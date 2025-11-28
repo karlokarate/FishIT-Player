@@ -1,0 +1,39 @@
+{
+  "chatId": -1002256151708,
+  "title": "Dexter Original Sin FULL HD",
+  "exportedAt": "2025-11-28T14:46:10.191404806Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 53477376,
+      "chatId": -1002256151708,
+      "date": 1740475168,
+      "dateIso": "2025-02-25T09:19:28Z",
+      "content": {
+        "duration": 3005,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Dexter Original Sin - S01E10 - Kodex-Blues.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5109,
+          "size": 3433851421,
+          "remoteId": "BAACAgQAAyEFAASGeiScAAMzaSmyQL1wRTZAo5EfUW7C5Tj-7moAAkkYAAIRTOlRZIjYI9U6dOw4BA",
+          "uniqueId": "AgADSRgAAhFM6VE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5108,
+            "size": 15473,
+            "remoteId": "AAMCBAADIQUABIZ6JJwAAzNpKbJAvXBFNkCjkR9RbsLlOP7uagACSRgAAhFM6VFkiNgj1Tp07AEAB20AAzgE",
+            "uniqueId": "AQADSRgAAhFM6VFy"
+          }
+        },
+        "caption": "Dexter Original Sin - S01 E10 - Kodex-Blues"
+      }
+    }
+  ]
+}

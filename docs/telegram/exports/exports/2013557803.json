@@ -1,0 +1,48 @@
+{
+  "chatId": 2013557803,
+  "title": "Telemetr io auth bot",
+  "exportedAt": "2025-11-28T14:46:09.885804996Z",
+  "count": 5,
+  "messages": [
+    {
+      "id": 46075478016,
+      "chatId": 2013557803,
+      "date": 1740562860,
+      "dateIso": "2025-02-26T09:41:00Z",
+      "text": "🔔 Important news - we have a new bot!\n\nActivate it , not to miss any updates, analytics or important notifications - @telemetr_io_bot",
+      "genres": []
+    },
+    {
+      "id": 43059773440,
+      "chatId": 2013557803,
+      "date": 1699272365,
+      "dateIso": "2023-11-06T12:06:05Z",
+      "text": "Hi!\nWe are happy to announce that Telemetrio has released a revolutionary update🎉\n\nAdvantages that await you in the new version of Telemetrio:\n🔹 Advertising posts. Explore the results of your own advertising posts and those of competitors\n🔹 Labels of bot drivers. We have already identified more than 55,000 fraudulent channels and marked them on the service\n🔹 Data export. Telemetrio makes it easy to export important data to Excel for further analysis and processing.\n\nWe are convinced that our service will save you time and money. We invite you to familiarize yourself with its functionality",
+      "genres": []
+    },
+    {
+      "id": 42199941120,
+      "chatId": 2013557803,
+      "date": 1690357996,
+      "dateIso": "2023-07-26T07:53:16Z",
+      "text": "Congratulations! You are logged in to the service. Return to the browser to continue working with telemetr io",
+      "genres": []
+    },
+    {
+      "id": 42198892544,
+      "chatId": 2013557803,
+      "date": 1690357996,
+      "dateIso": "2023-07-26T07:53:16Z",
+      "text": "Hello ChrisFischTophEr! Welcome to the Telegram bot telemetr io",
+      "genres": []
+    },
+    {
+      "id": 42197843968,
+      "chatId": 2013557803,
+      "date": 1690357996,
+      "dateIso": "2023-07-26T07:53:16Z",
+      "text": "/start",
+      "genres": []
+    }
+  ]
+}

@@ -1,0 +1,844 @@
+{
+  "chatId": -1001326220574,
+  "title": "🎬Filme kompakt!🎥",
+  "exportedAt": "2025-11-28T14:45:49.006429410Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 80117497856,
+      "chatId": -1001326220574,
+      "date": 1756632843,
+      "dateIso": "2025-08-31T09:34:03Z",
+      "content": {
+        "duration": 7762,
+        "width": 720,
+        "height": 388,
+        "fileName": "Superman - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4930,
+          "size": 794794942,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASp2aSmyaWcOfrQnKKxGrLDChP-YuwMAAtd6AAJSxaBJ0B6tWIOpabo4BA",
+          "uniqueId": "AgAD13oAAlLFoEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 172,
+          "file": {
+            "id": 4929,
+            "size": 9293,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKnZpKbJpZw5-tCcorEassMKE_5i7AwAC13oAAlLFoEnQHq1Yg6lpugEAB20AAzgE",
+            "uniqueId": "AQAD13oAAlLFoEly"
+          }
+        },
+        "caption": "Superman (2025) Plot: Superman ist bereits seit einiger Zeit als Superheld in Metropolis aktiv und arbeitet unter dem Deckmantel seines menschlichen Alter Egos, dem Reporter Clark Kent, bei der Zeitung „Daily Planet\". Dort hat er auch die Reporterin Lois Lane kennengelernt, die tatsächlich als einzige von seiner geheimen Identität als Superman weiß. Gemeinsam mit zahlreichen anderen Helden und Heldinnen, darunter Guy Gardner alias Green Lantern, Mister Terrific, Hawkgirl und Metamorpho, beschützt Superman die Menschheit vor Bedrohungen, von denen es wirklich zahlreiche gibt. Doch eine Bedrohung, die sticht hervor: Supermans Erzfeind Lex Luthor versucht mit allen Mitteln, ihn endgültig aus dem Weg zu räumen und in Ungnade fallen zu lassen. Dafür stellt sich ihm auch Angela Spica, bekannt als „The Engineer\", in den Weg … Rating: 7.538 #ScienceFiction #Abenteuer #Action"
+      }
+    },
+    {
+      "id": 80116449280,
+      "chatId": -1001326220574,
+      "date": 1756632840,
+      "dateIso": "2025-08-31T09:34:00Z",
+      "text": "󠄿Titel: Superman\nErscheinungsjahr: 2025\nLänge: 130 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nRegie: James Gunn\nTMDbRating: 7.538\nGenres: Science Fiction, Abenteuer, Action",
+      "year": 2025,
+      "lengthMinutes": 130,
+      "fsk": 12,
+      "productionCountry": "Vereinigte Staaten",
+      "director": "James Gunn",
+      "tmdbRating": 7.538,
+      "genres": [
+        "Science Fiction",
+        "Abenteuer",
+        "Action"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1061474-Superman?language\u003dde-DE"
+    },
+    {
+      "id": 80115400704,
+      "chatId": -1001326220574,
+      "date": 1756632836,
+      "dateIso": "2025-08-31T09:33:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 15261,
+              "size": 835736,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASp0aSmyacKuJYexM3NhzFj-4BrTgOYAAly5MRtaaR1Q2vs-A4OO6OkBAAMCAAN3AAM4BA",
+              "uniqueId": "AQADXLkxG1ppHVB8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15260,
+              "size": 234704,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASp0aSmyacKuJYexM3NhzFj-4BrTgOYAAly5MRtaaR1Q2vs-A4OO6OkBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADXLkxG1ppHVB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15259,
+              "size": 106397,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASp0aSmyacKuJYexM3NhzFj-4BrTgOYAAly5MRtaaR1Q2vs-A4OO6OkBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADXLkxG1ppHVB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15258,
+              "size": 25457,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASp0aSmyacKuJYexM3NhzFj-4BrTgOYAAly5MRtaaR1Q2vs-A4OO6OkBAAMCAANtAAM4BA",
+              "uniqueId": "AQADXLkxG1ppHVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80112254976,
+      "chatId": -1001326220574,
+      "date": 1756632817,
+      "dateIso": "2025-08-31T09:33:37Z",
+      "content": {
+        "duration": 6034,
+        "width": 720,
+        "height": 300,
+        "fileName": "The Ballad of Wallis Island - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15263,
+          "size": 617461805,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpxaSmyaQ2QDIxw1UMWoTshhlXW2u0AAsl6AAJSxaBJBiXUjuaGwOM4BA",
+          "uniqueId": "AgADyXoAAlLFoEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 15262,
+            "size": 5717,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKnFpKbJpDZAMjHDVQxahOyGGVdba7QACyXoAAlLFoEkGJdSO5obA4wEAB20AAzgE",
+            "uniqueId": "AQADyXoAAlLFoEly"
+          }
+        },
+        "caption": "The Ballad of Wallis Island (2025) Plot: Charles, ein exzentrischer Lottogewinner, lebt allein auf der abgeschiedenen Wallis Island und träumt davon, die legendäre Band Mortimer-McGwyer, bestehend aus den ehemaligen Liebhabern Mortimer und McGwyer, wieder auf die Bühne zu bringen. Mit seinem Vermögen lockt er die beiden Musiker zu einem exklusiven Privatkonzert in sein beeindruckendes Inselanwesen. Doch was als harmonisches Comeback geplant war, entwickelt sich schnell zu einem Chaos aus Konflikten und aufkochenden Emotionen. Rating: 7.138 #Komödie #Drama #Musik"
+      }
+    },
+    {
+      "id": 80111206400,
+      "chatId": -1001326220574,
+      "date": 1756632814,
+      "dateIso": "2025-08-31T09:33:34Z",
+      "text": "󠄿Titel: The Ballad of Wallis Island\nErscheinungsjahr: 2025\nLänge: 100 Minuten\nProduktionsland: Großbritannien\nFSK: 6\nRegie: James Griffiths\nTMDbRating: 7.138\nGenres: Komödie, Drama, Musik",
+      "year": 2025,
+      "lengthMinutes": 100,
+      "fsk": 6,
+      "productionCountry": "Großbritannien",
+      "director": "James Griffiths",
+      "tmdbRating": 7.138,
+      "genres": [
+        "Komödie",
+        "Drama",
+        "Musik"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1122099-The-Ballad-of-Wallis-Island?language\u003dde-DE"
+    },
+    {
+      "id": 80110157824,
+      "chatId": -1001326220574,
+      "date": 1756632811,
+      "dateIso": "2025-08-31T09:33:31Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 15267,
+              "size": 1130469,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpvaSmyaZj4Z9-lrJjyG7rKAAGE3F4xAALTujEb9IaEUd5GAAGGy6P8pQEAAwIAA3cAAzgE",
+              "uniqueId": "AQAD07oxG_SGhFF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15266,
+              "size": 292812,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpvaSmyaZj4Z9-lrJjyG7rKAAGE3F4xAALTujEb9IaEUd5GAAGGy6P8pQEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD07oxG_SGhFF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15265,
+              "size": 119318,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpvaSmyaZj4Z9-lrJjyG7rKAAGE3F4xAALTujEb9IaEUd5GAAGGy6P8pQEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD07oxG_SGhFF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15264,
+              "size": 23907,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpvaSmyaZj4Z9-lrJjyG7rKAAGE3F4xAALTujEb9IaEUd5GAAGGy6P8pQEAAwIAA20AAzgE",
+              "uniqueId": "AQAD07oxG_SGhFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80108060672,
+      "chatId": -1001326220574,
+      "date": 1756632802,
+      "dateIso": "2025-08-31T09:33:22Z",
+      "content": {
+        "duration": 5446,
+        "width": 720,
+        "height": 406,
+        "fileName": "Krieg der Welten - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15269,
+          "size": 557944913,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASptaSmyaZ3pLbKuetDI0Zy_ggvm_tQAAq16AAJSxaBJec-X61h0FBk4BA",
+          "uniqueId": "AgADrXoAAlLFoEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15268,
+            "size": 7450,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKm1pKbJpnektsq560MjRnL-CC-b-1AACrXoAAlLFoEl5z5frWHQUGQEAB20AAzgE",
+            "uniqueId": "AQADrXoAAlLFoEly"
+          }
+        },
+        "caption": "Krieg der Welten (2025) Plot: Will Radford ist ein Top-Cybersicherheitsanalytiker des Heimatschutzes, der potenzielle Bedrohungen für die nationale Sicherheit durch ein Massenüberwachungsprogramm aufspürt, bis ihn eines Tages ein Angriff eines unbekannten Wesens dazu bringt, sich zu fragen, ob die Regierung etwas vor ihm verbirgt ... und vor dem Rest der Welt. Rating: 4.297 #ScienceFiction #Thriller"
+      }
+    },
+    {
+      "id": 80107012096,
+      "chatId": -1001326220574,
+      "date": 1756632799,
+      "dateIso": "2025-08-31T09:33:19Z",
+      "text": "󠄿Titel: Krieg der Welten\nOriginaltitel: War of the Worlds\nErscheinungsjahr: 2025\nLänge: 91 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nRegie: Rich Lee\nTMDbRating: 4.297\nGenres: Science Fiction, Thriller",
+      "year": 2025,
+      "lengthMinutes": 91,
+      "fsk": 16,
+      "originalTitle": "War of the Worlds",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Rich Lee",
+      "tmdbRating": 4.297,
+      "genres": [
+        "Science Fiction",
+        "Thriller"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/755898-War-of-the-Worlds?language\u003dde-DE"
+    },
+    {
+      "id": 80105963520,
+      "chatId": -1001326220574,
+      "date": 1756632796,
+      "dateIso": "2025-08-31T09:33:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 15273,
+              "size": 565706,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpraSmyaSWEw1oJqQRRWOwniE1VoeQAAmy5MRvHnXVQvXwliX5p-ssBAAMCAAN3AAM4BA",
+              "uniqueId": "AQADbLkxG8eddVB8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15272,
+              "size": 199407,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpraSmyaSWEw1oJqQRRWOwniE1VoeQAAmy5MRvHnXVQvXwliX5p-ssBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADbLkxG8eddVB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15271,
+              "size": 92535,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpraSmyaSWEw1oJqQRRWOwniE1VoeQAAmy5MRvHnXVQvXwliX5p-ssBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADbLkxG8eddVB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15270,
+              "size": 19928,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpraSmyaSWEw1oJqQRRWOwniE1VoeQAAmy5MRvHnXVQvXwliX5p-ssBAAMCAANtAAM4BA",
+              "uniqueId": "AQADbLkxG8eddVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80102817792,
+      "chatId": -1001326220574,
+      "date": 1756632727,
+      "dateIso": "2025-08-31T09:32:07Z",
+      "content": {
+        "duration": 6670,
+        "width": 720,
+        "height": 404,
+        "fileName": "Ich weiß, was du letzten Sommer getan hast - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15275,
+          "size": 682229654,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpoaSmyaVxsDf3HdBcYtwABNLi8OPNBAAJSeAACoUSIScDRZkQPg_rxOAQ",
+          "uniqueId": "AgADUngAAqFEiEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15274,
+            "size": 7819,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKmhpKbJpXGwN_cd0Fxi3AAE0uLw480EAAlJ4AAKhRIhJwNFmRA-D-vEBAAdtAAM4BA",
+            "uniqueId": "AQADUngAAqFEiEly"
+          }
+        },
+        "caption": "Ich weiß, was du letzten Sommer getan hast (2025) Plot: Als fünf Freunde versehentlich einen tödlichen Autounfall verursachen, vertuschen sie ihre Beteiligung und schließen einen Pakt, den Unfall geheim zu halten, um die Konsequenzen nicht tragen zu müssen. Ein Jahr später werden sie von ihrer Vergangenheit eingeholt und müssen sich einer schrecklichen Wahrheit stellen: Jemand weiß, was sie im letzten Sommer getan haben ... und sinnt auf Rache. Als die Freunde einer nach dem anderen von einem Killer verfolgt werden, stellen sie fest, dass dies schon einmal passiert ist, und wenden sich an zwei Überlebende des legendären Southport-Massakers von 1997, um Hilfe zu erhalten. Rating: 5.867 #Horror #Mystery #Thriller #Action #Abenteuer"
+      }
+    },
+    {
+      "id": 80101769216,
+      "chatId": -1001326220574,
+      "date": 1756632724,
+      "dateIso": "2025-08-31T09:32:04Z",
+      "text": "󠄿Titel: Ich weiß, was du letzten Sommer getan hast\nOriginaltitel: I Know What You Did Last Summer\nErscheinungsjahr: 2025\nLänge: 116 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nFilmreihe: Ich weiß, was Du letzten Sommer getan hast Filmreihe\nRegie: Jennifer Kaytin Robinson\nTMDbRating: 5.867\nGenres: Horror, Mystery, Thriller, Action, Abenteuer",
+      "year": 2025,
+      "lengthMinutes": 116,
+      "fsk": 16,
+      "collection": "Ich weiß, was Du letzten Sommer getan hast Filmreihe",
+      "originalTitle": "I Know What You Did Last Summer",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Jennifer Kaytin Robinson",
+      "tmdbRating": 5.867,
+      "genres": [
+        "Horror",
+        "Mystery",
+        "Thriller",
+        "Action",
+        "Abenteuer"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1083433-I-Know-What-You-Did-Last-Summer?language\u003dde-DE"
+    },
+    {
+      "id": 80100720640,
+      "chatId": -1001326220574,
+      "date": 1756632721,
+      "dateIso": "2025-08-31T09:32:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 15279,
+              "size": 764027,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpmaSmyaWWZKtbkllUkm2p9jG8kQA0AAj66MRs7rYRRmmCIvUJLQyABAAMCAAN3AAM4BA",
+              "uniqueId": "AQADProxGzuthFF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15278,
+              "size": 209422,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpmaSmyaWWZKtbkllUkm2p9jG8kQA0AAj66MRs7rYRRmmCIvUJLQyABAAMCAAN5AAM4BA",
+              "uniqueId": "AQADProxGzuthFF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15277,
+              "size": 90977,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpmaSmyaWWZKtbkllUkm2p9jG8kQA0AAj66MRs7rYRRmmCIvUJLQyABAAMCAAN4AAM4BA",
+              "uniqueId": "AQADProxGzuthFF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15276,
+              "size": 19874,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpmaSmyaWWZKtbkllUkm2p9jG8kQA0AAj66MRs7rYRRmmCIvUJLQyABAAMCAANtAAM4BA",
+              "uniqueId": "AQADProxGzuthFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80097574912,
+      "chatId": -1001326220574,
+      "date": 1756632706,
+      "dateIso": "2025-08-31T09:31:46Z",
+      "content": {
+        "duration": 5544,
+        "width": 720,
+        "height": 404,
+        "fileName": "Ich werde immer wissen, was du letzten Sommer getan hast - 2.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15281,
+          "size": 567135094,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpjaSmyaZ_KhmDNCZBIhKXxxaDGh6YAArZ6AAJSxaBJxiaKNQiXxww4BA",
+          "uniqueId": "AgADtnoAAlLFoEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15280,
+            "size": 9740,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKmNpKbJpn8qGYM0JkEiEpfHFoMaHpgACtnoAAlLFoEnGJoo1CJfHDAEAB20AAzgE",
+            "uniqueId": "AQADtnoAAlLFoEly"
+          }
+        },
+        "caption": "Ich werde immer wissen, was du letzten Sommer getan hast (2006) Plot: Eine Gruppe von vier Jugendlichen, die, ein Jahr nachdem einer ihrer Freunde ermordet worden ist, unheimliche Mitteilungen von einer unbekannten Person erhält. Obwohl einer von ihnen dagegen ist, beschließt die Mehrheit der Gruppe, dieses Thema geheimzuhalten, denn sie haben einen Cousin des Ermordeten im Verdacht – mit diesem Verdacht sind sie allerdings auf einer falschen Spur, wie sich schnell zeigt. Rating: 4.224 #Horror"
+      }
+    },
+    {
+      "id": 80096526336,
+      "chatId": -1001326220574,
+      "date": 1756632703,
+      "dateIso": "2025-08-31T09:31:43Z",
+      "text": "󠄿Titel: Ich werde immer wissen, was du letzten Sommer getan hast\nOriginaltitel: I\u0027ll Always Know What You Did Last Summer\nErscheinungsjahr: 2006\nLänge: 92 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 18\nFilmreihe: Ich weiß, was Du letzten Sommer getan hast Filmreihe\nRegie: Sylvain White\nTMDbRating: 4.224\nGenres: Horror",
+      "year": 2006,
+      "lengthMinutes": 92,
+      "fsk": 18,
+      "collection": "Ich weiß, was Du letzten Sommer getan hast Filmreihe",
+      "originalTitle": "I\u0027ll Always Know What You Did Last Summer",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Sylvain White",
+      "tmdbRating": 4.224,
+      "genres": [
+        "Horror"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/3602-I\u0027ll-Always-Know-What-You-Did-Last-Summer?language\u003dde-DE"
+    },
+    {
+      "id": 80095477760,
+      "chatId": -1001326220574,
+      "date": 1756632700,
+      "dateIso": "2025-08-31T09:31:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1400,
+            "height": 2100,
+            "file": {
+              "id": 15285,
+              "size": 621065,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASphaSmyaXfKuMVFaNvpGYNUdia1HE0AAke5MRsydaVR4aoqn1V7FqsBAAMCAAN3AAM4BA",
+              "uniqueId": "AQADR7kxGzJ1pVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15284,
+              "size": 272745,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASphaSmyaXfKuMVFaNvpGYNUdia1HE0AAke5MRsydaVR4aoqn1V7FqsBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADR7kxGzJ1pVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15283,
+              "size": 114594,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASphaSmyaXfKuMVFaNvpGYNUdia1HE0AAke5MRsydaVR4aoqn1V7FqsBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADR7kxGzJ1pVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15282,
+              "size": 24663,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASphaSmyaXfKuMVFaNvpGYNUdia1HE0AAke5MRsydaVR4aoqn1V7FqsBAAMCAANtAAM4BA",
+              "uniqueId": "AQADR7kxGzJ1pVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80093380608,
+      "chatId": -1001326220574,
+      "date": 1756632683,
+      "dateIso": "2025-08-31T09:31:23Z",
+      "content": {
+        "duration": 6034,
+        "width": 720,
+        "height": 404,
+        "fileName": "Ich_weiß_noch_immer,_was_du_letzten_Sommer_getan_hast_1998.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15287,
+          "size": 617804477,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpfaSmyabSGuX-jZmUandrInPhHy7wAAhh4AAKhRIhJe_WnPVkSb4Y4BA",
+          "uniqueId": "AgADGHgAAqFEiEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15286,
+            "size": 7293,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKl9pKbJptIa5f6NmZRqd2sic-EfLvAACGHgAAqFEiEl79ac9WRJvhgEAB20AAzgE",
+            "uniqueId": "AQADGHgAAqFEiEly"
+          }
+        },
+        "caption": "Ich weiß noch immer, was du letzten Sommer getan hast (1998) Plot: Ein neuer Sommer und Julie James ist auf dem besten Wege, ihr Leben neu zu organisieren. Sie ist wieder im College und bewohnt ein Zimmer zusammen mit ihrer neuen Freundin Karla. Als Karla eine Reise für vier Personen auf die Bahamas gewinnt, beschließen die Mädchen, gemeinsam mit ihren Boyfriends Ray und Will zu fahren. Es wird die Reise in einen gräßlichen Alptraum. Denn auch auf dem paradiesischen Eiland wartet bereits der irre Killer mit dem Haken auf die Clique: Und er weiß immer noch um die Geschehnisse jenes verhängnisvollen Sommers. Rating: 5.367 #Horror #Mystery #Thriller"
+      }
+    },
+    {
+      "id": 80092332032,
+      "chatId": -1001326220574,
+      "date": 1756632680,
+      "dateIso": "2025-08-31T09:31:20Z",
+      "text": "󠄿Titel: Ich weiß noch immer, was du letzten Sommer getan hast\nOriginaltitel: I Still Know What You Did Last Summer\nErscheinungsjahr: 1998\nLänge: 100 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nFilmreihe: Ich weiß, was Du letzten Sommer getan hast Filmreihe\nRegie: Danny Cannon\nTMDbRating: 5.367\nGenres: Horror, Mystery, Thriller",
+      "year": 1998,
+      "lengthMinutes": 100,
+      "fsk": 16,
+      "collection": "Ich weiß, was Du letzten Sommer getan hast Filmreihe",
+      "originalTitle": "I Still Know What You Did Last Summer",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Danny Cannon",
+      "tmdbRating": 5.367,
+      "genres": [
+        "Horror",
+        "Mystery",
+        "Thriller"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/3600-I-Still-Know-What-You-Did-Last-Summer?language\u003dde-DE"
+    },
+    {
+      "id": 80091283456,
+      "chatId": -1001326220574,
+      "date": 1756632676,
+      "dateIso": "2025-08-31T09:31:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1400,
+            "height": 2100,
+            "file": {
+              "id": 15291,
+              "size": 347188,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpdaSmyabTO8D5H_FNEcYW-HK3zEB0AAousMRuvByxThPLjevPHqywBAAMCAAN3AAM4BA",
+              "uniqueId": "AQADi6wxG68HLFN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15290,
+              "size": 200271,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpdaSmyabTO8D5H_FNEcYW-HK3zEB0AAousMRuvByxThPLjevPHqywBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADi6wxG68HLFN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15289,
+              "size": 86430,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpdaSmyabTO8D5H_FNEcYW-HK3zEB0AAousMRuvByxThPLjevPHqywBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADi6wxG68HLFN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15288,
+              "size": 18763,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpdaSmyabTO8D5H_FNEcYW-HK3zEB0AAousMRuvByxThPLjevPHqywBAAMCAANtAAM4BA",
+              "uniqueId": "AQADi6wxG68HLFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80089186304,
+      "chatId": -1001326220574,
+      "date": 1756632670,
+      "dateIso": "2025-08-31T09:31:10Z",
+      "content": {
+        "duration": 6053,
+        "width": 720,
+        "height": 300,
+        "fileName": "Ich weiß, was Du letzten Sommer getan hast - 1997.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15293,
+          "size": 620030464,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpbaSmyady1M6DeDwAB8MUqzgVeT-HWAAIgeAACoUSISeWyJkzrWGUnOAQ",
+          "uniqueId": "AgADIHgAAqFEiEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 15292,
+            "size": 4998,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKltpKbJp3LUzoN4PAAHwxSrOBV5P4dYAAiB4AAKhRIhJ5bImTOtYZScBAAdtAAM4BA",
+            "uniqueId": "AQADIHgAAqFEiEly"
+          }
+        },
+        "caption": "Ich weiß, was Du letzten Sommer getan hast (1997) Plot: Die Freunde Julie, Helen, Barry und Ray rasen nach einer feuchtfröhlichen Party in Barrys Auto eine Küstenstraße entlang. Da die Teenager weiter ausgelassen feiern und in der Dunkelheit nicht auf die Fahrbahn achten, überfährt Ray plötzlich einen Mann, dessen Gesicht durch den Unfall bis zur Unkenntlichkeit entstellt wird. Aus Angst, die Polizei würde ihnen die Geschichte nicht glauben und vermuten, der betrunkene Barry habe am Steuer gesessen, tragen sie den Schwerverletzten ans Ufer und werfen ihn ins Wasser. Anschließend schwören sie sich, nie wieder über diese Nacht zu sprechen. In den folgenden Monaten verlieren sich die vier aus den Augen. Als sie sich ein Jahr später in den Sommerferien wiedertreffen, erhält Julie einen anonymen Brief mit einer düsteren Botschaft - jemand scheint von dem Geheimnis der Gruppe zu wissen und macht gnadenlos Jagd auf sie… Rating: 5.991 #Horror #Thriller #Mystery"
+      }
+    },
+    {
+      "id": 80088137728,
+      "chatId": -1001326220574,
+      "date": 1756632666,
+      "dateIso": "2025-08-31T09:31:06Z",
+      "text": "󠄿Titel: Ich weiß, was Du letzten Sommer getan hast\nOriginaltitel: I Know What You Did Last Summer\nErscheinungsjahr: 1997\nLänge: 100 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nFilmreihe: Ich weiß, was Du letzten Sommer getan hast Filmreihe\nRegie: Jim Gillespie\nTMDbRating: 5.991\nGenres: Horror, Thriller, Mystery",
+      "year": 1997,
+      "lengthMinutes": 100,
+      "fsk": 16,
+      "collection": "Ich weiß, was Du letzten Sommer getan hast Filmreihe",
+      "originalTitle": "I Know What You Did Last Summer",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Jim Gillespie",
+      "tmdbRating": 5.991,
+      "genres": [
+        "Horror",
+        "Thriller",
+        "Mystery"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/3597-I-Know-What-You-Did-Last-Summer?language\u003dde-DE"
+    },
+    {
+      "id": 80087089152,
+      "chatId": -1001326220574,
+      "date": 1756632663,
+      "dateIso": "2025-08-31T09:31:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 1200,
+            "file": {
+              "id": 15296,
+              "size": 118478,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpZaSmyaYO1Jha-F1dZ5zlvEJE_g8oAAlKsMRuDSyxTA62RquKW5eQBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADUqwxG4NLLFN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15295,
+              "size": 89937,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpZaSmyaYO1Jha-F1dZ5zlvEJE_g8oAAlKsMRuDSyxTA62RquKW5eQBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADUqwxG4NLLFN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15294,
+              "size": 19933,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpZaSmyaYO1Jha-F1dZ5zlvEJE_g8oAAlKsMRuDSyxTA62RquKW5eQBAAMCAANtAAM4BA",
+              "uniqueId": "AQADUqwxG4NLLFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80083943424,
+      "chatId": -1001326220574,
+      "date": 1756455105,
+      "dateIso": "2025-08-29T08:11:45Z",
+      "content": {
+        "duration": 8444,
+        "width": 720,
+        "height": 300,
+        "fileName": "Rust - Legende des Westens - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15298,
+          "size": 865369076,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpWaSmyaWTwtBWFsNHTsG2LpNRVMJsAAnB4AAKhRIhJbDDwXBRsZcw4BA",
+          "uniqueId": "AgADcHgAAqFEiEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 15297,
+            "size": 4670,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKlZpKbJpZPC0FYWw0dOwbYuk1FUwmwACcHgAAqFEiElsMPBcFGxlzAEAB20AAzgE",
+            "uniqueId": "AQADcHgAAqFEiEly"
+          }
+        },
+        "caption": "Rust - Legende des Westens (2025) Plot: Der berüchtigte Gesetzlose Harland Rust befreit seinen entfremdeten Enkel Lucas aus dem Gefängnis, nachdem Lucas wegen eines versehentlichen Mordes zum Tode durch den Strang verurteilt wurde. Die beiden müssen dem legendären US-Marshal Wood Helm und dem Kopfgeldjäger Fenton „Preacher“ Lang entkommen, die ihnen dicht auf den Fersen sind. Tief vergrabene Geheimnisse steigen empor und eine unerwartete familiäre Bindung beginnt sich zu bilden, während das ungleiche Duo versucht, an der gnadenlosen amerikanischen Grenze zu überleben. Rating: 6.368 #Western"
+      }
+    },
+    {
+      "id": 80082894848,
+      "chatId": -1001326220574,
+      "date": 1756455102,
+      "dateIso": "2025-08-29T08:11:42Z",
+      "text": "󠄿Titel: Rust - Legende des Westens\nOriginaltitel: Rust\nErscheinungsjahr: 2025\nLänge: 133 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nRegie: Joel Souza\nTMDbRating: 6.368\nGenres: Western",
+      "year": 2025,
+      "lengthMinutes": 133,
+      "fsk": 12,
+      "originalTitle": "Rust",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Joel Souza",
+      "tmdbRating": 6.368,
+      "genres": [
+        "Western"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/710258-Rust?language\u003dde-DE"
+    },
+    {
+      "id": 80081846272,
+      "chatId": -1001326220574,
+      "date": 1756455099,
+      "dateIso": "2025-08-29T08:11:39Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 15302,
+              "size": 700810,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpUaSmyaYgGW4Vcrjp-T8eDRlKbsjsAAuC5MRsZZnVR2lD1UZ58OlEBAAMCAAN3AAM4BA",
+              "uniqueId": "AQAD4LkxGxlmdVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 15301,
+              "size": 209516,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpUaSmyaYgGW4Vcrjp-T8eDRlKbsjsAAuC5MRsZZnVR2lD1UZ58OlEBAAMCAAN5AAM4BA",
+              "uniqueId": "AQAD4LkxGxlmdVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 15300,
+              "size": 90104,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpUaSmyaYgGW4Vcrjp-T8eDRlKbsjsAAuC5MRsZZnVR2lD1UZ58OlEBAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD4LkxGxlmdVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 15299,
+              "size": 19016,
+              "remoteId": "AgACAgQAAx0CTwyFHgABASpUaSmyaYgGW4Vcrjp-T8eDRlKbsjsAAuC5MRsZZnVR2lD1UZ58OlEBAAMCAANtAAM4BA",
+              "uniqueId": "AQAD4LkxGxlmdVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 80079749120,
+      "chatId": -1001326220574,
+      "date": 1756455090,
+      "dateIso": "2025-08-29T08:11:30Z",
+      "content": {
+        "duration": 7543,
+        "width": 712,
+        "height": 296,
+        "fileName": "The Old Woman with the Knife - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15304,
+          "size": 769967109,
+          "remoteId": "BAACAgIAAx0CTwyFHgABASpSaSmyaXJN8bpQgrQa8Ze7JM1zOpYAAml4AAKhRIhJPng6t8hLph84BA",
+          "uniqueId": "AgADaXgAAqFEiEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 15303,
+            "size": 3888,
+            "remoteId": "AAMCAgADHQJPDIUeAAEBKlJpKbJpck3xulCCtBrxl7skzXM6lgACaXgAAqFEiEk-eDq3yEumHwEAB20AAzgE",
+            "uniqueId": "AQADaXgAAqFEiEly"
+          }
+        },
+        "caption": "The Old Woman with the Knife (2025) Plot: Die alternde Assassine Hornclaw hat schon alles gesehen, doch hätte sie nie erwartet, einmal die Mentorin eines rücksichtslosen Neulings wie Bullfight zu werden. Während ihre ungewöhnliche Bindung stärker wird, bilden sich Risse in der Unterwelt, durch die sie gemeinsam navigieren. Als Hornclaw entdeckt, dass jemand ihren Tod will, wird sie in ein tödliches Täuschungsspiel hineingezogen. Da die Feinde immer näher kommen und Vertrauen Mangelware ist, bedeutet Überleben, scharfsinnig zu bleiben – sowohl mit der Klinge als auch mit dem Verstand. Rating: 6.3 #Action #Mystery #Drama"
+      }
+    }
+  ]
+}

@@ -1,0 +1,287 @@
+{
+  "chatId": -1001870058549,
+  "title": "German Genius - FullHD",
+  "exportedAt": "2025-11-28T14:46:48.351542328Z",
+  "count": 9,
+  "messages": [
+    {
+      "id": 37748736,
+      "chatId": -1001870058549,
+      "date": 1710271739,
+      "dateIso": "2024-03-12T19:28:59Z",
+      "content": {
+        "duration": 2003,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E08 - German Genius und Leni.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5284,
+          "size": 1885198035,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADJGkpsqNBzESrmb7LQLkmz0L9d6KZAAKASQACH2OJS-h5jrSZyA54OAQ",
+          "uniqueId": "AgADgEkAAh9jiUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5283,
+            "size": 8485,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMkaSmyo0HMRKuZvstAuSbPQv13opkAAoBJAAIfY4lL6HmOtJnIDngBAAdtAAM4BA",
+            "uniqueId": "AQADgEkAAh9jiUty"
+          }
+        },
+        "caption": "German Genius - S01 E08 - German Genius und Leni"
+      }
+    },
+    {
+      "id": 36700160,
+      "chatId": -1001870058549,
+      "date": 1710271736,
+      "dateIso": "2024-03-12T19:28:56Z",
+      "content": {
+        "duration": 1821,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E07 - Intimitäten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18652,
+          "size": 1895408045,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADI2kpsqM7HsTJs_GAVKRqAf_lCv7-AAJkSQACH2OJSzAUXiIQN5MROAQ",
+          "uniqueId": "AgADZEkAAh9jiUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18651,
+            "size": 8485,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMjaSmyozsexMmz8YBUpGoB_-UK_v4AAmRJAAIfY4lLMBReIhA3kxEBAAdtAAM4BA",
+            "uniqueId": "AQADZEkAAh9jiUty"
+          }
+        },
+        "caption": "German Genius - S01 E07 - Intimitäten"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1001870058549,
+      "date": 1697182629,
+      "dateIso": "2023-10-13T07:37:09Z",
+      "content": {
+        "duration": 1776,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E06 - Der Shitstorm und Beethoven.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18654,
+          "size": 2025308042,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADF2kpsqPx79sxLGvXThDuX-0m5a4PAAKPNgACHRJgSFGwaKxRG-laOAQ",
+          "uniqueId": "AgADjzYAAh0SYEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18653,
+            "size": 8489,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMXaSmyo_Hv2zEsa9dOEO5f7Sblrg8AAo82AAIdEmBIUbBorFEb6VoBAAdtAAM4BA",
+            "uniqueId": "AQADjzYAAh0SYEhy"
+          }
+        },
+        "caption": "German Genius - S01 E06 - Der Shitstorm und Beethoven"
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1001870058549,
+      "date": 1697182625,
+      "dateIso": "2023-10-13T07:37:05Z",
+      "content": {
+        "duration": 1831,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E05 - Zuversicht, gutes Aussehen und Ein.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18656,
+          "size": 2036836829,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADFmkpsqPjxl5gL9mv90vcoajt_VF7AAKqNgACHRJgSO_xLhMsT838OAQ",
+          "uniqueId": "AgADqjYAAh0SYEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18655,
+            "size": 8489,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMWaSmyo-PGXmAv2a_3S9yhqO39UXsAAqo2AAIdEmBI7_EuEyxPzfwBAAdtAAM4BA",
+            "uniqueId": "AQADqjYAAh0SYEhy"
+          }
+        },
+        "caption": "German Genius - S01 E05 - Zuversicht, gutes Aussehen und Einstein"
+      }
+    },
+    {
+      "id": 17825792,
+      "chatId": -1001870058549,
+      "date": 1685570801,
+      "dateIso": "2023-05-31T22:06:41Z",
+      "content": {
+        "duration": 1871,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E04 - Revolverkredit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18658,
+          "size": 2075170707,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADEWkpsqMBWj7ZBVWI28tiqfT-BerUAALSKwACnTTAS1ivIQzquSnAOAQ",
+          "uniqueId": "AgAD0isAAp00wEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18657,
+            "size": 17227,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMRaSmyowFaPtkFVYjby2Kp9P4F6tQAAtIrAAKdNMBLWK8hDOq5KcABAAdtAAM4BA",
+            "uniqueId": "AQAD0isAAp00wEty"
+          }
+        },
+        "caption": "German Genius - S01 E04 - Revolverkredit"
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001870058549,
+      "date": 1685570801,
+      "dateIso": "2023-05-31T22:06:41Z",
+      "content": {
+        "duration": 1789,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E03 - Wellen der Empfindsamkeit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18660,
+          "size": 2075018990,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADEGkpsqM3naa6dnR5Y5OJAAHSxqwDPwACwisAAp00wEtIDVM1b0RKdzgE",
+          "uniqueId": "AgADwisAAp00wEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18659,
+            "size": 17227,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMQaSmyozedprp2dHljk4kAAdLGrAM_AALCKwACnTTAS0gNUzVvREp3AQAHbQADOAQ",
+            "uniqueId": "AQADwisAAp00wEty"
+          }
+        },
+        "caption": "German Genius - S01 E03 - Wellen der Empfindsamkeit"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1001870058549,
+      "date": 1684966374,
+      "dateIso": "2023-05-24T22:12:54Z",
+      "content": {
+        "duration": 1829,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E02 - Wilhelm und der Wanderbeschneider.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18662,
+          "size": 2073469152,
+          "remoteId": "BAACAgIAAx0Cb3bUNQADD2kpsqOQm1QyNlwTKFUJ6t5i6CGyAAKsLAAC2xV4S8F-l_YVlC7aOAQ",
+          "uniqueId": "AgADrCwAAtsVeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18661,
+            "size": 17227,
+            "remoteId": "AAMCAgADHQJvdtQ1AAMPaSmyo5CbVDI2XBMoVQnq3mLoIbIAAqwsAALbFXhLwX6X9hWULtoBAAdtAAM4BA",
+            "uniqueId": "AQADrCwAAtsVeEty"
+          }
+        },
+        "caption": "German Genius - S01 E02 - Wilhelm und der Wanderbeschneider"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1001870058549,
+      "date": 1684966374,
+      "dateIso": "2023-05-24T22:12:54Z",
+      "content": {
+        "duration": 1977,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "German Genius - S01 E01 - Die Epiphanie und Goethe.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18664,
+          "size": 2079933535,
+          "remoteId": "BAACAgIAAxkDAAKktWkptb-_ZWYU2H2GPx_zuUpHOpMpAAKqLAAC2xV4S0BkO8MI4PDCOAQ",
+          "uniqueId": "AgADqiwAAtsVeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 18663,
+            "size": 17227,
+            "remoteId": "AAMCAgADGQMAAqS1aSm1v79lZhTYfYY_H_O5Skc6kykAAqosAALbFXhLQGQ7wwjg8MIBAAdtAAM4BA",
+            "uniqueId": "AQADqiwAAtsVeEty"
+          }
+        },
+        "caption": "German Genius - S01 E01 - Die Epiphanie und Goethe"
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001870058549
+      },
+      "chatId": -1001870058549,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1684948134,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "German Genius - FullHD"
+      }
+    }
+  ]
+}

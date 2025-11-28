@@ -1,0 +1,946 @@
+{
+  "chatId": -1001832346237,
+  "title": "Babylon Berlin",
+  "exportedAt": "2025-11-28T14:45:53.377598846Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 94371840,
+      "chatId": -1001832346237,
+      "date": 1753820251,
+      "dateIso": "2025-07-29T20:17:31Z",
+      "text": "Die fünfte und finale Staffel von \"Babylon Berlin\" befindet sich in der Produktion und soll voraussichtlich im Sommer 2026 ausgestrahlt werden. Die Dreharbeiten haben im Frühjahr 2025 begonnen und sollen im April 2025 abgeschlossen sein. Die Staffel basiert auf dem Roman \"Märzgefallene\" von Volker Kutscher und spielt im Jahr 1933, zur Zeit der Machtergreifung der Nationalsozialisten.",
+      "genres": []
+    },
+    {
+      "id": 93323264,
+      "senderId": {
+        "chatId": -1001832346237
+      },
+      "chatId": -1001832346237,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1752356786,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 121,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6156902259528565301,
+          "setId": 5082616684078956546,
+          "width": 512,
+          "height": 512,
+          "emoji": "😇",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 15679,
+              "size": 8628,
+              "expectedSize": 8628,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJtN2J9AANZaSmybVjVqHED3K6PGbGQpnamoUsAAjUCAAL8tXFVMN7YeTpyglcBAAdtAAM4BA",
+                "uniqueId": "AQADNQIAAvy1cVVy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 8628
+              }
+            }
+          },
+          "sticker": {
+            "id": 15680,
+            "size": 15246,
+            "expectedSize": 15246,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CbTdifQADWWkpsm1Y1ahxA9yujxmxkKZ2pqFLAAI1AgAC_LVxVTDe2Hk6coJXOAQ",
+              "uniqueId": "AgADNQIAAvy1cVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 15246
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 92274688,
+      "senderId": {
+        "chatId": -1001832346237
+      },
+      "chatId": -1001832346237,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1752356782,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 118,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6156634799030141362,
+          "setId": 5082616684078956546,
+          "width": 512,
+          "height": 96,
+          "emoji": "5⃣",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 60,
+            "file": {
+              "id": 15681,
+              "size": 8040,
+              "expectedSize": 8040,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJtN2J9AANYaSmybf2NELgkLdbtNN72X0zn97sAArIBAAK7wnBVofOHImYijJoBAAdtAAM4BA",
+                "uniqueId": "AQADsgEAArvCcFVy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 8040
+              }
+            }
+          },
+          "sticker": {
+            "id": 15682,
+            "size": 12792,
+            "expectedSize": 12792,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CbTdifQADWGkpsm39jRC4JC3W7TTe9l9M5_e7AAKyAQACu8JwVaHzhyJmIoyaOAQ",
+              "uniqueId": "AgADsgEAArvCcFU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12792
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 91226112,
+      "chatId": -1001832346237,
+      "date": 1668506593,
+      "dateIso": "2022-11-15T10:03:13Z",
+      "content": {
+        "duration": 3352,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E12 - Episode 12.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15684,
+          "size": 2090220920,
+          "remoteId": "BAACAgIAAx0CbTdifQADV2kpsm2I5QABRevc-44lfnxXBHv_1AACdB4AAksHoUsXjMSmPzqR2TgE",
+          "uniqueId": "AgADdB4AAksHoUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15683,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANXaSmybYjlAAFF69z7jiV-fFcEe__UAAJ0HgACSwehSxeMxKY_OpHZAQAHbQADOAQ",
+            "uniqueId": "AQADdB4AAksHoUty"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E12 - Episode 12"
+      }
+    },
+    {
+      "id": 89128960,
+      "chatId": -1001832346237,
+      "date": 1668364711,
+      "dateIso": "2022-11-13T18:38:31Z",
+      "content": {
+        "duration": 2910,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E11 - Episode 11.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15686,
+          "size": 2090293017,
+          "remoteId": "BAACAgIAAx0CbTdifQADVWkpsm1UvRfbYYIxipJh0zwpxpyUAAIrIAAC4t-ISza2X0vD6NPAOAQ",
+          "uniqueId": "AgADKyAAAuLfiEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15685,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANVaSmybVS9F9thgjGKkmHTPCnGnJQAAisgAALi34hLNrZfS8Po08ABAAdtAAM4BA",
+            "uniqueId": "AQADKyAAAuLfiEty"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E11 - Episode 11"
+      }
+    },
+    {
+      "id": 88080384,
+      "chatId": -1001832346237,
+      "date": 1667724084,
+      "dateIso": "2022-11-06T08:41:24Z",
+      "content": {
+        "duration": 2936,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E10 - Episode 10.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15688,
+          "size": 2090514611,
+          "remoteId": "BAACAgIAAx0CbTdifQADVGkpsm3V7w6A7LxdAXLd2rcHlKn6AAIhHwACC0w4SwNzMzGz_PCROAQ",
+          "uniqueId": "AgADIR8AAgtMOEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15687,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANUaSmybdXvDoDsvF0Bct3atweUqfoAAiEfAAILTDhLA3MzMbP88JEBAAdtAAM4BA",
+            "uniqueId": "AQADIR8AAgtMOEty"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E10 - Episode 10"
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1001832346237,
+      "date": 1667113982,
+      "dateIso": "2022-10-30T07:13:02Z",
+      "content": {
+        "duration": 2906,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E09 - Episode 09.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15690,
+          "size": 2090275445,
+          "remoteId": "BAACAgIAAx0CbTdifQADU2kpsm2hZOlgRXPaeVpF3s2bn2PWAAK0IgACURHwSrbY8tqVVYqLOAQ",
+          "uniqueId": "AgADtCIAAlER8Eo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15689,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANTaSmybaFk6WBFc9p5WkXezZufY9YAArQiAAJREfBKttjy2pVViosBAAdtAAM4BA",
+            "uniqueId": "AQADtCIAAlER8Epy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E09 - Episode 09"
+      }
+    },
+    {
+      "id": 85983232,
+      "chatId": -1001832346237,
+      "date": 1667113982,
+      "dateIso": "2022-10-30T07:13:02Z",
+      "content": {
+        "duration": 2850,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E08 - Episode 08.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15692,
+          "size": 2090390687,
+          "remoteId": "BAACAgIAAx0CbTdifQADUmkpsm0juwgt77cmqCDNvO84nEH2AAKzIgACURHwSgPEkljRCIrrOAQ",
+          "uniqueId": "AgADsyIAAlER8Eo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15691,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANSaSmybSO7CC3vtyaoIM287zicQfYAArMiAAJREfBKA8SSWNEIiusBAAdtAAM4BA",
+            "uniqueId": "AQADsyIAAlER8Epy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E08 - Episode 08"
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1001832346237,
+      "date": 1667113982,
+      "dateIso": "2022-10-30T07:13:02Z",
+      "content": {
+        "duration": 2941,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E07 - Episode 07.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15694,
+          "size": 2089778995,
+          "remoteId": "BAACAgIAAx0CbTdifQADUWkpsm23MZW_DBPvuXyCG2qyaSsSAAKwIgACURHwSm1zK1uA6nHGOAQ",
+          "uniqueId": "AgADsCIAAlER8Eo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15693,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANRaSmybbcxlb8ME--5fIIbarJpKxIAArAiAAJREfBKbXMrW4DqccYBAAdtAAM4BA",
+            "uniqueId": "AQADsCIAAlER8Epy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E07 - Episode 07"
+      }
+    },
+    {
+      "id": 83886080,
+      "chatId": -1001832346237,
+      "date": 1666468478,
+      "dateIso": "2022-10-22T19:54:38Z",
+      "content": {
+        "duration": 2570,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E06 - Episode 06.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15696,
+          "size": 2087462444,
+          "remoteId": "BAACAgIAAx0CbTdifQADUGkpsm30QwLQ-_wUTG6wG4-0fCQfAAL3IQAChBChSuXDCFqhyip1OAQ",
+          "uniqueId": "AgAD9yEAAoQQoUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15695,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANQaSmybfRDAtD7_BRMbrAbj7R8JB8AAvchAAKEEKFK5cMIWqHKKnUBAAdtAAM4BA",
+            "uniqueId": "AQAD9yEAAoQQoUpy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E06 - Episode 06"
+      }
+    },
+    {
+      "id": 82837504,
+      "chatId": -1001832346237,
+      "date": 1666468478,
+      "dateIso": "2022-10-22T19:54:38Z",
+      "content": {
+        "duration": 2735,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E05 - Episode 05.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15698,
+          "size": 2087197441,
+          "remoteId": "BAACAgIAAx0CbTdifQADT2kpsm1gsYvLIOzsxgnrTfBgZrOsAAL1IQAChBChShP-AulwR2OHOAQ",
+          "uniqueId": "AgAD9SEAAoQQoUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15697,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANPaSmybWCxi8sg7OzGCetN8GBms6wAAvUhAAKEEKFKE_4C6XBHY4cBAAdtAAM4BA",
+            "uniqueId": "AQAD9SEAAoQQoUpy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E05 - Episode 05"
+      }
+    },
+    {
+      "id": 81788928,
+      "chatId": -1001832346237,
+      "date": 1666254792,
+      "dateIso": "2022-10-20T08:33:12Z",
+      "content": {
+        "duration": 2731,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E04 - Episode 04.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15700,
+          "size": 2085611573,
+          "remoteId": "BAACAgIAAx0CbTdifQADTmkpsm2moAFEXykQZkV9yySuijr1AAJBIAACYBOJSsjmZ3b36SNzOAQ",
+          "uniqueId": "AgADQSAAAmATiUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15699,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANOaSmybaagAURfKRBmRX3LJK6KOvUAAkEgAAJgE4lKyOZndvfpI3MBAAdtAAM4BA",
+            "uniqueId": "AQADQSAAAmATiUpy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E04 - Episode 04"
+      }
+    },
+    {
+      "id": 78643200,
+      "chatId": -1001832346237,
+      "date": 1665841689,
+      "dateIso": "2022-10-15T13:48:09Z",
+      "content": {
+        "duration": 2574,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E03 - Episode 03.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15702,
+          "size": 2065890255,
+          "remoteId": "BAACAgIAAx0CbTdifQADS2kpsm2hMgXbXcBk8dLMq5-pd-e_AAIaIAACGYNZSrBDJBJLyzUHOAQ",
+          "uniqueId": "AgADGiAAAhmDWUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15701,
+            "size": 8064,
+            "remoteId": "AAMCAgADHQJtN2J9AANLaSmybaEyBdtdwGTx0syrn6l3578AAhogAAIZg1lKsEMkEkvLNQcBAAdtAAM4BA",
+            "uniqueId": "AQADGiAAAhmDWUpy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E03 - Episode 03"
+      }
+    },
+    {
+      "id": 62914560,
+      "chatId": -1001832346237,
+      "date": 1665739860,
+      "dateIso": "2022-10-14T09:31:00Z",
+      "content": {
+        "duration": 2954,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E02 - Episode 02.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15704,
+          "size": 2083148542,
+          "remoteId": "BAACAgIAAx0CbTdifQADPGkpsm3tyFgxJTuMJsZ1EPLIfGInAALrIgAChe8QSuXv1oOd2xSpOAQ",
+          "uniqueId": "AgAD6yIAAoXvEEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15703,
+            "size": 7157,
+            "remoteId": "AAMCAgADHQJtN2J9AAM8aSmybe3IWDElO4wmxnUQ8sh8YicAAusiAAKF7xBK5e_Wg53bFKkBAAdtAAM4BA",
+            "uniqueId": "AQAD6yIAAoXvEEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E02 - Episode 02"
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001832346237,
+      "date": 1665739860,
+      "dateIso": "2022-10-14T09:31:00Z",
+      "content": {
+        "duration": 2715,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S04 E01 - Episode 01.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15706,
+          "size": 2073315144,
+          "remoteId": "BAACAgIAAx0CbTdifQADO2kpsm3jMoRpiXUxMkhTHNZD70aKAALnIgAChe8QSpJi910qhOQtOAQ",
+          "uniqueId": "AgAD5yIAAoXvEEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15705,
+            "size": 7157,
+            "remoteId": "AAMCAgADHQJtN2J9AAM7aSmybeMyhGmJdTEySFMc1kPvRooAAuciAAKF7xBKkmL3XSqE5C0BAAdtAAM4BA",
+            "uniqueId": "AQAD5yIAAoXvEEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S04 E01 - Episode 01"
+      }
+    },
+    {
+      "id": 60817408,
+      "senderId": {
+        "chatId": -1001832346237
+      },
+      "chatId": -1001832346237,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1665739814,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 213,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6156970360530010690,
+          "setId": 5082616684078956546,
+          "width": 512,
+          "height": 96,
+          "emoji": "4⃣",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 60,
+            "file": {
+              "id": 15707,
+              "size": 7968,
+              "expectedSize": 7968,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJtN2J9AAM6aSmybeDYpB1Jvmgchfyl-USiWCoAAkICAALs83FVkIcINOj8qTQBAAdtAAM4BA",
+                "uniqueId": "AQADQgIAAuzzcVVy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 7968
+              }
+            }
+          },
+          "sticker": {
+            "id": 15708,
+            "size": 12782,
+            "expectedSize": 12782,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CbTdifQADOmkpsm3g2KQdSb5oHIX8pflEolgqAAJCAgAC7PNxVZCHCDTo_Kk0OAQ",
+              "uniqueId": "AgADQgIAAuzzcVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12782
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001832346237,
+      "date": 1665739806,
+      "dateIso": "2022-10-14T09:30:06Z",
+      "content": {
+        "duration": 3673,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E12 - Episode 12.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15710,
+          "size": 2093953677,
+          "remoteId": "BAACAgIAAx0CbTdifQADOWkpsm0De8EPoajSgjgUb0iwmdu2AAKrGgACOkVISpJnWLqBw5wIOAQ",
+          "uniqueId": "AgADqxoAAjpFSEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15709,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAM5aSmybQN7wQ-hqNKCOBRvSLCZ27YAAqsaAAI6RUhKkmdYuoHDnAgBAAdtAAM4BA",
+            "uniqueId": "AQADqxoAAjpFSEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E12 - Episode 12"
+      }
+    },
+    {
+      "id": 58720256,
+      "chatId": -1001832346237,
+      "date": 1665739794,
+      "dateIso": "2022-10-14T09:29:54Z",
+      "content": {
+        "duration": 3074,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E11 - Episode 11.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15712,
+          "size": 2096691924,
+          "remoteId": "BAACAgIAAx0CbTdifQADOGkpsm3MUe0Wui_dlDCr07tzic02AAImHAACGYNJSiP8To8-XfGNOAQ",
+          "uniqueId": "AgADJhwAAhmDSUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15711,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAM4aSmybcxR7Ra6L92UMKvTu3OJzTYAAiYcAAIZg0lKI_xOjz5d8Y0BAAdtAAM4BA",
+            "uniqueId": "AQADJhwAAhmDSUpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E11 - Episode 11"
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001832346237,
+      "date": 1665739794,
+      "dateIso": "2022-10-14T09:29:54Z",
+      "content": {
+        "duration": 2690,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E10 - Episode 10.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15714,
+          "size": 2095221715,
+          "remoteId": "BAACAgIAAx0CbTdifQADN2kpsm0Pelikp8QehJPyrLq3NLbdAAKpGgACOkVISrTbweX2L_7jOAQ",
+          "uniqueId": "AgADqRoAAjpFSEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15713,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAM3aSmybQ96WKSnxB6Ek_Ksurc0tt0AAqkaAAI6RUhKtNvB5fYv_uMBAAdtAAM4BA",
+            "uniqueId": "AQADqRoAAjpFSEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E10 - Episode 10"
+      }
+    },
+    {
+      "id": 56623104,
+      "chatId": -1001832346237,
+      "date": 1665739794,
+      "dateIso": "2022-10-14T09:29:54Z",
+      "content": {
+        "duration": 3008,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E09 - Episode 09.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15716,
+          "size": 2096888942,
+          "remoteId": "BAACAgIAAx0CbTdifQADNmkpsm1Zox8626o6ThbwSvV_a5PuAAKkGgACOkVISsB3bW4mz9w4OAQ",
+          "uniqueId": "AgADpBoAAjpFSEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15715,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAM2aSmybVmjHzrbqjpOFvBK9X9rk-4AAqQaAAI6RUhKwHdtbibP3DgBAAdtAAM4BA",
+            "uniqueId": "AQADpBoAAjpFSEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E09 - Episode 09"
+      }
+    },
+    {
+      "id": 54525952,
+      "chatId": -1001832346237,
+      "date": 1665691511,
+      "dateIso": "2022-10-13T20:05:11Z",
+      "content": {
+        "duration": 3003,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E08 - Episode 08.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15718,
+          "size": 2093824251,
+          "remoteId": "BAACAgIAAx0CbTdifQADNGkpsm3g1FHUO9sd2WaQFD_JUy-cAAIjJQACmuFASpFbSWLIkGzhOAQ",
+          "uniqueId": "AgADIyUAAprhQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15717,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAM0aSmybeDUUdQ72x3ZZpAUP8lTL5wAAiMlAAKa4UBKkVtJYsiQbOEBAAdtAAM4BA",
+            "uniqueId": "AQADIyUAAprhQEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E08 - Episode 08"
+      }
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001832346237,
+      "date": 1665691498,
+      "dateIso": "2022-10-13T20:04:58Z",
+      "content": {
+        "duration": 2478,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E07 - Episode 07.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15720,
+          "size": 2091513608,
+          "remoteId": "BAACAgIAAx0CbTdifQADM2kpsm0C0sQ0gr_hqMvu2k1wiHFkAAIhJQACmuFASsIqOHv-u4saOAQ",
+          "uniqueId": "AgADISUAAprhQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15719,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAMzaSmybQLSxDSCv-Goy-7aTXCIcWQAAiElAAKa4UBKwio4e_67ixoBAAdtAAM4BA",
+            "uniqueId": "AQADISUAAprhQEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E07 - Episode 07"
+      }
+    },
+    {
+      "id": 52428800,
+      "chatId": -1001832346237,
+      "date": 1665691487,
+      "dateIso": "2022-10-13T20:04:47Z",
+      "content": {
+        "duration": 2800,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E06 - Episode 06.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15722,
+          "size": 2096259073,
+          "remoteId": "BAACAgIAAx0CbTdifQADMmkpsm0OEyefh6HYz4_b6Z-2O-5NAAIgJQACmuFASmBFrnCAqOSqOAQ",
+          "uniqueId": "AgADICUAAprhQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15721,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAMyaSmybQ4TJ5-HodjPj9vpn7Y77k0AAiAlAAKa4UBKYEWucICo5KoBAAdtAAM4BA",
+            "uniqueId": "AQADICUAAprhQEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E06 - Episode 06"
+      }
+    },
+    {
+      "id": 51380224,
+      "chatId": -1001832346237,
+      "date": 1665691474,
+      "dateIso": "2022-10-13T20:04:34Z",
+      "content": {
+        "duration": 2826,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E05 - Episode 05.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15724,
+          "size": 2094396386,
+          "remoteId": "BAACAgIAAx0CbTdifQADMWkpsm1KF95P8H6y8KvWqFe7SALuAAIfJQACmuFASggHsyx2GLnsOAQ",
+          "uniqueId": "AgADHyUAAprhQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15723,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAMxaSmybUoX3k_wfrLwq9aoV7tIAu4AAh8lAAKa4UBKCAezLHYYuewBAAdtAAM4BA",
+            "uniqueId": "AQADHyUAAprhQEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E05 - Episode 05"
+      }
+    },
+    {
+      "id": 50331648,
+      "chatId": -1001832346237,
+      "date": 1665691459,
+      "dateIso": "2022-10-13T20:04:19Z",
+      "content": {
+        "duration": 2843,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Babylon Berlin - S03 E04 - Episode 04.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 15726,
+          "size": 2096075808,
+          "remoteId": "BAACAgIAAx0CbTdifQADMGkpsm152ZwZkNPss8eoYb5SMlttAAI6JQACmuFASlPToAO3LmoiOAQ",
+          "uniqueId": "AgADOiUAAprhQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 15725,
+            "size": 10458,
+            "remoteId": "AAMCAgADHQJtN2J9AAMwaSmybXnZnBmQ0-yzx6hhvlIyW20AAjolAAKa4UBKU9OgA7cuaiIBAAdtAAM4BA",
+            "uniqueId": "AQADOiUAAprhQEpy"
+          }
+        },
+        "caption": "Babylon Berlin - S03 E04 - Episode 04"
+      }
+    }
+  ]
+}

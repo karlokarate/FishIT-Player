@@ -1,0 +1,37 @@
+{
+  "chatId": 6408530367,
+  "title": "Cem Sarikoc",
+  "exportedAt": "2025-11-28T14:46:46.525930191Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 44307578880,
+      "senderId": {
+        "userId": 6408530367
+      },
+      "chatId": 6408530367,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1713778570,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

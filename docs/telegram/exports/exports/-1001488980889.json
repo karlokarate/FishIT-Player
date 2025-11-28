@@ -1,0 +1,890 @@
+{
+  "chatId": -1001488980889,
+  "title": "Wickie und die starken Männer",
+  "exportedAt": "2025-11-28T14:47:27.569053362Z",
+  "count": 18,
+  "messages": [
+    {
+      "id": 22020096,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1611236696,
+      "editDate": 1611236720,
+      "interactionInfo": {
+        "viewCount": 347,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "03 - Die rotäugigen Riesen.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5599,
+            "size": 52993971,
+            "expectedSize": 52993971,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWMALmQADFWkpssKRMR7E-YVM7zBB6trrGLqjAAKDCgACY2hRSAfDOX1PUUDOOAQ",
+              "uniqueId": "AgADgwoAAmNoUUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 52993971
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 03\n- Die rotäugigen Riesen\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━\nCover und Beschreibung: https://t.me/c/1488980889/8",
+          "entities": [
+            {
+              "offset": 168,
+              "length": 27,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 19922944,
+      "chatId": -1001488980889,
+      "date": 1560250192,
+      "dateIso": "2019-06-11T10:49:52Z",
+      "text": "Fehlt was? Fehler gefunden?\nHast Du Fragen zu diesem Kanal? Oder möchtest die Qualität bewerten?... \n\nIm @Hoerspiel_bot kannst Du Dich gerne dazu melden.",
+      "genres": []
+    },
+    {
+      "id": 18874368,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954777,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 418,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "08 - Die Schatztruhe.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20744,
+            "size": 68132049,
+            "expectedSize": 68132049,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADEmkpssL0co6T2pdRZJYI865GmeFvAAIDBQACUtEJUKTr8guVlBTPOAQ",
+              "uniqueId": "AgADAwUAAlLRCVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 68132049
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 08\n- Die Schatztruhe\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 101,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 17825792,
+      "chatId": -1001488980889,
+      "date": 1551954687,
+      "dateIso": "2019-03-07T10:31:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20746,
+              "size": 50828,
+              "remoteId": "AgACAgQAAx0CWMALmQADEWkpssKzLZt_FRrNsy7XT67KHMs_AALvsDEbUtEJUCCMYzSQwxqiAQADAgADeAADOAQ",
+              "uniqueId": "AQAD77AxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20745,
+              "size": 44688,
+              "remoteId": "AgACAgQAAx0CWMALmQADEWkpssKzLZt_FRrNsy7XT67KHMs_AALvsDEbUtEJUCCMYzSQwxqiAQADAgADbQADOAQ",
+              "uniqueId": "AQAD77AxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 16777216,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954687,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 266,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "07 - Abenteuer in Griechenland.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20747,
+            "size": 65194574,
+            "expectedSize": 65194574,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADEGkpssKNwQzz-o8RBXiRSKhUV1rjAAICBQACUtEJUBaeN0eaEPdkOAQ",
+              "uniqueId": "AgADAgUAAlLRCVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 65194574
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 07\n- Abenteuer in Griechenland\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 111,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1001488980889,
+      "date": 1551954625,
+      "dateIso": "2019-03-07T10:30:25Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20749,
+              "size": 54000,
+              "remoteId": "AgACAgQAAx0CWMALmQADD2kpssKGcR-ecZqpB0NsjKwDAlYjAALusDEbUtEJUJXyzoU0_5-0AQADAgADeAADOAQ",
+              "uniqueId": "AQAD7rAxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20748,
+              "size": 46621,
+              "remoteId": "AgACAgQAAx0CWMALmQADD2kpssKGcR-ecZqpB0NsjKwDAlYjAALusDEbUtEJUJXyzoU0_5-0AQADAgADbQADOAQ",
+              "uniqueId": "AQAD7rAxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 14680064,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954625,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 235,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "06 - Das Geisterschiff.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20750,
+            "size": 53983134,
+            "expectedSize": 53983134,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADDmkpssJQvAJrEdvPMHK_VM8yKkC_AAIBBQACUtEJULJm3DNOuSgtOAQ",
+              "uniqueId": "AgADAQUAAlLRCVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 53983134
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 06\n- Das Geisterschiff\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 103,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 13631488,
+      "chatId": -1001488980889,
+      "date": 1551954563,
+      "dateIso": "2019-03-07T10:29:23Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20752,
+              "size": 52672,
+              "remoteId": "AgACAgQAAx0CWMALmQADDWkpssIf37FfBSM989MJMTgZurRaAALtsDEbUtEJUAmrxJfiPVbEAQADAgADeAADOAQ",
+              "uniqueId": "AQAD7bAxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20751,
+              "size": 46488,
+              "remoteId": "AgACAgQAAx0CWMALmQADDWkpssIf37FfBSM989MJMTgZurRaAALtsDEbUtEJUAmrxJfiPVbEAQADAgADbQADOAQ",
+              "uniqueId": "AQAD7bAxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12582912,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954563,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 219,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "05 - Das fliegende Schiff.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20753,
+            "size": 53601279,
+            "expectedSize": 53601279,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADDGkpssIMXNm24qekpXcblghxaedBAAMFAAJS0QlQhA3K7ashBH04BA",
+              "uniqueId": "AgAEBQACUtEJUA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 53601279
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 05\n- Das fleigende Schiff\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 106,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1001488980889,
+      "date": 1551954501,
+      "dateIso": "2019-03-07T10:28:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20755,
+              "size": 52639,
+              "remoteId": "AgACAgQAAx0CWMALmQADC2kpssImu6oZGqCxF7GBRkt6B5dlAALssDEbUtEJUPyKfQ4KEoNhAQADAgADeAADOAQ",
+              "uniqueId": "AQAD7LAxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20754,
+              "size": 41296,
+              "remoteId": "AgACAgQAAx0CWMALmQADC2kpssImu6oZGqCxF7GBRkt6B5dlAALssDEbUtEJUPyKfQ4KEoNhAQADAgADbQADOAQ",
+              "uniqueId": "AQAD7LAxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 10485760,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954501,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 211,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "04 - Sturm auf der Festung.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20756,
+            "size": 53426470,
+            "expectedSize": 53426470,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADCmkpssIlBGDBsMNRKVKSVbsG2MgqAAL_BAACUtEJUGesT3Nzz2yaOAQ",
+              "uniqueId": "AgAD_wQAAlLRCVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 53426470
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 04\n- Sturm auf der Festung\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 107,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1001488980889,
+      "date": 1551954411,
+      "dateIso": "2019-03-07T10:26:51Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20758,
+              "size": 50011,
+              "remoteId": "AgACAgQAAx0CWMALmQADCWkpssKoUmIEh4LsOMX42WRu99ZbAALrsDEbUtEJUOTsS3cyppA8AQADAgADeAADOAQ",
+              "uniqueId": "AQAD67AxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20757,
+              "size": 43598,
+              "remoteId": "AgACAgQAAx0CWMALmQADCWkpssKoUmIEh4LsOMX42WRu99ZbAALrsDEbUtEJUOTsS3cyppA8AQADAgADbQADOAQ",
+              "uniqueId": "AQAD67AxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1001488980889,
+      "date": 1551954344,
+      "dateIso": "2019-03-07T10:25:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20760,
+              "size": 61167,
+              "remoteId": "AgACAgQAAx0CWMALmQADCGkpssKpOVrBDZBCSrMXkbw3NOgLAALqsDEbUtEJUIMMkSLxq62VAQADAgADeAADOAQ",
+              "uniqueId": "AQAD6rAxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20759,
+              "size": 47734,
+              "remoteId": "AgACAgQAAx0CWMALmQADCGkpssKpOVrBDZBCSrMXkbw3NOgLAALqsDEbUtEJUIMMkSLxq62VAQADAgADbQADOAQ",
+              "uniqueId": "AQAD6rAxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7340032,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954344,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 194,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "02 - Der schreckliche Sven.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20761,
+            "size": 49633919,
+            "expectedSize": 49633919,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADB2kpssIjDymG0Rl-rKSnuvZHTmeZAAL9BAACUtEJUJCUhHWttjgfOAQ",
+              "uniqueId": "AgAD_QQAAlLRCVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 49633919
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 02\n- Der schreckliche Sven\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 107,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1001488980889,
+      "date": 1551954267,
+      "dateIso": "2019-03-07T10:24:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20763,
+              "size": 41692,
+              "remoteId": "AgACAgQAAx0CWMALmQADBmkpssIZMUuQNIvNs4EJaMiwrFHdAALpsDEbUtEJUKfpzU4TQu_YAQADAgADeAADOAQ",
+              "uniqueId": "AQAD6bAxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20762,
+              "size": 36935,
+              "remoteId": "AgACAgQAAx0CWMALmQADBmkpssIZMUuQNIvNs4EJaMiwrFHdAALpsDEbUtEJUKfpzU4TQu_YAQADAgADbQADOAQ",
+              "uniqueId": "AQAD6bAxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4194304,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551954255,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 195,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "01 - Der Wettlauf.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 20764,
+            "size": 46748024,
+            "expectedSize": 46748024,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWMALmQADBGkpssJSX4r2mrq-9-Sr4zsfe3Z5AAL8BAACUtEJUAyi9joX2P36OAQ",
+              "uniqueId": "AgAD_AQAAlLRCVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 46748024
+            }
+          }
+        },
+        "caption": {
+          "text": "Wickie und die starken Männer, [07.03.19 11:15]\n[ Bild ]\n✅ : Wickie und die starken Männer\n━━━━━━━━━━━━━━\n🆚 : Folge 01\n- Der Wettlauf\n━━━━━━━━━━━━━━\n1️⃣: Track\n⏯ : MP3 + Cover\n━━━━━━━━━━━━━━",
+          "entities": [
+            {
+              "offset": 111,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 155,
+              "length": 6,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001488980889,
+      "date": 1551953718,
+      "dateIso": "2019-03-07T10:15:18Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 400,
+            "file": {
+              "id": 20766,
+              "size": 59936,
+              "remoteId": "AgACAgQAAx0CWMALmQADA2kpssJ48nLlPxyyD-H_I7C_go7DAALosDEbUtEJUMMc1rqlX7bGAQADAgADeAADOAQ",
+              "uniqueId": "AQAD6LAxG1LRCVB9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 20765,
+              "size": 45380,
+              "remoteId": "AgACAgQAAx0CWMALmQADA2kpssJ48nLlPxyyD-H_I7C_go7DAALosDEbUtEJUMMc1rqlX7bGAQADAgADbQADOAQ",
+              "uniqueId": "AQAD6LAxG1LRCVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001488980889
+      },
+      "chatId": -1001488980889,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1551953340,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Wickie und die starken Männer"
+      }
+    }
+  ]
+}

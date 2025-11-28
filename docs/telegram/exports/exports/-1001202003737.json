@@ -1,0 +1,793 @@
+{
+  "chatId": -1001202003737,
+  "title": "Batman (1992)",
+  "exportedAt": "2025-11-28T14:46:18.245388504Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 122683392,
+      "chatId": -1001202003737,
+      "date": 1610823361,
+      "dateIso": "2021-01-16T18:56:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 480,
+            "file": {
+              "id": 4234,
+              "size": 43330,
+              "remoteId": "AgACAgIAAx0CR6UfGQADdWkpsoVn6hJyQedfibWJBUtEZLeTAAJrszEbYhAYSNPtAAGnxo_HTQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADa7MxG2IQGEh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 4233,
+              "size": 52568,
+              "remoteId": "AgACAgIAAx0CR6UfGQADdWkpsoVn6hJyQedfibWJBUtEZLeTAAJrszEbYhAYSNPtAAGnxo_HTQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADa7MxG2IQGEh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 4232,
+              "size": 10329,
+              "remoteId": "AgACAgIAAx0CR6UfGQADdWkpsoVn6hJyQedfibWJBUtEZLeTAAJrszEbYhAYSNPtAAGnxo_HTQEAAwIAA20AAzgE",
+              "uniqueId": "AQADa7MxG2IQGEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 118489088,
+      "chatId": -1001202003737,
+      "date": 1609264523,
+      "dateIso": "2020-12-29T17:55:23Z",
+      "content": {
+        "duration": 1260,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E24 - Der Richter.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16647,
+          "size": 171580976,
+          "remoteId": "BAACAgIAAx0CR6UfGQADcWkpsoVgL62fjp_CpE5PtsRyOpYOAAKWCwACuGNZS4-gd2BHKFGbOAQ",
+          "uniqueId": "AgADlgsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16646,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANxaSmyhWAvrZ-On8KkTk-2xHI6lg4AApYLAAK4Y1lLj6B3YEcoUZsBAAdtAAM4BA",
+            "uniqueId": "AQADlgsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E24 - Der Richter"
+      }
+    },
+    {
+      "id": 117440512,
+      "chatId": -1001202003737,
+      "date": 1609264385,
+      "dateIso": "2020-12-29T17:53:05Z",
+      "content": {
+        "duration": 1276,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E23 - Sieben Jahre Pech.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16649,
+          "size": 201128990,
+          "remoteId": "BAACAgIAAx0CR6UfGQADcGkpsoXrN1zDen6y6u96AdR4kZFbAAKVCwACuGNZS8s5W6cHMM6bOAQ",
+          "uniqueId": "AgADlQsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16648,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANwaSmyhes3XMN6frLq73oB1HiRkVsAApULAAK4Y1lLyzlbpwcwzpsBAAdtAAM4BA",
+            "uniqueId": "AQADlQsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E23 - Sieben Jahre Pech"
+      }
+    },
+    {
+      "id": 116391936,
+      "chatId": -1001202003737,
+      "date": 1609264231,
+      "dateIso": "2020-12-29T17:50:31Z",
+      "content": {
+        "duration": 1285,
+        "width": 720,
+        "height": 540,
+        "fileName": "The_New_Batman_Adventures_S04_E22_Grüne_Augen,_giftiges_Herz.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16651,
+          "size": 218079032,
+          "remoteId": "BAACAgIAAx0CR6UfGQADb2kpsoXRjh-4_5pHnPS2y2qxsDeLAAKSCwACuGNZSzv8Fb4cYVwpOAQ",
+          "uniqueId": "AgADkgsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16650,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANvaSmyhdGOH7j_mkec9LbLarGwN4sAApILAAK4Y1lLO_wVvhxhXCkBAAdtAAM4BA",
+            "uniqueId": "AQADkgsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E22 - Grüne Augen, giftiges Herz"
+      }
+    },
+    {
+      "id": 115343360,
+      "chatId": -1001202003737,
+      "date": 1609264118,
+      "dateIso": "2020-12-29T17:48:38Z",
+      "content": {
+        "duration": 1287,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E21 - Die Piranha-Falle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16653,
+          "size": 185912735,
+          "remoteId": "BAACAgIAAx0CR6UfGQADbmkpsoWwdiNa-Bb4UQ84hLKzNOglAAKRCwACuGNZSxIyW3xFUA-6OAQ",
+          "uniqueId": "AgADkQsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16652,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANuaSmyhbB2I1r4FvhRDziEsrM06CUAApELAAK4Y1lLEjJbfEVQD7oBAAdtAAM4BA",
+            "uniqueId": "AQADkQsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E21 - Die Piranha-Falle"
+      }
+    },
+    {
+      "id": 114294784,
+      "chatId": -1001202003737,
+      "date": 1609263971,
+      "dateIso": "2020-12-29T17:46:11Z",
+      "content": {
+        "duration": 1270,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E20 - Böse Mädchen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16655,
+          "size": 207516253,
+          "remoteId": "BAACAgIAAx0CR6UfGQADbWkpsoU-oimBrn4UgoCYk3eGbKAqAAKQCwACuGNZS9KfWrvRThcCOAQ",
+          "uniqueId": "AgADkAsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16654,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANtaSmyhT6iKYGufhSCgJiTd4ZsoCoAApALAAK4Y1lL0p9au9FOFwIBAAdtAAM4BA",
+            "uniqueId": "AQADkAsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E20 - Böse Mädchen"
+      }
+    },
+    {
+      "id": 113246208,
+      "chatId": -1001202003737,
+      "date": 1609263804,
+      "dateIso": "2020-12-29T17:43:24Z",
+      "content": {
+        "duration": 1217,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E19 - Die Legende lebt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16657,
+          "size": 174088477,
+          "remoteId": "BAACAgIAAx0CR6UfGQADbGkpsoX0-ePOn91U66ulCkD1pl7AAAKPCwACuGNZS2tefIvmo_b1OAQ",
+          "uniqueId": "AgADjwsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16656,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANsaSmyhfT5486f3VTrq6UKQPWmXsAAAo8LAAK4Y1lLa158i-aj9vUBAAdtAAM4BA",
+            "uniqueId": "AQADjwsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E19 - Die Legende lebt"
+      }
+    },
+    {
+      "id": 112197632,
+      "chatId": -1001202003737,
+      "date": 1609263667,
+      "dateIso": "2020-12-29T17:41:07Z",
+      "content": {
+        "duration": 1289,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E18 - Der Hexer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16659,
+          "size": 184689749,
+          "remoteId": "BAACAgIAAx0CR6UfGQADa2kpsoVIBPg1h6uB3-4Q96WX78KKAAKOCwACuGNZS1hIr_hw6q14OAQ",
+          "uniqueId": "AgADjgsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16658,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANraSmyhUgE-DWHq4Hf7hD3pZfvwooAAo4LAAK4Y1lLWEiv-HDqrXgBAAdtAAM4BA",
+            "uniqueId": "AQADjgsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E18 - Der Hexer"
+      }
+    },
+    {
+      "id": 111149056,
+      "chatId": -1001202003737,
+      "date": 1609263520,
+      "dateIso": "2020-12-29T17:38:40Z",
+      "content": {
+        "duration": 1269,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E17 - Alte Wunden.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16661,
+          "size": 161610675,
+          "remoteId": "BAACAgIAAx0CR6UfGQADamkpsoXt8WwYTwGbLYUFWEBn_NS2AAKMCwACuGNZS5EnCaalyBInOAQ",
+          "uniqueId": "AgADjAsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16660,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANqaSmyhe3xbBhPAZsthQVYQGf81LYAAowLAAK4Y1lLkScJpqXIEicBAAdtAAM4BA",
+            "uniqueId": "AQADjAsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E17 - Alte Wunden"
+      }
+    },
+    {
+      "id": 110100480,
+      "chatId": -1001202003737,
+      "date": 1609263396,
+      "dateIso": "2020-12-29T17:36:36Z",
+      "content": {
+        "duration": 1260,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E16 - Tod in der Manege.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16663,
+          "size": 169734968,
+          "remoteId": "BAACAgIAAx0CR6UfGQADaWkpsoX5nBIVZPQG5ifKRKnX1XMzAAKLCwACuGNZSwFzN4tJTxThOAQ",
+          "uniqueId": "AgADiwsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16662,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANpaSmyhfmcEhVk9AbmJ8pEqdfVczMAAosLAAK4Y1lLAXM3i0lPFOEBAAdtAAM4BA",
+            "uniqueId": "AQADiwsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E16 - Tod in der Manege"
+      }
+    },
+    {
+      "id": 109051904,
+      "chatId": -1001202003737,
+      "date": 1609263264,
+      "dateIso": "2020-12-29T17:34:24Z",
+      "content": {
+        "duration": 1281,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E15 - Katzenkult.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16665,
+          "size": 191277818,
+          "remoteId": "BAACAgIAAx0CR6UfGQADaGkpsoWItrJ8B4-sX9YWVbRUvP0gAAKKCwACuGNZSzEiTc8GW_QtOAQ",
+          "uniqueId": "AgADigsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16664,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANoaSmyhYi2snwHj6xf1hZVtFS8_SAAAooLAAK4Y1lLMSJNzwZb9C0BAAdtAAM4BA",
+            "uniqueId": "AQADigsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E15 - Katzenkult"
+      }
+    },
+    {
+      "id": 108003328,
+      "chatId": -1001202003737,
+      "date": 1609263115,
+      "dateIso": "2020-12-29T17:31:55Z",
+      "content": {
+        "duration": 1259,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E14 - Invasion der Mutanten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16667,
+          "size": 215960077,
+          "remoteId": "BAACAgIAAx0CR6UfGQADZ2kpsoUMMM85OUre1QOSBXWiZwLWAAKJCwACuGNZS-wwweZV4AIQOAQ",
+          "uniqueId": "AgADiQsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16666,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANnaSmyhQwwzzk5St7VA5IFdaJnAtYAAokLAAK4Y1lL7DDB5lXgAhABAAdtAAM4BA",
+            "uniqueId": "AQADiQsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E14 - Invasion der Mutanten"
+      }
+    },
+    {
+      "id": 106954752,
+      "chatId": -1001202003737,
+      "date": 1609262944,
+      "dateIso": "2020-12-29T17:29:04Z",
+      "content": {
+        "duration": 1252,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E13 - Die Maske.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16669,
+          "size": 186900237,
+          "remoteId": "BAACAgIAAx0CR6UfGQADZmkpsoUVlpAZFfPrZGy2OglpfRGiAAKHCwACuGNZS3TsfMPj20lyOAQ",
+          "uniqueId": "AgADhwsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16668,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANmaSmyhRWWkBkV8-tkbLY6CWl9EaIAAocLAAK4Y1lLdOx8w-PbSXIBAAdtAAM4BA",
+            "uniqueId": "AQADhwsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E13 - Die Maske"
+      }
+    },
+    {
+      "id": 105906176,
+      "chatId": -1001202003737,
+      "date": 1609262802,
+      "dateIso": "2020-12-29T17:26:42Z",
+      "content": {
+        "duration": 1294,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E12 - Todesvisionen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16671,
+          "size": 186838632,
+          "remoteId": "BAACAgIAAx0CR6UfGQADZWkpsoXYlU9tsNBH7KFo6tBLyvD0AAKFCwACuGNZS0SoKmtSb74ZOAQ",
+          "uniqueId": "AgADhQsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16670,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANlaSmyhdiVT22w0EfsoWjq0EvK8PQAAoULAAK4Y1lLRKgqa1JvvhkBAAdtAAM4BA",
+            "uniqueId": "AQADhQsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E12 - Todesvisionen"
+      }
+    },
+    {
+      "id": 104857600,
+      "chatId": -1001202003737,
+      "date": 1609262655,
+      "dateIso": "2020-12-29T17:24:15Z",
+      "content": {
+        "duration": 1275,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E11 - Der letzte Kick.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16673,
+          "size": 193286922,
+          "remoteId": "BAACAgIAAx0CR6UfGQADZGkpsoUKYNfgbtbN9-qemrg7kq61AAKDCwACuGNZS_r_Ev0cM8R5OAQ",
+          "uniqueId": "AgADgwsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16672,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANkaSmyhQpg1-Bu1s336p6auDuSrrUAAoMLAAK4Y1lL-v8S_RwzxHkBAAdtAAM4BA",
+            "uniqueId": "AQADgwsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E11 - Der letzte Kick"
+      }
+    },
+    {
+      "id": 103809024,
+      "chatId": -1001202003737,
+      "date": 1609262502,
+      "dateIso": "2020-12-29T17:21:42Z",
+      "content": {
+        "duration": 1265,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E10 - Feuerteufel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16675,
+          "size": 204618993,
+          "remoteId": "BAACAgIAAx0CR6UfGQADY2kpsoVOGm7AZAes7IxiAV1pX5zoAAKCCwACuGNZS3OIPwfndLoCOAQ",
+          "uniqueId": "AgADggsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16674,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANjaSmyhU4absBkB6zsjGIBXWlfnOgAAoILAAK4Y1lLc4g_B-d0ugIBAAdtAAM4BA",
+            "uniqueId": "AQADggsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E10 - Feuerteufel"
+      }
+    },
+    {
+      "id": 102760448,
+      "chatId": -1001202003737,
+      "date": 1609262342,
+      "dateIso": "2020-12-29T17:19:02Z",
+      "content": {
+        "duration": 1283,
+        "width": 720,
+        "height": 540,
+        "fileName": "The_New_Batman_Adventures_S04_E09_Ein_Krokodil_zum_Knutschen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16677,
+          "size": 217395697,
+          "remoteId": "BAACAgIAAx0CR6UfGQADYmkpsoWVn86KEsDLBDZxd1vub2bgAAKACwACuGNZSzXTF9tQ1vQBOAQ",
+          "uniqueId": "AgADgAsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16676,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANiaSmyhZWfzooSwMsENnF3W-5vZuAAAoALAAK4Y1lLNdMX21DW9AEBAAdtAAM4BA",
+            "uniqueId": "AQADgAsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E09 - Ein Krokodil zum Knutschen"
+      }
+    },
+    {
+      "id": 101711872,
+      "chatId": -1001202003737,
+      "date": 1609262169,
+      "dateIso": "2020-12-29T17:16:09Z",
+      "content": {
+        "duration": 1269,
+        "width": 720,
+        "height": 540,
+        "fileName": "The_New_Batman_Adventures_S04_E08_Das_Mädchen_ohne_Erinnerung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16679,
+          "size": 185605786,
+          "remoteId": "BAACAgIAAx0CR6UfGQADYWkpsoX0nbZG4otAd5s8sHVpPmnDAAJ_CwACuGNZS0ju81Gn2iI9OAQ",
+          "uniqueId": "AgADfwsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16678,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANhaSmyhfSdtkbii0B3mzywdWk-acMAAn8LAAK4Y1lLSO7zUafaIj0BAAdtAAM4BA",
+            "uniqueId": "AQADfwsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E08 - Das Mädchen ohne Erinnerung"
+      }
+    },
+    {
+      "id": 100663296,
+      "chatId": -1001202003737,
+      "date": 1609262036,
+      "dateIso": "2020-12-29T17:13:56Z",
+      "content": {
+        "duration": 1263,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E07 - Die Erbschaft.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16681,
+          "size": 256002309,
+          "remoteId": "BAACAgIAAx0CR6UfGQADYGkpsoW6kIGZ97qVMvgSNbxWoBimAAJ-CwACuGNZS8QThddlb8DgOAQ",
+          "uniqueId": "AgADfgsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16680,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANgaSmyhbqQgZn3upUy-BI1vFagGKYAAn4LAAK4Y1lLxBOF12VvwOABAAdtAAM4BA",
+            "uniqueId": "AQADfgsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E07 - Die Erbschaft"
+      }
+    },
+    {
+      "id": 99614720,
+      "chatId": -1001202003737,
+      "date": 1609261858,
+      "dateIso": "2020-12-29T17:10:58Z",
+      "content": {
+        "duration": 1270,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E06 - Keine Angst.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16683,
+          "size": 190331899,
+          "remoteId": "BAACAgIAAx0CR6UfGQADX2kpsoW0eiDi1EfR_k-n_PSpNJvhAAJ8CwACuGNZS4ZtlVFSjwSNOAQ",
+          "uniqueId": "AgADfAsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16682,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANfaSmyhbR6IOLUR9H-T6f89Kk0m-EAAnwLAAK4Y1lLhm2VUVKPBI0BAAdtAAM4BA",
+            "uniqueId": "AQADfAsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E06 - Keine Angst"
+      }
+    },
+    {
+      "id": 98566144,
+      "chatId": -1001202003737,
+      "date": 1609261710,
+      "dateIso": "2020-12-29T17:08:30Z",
+      "content": {
+        "duration": 1260,
+        "width": 720,
+        "height": 540,
+        "fileName": "The_New_Batman_Adventures_S04_E05_Der_Katzenaugen_Smaragd.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16685,
+          "size": 189226984,
+          "remoteId": "BAACAgIAAx0CR6UfGQADXmkpsoXG_foQwgE-NXVYu-ErcypuAAJ6CwACuGNZS8UXG2VS-brcOAQ",
+          "uniqueId": "AgADegsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16684,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANeaSmyhcb9-hDCAT41dVi74StzKm4AAnoLAAK4Y1lLxRcbZVL5utwBAAdtAAM4BA",
+            "uniqueId": "AQADegsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E05 - Der Katzenaugen-Smaragd"
+      }
+    },
+    {
+      "id": 97517568,
+      "chatId": -1001202003737,
+      "date": 1609261564,
+      "dateIso": "2020-12-29T17:06:04Z",
+      "content": {
+        "duration": 1278,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E04 - Dem Bösen verfallen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16687,
+          "size": 229417831,
+          "remoteId": "BAACAgIAAx0CR6UfGQADXWkpsoWHhTucrPVk2oUAAV7uEjvfRQACdwsAArhjWUtjdzdF6Pw_gDgE",
+          "uniqueId": "AgADdwsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16686,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANdaSmyhYeFO5ys9WTahQABXu4SO99FAAJ3CwACuGNZS2N3N0Xo_D-AAQAHbQADOAQ",
+            "uniqueId": "AQADdwsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E04 - Dem Bösen verfallen"
+      }
+    },
+    {
+      "id": 96468992,
+      "chatId": -1001202003737,
+      "date": 1609261395,
+      "dateIso": "2020-12-29T17:03:15Z",
+      "content": {
+        "duration": 1253,
+        "width": 720,
+        "height": 540,
+        "fileName": "The_New_Batman_Adventures_S04_E03_Begraben_unter_dickem_Eis.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16689,
+          "size": 233568269,
+          "remoteId": "BAACAgIAAx0CR6UfGQADXGkpsoUY155SIXBfsPO7VG9ub8PcAAJ1CwACuGNZSwffdbFmPWy-OAQ",
+          "uniqueId": "AgADdQsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16688,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANcaSmyhRjXnlIhcF-w87tUb25vw9wAAnULAAK4Y1lLB991sWY9bL4BAAdtAAM4BA",
+            "uniqueId": "AQADdQsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E03 - Begraben unter dickem Eis"
+      }
+    },
+    {
+      "id": 95420416,
+      "chatId": -1001202003737,
+      "date": 1609261266,
+      "dateIso": "2020-12-29T17:01:06Z",
+      "content": {
+        "duration": 1267,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E02 - Tim.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16691,
+          "size": 213672697,
+          "remoteId": "BAACAgIAAx0CR6UfGQADW2kpsoXJoTzKLcwLT2XWWRhzcos_AAJwCwACuGNZSxcRZCMuEKDqOAQ",
+          "uniqueId": "AgADcAsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16690,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANbaSmyhcmhPMotzAtPZdZZGHNyiz8AAnALAAK4Y1lLFxFkIy4QoOoBAAdtAAM4BA",
+            "uniqueId": "AQADcAsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E02 - Tim"
+      }
+    },
+    {
+      "id": 94371840,
+      "chatId": -1001202003737,
+      "date": 1609261148,
+      "dateIso": "2020-12-29T16:59:08Z",
+      "content": {
+        "duration": 1283,
+        "width": 720,
+        "height": 540,
+        "fileName": "The New Batman Adventures - S04 E01 - Giftige Frauen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16693,
+          "size": 235815965,
+          "remoteId": "BAACAgIAAx0CR6UfGQADWmkpsoUCssStobwOvxWo0WO5UKg0AAJuCwACuGNZS2Vm_SlBIbQfOAQ",
+          "uniqueId": "AgADbgsAArhjWUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 16692,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJHpR8ZAANaaSmyhQKyxK2hvA6_FajRY7lQqDQAAm4LAAK4Y1lLZWb9KUEhtB8BAAdtAAM4BA",
+            "uniqueId": "AQADbgsAArhjWUty"
+          }
+        },
+        "caption": "The New Batman Adventures - S04 E01 - Giftige Frauen"
+      }
+    }
+  ]
+}

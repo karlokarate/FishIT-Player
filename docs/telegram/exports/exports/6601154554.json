@@ -1,0 +1,37 @@
+{
+  "chatId": 6601154554,
+  "title": "Funda",
+  "exportedAt": "2025-11-28T14:47:08.331212857Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42241884160,
+      "senderId": {
+        "userId": 6601154554
+      },
+      "chatId": 6601154554,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1691131166,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,760 @@
+{
+  "chatId": -1001521205317,
+  "title": "Die Sechs-Millionen-Dollar-Familie (Bionic-Six)",
+  "exportedAt": "2025-11-28T14:47:36.944411855Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 88080384,
+      "chatId": -1001521205317,
+      "date": 1629457449,
+      "dateIso": "2021-08-20T11:04:09Z",
+      "text": "Original Hochgeladen von 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 85983232,
+      "chatId": -1001521205317,
+      "date": 1629457448,
+      "dateIso": "2021-08-20T11:04:08Z",
+      "content": {
+        "duration": 1219,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E43 - Das war s Leu.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20429,
+          "size": 278594219,
+          "remoteId": "BAACAgIAAx0CWqvARQADUmkpssL17UEwHczZTBsWacVURjJQAAKsEQACf_XhSPAhOsDhB6j3OAQ",
+          "uniqueId": "AgADrBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20428,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAANSaSmywvXtQTAdzNlMGxZpxVRGMlAAAqwRAAJ_9eFI8CE6wOEHqPcBAAdtAAM4BA",
+            "uniqueId": "AQADrBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E43 - Das war’s Leute"
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1001521205317,
+      "date": 1629457445,
+      "dateIso": "2021-08-20T11:04:05Z",
+      "content": {
+        "duration": 1279,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E42 - Scarabina wil.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20431,
+          "size": 278744846,
+          "remoteId": "BAACAgIAAx0CWqvARQADUWkpssKX70TsZi5lQwU0CilHeKHSAAKrEQACf_XhSLIOdlv9e6swOAQ",
+          "uniqueId": "AgADqxEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20430,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANRaSmywpfvROxmLmVDBTQKKUd4odIAAqsRAAJ_9eFIsg52W_17qzABAAdtAAM4BA",
+            "uniqueId": "AQADqxEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E42 - Scarabina will nach oben"
+      }
+    },
+    {
+      "id": 83886080,
+      "chatId": -1001521205317,
+      "date": 1629457442,
+      "dateIso": "2021-08-20T11:04:02Z",
+      "content": {
+        "duration": 1284,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E41 - Die Zauberhar.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20433,
+          "size": 278815603,
+          "remoteId": "BAACAgIAAx0CWqvARQADUGkpssJWw3hQG4NLh6yXmRh97YqcAAKqEQACf_XhSCKytLceKS21OAQ",
+          "uniqueId": "AgADqhEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20432,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANQaSmywlbDeFAbg0uHrJeZGH3tipwAAqoRAAJ_9eFIIrK0tx4pLbUBAAdtAAM4BA",
+            "uniqueId": "AQADqhEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E41 - Die Zauberharfe"
+      }
+    },
+    {
+      "id": 82837504,
+      "chatId": -1001521205317,
+      "date": 1629457439,
+      "dateIso": "2021-08-20T11:03:59Z",
+      "content": {
+        "duration": 1282,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E40 - In geheimer M.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20435,
+          "size": 278427564,
+          "remoteId": "BAACAgIAAx0CWqvARQADT2kpssKR8xAOmNU7YHKffor4u2UVAAKpEQACf_XhSPqiBZalkT4_OAQ",
+          "uniqueId": "AgADqREAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20434,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANPaSmywpHzEA6Y1Ttgcp9-ivi7ZRUAAqkRAAJ_9eFI-qIFlqWRPj8BAAdtAAM4BA",
+            "uniqueId": "AQADqREAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E40 - In geheimer Mission"
+      }
+    },
+    {
+      "id": 81788928,
+      "chatId": -1001521205317,
+      "date": 1629457435,
+      "dateIso": "2021-08-20T11:03:55Z",
+      "content": {
+        "duration": 1224,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E39 - Licht und Sch.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20437,
+          "size": 278799617,
+          "remoteId": "BAACAgIAAx0CWqvARQADTmkpssK5L1G_7X-h9aa_2guVl5ZGAAKoEQACf_XhSDz-Dhszl3TOOAQ",
+          "uniqueId": "AgADqBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20436,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAANOaSmywrkvUb_tf6H1pr_aC5WXlkYAAqgRAAJ_9eFIPP4OGzOXdM4BAAdtAAM4BA",
+            "uniqueId": "AQADqBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E39 - Licht und Schatten"
+      }
+    },
+    {
+      "id": 79691776,
+      "chatId": -1001521205317,
+      "date": 1629457430,
+      "dateIso": "2021-08-20T11:03:50Z",
+      "content": {
+        "duration": 1286,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die_sechs_Millionen_Dollar_Familie_S02_E38_Das_Müllmonst.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20439,
+          "size": 278288737,
+          "remoteId": "BAACAgIAAx0CWqvARQADTGkpssK7fsk76mG3iq9LWJrRkRwQAAKnEQACf_XhSAAB2En8evab8jgE",
+          "uniqueId": "AgADpxEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20438,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANMaSmywrt-yTvqYbeKr0tYmtGRHBAAAqcRAAJ_9eFIAAHYSfx69pvyAQAHbQADOAQ",
+            "uniqueId": "AQADpxEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E38 - Das Müllmonster"
+      }
+    },
+    {
+      "id": 78643200,
+      "chatId": -1001521205317,
+      "date": 1629457427,
+      "dateIso": "2021-08-20T11:03:47Z",
+      "content": {
+        "duration": 1273,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E37 - Ich bin die V.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20441,
+          "size": 278403707,
+          "remoteId": "BAACAgIAAx0CWqvARQADS2kpssLWPedGZ3Gfa6YWvscDlwocAAKmEQACf_XhSHvBgeczxCaeOAQ",
+          "uniqueId": "AgADphEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20440,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANLaSmywtY950ZncZ9rpha-xwOXChwAAqYRAAJ_9eFIe8GB5zPEJp4BAAdtAAM4BA",
+            "uniqueId": "AQADphEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E37 - Ich bin die Viper"
+      }
+    },
+    {
+      "id": 77594624,
+      "chatId": -1001521205317,
+      "date": 1629457423,
+      "dateIso": "2021-08-20T11:03:43Z",
+      "content": {
+        "duration": 1267,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E36 - Der Gewalther.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20443,
+          "size": 278075894,
+          "remoteId": "BAACAgIAAx0CWqvARQADSmkpssLjOHEtg2u1H96yINtTugQZAAKlEQACf_XhSMuwyHyeqFs8OAQ",
+          "uniqueId": "AgADpREAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20442,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANKaSmywuM4cS2Da7Uf3rIg21O6BBkAAqURAAJ_9eFIy7DIfJ6oWzwBAAdtAAM4BA",
+            "uniqueId": "AQADpREAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E36 - Der Gewaltherrscher"
+      }
+    },
+    {
+      "id": 76546048,
+      "chatId": -1001521205317,
+      "date": 1629457420,
+      "dateIso": "2021-08-20T11:03:40Z",
+      "content": {
+        "duration": 1217,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E35 - Bananen-Harry.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20445,
+          "size": 279115239,
+          "remoteId": "BAACAgIAAx0CWqvARQADSWkpssLiBxw73xQ0q5DQjZ2uFTZDAAKkEQACf_XhSObqyFYyCIOOOAQ",
+          "uniqueId": "AgADpBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20444,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAANJaSmywuIHHDvfFDSrkNCNna4VNkMAAqQRAAJ_9eFI5urIVjIIg44BAAdtAAM4BA",
+            "uniqueId": "AQADpBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E35 - Bananen-Harry"
+      }
+    },
+    {
+      "id": 75497472,
+      "chatId": -1001521205317,
+      "date": 1629457417,
+      "dateIso": "2021-08-20T11:03:37Z",
+      "content": {
+        "duration": 1263,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E34 - Eine tolle Tr.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20447,
+          "size": 278369797,
+          "remoteId": "BAACAgIAAx0CWqvARQADSGkpssI7mNmL705z1chvtZ4ngYZPAAKjEQACf_XhSNXiSb1iN8u2OAQ",
+          "uniqueId": "AgADoxEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20446,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANIaSmywjuY2YvvTnPVyG-1nieBhk8AAqMRAAJ_9eFI1eJJvWI3y7YBAAdtAAM4BA",
+            "uniqueId": "AQADoxEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E34 - Eine tolle Truppe"
+      }
+    },
+    {
+      "id": 74448896,
+      "chatId": -1001521205317,
+      "date": 1629457413,
+      "dateIso": "2021-08-20T11:03:33Z",
+      "content": {
+        "duration": 1273,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E33 - Das Geheimnis.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20449,
+          "size": 278454336,
+          "remoteId": "BAACAgIAAx0CWqvARQADR2kpssLuSKEJGLqUd7CMsIPqGa23AAKiEQACf_XhSJUiN2RgAAELbzgE",
+          "uniqueId": "AgADohEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20448,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANHaSmywu5IoQkYupR3sIywg-oZrbcAAqIRAAJ_9eFIlSI3ZGAAAQtvAQAHbQADOAQ",
+            "uniqueId": "AQADohEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E33 - Das Geheimnis des Tempelmeisters"
+      }
+    },
+    {
+      "id": 73400320,
+      "chatId": -1001521205317,
+      "date": 1629457410,
+      "dateIso": "2021-08-20T11:03:30Z",
+      "content": {
+        "duration": 1276,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E32 - Die Leichtigk.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20451,
+          "size": 278189914,
+          "remoteId": "BAACAgIAAx0CWqvARQADRmkpssIEKo3O-N8kFlczKSa9TZCnAAKhEQACf_XhSM7JCubocoQAATgE",
+          "uniqueId": "AgADoREAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20450,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANGaSmywgQqjc743yQWVzMpJr1NkKcAAqERAAJ_9eFIzskK5uhyhAABAQAHbQADOAQ",
+            "uniqueId": "AQADoREAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E32 - Die Leichtigkeit der Schwerkraft"
+      }
+    },
+    {
+      "id": 72351744,
+      "chatId": -1001521205317,
+      "date": 1629457407,
+      "dateIso": "2021-08-20T11:03:27Z",
+      "content": {
+        "duration": 1268,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E31 - Scabracadabra.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20453,
+          "size": 278288595,
+          "remoteId": "BAACAgIAAx0CWqvARQADRWkpssKFS6AFVMrls_kWoF1kxayEAAKgEQACf_XhSMGSZxqFhCOHOAQ",
+          "uniqueId": "AgADoBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20452,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANFaSmywoVLoAVUyuWz-RagXWTFrIQAAqARAAJ_9eFIwZJnGoWEI4cBAAdtAAM4BA",
+            "uniqueId": "AQADoBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E31 - Scabracadabra"
+      }
+    },
+    {
+      "id": 71303168,
+      "chatId": -1001521205317,
+      "date": 1629457404,
+      "dateIso": "2021-08-20T11:03:24Z",
+      "content": {
+        "duration": 1276,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E30 - Scarab der Gr.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20455,
+          "size": 278040252,
+          "remoteId": "BAACAgIAAx0CWqvARQADRGkpssKFvDAwu6xADfbLp9_6P1bJAAKfEQACf_XhSJxWVe4PimrTOAQ",
+          "uniqueId": "AgADnxEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20454,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANEaSmywoW8MDC7rEAN9sun3_o_VskAAp8RAAJ_9eFInFZV7g-KatMBAAdtAAM4BA",
+            "uniqueId": "AQADnxEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E30 - Scarab der Grosse Teil 2"
+      }
+    },
+    {
+      "id": 70254592,
+      "chatId": -1001521205317,
+      "date": 1629457401,
+      "dateIso": "2021-08-20T11:03:21Z",
+      "content": {
+        "duration": 1265,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E29 - Scarab der Gr.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20457,
+          "size": 278806435,
+          "remoteId": "BAACAgIAAx0CWqvARQADQ2kpssLJ0QOQ2Ly0jPQeBQN1aGLqAAKeEQACf_XhSEWV8KeiVUYfOAQ",
+          "uniqueId": "AgADnhEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20456,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAANDaSmywsnRA5DYvLSM9B4FA3VoYuoAAp4RAAJ_9eFIRZXwp6JVRh8BAAdtAAM4BA",
+            "uniqueId": "AQADnhEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E29 - Scarab der Grosse Teil 1"
+      }
+    },
+    {
+      "id": 68157440,
+      "chatId": -1001521205317,
+      "date": 1629457387,
+      "dateIso": "2021-08-20T11:03:07Z",
+      "content": {
+        "duration": 1211,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E28 - Der dreifache.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20459,
+          "size": 278807628,
+          "remoteId": "BAACAgIAAx0CWqvARQADQWkpssIffIZGh93jUOf3PPOIctGSAAKdEQACf_XhSOsD3aJG7lfKOAQ",
+          "uniqueId": "AgADnREAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20458,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAANBaSmywh98hkaH3eNQ5_c884hy0ZIAAp0RAAJ_9eFI6wPdokbuV8oBAAdtAAM4BA",
+            "uniqueId": "AQADnREAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E28 - Der dreifache Scarab"
+      }
+    },
+    {
+      "id": 67108864,
+      "chatId": -1001521205317,
+      "date": 1629457384,
+      "dateIso": "2021-08-20T11:03:04Z",
+      "content": {
+        "duration": 1214,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E27 - Duell im Welt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20461,
+          "size": 278437118,
+          "remoteId": "BAACAgIAAx0CWqvARQADQGkpssKaZt1-TA8M7moDbr69f6ETAAKcEQACf_XhSOW2aC2Vk1VgOAQ",
+          "uniqueId": "AgADnBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20460,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAANAaSmywppm3X5MDwzuagNuvr1_oRMAApwRAAJ_9eFI5bZoLZWTVWABAAdtAAM4BA",
+            "uniqueId": "AQADnBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E27 - Duell im Weltraum"
+      }
+    },
+    {
+      "id": 66060288,
+      "chatId": -1001521205317,
+      "date": 1629457381,
+      "dateIso": "2021-08-20T11:03:01Z",
+      "content": {
+        "duration": 1209,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E26 - Pilze, Pech u.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20463,
+          "size": 278373996,
+          "remoteId": "BAACAgIAAx0CWqvARQADP2kpssLIZFUa8L-SIJw1cOhwglJqAAKaEQACf_XhSFcwh4vSfHAKOAQ",
+          "uniqueId": "AgADmhEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20462,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAAM_aSmywshkVRrwv5IgnDVw6HCCUmoAApoRAAJ_9eFIVzCHi9J8cAoBAAdtAAM4BA",
+            "uniqueId": "AQADmhEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E26 - Pilze, Pech und Pannen"
+      }
+    },
+    {
+      "id": 65011712,
+      "chatId": -1001521205317,
+      "date": 1629457378,
+      "dateIso": "2021-08-20T11:02:58Z",
+      "content": {
+        "duration": 1208,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die_sechs_Millionen_Dollar_Familie_S02_E25_Käpt_n_Kilowa.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20465,
+          "size": 279059838,
+          "remoteId": "BAACAgIAAx0CWqvARQADPmkpssLCdYeGULKiNAekpAlTLvkFAAKWEQACf_XhSNReFMbONCtiOAQ",
+          "uniqueId": "AgADlhEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20464,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAAM-aSmywsJ1h4ZQsqI0B6SkCVMu-QUAApYRAAJ_9eFI1F4Uxs40K2IBAAdtAAM4BA",
+            "uniqueId": "AQADlhEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E25 - Käpt’n Kilowatt"
+      }
+    },
+    {
+      "id": 63963136,
+      "chatId": -1001521205317,
+      "date": 1629457374,
+      "dateIso": "2021-08-20T11:02:54Z",
+      "content": {
+        "duration": 1207,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die_sechs_Millionen_Dollar_Familie_S02_E24_Scarabs_Frühl.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20467,
+          "size": 278827633,
+          "remoteId": "BAACAgIAAx0CWqvARQADPWkpssLxkgJKqqgTV2a5-QfYFkLSAAKUEQACf_XhSJgEc-p4v7YnOAQ",
+          "uniqueId": "AgADlBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20466,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAAM9aSmywvGSAkqqqBNXZrn5B9gWQtIAApQRAAJ_9eFImARz6ni_ticBAAdtAAM4BA",
+            "uniqueId": "AQADlBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E24 - Scarabs Frühlingsgefühle"
+      }
+    },
+    {
+      "id": 62914560,
+      "chatId": -1001521205317,
+      "date": 1629457371,
+      "dateIso": "2021-08-20T11:02:51Z",
+      "content": {
+        "duration": 1269,
+        "width": 620,
+        "height": 468,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E23 - Der Zankknoch.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20469,
+          "size": 278717514,
+          "remoteId": "BAACAgIAAx0CWqvARQADPGkpssJD6WpaRGIysbzQYlIVlZUFAAKSEQACf_XhSLXlfL4Wb9uFOAQ",
+          "uniqueId": "AgADkhEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20468,
+            "size": 17578,
+            "remoteId": "AAMCAgADHQJaq8BFAAM8aSmywkPpalpEYjKxvNBiUhWVlQUAApIRAAJ_9eFIteV8vhZv24UBAAdtAAM4BA",
+            "uniqueId": "AQADkhEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E23 - Der Zankknochen"
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001521205317,
+      "date": 1629457368,
+      "dateIso": "2021-08-20T11:02:48Z",
+      "content": {
+        "duration": 1211,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E22 - Bionic Sechs.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20471,
+          "size": 278861144,
+          "remoteId": "BAACAgIAAx0CWqvARQADO2kpssIlyf9KJpasTbdqMQhd7kw4AAKREQACf_XhSO1MjfrVyHoROAQ",
+          "uniqueId": "AgADkREAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20470,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAAM7aSmywiXJ_0omlqxNt2oxCF3uTDgAApERAAJ_9eFI7UyN-tXIehEBAAdtAAM4BA",
+            "uniqueId": "AQADkREAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E22 - Bionic Sechs im Märchenland"
+      }
+    },
+    {
+      "id": 60817408,
+      "chatId": -1001521205317,
+      "date": 1629457365,
+      "dateIso": "2021-08-20T11:02:45Z",
+      "content": {
+        "duration": 1208,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die sechs-Millionen Dollar Familie - S02 E21 - Kaleidoskop.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20473,
+          "size": 278944919,
+          "remoteId": "BAACAgIAAx0CWqvARQADOmkpssJBeGHuWtQnBMOZTV4KwiROAAKQEQACf_XhSBQqYTKianHCOAQ",
+          "uniqueId": "AgADkBEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20472,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAAM6aSmywkF4Ye5a1CcEw5lNXgrCJE4AApARAAJ_9eFIFCphMqJqccIBAAdtAAM4BA",
+            "uniqueId": "AQADkBEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E21 - Kaleidoskop"
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001521205317,
+      "date": 1629457361,
+      "dateIso": "2021-08-20T11:02:41Z",
+      "content": {
+        "duration": 1212,
+        "width": 432,
+        "height": 320,
+        "fileName": "Die_sechs_Millionen_Dollar_Familie_S02_E20_Der_grüne_Tee.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20475,
+          "size": 278996662,
+          "remoteId": "BAACAgIAAx0CWqvARQADOWkpssImLQIvpri0CYjm6KD9riSIAAKPEQACf_XhSP2XfprzSxCYOAQ",
+          "uniqueId": "AgADjxEAAn_14Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 238,
+          "file": {
+            "id": 20474,
+            "size": 17017,
+            "remoteId": "AAMCAgADHQJaq8BFAAM5aSmywiYtAi-muLQJiObooP2uJIgAAo8RAAJ_9eFI_Zd-mvNLEJgBAAdtAAM4BA",
+            "uniqueId": "AQADjxEAAn_14Uhy"
+          }
+        },
+        "caption": "Die sechs-Millionen Dollar Familie - S02 E20 - Der grüne Teer"
+      }
+    }
+  ]
+}

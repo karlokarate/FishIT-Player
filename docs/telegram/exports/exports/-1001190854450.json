@@ -1,0 +1,1199 @@
+{
+  "chatId": -1001190854450,
+  "title": "USER-UPLOAD-KANAL",
+  "exportedAt": "2025-11-28T14:46:11.022813502Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 307232768,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 306184192,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 305135616,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631908361,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5714,
+        "forwardCount": 18
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Williams Tad - Otherland 4 - Meer Des Silbernen Lichts.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17276,
+            "size": 443391558,
+            "expectedSize": 443391558,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CRvr_MgACASNpKbKGr3XZRH7rl6Gfwwn1BfwCmgACmwkAAiwbGVIKhMnFZVZiYjgE",
+              "uniqueId": "AgADmwkAAiwbGVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 443391558
+            }
+          }
+        },
+        "caption": {
+          "text": "Williams Tad - Otherland 4 - Meer Des Silbernen Lichts",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 304087040,
+      "chatId": -1001190854450,
+      "date": 1631908361,
+      "dateIso": "2021-09-17T19:52:41Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 225,
+            "height": 225,
+            "file": {
+              "id": 17277,
+              "size": 15218,
+              "remoteId": "AgACAgQAAx0CRvr_MgACASJpKbKG7RiIwwAB05EwMSMJkYGBwl4AAnq3MRssGxlSI4zpJUf4RJwBAAMCAANtAAM4BA",
+              "uniqueId": "AQADercxGywbGVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 303038464,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631908361,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5335,
+        "forwardCount": 15
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Williams Tad - Otherland 3 - Berg Aus Schwarzem Glas.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17278,
+            "size": 397669736,
+            "expectedSize": 397669736,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CRvr_MgACASFpKbKGKj0d9deT-t581FI1utGg4QACmQkAAiwbGVJmw0I9YUOrtDgE",
+              "uniqueId": "AgADmQkAAiwbGVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 397669736
+            }
+          }
+        },
+        "caption": {
+          "text": "Williams Tad - Otherland 3 - Berg Aus Schwarzem Glas",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 301989888,
+      "chatId": -1001190854450,
+      "date": 1631908361,
+      "dateIso": "2021-09-17T19:52:41Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 177,
+            "height": 175,
+            "file": {
+              "id": 17279,
+              "size": 11090,
+              "remoteId": "AgACAgQAAx0CRvr_MgACASBpKbKG4kW3sWmRYvLRcbfETgNuowACebcxGywbGVL69lQxi8AMYAEAAwIAA20AAzgE",
+              "uniqueId": "AQADebcxGywbGVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 300941312,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631908361,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4452,
+        "forwardCount": 18
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Williams Tad - Otherland 2 - Fluß Aus Blauem Feuer.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17280,
+            "size": 389045511,
+            "expectedSize": 389045511,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CRvr_MgACAR9pKbKG7tjblfEb-70Jnm1idvTuFQAClgkAAiwbGVKxJ3keLF-YDTgE",
+              "uniqueId": "AgADlgkAAiwbGVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 389045511
+            }
+          }
+        },
+        "caption": {
+          "text": "Williams Tad - Otherland 2 - Fluß Aus Blauem Feuer",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 299892736,
+      "chatId": -1001190854450,
+      "date": 1631908360,
+      "dateIso": "2021-09-17T19:52:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 177,
+            "height": 177,
+            "file": {
+              "id": 17281,
+              "size": 9679,
+              "remoteId": "AgACAgQAAx0CRvr_MgACAR5pKbKGxLwN1vDdkUyjJOH9u_A4GgACeLcxGywbGVKxivI2Tl12dQEAAwIAA20AAzgE",
+              "uniqueId": "AQADeLcxGywbGVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 298844160,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631908360,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4054,
+        "forwardCount": 17
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Williams Tad - Otherland 1 - Stadt Der Goldenen Schatten.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17282,
+            "size": 394650998,
+            "expectedSize": 394650998,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CRvr_MgACAR1pKbKGXULWmvXJ_EbzgaAErD8RhQAClAkAAiwbGVJ6w5VRvRy2WjgE",
+              "uniqueId": "AgADlAkAAiwbGVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 394650998
+            }
+          }
+        },
+        "caption": {
+          "text": "Williams Tad - Otherland 1 - Stadt Der Goldenen Schatten",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 297795584,
+      "chatId": -1001190854450,
+      "date": 1631908360,
+      "dateIso": "2021-09-17T19:52:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 177,
+            "height": 177,
+            "file": {
+              "id": 17283,
+              "size": 11217,
+              "remoteId": "AgACAgQAAx0CRvr_MgACARxpKbKGqrn2H-yHosmFAeA8HP1FsAACd7cxGywbGVKOlgSIwMppxAEAAwIAA20AAzgE",
+              "uniqueId": "AQADd7cxGywbGVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 296747008,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631907938,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3752,
+        "forwardCount": 16
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Cody McFadyen - Die Blutlinie.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17284,
+            "size": 466320892,
+            "expectedSize": 466320892,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CRvr_MgACARtpKbKGAfPFOI5ij8bgwzb6tSxZKQACjAYAAvwxcVApQckz5kSlDDgE",
+              "uniqueId": "AgADjAYAAvwxcVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 466320892
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 295698432,
+      "chatId": -1001190854450,
+      "date": 1631907922,
+      "dateIso": "2021-09-17T19:45:22Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 17287,
+              "size": 325623,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARppKbKG2xuS49U0vD8cvkSqYQ-jzQACOrgxG4RgKUozWmFyoKMsfAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADOrgxG4RgKUp-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17286,
+              "size": 145169,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARppKbKG2xuS49U0vD8cvkSqYQ-jzQACOrgxG4RgKUozWmFyoKMsfAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADOrgxG4RgKUp9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17285,
+              "size": 30824,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARppKbKG2xuS49U0vD8cvkSqYQ-jzQACOrgxG4RgKUozWmFyoKMsfAEAAwIAA20AAzgE",
+              "uniqueId": "AQADOrgxG4RgKUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 294649856,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631894787,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3595,
+        "forwardCount": 12
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Markus_Heitz_Zwergen_Saga_Folge.rar",
+          "mimeType": "application/x-rar",
+          "document": {
+            "id": 17288,
+            "size": 878430366,
+            "expectedSize": 878430366,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACARlpKbKGuHwNoULeMQ82hYWL_jLJuwACWAMAAvUGwUkSFrJzB4yTdjgE",
+              "uniqueId": "AgADWAMAAvUGwUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 878430366
+            }
+          }
+        },
+        "caption": {
+          "text": "Markus Heitz - Die Zwergensaga Teil 1 part2",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 293601280,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1631894787,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3545,
+        "forwardCount": 11
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Markus_Heitz_Zwergen_Saga_Folge.rar",
+          "mimeType": "application/x-rar",
+          "document": {
+            "id": 17289,
+            "size": 925137789,
+            "expectedSize": 925137789,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACARhpKbKGYeX1af7xpYo6oT-hEfnFTwACVgMAAvUGwUm0RuVdKGh5djgE",
+              "uniqueId": "AgADVgMAAvUGwUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 925137789
+            }
+          }
+        },
+        "caption": {
+          "text": "Markus Heitz - Die Zwergensaga Teil 1 part1",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 292552704,
+      "chatId": -1001190854450,
+      "date": 1631894787,
+      "dateIso": "2021-09-17T16:06:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 17291,
+              "size": 69156,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARdpKbKGd-ABexd6JBB1t1RNhTkymQACIKsxG4KXiUlhbsgu6wQ35gEAAwIAA3gAAzgE",
+              "uniqueId": "AQADIKsxG4KXiUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17290,
+              "size": 36188,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARdpKbKGd-ABexd6JBB1t1RNhTkymQACIKsxG4KXiUlhbsgu6wQ35gEAAwIAA20AAzgE",
+              "uniqueId": "AQADIKsxG4KXiUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 291504128,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1620809993,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4222,
+        "forwardCount": 13
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "H_P_Lovecrafts_Bibliothek_des_Schreckens_Berge_des_Wahnsinns_und.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17292,
+            "size": 902871631,
+            "expectedSize": 902871631,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACARZpKbKGifW-VGFvkKcISe_kIAY2AwAC5w4AAlv_4UjBrAABoICJZFo4BA",
+              "uniqueId": "AgAD5w4AAlv_4Ug",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 902871631
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 290455552,
+      "chatId": -1001190854450,
+      "date": 1620809993,
+      "dateIso": "2021-05-12T08:59:53Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1050,
+            "file": {
+              "id": 17295,
+              "size": 199363,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARVpKbKGEAH4ZL0YjM_V6s_4TtLDtwACL7MxG1v_4UgvPNEs6FKsjgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADL7MxG1v_4Uh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 656,
+            "file": {
+              "id": 17294,
+              "size": 105592,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARVpKbKGEAH4ZL0YjM_V6s_4TtLDtwACL7MxG1v_4UgvPNEs6FKsjgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADL7MxG1v_4Uh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 262,
+            "file": {
+              "id": 17293,
+              "size": 20040,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARVpKbKGEAH4ZL0YjM_V6s_4TtLDtwACL7MxG1v_4UgvPNEs6FKsjgEAAwIAA20AAzgE",
+              "uniqueId": "AQADL7MxG1v_4Uhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 289406976,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1620808853,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4083,
+        "forwardCount": 11
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "John Sinclair - Oculus - Special Edition 08.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17296,
+            "size": 259685161,
+            "expectedSize": 259685161,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACARRpKbKG6dA_OcEsfOnL_jpQ1fUS4gAC2g4AAlv_4UgRi0hXf6L-KjgE",
+              "uniqueId": "AgAD2g4AAlv_4Ug",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 259685161
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 288358400,
+      "chatId": -1001190854450,
+      "date": 1620808853,
+      "dateIso": "2021-05-12T08:40:53Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 17299,
+              "size": 196650,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARNpKbKGwRdP3fAWpVccMb2SA9D6yAACLbMxG1v_4UiWO6FrysuN5QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADLbMxG1v_4Uh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17298,
+              "size": 109660,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARNpKbKGwRdP3fAWpVccMb2SA9D6yAACLbMxG1v_4UiWO6FrysuN5QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADLbMxG1v_4Uh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17297,
+              "size": 25551,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARNpKbKGwRdP3fAWpVccMb2SA9D6yAACLbMxG1v_4UiWO6FrysuN5QEAAwIAA20AAzgE",
+              "uniqueId": "AQADLbMxG1v_4Uhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 287309824,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1620808757,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3709,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Durchs wilde Kurdistan #maritim#KarlMay.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17300,
+            "size": 77370814,
+            "expectedSize": 77370814,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACARJpKbKGGV5S-BngFR2rO1WUoznNHQACzA4AAlv_4Ug8sDEDOc_QTzgE",
+              "uniqueId": "AgADzA4AAlv_4Ug",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 77370814
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 286261248,
+      "chatId": -1001190854450,
+      "date": 1620808757,
+      "dateIso": "2021-05-12T08:39:17Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 17303,
+              "size": 304468,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARFpKbKGJ5RnrT58U9sgOPkBxWrYvQACLLMxG1v_4UjGwloPsxquFgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADLLMxG1v_4Uh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17302,
+              "size": 138277,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARFpKbKGJ5RnrT58U9sgOPkBxWrYvQACLLMxG1v_4UjGwloPsxquFgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADLLMxG1v_4Uh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17301,
+              "size": 23312,
+              "remoteId": "AgACAgIAAx0CRvr_MgACARFpKbKGJ5RnrT58U9sgOPkBxWrYvQACLLMxG1v_4UjGwloPsxquFgEAAwIAA20AAzgE",
+              "uniqueId": "AQADLLMxG1v_4Uhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 285212672,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1620808691,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3574,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Juweleninsel #KarlMay #maritim.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17304,
+            "size": 86446389,
+            "expectedSize": 86446389,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACARBpKbKGGfV676arFuFHXAJ6CZY7VgACxQ4AAlv_4Ug2Ua5Cl2hhAjgE",
+              "uniqueId": "AgADxQ4AAlv_4Ug",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 86446389
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 284164096,
+      "chatId": -1001190854450,
+      "date": 1620808691,
+      "dateIso": "2021-05-12T08:38:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1265,
+            "file": {
+              "id": 17307,
+              "size": 236379,
+              "remoteId": "AgACAgIAAx0CRvr_MgACAQ9pKbKGdrrmMhZVR9AAAQW1nc5u72IAAiuzMRtb_-FIIUvI5hyy9KcBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADK7MxG1v_4Uh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 791,
+            "file": {
+              "id": 17306,
+              "size": 118642,
+              "remoteId": "AgACAgIAAx0CRvr_MgACAQ9pKbKGdrrmMhZVR9AAAQW1nc5u72IAAiuzMRtb_-FIIUvI5hyy9KcBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADK7MxG1v_4Uh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 316,
+            "file": {
+              "id": 17305,
+              "size": 21494,
+              "remoteId": "AgACAgIAAx0CRvr_MgACAQ9pKbKGdrrmMhZVR9AAAQW1nc5u72IAAiuzMRtb_-FIIUvI5hyy9KcBAAMCAANtAAM4BA",
+              "uniqueId": "AQADK7MxG1v_4Uhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 283115520,
+      "senderId": {
+        "chatId": -1001190854450
+      },
+      "chatId": -1001190854450,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1620808680,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3267,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Das Wirtshaus Im Spessart.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17308,
+            "size": 80466112,
+            "expectedSize": 80466112,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRvr_MgACAQ5pKbKGxMC-9i9TO57T2JUrA-fH1gACwA4AAlv_4Ui9yxMnihFeQDgE",
+              "uniqueId": "AgADwA4AAlv_4Ug",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 80466112
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 282066944,
+      "chatId": -1001190854450,
+      "date": 1620808680,
+      "dateIso": "2021-05-12T08:38:00Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 17311,
+              "size": 279253,
+              "remoteId": "AgACAgIAAx0CRvr_MgACAQ1pKbKG0LJgurorH9u08B7_KEsnlwACKrMxG1v_4UizEbvZ5M9AeQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADKrMxG1v_4Uh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17310,
+              "size": 132959,
+              "remoteId": "AgACAgIAAx0CRvr_MgACAQ1pKbKG0LJgurorH9u08B7_KEsnlwACKrMxG1v_4UizEbvZ5M9AeQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADKrMxG1v_4Uh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17309,
+              "size": 25917,
+              "remoteId": "AgACAgIAAx0CRvr_MgACAQ1pKbKG0LJgurorH9u08B7_KEsnlwACKrMxG1v_4UizEbvZ5M9AeQEAAwIAA20AAzgE",
+              "uniqueId": "AQADKrMxG1v_4Uhy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

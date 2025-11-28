@@ -1,0 +1,304 @@
+{
+  "chatId": 10381748,
+  "title": "Marius Krassuski",
+  "exportedAt": "2025-11-28T14:47:08.027753184Z",
+  "count": 16,
+  "messages": [
+    {
+      "id": 42261807104,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 10381748,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1691574387,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "contact": {
+          "phoneNumber": "015158407530",
+          "firstName": "JACKY",
+          "lastName": "",
+          "vcard": "BEGIN:VCARD\nVERSION:2.1\nN;CHARSET\u003dUTF-8;ENCODING\u003dQUOTED-PRINTABLE:;\u003d4A\u003dC3\u003dA4\u003d63\u003d6B\u003d79;;;\nFN;CHARSET\u003dUTF-8;ENCODING\u003dQUOTED-PRINTABLE:\u003d4A\u003dC3\u003dA4\u003d63\u003d6B\u003d79\nTEL;CELL:015158407530\nEND:VCARD",
+          "userId": 0
+        }
+      }
+    },
+    {
+      "id": 41714450432,
+      "chatId": 10381748,
+      "date": 1687084539,
+      "dateIso": "2023-06-18T10:35:39Z",
+      "text": "Da ist det Parkplatz.",
+      "genres": []
+    },
+    {
+      "id": 41713401856,
+      "senderId": {
+        "userId": 10381748
+      },
+      "chatId": 10381748,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1687084524,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "location": {
+          "latitude": 50.997983,
+          "longitude": 6.998131,
+          "horizontalAccuracy": 0.0
+        },
+        "livePeriod": 0,
+        "expiresIn": 0,
+        "heading": 0,
+        "proximityAlertRadius": 0
+      }
+    },
+    {
+      "id": 41702916096,
+      "chatId": 10381748,
+      "date": 1686904550,
+      "dateIso": "2023-06-16T08:35:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 960,
+            "height": 1280,
+            "file": {
+              "id": 23598,
+              "size": 145332,
+              "remoteId": "AgACAgIAAxkDAAKbW2kpsuOW3-3kxe-8_tfUqjrB6UeeAAI01DEbHpVhSBZ4miWFKeM5AQADAgADeQADOAQ",
+              "uniqueId": "AQADNNQxGx6VYUh-"
+            }
+          },
+          {
+            "width": 600,
+            "height": 800,
+            "file": {
+              "id": 23597,
+              "size": 80558,
+              "remoteId": "AgACAgIAAxkDAAKbW2kpsuOW3-3kxe-8_tfUqjrB6UeeAAI01DEbHpVhSBZ4miWFKeM5AQADAgADeAADOAQ",
+              "uniqueId": "AQADNNQxGx6VYUh9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 23596,
+              "size": 20369,
+              "remoteId": "AgACAgIAAxkDAAKbW2kpsuOW3-3kxe-8_tfUqjrB6UeeAAI01DEbHpVhSBZ4miWFKeM5AQADAgADbQADOAQ",
+              "uniqueId": "AQADNNQxGx6VYUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 41313894400,
+      "chatId": 10381748,
+      "date": 1685085305,
+      "dateIso": "2023-05-26T07:15:05Z",
+      "text": "dann wünsch ich euch schonmal ein ganz tolles Wochenende und viel Spaß!",
+      "genres": []
+    },
+    {
+      "id": 41312845824,
+      "chatId": 10381748,
+      "date": 1685085121,
+      "dateIso": "2023-05-26T07:12:01Z",
+      "text": "Ganz genau. Sind gerade schon schwer am packen und Düsen gleich los.",
+      "genres": []
+    },
+    {
+      "id": 41311797248,
+      "chatId": 10381748,
+      "date": 1685084203,
+      "dateIso": "2023-05-26T06:56:43Z",
+      "text": "huhu, die Mädels kommen heute nicht, wegen eures Familienfestes, richtig?",
+      "genres": []
+    },
+    {
+      "id": 28517072896,
+      "chatId": 10381748,
+      "date": 1637931953,
+      "dateIso": "2021-11-26T13:05:53Z",
+      "text": "Lisa kommt die beiden gleich abholen.",
+      "genres": []
+    },
+    {
+      "id": 28516024320,
+      "chatId": 10381748,
+      "date": 1637931833,
+      "dateIso": "2021-11-26T13:03:53Z",
+      "text": "hallo, die Mädels sind seit einer Std wieder wach und die Marlene wirkt ziemlich kränklich. LG",
+      "genres": []
+    },
+    {
+      "id": 28465692672,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 10381748,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1637847003,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 97
+      }
+    },
+    {
+      "id": 27563917312,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 10381748,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1636021038,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": true,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 27028094976,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 10381748,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634283630,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": true,
+        "discardReason": {},
+        "duration": 47
+      }
+    },
+    {
+      "id": 24713887744,
+      "chatId": 10381748,
+      "date": 1628530493,
+      "dateIso": "2021-08-09T17:34:53Z",
+      "text": "Ich glaube ich habe es schon durch. Bisschen Rotznase und Husten",
+      "genres": []
+    },
+    {
+      "id": 24712839168,
+      "chatId": 10381748,
+      "date": 1628530320,
+      "dateIso": "2021-08-09T17:32:00Z",
+      "text": "Ok, danke dir für die Nachricht. Gute Besserung an Alle und bleib selbst fit für deine Bande. LG",
+      "genres": []
+    },
+    {
+      "id": 24711790592,
+      "chatId": 10381748,
+      "date": 1628530201,
+      "dateIso": "2021-08-09T17:30:01Z",
+      "text": "Hey, jetzt hat Marlene Fieber. 😔 ob ich morgen mit Juli kommen kann schreibe ich dir später. Lisa war heute nämlich krank zu Hause.",
+      "genres": []
+    },
+    {
+      "id": 24641536000,
+      "chatId": 10381748,
+      "date": 1628167123,
+      "dateIso": "2021-08-05T12:38:43Z",
+      "text": "Hey Christoph, Marius hier. Ich würde sagen, dass ich morgen wieder mit Marlene komme.",
+      "genres": []
+    }
+  ]
+}

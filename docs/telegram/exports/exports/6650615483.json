@@ -1,0 +1,32 @@
+{
+  "chatId": 6650615483,
+  "title": "",
+  "exportedAt": "2025-11-28T14:46:06.937918433Z",
+  "count": 3,
+  "messages": [
+    {
+      "id": 46291484672,
+      "chatId": 6650615483,
+      "date": 1743084162,
+      "dateIso": "2025-03-27T14:02:42Z",
+      "text": "Kann ich es dir erklären?",
+      "genres": []
+    },
+    {
+      "id": 46289387520,
+      "chatId": 6650615483,
+      "date": 1743063059,
+      "dateIso": "2025-03-27T08:10:59Z",
+      "text": "Tagespreis : 65-90 Euro / Std ..",
+      "genres": []
+    },
+    {
+      "id": 46288338944,
+      "chatId": 6650615483,
+      "date": 1743063059,
+      "dateIso": "2025-03-27T08:10:59Z",
+      "text": "Hallo....!!!Wir brauchen mehr Mitarbeiter, MiniJob- als auch Teilzeitjobs. Sind Sie interessiert?",
+      "genres": []
+    }
+  ]
+}

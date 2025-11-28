@@ -1,0 +1,47 @@
+{
+  "chatId": 6977962892,
+  "title": "Betty",
+  "exportedAt": "2025-11-28T14:45:41.770374490Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 46969913344,
+      "chatId": 6977962892,
+      "date": 1760705214,
+      "dateIso": "2025-10-17T12:46:54Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 4914,
+              "size": 83906,
+              "remoteId": "AgACAgQAAxkBAAKu-mkpsmenLLuFQU8ZvKBF2zkEG2woAAI1vDEb-UnkUm08QsaUL348AQADAgADeAADOAQ",
+              "uniqueId": "AQADNbwxG_lJ5FJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 4913,
+              "size": 20346,
+              "remoteId": "AgACAgQAAxkBAAKu-mkpsmenLLuFQU8ZvKBF2zkEG2woAAI1vDEb-UnkUm08QsaUL348AQADAgADbQADOAQ",
+              "uniqueId": "AQADNbwxG_lJ5FJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46968864768,
+      "chatId": 6977962892,
+      "date": 1760705213,
+      "dateIso": "2025-10-17T12:46:53Z",
+      "text": "ㅤ",
+      "genres": []
+    }
+  ]
+}

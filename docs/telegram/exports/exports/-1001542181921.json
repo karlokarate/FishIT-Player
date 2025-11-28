@@ -1,0 +1,39 @@
+{
+  "chatId": -1001542181921,
+  "title": "PJ Masks – Pyjamahelden FULL HD",
+  "exportedAt": "2025-11-28T14:45:55.210591604Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 167772160,
+      "chatId": -1001542181921,
+      "date": 1661436051,
+      "dateIso": "2022-08-25T14:00:51Z",
+      "content": {
+        "duration": 1447,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PJ Masks - Pyjamahelden - S03 E26 - Romeos Luftschloss - PJ.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5568,
+          "size": 327871817,
+          "remoteId": "BAACAgIAAx0CW-vUIQADoGkpskEdNKDYj_nww1g6Mc_CDCrTAAIKFgACuO3BSTDNM00sqUF2OAQ",
+          "uniqueId": "AgADChYAArjtwUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5567,
+            "size": 9248,
+            "remoteId": "AAMCAgADHQJb69QhAAOgaSmyQR00oNiP-fDDWDoxz8IMKtMAAgoWAAK47cFJMM0zTSypQXYBAAdtAAM4BA",
+            "uniqueId": "AQADChYAArjtwUly"
+          }
+        },
+        "caption": "PJ Masks - Pyjamahelden - S03 E26 - Romeos Luftschloss - PJ Robo gegen Romeo"
+      }
+    }
+  ]
+}

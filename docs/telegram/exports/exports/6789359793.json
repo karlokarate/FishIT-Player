@@ -1,0 +1,47 @@
+{
+  "chatId": 6789359793,
+  "title": "Alina",
+  "exportedAt": "2025-11-28T14:45:39.942980351Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 47004516352,
+      "chatId": 6789359793,
+      "date": 1761564567,
+      "dateIso": "2025-10-27T11:29:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 4907,
+              "size": 83906,
+              "remoteId": "AgACAgQAAxkBAAKvG2kpsmdWrhM8R-vJGNHMpHwjnFKcAAK-uzEbdI_lUulCze675GJ5AQADAgADeAADOAQ",
+              "uniqueId": "AQADvrsxG3SP5VJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 4906,
+              "size": 20346,
+              "remoteId": "AgACAgQAAxkBAAKvG2kpsmdWrhM8R-vJGNHMpHwjnFKcAAK-uzEbdI_lUulCze675GJ5AQADAgADbQADOAQ",
+              "uniqueId": "AQADvrsxG3SP5VJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 47002419200,
+      "chatId": 6789359793,
+      "date": 1761564566,
+      "dateIso": "2025-10-27T11:29:26Z",
+      "text": "ㅤ",
+      "genres": []
+    }
+  ]
+}

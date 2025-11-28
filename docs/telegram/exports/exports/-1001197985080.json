@@ -1,0 +1,513 @@
+{
+  "chatId": -1001197985080,
+  "title": "Spider-Man",
+  "exportedAt": "2025-11-28T14:46:13.871941735Z",
+  "count": 12,
+  "messages": [
+    {
+      "id": 16777216,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 15728640,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 14680064,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1615893947,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 690,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001197985080,
+        "messageId": 12582912,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Folge 03 - Sandman - Die Symbiose.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17183,
+            "size": 134802518,
+            "expectedSize": 134802518,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CR2fNOAADDmkpsobMMr57ON4PoFuON0lN1lNgAAJNDAACJxOJSrf94cK8aq7YOAQ",
+              "uniqueId": "AgADTQwAAicTiUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 134802518
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 03 - Sandman - Die Symbiose",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1001197985080,
+      "date": 1615893830,
+      "dateIso": "2021-03-16T11:23:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17185,
+              "size": 95688,
+              "remoteId": "AgACAgIAAx0CR2fNOAADDGkpsobczP3Jv5BCE70SqQHZdI-rAAIPsjEbJxOJSlO2XBZjcSDeAQADAgADeAADOAQ",
+              "uniqueId": "AQADD7IxGycTiUp9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17184,
+              "size": 28351,
+              "remoteId": "AgACAgIAAx0CR2fNOAADDGkpsobczP3Jv5BCE70SqQHZdI-rAAIPsjEbJxOJSlO2XBZjcSDeAQADAgADbQADOAQ",
+              "uniqueId": "AQADD7IxGycTiUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 11534336,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1615893829,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 573,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001197985080,
+        "messageId": 10485760,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Folge 02 - Black Cat - Zeit für Party!.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17186,
+            "size": 129617924,
+            "expectedSize": 129617924,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CR2fNOAADC2kpsob6PvUB8fZDVHzGpaD2cXzkAAJKDAACJxOJSlmzJczdhgZWOAQ",
+              "uniqueId": "AgADSgwAAicTiUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 129617924
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 02 - Black Cat - Zeit für Party!",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1001197985080,
+      "date": 1615893698,
+      "dateIso": "2021-03-16T11:21:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17188,
+              "size": 96376,
+              "remoteId": "AgACAgIAAx0CR2fNOAADCmkpsoafw0pD7gABYJfr7yRvwC3pbwACDrIxGycTiUooWAREfO6kLgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADDrIxGycTiUp9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17187,
+              "size": 28436,
+              "remoteId": "AgACAgIAAx0CR2fNOAADCmkpsoafw0pD7gABYJfr7yRvwC3pbwACDrIxGycTiUooWAREfO6kLgEAAwIAA20AAzgE",
+              "uniqueId": "AQADDrIxGycTiUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 9437184,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1615893682,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 492,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001197985080,
+        "messageId": 8388608,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Folge 01 - Wie alles begann - Die Osborne-Academy.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17189,
+            "size": 126848645,
+            "expectedSize": 126848645,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CR2fNOAADCWkpsobr3hR5nV5PbtJcalocymKOAAJGDAACJxOJSg8AAf6RC3kWwDgE",
+              "uniqueId": "AgADRgwAAicTiUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 126848645
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 01 - Wie alles begann - Die Osborne-Academy",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1001197985080,
+      "date": 1615893527,
+      "dateIso": "2021-03-16T11:18:47Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17191,
+              "size": 81657,
+              "remoteId": "AgACAgIAAx0CR2fNOAADCGkpsoY43lN9YRb0kAo4ZuvDwxvvAAIGsjEbJxOJSjo55PG5KOk5AQADAgADeAADOAQ",
+              "uniqueId": "AQADBrIxGycTiUp9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17190,
+              "size": 26417,
+              "remoteId": "AgACAgIAAx0CR2fNOAADCGkpsoY43lN9YRb0kAo4ZuvDwxvvAAIGsjEbJxOJSjo55PG5KOk5AQADAgADbQADOAQ",
+              "uniqueId": "AQADBrIxGycTiUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7340032,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1615893526,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 457,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001197985080,
+        "messageId": 6291456,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Folge 00 - Horizon High.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 17192,
+            "size": 122690899,
+            "expectedSize": 122690899,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CR2fNOAADB2kpsoZDyvVyZ7NvVE3ZmtbOQpu-AAJCDAACJxOJSgYbvhHHVawaOAQ",
+              "uniqueId": "AgADQgwAAicTiUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 122690899
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 00 - Horizon High Teil 1 \u0026 2",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1001197985080,
+      "date": 1615893349,
+      "dateIso": "2021-03-16T11:15:49Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17194,
+              "size": 91115,
+              "remoteId": "AgACAgIAAx0CR2fNOAADBmkpsoaSyR6oOd7muE8SNoq2GKjeAAIEsjEbJxOJSi6jgeNdy3mLAQADAgADeAADOAQ",
+              "uniqueId": "AQADBLIxGycTiUp9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17193,
+              "size": 29367,
+              "remoteId": "AgACAgIAAx0CR2fNOAADBmkpsoaSyR6oOd7muE8SNoq2GKjeAAIEsjEbJxOJSi6jgeNdy3mLAQADAgADbQADOAQ",
+              "uniqueId": "AQADBLIxGycTiUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2097152,
+      "chatId": -1001197985080,
+      "date": 1615892894,
+      "dateIso": "2021-03-16T11:08:14Z",
+      "text": "Fehlt was? Fehler gefunden?\nHast Du Fragen zu diesem Kanal? Oder möchtest die Qualität bewerten?... \n\nIm @Hoerspiel_bot kannst Du Dich gerne dazu melden.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001197985080
+      },
+      "chatId": -1001197985080,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1615892852,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Spiderman"
+      }
+    }
+  ]
+}

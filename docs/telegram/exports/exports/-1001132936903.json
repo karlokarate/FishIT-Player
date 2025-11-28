@@ -1,0 +1,1496 @@
+{
+  "chatId": -1001132936903,
+  "title": "🎬3D Filme🎥",
+  "exportedAt": "2025-11-28T14:46:39.887890332Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 1415577600,
+      "chatId": -1001132936903,
+      "date": 1721162770,
+      "dateIso": "2024-07-16T20:46:10Z",
+      "content": {
+        "duration": 4696,
+        "width": 1920,
+        "height": 1040,
+        "fileName": "Die Olsenbande in feiner Gesellschaft 3D - 2010.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5255,
+          "size": 3737448228,
+          "remoteId": "BAACAgQAAx0CQ4c-xwACBUZpKbKkepQm0rwffxJ2cY-EQpz77QACdhYAAmObuFCBnr_HxAH_PzgE",
+          "uniqueId": "AgADdhYAAmObuFA"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 5254,
+            "size": 16573,
+            "remoteId": "AAMCBAADHQJDhz7HAAIFRmkpsqR6lCbSvB9_EnZxj4RCnPvtAAJ2FgACY5u4UIGev8fEAf8_AQAHbQADOAQ",
+            "uniqueId": "AQADdhYAAmObuFBy"
+          }
+        },
+        "caption": "Die Olsenbande in feiner Gesellschaft 3D - 2010"
+      }
+    },
+    {
+      "id": 1414529024,
+      "chatId": -1001132936903,
+      "date": 1721162749,
+      "dateIso": "2024-07-16T20:45:49Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 921,
+            "height": 1181,
+            "file": {
+              "id": 19583,
+              "size": 262665,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBUVpKbKkFW3pdtzTs5O1bVCviNxoUAAChOMxGxC8uEi3YbYBBQyVdAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADhOMxGxC8uEh-"
+            }
+          },
+          {
+            "width": 624,
+            "height": 800,
+            "file": {
+              "id": 19582,
+              "size": 160164,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBUVpKbKkFW3pdtzTs5O1bVCviNxoUAAChOMxGxC8uEi3YbYBBQyVdAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADhOMxGxC8uEh9"
+            }
+          },
+          {
+            "width": 250,
+            "height": 320,
+            "file": {
+              "id": 19581,
+              "size": 33758,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBUVpKbKkFW3pdtzTs5O1bVCviNxoUAAChOMxGxC8uEi3YbYBBQyVdAEAAwIAA20AAzgE",
+              "uniqueId": "AQADhOMxGxC8uEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1412431872,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712770398,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1893,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.008",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19584,
+            "size": 1030435318,
+            "expectedSize": 1030435318,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBUNpKbKkmU4kLmvSO1-4CkxltUsznQACuUcAAovXsUjX_24OKsI_UjgE",
+              "uniqueId": "AgADuUcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1030435318
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1411383296,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712770164,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1820,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.007",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19585,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBUJpKbKkOBwdah4EkH_LeKBjkwrWeQACqkcAAovXsUgNPEwFNtiomDgE",
+              "uniqueId": "AgADqkcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1410334720,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712769973,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1733,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.006",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19586,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBUFpKbKkPmsix5Tyw0ZCjbd2o-gAARsAAqJHAAKL17FI8VQXeOHYkf44BA",
+              "uniqueId": "AgADokcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1409286144,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712769781,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1688,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.005",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19587,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBUBpKbKkOEvU6Oe2jjaoqQ2A1TQM0gACj0cAAovXsUiLEE5H6ynKLzgE",
+              "uniqueId": "AgADj0cAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1408237568,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712769581,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1671,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.004",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19588,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBT9pKbKk42DeV2f2YgPm6_KAdNVmuQAChkcAAovXsUg7_j47P-C05TgE",
+              "uniqueId": "AgADhkcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1407188992,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712769321,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1670,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.003",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19589,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBT5pKbKkQyYcyRmz9gABekK3X-c0bvMAAnZHAAKL17FI0t69pzglulI4BA",
+              "uniqueId": "AgADdkcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1406140416,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712769015,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1650,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.002",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 19590,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBT1pKbKkzBbV3LxI1u4oN1ZePI8g0wACakcAAovXsUjCdkPchsBJMTgE",
+              "uniqueId": "AgADakcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1405091840,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712768778,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1643,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Chain Letter - 3D.zip.001",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19591,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTxpKbKkCC8vvG-GR7UjnuFf6MTnQQACXkcAAovXsUiLmb5qNZC_RTgE",
+              "uniqueId": "AgADXkcAAovXsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1404043264,
+      "chatId": -1001132936903,
+      "date": 1712768562,
+      "dateIso": "2024-04-10T17:02:42Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 795,
+            "height": 1000,
+            "file": {
+              "id": 19594,
+              "size": 195546,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBTtpKbKkPkR13LnIIHexcIR5djvD8gACTNkxG4vXsUhKJe-naX6TmQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADTNkxG4vXsUh-"
+            }
+          },
+          {
+            "width": 636,
+            "height": 800,
+            "file": {
+              "id": 19593,
+              "size": 183867,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBTtpKbKkPkR13LnIIHexcIR5djvD8gACTNkxG4vXsUhKJe-naX6TmQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADTNkxG4vXsUh9"
+            }
+          },
+          {
+            "width": 254,
+            "height": 320,
+            "file": {
+              "id": 19592,
+              "size": 38526,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBTtpKbKkPkR13LnIIHexcIR5djvD8gACTNkxG4vXsUhKJe-naX6TmQEAAwIAA20AAzgE",
+              "uniqueId": "AQADTNkxG4vXsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1402994688,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959353,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3056,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.010",
+          "mimeType": "",
+          "document": {
+            "id": 19595,
+            "size": 23572271,
+            "expectedSize": 23572271,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTppKbKkC46bOpdAKG_loYpM8rnGSwACSAoAAh4PmUsP2Rnm-wacZDgE",
+              "uniqueId": "AgADSAoAAh4PmUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 23572271
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1401946112,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959353,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3011,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.009",
+          "mimeType": "",
+          "document": {
+            "id": 19596,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTlpKbKkTZ4fhW7f2CmEPsfDcyD6IgAC_AgAAh4PoUvaNXfxk-rwoTgE",
+              "uniqueId": "AgAD_AgAAh4PoUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1400897536,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959353,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3046,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.008",
+          "mimeType": "",
+          "document": {
+            "id": 19597,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBThpKbKkTKlfQo1x22wymYNpOwko4AACPQkAAvQLqEucEmeBGrPP2zgE",
+              "uniqueId": "AgADPQkAAvQLqEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1399848960,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959353,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3022,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.007",
+          "mimeType": "",
+          "document": {
+            "id": 19598,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTdpKbKkN8QS3PZQIxHkOYIa4cA8eAACqQoAAh4PmUtWENLWRE87BzgE",
+              "uniqueId": "AgADqQoAAh4PmUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1398800384,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2998,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.006",
+          "mimeType": "",
+          "document": {
+            "id": 19599,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTZpKbKkTE4ggiSJy3rCKaOwX3wI4AACpAoAAh4PmUsm8AHDaieKqzgE",
+              "uniqueId": "AgADpAoAAh4PmUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1397751808,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2906,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.005",
+          "mimeType": "",
+          "document": {
+            "id": 19600,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTVpKbKkKSHsU-EVP_2Avga57dU5JgACpgoAAh4PmUtLSpZ-ELWlRjgE",
+              "uniqueId": "AgADpgoAAh4PmUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1396703232,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2823,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.004",
+          "mimeType": "",
+          "document": {
+            "id": 19601,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTRpKbKkhW3Mm4NVSOozbyuqEbbW7gACSgoAAh4PmUvvXUCjjHCbCTgE",
+              "uniqueId": "AgADSgoAAh4PmUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1395654656,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2673,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.003",
+          "mimeType": "",
+          "document": {
+            "id": 19602,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTNpKbKkmY_abnOVetayYMPvmxShqwACcwkAAvQLqEuluPMWJ35ZSjgE",
+              "uniqueId": "AgADcwkAAvQLqEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1394606080,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2554,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.002",
+          "mimeType": "",
+          "document": {
+            "id": 19603,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTJpKbKk-hVKeRYSnGIAAQuYnAJRHoYAAoMKAAIeD5lLk4ljNmIl_gc4BA",
+              "uniqueId": "AgADgwoAAh4PmUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1393557504,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1670959352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2399,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pirates of the Caribbean Salazars Rache (2017) 3D.zip.001",
+          "mimeType": "",
+          "document": {
+            "id": 19604,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBTFpKbKkDxsiO7f_s8Nanvi2p3vxzQACywgAAh4PoUuuOP0ENmrjEDgE",
+              "uniqueId": "AgADywgAAh4PoUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1392508928,
+      "chatId": -1001132936903,
+      "date": 1670959352,
+      "dateIso": "2022-12-13T19:22:32Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 397,
+            "height": 500,
+            "file": {
+              "id": 19606,
+              "size": 56335,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBTBpKbKk3rVLjY80uCXKq6rkORDubwAC868xGwOEGEjlCxSHP1UDbQEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD868xGwOEGEh9"
+            }
+          },
+          {
+            "width": 254,
+            "height": 320,
+            "file": {
+              "id": 19605,
+              "size": 30713,
+              "remoteId": "AgACAgIAAx0CQ4c-xwACBTBpKbKk3rVLjY80uCXKq6rkORDubwAC868xGwOEGEjlCxSHP1UDbQEAAwIAA20AAzgE",
+              "uniqueId": "AQAD868xGwOEGEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1388314624,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634638770,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4636,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Monster Hunter - 2020 - 3D.zip.007",
+          "mimeType": "",
+          "document": {
+            "id": 19607,
+            "size": 188022532,
+            "expectedSize": 188022532,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBSxpKbKkbfGCxSX-IGYiylEIiiwtsQACVRIAAqOmYUvWZeTiovMCeDgE",
+              "uniqueId": "AgADVRIAAqOmYUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 188022532
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1387266048,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634638770,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4522,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Monster Hunter - 2020 - 3D.zip.006",
+          "mimeType": "",
+          "document": {
+            "id": 19608,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBStpKbKk5pVRDuhEfpJiPSB7Db_BRwACZhIAAqOmYUuuHMNBPK-BwTgE",
+              "uniqueId": "AgADZhIAAqOmYUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 1384120320,
+      "senderId": {
+        "chatId": -1001132936903
+      },
+      "chatId": -1001132936903,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634638756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 4482,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Monster Hunter - 2020 - 3D.zip.005",
+          "mimeType": "",
+          "document": {
+            "id": 19609,
+            "size": 1048576000,
+            "expectedSize": 1048576000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ4c-xwACBShpKbKk4QhJXQ00_zWLbe_4lVQ6dAACYxIAAqOmYUuC-CDrsefHWTgE",
+              "uniqueId": "AgADYxIAAqOmYUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1048576000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

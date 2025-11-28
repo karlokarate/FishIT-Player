@@ -1,0 +1,37 @@
+{
+  "chatId": 7851619169,
+  "title": "Muaaz Al Youssef",
+  "exportedAt": "2025-11-28T14:46:05.106998373Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 46349156352,
+      "senderId": {
+        "userId": 7851619169
+      },
+      "chatId": 7851619169,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1744404780,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

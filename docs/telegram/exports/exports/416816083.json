@@ -1,0 +1,359 @@
+{
+  "chatId": 416816083,
+  "title": "Judith Dauth",
+  "exportedAt": "2025-11-28T14:46:04.379059906Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 46350204928,
+      "chatId": 416816083,
+      "date": 1744528910,
+      "dateIso": "2025-04-13T07:21:50Z",
+      "text": "Huhu Chris,\nGeht\u0027s euch gut? \nToni hatte ja gefragt, ob sie mit deinen Kids mal wieder in der Kita spielen kann. Würden dir di, 22.04 oder Donnerstag, 24.04. passen? Dann ab 16 Uhr,wenn die anderen weg sind?",
+      "genres": []
+    },
+    {
+      "id": 43995103232,
+      "chatId": 416816083,
+      "date": 1708854664,
+      "dateIso": "2024-02-25T09:51:04Z",
+      "text": "ok, viel Spaß!",
+      "genres": []
+    },
+    {
+      "id": 43994054656,
+      "chatId": 416816083,
+      "date": 1708853454,
+      "dateIso": "2024-02-25T09:30:54Z",
+      "text": "Huhu, schöne Idee, haben aber schon Besuch und gehen später auf einen Kindergeburtstag. Gerne nächste Woche",
+      "genres": []
+    },
+    {
+      "id": 43993006080,
+      "chatId": 416816083,
+      "date": 1708849965,
+      "dateIso": "2024-02-25T08:32:45Z",
+      "text": "Huhu, guten Morgen! \nIch hoffe, es geht euch gut!\nFritz fragt, ob er die Toni besuchen kann..? LG",
+      "genres": []
+    },
+    {
+      "id": 43329257472,
+      "senderId": {
+        "userId": 416816083
+      },
+      "chatId": 416816083,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1701276216,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "voiceNote": {
+          "duration": 69,
+          "waveform": [
+            0,
+            0,
+            0,
+            0,
+            -104,
+            92,
+            -33,
+            74,
+            105,
+            91,
+            -1,
+            -1,
+            115,
+            120,
+            58,
+            4,
+            -92,
+            63,
+            -25,
+            -78,
+            -117,
+            97,
+            44,
+            63,
+            -52,
+            -48,
+            -75,
+            122,
+            125,
+            42,
+            18,
+            75,
+            84,
+            -90,
+            -90,
+            85,
+            -108,
+            63,
+            -75,
+            -67,
+            -6,
+            87,
+            -25,
+            78,
+            -53,
+            -22,
+            82,
+            24,
+            126,
+            -27,
+            -58,
+            -39,
+            78,
+            85,
+            27,
+            97,
+            124,
+            -121,
+            88,
+            -4,
+            31,
+            34,
+            5
+          ],
+          "mimeType": "audio/ogg",
+          "voice": {
+            "id": 17634,
+            "size": 1422015,
+            "expectedSize": 1422015,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "AwACAgIAAxkBAAKhamkpsoYyxxWAmv2t-hqxuobcQIEmAAIYQAACaUBAS3x0p_awgnjcOAQ",
+              "uniqueId": "AgADGEAAAmlAQEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1422015
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        },
+        "isListened": true
+      }
+    },
+    {
+      "id": 42253418496,
+      "chatId": 416816083,
+      "date": 1691392713,
+      "dateIso": "2023-08-07T07:18:33Z",
+      "text": "Guten Start heute 💫",
+      "genres": []
+    },
+    {
+      "id": 42252369920,
+      "chatId": 416816083,
+      "date": 1691238076,
+      "dateIso": "2023-08-05T12:21:16Z",
+      "text": "Kommen runter",
+      "genres": []
+    },
+    {
+      "id": 42251321344,
+      "chatId": 416816083,
+      "date": 1691238071,
+      "dateIso": "2023-08-05T12:21:11Z",
+      "text": "Ist fertig",
+      "genres": []
+    },
+    {
+      "id": 42250272768,
+      "chatId": 416816083,
+      "date": 1691237610,
+      "dateIso": "2023-08-05T12:13:30Z",
+      "text": "könnt ihr den Fritz schon fertig machen?",
+      "genres": []
+    },
+    {
+      "id": 42249224192,
+      "chatId": 416816083,
+      "date": 1691223342,
+      "dateIso": "2023-08-05T08:15:42Z",
+      "text": "Alles klar, fahren gleich los",
+      "genres": []
+    },
+    {
+      "id": 42248175616,
+      "chatId": 416816083,
+      "date": 1691223107,
+      "dateIso": "2023-08-05T08:11:47Z",
+      "text": "5 min",
+      "genres": []
+    },
+    {
+      "id": 42247127040,
+      "chatId": 416816083,
+      "date": 1691217630,
+      "dateIso": "2023-08-05T06:40:30Z",
+      "text": "Alles klar, das passt gut. Bis gleich",
+      "genres": []
+    },
+    {
+      "id": 42246078464,
+      "chatId": 416816083,
+      "date": 1691215706,
+      "dateIso": "2023-08-05T06:08:26Z",
+      "text": "eher ab 10\nich melde mich, wenn wir da sind",
+      "genres": []
+    },
+    {
+      "id": 42245029888,
+      "chatId": 416816083,
+      "date": 1691170823,
+      "dateIso": "2023-08-04T17:40:23Z",
+      "text": "Leni kann natürlich mitkommen",
+      "genres": []
+    },
+    {
+      "id": 42243981312,
+      "chatId": 416816083,
+      "date": 1691170815,
+      "dateIso": "2023-08-04T17:40:15Z",
+      "text": "hi, so von 9 bis 14 Uhr ca",
+      "genres": []
+    },
+    {
+      "id": 42242932736,
+      "chatId": 416816083,
+      "date": 1691157062,
+      "dateIso": "2023-08-04T13:51:02Z",
+      "text": "Kann ich Leni morgen mitbringen und wann geht\u0027s los? Ich bring ein paar Snacks mit...",
+      "genres": []
+    },
+    {
+      "id": 42235592704,
+      "chatId": 416816083,
+      "date": 1690922987,
+      "dateIso": "2023-08-01T20:49:47Z",
+      "text": "Magst du Kurt auch mitbringen und ich Leni oder lieber nicht? Ich kann auch gerne mitbeaufsichtigen...",
+      "genres": []
+    },
+    {
+      "id": 42234544128,
+      "chatId": 416816083,
+      "date": 1690922804,
+      "dateIso": "2023-08-01T20:46:44Z",
+      "text": "in der Kita passt gut",
+      "genres": []
+    },
+    {
+      "id": 42233495552,
+      "chatId": 416816083,
+      "date": 1690922776,
+      "dateIso": "2023-08-01T20:46:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 960,
+            "height": 1280,
+            "file": {
+              "id": 17637,
+              "size": 94037,
+              "remoteId": "AgACAgIAAxkBAAKdVWkpsoaMRq0UpE9yZGjVZRACIzkuAAICyjEbx3RRSi0hX_eJY78gAQADAgADeQADOAQ",
+              "uniqueId": "AQADAsoxG8d0UUp-"
+            }
+          },
+          {
+            "width": 600,
+            "height": 800,
+            "file": {
+              "id": 17636,
+              "size": 52913,
+              "remoteId": "AgACAgIAAxkBAAKdVWkpsoaMRq0UpE9yZGjVZRACIzkuAAICyjEbx3RRSi0hX_eJY78gAQADAgADeAADOAQ",
+              "uniqueId": "AQADAsoxG8d0UUp9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 17635,
+              "size": 13806,
+              "remoteId": "AgACAgIAAxkBAAKdVWkpsoaMRq0UpE9yZGjVZRACIzkuAAICyjEbx3RRSi0hX_eJY78gAQADAgADbQADOAQ",
+              "uniqueId": "AQADAsoxG8d0UUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 42232446976,
+      "chatId": 416816083,
+      "date": 1690922739,
+      "dateIso": "2023-08-01T20:45:39Z",
+      "text": "Hey Chris, wir sind nachmittags schon verplant, bis etwa 14 Uhr ginge aber. Sie freut sich sicher, wenn sie Fritz ihr Geschenk geben kann.\nPasst in der Kita oder lieber bei euch oder uns?",
+      "genres": []
+    },
+    {
+      "id": 42231398400,
+      "chatId": 416816083,
+      "date": 1690921996,
+      "dateIso": "2023-08-01T20:33:16Z",
+      "text": "hi Judith! Mag die Toni am Samstag mit Fritz spielen? LG, Chris",
+      "genres": []
+    },
+    {
+      "id": 41839230976,
+      "chatId": 416816083,
+      "date": 1687937492,
+      "dateIso": "2023-06-28T07:31:32Z",
+      "text": "hab schon mit ihm gesprochen",
+      "genres": []
+    },
+    {
+      "id": 41838182400,
+      "chatId": 416816083,
+      "date": 1687937464,
+      "dateIso": "2023-06-28T07:31:04Z",
+      "text": "Guten Morgen, ich hoffe, du hast fred erreicht. Ja, sie sind unterwegs und suchen eine urlaubsvertretung für unseren Arzt.",
+      "genres": []
+    },
+    {
+      "id": 41833988096,
+      "chatId": 416816083,
+      "date": 1687935399,
+      "dateIso": "2023-06-28T06:56:39Z",
+      "text": "guten Morgen! seid ihr gerade dabei Lenis Ausschlag beurteilen zu lassen?",
+      "genres": []
+    },
+    {
+      "id": 41764782080,
+      "chatId": 416816083,
+      "date": 1687323366,
+      "dateIso": "2023-06-21T04:56:06Z",
+      "text": "Super, danke",
+      "genres": []
+    }
+  ]
+}

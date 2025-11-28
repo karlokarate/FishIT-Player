@@ -1,0 +1,39 @@
+{
+  "chatId": -1001828274374,
+  "title": "Chucky - Full HD",
+  "exportedAt": "2025-11-28T14:46:20.993631122Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 50331648,
+      "chatId": -1001828274374,
+      "date": 1737228986,
+      "dateIso": "2025-01-18T19:36:26Z",
+      "content": {
+        "duration": 3032,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Chucky - S03 E08 - Haus der Puppen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5123,
+          "size": 2070152774,
+          "remoteId": "BAACAgIAAx0CbPlAxgADMGkpskBqhSCTPHwCylLzSKkxnp01AAIOdAACNkFhSA2UFXg-6abrOAQ",
+          "uniqueId": "AgADDnQAAjZBYUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 5122,
+            "size": 6290,
+            "remoteId": "AAMCAgADHQJs-UDGAAMwaSmyQGqFIJM8fALKUvNIqTGenTUAAg50AAI2QWFIDZQVeD7ppusBAAdtAAM4BA",
+            "uniqueId": "AQADDnQAAjZBYUhy"
+          }
+        },
+        "caption": "Chucky - S03 E08 - Haus der Puppen"
+      }
+    }
+  ]
+}

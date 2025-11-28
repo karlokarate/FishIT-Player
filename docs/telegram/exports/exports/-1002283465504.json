@@ -1,0 +1,39 @@
+{
+  "chatId": -1002283465504,
+  "title": "Test",
+  "exportedAt": "2025-11-28T14:46:18.956681579Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1002283465504
+      },
+      "chatId": -1002283465504,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1737656027,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Test"
+      }
+    }
+  ]
+}

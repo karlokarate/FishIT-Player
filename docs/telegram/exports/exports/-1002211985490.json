@@ -1,0 +1,403 @@
+{
+  "chatId": -1002211985490,
+  "title": "CINEMANIA 🎥🍿",
+  "exportedAt": "2025-11-28T14:45:25.098860283Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 1365245952,
+      "chatId": -1002211985490,
+      "date": 1764252389,
+      "dateIso": "2025-11-27T14:06:29Z",
+      "text": "​​Stranger Things Season 5 [Episode 1, 2, 3, 4 Added] 📺",
+      "genres": []
+    },
+    {
+      "id": 1362100224,
+      "chatId": -1002211985490,
+      "date": 1764072184,
+      "dateIso": "2025-11-25T12:03:04Z",
+      "text": "​​Bugonia (2025) 🎬",
+      "genres": []
+    },
+    {
+      "id": 1361051648,
+      "chatId": -1002211985490,
+      "date": 1763976508,
+      "dateIso": "2025-11-24T09:28:28Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 300,
+            "height": 450,
+            "file": {
+              "id": 12014,
+              "size": 20515,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAIFEmkpslX-cHwJQLol_IylEzB3_Mz8AAI2DGsbjYwgUR0hvfMbw6XTAQADAgADeAADOAQ",
+              "uniqueId": "AQADNgxrG42MIFF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 12013,
+              "size": 18136,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAIFEmkpslX-cHwJQLol_IylEzB3_Mz8AAI2DGsbjYwgUR0hvfMbw6XTAQADAgADbQADOAQ",
+              "uniqueId": "AQADNgxrG42MIFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1360003072,
+      "chatId": -1002211985490,
+      "date": 1763976508,
+      "dateIso": "2025-11-24T09:28:28Z",
+      "text": "Last Samurai Standing Season 1 (TV Series 2025) 📺",
+      "genres": []
+    },
+    {
+      "id": 275775488,
+      "senderId": {
+        "chatId": -1002211985490
+      },
+      "chatId": -1002211985490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729895343,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageAutoDeleteTime": 432000,
+        "fromUserId": 0
+      }
+    },
+    {
+      "id": 274726912,
+      "chatId": -1002211985490,
+      "date": 1729891354,
+      "dateIso": "2024-10-25T21:22:34Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 968,
+            "height": 1015,
+            "file": {
+              "id": 12017,
+              "size": 106721,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAIBBmkpslUPsQ6ir6xBDcm-drIlznmDAAJZxjEbmdzgUB38RwR6wgmVAQADAgADeQADOAQ",
+              "uniqueId": "AQADWcYxG5nc4FB-"
+            }
+          },
+          {
+            "width": 763,
+            "height": 800,
+            "file": {
+              "id": 12016,
+              "size": 88176,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAIBBmkpslUPsQ6ir6xBDcm-drIlznmDAAJZxjEbmdzgUB38RwR6wgmVAQADAgADeAADOAQ",
+              "uniqueId": "AQADWcYxG5nc4FB9"
+            }
+          },
+          {
+            "width": 305,
+            "height": 320,
+            "file": {
+              "id": 12015,
+              "size": 21055,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAIBBmkpslUPsQ6ir6xBDcm-drIlznmDAAJZxjEbmdzgUB38RwR6wgmVAQADAgADbQADOAQ",
+              "uniqueId": "AQADWcYxG5nc4FBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 273678336,
+      "chatId": -1002211985490,
+      "date": 1729878538,
+      "dateIso": "2024-10-25T17:48:58Z",
+      "text": "​​Don\u0027t Move (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 271581184,
+      "chatId": -1002211985490,
+      "date": 1729874026,
+      "dateIso": "2024-10-25T16:33:46Z",
+      "content": {
+        "duration": 75,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Squid Game_ Season 2 .mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12020,
+          "size": 4903385,
+          "remoteId": "BAACAgQAAyEFAASD2DhSAAIBA2kpslUxXkMOaZISU4s1Mx8_1WP4AALaJQACmdzgUPdkSkHqQxx7OAQ",
+          "uniqueId": "AgAD2iUAApnc4FA"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 12019,
+            "size": 5464,
+            "remoteId": "AAMCBAADIQUABIPYOFIAAgEDaSmyVTFeQw5pkhJTizUzHz_VY_gAAtolAAKZ3OBQ92RKQepDHHsBAAdtAAM4BA",
+            "uniqueId": "AQAD2iUAApnc4FBy"
+          }
+        },
+        "caption": "Squid Game: Season 2 📺\n\nYou\u0027re invited to get back in the game. \n\nSeason 2 on December 26, 2024.\n\nClick the Like Button if you are waiting for this masterpiece."
+      }
+    },
+    {
+      "id": 270532608,
+      "chatId": -1002211985490,
+      "date": 1729861514,
+      "dateIso": "2024-10-25T13:05:14Z",
+      "text": "​​Spirit in the Blood (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 269484032,
+      "chatId": -1002211985490,
+      "date": 1729852088,
+      "dateIso": "2024-10-25T10:28:08Z",
+      "text": "​​Terrifier 3 (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 268435456,
+      "chatId": -1002211985490,
+      "date": 1729852029,
+      "dateIso": "2024-10-25T10:27:09Z",
+      "text": "​​Terrifier 2 (2022) 📺",
+      "genres": []
+    },
+    {
+      "id": 267386880,
+      "chatId": -1002211985490,
+      "date": 1729851599,
+      "dateIso": "2024-10-25T10:19:59Z",
+      "text": "​​Terrifier (2018) 📺",
+      "genres": []
+    },
+    {
+      "id": 260046848,
+      "chatId": -1002211985490,
+      "date": 1729825460,
+      "dateIso": "2024-10-25T03:04:20Z",
+      "text": "​​Canary Black (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 258998272,
+      "senderId": {
+        "chatId": -1002211985490
+      },
+      "chatId": -1002211985490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729822292,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 257949696
+      }
+    },
+    {
+      "id": 255852544,
+      "chatId": -1002211985490,
+      "date": 1729773023,
+      "dateIso": "2024-10-24T12:30:23Z",
+      "content": {
+        "duration": 171,
+        "width": 1276,
+        "height": 720,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12034,
+          "size": 27571692,
+          "remoteId": "BAACAgQAAyEFAASD2DhSAAP0aSmyVdczX8FADGMHYm6fAdOhkIcAAnIbAAKZ3NBQBjUxsHzj2JY4BA",
+          "uniqueId": "AgADchsAApnc0FA"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 181,
+          "file": {
+            "id": 12033,
+            "size": 10562,
+            "remoteId": "AAMCBAADIQUABIPYOFIAA_RpKbJV1zNfwUAMYwdibp8B06GQhwACchsAApnc0FAGNTGwfOPYlgEAB20AAzgE",
+            "uniqueId": "AQADchsAApnc0FBy"
+          }
+        },
+        "caption": "🎬 Final trailer for Venom: The Last Dance! Catch it in cinemas today for an epic ride! 🍿👀"
+      }
+    },
+    {
+      "id": 254803968,
+      "chatId": -1002211985490,
+      "date": 1729755233,
+      "dateIso": "2024-10-24T07:33:53Z",
+      "text": "​​The Shadow Strays (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 253755392,
+      "chatId": -1002211985490,
+      "date": 1729745806,
+      "dateIso": "2024-10-24T04:56:46Z",
+      "text": "​​Agatha All Along Season 1 [Episode 7 Added]",
+      "genres": []
+    },
+    {
+      "id": 252706816,
+      "chatId": -1002211985490,
+      "date": 1729721641,
+      "dateIso": "2024-10-23T22:14:01Z",
+      "text": "​​The Wild Robot (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 251658240,
+      "chatId": -1002211985490,
+      "date": 1729698618,
+      "dateIso": "2024-10-23T15:50:18Z",
+      "text": "​​The Penguin Season 1 [Episode 1-5 Added] 📺",
+      "genres": []
+    },
+    {
+      "id": 250609664,
+      "chatId": -1002211985490,
+      "date": 1729690096,
+      "dateIso": "2024-10-23T13:28:16Z",
+      "text": "​​High Potential Season 1 [Episode 1-5 Added] 📺",
+      "genres": []
+    },
+    {
+      "id": 248512512,
+      "chatId": -1002211985490,
+      "date": 1729672896,
+      "dateIso": "2024-10-23T08:41:36Z",
+      "text": "​​Classified (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 247463936,
+      "senderId": {
+        "chatId": -1002211985490
+      },
+      "chatId": -1002211985490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729672706,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 246415360
+      }
+    },
+    {
+      "id": 245366784,
+      "chatId": -1002211985490,
+      "date": 1729664685,
+      "dateIso": "2024-10-23T06:24:45Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 452,
+            "height": 678,
+            "file": {
+              "id": 12050,
+              "size": 38404,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAPqaSmyVfTrTL1FWzP18ZRanvZmjrMAAprJMRsORsBQjuP5qvXN-5cBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADmskxGw5GwFB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 12049,
+              "size": 15689,
+              "remoteId": "AgACAgQAAyEFAASD2DhSAAPqaSmyVfTrTL1FWzP18ZRanvZmjrMAAprJMRsORsBQjuP5qvXN-5cBAAMCAANtAAM4BA",
+              "uniqueId": "AQADmskxGw5GwFBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 244318208,
+      "chatId": -1002211985490,
+      "date": 1729662595,
+      "dateIso": "2024-10-23T05:49:55Z",
+      "text": "​​Die Alone (2024) 📺",
+      "genres": []
+    },
+    {
+      "id": 243269632,
+      "chatId": -1002211985490,
+      "date": 1729623523,
+      "dateIso": "2024-10-22T18:58:43Z",
+      "text": "​​Wanted: Girlfriend (2024) 🔞",
+      "genres": []
+    }
+  ]
+}

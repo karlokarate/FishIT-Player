@@ -1,0 +1,779 @@
+{
+  "chatId": -1001434421634,
+  "title": "Mel Brooks 🥳",
+  "exportedAt": "2025-11-28T14:47:34.503287845Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 456130560,
+      "chatId": -1001434421634,
+      "date": 1675105642,
+      "dateIso": "2023-01-30T19:07:22Z",
+      "content": {
+        "duration": 5242,
+        "width": 1328,
+        "height": 720,
+        "fileName": "Mel Brooks  letzte Verrücktheit - Silent Movie - 1976.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5548,
+          "size": 2086129074,
+          "remoteId": "BAACAgIAAx0CVX-JggACAbNpKbLjph_t6fed2AjbzAWI6BIR_AACtCwAAuKGmUo5bAAB5Xbtmew4BA",
+          "uniqueId": "AgADtCwAAuKGmUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 5547,
+            "size": 9909,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBs2kpsuOmH-3p953YCNvMBYjoEhH8AAK0LAAC4oaZSjlsAAHldu2Z7AEAB20AAzgE",
+            "uniqueId": "AQADtCwAAuKGmUpy"
+          }
+        },
+        "caption": "Mel Brooks\u0027 letzte Verrücktheit: Silent Movie - 1976"
+      }
+    },
+    {
+      "id": 455081984,
+      "chatId": -1001434421634,
+      "date": 1675105642,
+      "dateIso": "2023-01-30T19:07:22Z",
+      "text": "󠄿Titel: Mel Brooks\u0027 letzte Verrücktheit: Silent Movie\nOriginaltitel: Silent Movie\nErscheinungsjahr: 1976\nLänge: 86 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 6\nRegie: Mel Brooks\nTMDbRating: 6.5\nGenres: Komödie",
+      "year": 1976,
+      "lengthMinutes": 86,
+      "fsk": 6,
+      "originalTitle": "Silent Movie",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Mel Brooks",
+      "tmdbRating": 6.5,
+      "genres": [
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/10970-Silent-Movie?language\u003dde-DE"
+    },
+    {
+      "id": 454033408,
+      "chatId": -1001434421634,
+      "date": 1675105642,
+      "dateIso": "2023-01-30T19:07:22Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 23701,
+              "size": 236940,
+              "remoteId": "AgACAgQAAx0CVX-JggACAbFpKbLjnANpVcbThw-XTcKdIuOd4gACx68xG5JFxFKRFfzxhb8OzQEAAwIAA3cAAzgE",
+              "uniqueId": "AQADx68xG5JFxFJ8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 23700,
+              "size": 237807,
+              "remoteId": "AgACAgQAAx0CVX-JggACAbFpKbLjnANpVcbThw-XTcKdIuOd4gACx68xG5JFxFKRFfzxhb8OzQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADx68xG5JFxFJ-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23699,
+              "size": 108659,
+              "remoteId": "AgACAgQAAx0CVX-JggACAbFpKbLjnANpVcbThw-XTcKdIuOd4gACx68xG5JFxFKRFfzxhb8OzQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADx68xG5JFxFJ9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23698,
+              "size": 26100,
+              "remoteId": "AgACAgQAAx0CVX-JggACAbFpKbLjnANpVcbThw-XTcKdIuOd4gACx68xG5JFxFKRFfzxhb8OzQEAAwIAA20AAzgE",
+              "uniqueId": "AQADx68xG5JFxFJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 440401920,
+      "chatId": -1001434421634,
+      "date": 1658081871,
+      "dateIso": "2022-07-17T18:17:51Z",
+      "content": {
+        "duration": 5130,
+        "width": 720,
+        "height": 576,
+        "fileName": "Dracula Tot Aber Gluecklich.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23703,
+          "size": 2094114596,
+          "remoteId": "BAACAgIAAx0CVX-JggACAaRpKbLjCZmuF5-W_bJp-WptJyX5EgACkhMAAgmsMEgjqQmruvAihzgE",
+          "uniqueId": "AgADkhMAAgmsMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 256,
+          "file": {
+            "id": 23702,
+            "size": 21217,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBpGkpsuMJma4Xn5b9smn5am0nJfkSAAKSEwACCawwSCOpCau68CKHAQAHbQADOAQ",
+            "uniqueId": "AQADkhMAAgmsMEhy"
+          }
+        },
+        "caption": "Dracula - Tot aber glücklich - 1995"
+      }
+    },
+    {
+      "id": 439353344,
+      "chatId": -1001434421634,
+      "date": 1658081870,
+      "dateIso": "2022-07-17T18:17:50Z",
+      "text": "󠄿Titel: Dracula - Tot aber glücklich\nOriginaltitel: Dracula: Dead and Loving It\nErscheinungsjahr: 1995\nLänge: 88 Minuten\nProduktionsland: Frankreich\nFSK: 12\nCharakter: Prof. Abraham Van Helsing\nRegie: Mel Brooks\nTMDbRating: 6\nGenres: Komödie, Horror, Fantasy",
+      "year": 1995,
+      "lengthMinutes": 88,
+      "fsk": 12,
+      "originalTitle": "Dracula: Dead and Loving It",
+      "productionCountry": "Frankreich",
+      "director": "Mel Brooks",
+      "tmdbRating": 6.0,
+      "genres": [
+        "Komödie",
+        "Horror",
+        "Fantasy"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/12110-Dracula:-Dead-and-Loving-It?language\u003dde-DE"
+    },
+    {
+      "id": 432013312,
+      "chatId": -1001434421634,
+      "date": 1658081834,
+      "dateIso": "2022-07-17T18:17:14Z",
+      "content": {
+        "duration": 6262,
+        "width": 1920,
+        "height": 1040,
+        "fileName": "Robin Hood - Helden in Strumpfhosen - 1993.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23705,
+          "size": 2089423744,
+          "remoteId": "BAACAgIAAx0CVX-JggACAZxpKbLjnij5xEOnxsI9h07AvpchLwACOhYAAq0MWUjEKQ148ugS-zgE",
+          "uniqueId": "AgADOhYAAq0MWUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 23704,
+            "size": 8333,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBnGkpsuOeKPnEQ6fGwj2HTsC-lyEvAAI6FgACrQxZSMQpDXjy6BL7AQAHbQADOAQ",
+            "uniqueId": "AQADOhYAAq0MWUhy"
+          }
+        },
+        "caption": "Robin Hood - Helden in Strumpfhosen - 1993"
+      }
+    },
+    {
+      "id": 430964736,
+      "chatId": -1001434421634,
+      "date": 1658081834,
+      "dateIso": "2022-07-17T18:17:14Z",
+      "text": "󠄿Titel: Robin Hood - Helden in Strumpfhosen\nOriginaltitel: Robin Hood: Men in Tights\nErscheinungsjahr: 1993\nLänge: 104 Minuten\nProduktionsland: Frankreich\nFSK: 6\nCharakter: Rabbi Tuckman\nRegie: Mel Brooks\nTMDbRating: 6.6\nGenres: Komödie",
+      "year": 1993,
+      "lengthMinutes": 104,
+      "fsk": 6,
+      "originalTitle": "Robin Hood: Men in Tights",
+      "productionCountry": "Frankreich",
+      "director": "Mel Brooks",
+      "tmdbRating": 6.6,
+      "genres": [
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/8005-Robin-Hood:-Men-in-Tights?language\u003dde-DE"
+    },
+    {
+      "id": 429916160,
+      "chatId": -1001434421634,
+      "date": 1658081833,
+      "dateIso": "2022-07-17T18:17:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 23709,
+              "size": 154011,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZppKbLjhV6NB4DJgRBApS8PDNROiwACb6wxG9qFHFMlgi0djlcI7QEAAwIAA3cAAzgE",
+              "uniqueId": "AQADb6wxG9qFHFN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 23708,
+              "size": 209148,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZppKbLjhV6NB4DJgRBApS8PDNROiwACb6wxG9qFHFMlgi0djlcI7QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADb6wxG9qFHFN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23707,
+              "size": 95062,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZppKbLjhV6NB4DJgRBApS8PDNROiwACb6wxG9qFHFMlgi0djlcI7QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADb6wxG9qFHFN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23706,
+              "size": 21825,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZppKbLjhV6NB4DJgRBApS8PDNROiwACb6wxG9qFHFMlgi0djlcI7QEAAwIAA20AAzgE",
+              "uniqueId": "AQADb6wxG9qFHFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 424673280,
+      "chatId": -1001434421634,
+      "date": 1658081793,
+      "dateIso": "2022-07-17T18:16:33Z",
+      "content": {
+        "duration": 5770,
+        "width": 1920,
+        "height": 1034,
+        "fileName": "Spaceballs - 1987.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23711,
+          "size": 2066421302,
+          "remoteId": "BAACAgIAAx0CVX-JggACAZVpKbLjAAFSxQUK8UUxmTXO-V4kk0wAAkwMAAMIqEq4neMrOGLSSTgE",
+          "uniqueId": "AgADTAwAAwioSg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 172,
+          "file": {
+            "id": 23710,
+            "size": 9425,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBlWkpsuMAAVLFBQrxRTGZNc75XiSTTAACTAwAAwioSrid4ys4YtJJAQAHbQADOAQ",
+            "uniqueId": "AQADTAwAAwioSnI"
+          }
+        },
+        "caption": "Spaceballs - 1987"
+      }
+    },
+    {
+      "id": 423624704,
+      "chatId": -1001434421634,
+      "date": 1658081792,
+      "dateIso": "2022-07-17T18:16:32Z",
+      "text": "󠄿Titel: Spaceballs\nErscheinungsjahr: 1987\nLänge: 96 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nCharakter: President Skroob / Yogurt\nRegie: Mel Brooks\nTMDbRating: 6.8\nGenres: Komödie, Science Fiction",
+      "year": 1987,
+      "lengthMinutes": 96,
+      "fsk": 12,
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Mel Brooks",
+      "tmdbRating": 6.8,
+      "genres": [
+        "Komödie",
+        "Science Fiction"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/957-Spaceballs?language\u003dde-DE"
+    },
+    {
+      "id": 422576128,
+      "chatId": -1001434421634,
+      "date": 1658081792,
+      "dateIso": "2022-07-17T18:16:32Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 23715,
+              "size": 220492,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZNpKbLjD4RhIFRl1yRhEu3DlxG13QACO60xG1TM_VPyJ2XcwHKlFAEAAwIAA3cAAzgE",
+              "uniqueId": "AQADO60xG1TM_VN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 23714,
+              "size": 248249,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZNpKbLjD4RhIFRl1yRhEu3DlxG13QACO60xG1TM_VPyJ2XcwHKlFAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADO60xG1TM_VN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23713,
+              "size": 106458,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZNpKbLjD4RhIFRl1yRhEu3DlxG13QACO60xG1TM_VPyJ2XcwHKlFAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADO60xG1TM_VN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23712,
+              "size": 21841,
+              "remoteId": "AgACAgQAAx0CVX-JggACAZNpKbLjD4RhIFRl1yRhEu3DlxG13QACO60xG1TM_VPyJ2XcwHKlFAEAAwIAA20AAzgE",
+              "uniqueId": "AQADO60xG1TM_VNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 420478976,
+      "chatId": -1001434421634,
+      "date": 1658081782,
+      "dateIso": "2022-07-17T18:16:22Z",
+      "content": {
+        "duration": 6162,
+        "width": 640,
+        "height": 384,
+        "fileName": "Sein oder Nichtsein - 1983.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23717,
+          "size": 1029409801,
+          "remoteId": "BAACAgIAAx0CVX-JggACAZFpKbLjTUGL3KRXul9eZ89brFOV_gACswoAAswBGUpSSTEIwU2yhzgE",
+          "uniqueId": "AgADswoAAswBGUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 192,
+          "file": {
+            "id": 23716,
+            "size": 14047,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBkWkpsuNNQYvcpFe6X15nz1usU5X-AAKzCgACzAEZSlJJMQjBTbKHAQAHbQADOAQ",
+            "uniqueId": "AQADswoAAswBGUpy"
+          }
+        },
+        "caption": "Sein oder Nichtsein - 1983"
+      }
+    },
+    {
+      "id": 419430400,
+      "chatId": -1001434421634,
+      "date": 1658081782,
+      "dateIso": "2022-07-17T18:16:22Z",
+      "text": "󠄿Titel: Sein oder Nichtsein\nOriginaltitel: To Be or Not to Be\nErscheinungsjahr: 1983\nLänge: 107 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nCharakter: Dr. Frederick Bronski\nRegie: Alan Johnson\nTMDbRating: 6.8\nGenres: Komödie",
+      "year": 1983,
+      "lengthMinutes": 107,
+      "fsk": 12,
+      "originalTitle": "To Be or Not to Be",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Alan Johnson",
+      "tmdbRating": 6.8,
+      "genres": [
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/22998-To-Be-or-Not-to-Be?language\u003dde-DE"
+    },
+    {
+      "id": 418381824,
+      "chatId": -1001434421634,
+      "date": 1658081781,
+      "dateIso": "2022-07-17T18:16:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 808,
+            "height": 1212,
+            "file": {
+              "id": 23720,
+              "size": 190891,
+              "remoteId": "AgACAgQAAx0CVX-JggACAY9pKbLjDhaZyITXxfKpnQvBgWjFawACnawxG33PXVNurpT3HcBQ9QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADnawxG33PXVN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23719,
+              "size": 122955,
+              "remoteId": "AgACAgQAAx0CVX-JggACAY9pKbLjDhaZyITXxfKpnQvBgWjFawACnawxG33PXVNurpT3HcBQ9QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADnawxG33PXVN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23718,
+              "size": 27084,
+              "remoteId": "AgACAgQAAx0CVX-JggACAY9pKbLjDhaZyITXxfKpnQvBgWjFawACnawxG33PXVNurpT3HcBQ9QEAAwIAA20AAzgE",
+              "uniqueId": "AQADnawxG33PXVNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 416284672,
+      "chatId": -1001434421634,
+      "date": 1658081772,
+      "dateIso": "2022-07-17T18:16:12Z",
+      "content": {
+        "duration": 5536,
+        "width": 1918,
+        "height": 812,
+        "fileName": "Mel Brooks - Die verrückte Geschichte der Welt - 1981.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23722,
+          "size": 1965350948,
+          "remoteId": "BAACAgIAAx0CVX-JggACAY1pKbLjr4BgySdgAAEX59qodSrK2dwAAksVAAIVgPFIJmDHUl8gCuA4BA",
+          "uniqueId": "AgADSxUAAhWA8Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 136,
+          "file": {
+            "id": 23721,
+            "size": 7132,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBjWkpsuOvgGDJJ2AAARfn2qh1KsrZ3AACSxUAAhWA8UgmYMdSXyAK4AEAB20AAzgE",
+            "uniqueId": "AQADSxUAAhWA8Uhy"
+          }
+        },
+        "caption": "Mel Brooks - Die verrückte Geschichte der Welt - 1981"
+      }
+    },
+    {
+      "id": 415236096,
+      "chatId": -1001434421634,
+      "date": 1658081771,
+      "dateIso": "2022-07-17T18:16:11Z",
+      "text": "󠄿Titel: Mel Brooks - Die verrückte Geschichte der Welt\nOriginaltitel: History of the World: Part I\nErscheinungsjahr: 1981\nLänge: 92 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nCharakter: Moses/Comicus/Torquemada/Jacques/King Louis XVI\nRegie: Mel Brooks\nTMDbRating: 6.8\nGenres: Komödie",
+      "year": 1981,
+      "lengthMinutes": 92,
+      "fsk": 16,
+      "originalTitle": "History of the World: Part I",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Mel Brooks",
+      "tmdbRating": 6.8,
+      "genres": [
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/10156-History-of-the-World:-Part-I?language\u003dde-DE"
+    },
+    {
+      "id": 414187520,
+      "chatId": -1001434421634,
+      "date": 1658081771,
+      "dateIso": "2022-07-17T18:16:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 23726,
+              "size": 305081,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYtpKbLjRlRP4jjBz32DJBH8vPu0XAACZawxG3tWVVFRsmE4PXDe2QEAAwIAA3cAAzgE",
+              "uniqueId": "AQADZawxG3tWVVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 23725,
+              "size": 297018,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYtpKbLjRlRP4jjBz32DJBH8vPu0XAACZawxG3tWVVFRsmE4PXDe2QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADZawxG3tWVVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23724,
+              "size": 138120,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYtpKbLjRlRP4jjBz32DJBH8vPu0XAACZawxG3tWVVFRsmE4PXDe2QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADZawxG3tWVVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23723,
+              "size": 31375,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYtpKbLjRlRP4jjBz32DJBH8vPu0XAACZawxG3tWVVFRsmE4PXDe2QEAAwIAA20AAzgE",
+              "uniqueId": "AQADZawxG3tWVVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 408944640,
+      "chatId": -1001434421634,
+      "date": 1658081730,
+      "dateIso": "2022-07-17T18:15:30Z",
+      "content": {
+        "duration": 5645,
+        "width": 1920,
+        "height": 1040,
+        "fileName": "Mel Brooks  Höhenkoller - 1977.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23728,
+          "size": 2091265531,
+          "remoteId": "BAACAgIAAx0CVX-JggACAYZpKbLjXThN4aWq6ankPFiXmT-VKgACUQ8AAk3kKEmT40rD1F9GCzgE",
+          "uniqueId": "AgADUQ8AAk3kKEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 23727,
+            "size": 10994,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBhmkpsuNdOE3hparpqeQ8WJeZP5UqAAJRDwACTeQoSZPjSsPUX0YLAQAHbQADOAQ",
+            "uniqueId": "AQADUQ8AAk3kKEly"
+          }
+        },
+        "caption": "Mel Brooks’ Höhenkoller - 1977"
+      }
+    },
+    {
+      "id": 407896064,
+      "chatId": -1001434421634,
+      "date": 1658081730,
+      "dateIso": "2022-07-17T18:15:30Z",
+      "text": "󠄿Titel: Mel Brooks’ Höhenkoller\nOriginaltitel: High Anxiety\nErscheinungsjahr: 1977\nLänge: 94 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nCharakter: Richard H. Thorndyke\nRegie: Mel Brooks\nTMDbRating: 6.4\nGenres: Komödie",
+      "year": 1977,
+      "lengthMinutes": 94,
+      "fsk": 12,
+      "originalTitle": "High Anxiety",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Mel Brooks",
+      "tmdbRating": 6.4,
+      "genres": [
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/12535-High-Anxiety?language\u003dde-DE"
+    },
+    {
+      "id": 406847488,
+      "chatId": -1001434421634,
+      "date": 1658081730,
+      "dateIso": "2022-07-17T18:15:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 1200,
+            "file": {
+              "id": 23731,
+              "size": 218179,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYRpKbLjke_gpqwqrSmuBs5FJ_u0CQACcqwxG-s0NFFWorG6ahdELgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADcqwxG-s0NFF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23730,
+              "size": 152645,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYRpKbLjke_gpqwqrSmuBs5FJ_u0CQACcqwxG-s0NFFWorG6ahdELgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADcqwxG-s0NFF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23729,
+              "size": 32529,
+              "remoteId": "AgACAgQAAx0CVX-JggACAYRpKbLjke_gpqwqrSmuBs5FJ_u0CQACcqwxG-s0NFFWorG6ahdELgEAAwIAA20AAzgE",
+              "uniqueId": "AQADcqwxG-s0NFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 400556032,
+      "chatId": -1001434421634,
+      "date": 1658081710,
+      "dateIso": "2022-07-17T18:15:10Z",
+      "content": {
+        "duration": 6074,
+        "width": 1278,
+        "height": 692,
+        "fileName": "Frankenstein Junior - 1974.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23733,
+          "size": 2032236402,
+          "remoteId": "BAACAgIAAx0CVX-JggACAX5pKbLjWW9GUhuJOOP0NT7xLqvAWwACmwoAAuFsKEoeCUQFxVjjazgE",
+          "uniqueId": "AgADmwoAAuFsKEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 23732,
+            "size": 9594,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBfmkpsuNZb0ZSG4k44_Q1PvEuq8BbAAKbCgAC4WwoSh4JRAXFWONrAQAHbQADOAQ",
+            "uniqueId": "AQADmwoAAuFsKEpy"
+          }
+        },
+        "caption": "Frankenstein Junior - 1974"
+      }
+    },
+    {
+      "id": 399507456,
+      "chatId": -1001434421634,
+      "date": 1658081709,
+      "dateIso": "2022-07-17T18:15:09Z",
+      "text": "󠄿Titel: Frankenstein Junior\nOriginaltitel: Young Frankenstein\nErscheinungsjahr: 1974\nLänge: 106 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nCharakter: Werewolf / Cat Hit by Dart / Victor Frankenstein (voice)\nRegie: Mel Brooks\nTMDbRating: 7.9\nGenres: Komödie",
+      "year": 1974,
+      "lengthMinutes": 106,
+      "fsk": 12,
+      "originalTitle": "Young Frankenstein",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Mel Brooks",
+      "tmdbRating": 7.9,
+      "genres": [
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/3034-Young-Frankenstein?language\u003dde-DE"
+    },
+    {
+      "id": 398458880,
+      "chatId": -1001434421634,
+      "date": 1658081709,
+      "dateIso": "2022-07-17T18:15:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 1200,
+            "file": {
+              "id": 23736,
+              "size": 155218,
+              "remoteId": "AgACAgQAAx0CVX-JggACAXxpKbLjP6Bvg17lgvlHnVE6XHCW1QACs6sxG57YjVK7c34F3hrHQwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADs6sxG57YjVJ-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 23735,
+              "size": 111839,
+              "remoteId": "AgACAgQAAx0CVX-JggACAXxpKbLjP6Bvg17lgvlHnVE6XHCW1QACs6sxG57YjVK7c34F3hrHQwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADs6sxG57YjVJ9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 23734,
+              "size": 26570,
+              "remoteId": "AgACAgQAAx0CVX-JggACAXxpKbLjP6Bvg17lgvlHnVE6XHCW1QACs6sxG57YjVK7c34F3hrHQwEAAwIAA20AAzgE",
+              "uniqueId": "AQADs6sxG57YjVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 396361728,
+      "chatId": -1001434421634,
+      "date": 1658081699,
+      "dateIso": "2022-07-17T18:14:59Z",
+      "content": {
+        "duration": 5571,
+        "width": 1920,
+        "height": 800,
+        "fileName": "Der Wilde Wilde Westen - 1974.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23738,
+          "size": 2094439291,
+          "remoteId": "BAACAgIAAx0CVX-JggACAXppKbLj-0NesCppmg5-LS2PHouTBgACWBYAAq0MWUh8-vaxCWQgOjgE",
+          "uniqueId": "AgADWBYAAq0MWUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 23737,
+            "size": 5423,
+            "remoteId": "AAMCAgADHQJVf4mCAAIBemkpsuP7Q16wKmmaDn4tLY8ei5MGAAJYFgACrQxZSHz69rEJZCA6AQAHbQADOAQ",
+            "uniqueId": "AQADWBYAAq0MWUhy"
+          }
+        },
+        "caption": "Der Wilde Wilde Westen - 1974"
+      }
+    },
+    {
+      "id": 395313152,
+      "chatId": -1001434421634,
+      "date": 1658081699,
+      "dateIso": "2022-07-17T18:14:59Z",
+      "text": "󠄿Titel: Der Wilde Wilde Westen\nOriginaltitel: Blazing Saddles\nErscheinungsjahr: 1974\nLänge: 93 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nCharakter: Governor William J. Le Petomane / Indian Chief\nRegie: Mel Brooks\nTMDbRating: 7.3\nGenres: Western, Komödie",
+      "year": 1974,
+      "lengthMinutes": 93,
+      "fsk": 16,
+      "originalTitle": "Blazing Saddles",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Mel Brooks",
+      "tmdbRating": 7.3,
+      "genres": [
+        "Western",
+        "Komödie"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/11072-Blazing-Saddles?language\u003dde-DE"
+    }
+  ]
+}

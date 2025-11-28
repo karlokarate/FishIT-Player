@@ -1,0 +1,300 @@
+{
+  "chatId": -1001449448622,
+  "title": "ZDF Magazin Royale",
+  "exportedAt": "2025-11-28T14:47:42.287818956Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 994050048,
+      "senderId": {
+        "chatId": -1001449448622
+      },
+      "chatId": -1001449448622,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1661514096,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The account of the user that owns this channel has been inactive for the last 5 months. If it remains inactive in the next 17 days, that account will self-destruct and this channel may no longer have an owner."
+      }
+    },
+    {
+      "id": 993001472,
+      "senderId": {
+        "chatId": -1001449448622
+      },
+      "chatId": -1001449448622,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1661215094,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The account of the user that owns this channel has been inactive for the last 5 months. If it remains inactive in the next 20 days, that account will self-destruct and this channel may no longer have an owner."
+      }
+    },
+    {
+      "id": 991952896,
+      "senderId": {
+        "chatId": -1001449448622
+      },
+      "chatId": -1001449448622,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1660398525,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The account of the user that owns this channel has been inactive for the last 5 months. If it remains inactive in the next 29 days, that account will self-destruct and this channel may no longer have an owner."
+      }
+    },
+    {
+      "id": 990904320,
+      "chatId": -1001449448622,
+      "date": 1637832130,
+      "dateIso": "2021-11-25T09:22:10Z",
+      "text": "Hey na?",
+      "genres": []
+    },
+    {
+      "id": 989855744,
+      "senderId": {
+        "chatId": -1001449448622
+      },
+      "chatId": -1001449448622,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1636162560,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The account of the user that owns this channel has been inactive for the last 5 months. If it remains inactive in the next 20 days, that account will self-destruct and this channel may no longer have an owner."
+      }
+    },
+    {
+      "id": 988807168,
+      "chatId": -1001449448622,
+      "date": 1621445330,
+      "dateIso": "2021-05-19T17:28:50Z",
+      "text": "In den letzten Tagen wurden über 400 Menschen in Seenot gerettet. Und wer hatte damit nichts zu tun? Die Europäische Agentur für Grenz- und Küstenwache FRONTEX hatte damit nichts zu tun!\nhttps://zdfmagaz.in/frontex",
+      "genres": []
+    },
+    {
+      "id": 987758592,
+      "chatId": -1001449448622,
+      "date": 1620919245,
+      "dateIso": "2021-05-13T15:20:45Z",
+      "text": "Empfehlung für Burda, Bauer und Co. oder alle, die sonst nicht wissen, was Medienkompetenz ist. https://zdfmagaz.in/medienkompetenzseminar",
+      "genres": []
+    },
+    {
+      "id": 986710016,
+      "chatId": -1001449448622,
+      "date": 1620829199,
+      "dateIso": "2021-05-12T14:19:59Z",
+      "text": "Keiner ist vor der Justiz sicher, selbst ein Penatenkanzler nicht‼ https://www.derstandard.at/story/2000126587697/ermittlungen-gegen-kurz-und-seinen-kabinettschef-wegen-falschaussage",
+      "genres": []
+    },
+    {
+      "id": 985661440,
+      "chatId": -1001449448622,
+      "date": 1620828337,
+      "dateIso": "2021-05-12T14:05:37Z",
+      "text": "Glückwunsch! Sebastian Kurz wurde gestern mit den \"Freiheitspreises der Medien 2021“ ausgezeichnet ... https://www.derstandard.at/consent/tcf/story/2000122195416/satire-die-nicht-alles-darf-die-schwierige-geschichte-von-gute",
+      "genres": []
+    },
+    {
+      "id": 984612864,
+      "chatId": -1001449448622,
+      "date": 1620662795,
+      "dateIso": "2021-05-10T16:06:35Z",
+      "text": "Sebastian Kurz. Ein Macher, um keinen Fernsehauftritt verlegen, der sich in der Corona-Krise profiliert und überaus beliebt mit hohen Umfragewerten ist. Doch ist der österreichische Kanzler, der niedliche Kurz Sebastian in Wirklichkeit ein gefährlicher Erdapfel-Erdogan? https://youtu.be/kf1JDekzL00",
+      "genres": []
+    },
+    {
+      "id": 983564288,
+      "chatId": -1001449448622,
+      "date": 1620647393,
+      "dateIso": "2021-05-10T11:49:53Z",
+      "text": "Ach, was kann ein kleiner Penatenkanzler mit 600-Euro-Gel-Frisur der österreichischen Demokratie schon antun ...\nhttps://zdfmagaz.in/szsebastiankurz",
+      "genres": []
+    },
+    {
+      "id": 982515712,
+      "chatId": -1001449448622,
+      "date": 1620576025,
+      "dateIso": "2021-05-09T16:00:25Z",
+      "text": "Drei, zwoa, oas schreddern!\nhttps://www.zeit.de/politik/ausland/2019-07/oesterreich-sebastian-kurz-mitarbeiter-festplatten-vernichtung",
+      "genres": []
+    },
+    {
+      "id": 981467136,
+      "chatId": -1001449448622,
+      "date": 1620491829,
+      "dateIso": "2021-05-08T16:37:09Z",
+      "text": "Die vielen Ermittlungen gegen die türkise Ballhausplatz-Familie, so einfach wie möglich erklärt:\nhttps://zdfmagaz.in/derstandardoevp",
+      "genres": []
+    },
+    {
+      "id": 980418560,
+      "chatId": -1001449448622,
+      "date": 1620468594,
+      "dateIso": "2021-05-08T10:09:54Z",
+      "text": "Sebastian Kurz schafft ECHTE Veränderung für Legislative, Exekutive, Judikative und Medien! https://zdfmagaz.in/augsburgerallgemeinekurz",
+      "genres": []
+    },
+    {
+      "id": 979369984,
+      "chatId": -1001449448622,
+      "date": 1620425640,
+      "dateIso": "2021-05-07T22:14:00Z",
+      "text": "ZDF Magazin Royale Sondersendung zum Thema: Ist Österreich auf dem Weg zur autoritären Demokratien? https://zdfmagaz.in/sebastiankurz",
+      "genres": []
+    },
+    {
+      "id": 978321408,
+      "chatId": -1001449448622,
+      "date": 1620410823,
+      "dateIso": "2021-05-07T18:07:03Z",
+      "text": "Wir schauen JETZT die Sendung mit dem Laptop von Gernot Blümel, den wir beim Spazierengehen gefunden haben. \nkurz.zdf.de/zmr21tw/",
+      "genres": []
+    },
+    {
+      "id": 977272832,
+      "chatId": -1001449448622,
+      "date": 1620397030,
+      "dateIso": "2021-05-07T14:17:10Z",
+      "text": "Heute machen wir kurzen Prozess im ZDF Magazin Royale. 20 Uhr in der Mediathek und 23 Uhr im ZDF👆",
+      "genres": []
+    },
+    {
+      "id": 976224256,
+      "chatId": -1001449448622,
+      "date": 1620045020,
+      "dateIso": "2021-05-03T12:30:20Z",
+      "text": "Der frühere Chef der hessischen Filmförderung Joachim Mendig wurde entlassen, weil er sich mit Jörg Meuthen zum  \"anregenden Gedankenaustausch\" getroffen hat ...\nhttps://zdfmagaz.in/frfilmfoerderung",
+      "genres": []
+    },
+    {
+      "id": 975175680,
+      "chatId": -1001449448622,
+      "date": 1620044928,
+      "dateIso": "2021-05-03T12:28:48Z",
+      "text": "Die deutsche Filmförderung richtet mit geförderten Filmen wie \"Verrückt nach Fixi\" schon genug Unheil an. Jetzt mischt sich auch noch Die AfD ein und versucht, die deutsche Kulturlandschaft zu beeinflussen. 😡😡  \nhttps://zdfmagaz.in/spiegeldeutscherfilm",
+      "genres": []
+    },
+    {
+      "id": 974127104,
+      "chatId": -1001449448622,
+      "date": 1619972464,
+      "dateIso": "2021-05-02T16:21:04Z",
+      "text": "Für Frauen in der Hauptrolle will keiner sehen! Man sieht es an den erschreckenden Einspielergebnissen:\n“Studie: Filme mit weiblichem Star erfolgreicher als mit männlichem” \nhttps://zdfmagaz.in/zeitdeutscherfilm3",
+      "genres": []
+    },
+    {
+      "id": 973078528,
+      "chatId": -1001449448622,
+      "date": 1619955847,
+      "dateIso": "2021-05-02T11:44:07Z",
+      "text": "Mann, Mann, Mann – wen wunderts, dass es in Deutschland soooo viele gute Filme gibt? Deutscher Film hat aber nicht nur ein Problem mit Sexismus, sondern auch mit Rassismus\nhttps://zdfmagaz.in/fluterdeutscherfilm",
+      "genres": []
+    },
+    {
+      "id": 972029952,
+      "chatId": -1001449448622,
+      "date": 1619871211,
+      "dateIso": "2021-05-01T12:13:31Z",
+      "text": "Könnte man das deutsche Filmförderungssystem nicht mal reformieren❓  Damit der deutsche Film besser wird❓  Vorschläge dafür gibt es schon, zum Beispiel hier, in den “Frankfurter Positionen zur Zukunft des deutschen Films” von 2018:\nhttps://zdfmagaz.in/lichterfilmfestfilmfoerderung",
+      "genres": []
+    },
+    {
+      "id": 970981376,
+      "chatId": -1001449448622,
+      "date": 1619867843,
+      "dateIso": "2021-05-01T11:17:23Z",
+      "text": "Die guten deutschen Filme entstehen nicht wegen, sondern trotz des deutschen Filmförderungssystems. Aber wieso ist das eigentlich so? ⬇⬇⬇   \nhttps://zdfmagaz.in/zeitdeutscherfilm",
+      "genres": []
+    },
+    {
+      "id": 969932800,
+      "chatId": -1001449448622,
+      "date": 1619820144,
+      "dateIso": "2021-04-30T22:02:24Z",
+      "text": "Warum sind deutsche Filme so gut? 🎥✨🎬 https://zdfmagaz.in/deutscherfilm",
+      "genres": []
+    },
+    {
+      "id": 968884224,
+      "chatId": -1001449448622,
+      "date": 1619805730,
+      "dateIso": "2021-04-30T18:02:10Z",
+      "text": "Die heutige Sendung darf nicht abgefilmt werden. Raubkopierer sind Verbrecher! Deswegen ZDF Magazin Royale JETZT in der Mediathek gucken! kurz.zdf.de/zmr20/",
+      "genres": []
+    }
+  ]
+}

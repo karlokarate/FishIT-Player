@@ -1,0 +1,852 @@
+{
+  "chatId": -1001491030766,
+  "title": "John Carpenter",
+  "exportedAt": "2025-11-28T14:47:30.022018462Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 65011712,
+      "chatId": -1001491030766,
+      "date": 1680380914,
+      "dateIso": "2023-04-01T20:28:34Z",
+      "content": {
+        "duration": 4545,
+        "width": 1280,
+        "height": 720,
+        "fileName": "John Carpenter - Fürst der Dunkelheit - 2006.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5525,
+          "size": 1258236708,
+          "remoteId": "BAACAgIAAx0CWN9S7gADPmkpssIPVCjp2RxRoyy0yOYP4zXMAAK-JQACk_AxSUQ0PmLGlhLSOAQ",
+          "uniqueId": "AgADviUAApPwMUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5524,
+            "size": 7024,
+            "remoteId": "AAMCAgADHQJY31LuAAM-aSmywg9UKOnZHFGjLLTI5g_jNcwAAr4lAAKT8DFJRDQ-YsaWEtIBAAdtAAM4BA",
+            "uniqueId": "AQADviUAApPwMUly"
+          }
+        },
+        "caption": "John Carpenter - Fürst der Dunkelheit - 2006"
+      }
+    },
+    {
+      "id": 63963136,
+      "chatId": -1001491030766,
+      "date": 1680380914,
+      "dateIso": "2023-04-01T20:28:34Z",
+      "text": "Titel: John Carpenter - Fürst der Dunkelheit\nOriginaltitel: Big John\nErscheinungsjahr: 2006\nLänge: 75 Minuten\nProduktionsland: Frankreich\nRegie: Julien Dunand\nTMDbRating: 7.8 bei 10 Stimmen\nGenres: Dokumentarfilm",
+      "title": "John Carpenter - Fürst der Dunkelheit",
+      "year": 2006,
+      "lengthMinutes": 75,
+      "originalTitle": "Big John",
+      "productionCountry": "Frankreich",
+      "director": "Julien Dunand",
+      "genres": [
+        "Dokumentarfilm"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/172438-Big-John?language\u003dde-DE"
+    },
+    {
+      "id": 62914560,
+      "chatId": -1001491030766,
+      "date": 1680380913,
+      "dateIso": "2023-04-01T20:28:33Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 750,
+            "file": {
+              "id": 21015,
+              "size": 38689,
+              "remoteId": "AgACAgIAAx0CWN9S7gADPGkpssLbFnB_yaw8SvY0jCyLrzQcAAKTyTEbBYhASZib-UIqKfn5AQADAgADeAADOAQ",
+              "uniqueId": "AQADk8kxGwWIQEl9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21014,
+              "size": 16128,
+              "remoteId": "AgACAgIAAx0CWN9S7gADPGkpssLbFnB_yaw8SvY0jCyLrzQcAAKTyTEbBYhASZib-UIqKfn5AQADAgADbQADOAQ",
+              "uniqueId": "AQADk8kxGwWIQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001491030766,
+      "date": 1612502038,
+      "dateIso": "2021-02-05T05:13:58Z",
+      "content": {
+        "duration": 5829,
+        "width": 1920,
+        "height": 1040,
+        "fileName": "Das unsichtbare Auge - 1978.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21017,
+          "size": 1957164020,
+          "remoteId": "BAACAgIAAx0CWN9S7gADO2kpssL1zOwfE4eCQRtZXcMRZZg-AAILCwAClQXoSLSzlmAmAnZiOAQ",
+          "uniqueId": "AgADCwsAApUF6Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 21016,
+            "size": 8063,
+            "remoteId": "AAMCAgADHQJY31LuAAM7aSmywvXM7B8Th4JBG1ldwxFlmD4AAgsLAAKVBehItLOWYCYCdmIBAAdtAAM4BA",
+            "uniqueId": "AQADCwsAApUF6Ehy"
+          }
+        },
+        "caption": "Das unsichtbare Auge - 1978"
+      }
+    },
+    {
+      "id": 60817408,
+      "chatId": -1001491030766,
+      "date": 1612502031,
+      "dateIso": "2021-02-05T05:13:51Z",
+      "text": "󠄿Titel: Das unsichtbare Auge\nOriginaltitel: Someone\u0027s Watching Me!\nErscheinungsjahr: 1978\nLänge: 93 Minuten\nProduktionsland: Vereinigte Staaten\nRegie: John Carpenter\nTMDbRating: 6.4\nGenres: Horror, Mystery, TV-Film, Thriller",
+      "year": 1978,
+      "lengthMinutes": 93,
+      "originalTitle": "Someone\u0027s Watching Me!",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "John Carpenter",
+      "tmdbRating": 6.4,
+      "genres": [
+        "Horror",
+        "Mystery",
+        "TV-Film",
+        "Thriller"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/31428-Someone\u0027s-Watching-Me!?language\u003dde-DE"
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001491030766,
+      "date": 1612502031,
+      "dateIso": "2021-02-05T05:13:51Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 838,
+            "height": 1187,
+            "file": {
+              "id": 21020,
+              "size": 157081,
+              "remoteId": "AgACAgQAAx0CWN9S7gADOWkpssLq1ORmxSQoxDJZ3LZkDUUFAALVqzEbVp3tUODPnzKKga19AQADAgADeQADOAQ",
+              "uniqueId": "AQAD1asxG1ad7VB-"
+            }
+          },
+          {
+            "width": 565,
+            "height": 800,
+            "file": {
+              "id": 21019,
+              "size": 100093,
+              "remoteId": "AgACAgQAAx0CWN9S7gADOWkpssLq1ORmxSQoxDJZ3LZkDUUFAALVqzEbVp3tUODPnzKKga19AQADAgADeAADOAQ",
+              "uniqueId": "AQAD1asxG1ad7VB9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 21018,
+              "size": 21465,
+              "remoteId": "AgACAgQAAx0CWN9S7gADOWkpssLq1ORmxSQoxDJZ3LZkDUUFAALVqzEbVp3tUODPnzKKga19AQADAgADbQADOAQ",
+              "uniqueId": "AQAD1asxG1ad7VBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001491030766,
+      "date": 1612446802,
+      "dateIso": "2021-02-04T13:53:22Z",
+      "content": {
+        "duration": 5224,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Das-Ende - Assault_Anschlag_bei_Nacht.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21022,
+          "size": 2033474827,
+          "remoteId": "BAACAgIAAx0CWN9S7gADNWkpssIGW94u8VeCI3IKdomIu1nYAAK2CwACbcHhSDUUL1zfIgoaOAQ",
+          "uniqueId": "AgADtgsAAm3B4Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 21021,
+            "size": 684,
+            "remoteId": "AAMCAgADHQJY31LuAAM1aSmywgZb3i7xV4Ijcgp2iYi7WdgAArYLAAJtweFINRQvXN8iChoBAAdtAAM4BA",
+            "uniqueId": "AQADtgsAAm3B4Uhy"
+          }
+        },
+        "caption": "Assault - Anschlag bei Nacht - 1976"
+      }
+    },
+    {
+      "id": 54525952,
+      "chatId": -1001491030766,
+      "date": 1612446802,
+      "dateIso": "2021-02-04T13:53:22Z",
+      "text": "󠄿Titel: Assault - Anschlag bei Nacht\nOriginaltitel: Assault on Precinct 13\nErscheinungsjahr: 1976\nLänge: 91 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 18\nRegie: John Carpenter\nTMDbRating: 7.3\nGenres: Thriller, Action, Krimi",
+      "year": 1976,
+      "lengthMinutes": 91,
+      "fsk": 18,
+      "originalTitle": "Assault on Precinct 13",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "John Carpenter",
+      "tmdbRating": 7.3,
+      "genres": [
+        "Thriller",
+        "Action",
+        "Krimi"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/17814-Assault-on-Precinct-13?language\u003dde-DE"
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001491030766,
+      "date": 1612446801,
+      "dateIso": "2021-02-04T13:53:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 1200,
+            "file": {
+              "id": 21025,
+              "size": 197700,
+              "remoteId": "AgACAgQAAx0CWN9S7gADM2kpssI4OnJGGOZNw_nIwcsLvT3GAAJJrDEb3wndUF7Jgzbjo7TYAQADAgADeQADOAQ",
+              "uniqueId": "AQADSawxG98J3VB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21024,
+              "size": 133620,
+              "remoteId": "AgACAgQAAx0CWN9S7gADM2kpssI4OnJGGOZNw_nIwcsLvT3GAAJJrDEb3wndUF7Jgzbjo7TYAQADAgADeAADOAQ",
+              "uniqueId": "AQADSawxG98J3VB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21023,
+              "size": 27482,
+              "remoteId": "AgACAgQAAx0CWN9S7gADM2kpssI4OnJGGOZNw_nIwcsLvT3GAAJJrDEb3wndUF7Jgzbjo7TYAQADAgADbQADOAQ",
+              "uniqueId": "AQADSawxG98J3VBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 49283072,
+      "chatId": -1001491030766,
+      "date": 1612300950,
+      "dateIso": "2021-02-02T21:22:30Z",
+      "content": {
+        "duration": 5325,
+        "width": 672,
+        "height": 288,
+        "fileName": "The Ward.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21027,
+          "size": 1061175022,
+          "remoteId": "BAACAgIAAx0CWN9S7gADL2kpssLK_-L2k6FGPGg3kHOjUhRdAAJMBAACrtxgSqH8fMlLw9UAATgE",
+          "uniqueId": "AgADTAQAAq7cYEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 137,
+          "file": {
+            "id": 21026,
+            "size": 554,
+            "remoteId": "AAMCAgADHQJY31LuAAMvaSmywsr_4vaToUY8aDeQc6NSFF0AAkwEAAKu3GBKofx8yUvD1QABAQAHbQADOAQ",
+            "uniqueId": "AQADTAQAAq7cYEpy"
+          }
+        },
+        "caption": "The Ward - 2010"
+      }
+    },
+    {
+      "id": 48234496,
+      "chatId": -1001491030766,
+      "date": 1612300950,
+      "dateIso": "2021-02-02T21:22:30Z",
+      "text": "󠄿Titel: The Ward\nErscheinungsjahr: 2010\nLänge: 89 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 18\nRegie: John Carpenter\nTMDbRating: 5.8\nGenres: Horror, Thriller",
+      "year": 2010,
+      "lengthMinutes": 89,
+      "fsk": 18,
+      "productionCountry": "Vereinigte Staaten",
+      "director": "John Carpenter",
+      "tmdbRating": 5.8,
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/45657-The-Ward?language\u003dde-DE"
+    },
+    {
+      "id": 47185920,
+      "chatId": -1001491030766,
+      "date": 1612300950,
+      "dateIso": "2021-02-02T21:22:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 21031,
+              "size": 157919,
+              "remoteId": "AgACAgQAAx0CWN9S7gADLWkpssLBA9cdq6kPiyoZWaG9xkK-AALdqzEbfI3VUJnwijiWZsZFAQADAgADdwADOAQ",
+              "uniqueId": "AQAD3asxG3yN1VB8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 21030,
+              "size": 174432,
+              "remoteId": "AgACAgQAAx0CWN9S7gADLWkpssLBA9cdq6kPiyoZWaG9xkK-AALdqzEbfI3VUJnwijiWZsZFAQADAgADeQADOAQ",
+              "uniqueId": "AQAD3asxG3yN1VB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21029,
+              "size": 79777,
+              "remoteId": "AgACAgQAAx0CWN9S7gADLWkpssLBA9cdq6kPiyoZWaG9xkK-AALdqzEbfI3VUJnwijiWZsZFAQADAgADeAADOAQ",
+              "uniqueId": "AQAD3asxG3yN1VB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21028,
+              "size": 17236,
+              "remoteId": "AgACAgQAAx0CWN9S7gADLWkpssLBA9cdq6kPiyoZWaG9xkK-AALdqzEbfI3VUJnwijiWZsZFAQADAgADbQADOAQ",
+              "uniqueId": "AQAD3asxG3yN1VBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46137344,
+      "chatId": -1001491030766,
+      "date": 1612300933,
+      "dateIso": "2021-02-02T21:22:13Z",
+      "content": {
+        "duration": 5886,
+        "width": 720,
+        "height": 304,
+        "fileName": "Das Dorf der Verdammten - 1995.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21033,
+          "size": 1515866264,
+          "remoteId": "BAACAgIAAx0CWN9S7gADLGkpssJZyBISNDx1xzkh0y_MAQpaAALlCgAC49EYSLcqFbuG_pTkOAQ",
+          "uniqueId": "AgAD5QoAAuPRGEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 135,
+          "file": {
+            "id": 21032,
+            "size": 4733,
+            "remoteId": "AAMCAgADHQJY31LuAAMsaSmywlnIEhI0PHXHOSHTL8wBCloAAuUKAALj0RhItyoVu4b-lOQBAAdtAAM4BA",
+            "uniqueId": "AQAD5QoAAuPRGEhy"
+          }
+        },
+        "caption": "Das Dorf der Verdammten - 1995"
+      }
+    },
+    {
+      "id": 45088768,
+      "chatId": -1001491030766,
+      "date": 1612300933,
+      "dateIso": "2021-02-02T21:22:13Z",
+      "text": "󠄿Titel: Das Dorf der Verdammten\nOriginaltitel: Village of the Damned\nErscheinungsjahr: 1995\nLänge: 99 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nRegie: John Carpenter\nTMDbRating: 6\nGenres: Thriller, Horror, Science Fiction",
+      "year": 1995,
+      "lengthMinutes": 99,
+      "fsk": 16,
+      "originalTitle": "Village of the Damned",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "John Carpenter",
+      "tmdbRating": 6.0,
+      "genres": [
+        "Thriller",
+        "Horror",
+        "Science Fiction"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/12122-Village-of-the-Damned?language\u003dde-DE"
+    },
+    {
+      "id": 44040192,
+      "chatId": -1001491030766,
+      "date": 1612300933,
+      "dateIso": "2021-02-02T21:22:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1200,
+            "height": 1800,
+            "file": {
+              "id": 21037,
+              "size": 227751,
+              "remoteId": "AgACAgQAAx0CWN9S7gADKmkpssJxxjz5hSvxzUQpW7qyfRkPAAI_qzEb6SusUSEpBg8JU30FAQADAgADdwADOAQ",
+              "uniqueId": "AQADP6sxG-krrFF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 21036,
+              "size": 187609,
+              "remoteId": "AgACAgQAAx0CWN9S7gADKmkpssJxxjz5hSvxzUQpW7qyfRkPAAI_qzEb6SusUSEpBg8JU30FAQADAgADeQADOAQ",
+              "uniqueId": "AQADP6sxG-krrFF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21035,
+              "size": 88244,
+              "remoteId": "AgACAgQAAx0CWN9S7gADKmkpssJxxjz5hSvxzUQpW7qyfRkPAAI_qzEb6SusUSEpBg8JU30FAQADAgADeAADOAQ",
+              "uniqueId": "AQADP6sxG-krrFF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21034,
+              "size": 19373,
+              "remoteId": "AgACAgQAAx0CWN9S7gADKmkpssJxxjz5hSvxzUQpW7qyfRkPAAI_qzEb6SusUSEpBg8JU30FAQADAgADbQADOAQ",
+              "uniqueId": "AQADP6sxG-krrFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1001491030766,
+      "date": 1612300910,
+      "dateIso": "2021-02-02T21:21:50Z",
+      "content": {
+        "duration": 5456,
+        "width": 704,
+        "height": 304,
+        "fileName": "Halloween 1 - Die Nacht des Grauens - 1978.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21039,
+          "size": 1169836453,
+          "remoteId": "BAACAgIAAx0CWN9S7gADKWkpssIIXAAB4SYuBvC_w4d4Le4YAANvBAACkqfYSd59EbtkGhzcOAQ",
+          "uniqueId": "AgADbwQAApKn2Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 138,
+          "file": {
+            "id": 21038,
+            "size": 554,
+            "remoteId": "AAMCAgADHQJY31LuAAMpaSmywghcAAHhJi4G8L_Dh3gt7hgAA28EAAKSp9hJ3n0Ru2QaHNwBAAdtAAM4BA",
+            "uniqueId": "AQADbwQAApKn2Ely"
+          }
+        },
+        "caption": "Halloween - Die Nacht des Grauens - 1978"
+      }
+    },
+    {
+      "id": 41943040,
+      "chatId": -1001491030766,
+      "date": 1612300909,
+      "dateIso": "2021-02-02T21:21:49Z",
+      "text": "󠄿Titel: Halloween - Die Nacht des Grauens\nOriginaltitel: Halloween\nErscheinungsjahr: 1978\nLänge: 92 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nFilmreihe: Halloween Filmreihe\nRegie: John Carpenter\nTMDbRating: 7.6\nGenres: Horror, Thriller",
+      "year": 1978,
+      "lengthMinutes": 92,
+      "fsk": 16,
+      "collection": "Halloween Filmreihe",
+      "originalTitle": "Halloween",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "John Carpenter",
+      "tmdbRating": 7.6,
+      "genres": [
+        "Horror",
+        "Thriller"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/948-Halloween?language\u003dde-DE"
+    },
+    {
+      "id": 40894464,
+      "chatId": -1001491030766,
+      "date": 1612300909,
+      "dateIso": "2021-02-02T21:21:49Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 21043,
+              "size": 148031,
+              "remoteId": "AgACAgQAAx0CWN9S7gADJ2kpssLzGKqrvZK8mf54WCmBa1rMAALMqzEbSnTUULWmXQ5WF6J4AQADAgADdwADOAQ",
+              "uniqueId": "AQADzKsxG0p01FB8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 21042,
+              "size": 193458,
+              "remoteId": "AgACAgQAAx0CWN9S7gADJ2kpssLzGKqrvZK8mf54WCmBa1rMAALMqzEbSnTUULWmXQ5WF6J4AQADAgADeQADOAQ",
+              "uniqueId": "AQADzKsxG0p01FB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21041,
+              "size": 100116,
+              "remoteId": "AgACAgQAAx0CWN9S7gADJ2kpssLzGKqrvZK8mf54WCmBa1rMAALMqzEbSnTUULWmXQ5WF6J4AQADAgADeAADOAQ",
+              "uniqueId": "AQADzKsxG0p01FB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21040,
+              "size": 26122,
+              "remoteId": "AgACAgQAAx0CWN9S7gADJ2kpssLzGKqrvZK8mf54WCmBa1rMAALMqzEbSnTUULWmXQ5WF6J4AQADAgADbQADOAQ",
+              "uniqueId": "AQADzKsxG0p01FBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 35651584,
+      "chatId": -1001491030766,
+      "date": 1611706692,
+      "dateIso": "2021-01-27T00:18:12Z",
+      "content": {
+        "duration": 6039,
+        "width": 720,
+        "height": 306,
+        "fileName": "Flucht aus L.A. - 1996.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21045,
+          "size": 1571533518,
+          "remoteId": "BAACAgIAAx0CWN9S7gADImkpssI4B2J4bhtBfZT0xry7wWwcAALqCgAC49EYSBKgr0A0Cs0SOAQ",
+          "uniqueId": "AgAD6goAAuPRGEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 136,
+          "file": {
+            "id": 21044,
+            "size": 6093,
+            "remoteId": "AAMCAgADHQJY31LuAAMiaSmywjgHYnhuG0F9lPTGvLvBbBwAAuoKAALj0RhIEqCvQDQKzRIBAAdtAAM4BA",
+            "uniqueId": "AQAD6goAAuPRGEhy"
+          }
+        },
+        "caption": "Flucht aus L.A. - 1996"
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001491030766,
+      "date": 1611706692,
+      "dateIso": "2021-01-27T00:18:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1400,
+            "height": 2100,
+            "file": {
+              "id": 21049,
+              "size": 552140,
+              "remoteId": "AgACAgQAAx0CWN9S7gADIWkpssIquPr5ash5KBKNWW-o2VGAAAKYqzEbsX49UD8r1VKDeHa2AQADAgADdwADOAQ",
+              "uniqueId": "AQADmKsxG7F-PVB8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 21048,
+              "size": 279550,
+              "remoteId": "AgACAgQAAx0CWN9S7gADIWkpssIquPr5ash5KBKNWW-o2VGAAAKYqzEbsX49UD8r1VKDeHa2AQADAgADeQADOAQ",
+              "uniqueId": "AQADmKsxG7F-PVB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21047,
+              "size": 119545,
+              "remoteId": "AgACAgQAAx0CWN9S7gADIWkpssIquPr5ash5KBKNWW-o2VGAAAKYqzEbsX49UD8r1VKDeHa2AQADAgADeAADOAQ",
+              "uniqueId": "AQADmKsxG7F-PVB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21046,
+              "size": 24906,
+              "remoteId": "AgACAgQAAx0CWN9S7gADIWkpssIquPr5ash5KBKNWW-o2VGAAAKYqzEbsX49UD8r1VKDeHa2AQADAgADbQADOAQ",
+              "uniqueId": "AQADmKsxG7F-PVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 33554432,
+      "chatId": -1001491030766,
+      "date": 1611706384,
+      "dateIso": "2021-01-27T00:13:04Z",
+      "content": {
+        "duration": 5987,
+        "width": 720,
+        "height": 304,
+        "fileName": "Big Trouble in Little China - 1986.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21051,
+          "size": 2018648491,
+          "remoteId": "BAACAgIAAx0CWN9S7gADIGkpssI8FW4f36topDM5FQABbKuk6gACmQoAAmFNSUqckeJ3ASHOMjgE",
+          "uniqueId": "AgADmQoAAmFNSUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 135,
+          "file": {
+            "id": 21050,
+            "size": 554,
+            "remoteId": "AAMCAgADHQJY31LuAAMgaSmywjwVbh_fq2ikMzkVAAFsq6TqAAKZCgACYU1JSpyR4ncBIc4yAQAHbQADOAQ",
+            "uniqueId": "AQADmQoAAmFNSUpy"
+          }
+        },
+        "caption": "Big Trouble in Little China - 1986"
+      }
+    },
+    {
+      "id": 32505856,
+      "chatId": -1001491030766,
+      "date": 1611706384,
+      "dateIso": "2021-01-27T00:13:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 21055,
+              "size": 325580,
+              "remoteId": "AgACAgQAAx0CWN9S7gADH2kpssJOFMh2tMOqrm6KJcfr97fnAALUqzEbO3hcUtFRL69cQl8zAQADAgADdwADOAQ",
+              "uniqueId": "AQAD1KsxGzt4XFJ8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 21054,
+              "size": 304654,
+              "remoteId": "AgACAgQAAx0CWN9S7gADH2kpssJOFMh2tMOqrm6KJcfr97fnAALUqzEbO3hcUtFRL69cQl8zAQADAgADeQADOAQ",
+              "uniqueId": "AQAD1KsxGzt4XFJ-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21053,
+              "size": 140435,
+              "remoteId": "AgACAgQAAx0CWN9S7gADH2kpssJOFMh2tMOqrm6KJcfr97fnAALUqzEbO3hcUtFRL69cQl8zAQADAgADeAADOAQ",
+              "uniqueId": "AQAD1KsxGzt4XFJ9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21052,
+              "size": 28701,
+              "remoteId": "AgACAgQAAx0CWN9S7gADH2kpssJOFMh2tMOqrm6KJcfr97fnAALUqzEbO3hcUtFRL69cQl8zAQADAgADbQADOAQ",
+              "uniqueId": "AQAD1KsxGzt4XFJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 31457280,
+      "chatId": -1001491030766,
+      "date": 1611706150,
+      "dateIso": "2021-01-27T00:09:10Z",
+      "content": {
+        "duration": 4943,
+        "width": 688,
+        "height": 384,
+        "fileName": "Dark Star - 1974.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21057,
+          "size": 1131706664,
+          "remoteId": "BAACAgIAAx0CWN9S7gADHmkpssLqUEvU6iMdfzKuLfxEBXFQAAIgCgACzAEZSjHevCfif83XOAQ",
+          "uniqueId": "AgADIAoAAswBGUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21056,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJY31LuAAMeaSmywupQS9TqIx1_Mq4t_EQFcVAAAiAKAALMARlKMd68J-J_zdcBAAdtAAM4BA",
+            "uniqueId": "AQADIAoAAswBGUpy"
+          }
+        },
+        "caption": "Dark Star - Finsterer Stern - 1974"
+      }
+    },
+    {
+      "id": 30408704,
+      "chatId": -1001491030766,
+      "date": 1611706150,
+      "dateIso": "2021-01-27T00:09:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 21061,
+              "size": 75072,
+              "remoteId": "AgACAgQAAx0CWN9S7gADHWkpssJnf7T-9IPLqoy8Hkgd8tnnAAIcqzEbUR0dUcd16OWG0BR-AQADAgADdwADOAQ",
+              "uniqueId": "AQADHKsxG1EdHVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 21060,
+              "size": 101339,
+              "remoteId": "AgACAgQAAx0CWN9S7gADHWkpssJnf7T-9IPLqoy8Hkgd8tnnAAIcqzEbUR0dUcd16OWG0BR-AQADAgADeQADOAQ",
+              "uniqueId": "AQADHKsxG1EdHVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 21059,
+              "size": 51650,
+              "remoteId": "AgACAgQAAx0CWN9S7gADHWkpssJnf7T-9IPLqoy8Hkgd8tnnAAIcqzEbUR0dUcd16OWG0BR-AQADAgADeAADOAQ",
+              "uniqueId": "AQADHKsxG1EdHVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 21058,
+              "size": 13621,
+              "remoteId": "AgACAgQAAx0CWN9S7gADHWkpssJnf7T-9IPLqoy8Hkgd8tnnAAIcqzEbUR0dUcd16OWG0BR-AQADAgADbQADOAQ",
+              "uniqueId": "AQADHKsxG1EdHVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29360128,
+      "chatId": -1001491030766,
+      "date": 1611705202,
+      "dateIso": "2021-01-26T23:53:22Z",
+      "content": {
+        "duration": 5947,
+        "width": 1920,
+        "height": 816,
+        "fileName": "Die Klapperschlange (1981).mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21063,
+          "size": 2089098002,
+          "remoteId": "BAACAgIAAx0CWN9S7gADHGkpssL8P3QSa5Jb_pcxe7yTnaYCAALpCAACyueASFnMhQIeG3olOAQ",
+          "uniqueId": "AgAD6QgAAsrngEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 136,
+          "file": {
+            "id": 21062,
+            "size": 554,
+            "remoteId": "AAMCAgADHQJY31LuAAMcaSmywvw_dBJrklv-lzF7vJOdpgIAAukIAALK54BIWcyFAh4beiUBAAdtAAM4BA",
+            "uniqueId": "AQAD6QgAAsrngEhy"
+          }
+        },
+        "caption": "Die Klapperschlange - 1981"
+      }
+    }
+  ]
+}

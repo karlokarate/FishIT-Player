@@ -1,0 +1,783 @@
+{
+  "chatId": -1002684422552,
+  "title": "Rick And Morty - Full HD",
+  "exportedAt": "2025-11-28T14:45:48.190193841Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 122683392,
+      "chatId": -1002684422552,
+      "date": 1757243154,
+      "dateIso": "2025-09-07T11:05:54Z",
+      "content": {
+        "duration": 1334,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E10 - Der heiße Rick.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4928,
+          "size": 1321616360,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAAN1aSmyaFGBl9vAblbgNZb_EE_C04EAAjSJAAL25tlJt0Jj1B_d5rQ4BA",
+          "uniqueId": "AgADNIkAAvbm2Uk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 4927,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA3VpKbJoUYGX28BuVuA1lv8QT8LTgQACNIkAAvbm2Um3QmPUH93mtAEAB20AAzgE",
+            "uniqueId": "AQADNIkAAvbm2Uly"
+          }
+        },
+        "caption": "Rick and Morty - S08 E10 - Der heiße Rick"
+      }
+    },
+    {
+      "id": 121634816,
+      "chatId": -1002684422552,
+      "date": 1757243151,
+      "dateIso": "2025-09-07T11:05:51Z",
+      "content": {
+        "duration": 1277,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E09 - Papa-Morty.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14933,
+          "size": 1321616668,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAAN0aSmyaCy6XaN_LlU4tmQgbfkoreQAAi6JAAL25tlJyibEREblSx84BA",
+          "uniqueId": "AgADLokAAvbm2Uk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14932,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA3RpKbJoLLpdo38uVTi2ZCBt-Sit5AACLokAAvbm2UnKJsRERuVLHwEAB20AAzgE",
+            "uniqueId": "AQADLokAAvbm2Uly"
+          }
+        },
+        "caption": "Rick and Morty - S08 E09 - Papa-Morty"
+      }
+    },
+    {
+      "id": 117440512,
+      "chatId": -1002684422552,
+      "date": 1756642207,
+      "dateIso": "2025-08-31T12:10:07Z",
+      "content": {
+        "duration": 1293,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E08 - Die fantastische Reise des Jerry.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14935,
+          "size": 1340468656,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANwaSmyaNPOnkhVsuVre62Aoa1fu_UAA3sAApOmgEmfb9hli4z53zgE",
+          "uniqueId": "AgAEewACk6aASQ"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14934,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA3BpKbJo086eSFWy5Wt7rYChrV-79QADewACk6aASZ9v2GWLjPnfAQAHbQADOAQ",
+            "uniqueId": "AQAEewACk6aASXI"
+          }
+        },
+        "caption": "Rick and Morty - S08 E08 - Die fantastische Reise des Jerry Smith"
+      }
+    },
+    {
+      "id": 116391936,
+      "chatId": -1002684422552,
+      "date": 1756642204,
+      "dateIso": "2025-08-31T12:10:04Z",
+      "content": {
+        "duration": 1299,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E07 - Ricker als Fiktion.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14937,
+          "size": 1310997821,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANvaSmyaB8UvGio0xDqXcJVxYiqrpMAAv16AAKTpoBJeI3WeCuHWr84BA",
+          "uniqueId": "AgAD_XoAApOmgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14936,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA29pKbJoHxS8aKjTEOpdwlXFiKqukwAC_XoAApOmgEl4jdZ4K4davwEAB20AAzgE",
+            "uniqueId": "AQAD_XoAApOmgEly"
+          }
+        },
+        "caption": "Rick and Morty - S08 E07 - Ricker als Fiktion"
+      }
+    },
+    {
+      "id": 112197632,
+      "chatId": -1002684422552,
+      "date": 1755785458,
+      "dateIso": "2025-08-21T14:10:58Z",
+      "content": {
+        "duration": 1267,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E06 - Der seltsame Fall des Bethjamin B.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14939,
+          "size": 1331278426,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANraSmyaHWdbpf4GFDUsxJkgRD6ufkAAqGWAAJxGChJZbswerV55zk4BA",
+          "uniqueId": "AgADoZYAAnEYKEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14938,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA2tpKbJodZ1ul_gYUNSzEmSBEPq5-QACoZYAAnEYKElluzB6tXnnOQEAB20AAzgE",
+            "uniqueId": "AQADoZYAAnEYKEly"
+          }
+        },
+        "caption": "Rick and Morty - S08 E06 - Der seltsame Fall des Bethjamin Button"
+      }
+    },
+    {
+      "id": 111149056,
+      "chatId": -1002684422552,
+      "date": 1755785455,
+      "dateIso": "2025-08-21T14:10:55Z",
+      "content": {
+        "duration": 1246,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E05 - Richie Rick.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14941,
+          "size": 1318584282,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANqaSmyaCWwAAFVplycH8xG2zlGk1rZAAKYlgACcRgoSWqLbm5H5XUDOAQ",
+          "uniqueId": "AgADmJYAAnEYKEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14940,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA2ppKbJoJbAAAVWmXJwfzEbbOUaTWtkAApiWAAJxGChJaotubkfldQMBAAdtAAM4BA",
+            "uniqueId": "AQADmJYAAnEYKEly"
+          }
+        },
+        "caption": "Rick and Morty - S08 E05 - Richie Rick"
+      }
+    },
+    {
+      "id": 106954752,
+      "chatId": -1002684422552,
+      "date": 1755085823,
+      "dateIso": "2025-08-13T11:50:23Z",
+      "content": {
+        "duration": 1303,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E04 - Die Letzte Versuchung Jerrys.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14943,
+          "size": 1320851506,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANmaSmyaESYz4Hub9WfWsWGOQx0-m8AAtyGAAI_oeBIU7OeoiHJSVk4BA",
+          "uniqueId": "AgAD3IYAAj-h4Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14942,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA2ZpKbJoRJjPge5v1Z9axYY5DHT6bwAC3IYAAj-h4EhTs56iIclJWQEAB20AAzgE",
+            "uniqueId": "AQAD3IYAAj-h4Ehy"
+          }
+        },
+        "caption": "Rick and Morty - S08 E04 - Die Letzte Versuchung Jerrys"
+      }
+    },
+    {
+      "id": 105906176,
+      "chatId": -1002684422552,
+      "date": 1755085820,
+      "dateIso": "2025-08-13T11:50:20Z",
+      "content": {
+        "duration": 1233,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E03 - Zwei glorRicke Halunken.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14945,
+          "size": 1333916878,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANlaSmyaG6a6UhPsVdxG8NJXj-tmdMAAuKGAAI_oeBIhNXcYpy6c7s4BA",
+          "uniqueId": "AgAD4oYAAj-h4Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14944,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA2VpKbJobprpSE-xV3Ebw0leP62Z0wAC4oYAAj-h4EiE1dxinLpzuwEAB20AAzgE",
+            "uniqueId": "AQAD4oYAAj-h4Ehy"
+          }
+        },
+        "caption": "Rick and Morty - S08 E03 - Zwei glorRicke Halunken"
+      }
+    },
+    {
+      "id": 102760448,
+      "chatId": -1002684422552,
+      "date": 1754779101,
+      "dateIso": "2025-08-09T22:38:21Z",
+      "content": {
+        "duration": 1275,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E02 - Walkürick.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14947,
+          "size": 1321043430,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANiaSmyaA9Uvf6M5yreOHHxZDAAAZJfAAL3fgACFT6wSOFDUOjKf6D0OAQ",
+          "uniqueId": "AgAD934AAhU-sEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14946,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA2JpKbJoD1S9_oznKt44cfFkMAABkl8AAvd-AAIVPrBI4UNQ6Mp_oPQBAAdtAAM4BA",
+            "uniqueId": "AQAD934AAhU-sEhy"
+          }
+        },
+        "caption": "Rick and Morty - S08 E02 - Walkürick"
+      }
+    },
+    {
+      "id": 100663296,
+      "chatId": -1002684422552,
+      "date": 1754779086,
+      "dateIso": "2025-08-09T22:38:06Z",
+      "content": {
+        "duration": 1348,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S08 E01 - Das Schweigen der Ladekabel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14949,
+          "size": 1333650284,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANgaSmyaKnMXzCLxdopk-VCSku6m4kAAud-AAIVPrBImYD8m7dr9kE4BA",
+          "uniqueId": "AgAD534AAhU-sEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14948,
+            "size": 9395,
+            "remoteId": "AAMCAgADIQUABKABCZgAA2BpKbJoqcxfMIvF2imT5UJKS7qbiQAC534AAhU-sEiZgPybt2v2QQEAB20AAzgE",
+            "uniqueId": "AQAD534AAhU-sEhy"
+          }
+        },
+        "caption": "Rick and Morty - S08 E01 - Das Schweigen der Ladekabel"
+      }
+    },
+    {
+      "id": 99614720,
+      "chatId": -1002684422552,
+      "date": 1754779083,
+      "dateIso": "2025-08-09T22:38:03Z",
+      "content": {
+        "duration": 1343,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E10 - Fear No Mort.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14951,
+          "size": 1129587770,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANfaSmyaMCRb8kg6NXeX181EsxGYoYAAnpGAAI063hKg16-E2-9IWA4BA",
+          "uniqueId": "AgADekYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14950,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA19pKbJowJFvySDo1d5fXzUSzEZihgACekYAAjTreEqDXr4Tb70hYAEAB20AAzgE",
+            "uniqueId": "AQADekYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E10 - Fear No Mort"
+      }
+    },
+    {
+      "id": 98566144,
+      "chatId": -1002684422552,
+      "date": 1754779080,
+      "dateIso": "2025-08-09T22:38:00Z",
+      "content": {
+        "duration": 1277,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E09 - Mort Ragnarick.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14953,
+          "size": 1129898779,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANeaSmyaFtoDtK4f493AAEP4A8SgexpAAJ9RgACNOt4SvyhS2muziNrOAQ",
+          "uniqueId": "AgADfUYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14952,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA15pKbJoW2gO0rh_j3cAAQ_gDxKB7GkAAn1GAAI063hK_KFLaa7OI2sBAAdtAAM4BA",
+            "uniqueId": "AQADfUYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E09 - Mort Ragnarick"
+      }
+    },
+    {
+      "id": 97517568,
+      "chatId": -1002684422552,
+      "date": 1754779077,
+      "dateIso": "2025-08-09T22:37:57Z",
+      "content": {
+        "duration": 1297,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E08 - Der Aufstand der Nummericons Der.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14955,
+          "size": 1126505460,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANdaSmyaM8iZjrxP5ArR3fDtzChshkAAnBGAAI063hKI_icbcy65YI4BA",
+          "uniqueId": "AgADcEYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14954,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA11pKbJozyJmOvE_kCtHd8O3MKGyGQACcEYAAjTreEoj-JxtzLrlggEAB20AAzgE",
+            "uniqueId": "AQADcEYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E08 - Der Aufstand der Nummericons Der Film"
+      }
+    },
+    {
+      "id": 96468992,
+      "chatId": -1002684422552,
+      "date": 1754779074,
+      "dateIso": "2025-08-09T22:37:54Z",
+      "content": {
+        "duration": 1298,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E07 - Wet Kuat Amortican Summer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14957,
+          "size": 1128110609,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANcaSmyaJ_nc40oJNFL6neh_p7pum0AAnZGAAI063hKnyQassNpNMA4BA",
+          "uniqueId": "AgADdkYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14956,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1xpKbJon-dzjSgk0Uvqd6H-num6bQACdkYAAjTreEqfJBqyw2k0wAEAB20AAzgE",
+            "uniqueId": "AQADdkYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E07 - Wet Kuat Amortican Summer"
+      }
+    },
+    {
+      "id": 95420416,
+      "chatId": -1002684422552,
+      "date": 1754779071,
+      "dateIso": "2025-08-09T22:37:51Z",
+      "content": {
+        "duration": 1290,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E06 - Die Rickmort Show.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14959,
+          "size": 1119955187,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANbaSmyaKu18t8DnSzd6eXV2RN2grcAAm9GAAI063hKDKpGLkZpDGY4BA",
+          "uniqueId": "AgADb0YAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14958,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1tpKbJoq7Xy3wOdLN3p5dXZE3aCtwACb0YAAjTreEoMqkYuRmkMZgEAB20AAzgE",
+            "uniqueId": "AQADb0YAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E06 - Die Rickmort Show"
+      }
+    },
+    {
+      "id": 94371840,
+      "chatId": -1002684422552,
+      "date": 1754779067,
+      "dateIso": "2025-08-09T22:37:47Z",
+      "content": {
+        "duration": 1316,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E05 - Zurück in die Unendlichkeit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14961,
+          "size": 1140982342,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANaaSmyaONlG9cFR8EiKT_glUe80IkAAn9GAAI063hKKC5Eb8O98Ts4BA",
+          "uniqueId": "AgADf0YAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14960,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1ppKbJo42Ub1wVHwSIpP-CVR7zQiQACf0YAAjTreEooLkRvw73xOwEAB20AAzgE",
+            "uniqueId": "AQADf0YAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E05 - Zurück in die Unendlichkeit"
+      }
+    },
+    {
+      "id": 93323264,
+      "chatId": -1002684422552,
+      "date": 1754779064,
+      "dateIso": "2025-08-09T22:37:44Z",
+      "content": {
+        "duration": 1301,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E04 - That s Amorte.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14963,
+          "size": 1127548977,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANZaSmyaMq9a2vMkubn44ecN9_5SewAAnNGAAI063hK-u8y63Gfq704BA",
+          "uniqueId": "AgADc0YAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14962,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1lpKbJoyr1ra8yS5ufjh5w33_lJ7AACc0YAAjTreEr67zLrcZ-rvQEAB20AAzgE",
+            "uniqueId": "AQADc0YAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E04 - That’s Amorte"
+      }
+    },
+    {
+      "id": 92274688,
+      "chatId": -1002684422552,
+      "date": 1754779061,
+      "dateIso": "2025-08-09T22:37:41Z",
+      "content": {
+        "duration": 1290,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E03 - Air Force Wong.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14965,
+          "size": 1099384960,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANYaSmyaPVmGyidTKjmCWxOv3BFkhwAAmxGAAI063hK-iYehH-0B-U4BA",
+          "uniqueId": "AgADbEYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14964,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1hpKbJo9WYbKJ1MqOYJbE6_cEWSHAACbEYAAjTreEr6Jh6Ef7QH5QEAB20AAzgE",
+            "uniqueId": "AQADbEYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E03 - Air Force Wong"
+      }
+    },
+    {
+      "id": 91226112,
+      "chatId": -1002684422552,
+      "date": 1754779058,
+      "dateIso": "2025-08-09T22:37:38Z",
+      "content": {
+        "duration": 1310,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E02 - Ein Jerrick kommt immer zu zweit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14967,
+          "size": 1127681445,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANXaSmyaHhGmvGhNyEErazsJBzx330AAnJGAAI063hKEftlAbP84jI4BA",
+          "uniqueId": "AgADckYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14966,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1dpKbJoeEaa8aE3IQStrOwkHPHffQACckYAAjTreEoR-2UBs_ziMgEAB20AAzgE",
+            "uniqueId": "AQADckYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E02 - Ein Jerrick kommt immer zu zweit"
+      }
+    },
+    {
+      "id": 89128960,
+      "chatId": -1002684422552,
+      "date": 1754779036,
+      "dateIso": "2025-08-09T22:37:16Z",
+      "content": {
+        "duration": 1293,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S07 E01 - Das erstaunliche Leben des Mr. Ka.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14969,
+          "size": 1130426835,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANVaSmyaCIg76y8t72S9WL2FHUlwfcAAmlGAAI063hK-lMgJIZ1pnw4BA",
+          "uniqueId": "AgADaUYAAjTreEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14968,
+            "size": 11273,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1VpKbJoIiDvrLy3vZL1YvYUdSXB9wACaUYAAjTreEr6UyAkhnWmfAEAB20AAzgE",
+            "uniqueId": "AQADaUYAAjTreEpy"
+          }
+        },
+        "caption": "Rick and Morty - S07 E01 - Das erstaunliche Leben des Mr. Kakapopoloch"
+      }
+    },
+    {
+      "id": 88080384,
+      "chatId": -1002684422552,
+      "date": 1754779033,
+      "dateIso": "2025-08-09T22:37:13Z",
+      "content": {
+        "duration": 1266,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S06 E10 - Weihnachten schlägt zurück.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14971,
+          "size": 691577211,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANUaSmyaKBwLy_4CN7sL2QBjAXoHMAAAt4hAAJMTXlJk9z5gFNReTo4BA",
+          "uniqueId": "AgAD3iEAAkxNeUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14970,
+            "size": 10276,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1RpKbJooHAvL_gI3uwvZAGMBegcwAAC3iEAAkxNeUmT3PmAU1F5OgEAB20AAzgE",
+            "uniqueId": "AQAD3iEAAkxNeUly"
+          }
+        },
+        "caption": "Rick and Morty - S06 E10 - Weihnachten schlägt zurück"
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1002684422552,
+      "date": 1754779030,
+      "dateIso": "2025-08-09T22:37:10Z",
+      "content": {
+        "duration": 1285,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S06 E09 - Die Ritter der Sonnenrunde.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14973,
+          "size": 699372037,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANTaSmyaOvFg6pqYlO8czsRgiDDKWwAAuAhAAJMTXlJkOUM9jAWFN04BA",
+          "uniqueId": "AgAD4CEAAkxNeUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14972,
+            "size": 10276,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1NpKbJo68WDqmpiU7xzOxGCIMMpbAAC4CEAAkxNeUmQ5Qz2MBYU3QEAB20AAzgE",
+            "uniqueId": "AQAD4CEAAkxNeUly"
+          }
+        },
+        "caption": "Rick and Morty - S06 E09 - Die Ritter der Sonnenrunde"
+      }
+    },
+    {
+      "id": 85983232,
+      "chatId": -1002684422552,
+      "date": 1754779027,
+      "dateIso": "2025-08-09T22:37:07Z",
+      "content": {
+        "duration": 1290,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S06 E08 - Reine Pissesache.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14975,
+          "size": 702445047,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANSaSmyaFSrXCKFrAW0WC1VW-jPF1sAAuYhAAJMTXlJQtX2RcocY0A4BA",
+          "uniqueId": "AgAD5iEAAkxNeUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14974,
+            "size": 10276,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1JpKbJoVKtcIoWsBbRYLVVb6M8XWwAC5iEAAkxNeUlC1fZFyhxjQAEAB20AAzgE",
+            "uniqueId": "AQAD5iEAAkxNeUly"
+          }
+        },
+        "caption": "Rick and Morty - S06 E08 - Reine Pissesache"
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1002684422552,
+      "date": 1754779024,
+      "dateIso": "2025-08-09T22:37:04Z",
+      "content": {
+        "duration": 1225,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Rick and Morty - S06 E07 - Full Meta JackRick.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14977,
+          "size": 667343062,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANRaSmyaF38U4mawf57bQ3CHrU5NrMAAtwhAAJMTXlJVt3oH6dzIz04BA",
+          "uniqueId": "AgAD3CEAAkxNeUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14976,
+            "size": 10276,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1FpKbJoXfxTiZrB_nttDcIetTk2swAC3CEAAkxNeUlW3egfp3MjPQEAB20AAzgE",
+            "uniqueId": "AQAD3CEAAkxNeUly"
+          }
+        },
+        "caption": "Rick and Morty - S06 E07 - Full Meta JackRick"
+      }
+    },
+    {
+      "id": 83886080,
+      "chatId": -1002684422552,
+      "date": 1754779020,
+      "dateIso": "2025-08-09T22:37:00Z",
+      "content": {
+        "duration": 1294,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Rick and Morty - S06 E06 - JuRicksic Mort.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14979,
+          "size": 574248866,
+          "remoteId": "BAACAgIAAyEFAASgAQmYAANQaSmyaNOqkIdS_aj7Xsd5MxInNfkAAksrAALJ6RlIqsPDiyrx6Rg4BA",
+          "uniqueId": "AgADSysAAsnpGUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14978,
+            "size": 10236,
+            "remoteId": "AAMCAgADIQUABKABCZgAA1BpKbJo06qQh1L9qPtex3kzEic1-QACSysAAsnpGUiqw8OLKvHpGAEAB20AAzgE",
+            "uniqueId": "AQADSysAAsnpGUhy"
+          }
+        },
+        "caption": "Rick and Morty - S06 E06 - JuRicksic Mort"
+      }
+    }
+  ]
+}

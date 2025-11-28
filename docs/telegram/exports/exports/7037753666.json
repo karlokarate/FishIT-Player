@@ -1,0 +1,37 @@
+{
+  "chatId": 7037753666,
+  "title": "Matthias Stinn",
+  "exportedAt": "2025-11-28T14:46:47.945261335Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 44188041216,
+      "senderId": {
+        "userId": 7037753666
+      },
+      "chatId": 7037753666,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1711382450,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,836 @@
+{
+  "chatId": -1001203115098,
+  "title": "🎬⚠️ Filme ab: 2020 ⚠️🎥",
+  "exportedAt": "2025-11-28T14:45:23.469732380Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 18212716544,
+      "chatId": -1001203115098,
+      "date": 1764275357,
+      "dateIso": "2025-11-27T20:29:17Z",
+      "content": {
+        "duration": 7014,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Omniscient Reader - The Prophecy - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4843,
+          "size": 2087201001,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ9lpKbJTrwyZ016owjWeHCWMVqyW3AAC9IYAAha9KUmh3ogeKFJBvjgE",
+          "uniqueId": "AgAD9IYAAha9KUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 4842,
+            "size": 8338,
+            "remoteId": "AAMCAgADHQJHthRaAAJD2WkpslOvDJnTXqjCNZ4cJYxWrJbcAAL0hgACFr0pSaHeiB4oUkG-AQAHbQADOAQ",
+            "uniqueId": "AQAD9IYAAha9KUly"
+          }
+        },
+        "caption": "Omniscient Reader: The Prophecy - 2025"
+      }
+    },
+    {
+      "id": 18211667968,
+      "chatId": -1001203115098,
+      "date": 1764275357,
+      "dateIso": "2025-11-27T20:29:17Z",
+      "text": "󠄿Titel: Omniscient Reader: The Prophecy\nOriginaltitel: 전지적 독자 시점\nErscheinungsjahr: 2025\nLänge: 116 Minuten\nProduktionsland: Südkorea\nRegie: 김병우\nTMDbRating: 6.7\nGenres: Action, Abenteuer, Fantasy",
+      "year": 2025,
+      "lengthMinutes": 116,
+      "originalTitle": "전지적 독자 시점",
+      "productionCountry": "Südkorea",
+      "director": "김병우",
+      "tmdbRating": 6.7,
+      "genres": [
+        "Action",
+        "Abenteuer",
+        "Fantasy"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1131759-전지적-독자-시점?language\u003dde-DE"
+    },
+    {
+      "id": 18210619392,
+      "chatId": -1001203115098,
+      "date": 1764275357,
+      "dateIso": "2025-11-27T20:29:17Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1706,
+            "height": 2560,
+            "file": {
+              "id": 11800,
+              "size": 1109648,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9dpKbJTNF1wz99o5IM-f1sM8l0KwwACSgtrG5K8BVGrCXVVRVwcjgEAAwIAA3cAAzgE",
+              "uniqueId": "AQADSgtrG5K8BVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11799,
+              "size": 263671,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9dpKbJTNF1wz99o5IM-f1sM8l0KwwACSgtrG5K8BVGrCXVVRVwcjgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADSgtrG5K8BVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11798,
+              "size": 105384,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9dpKbJTNF1wz99o5IM-f1sM8l0KwwACSgtrG5K8BVGrCXVVRVwcjgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADSgtrG5K8BVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11797,
+              "size": 21212,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9dpKbJTNF1wz99o5IM-f1sM8l0KwwACSgtrG5K8BVGrCXVVRVwcjgEAAwIAA20AAzgE",
+              "uniqueId": "AQADSgtrG5K8BVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18209570816,
+      "chatId": -1001203115098,
+      "date": 1764058581,
+      "dateIso": "2025-11-25T08:16:21Z",
+      "content": {
+        "duration": 5339,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Eine fast perfekte Bescherung - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11802,
+          "size": 2092104066,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ9ZpKbJTD7nJO_C3Kjo8g-jFkl5c0gACB4gAAtWaAAFJL3OOnQUQ13Q4BA",
+          "uniqueId": "AgADB4gAAtWaAAFJ"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11801,
+            "size": 10945,
+            "remoteId": "AAMCAgADHQJHthRaAAJD1mkpslMPuck78LcqOjyD6MWSXlzSAAIHiAAC1ZoAAUkvc46dBRDXdAEAB20AAzgE",
+            "uniqueId": "AQADB4gAAtWaAAFJcg"
+          }
+        },
+        "caption": "Eine fast perfekte Bescherung - 2025"
+      }
+    },
+    {
+      "id": 18208522240,
+      "chatId": -1001203115098,
+      "date": 1764058581,
+      "dateIso": "2025-11-25T08:16:21Z",
+      "text": "󠄿Titel: Eine fast perfekte Bescherung\nErscheinungsjahr: 2025\nLänge: 89 Minuten\nProduktionsland: Deutschland\nRegie: Ulli Baumann\nTMDbRating: 0\nGenres: Komödie, Liebesfilm, Drama",
+      "year": 2025,
+      "lengthMinutes": 89,
+      "productionCountry": "Deutschland",
+      "director": "Ulli Baumann",
+      "tmdbRating": 0.0,
+      "genres": [
+        "Komödie",
+        "Liebesfilm",
+        "Drama"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1580654-Eine-fast-perfekte-Bescherung?language\u003dde-DE"
+    },
+    {
+      "id": 18207473664,
+      "chatId": -1001203115098,
+      "date": 1764058581,
+      "dateIso": "2025-11-25T08:16:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1059,
+            "height": 1500,
+            "file": {
+              "id": 11806,
+              "size": 260570,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9RpKbJTtU4jtaSk8oMZweCYmNXdegACXAxrG6TrLVGkH7_4vP0elwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADXAxrG6TrLVF8"
+            }
+          },
+          {
+            "width": 904,
+            "height": 1280,
+            "file": {
+              "id": 11805,
+              "size": 268134,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9RpKbJTtU4jtaSk8oMZweCYmNXdegACXAxrG6TrLVGkH7_4vP0elwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADXAxrG6TrLVF-"
+            }
+          },
+          {
+            "width": 565,
+            "height": 800,
+            "file": {
+              "id": 11804,
+              "size": 130860,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9RpKbJTtU4jtaSk8oMZweCYmNXdegACXAxrG6TrLVGkH7_4vP0elwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADXAxrG6TrLVF9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 11803,
+              "size": 30658,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9RpKbJTtU4jtaSk8oMZweCYmNXdegACXAxrG6TrLVGkH7_4vP0elwEAAwIAA20AAzgE",
+              "uniqueId": "AQADXAxrG6TrLVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18206425088,
+      "chatId": -1001203115098,
+      "date": 1764058573,
+      "dateIso": "2025-11-25T08:16:13Z",
+      "content": {
+        "duration": 6220,
+        "width": 1440,
+        "height": 1080,
+        "fileName": "Train Dreams - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11808,
+          "size": 2066735665,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ9NpKbJTuvxzfShMCpGSinpKfiIo9QACeIcAAtWaAAFJHffDVtn3QAY4BA",
+          "uniqueId": "AgADeIcAAtWaAAFJ"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 11807,
+            "size": 10839,
+            "remoteId": "AAMCAgADHQJHthRaAAJD02kpslO6_HN9KEwKkZKKekp-Iij1AAJ4hwAC1ZoAAUkd98NW2fdABgEAB20AAzgE",
+            "uniqueId": "AQADeIcAAtWaAAFJcg"
+          }
+        },
+        "caption": "Train Dreams - 2025"
+      }
+    },
+    {
+      "id": 18205376512,
+      "chatId": -1001203115098,
+      "date": 1764058570,
+      "dateIso": "2025-11-25T08:16:10Z",
+      "text": "󠄿Titel: Train Dreams\nErscheinungsjahr: 2025\nLänge: 102 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nRegie: Clint Bentley\nTMDbRating: 7.596\nGenres: Drama",
+      "year": 2025,
+      "lengthMinutes": 102,
+      "fsk": 12,
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Clint Bentley",
+      "tmdbRating": 7.596,
+      "genres": [
+        "Drama"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1241983-Train-Dreams?language\u003dde-DE"
+    },
+    {
+      "id": 18204327936,
+      "chatId": -1001203115098,
+      "date": 1764058570,
+      "dateIso": "2025-11-25T08:16:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 11812,
+              "size": 638793,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9FpKbJTLQVnHjebmAn0WYdB5pWymwACdgtrGyILLVF7E6pIJxywYwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADdgtrGyILLVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11811,
+              "size": 218724,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9FpKbJTLQVnHjebmAn0WYdB5pWymwACdgtrGyILLVF7E6pIJxywYwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADdgtrGyILLVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11810,
+              "size": 96540,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9FpKbJTLQVnHjebmAn0WYdB5pWymwACdgtrGyILLVF7E6pIJxywYwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADdgtrGyILLVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11809,
+              "size": 20349,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ9FpKbJTLQVnHjebmAn0WYdB5pWymwACdgtrGyILLVF7E6pIJxywYwEAAwIAA20AAzgE",
+              "uniqueId": "AQADdgtrGyILLVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18203279360,
+      "chatId": -1001203115098,
+      "date": 1764058566,
+      "dateIso": "2025-11-25T08:16:06Z",
+      "content": {
+        "duration": 5449,
+        "width": 1920,
+        "height": 804,
+        "fileName": "Stillstehen - 2021.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11814,
+          "size": 2023130135,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ9BpKbJThrKQ98vbZk8zc-crzhsfiQACzYQAAtgauUhsnhlqDp3nKzgE",
+          "uniqueId": "AgADzYQAAtgauUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 11813,
+            "size": 5159,
+            "remoteId": "AAMCAgADHQJHthRaAAJD0GkpslOGspD3y9tmTzNz5yvOGx-JAALNhAAC2Bq5SGyeGWoOnecrAQAHbQADOAQ",
+            "uniqueId": "AQADzYQAAtgauUhy"
+          }
+        },
+        "caption": "Stillstehen - 2021"
+      }
+    },
+    {
+      "id": 18202230784,
+      "chatId": -1001203115098,
+      "date": 1764058566,
+      "dateIso": "2025-11-25T08:16:06Z",
+      "text": "󠄿Titel: Stillstehen\nErscheinungsjahr: 2021\nLänge: 91 Minuten\nProduktionsland: Deutschland\nFSK: 12\nRegie: Elisa Mishto\nTMDbRating: 4.9\nGenres: Drama",
+      "year": 2021,
+      "lengthMinutes": 91,
+      "fsk": 12,
+      "productionCountry": "Deutschland",
+      "director": "Elisa Mishto",
+      "tmdbRating": 4.9,
+      "genres": [
+        "Drama"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/530554-Stillstehen?language\u003dde-DE"
+    },
+    {
+      "id": 18201182208,
+      "chatId": -1001203115098,
+      "date": 1764058566,
+      "dateIso": "2025-11-25T08:16:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 11818,
+              "size": 129250,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ85pKbJTDIxutGxFt8GSOrp_lwEk8AACibMxGxA4tFDwfLzawFwptwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADibMxGxA4tFB8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11817,
+              "size": 88325,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ85pKbJTDIxutGxFt8GSOrp_lwEk8AACibMxGxA4tFDwfLzawFwptwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADibMxGxA4tFB-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11816,
+              "size": 49222,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ85pKbJTDIxutGxFt8GSOrp_lwEk8AACibMxGxA4tFDwfLzawFwptwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADibMxGxA4tFB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11815,
+              "size": 14774,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ85pKbJTDIxutGxFt8GSOrp_lwEk8AACibMxGxA4tFDwfLzawFwptwEAAwIAA20AAzgE",
+              "uniqueId": "AQADibMxGxA4tFBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18200133632,
+      "chatId": -1001203115098,
+      "date": 1764013618,
+      "dateIso": "2025-11-24T19:46:58Z",
+      "content": {
+        "duration": 5481,
+        "width": 1920,
+        "height": 800,
+        "fileName": "Diablo - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11820,
+          "size": 2091869138,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ81pKbJTa6E3drvMA4rBkLduaKGQDgACn3gAAlKJ-Eh7bElstXfRPDgE",
+          "uniqueId": "AgADn3gAAlKJ-Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 11819,
+            "size": 5133,
+            "remoteId": "AAMCAgADHQJHthRaAAJDzWkpslNroTd2u8wDisGQt25ooZAOAAKfeAACUon4SHtsSWy1d9E8AQAHbQADOAQ",
+            "uniqueId": "AQADn3gAAlKJ-Ehy"
+          }
+        },
+        "caption": "Diablo - 2025"
+      }
+    },
+    {
+      "id": 18199085056,
+      "chatId": -1001203115098,
+      "date": 1764013618,
+      "dateIso": "2025-11-24T19:46:58Z",
+      "text": "󠄿Titel: Diablo\nErscheinungsjahr: 2025\nLänge: 91 Minuten\nProduktionsland: Vereinigte Staaten\nRegie: Ernesto Díaz Espinoza\nTMDbRating: 7.258\nGenres: Action, Thriller, Krimi",
+      "year": 2025,
+      "lengthMinutes": 91,
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Ernesto Díaz Espinoza",
+      "tmdbRating": 7.258,
+      "genres": [
+        "Action",
+        "Thriller",
+        "Krimi"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1127110-Diablo?language\u003dde-DE"
+    },
+    {
+      "id": 18198036480,
+      "chatId": -1001203115098,
+      "date": 1764013617,
+      "dateIso": "2025-11-24T19:46:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 11824,
+              "size": 943454,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8tpKbJTYBXJ-7gO9oI7FWJJDnaOwgACyrkxGwRhdVIxr8N-F2URMwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADyrkxGwRhdVJ8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11823,
+              "size": 243027,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8tpKbJTYBXJ-7gO9oI7FWJJDnaOwgACyrkxGwRhdVIxr8N-F2URMwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADyrkxGwRhdVJ-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11822,
+              "size": 96987,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8tpKbJTYBXJ-7gO9oI7FWJJDnaOwgACyrkxGwRhdVIxr8N-F2URMwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADyrkxGwRhdVJ9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11821,
+              "size": 20036,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8tpKbJTYBXJ-7gO9oI7FWJJDnaOwgACyrkxGwRhdVIxr8N-F2URMwEAAwIAA20AAzgE",
+              "uniqueId": "AQADyrkxGwRhdVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18196987904,
+      "chatId": -1001203115098,
+      "date": 1763837290,
+      "dateIso": "2025-11-22T18:48:10Z",
+      "content": {
+        "duration": 4924,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Frankie Freako - 2024.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11826,
+          "size": 2083036756,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ8ppKbJTR_mwlxFJOfOossYez5nXHAACfngAAlKJ-Egg2dIaXPcSgTgE",
+          "uniqueId": "AgADfngAAlKJ-Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11825,
+            "size": 9442,
+            "remoteId": "AAMCAgADHQJHthRaAAJDymkpslNH-bCXEUk586iyxh7PmdccAAJ-eAACUon4SCDZ0hpc9xKBAQAHbQADOAQ",
+            "uniqueId": "AQADfngAAlKJ-Ehy"
+          }
+        },
+        "caption": "Frankie Freako - 2024"
+      }
+    },
+    {
+      "id": 18195939328,
+      "chatId": -1001203115098,
+      "date": 1763837287,
+      "dateIso": "2025-11-22T18:48:07Z",
+      "text": "󠄿Titel: Frankie Freako\nErscheinungsjahr: 2024\nLänge: 85 Minuten\nProduktionsland: Kanada\nRegie: Steven Kostanski\nTMDbRating: 5.016\nGenres: Fantasy, Komödie, Horror",
+      "year": 2024,
+      "lengthMinutes": 85,
+      "productionCountry": "Kanada",
+      "director": "Steven Kostanski",
+      "tmdbRating": 5.016,
+      "genres": [
+        "Fantasy",
+        "Komödie",
+        "Horror"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1127407-Frankie-Freako?language\u003dde-DE"
+    },
+    {
+      "id": 18194890752,
+      "chatId": -1001203115098,
+      "date": 1763837287,
+      "dateIso": "2025-11-22T18:48:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 11830,
+              "size": 946205,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8hpKbJTT2set266tpLDWiZ5M9pILQACrLoxG1KoLFJEzD0etlZDLAEAAwIAA3cAAzgE",
+              "uniqueId": "AQADrLoxG1KoLFJ8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11829,
+              "size": 277946,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8hpKbJTT2set266tpLDWiZ5M9pILQACrLoxG1KoLFJEzD0etlZDLAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADrLoxG1KoLFJ-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11828,
+              "size": 119272,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8hpKbJTT2set266tpLDWiZ5M9pILQACrLoxG1KoLFJEzD0etlZDLAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADrLoxG1KoLFJ9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11827,
+              "size": 25192,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8hpKbJTT2set266tpLDWiZ5M9pILQACrLoxG1KoLFJEzD0etlZDLAEAAwIAA20AAzgE",
+              "uniqueId": "AQADrLoxG1KoLFJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18193842176,
+      "chatId": -1001203115098,
+      "date": 1763837282,
+      "dateIso": "2025-11-22T18:48:02Z",
+      "content": {
+        "duration": 6150,
+        "width": 1920,
+        "height": 1040,
+        "fileName": "Die Barbaren - Willkommen in der Bretagne - 2024.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11832,
+          "size": 2093534930,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ8dpKbJTU2MqVanTUkDVjcHkVhoaawACvpYAApkwyUg5YgaCJf8vfjgE",
+          "uniqueId": "AgADvpYAApkwyUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 11831,
+            "size": 9725,
+            "remoteId": "AAMCAgADHQJHthRaAAJDx2kpslNTYypVqdNSQNWNweRWGhprAAK-lgACmTDJSDliBoIl_y9-AQAHbQADOAQ",
+            "uniqueId": "AQADvpYAApkwyUhy"
+          }
+        },
+        "caption": "Die Barbaren - Willkommen in der Bretagne - 2024"
+      }
+    },
+    {
+      "id": 18192793600,
+      "chatId": -1001203115098,
+      "date": 1763837282,
+      "dateIso": "2025-11-22T18:48:02Z",
+      "text": "󠄿Titel: Die Barbaren - Willkommen in der Bretagne\nOriginaltitel: Les Barbares\nErscheinungsjahr: 2024\nLänge: 103 Minuten\nProduktionsland: Frankreich\nFSK: 12\nRegie: Julie Delpy\nTMDbRating: 6.141\nGenres: Komödie, Drama",
+      "year": 2024,
+      "lengthMinutes": 103,
+      "fsk": 12,
+      "originalTitle": "Les Barbares",
+      "productionCountry": "Frankreich",
+      "director": "Julie Delpy",
+      "tmdbRating": 6.141,
+      "genres": [
+        "Komödie",
+        "Drama"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1001736-Les-Barbares?language\u003dde-DE"
+    },
+    {
+      "id": 18191745024,
+      "chatId": -1001203115098,
+      "date": 1763837282,
+      "dateIso": "2025-11-22T18:48:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1131,
+            "height": 1600,
+            "file": {
+              "id": 11836,
+              "size": 300897,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8VpKbJT20yVJSg2P_EFjaHinUuNmQACVgxrGyUCzVByixDRlPDZxwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADVgxrGyUCzVB8"
+            }
+          },
+          {
+            "width": 905,
+            "height": 1280,
+            "file": {
+              "id": 11835,
+              "size": 254925,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8VpKbJT20yVJSg2P_EFjaHinUuNmQACVgxrGyUCzVByixDRlPDZxwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADVgxrGyUCzVB-"
+            }
+          },
+          {
+            "width": 566,
+            "height": 800,
+            "file": {
+              "id": 11834,
+              "size": 116662,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8VpKbJT20yVJSg2P_EFjaHinUuNmQACVgxrGyUCzVByixDRlPDZxwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADVgxrGyUCzVB9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 11833,
+              "size": 26510,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8VpKbJT20yVJSg2P_EFjaHinUuNmQACVgxrGyUCzVByixDRlPDZxwEAAwIAA20AAzgE",
+              "uniqueId": "AQADVgxrGyUCzVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18190696448,
+      "chatId": -1001203115098,
+      "date": 1763837272,
+      "dateIso": "2025-11-22T18:47:52Z",
+      "content": {
+        "duration": 5207,
+        "width": 720,
+        "height": 300,
+        "fileName": "Cody - Wie ein Hund die Welt verändert - 2020.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11838,
+          "size": 1973747608,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ8RpKbJTJSeQA4LvDmKG3n4OHfADvQACt4MAAtgauUiRBlCVVzQ4oDgE",
+          "uniqueId": "AgADt4MAAtgauUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 11837,
+            "size": 4874,
+            "remoteId": "AAMCAgADHQJHthRaAAJDxGkpslMlJ5ADgu8OYobefg4d8AO9AAK3gwAC2Bq5SJEGUJVXNDigAQAHbQADOAQ",
+            "uniqueId": "AQADt4MAAtgauUhy"
+          }
+        },
+        "caption": "Cody - Wie ein Hund die Welt verändert - 2020"
+      }
+    },
+    {
+      "id": 18189647872,
+      "chatId": -1001203115098,
+      "date": 1763837272,
+      "dateIso": "2025-11-22T18:47:52Z",
+      "text": "󠄿Titel: Cody - Wie ein Hund die Welt verändert\nOriginaltitel: Cody - The dog days are over\nErscheinungsjahr: 2020\nLänge: 89 Minuten\nProduktionsland: Schweiz\nRegie: Martin Skalsky\nTMDbRating: 7.5\nGenres:",
+      "year": 2020,
+      "lengthMinutes": 89,
+      "originalTitle": "Cody - The dog days are over",
+      "productionCountry": "Schweiz",
+      "director": "Martin Skalsky",
+      "tmdbRating": 7.5,
+      "genres": [],
+      "tmdbUrl": "https://www.themoviedb.org/movie/641865-Cody---The-dog-days-are-over?language\u003dde-DE"
+    },
+    {
+      "id": 18188599296,
+      "chatId": -1001203115098,
+      "date": 1763837272,
+      "dateIso": "2025-11-22T18:47:52Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 11842,
+              "size": 436379,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8JpKbJTjpv6JOLjsOypxowFnfCvpAAC8qsxG3VbxFP7j3yPoqyzLwEAAwIAA3cAAzgE",
+              "uniqueId": "AQAD8qsxG3VbxFN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11841,
+              "size": 156375,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8JpKbJTjpv6JOLjsOypxowFnfCvpAAC8qsxG3VbxFP7j3yPoqyzLwEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD8qsxG3VbxFN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11840,
+              "size": 74145,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8JpKbJTjpv6JOLjsOypxowFnfCvpAAC8qsxG3VbxFP7j3yPoqyzLwEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD8qsxG3VbxFN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11839,
+              "size": 17775,
+              "remoteId": "AgACAgQAAx0CR7YUWgACQ8JpKbJTjpv6JOLjsOypxowFnfCvpAAC8qsxG3VbxFP7j3yPoqyzLwEAAwIAA20AAzgE",
+              "uniqueId": "AQAD8qsxG3VbxFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 18187550720,
+      "chatId": -1001203115098,
+      "date": 1763837237,
+      "dateIso": "2025-11-22T18:47:17Z",
+      "content": {
+        "duration": 5428,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Lulli - 2021.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11844,
+          "size": 2018911555,
+          "remoteId": "BAACAgIAAx0CR7YUWgACQ8FpKbJTlXI0LyzdplcQybtIW6HodgACPIAAArQLmEgIw5sdenmeuTgE",
+          "uniqueId": "AgADPIAAArQLmEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11843,
+            "size": 9498,
+            "remoteId": "AAMCAgADHQJHthRaAAJDwWkpslOVcjQvLN2mVxDJu0hboeh2AAI8gAACtAuYSAjDmx16eZ65AQAHbQADOAQ",
+            "uniqueId": "AQADPIAAArQLmEhy"
+          }
+        },
+        "caption": "Lulli - 2021"
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "chatId": -1002192363834,
+  "title": "The Head - Full HD",
+  "exportedAt": "2025-11-28T14:46:26.605234894Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 48234496,
+      "chatId": -1002192363834,
+      "date": 1727075147,
+      "dateIso": "2024-09-23T07:05:47Z",
+      "content": {
+        "duration": 3066,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Head - S02 E06 - Episode 6.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5249,
+          "size": 2095171081,
+          "remoteId": "BAACAgIAAyEFAASCrNE6AAMuaSmyQceXkcEhG2WOzWFF5C5D8RwAAjtfAAIqqYlLymifhrvMuq84BA",
+          "uniqueId": "AgADO18AAiqpiUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5248,
+            "size": 8756,
+            "remoteId": "AAMCAgADIQUABIKs0ToAAy5pKbJBx5eRwSEbZY7NYUXkLkPxHAACO18AAiqpiUvKaJ-Gu8y6rwEAB20AAzgE",
+            "uniqueId": "AQADO18AAiqpiUty"
+          }
+        },
+        "caption": "The Head - S02 E06 - Episode 6"
+      }
+    }
+  ]
+}

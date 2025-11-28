@@ -1,0 +1,37 @@
+{
+  "chatId": 8064416680,
+  "title": "Kadriye",
+  "exportedAt": "2025-11-28T14:46:31.953174581Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45194674176,
+      "senderId": {
+        "userId": 8064416680
+      },
+      "chatId": 8064416680,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1730048683,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "chatId": 7929959145,
+  "title": "Faruk Tazeguel",
+  "exportedAt": "2025-11-28T14:46:28.431583690Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45339377664,
+      "senderId": {
+        "userId": 7929959145
+      },
+      "chatId": 7929959145,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1731519442,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

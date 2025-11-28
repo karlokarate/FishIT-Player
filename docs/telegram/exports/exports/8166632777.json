@@ -1,0 +1,37 @@
+{
+  "chatId": 8166632777,
+  "title": "Dennis Reger",
+  "exportedAt": "2025-11-28T14:46:33.779812448Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45057310720,
+      "senderId": {
+        "userId": 8166632777
+      },
+      "chatId": 8166632777,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729184924,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

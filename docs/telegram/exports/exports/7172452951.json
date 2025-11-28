@@ -1,0 +1,37 @@
+{
+  "chatId": 7172452951,
+  "title": "",
+  "exportedAt": "2025-11-28T14:46:48.958863999Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 44153438208,
+      "senderId": {
+        "userId": 7172452951
+      },
+      "chatId": 7172452951,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1709939869,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

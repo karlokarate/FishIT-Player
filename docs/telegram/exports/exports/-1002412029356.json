@@ -1,0 +1,388 @@
+{
+  "chatId": -1002412029356,
+  "title": "Landman - Full HD",
+  "exportedAt": "2025-11-28T14:45:30.149053928Z",
+  "count": 13,
+  "messages": [
+    {
+      "id": 48234496,
+      "chatId": -1002412029356,
+      "date": 1763593232,
+      "dateIso": "2025-11-19T23:00:32Z",
+      "content": {
+        "duration": 3022,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S02 E01 - Tod und Sonnenuntergang.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4872,
+          "size": 2047419616,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMuaSmyWQN8AAEwPd88F_plDLJZi8QLAAL9jAACArrgSGph-89lXEypOAQ",
+          "uniqueId": "AgAD_YwAAgK64Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 4871,
+            "size": 7861,
+            "remoteId": "AAMCAgADIQUABI_EpawAAy5pKbJZA3wAATA93zwX-mUMslmLxAsAAv2MAAICuuBIamH7z2VcTKkBAAdtAAM4BA",
+            "uniqueId": "AQAD_YwAAgK64Ehy"
+          }
+        },
+        "caption": "Landman - S02 E01 - Tod und Sonnenuntergang"
+      }
+    },
+    {
+      "id": 44040192,
+      "chatId": -1002412029356,
+      "date": 1736717511,
+      "dateIso": "2025-01-12T21:31:51Z",
+      "content": {
+        "duration": 4853,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E10 - Episode 10.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13317,
+          "size": 1381577924,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMqaSmyWaZki6q7uvilgIThiblKSncAAiJcAAJX_ChIJQ4tc5rdxYs4BA",
+          "uniqueId": "AgADIlwAAlf8KEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13316,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAyppKbJZpmSLqru6-KWAhOGJuUpKdwACIlwAAlf8KEglDi1zmt3FiwEAB20AAzgE",
+            "uniqueId": "AQADIlwAAlf8KEhy"
+          }
+        },
+        "caption": "Landman - S01 E10 - Episode 10"
+      }
+    },
+    {
+      "id": 39845888,
+      "chatId": -1002412029356,
+      "date": 1736286272,
+      "dateIso": "2025-01-07T21:44:32Z",
+      "content": {
+        "duration": 2924,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E09 - Episode 9.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13319,
+          "size": 1869538559,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMmaSmyWU1LZfpNDB3XcgnAoIeisQMAAjFlAAL8VdhLTMDpWR-JiEI4BA",
+          "uniqueId": "AgADMWUAAvxV2Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13318,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAyZpKbJZTUtl-k0MHddyCcCgh6KxAwACMWUAAvxV2EtMwOlZH4mIQgEAB20AAzgE",
+            "uniqueId": "AQADMWUAAvxV2Ety"
+          }
+        },
+        "caption": "Landman - S01 E09 - Episode 9"
+      }
+    },
+    {
+      "id": 38797312,
+      "chatId": -1002412029356,
+      "date": 1736286269,
+      "dateIso": "2025-01-07T21:44:29Z",
+      "content": {
+        "duration": 3309,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E08 - Episode 8.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13321,
+          "size": 1061848850,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMlaSmyWYewFyd4WYa9bu4OMfKhZeUAAgRjAALi_6BLKpC8j-9SuEc4BA",
+          "uniqueId": "AgADBGMAAuL_oEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13320,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAyVpKbJZh7AXJ3hZhr1u7g4x8qFl5QACBGMAAuL_oEsqkLyP71K4RwEAB20AAzgE",
+            "uniqueId": "AQADBGMAAuL_oEty"
+          }
+        },
+        "caption": "Landman - S01 E08 - Episode 8"
+      }
+    },
+    {
+      "id": 37748736,
+      "chatId": -1002412029356,
+      "date": 1736286266,
+      "dateIso": "2025-01-07T21:44:26Z",
+      "content": {
+        "duration": 2828,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E07 - Alle Straßen führen zum Bohrloch.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13323,
+          "size": 1862982411,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMkaSmyWffF6uOykn-wPfuR3A6GU7kAAmleAAIm2_BLp9vy-gFwLjA4BA",
+          "uniqueId": "AgADaV4AAibb8Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13322,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAyRpKbJZ98Xq47KSf7A9-5HcDoZTuQACaV4AAibb8Eun2_L6AXAuMAEAB20AAzgE",
+            "uniqueId": "AQADaV4AAibb8Ety"
+          }
+        },
+        "caption": "Landman - S01 E07 - Alle Straßen führen zum Bohrloch"
+      }
+    },
+    {
+      "id": 27262976,
+      "chatId": -1002412029356,
+      "date": 1735246853,
+      "dateIso": "2024-12-26T21:00:53Z",
+      "content": {
+        "duration": 2606,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E06 - Nicht gemein genug.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13325,
+          "size": 1846960527,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMaaSmyWcIlurU53ejSUARWeRqhDSEAAhZyAALornBLUDchdkry6Oo4BA",
+          "uniqueId": "AgADFnIAAuiucEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13324,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAxppKbJZwiW6tTnd6NJQBFZ5GqENIQACFnIAAuiucEtQNyF2SvLo6gEAB20AAzgE",
+            "uniqueId": "AQADFnIAAuiucEty"
+          }
+        },
+        "caption": "Landman - S01 E06 - Nicht gemein genug"
+      }
+    },
+    {
+      "id": 26214400,
+      "chatId": -1002412029356,
+      "date": 1735246849,
+      "dateIso": "2024-12-26T21:00:49Z",
+      "content": {
+        "duration": 3907,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E05 - Wo ist Zuhause.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13327,
+          "size": 1891703671,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMZaSmyWRgQFVQqN0y6F5-C4IP84YMAAg9yAALornBLa-7MdaJQ6mw4BA",
+          "uniqueId": "AgADD3IAAuiucEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13326,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAxlpKbJZGBAVVCo3TLoXn4Lgg_zhgwACD3IAAuiucEtr7sx1olDqbAEAB20AAzgE",
+            "uniqueId": "AQADD3IAAuiucEty"
+          }
+        },
+        "caption": "Landman - S01 E05 - Wo ist Zuhause"
+      }
+    },
+    {
+      "id": 17825792,
+      "chatId": -1002412029356,
+      "date": 1733221321,
+      "dateIso": "2024-12-03T10:22:01Z",
+      "content": {
+        "duration": 2646,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E04 - Der Reiz der zweiten Chancen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13329,
+          "size": 1862221928,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMRaSmyWWfSvCPSTEhxvv7yP0XdoVYAAqlbAAKfq3lKqcmatQTeNTQ4BA",
+          "uniqueId": "AgADqVsAAp-reUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13328,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAxFpKbJZZ9K8I9JMSHG-_vI_Rd2hVgACqVsAAp-reUqpyZq1BN41NAEAB20AAzgE",
+            "uniqueId": "AQADqVsAAp-reUpy"
+          }
+        },
+        "caption": "Landman - S01 E04 - Der Reiz der zweiten Chancen"
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1002412029356,
+      "date": 1733221318,
+      "dateIso": "2024-12-03T10:21:58Z",
+      "content": {
+        "duration": 3288,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E03 - Im Vorhof der Hölle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13331,
+          "size": 1875984723,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMQaSmyWQAB6R_g3RTdTtv-A6_tgv5mAALdWwACn6t5Stlg9H1_96d1OAQ",
+          "uniqueId": "AgAD3VsAAp-reUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13330,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAxBpKbJZAAHpH-DdFN1O2_4Dr-2C_mYAAt1bAAKfq3lK2WD0fX_3p3UBAAdtAAM4BA",
+            "uniqueId": "AQAD3VsAAp-reUpy"
+          }
+        },
+        "caption": "Landman - S01 E03 - Im Vorhof der Hölle"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1002412029356,
+      "date": 1733221315,
+      "dateIso": "2024-12-03T10:21:55Z",
+      "content": {
+        "duration": 3324,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E02 - Träumer und Versager.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13333,
+          "size": 1882316889,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMPaSmyWQ4VgHhAl8uvTUOL56HsvugAAhZcAAKfq3lKSyzOgDdGEC04BA",
+          "uniqueId": "AgADFlwAAp-reUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13332,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAw9pKbJZDhWAeECXy69NQ4vnoey-6AACFlwAAp-reUpLLM6AN0YQLQEAB20AAzgE",
+            "uniqueId": "AQADFlwAAp-reUpy"
+          }
+        },
+        "caption": "Landman - S01 E02 - Träumer und Versager"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1002412029356,
+      "date": 1733221312,
+      "dateIso": "2024-12-03T10:21:52Z",
+      "content": {
+        "duration": 3383,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Landman - S01 E01 - Landman.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 13335,
+          "size": 1895075816,
+          "remoteId": "BAACAgIAAyEFAASPxKWsAAMOaSmyWTYYslpc0Up-QBJnIV-J03YAAohbAAKfq3lKF_sAAZucuE1ZOAQ",
+          "uniqueId": "AgADiFsAAp-reUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 13334,
+            "size": 7722,
+            "remoteId": "AAMCAgADIQUABI_EpawAAw5pKbJZNhiyWlzRSn5AEmchX4nTdgACiFsAAp-reUoX-wABm5y4TVkBAAdtAAM4BA",
+            "uniqueId": "AQADiFsAAp-reUpy"
+          }
+        },
+        "caption": "Landman - S01 E01 - Landman"
+      }
+    },
+    {
+      "id": 2097152,
+      "chatId": -1002412029356,
+      "date": 1733210182,
+      "dateIso": "2024-12-03T07:16:22Z",
+      "text": "Tief im Herzen von West-Texas versuchen Raufbolde und Milliardäre, im Ölgeschäft schnell reich zu werden, als die Bohrinseln den Staat zu dominieren beginnen. Der Krisenmanager Tommy Norris versucht, sein Unternehmen an die Spitze zu bringen.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1002412029356
+      },
+      "chatId": -1002412029356,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1733210143,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Landman - Full HD"
+      }
+    }
+  ]
+}

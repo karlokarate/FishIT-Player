@@ -1,0 +1,32 @@
+{
+  "chatId": 658777831,
+  "title": "Katja Brandt",
+  "exportedAt": "2025-11-28T14:45:52.258470864Z",
+  "count": 3,
+  "messages": [
+    {
+      "id": 46568308736,
+      "chatId": 658777831,
+      "date": 1754291211,
+      "dateIso": "2025-08-04T07:06:51Z",
+      "text": "Hallo Christoph, ich stehe gerade vor deinem Laden, wir hatten um 9Uhr einen Termin und du bist nicht da. Ist alles ok? Melde dich doch mal, damit wir einen neuen Termin ausmachen können. Liebe Grüße Katja",
+      "genres": []
+    },
+    {
+      "id": 46543142912,
+      "chatId": 658777831,
+      "date": 1751362795,
+      "dateIso": "2025-07-01T09:39:55Z",
+      "text": "Hallo Christoph, bist du weiterhin krank? Die Eltern melden sich schon für morgen an. Ist das richtig so? Liebe Grüße Katja",
+      "genres": []
+    },
+    {
+      "id": 45504004096,
+      "chatId": 658777831,
+      "date": 1736233646,
+      "dateIso": "2025-01-07T07:07:26Z",
+      "text": "Guten Morgen Christoph, kommst du heute in den Stützpunkt? Liebe Grüße Katja",
+      "genres": []
+    }
+  ]
+}

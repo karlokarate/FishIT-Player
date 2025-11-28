@@ -1,0 +1,352 @@
+{
+  "chatId": 798902386,
+  "title": "Dauth",
+  "exportedAt": "2025-11-28T14:46:34.487817865Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 45048922112,
+      "chatId": 798902386,
+      "date": 1728582272,
+      "dateIso": "2024-10-10T17:44:32Z",
+      "text": "Dankeschön! Es war so schön dich zu sehen 💗 \nHoffe, wir kommen dich jetzt wieder öfter besuchen.",
+      "genres": []
+    },
+    {
+      "id": 45047873536,
+      "chatId": 798902386,
+      "date": 1728582193,
+      "dateIso": "2024-10-10T17:43:13Z",
+      "text": "hi, das war eine schöne Überraschung heute! Danke für den Besuch",
+      "genres": []
+    },
+    {
+      "id": 42733666304,
+      "chatId": 798902386,
+      "date": 1697269910,
+      "dateIso": "2023-10-14T07:51:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 33240,
+              "size": 196318,
+              "remoteId": "AgACAgIAAxkBAAKfMmkptcqkMmF1aDd-gbOQihHqZLbEAAJWzTEb8O9ZSXdCWYp9gIW6AQADAgADeQADOAQ",
+              "uniqueId": "AQADVs0xG_DvWUl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 33239,
+              "size": 105293,
+              "remoteId": "AgACAgIAAxkBAAKfMmkptcqkMmF1aDd-gbOQihHqZLbEAAJWzTEb8O9ZSXdCWYp9gIW6AQADAgADeAADOAQ",
+              "uniqueId": "AQADVs0xG_DvWUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 33238,
+              "size": 25026,
+              "remoteId": "AgACAgIAAxkBAAKfMmkptcqkMmF1aDd-gbOQihHqZLbEAAJWzTEb8O9ZSXdCWYp9gIW6AQADAgADbQADOAQ",
+              "uniqueId": "AQADVs0xG_DvWUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 42732617728,
+      "chatId": 798902386,
+      "date": 1697269868,
+      "dateIso": "2023-10-14T07:51:08Z",
+      "text": "Leider nicht. Die wurden einer Schule gespendet. Liebe Grüße aus der Backstube",
+      "genres": []
+    },
+    {
+      "id": 42731569152,
+      "chatId": 798902386,
+      "date": 1697268707,
+      "dateIso": "2023-10-14T07:31:47Z",
+      "text": "Hallo Fred, ich hoffe es geht euch gut.\nSag mal, gibt es eigentlich noch diese ausgemusterten Riesenbauklötze, von denen du mal gesprochen hast? LG, Chris",
+      "genres": []
+    },
+    {
+      "id": 42073063424,
+      "senderId": {
+        "userId": 798902386
+      },
+      "chatId": 798902386,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1689066318,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "animatedEmoji": {
+          "sticker": {
+            "id": 5130137765609996918,
+            "setId": 1258816259751983,
+            "width": 512,
+            "height": 512,
+            "emoji": "😍",
+            "format": {},
+            "fullType": {},
+            "thumbnail": {
+              "format": {},
+              "width": 128,
+              "height": 128,
+              "file": {
+                "id": 344,
+                "size": 4256,
+                "expectedSize": 4256,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAMCAQADFQABaSmyNaSHnJnlFGeR1mbEvqkDpKYAAnYCAAIe6TFHG_ITbweydrEBAAdtAAM4BA",
+                  "uniqueId": "AQADdgIAAh7pMUdy",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 4256
+                }
+              }
+            },
+            "sticker": {
+              "id": 343,
+              "size": 5032,
+              "expectedSize": 5032,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "CAACAgEAAxUAAWkpsjWkh5yZ5RRnkdZmxL6pA6SmAAJ2AgACHukxRxvyE28HsnaxOAQ",
+                "uniqueId": "AgADdgIAAh7pMUc",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 5032
+              }
+            }
+          },
+          "stickerWidth": 512,
+          "stickerHeight": 512,
+          "fitzpatrickType": 0
+        },
+        "emoji": "😍"
+      }
+    },
+    {
+      "id": 42072014848,
+      "chatId": 798902386,
+      "date": 1689062490,
+      "dateIso": "2023-07-11T08:01:30Z",
+      "text": "hab ich 💋",
+      "genres": []
+    },
+    {
+      "id": 42070966272,
+      "chatId": 798902386,
+      "date": 1689062468,
+      "dateIso": "2023-07-11T08:01:08Z",
+      "text": "Hi, hab leider Lenis Mütze vergessen mitzugeben. Vielleicht hast du noch eine andere Kopfbedeckung. 1000 Dank Fred",
+      "genres": []
+    },
+    {
+      "id": 41837133824,
+      "chatId": 798902386,
+      "date": 1687935710,
+      "dateIso": "2023-06-28T07:01:50Z",
+      "text": "guten Morgen! seid ihr gerade dabei Lenis Ausschlag beurteilen zu lassen?",
+      "genres": []
+    },
+    {
+      "id": 41782607872,
+      "chatId": 798902386,
+      "date": 1687412997,
+      "dateIso": "2023-06-22T05:49:57Z",
+      "text": "Leni kommt heute vor 9:00 💐",
+      "genres": []
+    },
+    {
+      "id": 41780510720,
+      "senderId": {
+        "userId": 798902386
+      },
+      "chatId": 798902386,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1687351262,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 19
+      }
+    },
+    {
+      "id": 41722839040,
+      "chatId": 798902386,
+      "date": 1687155861,
+      "dateIso": "2023-06-19T06:24:21Z",
+      "text": "Und zum Arzt gehe ich dann auch nicht 😉",
+      "genres": []
+    },
+    {
+      "id": 41721790464,
+      "chatId": 798902386,
+      "date": 1687155794,
+      "dateIso": "2023-06-19T06:23:14Z",
+      "text": "Hihi, mach ich",
+      "genres": []
+    },
+    {
+      "id": 41719693312,
+      "chatId": 798902386,
+      "date": 1687155740,
+      "dateIso": "2023-06-19T06:22:20Z",
+      "text": "sollte sie doch noch Rum husten, bitte Holzfass drunter halten. LG",
+      "genres": []
+    },
+    {
+      "id": 41718644736,
+      "chatId": 798902386,
+      "date": 1687155654,
+      "dateIso": "2023-06-19T06:20:54Z",
+      "text": "Leni bleibt Zuhause. Hustet Rum, nein rum 🤣 gehen mal zum Dr. Uguz\nLiebe Grüße und schönen Tag",
+      "genres": []
+    },
+    {
+      "id": 41626370048,
+      "chatId": 798902386,
+      "date": 1685984498,
+      "dateIso": "2023-06-05T17:01:38Z",
+      "text": "kein Problem",
+      "genres": []
+    },
+    {
+      "id": 41625321472,
+      "chatId": 798902386,
+      "date": 1685984318,
+      "dateIso": "2023-06-05T16:58:38Z",
+      "text": "Super danke dir",
+      "genres": []
+    },
+    {
+      "id": 41624272896,
+      "chatId": 798902386,
+      "date": 1685984199,
+      "dateIso": "2023-06-05T16:56:39Z",
+      "text": "ok",
+      "genres": []
+    },
+    {
+      "id": 41622175744,
+      "chatId": 798902386,
+      "date": 1685979358,
+      "dateIso": "2023-06-05T15:35:58Z",
+      "text": "Hallo Chris, ich muss morgen früher in der Schule sein, daher möchte ich ich Leni um 8 Uhr abgeben. Kannst du mir bitte eine kurze Bestätigung schicken?",
+      "genres": []
+    },
+    {
+      "id": 41146122240,
+      "chatId": 798902386,
+      "date": 1683699618,
+      "dateIso": "2023-05-10T06:20:18Z",
+      "text": "jetzt",
+      "genres": []
+    },
+    {
+      "id": 41145073664,
+      "chatId": 798902386,
+      "date": 1683698053,
+      "dateIso": "2023-05-10T05:54:13Z",
+      "text": "Moin Chris, ab wann bist du heute da?",
+      "genres": []
+    },
+    {
+      "id": 41111519232,
+      "chatId": 798902386,
+      "date": 1683526927,
+      "dateIso": "2023-05-08T06:22:07Z",
+      "text": "Danke dir",
+      "genres": []
+    },
+    {
+      "id": 41110470656,
+      "chatId": 798902386,
+      "date": 1683526566,
+      "dateIso": "2023-05-08T06:16:06Z",
+      "text": "ok, gute Besserung!!!",
+      "genres": []
+    },
+    {
+      "id": 41109422080,
+      "chatId": 798902386,
+      "date": 1683526536,
+      "dateIso": "2023-05-08T06:15:36Z",
+      "text": "Leni kommt heute nicht. Sie hat sich heute Nacht übergeben. Ist aber aktuell putzmunter und ich hoffe, sie kann morgen wieder kommen. LG f",
+      "genres": []
+    },
+    {
+      "id": 41031827456,
+      "chatId": 798902386,
+      "date": 1682961193,
+      "dateIso": "2023-05-01T17:13:13Z",
+      "text": "Wenigstens etwas. Blessings",
+      "genres": []
+    }
+  ]
+}

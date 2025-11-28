@@ -1,0 +1,37 @@
+{
+  "chatId": 7510523559,
+  "title": "Alejandro WAGENHALLE",
+  "exportedAt": "2025-11-28T14:46:17.430867031Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45746225152,
+      "senderId": {
+        "userId": 7510523559
+      },
+      "chatId": 7510523559,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1738269972,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}
