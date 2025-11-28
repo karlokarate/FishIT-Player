@@ -1,0 +1,41 @@
+{
+  "chatId": 519209890,
+  "title": "Lubberich",
+  "exportedAt": "2025-11-28T14:47:12.599267122Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42178969600,
+      "senderId": {
+        "userId": 519209890
+      },
+      "chatId": 519209890,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1689847393,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": true,
+        "discardReason": {},
+        "duration": 42
+      }
+    }
+  ]
+}

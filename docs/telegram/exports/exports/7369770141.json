@@ -1,0 +1,37 @@
+{
+  "chatId": 7369770141,
+  "title": "Bach Kaminholz Lev",
+  "exportedAt": "2025-11-28T14:46:38.357949272Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 44788875264,
+      "senderId": {
+        "userId": 7369770141
+      },
+      "chatId": 7369770141,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1723990362,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

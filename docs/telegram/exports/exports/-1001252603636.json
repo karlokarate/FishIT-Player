@@ -1,0 +1,793 @@
+{
+  "chatId": -1001252603636,
+  "title": "Graf Duckula",
+  "exportedAt": "2025-11-28T14:47:31.649359906Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 91226112,
+      "chatId": -1001252603636,
+      "date": 1611261219,
+      "dateIso": "2021-01-21T20:33:39Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 480,
+            "file": {
+              "id": 5598,
+              "size": 46757,
+              "remoteId": "AgACAgIAAx0CSqk29AADV2kpssKb0sXVzkpn9v_J5VomvoaqAALEsTEb3_VISCTNTHIJMX3QAQADAgADeQADOAQ",
+              "uniqueId": "AQADxLExG9_1SEh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 5597,
+              "size": 54939,
+              "remoteId": "AgACAgIAAx0CSqk29AADV2kpssKb0sXVzkpn9v_J5VomvoaqAALEsTEb3_VISCTNTHIJMX3QAQADAgADeAADOAQ",
+              "uniqueId": "AQADxLExG9_1SEh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 5596,
+              "size": 10472,
+              "remoteId": "AgACAgIAAx0CSqk29AADV2kpssKb0sXVzkpn9v_J5VomvoaqAALEsTEb3_VISCTNTHIJMX3QAQADAgADbQADOAQ",
+              "uniqueId": "AQADxLExG9_1SEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 89128960,
+      "chatId": -1001252603636,
+      "date": 1611260933,
+      "dateIso": "2021-01-21T20:28:53Z",
+      "content": {
+        "duration": 1321,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E07 - Wenn Zombies träumen.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20529,
+          "size": 170511769,
+          "remoteId": "BAACAgIAAx0CSqk29AADVWkpssJhRTl-v0GX6E4mePyjRDN5AAKJCwAC6ddISOgidi6T53YjOAQ",
+          "uniqueId": "AgADiQsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20528,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANVaSmywmFFOX6_QZfoTiZ4_KNEM3kAAokLAALp10hI6CJ2LpPndiMBAAdtAAM4BA",
+            "uniqueId": "AQADiQsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E07 - Wenn Zombies träumen"
+      }
+    },
+    {
+      "id": 88080384,
+      "chatId": -1001252603636,
+      "date": 1611260930,
+      "dateIso": "2021-01-21T20:28:50Z",
+      "content": {
+        "duration": 1335,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E06 - Ein Mountie kriegt immer seinen Man.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20531,
+          "size": 180094038,
+          "remoteId": "BAACAgIAAx0CSqk29AADVGkpssJ7qzVVP58LLZ545CITBvcVAAKKCwAC6ddISDaqplEQJpcHOAQ",
+          "uniqueId": "AgADigsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20530,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANUaSmywnurNVU_nwstnnjkIhMG9xUAAooLAALp10hINqqmURAmlwcBAAdtAAM4BA",
+            "uniqueId": "AQADigsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E06 - Ein Mountie kriegt immer seinen Mann"
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1001252603636,
+      "date": 1611260927,
+      "dateIso": "2021-01-21T20:28:47Z",
+      "content": {
+        "duration": 1323,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E05 - Venedig sehen und sterben.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20533,
+          "size": 212768466,
+          "remoteId": "BAACAgIAAx0CSqk29AADU2kpssJI1wABmwgbuJwjfzKjRNDB6gACvwsAAunXSEjd5o9AsQm5tjgE",
+          "uniqueId": "AgADvwsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20532,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANTaSmywkjXAAGbCBu4nCN_MqNE0MHqAAK_CwAC6ddISN3mj0CxCbm2AQAHbQADOAQ",
+            "uniqueId": "AQADvwsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E05 - Venedig sehen und sterben"
+      }
+    },
+    {
+      "id": 85983232,
+      "chatId": -1001252603636,
+      "date": 1611260924,
+      "dateIso": "2021-01-21T20:28:44Z",
+      "content": {
+        "duration": 1333,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E04 - Prinz Duckula.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20535,
+          "size": 212025886,
+          "remoteId": "BAACAgIAAx0CSqk29AADUmkpssJrzbqwh_uXrAWT8Nbf7hNoAAKTCwAC6ddISDV6ki0R65k2OAQ",
+          "uniqueId": "AgADkwsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20534,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANSaSmywmvNurCH-5esBZPw1t_uE2gAApMLAALp10hINXqSLRHrmTYBAAdtAAM4BA",
+            "uniqueId": "AQADkwsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E04 - Prinz Duckula"
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1001252603636,
+      "date": 1611260921,
+      "dateIso": "2021-01-21T20:28:41Z",
+      "content": {
+        "duration": 1330,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E03 - Drei Transylvanier im Schnee.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20537,
+          "size": 212020037,
+          "remoteId": "BAACAgIAAx0CSqk29AADUWkpssLmTLmjdkyJAfv-DCeC1liZAAKLCwAC6ddISJ3bF_T4aXfOOAQ",
+          "uniqueId": "AgADiwsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20536,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANRaSmywuZMuaN2TIkB-_4MJ4LWWJkAAosLAALp10hIndsX9Phpd84BAAdtAAM4BA",
+            "uniqueId": "AQADiwsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E03 - Drei Transylvanier im Schnee"
+      }
+    },
+    {
+      "id": 83886080,
+      "chatId": -1001252603636,
+      "date": 1611260918,
+      "dateIso": "2021-01-21T20:28:38Z",
+      "content": {
+        "duration": 1331,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E02 - New York, New York.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20539,
+          "size": 212022348,
+          "remoteId": "BAACAgIAAx0CSqk29AADUGkpssLYo9PnBHWUl9cGUW1yJpLAAAKMCwAC6ddISJJYFCDJJF5SOAQ",
+          "uniqueId": "AgADjAsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20538,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANQaSmywtij0-cEdZSX1wZRbXImksAAAowLAALp10hIklgUIMkkXlIBAAdtAAM4BA",
+            "uniqueId": "AQADjAsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E02 - New York, New York"
+      }
+    },
+    {
+      "id": 82837504,
+      "chatId": -1001252603636,
+      "date": 1611260914,
+      "dateIso": "2021-01-21T20:28:34Z",
+      "content": {
+        "duration": 1326,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S04 E01 - In 20 Minuten um die Welt.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20541,
+          "size": 212034247,
+          "remoteId": "BAACAgIAAx0CSqk29AADT2kpssJlFMjl14gspe7j5pXy_L_NAAKSCwAC6ddISPKXbPEgAV40OAQ",
+          "uniqueId": "AgADkgsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20540,
+            "size": 14809,
+            "remoteId": "AAMCAgADHQJKqTb0AANPaSmywmUUyOXXiCyl7uPmlfL8v80AApILAALp10hI8pds8SABXjQBAAdtAAM4BA",
+            "uniqueId": "AQADkgsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S04 E01 - In 20 Minuten um die Welt"
+      }
+    },
+    {
+      "id": 81788928,
+      "chatId": -1001252603636,
+      "date": 1611260911,
+      "dateIso": "2021-01-21T20:28:31Z",
+      "content": {
+        "duration": 1328,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E13 - Emma Ahoi!.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20543,
+          "size": 212042902,
+          "remoteId": "BAACAgIAAx0CSqk29AADTmkpssI00j3fjHAWDIzslFlpP5hBAAKQCwAC6ddISM8Ck54Xrd6FOAQ",
+          "uniqueId": "AgADkAsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20542,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANOaSmywjTSPd-McBYMjOyUWWk_mEEAApALAALp10hIzwKTnhet3oUBAAdtAAM4BA",
+            "uniqueId": "AQADkAsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E13 - Emma Ahoi!"
+      }
+    },
+    {
+      "id": 80740352,
+      "chatId": -1001252603636,
+      "date": 1611260908,
+      "dateIso": "2021-01-21T20:28:28Z",
+      "content": {
+        "duration": 1336,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E12 - 00 Duck - In geheimer Mission.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20545,
+          "size": 212038208,
+          "remoteId": "BAACAgIAAx0CSqk29AADTWkpssKfIEbKZrntnkF7rG3qEfD_AAKOCwAC6ddISF8lIWsUmee5OAQ",
+          "uniqueId": "AgADjgsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20544,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANNaSmywp8gRspmue2eQXusbeoR8P8AAo4LAALp10hIXyUhaxSZ57kBAAdtAAM4BA",
+            "uniqueId": "AQADjgsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E12 - 00 Duck - In geheimer Mission"
+      }
+    },
+    {
+      "id": 79691776,
+      "chatId": -1001252603636,
+      "date": 1611260905,
+      "dateIso": "2021-01-21T20:28:25Z",
+      "content": {
+        "duration": 1335,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E11 - Zurück zu den Anfängen.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20547,
+          "size": 212015049,
+          "remoteId": "BAACAgIAAx0CSqk29AADTGkpssIBAAFy5edC5yFYkNXYGPYfoAACkQsAAunXSEhmxBODCgWCqTgE",
+          "uniqueId": "AgADkQsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20546,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANMaSmywgEAAXLl50LnIViQ1dgY9h-gAAKRCwAC6ddISGbEE4MKBYKpAQAHbQADOAQ",
+            "uniqueId": "AQADkQsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E11 - Zurück zu den Anfängen"
+      }
+    },
+    {
+      "id": 77594624,
+      "chatId": -1001252603636,
+      "date": 1611260896,
+      "dateIso": "2021-01-21T20:28:16Z",
+      "content": {
+        "duration": 1329,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E10 - Rettet den Weihnachtsmann!.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20549,
+          "size": 212740399,
+          "remoteId": "BAACAgIAAx0CSqk29AADSmkpssIRUUe5Av9XLe7qpBi2wOlRAAK8CwAC6ddISIKcdczMKQFPOAQ",
+          "uniqueId": "AgADvAsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20548,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANKaSmywhFRR7kC_1ct7uqkGLbA6VEAArwLAALp10hIgpx1zMwpAU8BAAdtAAM4BA",
+            "uniqueId": "AQADvAsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E10 - Rettet den Weihnachtsmann!"
+      }
+    },
+    {
+      "id": 76546048,
+      "chatId": -1001252603636,
+      "date": 1611260893,
+      "dateIso": "2021-01-21T20:28:13Z",
+      "content": {
+        "duration": 1331,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E09 - Was für ein Theater!.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20551,
+          "size": 212682017,
+          "remoteId": "BAACAgIAAx0CSqk29AADSWkpssLskY1k8NOK0LHD30MbULMPAAK3CwAC6ddISIIy7O2q7zhQOAQ",
+          "uniqueId": "AgADtwsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20550,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANJaSmywuyRjWTw04rQscPfQxtQsw8AArcLAALp10hIgjLs7arvOFABAAdtAAM4BA",
+            "uniqueId": "AQADtwsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E09 - Was für ein Theater!"
+      }
+    },
+    {
+      "id": 75497472,
+      "chatId": -1001252603636,
+      "date": 1611260890,
+      "dateIso": "2021-01-21T20:28:10Z",
+      "content": {
+        "duration": 1339,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E08 - Der Held von Dodgey City.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20553,
+          "size": 212645004,
+          "remoteId": "BAACAgIAAx0CSqk29AADSGkpssKvhCu2x-Lgrw-o7vZ5dt2fAAKzCwAC6ddISKxMMaxKtj5hOAQ",
+          "uniqueId": "AgADswsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20552,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANIaSmywq-EK7bH4uCvD6ju9nl23Z8AArMLAALp10hIrEwxrEq2PmEBAAdtAAM4BA",
+            "uniqueId": "AQADswsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E08 - Der Held von Dodgey City"
+      }
+    },
+    {
+      "id": 74448896,
+      "chatId": -1001252603636,
+      "date": 1611260886,
+      "dateIso": "2021-01-21T20:28:06Z",
+      "content": {
+        "duration": 1340,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E07 - Mord im Schloss.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20555,
+          "size": 212735966,
+          "remoteId": "BAACAgIAAx0CSqk29AADR2kpssKDuB6_UYxGNCT71VmRYOraAALJCwAC6ddISAMUp93EZEsVOAQ",
+          "uniqueId": "AgADyQsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20554,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANHaSmywoO4Hr9RjEY0JPvVWZFg6toAAskLAALp10hIAxSn3cRkSxUBAAdtAAM4BA",
+            "uniqueId": "AQADyQsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E07 - Mord im Schloss"
+      }
+    },
+    {
+      "id": 73400320,
+      "chatId": -1001252603636,
+      "date": 1611260883,
+      "dateIso": "2021-01-21T20:28:03Z",
+      "content": {
+        "duration": 1336,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E06 - Schotten dicht - Leinen los.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20557,
+          "size": 212732812,
+          "remoteId": "BAACAgIAAx0CSqk29AADRmkpssJjezjrmhjwNb3kAoo8F-BNAAK7CwAC6ddISDkRN4ydb3OTOAQ",
+          "uniqueId": "AgADuwsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20556,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANGaSmywmN7OOuaGPA1veQCijwX4E0AArsLAALp10hIORE3jJ1vc5MBAAdtAAM4BA",
+            "uniqueId": "AQADuwsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E06 - Schotten dicht - Leinen los"
+      }
+    },
+    {
+      "id": 72351744,
+      "chatId": -1001252603636,
+      "date": 1611260880,
+      "dateIso": "2021-01-21T20:28:00Z",
+      "content": {
+        "duration": 1338,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E05 - Hinterm Haus heult Wulfi.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20559,
+          "size": 212733256,
+          "remoteId": "BAACAgIAAx0CSqk29AADRWkpssI-tpjJ4Zm5WE0mOvpxM3QpAALFCwAC6ddISLI_ysa3OqFHOAQ",
+          "uniqueId": "AgADxQsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20558,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANFaSmywj62mMnhmblYTSY6-nEzdCkAAsULAALp10hIsj_Kxrc6oUcBAAdtAAM4BA",
+            "uniqueId": "AQADxQsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E05 - Hinterm Haus heult Wulfi"
+      }
+    },
+    {
+      "id": 71303168,
+      "chatId": -1001252603636,
+      "date": 1611260877,
+      "dateIso": "2021-01-21T20:27:57Z",
+      "content": {
+        "duration": 1328,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E04 - Das indische Grabmal.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20561,
+          "size": 212731238,
+          "remoteId": "BAACAgIAAx0CSqk29AADRGkpssIru9xXCeFGu6c5qPRqG9IyAALHCwAC6ddISHbg1JOniFlVOAQ",
+          "uniqueId": "AgADxwsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20560,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANEaSmywiu73FcJ4Ua7pzmo9Gob0jIAAscLAALp10hIduDUk6eIWVUBAAdtAAM4BA",
+            "uniqueId": "AQADxwsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E04 - Das indische Grabmal"
+      }
+    },
+    {
+      "id": 70254592,
+      "chatId": -1001252603636,
+      "date": 1611260874,
+      "dateIso": "2021-01-21T20:27:54Z",
+      "content": {
+        "duration": 1335,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E03 - Die mobile Immobilie.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20563,
+          "size": 212730089,
+          "remoteId": "BAACAgIAAx0CSqk29AADQ2kpssIbYnZ9UCt5LYdP6977yqEqAALICwAC6ddISBVRZBBmlxI_OAQ",
+          "uniqueId": "AgADyAsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20562,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANDaSmywhtidn1QK3kth0_r3vvKoSoAAsgLAALp10hIFVFkEGaXEj8BAAdtAAM4BA",
+            "uniqueId": "AQADyAsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E03 - Die mobile Immobilie"
+      }
+    },
+    {
+      "id": 69206016,
+      "chatId": -1001252603636,
+      "date": 1611260871,
+      "dateIso": "2021-01-21T20:27:51Z",
+      "content": {
+        "duration": 1339,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E02 - Echt hinterm Mond.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20565,
+          "size": 212733172,
+          "remoteId": "BAACAgIAAx0CSqk29AADQmkpssJy16ltJH_In9hDYQISrtx0AALCCwAC6ddISLL0kgdvxREHOAQ",
+          "uniqueId": "AgADwgsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20564,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANCaSmywnLXqW0kf8if2ENhAhKu3HQAAsILAALp10hIsvSSB2_FEQcBAAdtAAM4BA",
+            "uniqueId": "AQADwgsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E02 - Echt hinterm Mond"
+      }
+    },
+    {
+      "id": 68157440,
+      "chatId": -1001252603636,
+      "date": 1611260867,
+      "dateIso": "2021-01-21T20:27:47Z",
+      "content": {
+        "duration": 1335,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S03 E01 - Privatdetektiv Philipp Macklow.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20567,
+          "size": 212731290,
+          "remoteId": "BAACAgIAAx0CSqk29AADQWkpssLNZgTdVI9lPOHXYJ7rdfZbAALECwAC6ddISE3s7Q1BQRl6OAQ",
+          "uniqueId": "AgADxAsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20566,
+            "size": 14794,
+            "remoteId": "AAMCAgADHQJKqTb0AANBaSmyws1mBN1Uj2U84ddgnut19lsAAsQLAALp10hITeztDUFBGXoBAAdtAAM4BA",
+            "uniqueId": "AQADxAsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S03 E01 - Privatdetektiv Philipp Macklow"
+      }
+    },
+    {
+      "id": 67108864,
+      "chatId": -1001252603636,
+      "date": 1611260864,
+      "dateIso": "2021-01-21T20:27:44Z",
+      "content": {
+        "duration": 1330,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S02 E19 - Freitag der 13.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20569,
+          "size": 212384351,
+          "remoteId": "BAACAgIAAx0CSqk29AADQGkpssLNSICiQAd788fzsruQbbeiAAKlCwAC6ddISO-L6SeJV2mwOAQ",
+          "uniqueId": "AgADpQsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20568,
+            "size": 14793,
+            "remoteId": "AAMCAgADHQJKqTb0AANAaSmyws1IgKJAB3vzx_Oyu5Btt6IAAqULAALp10hI74vpJ4lXabABAAdtAAM4BA",
+            "uniqueId": "AQADpQsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S02 E19 - Freitag der 13."
+      }
+    },
+    {
+      "id": 65011712,
+      "chatId": -1001252603636,
+      "date": 1611260856,
+      "dateIso": "2021-01-21T20:27:36Z",
+      "content": {
+        "duration": 1343,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S02 E18 - Atlantis, verlorene Stadt.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20571,
+          "size": 212446449,
+          "remoteId": "BAACAgIAAx0CSqk29AADPmkpssIsZWqI-YvVdQtRaGUqDfY6AAKuCwAC6ddISC9Jktc633E9OAQ",
+          "uniqueId": "AgADrgsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20570,
+            "size": 14793,
+            "remoteId": "AAMCAgADHQJKqTb0AAM-aSmywixlaoj5i9V1C1FoZSoN9joAAq4LAALp10hIL0mS1zrfcT0BAAdtAAM4BA",
+            "uniqueId": "AQADrgsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S02 E18 - Atlantis, verlorene Stadt"
+      }
+    },
+    {
+      "id": 63963136,
+      "chatId": -1001252603636,
+      "date": 1611260852,
+      "dateIso": "2021-01-21T20:27:32Z",
+      "content": {
+        "duration": 1333,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S02 E17 - ... oder das Ende vom Seil.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20573,
+          "size": 212732658,
+          "remoteId": "BAACAgIAAx0CSqk29AADPWkpssLh7NeixluOpjlloQ9nL_qEAAK6CwAC6ddISCATDwfQZ8PcOAQ",
+          "uniqueId": "AgADugsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20572,
+            "size": 14793,
+            "remoteId": "AAMCAgADHQJKqTb0AAM9aSmywuHs16LGW46mOWWhD2cv-oQAAroLAALp10hIIBMPB9Bnw9wBAAdtAAM4BA",
+            "uniqueId": "AQADugsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S02 E17 - ... oder das Ende vom Seil"
+      }
+    },
+    {
+      "id": 62914560,
+      "chatId": -1001252603636,
+      "date": 1611260849,
+      "dateIso": "2021-01-21T20:27:29Z",
+      "content": {
+        "duration": 1338,
+        "width": 576,
+        "height": 432,
+        "fileName": "Graf Duckula - S02 E16 - Das doppelte Entchen.avi",
+        "mimeType": "video/x-msvideo",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20575,
+          "size": 212731383,
+          "remoteId": "BAACAgIAAx0CSqk29AADPGkpssK6wZ1D60QiitaoyUwy1XZOAALACwAC6ddISBS2OhRZyEHOOAQ",
+          "uniqueId": "AgADwAsAAunXSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20574,
+            "size": 14793,
+            "remoteId": "AAMCAgADHQJKqTb0AAM8aSmywrrBnUPrRCKK1qjJTDLVdk4AAsALAALp10hIFLY6FFnIQc4BAAdtAAM4BA",
+            "uniqueId": "AQADwAsAAunXSEhy"
+          }
+        },
+        "caption": "Graf Duckula - S02 E16 - Das doppelte Entchen"
+      }
+    }
+  ]
+}

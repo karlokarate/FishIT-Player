@@ -1,0 +1,1532 @@
+{
+  "chatId": -1001134324536,
+  "title": "Repository / Buildstuben",
+  "exportedAt": "2025-11-28T14:46:17.838795346Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 2436890624,
+      "chatId": -1001134324536,
+      "date": 1523639038,
+      "dateIso": "2018-04-13T17:03:58Z",
+      "text": "https://t.me/joinchat/HtQ8-E1pvGb5_HrFQ1rahQ",
+      "genres": []
+    },
+    {
+      "id": 2435842048,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1523639037,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 13642,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "$ς€€ยเ๏๏",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 1695471364099538983,
+          "setId": 1695471364099538948,
+          "width": 512,
+          "height": 65,
+          "emoji": "😊",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 16,
+            "file": {
+              "id": 16303,
+              "size": 1468,
+              "expectedSize": 1468,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBAADHQJDnGs4AAIIyGkpsoXZOKjE39u6Q4vuAZ2WfWM6AAInAAM5hocXwIXhzjfF0DEBAAdtAAM4BA",
+                "uniqueId": "AQADJwADOYaHF3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 1468
+              }
+            }
+          },
+          "sticker": {
+            "id": 16304,
+            "size": 8794,
+            "expectedSize": 8794,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgQAAx0CQ5xrOAACCMhpKbKF2TioxN_bukOL7gGdln1jOgACJwADOYaHF8CF4c43xdAxOAQ",
+              "uniqueId": "AgADJwADOYaHFw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8794
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 2434793472,
+      "chatId": -1001134324536,
+      "date": 1518119457,
+      "dateIso": "2018-02-08T19:50:57Z",
+      "content": {
+        "duration": 30,
+        "width": 848,
+        "height": 464,
+        "fileName": "Addon.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16306,
+          "size": 4360912,
+          "remoteId": "BAACAgIAAx0CQ5xrOAACCRJpKbKFK83tB1wHgvaj7Hdgm1aDqgACLwEAAhXX6UsZNAhrK8AAAYY4BA",
+          "uniqueId": "AgADLwEAAhXX6Us"
+        },
+        "thumbnail": {
+          "width": 90,
+          "height": 49,
+          "file": {
+            "id": 16305,
+            "size": 2797,
+            "remoteId": "AAMCAgADHQJDnGs4AAIJEmkpsoUrze0HXAeC9qPsd2CbVoOqAAIvAQACFdfpSxk0CGsrwAABhgEAB3MAAzgE",
+            "uniqueId": "AQADLwEAAhXX6Ut4"
+          }
+        },
+        "caption": "Buildstuben FM und Hörspiel Addon Bald in der Repo enthalten ( Video von M.G. )"
+      }
+    },
+    {
+      "id": 2431647744,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1518042478,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 13267,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 1695471364099538983,
+          "setId": 1695471364099538948,
+          "width": 512,
+          "height": 65,
+          "emoji": "😊",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 16,
+            "file": {
+              "id": 16303,
+              "size": 1468,
+              "expectedSize": 1468,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBAADHQJDnGs4AAIIyGkpsoXZOKjE39u6Q4vuAZ2WfWM6AAInAAM5hocXwIXhzjfF0DEBAAdtAAM4BA",
+                "uniqueId": "AQADJwADOYaHF3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 1468
+              }
+            }
+          },
+          "sticker": {
+            "id": 16304,
+            "size": 8794,
+            "expectedSize": 8794,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgQAAx0CQ5xrOAACCMhpKbKF2TioxN_bukOL7gGdln1jOgACJwADOYaHF8CF4c43xdAxOAQ",
+              "uniqueId": "AgADJwADOYaHFw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8794
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 2430599168,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1518042476,
+      "editDate": 1518042513,
+      "interactionInfo": {
+        "viewCount": 13590,
+        "forwardCount": 35
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "plugin.video.buildstube-2.1.1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16307,
+            "size": 4086723,
+            "expectedSize": 4086723,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCQ5pKbKF-OCPaHfs60lt1s5oX7RdUgACQwEAApczwEuaLjVLMz31XzgE",
+              "uniqueId": "AgADQwEAApczwEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 4086723
+            }
+          }
+        },
+        "caption": {
+          "text": "Buildstuben Sounds Update 2.1.1",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2429550592,
+      "chatId": -1001134324536,
+      "date": 1518042475,
+      "dateIso": "2018-02-07T22:27:55Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 940,
+            "height": 788,
+            "file": {
+              "id": 16311,
+              "size": 127271,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCQ1pKbKFHHCs-vS8pBZrXPzVfMwUwwACZKgxG5czwEuDWWJDpayW6QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADZKgxG5czwEt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 671,
+            "file": {
+              "id": 16310,
+              "size": 118366,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCQ1pKbKFHHCs-vS8pBZrXPzVfMwUwwACZKgxG5czwEuDWWJDpayW6QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADZKgxG5czwEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 268,
+            "file": {
+              "id": 16309,
+              "size": 26420,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCQ1pKbKFHHCs-vS8pBZrXPzVfMwUwwACZKgxG5czwEuDWWJDpayW6QEAAwIAA20AAzgE",
+              "uniqueId": "AQADZKgxG5czwEty"
+            }
+          },
+          {
+            "width": 90,
+            "height": 75,
+            "file": {
+              "id": 16308,
+              "size": 1562,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCQ1pKbKFHHCs-vS8pBZrXPzVfMwUwwACZKgxG5czwEuDWWJDpayW6QEAAwIAA3MAAzgE",
+              "uniqueId": "AQADZKgxG5czwEt4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2428502016,
+      "chatId": -1001134324536,
+      "date": 1517927406,
+      "dateIso": "2018-02-06T14:30:06Z",
+      "text": "Achtung ⚠ Wir siedeln um in Gruppe Buildstuben Reloaded https://telegram.me/BuildstubenReloaded\nBitte in die Gruppe wechseln Buildstuben.de kommt wieder\nWizard, Repo and more",
+      "genres": []
+    },
+    {
+      "id": 2422210560,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517369584,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 10681,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 1695471364099538983,
+          "setId": 1695471364099538948,
+          "width": 512,
+          "height": 65,
+          "emoji": "😊",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 16,
+            "file": {
+              "id": 16303,
+              "size": 1468,
+              "expectedSize": 1468,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBAADHQJDnGs4AAIIyGkpsoXZOKjE39u6Q4vuAZ2WfWM6AAInAAM5hocXwIXhzjfF0DEBAAdtAAM4BA",
+                "uniqueId": "AQADJwADOYaHF3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 1468
+              }
+            }
+          },
+          "sticker": {
+            "id": 16304,
+            "size": 8794,
+            "expectedSize": 8794,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgQAAx0CQ5xrOAACCMhpKbKF2TioxN_bukOL7gGdln1jOgACJwADOYaHF8CF4c43xdAxOAQ",
+              "uniqueId": "AgADJwADOYaHFw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8794
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 2419064832,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517369555,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 10617,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "script.module.incursion-1.12.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16312,
+            "size": 1360779,
+            "expectedSize": 1360779,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCQNpKbKFp1prb6lJOdUGsxppeCNHWwACNgEAAk4IkEuz0Fco5PUqZTgE",
+              "uniqueId": "AgADNgEAAk4IkEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1360779
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2418016256,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517369553,
+      "editDate": 1517369984,
+      "interactionInfo": {
+        "viewCount": 10309,
+        "forwardCount": 12
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "plugin.video.incursion-0.1.11.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16313,
+            "size": 693651,
+            "expectedSize": 693651,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCQJpKbKF6Aks_OjzaLGeMPeqL9y6KAACNQEAAk4IkEsl5-2NwYdgsDgE",
+              "uniqueId": "AgADNQEAAk4IkEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 693651
+            }
+          }
+        },
+        "caption": {
+          "text": "Incursion\nIMDb Benutzer Konto: 50382990 eingeben\nVideothek freigeschaltet",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2416967680,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517369551,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 9686,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "script.incursion.artwork-1.0.7.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16314,
+            "size": 6291055,
+            "expectedSize": 6291055,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCQFpKbKFnAzYwNRsSdbMgRGh3e1iQQACNAEAAk4IkEvUNTQW4TDbAAE4BA",
+              "uniqueId": "AgADNAEAAk4IkEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 6291055
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2415919104,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517369541,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 9388,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "script.incursion.metadata-1.0.3.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16315,
+            "size": 8724921,
+            "expectedSize": 8724921,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCQABaSmyhfa4ayRA0vk3gmObhlVH8OMAAjMBAAJOCJBLUnik8uMOyM44BA",
+              "uniqueId": "AgADMwEAAk4IkEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8724921
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2414870528,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517369526,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 9115,
+        "forwardCount": 11
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "incursion.repository-0.0.2.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16316,
+            "size": 33931,
+            "expectedSize": 33931,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCP9pKbKF1dUBIAKVpgsOa1fTn7b3RgACMgEAAk4IkEuqII-X82k5-TgE",
+              "uniqueId": "AgADMgEAAk4IkEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 33931
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2413821952,
+      "chatId": -1001134324536,
+      "date": 1517369510,
+      "dateIso": "2018-01-31T03:31:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 512,
+            "file": {
+              "id": 16319,
+              "size": 8573,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCP5pKbKFQF9w-PApFAZfIaL8OggKlgACBakxG3HOiEs_PUQWZeIG8wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADBakxG3HOiEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16318,
+              "size": 4477,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCP5pKbKFQF9w-PApFAZfIaL8OggKlgACBakxG3HOiEs_PUQWZeIG8wEAAwIAA20AAzgE",
+              "uniqueId": "AQADBakxG3HOiEty"
+            }
+          },
+          {
+            "width": 90,
+            "height": 90,
+            "file": {
+              "id": 16317,
+              "size": 645,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCP5pKbKFQF9w-PApFAZfIaL8OggKlgACBakxG3HOiEs_PUQWZeIG8wEAAwIAA3MAAzgE",
+              "uniqueId": "AQADBakxG3HOiEt4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2410676224,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517341987,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 8374,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 1695471364099538983,
+          "setId": 1695471364099538948,
+          "width": 512,
+          "height": 65,
+          "emoji": "😊",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 16,
+            "file": {
+              "id": 16303,
+              "size": 1468,
+              "expectedSize": 1468,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBAADHQJDnGs4AAIIyGkpsoXZOKjE39u6Q4vuAZ2WfWM6AAInAAM5hocXwIXhzjfF0DEBAAdtAAM4BA",
+                "uniqueId": "AQADJwADOYaHF3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 1468
+              }
+            }
+          },
+          "sticker": {
+            "id": 16304,
+            "size": 8794,
+            "expectedSize": 8794,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgQAAx0CQ5xrOAACCMhpKbKF2TioxN_bukOL7gGdln1jOgACJwADOYaHF8CF4c43xdAxOAQ",
+              "uniqueId": "AgADJwADOYaHFw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8794
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 2409627648,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517341945,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 8369,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "script.module.requests-1.0.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16320,
+            "size": 149360,
+            "expectedSize": 149360,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCPppKbKFJND2fe3-JT9c69dvhgKB_gACFQIAAk4IiEvWaXhMguDZ1jgE",
+              "uniqueId": "AgADFQIAAk4IiEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 149360
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2408579072,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517341932,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 8291,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "script.module.futures-1.0.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16321,
+            "size": 86647,
+            "expectedSize": 86647,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCPlpKbKFP0GgUOpLERMnMORNG4RjWgACFAIAAk4IiEswK8bxfguNYTgE",
+              "uniqueId": "AgADFAIAAk4IiEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 86647
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2407530496,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517341815,
+      "editDate": 1517341964,
+      "interactionInfo": {
+        "viewCount": 8237,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "plugin.video.metalliq-2.0.16krypton.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16322,
+            "size": 1763035,
+            "expectedSize": 1763035,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCPhpKbKFVaq0Z2Aiz4OivdyOkwPVdQACEwIAAk4IiEtUA3Tt18a_QTgE",
+              "uniqueId": "AgADEwIAAk4IiEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1763035
+            }
+          }
+        },
+        "caption": {
+          "text": "MetalliQ",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2406481920,
+      "chatId": -1001134324536,
+      "date": 1517341781,
+      "dateIso": "2018-01-30T19:49:41Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 512,
+            "file": {
+              "id": 16325,
+              "size": 45408,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCPdpKbKFcT3ORJiWUpVTi3PRyDAbfgAC6agxG3HOiEtn3e8UV2oTZwEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD6agxG3HOiEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16324,
+              "size": 22218,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCPdpKbKFcT3ORJiWUpVTi3PRyDAbfgAC6agxG3HOiEtn3e8UV2oTZwEAAwIAA20AAzgE",
+              "uniqueId": "AQAD6agxG3HOiEty"
+            }
+          },
+          {
+            "width": 90,
+            "height": 90,
+            "file": {
+              "id": 16323,
+              "size": 1959,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCPdpKbKFcT3ORJiWUpVTi3PRyDAbfgAC6agxG3HOiEtn3e8UV2oTZwEAAwIAA3MAAzgE",
+              "uniqueId": "AQAD6agxG3HOiEt4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2403336192,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517247134,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 7161,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 1695471364099538983,
+          "setId": 1695471364099538948,
+          "width": 512,
+          "height": 65,
+          "emoji": "😊",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 16,
+            "file": {
+              "id": 16303,
+              "size": 1468,
+              "expectedSize": 1468,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBAADHQJDnGs4AAIIyGkpsoXZOKjE39u6Q4vuAZ2WfWM6AAInAAM5hocXwIXhzjfF0DEBAAdtAAM4BA",
+                "uniqueId": "AQADJwADOYaHF3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 1468
+              }
+            }
+          },
+          "sticker": {
+            "id": 16304,
+            "size": 8794,
+            "expectedSize": 8794,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgQAAx0CQ5xrOAACCMhpKbKF2TioxN_bukOL7gGdln1jOgACJwADOYaHF8CF4c43xdAxOAQ",
+              "uniqueId": "AgADJwADOYaHFw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8794
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 2402287616,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517247104,
+      "editDate": 1517247125,
+      "interactionInfo": {
+        "viewCount": 7148,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "plugin.video.buildstuben.hardsound-2.5.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16326,
+            "size": 3150272,
+            "expectedSize": 3150272,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCPNpKbKFyejqoyX9LsoCLxv0FmD3NQACHAEAApnrgEuG6B_elBDvSzgE",
+              "uniqueId": "AgADHAEAApnrgEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 3150272
+            }
+          }
+        },
+        "caption": {
+          "text": "Buildstuben Hardsound Update 2.5",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2397044736,
+      "chatId": -1001134324536,
+      "date": 1517171020,
+      "dateIso": "2018-01-28T20:23:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 684,
+            "height": 684,
+            "file": {
+              "id": 16329,
+              "size": 87717,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCO5pKbKFos_fSJkQd1VBHs-mN0XPewACRagxG2_M0Embov_ExNM-ggEAAwIAA3gAAzgE",
+              "uniqueId": "AQADRagxG2_M0El9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16328,
+              "size": 24098,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCO5pKbKFos_fSJkQd1VBHs-mN0XPewACRagxG2_M0Embov_ExNM-ggEAAwIAA20AAzgE",
+              "uniqueId": "AQADRagxG2_M0Ely"
+            }
+          },
+          {
+            "width": 90,
+            "height": 90,
+            "file": {
+              "id": 16327,
+              "size": 1883,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCO5pKbKFos_fSJkQd1VBHs-mN0XPewACRagxG2_M0Embov_ExNM-ggEAAwIAA3MAAzgE",
+              "uniqueId": "AQADRagxG2_M0El4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2393899008,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517151104,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6412,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 1695471364099538983,
+          "setId": 1695471364099538948,
+          "width": 512,
+          "height": 65,
+          "emoji": "😊",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 16,
+            "file": {
+              "id": 16303,
+              "size": 1468,
+              "expectedSize": 1468,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBAADHQJDnGs4AAIIyGkpsoXZOKjE39u6Q4vuAZ2WfWM6AAInAAM5hocXwIXhzjfF0DEBAAdtAAM4BA",
+                "uniqueId": "AQADJwADOYaHF3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 1468
+              }
+            }
+          },
+          "sticker": {
+            "id": 16304,
+            "size": 8794,
+            "expectedSize": 8794,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgQAAx0CQ5xrOAACCMhpKbKF2TioxN_bukOL7gGdln1jOgACJwADOYaHF8CF4c43xdAxOAQ",
+              "uniqueId": "AgADJwADOYaHFw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 8794
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 2392850432,
+      "senderId": {
+        "chatId": -1001134324536
+      },
+      "chatId": -1001134324536,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1517151092,
+      "editDate": 1517151102,
+      "interactionInfo": {
+        "viewCount": 6441,
+        "forwardCount": 21
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "💲 © € € 🇺 🇮 🇴 🇴",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "repository.blamo.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16330,
+            "size": 439918,
+            "expectedSize": 439918,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQ5xrOAACCOppKbKFsgynEflNQdp0MiCw-Xo7LwACdgEAAtEjYUtt-kee7f2n1DgE",
+              "uniqueId": "AgADdgEAAtEjYUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 439918
+            }
+          }
+        },
+        "caption": {
+          "text": "Blamo",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2391801856,
+      "chatId": -1001134324536,
+      "date": 1517151071,
+      "dateIso": "2018-01-28T14:51:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 512,
+            "file": {
+              "id": 16333,
+              "size": 67948,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCOlpKbKFKzgTNXkJ3reqstTo9wRcNgACtKgxG4zpcUvoFT5FUIDongEAAwIAA3gAAzgE",
+              "uniqueId": "AQADtKgxG4zpcUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16332,
+              "size": 40851,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCOlpKbKFKzgTNXkJ3reqstTo9wRcNgACtKgxG4zpcUvoFT5FUIDongEAAwIAA20AAzgE",
+              "uniqueId": "AQADtKgxG4zpcUty"
+            }
+          },
+          {
+            "width": 90,
+            "height": 90,
+            "file": {
+              "id": 16331,
+              "size": 2452,
+              "remoteId": "AgACAgIAAx0CQ5xrOAACCOlpKbKFKzgTNXkJ3reqstTo9wRcNgACtKgxG4zpcUvoFT5FUIDongEAAwIAA3MAAzgE",
+              "uniqueId": "AQADtKgxG4zpcUt4"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

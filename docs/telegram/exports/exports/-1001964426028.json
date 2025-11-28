@@ -1,0 +1,109 @@
+{
+  "chatId": -1001964426028,
+  "title": "Filme",
+  "exportedAt": "2025-11-28T14:47:26.752144622Z",
+  "count": 4,
+  "messages": [
+    {
+      "id": 4194304,
+      "chatId": -1001964426028,
+      "date": 1681414245,
+      "dateIso": "2023-04-13T19:30:45Z",
+      "content": {
+        "duration": 5828,
+        "width": 1920,
+        "height": 800,
+        "fileName": "The Signal - 2014.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5523,
+          "size": 1639529078,
+          "remoteId": "BAACAgIAAx0CUPfVDwACErlpKbXkQdTKbk3y1Cj_0UTUIpby9gACqygAAvlLCEr2jMg3A09CLTgE",
+          "uniqueId": "AgADqygAAvlLCEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 5522,
+            "size": 5252,
+            "remoteId": "AAMCAgADHQJQ99UPAAISuWkpteRB1MpuTfLUKP_RRNQilvL2AAKrKAAC-UsISvaMyDcDT0ItAQAHbQADOAQ",
+            "uniqueId": "AQADqygAAvlLCEpy"
+          }
+        },
+        "caption": "The Signal - 2014"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001964426028,
+      "date": 1681414228,
+      "dateIso": "2023-04-13T19:30:28Z",
+      "content": {
+        "duration": 5333,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Memory Effect - Verloren in einer anderen Dimension - 2012.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21235,
+          "size": 2071738427,
+          "remoteId": "BAACAgQAAx0CUPfVDwACEr9pKbXkhVdjwq_fJOv01ixvo4EkKgACGQ4AA-05UJYLuDD7clUkOAQ",
+          "uniqueId": "AgADGQ4AA-05UA"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 21234,
+            "size": 7196,
+            "remoteId": "AAMCBAADHQJQ99UPAAISv2kpteSFV2PCr98k6_TWLG-jgSQqAAIZDgAD7TlQlgu4MPtyVSQBAAdtAAM4BA",
+            "uniqueId": "AQADGQ4AA-05UHI"
+          }
+        },
+        "caption": "Memory Effect - 2012"
+      }
+    },
+    {
+      "id": 2097152,
+      "chatId": -1001964426028,
+      "date": 1681414065,
+      "dateIso": "2023-04-13T19:27:45Z",
+      "text": "https://t.me/c/1545742878/359",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001964426028
+      },
+      "chatId": -1001964426028,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681413948,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Filme"
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "chatId": 478869075,
+  "title": "Jan Fenger",
+  "exportedAt": "2025-11-28T14:46:24.753423525Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45484081152,
+      "chatId": 478869075,
+      "date": 1735224102,
+      "dateIso": "2024-12-26T14:41:42Z",
+      "content": {
+        "duration": 10682,
+        "width": 1920,
+        "height": 872,
+        "fileName": "Oppenheimer - 2023.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5132,
+          "size": 2076765829,
+          "remoteId": "BAACAgIAAxkDAAKpcWkpskAFq6K8mi3L3taeOl1t6N0-AAJTOwAC77vgSjC6H9JEDhwfOAQ",
+          "uniqueId": "AgADUzsAAu-74Eo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 145,
+          "file": {
+            "id": 5131,
+            "size": 6720,
+            "remoteId": "AAMCAgADGQMAAqlxaSmyQAWroryaLcve1p46XW3o3T4AAlM7AALvu-BKMLof0kQOHB8BAAdtAAM4BA",
+            "uniqueId": "AQADUzsAAu-74Epy"
+          }
+        },
+        "caption": "Oppenheimer - 2023"
+      }
+    }
+  ]
+}

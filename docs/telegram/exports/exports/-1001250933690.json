@@ -1,0 +1,1394 @@
+{
+  "chatId": -1001250933690,
+  "title": "Die drei Fragezeichen (KIDS)",
+  "exportedAt": "2025-11-28T14:46:29.246978650Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 260046848,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1730461644,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 365,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die_Drei_Fragezeichen_Kids_Adventskalender_24_Tage_Elfen_Alarm.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5139,
+            "size": 307487517,
+            "expectedSize": 307487517,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD-GkpsqTjphCReJEAAVKIaVLuBRe8ZQACoYAAAkdjIUnw_CTJg8UvxjgE",
+              "uniqueId": "AgADoYAAAkdjIUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 307487517
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 258998272,
+      "chatId": -1001250933690,
+      "date": 1730461644,
+      "dateIso": "2024-11-01T11:47:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 19774,
+              "size": 69085,
+              "remoteId": "AgACAgIAAx0CSo-7ugAD92kpsqQe3qsuXVRwQelYpXqP_m0CAAKz7jEbR2MhSdpHBFZ21MfLAQADAgADeAADOAQ",
+              "uniqueId": "AQADs-4xG0djIUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19773,
+              "size": 38420,
+              "remoteId": "AgACAgIAAx0CSo-7ugAD92kpsqQe3qsuXVRwQelYpXqP_m0CAAKz7jEbR2MhSdpHBFZ21MfLAQADAgADbQADOAQ",
+              "uniqueId": "AQADs-4xG0djIUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 257949696,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1701423373,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 806,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die_Drei_Fragezeichen_Kids_Adventskalender_24_Tage_Weihnachtsspuk.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 19775,
+            "size": 438990482,
+            "expectedSize": 438990482,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD9mkpsqSaRWA62cNQhc9nzs1x9xudAALtRAACW7wwSysWm8WZPYCeOAQ",
+              "uniqueId": "AgAD7UQAAlu8MEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 438990482
+            }
+          }
+        },
+        "caption": {
+          "text": "Die Drei Fragezeichen Kids - Adventskalender - 24 Tage Weihnachtsspuk\n\nDer Bürgermeister von Rocky hat sich eine besondere Weihnachtsaktion ausgedacht: einen Adventskalender, der alle Bewohner auf eine spannende Rätsel-Schnitzeljagd schickt. Doch dann passieren merkwürdige Dinge und die drei ??? stecken mitten in ihrem nächsten Fall.\n\nEin winterliches Detektivabenteuer in 24 Kapiteln!\n\nBeginne am 1. Dezember und höre bis Weihnachten jeden Tag ein Kapitel.",
+          "entities": [
+            {
+              "offset": 0,
+              "length": 71,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 256901120,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1701423359,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 693,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 0,
+          "setId": 0,
+          "width": 709,
+          "height": 1000,
+          "emoji": "",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 227,
+            "height": 320,
+            "file": {
+              "id": 19776,
+              "size": 23900,
+              "expectedSize": 23900,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADHQJKj7u6AAP1aSmypLmNRYsl8eulaohj7UoLEg0AAjU9AAJuJFBLYrZetNb3zz0BAAdtAAM4BA",
+                "uniqueId": "AQADNT0AAm4kUEty",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 23900
+              }
+            }
+          },
+          "sticker": {
+            "id": 19777,
+            "size": 114600,
+            "expectedSize": 114600,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAx0CSo-7ugAD9WkpsqS5jUWLJfHrpWqIY-1KCxINAAI1PQACbiRQS2K2XrTW9889OAQ",
+              "uniqueId": "AgADNT0AAm4kUEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 114600
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 255852544,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1691745477,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 858,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Drei Fragezeichen Kids - Folge 93 - Die Geistermühle.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 19778,
+            "size": 166404597,
+            "expectedSize": 166404597,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD9GkpsqSAIbClhhxB20ad0pCno2e1AAK0KwAC3oixSr4nQIXp280GOAQ",
+              "uniqueId": "AgADtCsAAt6IsUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 166404597
+            }
+          }
+        },
+        "caption": {
+          "text": "Die Drei Fragezeichen Kids - Folge 93 - Die Geistermühle\n \n Die Flügel der alten Windmühle in Rocky Beach drehen sich plötzlich bei absoluter Windstille. Wie kann das sein? Bei genauer Untersuchung stoßen die drei Freunde auf eine sagenhafte Legende ...",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 254803968,
+      "chatId": -1001250933690,
+      "date": 1691745477,
+      "dateIso": "2023-08-11T09:17:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 513,
+            "height": 513,
+            "file": {
+              "id": 19780,
+              "size": 73612,
+              "remoteId": "AgACAgIAAx0CSo-7ugAD82kpsqQsoT_cI0nQ8T2WK0dNhY9RAAKtzjEb3oixSlWNhIrJSu-vAQADAgADeAADOAQ",
+              "uniqueId": "AQADrc4xG96IsUp9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19779,
+              "size": 37809,
+              "remoteId": "AgACAgIAAx0CSo-7ugAD82kpsqQsoT_cI0nQ8T2WK0dNhY9RAAKtzjEb3oixSlWNhIrJSu-vAQADAgADbQADOAQ",
+              "uniqueId": "AQADrc4xG96IsUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 253755392,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1676659566,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1469,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die_Drei_Fragezeichen_Kids_Folge_91_Gefahr_im_Spiegelkabinett.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 19781,
+            "size": 184167576,
+            "expectedSize": 184167576,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD8mkpsqRGMdx6dKU6jMuwyKbST3dmAAKoKQACwP2BS-45b8U2wN5OOAQ",
+              "uniqueId": "AgADqCkAAsD9gUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 184167576
+            }
+          }
+        },
+        "caption": {
+          "text": "Die Drei Fragezeichen Kids Folge 91 - Gefahr im Spiegelkabinett",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 252706816,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1676659184,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1397,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13413273469040354,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die drei Fragezeichen Kids - Folge 90 - Flug ins Nichts.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 19782,
+            "size": 193285277,
+            "expectedSize": 193285277,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD8WkpsqSb8m368AoWhR5u4l5LnpXWAAJsKQACwP2BSwkELSc6WKIFOAQ",
+              "uniqueId": "AgADbCkAAsD9gUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 193285277
+            }
+          }
+        },
+        "caption": {
+          "text": "Die drei Fragezeichen Kids - Folge 90 - Flug ins Nichts",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 251658240,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1676659183,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1380,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13413273469040354,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Drei Fragezeichen Kids - Folge 89 - Im Geistergarten.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 19783,
+            "size": 179706687,
+            "expectedSize": 179706687,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD8GkpsqRa8IKWBkVbAuUXXT222dPvAAJDKQACwP2BS5H5Xnu9qrdXOAQ",
+              "uniqueId": "AgADQykAAsD9gUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 179706687
+            }
+          }
+        },
+        "caption": {
+          "text": "Die Drei Fragezeichen Kids - Folge 89 - Im Geistergarten",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 250609664,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1676657369,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1346,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Drei Fragezeichen Kids - Folge 88 - Schatz aus dem All.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 19784,
+            "size": 197452922,
+            "expectedSize": 197452922,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CSo-7ugAD72kpsqSk_xrbDeaBzTN0jgXs_G84AAMpAALA_YFLaRQSnRt_HaM4BA",
+              "uniqueId": "AgAEKQACwP2BSw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 197452922
+            }
+          }
+        },
+        "caption": {
+          "text": "Die Drei Fragezeichen Kids - Folge 88 - Schatz aus dem All",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 249561088,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1648549482,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1509,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 248512512,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "87 - Das Geisterspiel.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19785,
+            "size": 157135138,
+            "expectedSize": 157135138,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD7mkpsqSnCA2dZetCwkBNhnT1C3ZeAALrCgAC_YEYUhTctk3LGWa0OAQ",
+              "uniqueId": "AgAD6woAAv2BGFI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 157135138
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 87 - Das Geisterspiel",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 248512512,
+      "chatId": -1001250933690,
+      "date": 1648549364,
+      "dateIso": "2022-03-29T10:22:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 19787,
+              "size": 71125,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD7WkpsqTDb42HB-FZa6mG0TgzFjOUAAKttjEb_YEYUjrWdIGzcy_YAQADAgADeAADOAQ",
+              "uniqueId": "AQADrbYxG_2BGFJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19786,
+              "size": 39442,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD7WkpsqTDb42HB-FZa6mG0TgzFjOUAAKttjEb_YEYUjrWdIGzcy_YAQADAgADbQADOAQ",
+              "uniqueId": "AQADrbYxG_2BGFJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 247463936,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1648549071,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1249,
+        "forwardCount": 10
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 246415360,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "86 - Riesen in Rocky Beach.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19788,
+            "size": 80432550,
+            "expectedSize": 80432550,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD7GkpsqTRQVyJ9kEl6cj4z4cMZtBQAALqCgAC_YEYUozhGva6OvdSOAQ",
+              "uniqueId": "AgAD6goAAv2BGFI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 80432550
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 86 - Riesen in Rocky Beach",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 246415360,
+      "chatId": -1001250933690,
+      "date": 1648548957,
+      "dateIso": "2022-03-29T10:15:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 600,
+            "height": 600,
+            "file": {
+              "id": 19790,
+              "size": 73944,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD62kpsqTTTgw4g85Eh7lKzEOrIDkDAAKrtjEb_YEYUq1M6RdmEolFAQADAgADeAADOAQ",
+              "uniqueId": "AQADq7YxG_2BGFJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19789,
+              "size": 36313,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD62kpsqTTTgw4g85Eh7lKzEOrIDkDAAKrtjEb_YEYUq1M6RdmEolFAQADAgADbQADOAQ",
+              "uniqueId": "AQADq7YxG_2BGFJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 245366784,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1640015646,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1156,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 244318208,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "85 - Falscher Alarm.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19791,
+            "size": 150624978,
+            "expectedSize": 150624978,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD6mkpsqQqfwZm16aaE817OuiLaegmAAI0DAACTs0BUpq_sKH_M9dlOAQ",
+              "uniqueId": "AgADNAwAAk7NAVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 150624978
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 85 - Falscher Alarm",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 244318208,
+      "chatId": -1001250933690,
+      "date": 1640015499,
+      "dateIso": "2021-12-20T15:51:39Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 600,
+            "height": 600,
+            "file": {
+              "id": 19793,
+              "size": 94639,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD6WkpsqQGKLL4CwuIi6YsEwx1IUK9AALgtTEbTs0BUvMfza_LaSGRAQADAgADeAADOAQ",
+              "uniqueId": "AQAD4LUxG07NAVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19792,
+              "size": 39457,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD6WkpsqQGKLL4CwuIi6YsEwx1IUK9AALgtTEbTs0BUvMfza_LaSGRAQADAgADbQADOAQ",
+              "uniqueId": "AQAD4LUxG07NAVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 243269632,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634321124,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1121,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 242221056,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "84 - Tatort Skater-Park.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19794,
+            "size": 196085467,
+            "expectedSize": 196085467,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD6GkpsqTb7ZYhzkoOkwKYu9-eoU-dAAIXCAACchtIUzWPBoN3PEe4OAQ",
+              "uniqueId": "AgADFwgAAnIbSFM",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 196085467
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 84 - Tatort Skater-Park",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 242221056,
+      "chatId": -1001250933690,
+      "date": 1634297731,
+      "dateIso": "2021-10-15T11:35:31Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 600,
+            "height": 595,
+            "file": {
+              "id": 19796,
+              "size": 75187,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD52kpsqR_3S5ZaZq17x9DJ9Myb8MlAALJtTEbchtIU5Xki_v14VUTAQADAgADeAADOAQ",
+              "uniqueId": "AQADybUxG3IbSFN9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 317,
+            "file": {
+              "id": 19795,
+              "size": 33926,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD52kpsqR_3S5ZaZq17x9DJ9Myb8MlAALJtTEbchtIU5Xki_v14VUTAQADAgADbQADOAQ",
+              "uniqueId": "AQADybUxG3IbSFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 241172480,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634297643,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 984,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 240123904,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "83 - Fußball-Diebe.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19797,
+            "size": 135579762,
+            "expectedSize": 135579762,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD5mkpsqTYarWwpTUHVNebV9mPgQgHAALLBwACchtIU3jnVdC3avoyOAQ",
+              "uniqueId": "AgADywcAAnIbSFM",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 135579762
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 83 - Die Fußball-Diebe",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 240123904,
+      "chatId": -1001250933690,
+      "date": 1634297564,
+      "dateIso": "2021-10-15T11:32:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 19799,
+              "size": 56095,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD5WkpsqT1A43augUHtIO6fx5TS4xJAALItTEbchtIU0gVR4ukLSWDAQADAgADeAADOAQ",
+              "uniqueId": "AQADyLUxG3IbSFN9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19798,
+              "size": 32260,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD5WkpsqT1A43augUHtIO6fx5TS4xJAALItTEbchtIU0gVR4ukLSWDAQADAgADbQADOAQ",
+              "uniqueId": "AQADyLUxG3IbSFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 239075328,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634297564,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 891,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 238026752,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "82 - Die Delfin-Piraten.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19800,
+            "size": 185738314,
+            "expectedSize": 185738314,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD5GkpsqRezuXWFDB3zYFcDQWLAAG43AACygcAAnIbSFO1NEQjx_YYoDgE",
+              "uniqueId": "AgADygcAAnIbSFM",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 185738314
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 82 - Die Delphin-Piraten",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 238026752,
+      "chatId": -1001250933690,
+      "date": 1634297443,
+      "dateIso": "2021-10-15T11:30:43Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 19802,
+              "size": 58196,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD42kpsqRUbC3_EqOyY5ZPKAl3NRC3AALHtTEbchtIU8OzFFasxZG3AQADAgADeAADOAQ",
+              "uniqueId": "AQADx7UxG3IbSFN9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19801,
+              "size": 33477,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD42kpsqRUbC3_EqOyY5ZPKAl3NRC3AALHtTEbchtIU8OzFFasxZG3AQADAgADbQADOAQ",
+              "uniqueId": "AQADx7UxG3IbSFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 236978176,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634296938,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 867,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 235929600,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "81 - Turbo-Rennen.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19803,
+            "size": 166941415,
+            "expectedSize": 166941415,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD4mkpsqTxC30-nXWZ95GzcyTzzd3LAALHBwACchtIU_Q-dFAfEgUXOAQ",
+              "uniqueId": "AgADxwcAAnIbSFM",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 166941415
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 81 - Turbo-Rennen",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 235929600,
+      "chatId": -1001250933690,
+      "date": 1634296827,
+      "dateIso": "2021-10-15T11:20:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 19805,
+              "size": 65329,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD4WkpsqR0rkmiKj50qXkkixxQEWGdAAK5tTEbchtIU_lO2tWj2vApAQADAgADeAADOAQ",
+              "uniqueId": "AQADubUxG3IbSFN9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19804,
+              "size": 35861,
+              "remoteId": "AgACAgQAAx0CSo-7ugAD4WkpsqR0rkmiKj50qXkkixxQEWGdAAK5tTEbchtIU_lO2tWj2vApAQADAgADbQADOAQ",
+              "uniqueId": "AQADubUxG3IbSFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 234881024,
+      "senderId": {
+        "chatId": -1001250933690
+      },
+      "chatId": -1001250933690,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634291004,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 850,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001250933690,
+        "messageId": 233832448,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "80 - Gefährlicher Nebel.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19806,
+            "size": 186338068,
+            "expectedSize": 186338068,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CSo-7ugAD4GkpsqSNbBPerbcLp6KXG9BxzgRyAAKlBwACchtIU8QEMS86F5avOAQ",
+              "uniqueId": "AgADpQcAAnIbSFM",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 186338068
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 80 - Gefährlicher Nebel",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

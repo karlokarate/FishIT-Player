@@ -1,0 +1,783 @@
+{
+  "chatId": -1001905895053,
+  "title": "Tulsa King FULL HD",
+  "exportedAt": "2025-11-28T14:45:33.333612711Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 134217728,
+      "chatId": -1001905895053,
+      "date": 1762887352,
+      "dateIso": "2025-11-11T18:55:52Z",
+      "content": {
+        "duration": 2507,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E08 - Nichts ist vorbei.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4886,
+          "size": 1959249137,
+          "remoteId": "BAACAgIAAx0CcZmmjQADgGkpslv2yPU_xj2D6Kd9UdsAAeyJ1gACFowAAkpqkEh6pnzxyHf1rTgE",
+          "uniqueId": "AgADFowAAkpqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 4885,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAAOAaSmyW_bI9T_GPYPop31R2wAB7InWAAIWjAACSmqQSHqmfPHId_WtAQAHbQADOAQ",
+            "uniqueId": "AQADFowAAkpqkEhy"
+          }
+        },
+        "caption": "Tulsa King - S03 E08 - Nichts ist vorbei"
+      }
+    },
+    {
+      "id": 133169152,
+      "chatId": -1001905895053,
+      "date": 1762887349,
+      "dateIso": "2025-11-11T18:55:49Z",
+      "content": {
+        "duration": 2441,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E07 - Die Kunst des Krieges.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14170,
+          "size": 1717053953,
+          "remoteId": "BAACAgIAAx0CcZmmjQADf2kpsltFs68rnVJRR_QdSZSJ5zY3AAL7iwACSmqQSOn4zmEnevAqOAQ",
+          "uniqueId": "AgAD-4sAAkpqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14169,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAAN_aSmyW0WzryudUlFH9B1JlInnNjcAAvuLAAJKapBI6fjOYSd68CoBAAdtAAM4BA",
+            "uniqueId": "AQAD-4sAAkpqkEhy"
+          }
+        },
+        "caption": "Tulsa King - S03 E07 - Die Kunst des Krieges"
+      }
+    },
+    {
+      "id": 132120576,
+      "chatId": -1001905895053,
+      "date": 1762887345,
+      "dateIso": "2025-11-11T18:55:45Z",
+      "content": {
+        "duration": 2463,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E06 - Bubbles.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14172,
+          "size": 1979679304,
+          "remoteId": "BAACAgIAAx0CcZmmjQADfmkpslvMUVLK1c7GkBmRVNjWVl-KAAIujAACSmqQSM4AAeEN7eEzDzgE",
+          "uniqueId": "AgADLowAAkpqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14171,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAAN-aSmyW8xRUsrVzsaQGZFU2NZWX4oAAi6MAAJKapBIzgAB4Q3t4TMPAQAHbQADOAQ",
+            "uniqueId": "AQADLowAAkpqkEhy"
+          }
+        },
+        "caption": "Tulsa King - S03 E06 - Bubbles"
+      }
+    },
+    {
+      "id": 131072000,
+      "chatId": -1001905895053,
+      "date": 1762887342,
+      "dateIso": "2025-11-11T18:55:42Z",
+      "content": {
+        "duration": 2709,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E05 - On the Rocks.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14174,
+          "size": 1787223287,
+          "remoteId": "BAACAgIAAx0CcZmmjQADfWkpsls-DbftmWuqln69c8VtIro7AALoiwACSmqQSPfygykIjHl3OAQ",
+          "uniqueId": "AgAD6IsAAkpqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14173,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAAN9aSmyWz4Nt-2Za6qWfr1zxW0iujsAAuiLAAJKapBI9_KDKQiMeXcBAAdtAAM4BA",
+            "uniqueId": "AQAD6IsAAkpqkEhy"
+          }
+        },
+        "caption": "Tulsa King - S03 E05 - On the Rocks"
+      }
+    },
+    {
+      "id": 125829120,
+      "chatId": -1001905895053,
+      "date": 1760277195,
+      "dateIso": "2025-10-12T13:53:15Z",
+      "content": {
+        "duration": 2436,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E04 - Die Waffe im Gesicht.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14176,
+          "size": 1755186927,
+          "remoteId": "BAACAgIAAx0CcZmmjQADeGkpslvjd66b4sy5PtmotwGdFjWXAAKYggACUY9YS3FBTpEWvu07OAQ",
+          "uniqueId": "AgADmIIAAlGPWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14175,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAAN4aSmyW-N3rpvizLk-2ai3AZ0WNZcAApiCAAJRj1hLcUFOkRa-7TsBAAdtAAM4BA",
+            "uniqueId": "AQADmIIAAlGPWEty"
+          }
+        },
+        "caption": "Tulsa King - S03 E04 - Die Waffe im Gesicht"
+      }
+    },
+    {
+      "id": 124780544,
+      "chatId": -1001905895053,
+      "date": 1760277192,
+      "dateIso": "2025-10-12T13:53:12Z",
+      "content": {
+        "duration": 2945,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E03 - Auge um Auge.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14178,
+          "size": 2086421423,
+          "remoteId": "BAACAgIAAx0CcZmmjQADd2kpslvn3V4_udzSRx3o-xUmVKnTAAKoggACUY9YSy2fKnNFXCRAOAQ",
+          "uniqueId": "AgADqIIAAlGPWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14177,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAAN3aSmyW-fdXj-53NJHHej7FSZUqdMAAqiCAAJRj1hLLZ8qc0VcJEABAAdtAAM4BA",
+            "uniqueId": "AQADqIIAAlGPWEty"
+          }
+        },
+        "caption": "Tulsa King - S03 E03 - Auge um Auge"
+      }
+    },
+    {
+      "id": 119537664,
+      "chatId": -1001905895053,
+      "date": 1759159525,
+      "dateIso": "2025-09-29T15:25:25Z",
+      "content": {
+        "duration": 2775,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E02 - Die 50.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14180,
+          "size": 1885838923,
+          "remoteId": "BAACAgIAAx0CcZmmjQADcmkpslvZBNguj_zjCTjkXd7y3lVXAAKJiAACZgAB0Uo_5CKSSnke2TgE",
+          "uniqueId": "AgADiYgAAmYAAdFK"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14179,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAANyaSmyW9kE2C6P_OMJOORd3vLeVVcAAomIAAJmAAHRSj_kIpJKeR7ZAQAHbQADOAQ",
+            "uniqueId": "AQADiYgAAmYAAdFKcg"
+          }
+        },
+        "caption": "Tulsa King - S03 E02 - Die 50"
+      }
+    },
+    {
+      "id": 114294784,
+      "chatId": -1001905895053,
+      "date": 1758546735,
+      "dateIso": "2025-09-22T13:12:15Z",
+      "content": {
+        "duration": 2934,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S03 E01 - Blut und Bourbon.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14182,
+          "size": 2032819818,
+          "remoteId": "BAACAgIAAx0CcZmmjQADbWkpslv80llC1sRxVOcbQLlXLxFVAAL1ggAC_quJSicY8ELjfOu5OAQ",
+          "uniqueId": "AgAD9YIAAv6riUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14181,
+            "size": 7877,
+            "remoteId": "AAMCAgADHQJxmaaNAANtaSmyW_zSWULWxHFU5xtAuVcvEVUAAvWCAAL-q4lKJxjwQuN867kBAAdtAAM4BA",
+            "uniqueId": "AQAD9YIAAv6riUpy"
+          }
+        },
+        "caption": "Tulsa King - S03 E01 - Blut und Bourbon"
+      }
+    },
+    {
+      "id": 108003328,
+      "chatId": -1001905895053,
+      "date": 1731958574,
+      "dateIso": "2024-11-18T19:36:14Z",
+      "content": {
+        "duration": 2128,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E10 - Der Neuaufbau.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14184,
+          "size": 1545277946,
+          "remoteId": "BAACAgIAAx0CcZmmjQADZ2kpslsmUL2pMvbWDsMFbkEdDvkEAAL8YwACM4nYSRYt39n2WGIKOAQ",
+          "uniqueId": "AgAD_GMAAjOJ2Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14183,
+            "size": 8940,
+            "remoteId": "AAMCAgADHQJxmaaNAANnaSmyWyZQvaky9tYOwwVuQR0O-QQAAvxjAAIzidhJFi3f2fZYYgoBAAdtAAM4BA",
+            "uniqueId": "AQAD_GMAAjOJ2Ely"
+          }
+        },
+        "caption": "Tulsa King - S02 E10 - Der Neuaufbau"
+      }
+    },
+    {
+      "id": 101711872,
+      "chatId": -1001905895053,
+      "date": 1731398612,
+      "dateIso": "2024-11-12T08:03:32Z",
+      "content": {
+        "duration": 2202,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E09 - Triade.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14186,
+          "size": 1467206452,
+          "remoteId": "BAACAgIAAx0CcZmmjQADYWkpslsXTwnDu-tIlxm3q7OKzIRIAAJ4VwACJuyZSYPY8JPgnUA9OAQ",
+          "uniqueId": "AgADeFcAAibsmUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14185,
+            "size": 8940,
+            "remoteId": "AAMCAgADHQJxmaaNAANhaSmyWxdPCcO760iXGbers4rMhEgAAnhXAAIm7JlJg9jwk-CdQD0BAAdtAAM4BA",
+            "uniqueId": "AQADeFcAAibsmUly"
+          }
+        },
+        "caption": "Tulsa King - S02 E09 - Triade"
+      }
+    },
+    {
+      "id": 100663296,
+      "chatId": -1001905895053,
+      "date": 1731398609,
+      "dateIso": "2024-11-12T08:03:29Z",
+      "content": {
+        "duration": 2556,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E08 - Unter neuer Leitung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14188,
+          "size": 1949783175,
+          "remoteId": "BAACAgIAAx0CcZmmjQADYGkpsltokoQD3AujlCRfVvFYAAE4QwACflcAAibsmUnERuH8TtPpCTgE",
+          "uniqueId": "AgADflcAAibsmUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14187,
+            "size": 8940,
+            "remoteId": "AAMCAgADHQJxmaaNAANgaSmyW2iShAPcC6OUJF9W8VgAAThDAAJ-VwACJuyZScRG4fxO0-kJAQAHbQADOAQ",
+            "uniqueId": "AQADflcAAibsmUly"
+          }
+        },
+        "caption": "Tulsa King - S02 E08 - Unter neuer Leitung"
+      }
+    },
+    {
+      "id": 99614720,
+      "chatId": -1001905895053,
+      "date": 1731398606,
+      "dateIso": "2024-11-12T08:03:26Z",
+      "content": {
+        "duration": 2408,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E07 - Lebenserhaltung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14190,
+          "size": 1986333604,
+          "remoteId": "BAACAgIAAx0CcZmmjQADX2kpslvakZCQmP-BZnqOvbsFd_FWAALKWgAC2VQBSdzvX7Q_17DHOAQ",
+          "uniqueId": "AgADyloAAtlUAUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14189,
+            "size": 8940,
+            "remoteId": "AAMCAgADHQJxmaaNAANfaSmyW9qRkJCY_4Fmeo69uwV38VYAAspaAALZVAFJ3O9ftD_XsMcBAAdtAAM4BA",
+            "uniqueId": "AQADyloAAtlUAUly"
+          }
+        },
+        "caption": "Tulsa King - S02 E07 - Lebenserhaltung"
+      }
+    },
+    {
+      "id": 93323264,
+      "chatId": -1001905895053,
+      "date": 1729493251,
+      "dateIso": "2024-10-21T06:47:31Z",
+      "content": {
+        "duration": 2282,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E06 - Navigator.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14192,
+          "size": 2031913854,
+          "remoteId": "BAACAgIAAx0CcZmmjQADWWkpsluP91ZZtK_pCLJhy-5qDYYEAALfVgAClEKwSML5bySEeLfMOAQ",
+          "uniqueId": "AgAD31YAApRCsEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14191,
+            "size": 8940,
+            "remoteId": "AAMCAgADHQJxmaaNAANZaSmyW4_3Vlm0r-kIsmHL7moNhgQAAt9WAAKUQrBIwvlvJIR4t8wBAAdtAAM4BA",
+            "uniqueId": "AQAD31YAApRCsEhy"
+          }
+        },
+        "caption": "Tulsa King - S02 E06 - Navigator"
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1001905895053,
+      "date": 1728931884,
+      "dateIso": "2024-10-14T18:51:24Z",
+      "content": {
+        "duration": 2404,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E05 - Kämpfen gegen Windmühlen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14194,
+          "size": 2089139695,
+          "remoteId": "BAACAgIAAx0CcZmmjQADU2kpslt-uzA09TzPRDfZZBNml2hOAAIyZwACdCppSNVSM4gOVpcbOAQ",
+          "uniqueId": "AgADMmcAAnQqaUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14193,
+            "size": 9003,
+            "remoteId": "AAMCAgADHQJxmaaNAANTaSmyW367MDT1PM9EN9lkE2aXaE4AAjJnAAJ0KmlI1VIziA5WlxsBAAdtAAM4BA",
+            "uniqueId": "AQADMmcAAnQqaUhy"
+          }
+        },
+        "caption": "Tulsa King - S02 E05 - Kämpfen gegen Windmühlen"
+      }
+    },
+    {
+      "id": 80740352,
+      "chatId": -1001905895053,
+      "date": 1728321432,
+      "dateIso": "2024-10-07T17:17:12Z",
+      "content": {
+        "duration": 2690,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E04 - Helden und Schurken.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14196,
+          "size": 2086503097,
+          "remoteId": "BAACAgIAAx0CcZmmjQADTWkpsltRYNdPCYGeh6olXh8OIo5zAAIbZQAClScZSMAz4Hht7CXCOAQ",
+          "uniqueId": "AgADG2UAApUnGUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14195,
+            "size": 9003,
+            "remoteId": "AAMCAgADHQJxmaaNAANNaSmyW1Fg108JgZ6HqiVeHw4ijnMAAhtlAAKVJxlIwDPgeG3sJcIBAAdtAAM4BA",
+            "uniqueId": "AQADG2UAApUnGUhy"
+          }
+        },
+        "caption": "Tulsa King - S02 E04 - Helden und Schurken"
+      }
+    },
+    {
+      "id": 79691776,
+      "chatId": -1001905895053,
+      "date": 1728321428,
+      "dateIso": "2024-10-07T17:17:08Z",
+      "content": {
+        "duration": 2578,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E03 - Oklahoma gegen Manfredi.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14198,
+          "size": 2054156203,
+          "remoteId": "BAACAgIAAx0CcZmmjQADTGkpslvwImUEwQymdnRdGQoRn4VXAAJVVQACr2PRS_-IXmUgQYmAOAQ",
+          "uniqueId": "AgADVVUAAq9j0Us"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14197,
+            "size": 9003,
+            "remoteId": "AAMCAgADHQJxmaaNAANMaSmyW_AiZQTBDKZ2dF0ZChGfhVcAAlVVAAKvY9FL_4heZSBBiYABAAdtAAM4BA",
+            "uniqueId": "AQADVVUAAq9j0Uty"
+          }
+        },
+        "caption": "Tulsa King - S02 E03 - Oklahoma gegen Manfredi"
+      }
+    },
+    {
+      "id": 73400320,
+      "chatId": -1001905895053,
+      "date": 1727005967,
+      "dateIso": "2024-09-22T11:52:47Z",
+      "content": {
+        "duration": 2649,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E02 - Kansas City Blues.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14200,
+          "size": 2096866813,
+          "remoteId": "BAACAgIAAx0CcZmmjQADRmkpslv1M2KLc1HJIzFld2x2m59bAAL-VwACKqmBS-lIT9ZlZdrWOAQ",
+          "uniqueId": "AgAD_lcAAiqpgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14199,
+            "size": 9003,
+            "remoteId": "AAMCAgADHQJxmaaNAANGaSmyW_UzYotzUckjMWV3bHabn1sAAv5XAAIqqYFL6UhP1mVl2tYBAAdtAAM4BA",
+            "uniqueId": "AQAD_lcAAiqpgUty"
+          }
+        },
+        "caption": "Tulsa King - S02 E02 - Kansas City Blues"
+      }
+    },
+    {
+      "id": 67108864,
+      "chatId": -1001905895053,
+      "date": 1726558077,
+      "dateIso": "2024-09-17T07:27:57Z",
+      "content": {
+        "duration": 2559,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S02 E01 - Wieder im Sattel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14202,
+          "size": 2094693480,
+          "remoteId": "BAACAgIAAx0CcZmmjQADQGkpslvcXp3W8pr25AYYO_cVFkKcAAICVQACnu1JS3YglSwEkijVOAQ",
+          "uniqueId": "AgADAlUAAp7tSUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14201,
+            "size": 8940,
+            "remoteId": "AAMCAgADHQJxmaaNAANAaSmyW9xendbymvbkBhg79xUWQpwAAgJVAAKe7UlLdiCVLASSKNUBAAdtAAM4BA",
+            "uniqueId": "AQADAlUAAp7tSUty"
+          }
+        },
+        "caption": "Tulsa King - S02 E01 - Wieder im Sattel"
+      }
+    },
+    {
+      "id": 60817408,
+      "chatId": -1001905895053,
+      "date": 1685183556,
+      "dateIso": "2023-05-27T10:32:36Z",
+      "content": {
+        "duration": 2207,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E09 - Mach s gut.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14204,
+          "size": 1245641043,
+          "remoteId": "BAACAgIAAx0CcZmmjQADOmkpslsgdsRFAhqpzxAvdV6e6n5gAAJHMQACtYSIS07a-5tJceoTOAQ",
+          "uniqueId": "AgADRzEAArWEiEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14203,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAM6aSmyWyB2xEUCGqnPEC91Xp7qfmAAAkcxAAK1hIhLTtr7m0lx6hMBAAdtAAM4BA",
+            "uniqueId": "AQADRzEAArWEiEty"
+          }
+        },
+        "caption": "Tulsa King - S01 E09 - Mach\u0027s gut"
+      }
+    },
+    {
+      "id": 58720256,
+      "chatId": -1001905895053,
+      "date": 1685183550,
+      "dateIso": "2023-05-27T10:32:30Z",
+      "content": {
+        "duration": 2147,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E08 - Adobe Walls.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14206,
+          "size": 1290688426,
+          "remoteId": "BAACAgIAAx0CcZmmjQADOGkpsluDi9vzQ-fTNLmDScyTOa3SAAJFJwACHuhAStKeHlWRpWhpOAQ",
+          "uniqueId": "AgADRScAAh7oQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14205,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAM4aSmyW4OL2_ND59M0uYNJzJM5rdIAAkUnAAIe6EBK0p4eVZGlaGkBAAdtAAM4BA",
+            "uniqueId": "AQADRScAAh7oQEpy"
+          }
+        },
+        "caption": "Tulsa King - S01 E08 - Adobe Walls"
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001905895053,
+      "date": 1685183546,
+      "dateIso": "2023-05-27T10:32:26Z",
+      "content": {
+        "duration": 2545,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E07 - Warr Acres.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14208,
+          "size": 1541817618,
+          "remoteId": "BAACAgIAAx0CcZmmjQADN2kpslspnPgL97H08_rRyEdN9N6zAAJHJwACHuhASiX9ulau3uepOAQ",
+          "uniqueId": "AgADRycAAh7oQEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14207,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAM3aSmyWymc-Av3sfTz-tHIR0303rMAAkcnAAIe6EBKJf26Vq7e56kBAAdtAAM4BA",
+            "uniqueId": "AQADRycAAh7oQEpy"
+          }
+        },
+        "caption": "Tulsa King - S01 E07 - Warr Acres"
+      }
+    },
+    {
+      "id": 56623104,
+      "chatId": -1001905895053,
+      "date": 1685183543,
+      "dateIso": "2023-05-27T10:32:23Z",
+      "content": {
+        "duration": 2372,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E06 - Der Stall.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14210,
+          "size": 1436729638,
+          "remoteId": "BAACAgIAAx0CcZmmjQADNmkpslsmG0lSJVcAAbEeyn6YEmZF7wACYCcAArKCwEk6mRN3sv0RTTgE",
+          "uniqueId": "AgADYCcAArKCwEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14209,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAM2aSmyWyYbSVIlVwABsR7KfpgSZkXvAAJgJwACsoLASTqZE3ey_RFNAQAHbQADOAQ",
+            "uniqueId": "AQADYCcAArKCwEly"
+          }
+        },
+        "caption": "Tulsa King - S01 E06 - Der Stall"
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001905895053,
+      "date": 1685183540,
+      "dateIso": "2023-05-27T10:32:20Z",
+      "content": {
+        "duration": 2174,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E05 - Token Joe.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14212,
+          "size": 1311278320,
+          "remoteId": "BAACAgIAAx0CcZmmjQADNWkpsltGSg0MvxVl7rXzeRyRaGGdAAJZJwACsoLASbXA2g8XDyKLOAQ",
+          "uniqueId": "AgADWScAArKCwEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14211,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAM1aSmyW0ZKDQy_FWXutfN5HJFoYZ0AAlknAAKygsBJtcDaDxcPIosBAAdtAAM4BA",
+            "uniqueId": "AQADWScAArKCwEly"
+          }
+        },
+        "caption": "Tulsa King - S01 E05 - Token Joe"
+      }
+    },
+    {
+      "id": 54525952,
+      "chatId": -1001905895053,
+      "date": 1685183536,
+      "dateIso": "2023-05-27T10:32:16Z",
+      "content": {
+        "duration": 2348,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E04 - Visitation Place.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14214,
+          "size": 1399096018,
+          "remoteId": "BAACAgIAAx0CcZmmjQADNGkpslt9JODqsiYLFVUIYzi846HdAALZLwAC78ZBSfWC98tvr5cQOAQ",
+          "uniqueId": "AgAD2S8AAu_GQUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14213,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAM0aSmyW30k4OqyJgsVVQhjOLzjod0AAtkvAALvxkFJ9YL3y2-vlxABAAdtAAM4BA",
+            "uniqueId": "AQAD2S8AAu_GQUly"
+          }
+        },
+        "caption": "Tulsa King - S01 E04 - Visitation Place"
+      }
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001905895053,
+      "date": 1685183533,
+      "dateIso": "2023-05-27T10:32:13Z",
+      "content": {
+        "duration": 2332,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Tulsa King - S01 E03 - Willkür.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14216,
+          "size": 1321342758,
+          "remoteId": "BAACAgIAAx0CcZmmjQADM2kpslunOpi4w8sUm6_PYFspaCxOAAJAMQACtYSIS2m_ybi7rvSSOAQ",
+          "uniqueId": "AgADQDEAArWEiEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14215,
+            "size": 6202,
+            "remoteId": "AAMCAgADHQJxmaaNAAMzaSmyW6c6mLjDyxSbr89gWyloLE4AAkAxAAK1hIhLab_JuLuu9JIBAAdtAAM4BA",
+            "uniqueId": "AQADQDEAArWEiEty"
+          }
+        },
+        "caption": "Tulsa King - S01 E03 - Willkür"
+      }
+    }
+  ]
+}

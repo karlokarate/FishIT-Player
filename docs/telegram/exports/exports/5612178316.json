@@ -1,0 +1,106 @@
+{
+  "chatId": 5612178316,
+  "title": "TransVip",
+  "exportedAt": "2025-11-28T14:45:27.566576320Z",
+  "count": 4,
+  "messages": [
+    {
+      "id": 47348449280,
+      "chatId": 5612178316,
+      "date": 1764097767,
+      "dateIso": "2025-11-25T19:09:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1135,
+            "height": 1150,
+            "file": {
+              "id": 4857,
+              "size": 242167,
+              "remoteId": "AgACAgIAAxkBAAKwY2kpslfxSEPzWqiA0FHy0kx5fix5AAIQ4zEb_TioSsS9VtSyedA5AQADAgADeQADOAQ",
+              "uniqueId": "AQADEOMxG_04qEp-"
+            }
+          },
+          {
+            "width": 790,
+            "height": 800,
+            "file": {
+              "id": 4856,
+              "size": 147355,
+              "remoteId": "AgACAgIAAxkBAAKwY2kpslfxSEPzWqiA0FHy0kx5fix5AAIQ4zEb_TioSsS9VtSyedA5AQADAgADeAADOAQ",
+              "uniqueId": "AQADEOMxG_04qEp9"
+            }
+          },
+          {
+            "width": 316,
+            "height": 320,
+            "file": {
+              "id": 4855,
+              "size": 38414,
+              "remoteId": "AgACAgIAAxkBAAKwY2kpslfxSEPzWqiA0FHy0kx5fix5AAIQ4zEb_TioSsS9VtSyedA5AQADAgADbQADOAQ",
+              "uniqueId": "AQADEOMxG_04qEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46573551616,
+      "chatId": 5612178316,
+      "date": 1754317574,
+      "dateIso": "2025-08-04T14:26:14Z",
+      "text": "📚 Produkt: транс1\n\n🗓 Tarifpläne",
+      "genres": []
+    },
+    {
+      "id": 46572503040,
+      "chatId": 5612178316,
+      "date": 1754317574,
+      "dateIso": "2025-08-04T14:26:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1138,
+            "height": 1193,
+            "file": {
+              "id": 12417,
+              "size": 239784,
+              "remoteId": "AgACAgIAAxkBAAKtf2kpslfE5te31Enb0naKhnfwXhsPAAIlzzEb6MyQSZ6sTaqKHSn9AQADAgADeQADOAQ",
+              "uniqueId": "AQADJc8xG-jMkEl-"
+            }
+          },
+          {
+            "width": 763,
+            "height": 800,
+            "file": {
+              "id": 12416,
+              "size": 140604,
+              "remoteId": "AgACAgIAAxkBAAKtf2kpslfE5te31Enb0naKhnfwXhsPAAIlzzEb6MyQSZ6sTaqKHSn9AQADAgADeAADOAQ",
+              "uniqueId": "AQADJc8xG-jMkEl9"
+            }
+          },
+          {
+            "width": 305,
+            "height": 320,
+            "file": {
+              "id": 12415,
+              "size": 35138,
+              "remoteId": "AgACAgIAAxkBAAKtf2kpslfE5te31Enb0naKhnfwXhsPAAIlzzEb6MyQSZ6sTaqKHSn9AQADAgADbQADOAQ",
+              "uniqueId": "AQADJc8xG-jMkEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46570405888,
+      "chatId": 5612178316,
+      "date": 1754317571,
+      "dateIso": "2025-08-04T14:26:11Z",
+      "text": "/start",
+      "genres": []
+    }
+  ]
+}

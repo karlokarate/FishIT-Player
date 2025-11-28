@@ -1,0 +1,1473 @@
+{
+  "chatId": 143846926,
+  "title": "Christoph",
+  "exportedAt": "2025-11-28T14:45:09.506691262Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 47389343744,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764321556,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "tdl-cli-code-clean.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 4577,
+            "size": 13043,
+            "expectedSize": 13043,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKwimkpskiHyic7qWyN3j2EDG8PraxvAAI7jwAC_UtJSaP00UsasU1WOAQ",
+              "uniqueId": "AgADO48AAv1LSUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13043
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47386198016,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764321439,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "tdl-cli-code.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5611,
+            "size": 19396989,
+            "expectedSize": 19396989,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKwh2kpskhTX3Ai9tehJFyDO1QAAZtQGgACNI8AAv1LSUmA9sQAASiFQKQ4BA",
+              "uniqueId": "AgADNI8AAv1LSUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 19396989
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47374663680,
+      "chatId": 143846926,
+      "date": 1764249181,
+      "dateIso": "2025-11-27T13:13:01Z",
+      "text": "Sehr gut — das ist eine präzise Frage, und die Antwort ist eindeutig, weil der g000sha-Wrapper eine klar strukturierte Architektur hat.\n\nIch gebe dir alle konkreten Binding-Klassen, Paketnamen, JNI-Schichten und Wrapper-Abstraktionen, die in g000sha256/tdl-coroutines existieren.\n\nDamit weißt du exakt, wie TDLib angebunden ist, welche Klassen den JNI-Call ausführen und welche Schicht den AuthorizationState/Flows erzeugt.\n\n\n---\n\n🧩 1. Hauptpaket (Root):\n\ndev.g000sha256.tdl\n\n\n---\n\n🧠 2. JNI-Bindings / Native Layer\n\nDer g00sha-Wrapper benutzt keine eigene JNI-Handarbeit, sondern packt die offiziellen TDLib-Java-Bindings in Kotlin-Fassaden.\n\nDie konkreten Binding-Klassen liegen in:\n\ndev.g000sha256.tdl.client\n\nUnd die eigentliche TDLib-native Klasse ist:\n\norg.drinkless.tdlib.TdApi\norg.drinkless.tdlib.Client\n\nDiese beiden kommen direkt aus TDLib (C++ → JNI → Java Interface).\n\nDer g000sha-Wrapper ruft Client.execute(), Client.send() \u0026 Client.create() aus diesen Klassen auf.\n\n\n---\n\n🔌 3. Kotlin-Coroutines Binding („High-Level API“)\n\nDies ist die Schicht, die du im Projekt nutzt:\n\ndev.g000sha256.tdl.TdClient\ndev.g000sha256.tdl.TelegramClient\n\nWichtigste Klassen:\n\n✔️ TdClient\n\nKapselt das TDLib-Client-Objekt:\n\nclass TdClient(val native: Client)\n\n✔️ TelegramClient\n\nDas ist das Haupt-Interface, das Coroutines, StateFlow, AuthorizationFlow uvm. bereitstellt:\n\nclass TelegramClient(\n    private val client: TdClient,\n    private val scope: CoroutineScope\n)\n\n✔️ Binding-Hilfsklassen:\n\ndev.g000sha256.tdl.TdExtensions\ndev.g000sha256.tdl.TdResult\n\n\n---\n\n🔁 4. StateFlow-basierte Binding-Schicht\n\nDiese Schicht erzeugt Flows, die TDLib-Updates in Kotlin States verwandeln:\n\ndev.g000sha256.tdl.flow.AuthorizationFlow\ndev.g000sha256.tdl.flow.UpdateFlow\n\nKonkret:\n\n✔️ authorizationState: StateFlow\u003cAuthorizationState?\u003e\n\nkommt aus:\n\ndev.g000sha256.tdl.flow.AuthorizationFlow\n\n✔️ updates: SharedFlow\u003cTdApi.Update\u003e\n\nkommt aus:\n\ndev.g000sha256.tdl.flow.UpdateFlow\n\n\n---\n\n📦 5. DTO / Domain-Model Bindings\n\nAlles was in tdl-coroutines/dto liegt, sind exakte Wrapper um TDLibs Java-DTOs:\n\ndev.g000sha256.tdl.dto.*\n\nBeispiele:\n\nChat\nMessage\nUser\nFile\nChatListMain\nChatPosition\n\nDiese sind 1:1 Mappings zu:\n\norg.drinkless.tdlib.TdApi.Chat\norg.drinkless.tdlib.TdApi.Message\n...\n\nNur „ge-Kotlin-t“ und Flow-friendly.\n\n\n---\n\n🧠 6. Request Bindings (Senden von TDLib-Requests)\n\nAlle Anfragen werden durch folgende Klasse abstrahiert:\n\ndev.g000sha256.tdl.TdExtensions.kt\n\nBeispiel:\n\nsuspend fun \u003cT : TdApi.Object\u003e Client.send(query: TdApi.Function): TdResult\u003cT\u003e\n\nEs ist ein sauberer Coroutine-Wrapper um:\n\nClient.send(query)   --\u003e callback\nClient.execute(query)\n\n\n---\n\n🧬 7. Wie die Bindings zusammenspielen\n\nHier ist der exakte Binding-Stack von oben nach unten:\n\n🟣 Deins (Application Code)\n   ↓\n🔵 TelegramClient (Coroutines High Level)\n   ↓\n🟡 TdClient (Wrapper um Native)\n   ↓\n🟠 org.drinkless.tdlib.Client (JNI Java Binding)\n   ↓\n🔴 TDLib C++ Engine (native binary)\n\n\n---\n\n📌 Konkrete Klassen, nach denen du gefragt hast\n\nDiese Klassen sind DIE „Bindings\" im Sinne von:\n„Was verbindet TDLib \u003c-\u003e JNI \u003c-\u003e Kotlin?\"\n\nNative/JNI Binding:\n\norg.drinkless.tdlib.Client\norg.drinkless.tdlib.TdApi\n\nWrapper (g00sha Binding-Layer):\n\ndev.g000sha256.tdl.TdClient\ndev.g000sha256.tdl.TelegramClient\n\nFlow Binding:\n\ndev.g000sha256.tdl.flow.AuthorizationFlow\ndev.g000sha256.tdl.flow.UpdateFlow\n\nRequest Binding (Kotlin suspend):\n\ndev.g000sha256.tdl.TdExtensions\n\nDTO Binding:\n\ndev.g000sha256.tdl.dto.*\n\nDas ist der komplette Stack — präzise, vollständig und technisch exakt.\n\n\n---\n\nWenn du möchtest, kann ich dir zusätzlich:\n\neine Diagramm-Datei (Mermaid oder PNG) bauen\n\noder eine Audio-Erklärung\n\noder ein interaktives Live-Diagramm\n\n\ndamit du den Binding-Flow 100 % sicher verstehst.",
+      "genres": []
+    },
+    {
+      "id": 47372566528,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764246065,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "tdlib_history_cache_guide.md",
+          "mimeType": "text/markdown",
+          "document": {
+            "id": 5612,
+            "size": 6217,
+            "expectedSize": 6217,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKwemkpskib5nTt2V7SsbbbBn5gYSAZAAKInAAC_UtBSdESre-tewZqOAQ",
+              "uniqueId": "AgADiJwAAv1LQUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 6217
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47371517952,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764245030,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "tdl-cli-clean.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5613,
+            "size": 9601,
+            "expectedSize": 9601,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKweWkpskgY45PXrOWnSTt2FfeSDxf6AAJCnAAC_UtBSUcfASW1k7gAATgE",
+              "uniqueId": "AgADQpwAAv1LQUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 9601
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47336914944,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1763983869,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "tdlib neu.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5614,
+            "size": 46179,
+            "expectedSize": 46179,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKwWGkpskhusU91b2zbqK_sLObFEsZNAAJ8lAACi5YpSaP613EhEKjAOAQ",
+              "uniqueId": "AgADfJQAAouWKUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 46179
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47245688832,
+      "chatId": 143846926,
+      "date": 1763307431,
+      "dateIso": "2025-11-16T15:37:11Z",
+      "text": "mafki0-jidJuv-syqde3",
+      "genres": []
+    },
+    {
+      "id": 47067430912,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761824825,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094598607230450,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5615,
+            "size": 33359963,
+            "expectedSize": 33359963,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvV2kpskh1vEQTQ89Bwx8F6lAvChAVAAIxhgACBJsgSHsDwLacvwgDOAQ",
+              "uniqueId": "AgADMYYAAgSbIEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 33359963
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47066382336,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761824825,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094598607230450,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-armeabi-v7a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5616,
+            "size": 27717866,
+            "expectedSize": 27717866,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvVmkpskhZ-IL9R6Tzc_tdjbDIdGYfAAIvhgACBJsgSBDt8SiKxAqBOAQ",
+              "uniqueId": "AgADL4YAAgSbIEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 27717866
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47065333760,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761822495,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094579967232778,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5617,
+            "size": 33359915,
+            "expectedSize": 33359915,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvVWkpski9WsiYT25E2obxZmzK1sKWAAKjhQACBJsgSKq94_elGLROOAQ",
+              "uniqueId": "AgADo4UAAgSbIEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 33359915
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47064285184,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761822495,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094579967232778,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-armeabi-v7a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5618,
+            "size": 27717825,
+            "expectedSize": 27717825,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvVGkpskixbtXMeHmx5zJ1YZlGVgYQAAKihQACBJsgSH1WAV33PGaBOAQ",
+              "uniqueId": "AgADooUAAgSbIEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 27717825
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47063236608,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761820059,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094560472238354,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5619,
+            "size": 33359922,
+            "expectedSize": 33359922,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvU2kpskin8HpnJv3AvG-8lR1gBHb0AAIbhQACBJsgSMGOIiE-wybROAQ",
+              "uniqueId": "AgADG4UAAgSbIEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 33359922
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47062188032,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761820059,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094560472238354,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-armeabi-v7a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5620,
+            "size": 27717819,
+            "expectedSize": 27717819,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvUmkpskjujB3-oSYDWhSAohqVo57VAAIahQACBJsgSEsdKVpx7ZaIOAQ",
+              "uniqueId": "AgADGoUAAgSbIEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 27717819
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47049605120,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761750951,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094007613532626,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5621,
+            "size": 33359863,
+            "expectedSize": 33359863,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvRmkpskjovSCd8gU4gXAxV7Zk-c7aAAJXhQACBJsYSMne6rgQil4dOAQ",
+              "uniqueId": "AgADV4UAAgSbGEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 33359863
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47048556544,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761750951,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14094007613532626,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-armeabi-v7a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5622,
+            "size": 27717760,
+            "expectedSize": 27717760,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvRWkpskgGeBRwCdvqa7M7_7ezv6BNAAJWhQACBJsYSP0Tm7XN620SOAQ",
+              "uniqueId": "AgADVoUAAgSbGEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 27717760
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46996127744,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761559654,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "review_output.txt",
+          "mimeType": "text/plain",
+          "document": {
+            "id": 5623,
+            "size": 1922281,
+            "expectedSize": 1922281,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvE2kpskhOIoawUnsKQqeUFgGNK60hAAK_hgAC_5f4S29r78773tQOOAQ",
+              "uniqueId": "AgADv4YAAv-X-Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1922281
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46995079168,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761555378,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-debug.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5624,
+            "size": 60201006,
+            "expectedSize": 60201006,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvEmkpskjjNJASiJ0cHTRkJM_GpB59AAKKhQAC_5f4S24glZznl4PJOAQ",
+              "uniqueId": "AgADioUAAv-X-Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 60201006
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46994030592,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761555323,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5625,
+            "size": 32480547,
+            "expectedSize": 32480547,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvEWkpskh_CUxiJgRqsRFyLa_sMYdmAAKHhQAC_5f4S5_Po07SeRMpOAQ",
+              "uniqueId": "AgADh4UAAv-X-Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 32480547
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46992982016,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761141495,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14089131965650546,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5626,
+            "size": 32463399,
+            "expectedSize": 32463399,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvEGkpskgDHzRxksmERxt3AZI62_2NAAI2ggACI6rJS83cyC3CMhGMOAQ",
+              "uniqueId": "AgADNoIAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 32463399
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46991933440,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761141495,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14089131965650546,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-armeabi-v7a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5627,
+            "size": 26109517,
+            "expectedSize": 26109517,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvD2kpskhKZP_72i6Eq8pdMVxTxXPsAAIyggACI6rJSxJANppGC4tHOAQ",
+              "uniqueId": "AgADMoIAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 26109517
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46990884864,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761140883,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14089127065949458,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "StartScreen_backup.kt",
+          "mimeType": "text/x-kotlin",
+          "document": {
+            "id": 5628,
+            "size": 87850,
+            "expectedSize": 87850,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvDmkpskhN3Cx37AABwUk6m2d3xfbHTQAC6IEAAiOqyUuFXlhIWi24hzgE",
+              "uniqueId": "AgAD6IEAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 87850
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46989836288,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761140883,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14089127065949458,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "SettingsScreen_backup.kt",
+          "mimeType": "text/x-kotlin",
+          "document": {
+            "id": 5629,
+            "size": 151662,
+            "expectedSize": 151662,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvDWkpskiugH3pw-pKc5x4vO0pmx2tAALngQACI6rJS5L7otTULk0bOAQ",
+              "uniqueId": "AgAD54EAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 151662
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46988787712,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761137229,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5630,
+            "size": 32447057,
+            "expectedSize": 32447057,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvDGkpskg2DVyETYR4zh-PnSfcLGJCAAI8gAACI6rJSz78_jxq4dHZOAQ",
+              "uniqueId": "AgADPIAAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 32447057
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46987739136,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761123128,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-arm64-v8a-release.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5631,
+            "size": 32447049,
+            "expectedSize": 32447049,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvC2kpskgFY8PWzplesNzp4JTll8s0AAI_fAACI6rJS3TSZz1Pgm6vOAQ",
+              "uniqueId": "AgADP3wAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 32447049
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 46986690560,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 143846926,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761121968,
+      "editDate": 0,
+      "unreadReactions": [],
+      "topicId": {
+        "savedMessagesTopicId": 143846926
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14088975750626418,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "output-metadata.json",
+          "mimeType": "application/json",
+          "document": {
+            "id": 5632,
+            "size": 1224,
+            "expectedSize": 1224,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKvCmkpskgyPN-v_HrSZGqi84SzaNZUAAIRfAACI6rJS0rxesEKMRHpOAQ",
+              "uniqueId": "AgADEXwAAiOqyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1224
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

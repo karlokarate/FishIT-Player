@@ -1,0 +1,340 @@
+{
+  "chatId": -388086908,
+  "title": "Mai-Offensive",
+  "exportedAt": "2025-11-28T14:47:44.286252829Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 6417285120,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": -388086908,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1553584762,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "userId": 143846926
+      }
+    },
+    {
+      "id": 6373244928,
+      "chatId": -388086908,
+      "date": 1552566857,
+      "dateIso": "2019-03-14T12:34:17Z",
+      "text": "Hat jmd noch mein windturbinen arschbild vol\nKroatien turn",
+      "genres": []
+    },
+    {
+      "id": 6365904896,
+      "chatId": -388086908,
+      "date": 1552496864,
+      "dateIso": "2019-03-13T17:07:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 296,
+            "file": {
+              "id": 23229,
+              "size": 19509,
+              "remoteId": "AgACAgIAAxkBAAIXt2kpsuFyBR6xn9Xt_xcj5xVU--MPAALEqjEbpSRJSO_PonYwdaziAQADAgADeAADOAQ",
+              "uniqueId": "AQADxKoxG6UkSUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 237,
+            "file": {
+              "id": 23228,
+              "size": 12826,
+              "remoteId": "AgACAgIAAxkBAAIXt2kpsuFyBR6xn9Xt_xcj5xVU--MPAALEqjEbpSRJSO_PonYwdaziAQADAgADbQADOAQ",
+              "uniqueId": "AQADxKoxG6UkSUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6364856320,
+      "chatId": -388086908,
+      "date": 1552496599,
+      "dateIso": "2019-03-13T17:03:19Z",
+      "text": "ohne seine Alte, versteht sich",
+      "genres": []
+    },
+    {
+      "id": 6363807744,
+      "chatId": -388086908,
+      "date": 1552496590,
+      "dateIso": "2019-03-13T17:03:10Z",
+      "text": "da hat Vogel seine Flitterwochen",
+      "genres": []
+    },
+    {
+      "id": 6362759168,
+      "chatId": -388086908,
+      "date": 1552495961,
+      "dateIso": "2019-03-13T16:52:41Z",
+      "text": "☔️",
+      "genres": []
+    },
+    {
+      "id": 6361710592,
+      "chatId": -388086908,
+      "date": 1552491798,
+      "dateIso": "2019-03-13T15:43:18Z",
+      "text": "Ich würde gerne nach Nakskov, da werden Rotorblätter für Offshorewindanlagen gefertigt und verladen 👋🏻💦💦💦 wem da keiner abgeht...",
+      "genres": []
+    },
+    {
+      "id": 6360662016,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": -388086908,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1552487781,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "animatedEmoji": {
+          "sticker": {
+            "id": 5181593617004757506,
+            "setId": 1258816259751983,
+            "width": 512,
+            "height": 512,
+            "emoji": "👍",
+            "format": {},
+            "fullType": {},
+            "thumbnail": {
+              "format": {},
+              "width": 128,
+              "height": 128,
+              "file": {
+                "id": 50,
+                "size": 3848,
+                "expectedSize": 3848,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAMCAQADFQABaSmyNc0ZIbckrMHT0vXYiVSo7jMAAgICAALxt-hH75Umgn47BZABAAdtAAM4BA",
+                  "uniqueId": "AQADAgIAAvG36Edy",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 3848
+                }
+              }
+            },
+            "sticker": {
+              "id": 49,
+              "size": 25835,
+              "expectedSize": 25835,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "CAACAgEAAxUAAWkpsjXNGSG3JKzB09L12IlUqO4zAAICAgAC8bfoR--VJoJ-OwWQOAQ",
+                "uniqueId": "AgADAgIAAvG36Ec",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 25835
+              }
+            }
+          },
+          "stickerWidth": 512,
+          "stickerHeight": 512,
+          "fitzpatrickType": 0
+        },
+        "emoji": "👍"
+      }
+    },
+    {
+      "id": 6359613440,
+      "chatId": -388086908,
+      "date": 1552486861,
+      "dateIso": "2019-03-13T14:21:01Z",
+      "text": "Und unterschreiben muss man da nie",
+      "genres": []
+    },
+    {
+      "id": 6358564864,
+      "chatId": -388086908,
+      "date": 1552486849,
+      "dateIso": "2019-03-13T14:20:49Z",
+      "text": "Das hab ich im Kopf, weil ich mich da schon locker 10 mal für Festivals eingedeckt habe",
+      "genres": []
+    },
+    {
+      "id": 6357516288,
+      "chatId": -388086908,
+      "date": 1552486805,
+      "dateIso": "2019-03-13T14:20:05Z",
+      "text": "Maux Kommst du da zufällig vorher nochmal vorbei und kannst das Angebot sondieren?",
+      "genres": []
+    },
+    {
+      "id": 6356467712,
+      "chatId": -388086908,
+      "date": 1552486754,
+      "dateIso": "2019-03-13T14:19:14Z",
+      "text": "Wäre der Laden nicht für unsere Zwecke geeignet, hätte Febo den nicht vorgeschlagen",
+      "genres": []
+    },
+    {
+      "id": 6355419136,
+      "chatId": -388086908,
+      "date": 1552486724,
+      "dateIso": "2019-03-13T14:18:44Z",
+      "text": "Richtig",
+      "genres": []
+    },
+    {
+      "id": 6354370560,
+      "chatId": -388086908,
+      "date": 1552486543,
+      "dateIso": "2019-03-13T14:15:43Z",
+      "text": "Gibt aber leider keine Angebotskarte, die man vorher angucken kann. Muss man vor Ort in Augenschein nehmen. Aber da können wir uns komplett eindecken, auch mit Sprit.",
+      "genres": []
+    },
+    {
+      "id": 6353321984,
+      "chatId": -388086908,
+      "date": 1552486461,
+      "dateIso": "2019-03-13T14:14:21Z",
+      "text": "Hab da angerufen.",
+      "genres": []
+    },
+    {
+      "id": 6352273408,
+      "chatId": -388086908,
+      "date": 1552486304,
+      "dateIso": "2019-03-13T14:11:44Z",
+      "text": "Woher hast du die Info mit der späteren Öffnungszeit?",
+      "genres": []
+    },
+    {
+      "id": 6351224832,
+      "chatId": -388086908,
+      "date": 1552486227,
+      "dateIso": "2019-03-13T14:10:27Z",
+      "text": "Wenn du keine Quittung willst, musst du nicht mal unterschreiben 😄",
+      "genres": []
+    },
+    {
+      "id": 6350176256,
+      "chatId": -388086908,
+      "date": 1552486207,
+      "dateIso": "2019-03-13T14:10:07Z",
+      "text": "Haben da auch fürs Festival immer Bier geholt",
+      "genres": []
+    },
+    {
+      "id": 6349127680,
+      "chatId": -388086908,
+      "date": 1552486198,
+      "dateIso": "2019-03-13T14:09:58Z",
+      "text": "Jo genau, brauchst keinen Verchaterer Wisch",
+      "genres": []
+    },
+    {
+      "id": 6348079104,
+      "chatId": -388086908,
+      "date": 1552484242,
+      "dateIso": "2019-03-13T13:37:22Z",
+      "text": "Ah, hab schon gefunden: TOPSHOP am Bootshafen. Die haben regulär nur bis 17h auf, man kann aber evtl. eine spätere Zeit mit denen ausmachen. Man muss nur den Perso vorlegen und unterschreiben, dass man die Dosen binnen 48 Std aus D ausführt.",
+      "genres": []
+    },
+    {
+      "id": 6347030528,
+      "chatId": -388086908,
+      "date": 1552483632,
+      "dateIso": "2019-03-13T13:27:12Z",
+      "text": "Wie heißt denn der Laden und haben die ne Website? Die werden ja sicher irgendeinen Wisch vom Vercharterer o.Ä. brauchen.",
+      "genres": []
+    },
+    {
+      "id": 6345981952,
+      "chatId": -388086908,
+      "date": 1552480885,
+      "dateIso": "2019-03-13T12:41:25Z",
+      "text": "ich kann frühestens 2230 in Kiel Hbf sein.",
+      "genres": []
+    },
+    {
+      "id": 6344933376,
+      "chatId": -388086908,
+      "date": 1552480831,
+      "dateIso": "2019-03-13T12:40:31Z",
+      "text": "Reisen alle am 30.04. an?",
+      "genres": []
+    },
+    {
+      "id": 6343884800,
+      "chatId": -388086908,
+      "date": 1552480142,
+      "dateIso": "2019-03-13T12:29:02Z",
+      "text": "Haben slots, carlsberg, Falcon, Astra uvm im Preisbereich 10-15€ für 24 Dosen a 0.33l",
+      "genres": []
+    },
+    {
+      "id": 6342836224,
+      "chatId": -388086908,
+      "date": 1552475918,
+      "dateIso": "2019-03-13T11:18:38Z",
+      "text": "Der ist für Segler die den Stoff nach Dänemark ausführen",
+      "genres": []
+    }
+  ]
+}

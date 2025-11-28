@@ -1,0 +1,24 @@
+{
+  "chatId": 1061392438,
+  "title": "Telemetrio",
+  "exportedAt": "2025-11-28T14:47:09.142487670Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 42202038272,
+      "chatId": 1061392438,
+      "date": 1690358027,
+      "dateIso": "2023-07-26T07:53:47Z",
+      "text": "Hello ChrisFischTophEr! Welcome to the Telegram bot telemetr io",
+      "genres": []
+    },
+    {
+      "id": 42200989696,
+      "chatId": 1061392438,
+      "date": 1690358027,
+      "dateIso": "2023-07-26T07:53:47Z",
+      "text": "/start",
+      "genres": []
+    }
+  ]
+}

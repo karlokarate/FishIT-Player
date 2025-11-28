@@ -1,0 +1,933 @@
+{
+  "chatId": -1001924741819,
+  "title": "DONNY TV",
+  "exportedAt": "2025-11-28T14:45:56.635501114Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 4687134720,
+      "chatId": -1001924741819,
+      "date": 1750950825,
+      "dateIso": "2025-06-26T15:13:45Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 783,
+            "file": {
+              "id": 5079,
+              "size": 132184,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXZpKbKG0vjH0qwa6rguKGoFwlK-pQACqQQyG_Bp8Er_gCSaYEKq6wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADqQQyG_Bp8Ep9"
+            }
+          },
+          {
+            "width": 262,
+            "height": 320,
+            "file": {
+              "id": 5078,
+              "size": 24105,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXZpKbKG0vjH0qwa6rguKGoFwlK-pQACqQQyG_Bp8Er_gCSaYEKq6wEAAwIAA20AAzgE",
+              "uniqueId": "AQADqQQyG_Bp8Epy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4686086144,
+      "chatId": -1001924741819,
+      "date": 1750089741,
+      "dateIso": "2025-06-16T16:02:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 864,
+            "height": 1280,
+            "file": {
+              "id": 17682,
+              "size": 151545,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXVpKbKGXjyAZaDtNvtJKORmbDftJQACtgcyG8bSgUqYNgptnF_3iwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADtgcyG8bSgUp-"
+            }
+          },
+          {
+            "width": 540,
+            "height": 800,
+            "file": {
+              "id": 17681,
+              "size": 85484,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXVpKbKGXjyAZaDtNvtJKORmbDftJQACtgcyG8bSgUqYNgptnF_3iwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADtgcyG8bSgUp9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17680,
+              "size": 20809,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXVpKbKGXjyAZaDtNvtJKORmbDftJQACtgcyG8bSgUqYNgptnF_3iwEAAwIAA20AAzgE",
+              "uniqueId": "AQADtgcyG8bSgUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4685037568,
+      "chatId": -1001924741819,
+      "date": 1749998436,
+      "dateIso": "2025-06-15T14:40:36Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 674,
+            "height": 1000,
+            "file": {
+              "id": 17685,
+              "size": 158367,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXRpKbKGnMbAQKjLpxpZ5Fl-WZzx-QAC1O0xG9oleEp04WmhMA0QEAEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD1O0xG9oleEp-"
+            }
+          },
+          {
+            "width": 539,
+            "height": 800,
+            "file": {
+              "id": 17684,
+              "size": 135165,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXRpKbKGnMbAQKjLpxpZ5Fl-WZzx-QAC1O0xG9oleEp04WmhMA0QEAEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD1O0xG9oleEp9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17683,
+              "size": 26648,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXRpKbKGnMbAQKjLpxpZ5Fl-WZzx-QAC1O0xG9oleEp04WmhMA0QEAEAAwIAA20AAzgE",
+              "uniqueId": "AQAD1O0xG9oleEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4683988992,
+      "chatId": -1001924741819,
+      "date": 1749914877,
+      "dateIso": "2025-06-14T15:27:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1024,
+            "height": 1280,
+            "file": {
+              "id": 17688,
+              "size": 94848,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXNpKbKG1FD7IRqY9I0cclM3ORF-yAACavAxG9olcErxr4A0VkqyRQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADavAxG9olcEp-"
+            }
+          },
+          {
+            "width": 640,
+            "height": 800,
+            "file": {
+              "id": 17687,
+              "size": 52659,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXNpKbKG1FD7IRqY9I0cclM3ORF-yAACavAxG9olcErxr4A0VkqyRQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADavAxG9olcEp9"
+            }
+          },
+          {
+            "width": 256,
+            "height": 320,
+            "file": {
+              "id": 17686,
+              "size": 13090,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXNpKbKG1FD7IRqY9I0cclM3ORF-yAACavAxG9olcErxr4A0VkqyRQEAAwIAA20AAzgE",
+              "uniqueId": "AQADavAxG9olcEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4682940416,
+      "chatId": -1001924741819,
+      "date": 1749727405,
+      "dateIso": "2025-06-12T11:23:25Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 720,
+            "height": 1126,
+            "file": {
+              "id": 17691,
+              "size": 269095,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXJpKbKGAUXcxE2VJag5Tziu7g1R1AACF-0xG24iWUoWzONU75k_VwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADF-0xG24iWUp-"
+            }
+          },
+          {
+            "width": 512,
+            "height": 800,
+            "file": {
+              "id": 17690,
+              "size": 165920,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXJpKbKGAUXcxE2VJag5Tziu7g1R1AACF-0xG24iWUoWzONU75k_VwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADF-0xG24iWUp9"
+            }
+          },
+          {
+            "width": 205,
+            "height": 320,
+            "file": {
+              "id": 17689,
+              "size": 34043,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXJpKbKGAUXcxE2VJag5Tziu7g1R1AACF-0xG24iWUoWzONU75k_VwEAAwIAA20AAzgE",
+              "uniqueId": "AQADF-0xG24iWUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4681891840,
+      "chatId": -1001924741819,
+      "date": 1749564818,
+      "dateIso": "2025-06-10T14:13:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 604,
+            "height": 755,
+            "file": {
+              "id": 17693,
+              "size": 95740,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXFpKbKG6W91E0Pdu4lewRnfwmBr_wACMvIxG0qdQUq9yrCTEwW4uwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADMvIxG0qdQUp9"
+            }
+          },
+          {
+            "width": 256,
+            "height": 320,
+            "file": {
+              "id": 17692,
+              "size": 27682,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXFpKbKG6W91E0Pdu4lewRnfwmBr_wACMvIxG0qdQUq9yrCTEwW4uwEAAwIAA20AAzgE",
+              "uniqueId": "AQADMvIxG0qdQUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4680843264,
+      "chatId": -1001924741819,
+      "date": 1749469046,
+      "dateIso": "2025-06-09T11:37:26Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1063,
+            "height": 1280,
+            "file": {
+              "id": 17696,
+              "size": 246949,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXBpKbKGYy9CbAABP6DFtd4aw_sqf_8AAmD7MRtuejhKlK9f4xvaxj4BAAMCAAN5AAM4BA",
+              "uniqueId": "AQADYPsxG256OEp-"
+            }
+          },
+          {
+            "width": 664,
+            "height": 800,
+            "file": {
+              "id": 17695,
+              "size": 127110,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXBpKbKGYy9CbAABP6DFtd4aw_sqf_8AAmD7MRtuejhKlK9f4xvaxj4BAAMCAAN4AAM4BA",
+              "uniqueId": "AQADYPsxG256OEp9"
+            }
+          },
+          {
+            "width": 266,
+            "height": 320,
+            "file": {
+              "id": 17694,
+              "size": 27013,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEXBpKbKGYy9CbAABP6DFtd4aw_sqf_8AAmD7MRtuejhKlK9f4xvaxj4BAAMCAANtAAM4BA",
+              "uniqueId": "AQADYPsxG256OEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4679794688,
+      "chatId": -1001924741819,
+      "date": 1749394111,
+      "dateIso": "2025-06-08T14:48:31Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 400,
+            "height": 593,
+            "file": {
+              "id": 17698,
+              "size": 53412,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEW9pKbKGq9Xmar1Sj9uQPLIazMyymgACyfIxG256MEpqo10FgnETlgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADyfIxG256MEp9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17697,
+              "size": 20886,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEW9pKbKGq9Xmar1Sj9uQPLIazMyymgACyfIxG256MEpqo10FgnETlgEAAwIAA20AAzgE",
+              "uniqueId": "AQADyfIxG256MEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4678746112,
+      "chatId": -1001924741819,
+      "date": 1749306940,
+      "dateIso": "2025-06-07T14:35:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 487,
+            "height": 755,
+            "file": {
+              "id": 17700,
+              "size": 98995,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEW5pKbKGmvYgjLUk0ZgtauHtbPNptwACSe4xG74PIUrc2_BcjkPXLAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADSe4xG74PIUp9"
+            }
+          },
+          {
+            "width": 206,
+            "height": 320,
+            "file": {
+              "id": 17699,
+              "size": 22835,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEW5pKbKGmvYgjLUk0ZgtauHtbPNptwACSe4xG74PIUrc2_BcjkPXLAEAAwIAA20AAzgE",
+              "uniqueId": "AQADSe4xG74PIUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4677697536,
+      "chatId": -1001924741819,
+      "date": 1749208690,
+      "dateIso": "2025-06-06T11:18:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 450,
+            "height": 630,
+            "file": {
+              "id": 17702,
+              "size": 56630,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEW1pKbKGzzym4wTSn7UXT-WE_lwnKAACvusxG80SGUpNwTqxuYglDgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADvusxG80SGUp9"
+            }
+          },
+          {
+            "width": 229,
+            "height": 320,
+            "file": {
+              "id": 17701,
+              "size": 20452,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEW1pKbKGzzym4wTSn7UXT-WE_lwnKAACvusxG80SGUpNwTqxuYglDgEAAwIAA20AAzgE",
+              "uniqueId": "AQADvusxG80SGUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4676648960,
+      "chatId": -1001924741819,
+      "date": 1749123661,
+      "dateIso": "2025-06-05T11:41:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 842,
+            "height": 1280,
+            "file": {
+              "id": 17705,
+              "size": 96396,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWxpKbKG8ZyTVxNJnEj9EcY1FqsYSAACNvAxG_1eCEp2XMgWu4S6XQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADNvAxG_1eCEp-"
+            }
+          },
+          {
+            "width": 526,
+            "height": 800,
+            "file": {
+              "id": 17704,
+              "size": 53179,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWxpKbKG8ZyTVxNJnEj9EcY1FqsYSAACNvAxG_1eCEp2XMgWu4S6XQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADNvAxG_1eCEp9"
+            }
+          },
+          {
+            "width": 210,
+            "height": 320,
+            "file": {
+              "id": 17703,
+              "size": 13327,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWxpKbKG8ZyTVxNJnEj9EcY1FqsYSAACNvAxG_1eCEp2XMgWu4S6XQEAAwIAA20AAzgE",
+              "uniqueId": "AQADNvAxG_1eCEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4675600384,
+      "chatId": -1001924741819,
+      "date": 1749038076,
+      "dateIso": "2025-06-04T11:54:36Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 1182,
+            "file": {
+              "id": 17708,
+              "size": 82440,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWtpKbKGewIUDdycm2HcoW_MkCNopAACqPExG_1eAAFKuaC3Cdi_99oBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADqPExG_1eAAFKfg"
+            }
+          },
+          {
+            "width": 541,
+            "height": 800,
+            "file": {
+              "id": 17707,
+              "size": 55236,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWtpKbKGewIUDdycm2HcoW_MkCNopAACqPExG_1eAAFKuaC3Cdi_99oBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADqPExG_1eAAFKfQ"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17706,
+              "size": 13252,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWtpKbKGewIUDdycm2HcoW_MkCNopAACqPExG_1eAAFKuaC3Cdi_99oBAAMCAANtAAM4BA",
+              "uniqueId": "AQADqPExG_1eAAFKcg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4674551808,
+      "chatId": -1001924741819,
+      "date": 1748943241,
+      "dateIso": "2025-06-03T09:34:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 650,
+            "height": 800,
+            "file": {
+              "id": 17710,
+              "size": 155614,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWppKbKGhzj3h5C8hv23lVbYrRcDpAACqewxGz-r-ElWTHkporYWwQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADqewxGz-r-El9"
+            }
+          },
+          {
+            "width": 260,
+            "height": 320,
+            "file": {
+              "id": 17709,
+              "size": 35815,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWppKbKGhzj3h5C8hv23lVbYrRcDpAACqewxGz-r-ElWTHkporYWwQEAAwIAA20AAzgE",
+              "uniqueId": "AQADqewxGz-r-Ely"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4673503232,
+      "chatId": -1001924741819,
+      "date": 1748859224,
+      "dateIso": "2025-06-02T10:13:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 489,
+            "height": 755,
+            "file": {
+              "id": 17712,
+              "size": 79818,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWlpKbKGfId0wrMVwz_7YIwi-EzXiQAC3AABMhuWeuhJAAGUAes5f6q7AQADAgADeAADOAQ",
+              "uniqueId": "AQAD3AABMhuWeuhJfQ"
+            }
+          },
+          {
+            "width": 207,
+            "height": 320,
+            "file": {
+              "id": 17711,
+              "size": 19528,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWlpKbKGfId0wrMVwz_7YIwi-EzXiQAC3AABMhuWeuhJAAGUAes5f6q7AQADAgADbQADOAQ",
+              "uniqueId": "AQAD3AABMhuWeuhJcg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4672454656,
+      "chatId": -1001924741819,
+      "date": 1748776993,
+      "dateIso": "2025-06-01T11:23:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 854,
+            "height": 1280,
+            "file": {
+              "id": 17715,
+              "size": 145152,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWhpKbKGOsRnStaZ_jKee65Fo7UbCQACQPUxG5Z64EmyRw4_IRFHvQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADQPUxG5Z64El-"
+            }
+          },
+          {
+            "width": 534,
+            "height": 800,
+            "file": {
+              "id": 17714,
+              "size": 65419,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWhpKbKGOsRnStaZ_jKee65Fo7UbCQACQPUxG5Z64EmyRw4_IRFHvQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADQPUxG5Z64El9"
+            }
+          },
+          {
+            "width": 214,
+            "height": 320,
+            "file": {
+              "id": 17713,
+              "size": 13355,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWhpKbKGOsRnStaZ_jKee65Fo7UbCQACQPUxG5Z64EmyRw4_IRFHvQEAAwIAA20AAzgE",
+              "uniqueId": "AQADQPUxG5Z64Ely"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4671406080,
+      "chatId": -1001924741819,
+      "date": 1748690641,
+      "dateIso": "2025-05-31T11:24:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 854,
+            "height": 1280,
+            "file": {
+              "id": 17718,
+              "size": 208095,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWdpKbKGNkZwDZ3rfbO_IsXjBybduwAC5fExG5ts0UmwMSvANsg05gEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD5fExG5ts0Ul-"
+            }
+          },
+          {
+            "width": 534,
+            "height": 800,
+            "file": {
+              "id": 17717,
+              "size": 106283,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWdpKbKGNkZwDZ3rfbO_IsXjBybduwAC5fExG5ts0UmwMSvANsg05gEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD5fExG5ts0Ul9"
+            }
+          },
+          {
+            "width": 214,
+            "height": 320,
+            "file": {
+              "id": 17716,
+              "size": 23459,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWdpKbKGNkZwDZ3rfbO_IsXjBybduwAC5fExG5ts0UmwMSvANsg05gEAAwIAA20AAzgE",
+              "uniqueId": "AQAD5fExG5ts0Uly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4670357504,
+      "chatId": -1001924741819,
+      "date": 1748594041,
+      "dateIso": "2025-05-30T08:34:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 17721,
+              "size": 172402,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWZpKbKGhAPgBJf7VsP03OuSbsLjqQACZuYxGzHF0UmgJYEaUVgq3wEAAwIAA3kAAzgE",
+              "uniqueId": "AQADZuYxGzHF0Ul-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 17720,
+              "size": 92697,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWZpKbKGhAPgBJf7VsP03OuSbsLjqQACZuYxGzHF0UmgJYEaUVgq3wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADZuYxGzHF0Ul9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 17719,
+              "size": 21137,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWZpKbKGhAPgBJf7VsP03OuSbsLjqQACZuYxGzHF0UmgJYEaUVgq3wEAAwIAA20AAzgE",
+              "uniqueId": "AQADZuYxGzHF0Uly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4669308928,
+      "chatId": -1001924741819,
+      "date": 1748516041,
+      "dateIso": "2025-05-29T10:54:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 300,
+            "height": 445,
+            "file": {
+              "id": 17723,
+              "size": 39076,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWVpKbKGg7WxMrF1aHkxczX3KowIcQACD_AxGyTPwUm7oz7TUAlpqwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADD_AxGyTPwUl9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17722,
+              "size": 26151,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWVpKbKGg7WxMrF1aHkxczX3KowIcQACD_AxGyTPwUm7oz7TUAlpqwEAAwIAA20AAzgE",
+              "uniqueId": "AQADD_AxGyTPwUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4668260352,
+      "chatId": -1001924741819,
+      "date": 1748421481,
+      "dateIso": "2025-05-28T08:38:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 974,
+            "height": 1129,
+            "file": {
+              "id": 17726,
+              "size": 206754,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWRpKbKGG6BKDV6RnlypTud2Ed2jLwACZ_sxGyTPsUnXZ_7YOraXwAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADZ_sxGyTPsUl-"
+            }
+          },
+          {
+            "width": 690,
+            "height": 800,
+            "file": {
+              "id": 17725,
+              "size": 133322,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWRpKbKGG6BKDV6RnlypTud2Ed2jLwACZ_sxGyTPsUnXZ_7YOraXwAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADZ_sxGyTPsUl9"
+            }
+          },
+          {
+            "width": 276,
+            "height": 320,
+            "file": {
+              "id": 17724,
+              "size": 31523,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWRpKbKGG6BKDV6RnlypTud2Ed2jLwACZ_sxGyTPsUnXZ_7YOraXwAEAAwIAA20AAzgE",
+              "uniqueId": "AQADZ_sxGyTPsUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4667211776,
+      "chatId": -1001924741819,
+      "date": 1748253775,
+      "dateIso": "2025-05-26T10:02:55Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 17729,
+              "size": 157608,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWNpKbKG537HsvFzNXP3wVt-oC833AACv-sxGyjDoUn0LXVduN4E6AEAAwIAA3kAAzgE",
+              "uniqueId": "AQADv-sxGyjDoUl-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 17728,
+              "size": 87437,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWNpKbKG537HsvFzNXP3wVt-oC833AACv-sxGyjDoUn0LXVduN4E6AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADv-sxGyjDoUl9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 17727,
+              "size": 20577,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWNpKbKG537HsvFzNXP3wVt-oC833AACv-sxGyjDoUn0LXVduN4E6AEAAwIAA20AAzgE",
+              "uniqueId": "AQADv-sxGyjDoUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4666163200,
+      "chatId": -1001924741819,
+      "date": 1748167381,
+      "dateIso": "2025-05-25T10:03:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 873,
+            "height": 1280,
+            "file": {
+              "id": 17732,
+              "size": 182120,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWJpKbKG_x31G1LUX2VkKjCJm-3YqwACKfIxGyFtmEn8ThlkYvLL2QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADKfIxGyFtmEl-"
+            }
+          },
+          {
+            "width": 546,
+            "height": 800,
+            "file": {
+              "id": 17731,
+              "size": 80950,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWJpKbKG_x31G1LUX2VkKjCJm-3YqwACKfIxGyFtmEn8ThlkYvLL2QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADKfIxGyFtmEl9"
+            }
+          },
+          {
+            "width": 218,
+            "height": 320,
+            "file": {
+              "id": 17730,
+              "size": 15608,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWJpKbKG_x31G1LUX2VkKjCJm-3YqwACKfIxGyFtmEn8ThlkYvLL2QEAAwIAA20AAzgE",
+              "uniqueId": "AQADKfIxGyFtmEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4665114624,
+      "chatId": -1001924741819,
+      "date": 1748083324,
+      "dateIso": "2025-05-24T10:42:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 509,
+            "height": 755,
+            "file": {
+              "id": 17734,
+              "size": 88643,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWFpKbKGZYR2DFpkgyfcv7AzR3bb3AACmvgxG4R4iUkZtxIVa9gF5AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADmvgxG4R4iUl9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17733,
+              "size": 20930,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWFpKbKGZYR2DFpkgyfcv7AzR3bb3AACmvgxG4R4iUkZtxIVa9gF5AEAAwIAA20AAzgE",
+              "uniqueId": "AQADmvgxG4R4iUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4664066048,
+      "chatId": -1001924741819,
+      "date": 1747981321,
+      "dateIso": "2025-05-23T06:22:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 480,
+            "height": 711,
+            "file": {
+              "id": 17736,
+              "size": 28216,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWBpKbKGXzOn8awwtd1zF59ItiQlTgAC9ugxG4R4gUniJE7wDGmGEgEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD9ugxG4R4gUl9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17735,
+              "size": 9391,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEWBpKbKGXzOn8awwtd1zF59ItiQlTgAC9ugxG4R4gUniJE7wDGmGEgEAAwIAA20AAzgE",
+              "uniqueId": "AQAD9ugxG4R4gUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4663017472,
+      "chatId": -1001924741819,
+      "date": 1747908150,
+      "dateIso": "2025-05-22T10:02:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 864,
+            "height": 1280,
+            "file": {
+              "id": 17739,
+              "size": 234830,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEV9pKbKG4MSqBQ0zd7WfrWwZEiknZgACRe8xG1NReEnqbI4halsqeAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADRe8xG1NReEl-"
+            }
+          },
+          {
+            "width": 540,
+            "height": 800,
+            "file": {
+              "id": 17738,
+              "size": 113899,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEV9pKbKG4MSqBQ0zd7WfrWwZEiknZgACRe8xG1NReEnqbI4halsqeAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADRe8xG1NReEl9"
+            }
+          },
+          {
+            "width": 216,
+            "height": 320,
+            "file": {
+              "id": 17737,
+              "size": 25535,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEV9pKbKG4MSqBQ0zd7WfrWwZEiknZgACRe8xG1NReEnqbI4halsqeAEAAwIAA20AAzgE",
+              "uniqueId": "AQADRe8xG1NReEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4661968896,
+      "chatId": -1001924741819,
+      "date": 1747848358,
+      "dateIso": "2025-05-21T17:25:58Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 683,
+            "height": 1024,
+            "file": {
+              "id": 17742,
+              "size": 92704,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEV5pKbKGQSJUmMqlpuWvkwgYTgZMHgACi_UxG1NRcEn8gCfF1-qCkQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADi_UxG1NRcEl-"
+            }
+          },
+          {
+            "width": 534,
+            "height": 800,
+            "file": {
+              "id": 17741,
+              "size": 74436,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEV5pKbKGQSJUmMqlpuWvkwgYTgZMHgACi_UxG1NRcEn8gCfF1-qCkQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADi_UxG1NRcEl9"
+            }
+          },
+          {
+            "width": 214,
+            "height": 320,
+            "file": {
+              "id": 17740,
+              "size": 20167,
+              "remoteId": "AgACAgIAAx0Ccrk6uwACEV5pKbKGQSJUmMqlpuWvkwgYTgZMHgACi_UxG1NRcEn8gCfF1-qCkQEAAwIAA20AAzgE",
+              "uniqueId": "AQADi_UxG1NRcEly"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

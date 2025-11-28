@@ -1,0 +1,37 @@
+{
+  "chatId": 6467266031,
+  "title": "Niklas",
+  "exportedAt": "2025-11-28T14:47:00.748816990Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42449502208,
+      "senderId": {
+        "userId": 6467266031
+      },
+      "chatId": 6467266031,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1694705608,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

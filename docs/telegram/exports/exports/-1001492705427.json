@@ -1,0 +1,691 @@
+{
+  "chatId": -1001492705427,
+  "title": "Peppa Wutz",
+  "exportedAt": "2025-11-28T14:46:36.632595565Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 188743680,
+      "chatId": -1001492705427,
+      "date": 1664958558,
+      "dateIso": "2022-10-05T08:29:18Z",
+      "text": "https://t.me/DeutscheCartoon",
+      "genres": []
+    },
+    {
+      "id": 187695104,
+      "senderId": {
+        "chatId": -1001492705427
+      },
+      "chatId": -1001492705427,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1651992455,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 182452224
+      }
+    },
+    {
+      "id": 183500800,
+      "chatId": -1001492705427,
+      "date": 1616262968,
+      "dateIso": "2021-03-20T17:56:08Z",
+      "text": "سلام\nدوستان گلم اگه دوست داشته باشید میتونید از این کانال ها هم استفاده کنید.\nکارتون زیبای پپا به زبان آلمانی:\nhttps://t.me/PeppaWutz\nSlow German:\nhttps://t.me/slowgermanpod\nآموزش زبان آلمانی – استاد فرهمند:\nhttps://t.me/farahmandde\nموزیک ویدئو های آلمانی با زیرنویس فارسی و آلمانی:\nhttps://t.me/Deutschmusiknew",
+      "genres": []
+    },
+    {
+      "id": 182452224,
+      "chatId": -1001492705427,
+      "date": 1613908739,
+      "dateIso": "2021-02-21T11:58:59Z",
+      "text": "https://www.instagram.com/invites/contact/?i\u003dg0rntbs6x8vb\u0026utm_content\u003dixwucuv\nسلام\nدوستان این پیج اینستامون هستش\nخوشحال میشیم اگه اونجا ببینیمتون 🥰",
+      "genres": []
+    },
+    {
+      "id": 178257920,
+      "chatId": -1001492705427,
+      "date": 1591524614,
+      "dateIso": "2020-06-07T10:10:14Z",
+      "content": {
+        "duration": 2523,
+        "width": 1280,
+        "height": 720,
+        "fileName": "03.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19877,
+          "size": 103353536,
+          "remoteId": "BAACAgQAAx0CWPjgkwADqmkpsqQz2x8J8HFMXGWeNCF8elM7AALEBgACwCXoUtZxxU9kCRboOAQ",
+          "uniqueId": "AgADxAYAAsAl6FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19876,
+            "size": 5655,
+            "remoteId": "AAMCBAADHQJY-OCTAAOqaSmypDPbHwnwcUxcZZ40IXx6UzsAAsQGAALAJehS1nHFT2QJFugBAAdtAAM4BA",
+            "uniqueId": "AQADxAYAAsAl6FJy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 177209344,
+      "chatId": -1001492705427,
+      "date": 1591524172,
+      "dateIso": "2020-06-07T10:02:52Z",
+      "content": {
+        "duration": 1307,
+        "width": 1280,
+        "height": 720,
+        "fileName": "02.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19879,
+          "size": 118153472,
+          "remoteId": "BAACAgQAAx0CWPjgkwADqWkpsqQm_EZDzlNo-qQKowiXgL-JAALDBgACwCXoUsgXZI1tqs5MOAQ",
+          "uniqueId": "AgADwwYAAsAl6FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19878,
+            "size": 7611,
+            "remoteId": "AAMCBAADHQJY-OCTAAOpaSmypCb8RkPOU2j6pAqjCJeAv4kAAsMGAALAJehSyBdkjW2qzkwBAAdtAAM4BA",
+            "uniqueId": "AQADwwYAAsAl6FJy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 176160768,
+      "chatId": -1001492705427,
+      "date": 1591523469,
+      "dateIso": "2020-06-07T09:51:09Z",
+      "content": {
+        "duration": 1893,
+        "width": 1280,
+        "height": 720,
+        "fileName": "01.MP4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19881,
+          "size": 77334167,
+          "remoteId": "BAACAgQAAx0CWPjgkwADqGkpsqT856v_x5ENXNktKEO1gjbFAALABgACwCXoUpozJAW9F2e_OAQ",
+          "uniqueId": "AgADwAYAAsAl6FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19880,
+            "size": 5638,
+            "remoteId": "AAMCBAADHQJY-OCTAAOoaSmypPznq__HkQ1c2S0oQ7WCNsUAAsAGAALAJehSmjMkBb0XZ78BAAdtAAM4BA",
+            "uniqueId": "AQADwAYAAsAl6FJy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 175112192,
+      "chatId": -1001492705427,
+      "date": 1581749988,
+      "dateIso": "2020-02-15T06:59:48Z",
+      "text": "موزیک ویدئو های آلمانی با زیرنویس فارسی و آلمانی:\nhttps://t.me/Deutschmusiknew",
+      "genres": []
+    },
+    {
+      "id": 171966464,
+      "chatId": -1001492705427,
+      "date": 1581432583,
+      "dateIso": "2020-02-11T14:49:43Z",
+      "content": {
+        "duration": 345,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa Einkaufen Supermarkt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19886,
+          "size": 17612482,
+          "remoteId": "BAACAgQAAx0CWPjgkwADpGkpsqSqaa_ax8RwmN9DIAOrtw7RAAI4BwACWw8QUlwBsFeWEkQ3OAQ",
+          "uniqueId": "AgADOAcAAlsPEFI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19885,
+            "size": 10963,
+            "remoteId": "AAMCBAADHQJY-OCTAAOkaSmypKppr9rHxHCY30MgA6u3DtEAAjgHAAJbDxBSXAGwV5YSRDcBAAdtAAM4BA",
+            "uniqueId": "AQADOAcAAlsPEFJy"
+          }
+        },
+        "caption": "145"
+      }
+    },
+    {
+      "id": 166723584,
+      "chatId": -1001492705427,
+      "date": 1572699632,
+      "dateIso": "2019-11-02T13:00:32Z",
+      "content": {
+        "duration": 268,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-37.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19888,
+          "size": 16385135,
+          "remoteId": "BAACAgQAAx0CWPjgkwADn2kpsqQwsly51yu8jO9QfYCV0vZkAAItBwAComDwURhTUZC5KnV4OAQ",
+          "uniqueId": "AgADLQcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19887,
+            "size": 4311,
+            "remoteId": "AAMCBAADHQJY-OCTAAOfaSmypDCyXLnXK7yM71B9gJXS9mQAAi0HAAKiYPBRGFNRkLkqdXgBAAdtAAM4BA",
+            "uniqueId": "AQADLQcAAqJg8FFy"
+          }
+        },
+        "caption": "144"
+      }
+    },
+    {
+      "id": 165675008,
+      "chatId": -1001492705427,
+      "date": 1572699573,
+      "dateIso": "2019-11-02T12:59:33Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-36.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19890,
+          "size": 16477754,
+          "remoteId": "BAACAgQAAx0CWPjgkwADnmkpsqSwYvqbLn1I_-VlgmRz_O94AAIsBwAComDwUUTrc0CwGitFOAQ",
+          "uniqueId": "AgADLAcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19889,
+            "size": 7527,
+            "remoteId": "AAMCBAADHQJY-OCTAAOeaSmypLBi-psufUj_5WWCZHP873gAAiwHAAKiYPBRROtzQLAaK0UBAAdtAAM4BA",
+            "uniqueId": "AQADLAcAAqJg8FFy"
+          }
+        },
+        "caption": "143"
+      }
+    },
+    {
+      "id": 164626432,
+      "chatId": -1001492705427,
+      "date": 1572699507,
+      "dateIso": "2019-11-02T12:58:27Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-35.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19892,
+          "size": 16443190,
+          "remoteId": "BAACAgQAAx0CWPjgkwADnWkpsqQcqXgN78a3jFVZ0p4F9z76AAIrBwAComDwUZcpDxByrhsGOAQ",
+          "uniqueId": "AgADKwcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19891,
+            "size": 5090,
+            "remoteId": "AAMCBAADHQJY-OCTAAOdaSmypBypeA3vxreMVVnSngX3PvoAAisHAAKiYPBRlykPEHKuGwYBAAdtAAM4BA",
+            "uniqueId": "AQADKwcAAqJg8FFy"
+          }
+        },
+        "caption": "142"
+      }
+    },
+    {
+      "id": 163577856,
+      "chatId": -1001492705427,
+      "date": 1572699446,
+      "dateIso": "2019-11-02T12:57:26Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-34.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19894,
+          "size": 16414078,
+          "remoteId": "BAACAgQAAx0CWPjgkwADnGkpsqTMx6zDqineLZg-zrE0_NFMAAIqBwAComDwUalgm7UqJbuBOAQ",
+          "uniqueId": "AgADKgcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19893,
+            "size": 6100,
+            "remoteId": "AAMCBAADHQJY-OCTAAOcaSmypMzHrMOqKd4tmD7OsTT80UwAAioHAAKiYPBRqWCbtSolu4EBAAdtAAM4BA",
+            "uniqueId": "AQADKgcAAqJg8FFy"
+          }
+        },
+        "caption": "141"
+      }
+    },
+    {
+      "id": 162529280,
+      "chatId": -1001492705427,
+      "date": 1572699396,
+      "dateIso": "2019-11-02T12:56:36Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-33.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19896,
+          "size": 16471951,
+          "remoteId": "BAACAgQAAx0CWPjgkwADm2kpsqQZggs0QurQOwadjZIa7uACAAIpBwAComDwUbkaUtbRHRB4OAQ",
+          "uniqueId": "AgADKQcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19895,
+            "size": 6530,
+            "remoteId": "AAMCBAADHQJY-OCTAAObaSmypBmCCzRC6tA7Bp2Nkhru4AIAAikHAAKiYPBRuRpS1tEdEHgBAAdtAAM4BA",
+            "uniqueId": "AQADKQcAAqJg8FFy"
+          }
+        },
+        "caption": "140"
+      }
+    },
+    {
+      "id": 161480704,
+      "chatId": -1001492705427,
+      "date": 1572699324,
+      "dateIso": "2019-11-02T12:55:24Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-32.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19898,
+          "size": 16448929,
+          "remoteId": "BAACAgQAAx0CWPjgkwADmmkpsqRblzUgBaGIm7wBCXv9pL1AAAIoBwAComDwUTWWHQejPxlEOAQ",
+          "uniqueId": "AgADKAcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19897,
+            "size": 7247,
+            "remoteId": "AAMCBAADHQJY-OCTAAOaaSmypFuXNSAFoYibvAEJe_2kvUAAAigHAAKiYPBRNZYdB6M_GUQBAAdtAAM4BA",
+            "uniqueId": "AQADKAcAAqJg8FFy"
+          }
+        },
+        "caption": "139"
+      }
+    },
+    {
+      "id": 160432128,
+      "chatId": -1001492705427,
+      "date": 1572699268,
+      "dateIso": "2019-11-02T12:54:28Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-31.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19900,
+          "size": 16444263,
+          "remoteId": "BAACAgQAAx0CWPjgkwADmWkpsqSbHMHswS-_wZBRGX548OW0AAInBwAComDwUdUTWz8sXfOjOAQ",
+          "uniqueId": "AgADJwcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19899,
+            "size": 6000,
+            "remoteId": "AAMCBAADHQJY-OCTAAOZaSmypJscwezBL7_BkFEZfnjw5bQAAicHAAKiYPBR1RNbPyxd86MBAAdtAAM4BA",
+            "uniqueId": "AQADJwcAAqJg8FFy"
+          }
+        },
+        "caption": "138"
+      }
+    },
+    {
+      "id": 159383552,
+      "chatId": -1001492705427,
+      "date": 1572699214,
+      "dateIso": "2019-11-02T12:53:34Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-30.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19902,
+          "size": 16436253,
+          "remoteId": "BAACAgQAAx0CWPjgkwADmGkpsqTdAmVMtb9FsotaoyggGAXzAAImBwAComDwUZQQUi5-2PbtOAQ",
+          "uniqueId": "AgADJgcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19901,
+            "size": 5176,
+            "remoteId": "AAMCBAADHQJY-OCTAAOYaSmypN0CZUy1v0Wyi1qjKCAYBfMAAiYHAAKiYPBRlBBSLn7Y9u0BAAdtAAM4BA",
+            "uniqueId": "AQADJgcAAqJg8FFy"
+          }
+        },
+        "caption": "137"
+      }
+    },
+    {
+      "id": 157286400,
+      "chatId": -1001492705427,
+      "date": 1572699105,
+      "dateIso": "2019-11-02T12:51:45Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-28.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19904,
+          "size": 16392439,
+          "remoteId": "BAACAgQAAx0CWPjgkwADlmkpsqStEffZq5NYKzcpm5XzPOL0AAIkBwAComDwUYrsEaBPZMIyOAQ",
+          "uniqueId": "AgADJAcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19903,
+            "size": 5174,
+            "remoteId": "AAMCBAADHQJY-OCTAAOWaSmypK0R99mrk1grNymblfM84vQAAiQHAAKiYPBRiuwRoE9kwjIBAAdtAAM4BA",
+            "uniqueId": "AQADJAcAAqJg8FFy"
+          }
+        },
+        "caption": "135"
+      }
+    },
+    {
+      "id": 156237824,
+      "chatId": -1001492705427,
+      "date": 1572699040,
+      "dateIso": "2019-11-02T12:50:40Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-27.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19906,
+          "size": 16442828,
+          "remoteId": "BAACAgQAAx0CWPjgkwADlWkpsqQoiIZPwzeQtNwVaZgK-WPXAAIjBwAComDwUSVc3uWijQMaOAQ",
+          "uniqueId": "AgADIwcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19905,
+            "size": 7074,
+            "remoteId": "AAMCBAADHQJY-OCTAAOVaSmypCiIhk_DN5C03BVpmAr5Y9cAAiMHAAKiYPBRJVze5aKNAxoBAAdtAAM4BA",
+            "uniqueId": "AQADIwcAAqJg8FFy"
+          }
+        },
+        "caption": "134"
+      }
+    },
+    {
+      "id": 153092096,
+      "chatId": -1001492705427,
+      "date": 1572698868,
+      "dateIso": "2019-11-02T12:47:48Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-24.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19908,
+          "size": 16362297,
+          "remoteId": "BAACAgQAAx0CWPjgkwADkmkpsqRuh8scYqoSCA8ou9Vhkob8AAIgBwAComDwUTpHon8-f_w7OAQ",
+          "uniqueId": "AgADIAcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19907,
+            "size": 5713,
+            "remoteId": "AAMCBAADHQJY-OCTAAOSaSmypG6HyxxiqhIIDyi71WGShvwAAiAHAAKiYPBROkeifz5__DsBAAdtAAM4BA",
+            "uniqueId": "AQADIAcAAqJg8FFy"
+          }
+        },
+        "caption": "131"
+      }
+    },
+    {
+      "id": 152043520,
+      "chatId": -1001492705427,
+      "date": 1572698807,
+      "dateIso": "2019-11-02T12:46:47Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-23.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19910,
+          "size": 16444990,
+          "remoteId": "BAACAgQAAx0CWPjgkwADkWkpsqTEdXJ3O9FzZijj6zZrnghlAAIfBwAComDwURHqGddqS3gtOAQ",
+          "uniqueId": "AgADHwcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19909,
+            "size": 7478,
+            "remoteId": "AAMCBAADHQJY-OCTAAORaSmypMR1cnc70XNmKOPrNmueCGUAAh8HAAKiYPBREeoZ12pLeC0BAAdtAAM4BA",
+            "uniqueId": "AQADHwcAAqJg8FFy"
+          }
+        },
+        "caption": "130"
+      }
+    },
+    {
+      "id": 150994944,
+      "chatId": -1001492705427,
+      "date": 1572698746,
+      "dateIso": "2019-11-02T12:45:46Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-22.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19912,
+          "size": 16491191,
+          "remoteId": "BAACAgQAAx0CWPjgkwADkGkpsqR-ui0hvbHFHyEnQ-DrvAcZAAIeBwAComDwUQHbMHLUht71OAQ",
+          "uniqueId": "AgADHgcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19911,
+            "size": 6112,
+            "remoteId": "AAMCBAADHQJY-OCTAAOQaSmypH66LSG9scUfISdD4Ou8BxkAAh4HAAKiYPBRAdswctSG3vUBAAdtAAM4BA",
+            "uniqueId": "AQADHgcAAqJg8FFy"
+          }
+        },
+        "caption": "129"
+      }
+    },
+    {
+      "id": 149946368,
+      "chatId": -1001492705427,
+      "date": 1572698680,
+      "dateIso": "2019-11-02T12:44:40Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-21.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19914,
+          "size": 16382107,
+          "remoteId": "BAACAgQAAx0CWPjgkwADj2kpsqRAugsAAXzdhjBF2sV4fls4lwACHQcAAqJg8FH2oPoYN5vhlTgE",
+          "uniqueId": "AgADHQcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19913,
+            "size": 5850,
+            "remoteId": "AAMCBAADHQJY-OCTAAOPaSmypEC6CwABfN2GMEXaxXh-WziXAAIdBwAComDwUfag-hg3m-GVAQAHbQADOAQ",
+            "uniqueId": "AQADHQcAAqJg8FFy"
+          }
+        },
+        "caption": "128"
+      }
+    },
+    {
+      "id": 148897792,
+      "chatId": -1001492705427,
+      "date": 1572698619,
+      "dateIso": "2019-11-02T12:43:39Z",
+      "content": {
+        "duration": 269,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-20.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19916,
+          "size": 16412364,
+          "remoteId": "BAACAgQAAx0CWPjgkwADjmkpsqTzMWDqN-q_WHUBVEgfI3z2AAIcBwAComDwUaSQBQABDw2mEDgE",
+          "uniqueId": "AgADHAcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19915,
+            "size": 5051,
+            "remoteId": "AAMCBAADHQJY-OCTAAOOaSmypPMxYOo36r9YdQFUSB8jfPYAAhwHAAKiYPBRpJAFAAEPDaYQAQAHbQADOAQ",
+            "uniqueId": "AQADHAcAAqJg8FFy"
+          }
+        },
+        "caption": "127"
+      }
+    },
+    {
+      "id": 147849216,
+      "chatId": -1001492705427,
+      "date": 1572698557,
+      "dateIso": "2019-11-02T12:42:37Z",
+      "content": {
+        "duration": 268,
+        "width": 640,
+        "height": 360,
+        "fileName": "Peppa-splitter-19.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19918,
+          "size": 16428984,
+          "remoteId": "BAACAgQAAx0CWPjgkwADjWkpsqSian10S5V6MgUXscJ5qqZoAAIbBwAComDwUbMT03ShvVbnOAQ",
+          "uniqueId": "AgADGwcAAqJg8FE"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19917,
+            "size": 4979,
+            "remoteId": "AAMCBAADHQJY-OCTAAONaSmypKJqfXRLlXoyBRexwnmqpmgAAhsHAAKiYPBRsxPTdKG9VucBAAdtAAM4BA",
+            "uniqueId": "AQADGwcAAqJg8FFy"
+          }
+        },
+        "caption": "126"
+      }
+    }
+  ]
+}

@@ -1,0 +1,359 @@
+{
+  "chatId": -1001713482255,
+  "title": "Djatlow-Pass - Tod im Schnee | HD",
+  "exportedAt": "2025-11-28T14:46:57.797460692Z",
+  "count": 11,
+  "messages": [
+    {
+      "id": 29360128,
+      "chatId": -1001713482255,
+      "date": 1649549653,
+      "dateIso": "2022-04-10T00:14:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 700,
+            "height": 1000,
+            "file": {
+              "id": 5576,
+              "size": 64859,
+              "remoteId": "AgACAgIAAx0CZiGqDwADHGkpsqOQUSnyLAoEhOUw3Zfne_DEAALquzEbc5-RSgG9ZtPGBkRlAQADAgADeQADOAQ",
+              "uniqueId": "AQAD6rsxG3OfkUp-"
+            }
+          },
+          {
+            "width": 560,
+            "height": 800,
+            "file": {
+              "id": 5575,
+              "size": 57081,
+              "remoteId": "AgACAgIAAx0CZiGqDwADHGkpsqOQUSnyLAoEhOUw3Zfne_DEAALquzEbc5-RSgG9ZtPGBkRlAQADAgADeAADOAQ",
+              "uniqueId": "AQAD6rsxG3OfkUp9"
+            }
+          },
+          {
+            "width": 224,
+            "height": 320,
+            "file": {
+              "id": 5574,
+              "size": 17767,
+              "remoteId": "AgACAgIAAx0CZiGqDwADHGkpsqOQUSnyLAoEhOUw3Zfne_DEAALquzEbc5-RSgG9ZtPGBkRlAQADAgADbQADOAQ",
+              "uniqueId": "AQAD6rsxG3OfkUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 26214400,
+      "chatId": -1001713482255,
+      "date": 1637027896,
+      "dateIso": "2021-11-16T01:58:16Z",
+      "content": {
+        "duration": 3289,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E08 - Igor.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18518,
+          "size": 1331895819,
+          "remoteId": "BAACAgIAAx0CZiGqDwADGWkpsqNoRLqeBPyZBWU6SPb3QbS1AAIZEQACOB6YSNGt_3rCjBxyOAQ",
+          "uniqueId": "AgADGREAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18517,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMZaSmyo2hEup4E_JkFZTpI9vdBtLUAAhkRAAI4HphI0a3_esKMHHIBAAdtAAM4BA",
+            "uniqueId": "AQADGREAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E08 - Igor"
+      }
+    },
+    {
+      "id": 25165824,
+      "chatId": -1001713482255,
+      "date": 1637027893,
+      "dateIso": "2021-11-16T01:58:13Z",
+      "content": {
+        "duration": 3118,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E07 - Witja.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18520,
+          "size": 1319695717,
+          "remoteId": "BAACAgIAAx0CZiGqDwADGGkpsqOuIj9sEqWxYHU_hc4ip3FVAAISEQACOB6YSARY13xAKxS1OAQ",
+          "uniqueId": "AgADEhEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18519,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMYaSmyo64iP2wSpbFgdT-FziKncVUAAhIRAAI4HphIBFjXfEArFLUBAAdtAAM4BA",
+            "uniqueId": "AQADEhEAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E07 - Witja"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1001713482255,
+      "date": 1637027890,
+      "dateIso": "2021-11-16T01:58:10Z",
+      "content": {
+        "duration": 2813,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E06 - Kostja.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18522,
+          "size": 1333403221,
+          "remoteId": "BAACAgIAAx0CZiGqDwADF2kpsqOFoJf7TFGF0QNZ-A9M05f1AAIOEQACOB6YSMFIh7hSTm1fOAQ",
+          "uniqueId": "AgADDhEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18521,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMXaSmyo4Wgl_tMUYXRA1n4D0zTl_UAAg4RAAI4HphIwUiHuFJObV8BAAdtAAM4BA",
+            "uniqueId": "AQADDhEAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E06 - Kostja"
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1001713482255,
+      "date": 1637027887,
+      "dateIso": "2021-11-16T01:58:07Z",
+      "content": {
+        "duration": 2828,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E05 - Katja.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18524,
+          "size": 1339695712,
+          "remoteId": "BAACAgIAAx0CZiGqDwADFmkpsqMheed6WAu5TSoju4GeAAE2WgACIBEAAjgemEjcjN6rcyYM1zgE",
+          "uniqueId": "AgADIBEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18523,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMWaSmyoyF553pYC7lNKiO7gZ4AATZaAAIgEQACOB6YSNyM3qtzJgzXAQAHbQADOAQ",
+            "uniqueId": "AQADIBEAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E05 - Katja"
+      }
+    },
+    {
+      "id": 22020096,
+      "chatId": -1001713482255,
+      "date": 1637027884,
+      "dateIso": "2021-11-16T01:58:04Z",
+      "content": {
+        "duration": 2595,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E04 - Ljuda.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18526,
+          "size": 1340410969,
+          "remoteId": "BAACAgIAAx0CZiGqDwADFWkpsqO-R2RRm4olPYDgpZaehQEKAAImEQACOB6YSOey05KEr1AaOAQ",
+          "uniqueId": "AgADJhEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18525,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMVaSmyo75HZFGbiiU9gOCllp6FAQoAAiYRAAI4HphI57LTkoSvUBoBAAdtAAM4BA",
+            "uniqueId": "AQADJhEAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E04 - Ljuda"
+      }
+    },
+    {
+      "id": 20971520,
+      "chatId": -1001713482255,
+      "date": 1637027880,
+      "dateIso": "2021-11-16T01:58:00Z",
+      "content": {
+        "duration": 2686,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E03 - Zolotarjow.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18528,
+          "size": 1344335986,
+          "remoteId": "BAACAgIAAx0CZiGqDwADFGkpsqPI5DXNKQQcwSnRK7NYx6SnAAIrEQACOB6YSHF3r8DEIyZ6OAQ",
+          "uniqueId": "AgADKxEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18527,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMUaSmyo8jkNc0pBBzBKdErs1jHpKcAAisRAAI4HphIcXevwMQjJnoBAAdtAAM4BA",
+            "uniqueId": "AQADKxEAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E03 - Zolotarjow"
+      }
+    },
+    {
+      "id": 19922944,
+      "chatId": -1001713482255,
+      "date": 1637027877,
+      "dateIso": "2021-11-16T01:57:57Z",
+      "content": {
+        "duration": 3184,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E02 - Judin.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18530,
+          "size": 1315416651,
+          "remoteId": "BAACAgIAAx0CZiGqDwADE2kpsqP7I5OTK2Z2awzKari1Bqh3AAINEQACOB6YSAsPY8oAAaKvZDgE",
+          "uniqueId": "AgADDREAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18529,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMTaSmyo_sjk5MrZnZrDMpquLUGqHcAAg0RAAI4HphICw9jygABoq9kAQAHbQADOAQ",
+            "uniqueId": "AQADDREAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E02 - Judin"
+      }
+    },
+    {
+      "id": 18874368,
+      "chatId": -1001713482255,
+      "date": 1637027874,
+      "dateIso": "2021-11-16T01:57:54Z",
+      "content": {
+        "duration": 3441,
+        "width": 1280,
+        "height": 536,
+        "fileName": "Djatlow Pass Tod im Schnee - S01 E01 - Kostin.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18532,
+          "size": 1354279143,
+          "remoteId": "BAACAgIAAx0CZiGqDwADEmkpsqP6mEt7k5mP_OEbeT1-RTqCAAIMEQACOB6YSFJ2VIVWiD-rOAQ",
+          "uniqueId": "AgADDBEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 18531,
+            "size": 5327,
+            "remoteId": "AAMCAgADHQJmIaoPAAMSaSmyo_qYS3uTmY_84Rt5PX5FOoIAAgwRAAI4HphIUnZUhVaIP6sBAAdtAAM4BA",
+            "uniqueId": "AQADDBEAAjgemEhy"
+          }
+        },
+        "caption": "Djatlow Pass Tod im Schnee - S01 E01 - Kostin"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001713482255,
+      "date": 1636987593,
+      "dateIso": "2021-11-15T14:46:33Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 619,
+            "height": 299,
+            "file": {
+              "id": 18534,
+              "size": 31912,
+              "remoteId": "AgACAgIAAx0CZiGqDwADA2kpsqPU6EBCiX4sVHvHKpnnfhr0AAIBtjEbSoeZSNNA7bUGhaGwAQADAgADeAADOAQ",
+              "uniqueId": "AQADAbYxG0qHmUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 155,
+            "file": {
+              "id": 18533,
+              "size": 12777,
+              "remoteId": "AgACAgIAAx0CZiGqDwADA2kpsqPU6EBCiX4sVHvHKpnnfhr0AAIBtjEbSoeZSNNA7bUGhaGwAQADAgADbQADOAQ",
+              "uniqueId": "AQADAbYxG0qHmUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001713482255
+      },
+      "chatId": -1001713482255,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1636987427,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Djatlow-Pass - Tod im Schnee"
+      }
+    }
+  ]
+}

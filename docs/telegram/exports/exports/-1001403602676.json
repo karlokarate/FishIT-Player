@@ -1,0 +1,1209 @@
+{
+  "chatId": -1001403602676,
+  "title": "Abenteuer \u0026 Wissen - Sammlung",
+  "exportedAt": "2025-11-28T14:46:11.837098210Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 104857600,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 103809024,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 102760448,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593093215,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1792,
+        "forwardCount": 13
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Wolfgang_Amadeus_Mozart_Wunderkind_und_Musikrebell.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17017,
+            "size": 134480884,
+            "expectedSize": 134480884,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADYmkpsob1eNGW7j2yqV2dYAHI1e97AAIpCQAC4EWpS2OJH9Dj2OXWOAQ",
+              "uniqueId": "AgADKQkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 134480884
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge  Wolfgang Amadeus Mozart",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 101711872,
+      "chatId": -1001403602676,
+      "date": 1593093086,
+      "dateIso": "2020-06-25T13:51:26Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1149,
+            "file": {
+              "id": 17020,
+              "size": 354755,
+              "remoteId": "AgACAgIAAx0CU6lG9AADYWkpsoY6S65RNB-EBwOgtxSx5WhOAALcrTEb4EWpS4xxnODpIfM2AQADAgADeQADOAQ",
+              "uniqueId": "AQAD3K0xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 718,
+            "file": {
+              "id": 17019,
+              "size": 145874,
+              "remoteId": "AgACAgIAAx0CU6lG9AADYWkpsoY6S65RNB-EBwOgtxSx5WhOAALcrTEb4EWpS4xxnODpIfM2AQADAgADeAADOAQ",
+              "uniqueId": "AQAD3K0xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 287,
+            "file": {
+              "id": 17018,
+              "size": 31328,
+              "remoteId": "AgACAgIAAx0CU6lG9AADYWkpsoY6S65RNB-EBwOgtxSx5WhOAALcrTEb4EWpS4xxnODpIfM2AQADAgADbQADOAQ",
+              "uniqueId": "AQAD3K0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 100663296,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593093031,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1687,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Walt_Disney_Zeichner_unserer_Träume.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17021,
+            "size": 144336798,
+            "expectedSize": 144336798,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADYGkpsoa4WR24vipfRdvWbPYBgQyMAAIlCQAC4EWpSyj1qmxnR9rfOAQ",
+              "uniqueId": "AgADJQkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 144336798
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge  Walt Disney",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 99614720,
+      "chatId": -1001403602676,
+      "date": 1593092929,
+      "dateIso": "2020-06-25T13:48:49Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1152,
+            "file": {
+              "id": 17024,
+              "size": 398672,
+              "remoteId": "AgACAgIAAx0CU6lG9AADX2kpsoZTGRwAAWRJdcapRvQVSUdBlwAC260xG-BFqUuAVLyoBSH_0wEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD260xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 720,
+            "file": {
+              "id": 17023,
+              "size": 152449,
+              "remoteId": "AgACAgIAAx0CU6lG9AADX2kpsoZTGRwAAWRJdcapRvQVSUdBlwAC260xG-BFqUuAVLyoBSH_0wEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD260xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 288,
+            "file": {
+              "id": 17022,
+              "size": 29132,
+              "remoteId": "AgACAgIAAx0CU6lG9AADX2kpsoZTGRwAAWRJdcapRvQVSUdBlwAC260xG-BFqUuAVLyoBSH_0wEAAwIAA20AAzgE",
+              "uniqueId": "AQAD260xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 98566144,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593092905,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1299,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Tutanchamun_Das_vergessene_Königsgrab.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17025,
+            "size": 93948119,
+            "expectedSize": 93948119,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADXmkpsoby7JBqhz0Qtzj4d03t34AaAAIjCQAC4EWpS6Y1VxF2Zcn4OAQ",
+              "uniqueId": "AgADIwkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 93948119
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen   Folge Tutanchamun",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 97517568,
+      "chatId": -1001403602676,
+      "date": 1593092785,
+      "dateIso": "2020-06-25T13:46:25Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 237,
+            "height": 213,
+            "file": {
+              "id": 17026,
+              "size": 15989,
+              "remoteId": "AgACAgIAAx0CU6lG9AADXWkpsobGLx4sHTnGbVjAugxUNvuiAALZrTEb4EWpS3L61uaLYXLHAQADAgADbQADOAQ",
+              "uniqueId": "AQAD2a0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 96468992,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593092690,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1189,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Titanic_Entdeckung_auf_dem_Meeresgrund.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17027,
+            "size": 141231848,
+            "expectedSize": 141231848,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADXGkpsoYBCohmnZOjgnt71QzCr1N_AAIhCQAC4EWpS3jdLPw9F24YOAQ",
+              "uniqueId": "AgADIQkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 141231848
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge  Titanic",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 95420416,
+      "chatId": -1001403602676,
+      "date": 1593092577,
+      "dateIso": "2020-06-25T13:42:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1273,
+            "file": {
+              "id": 17030,
+              "size": 312408,
+              "remoteId": "AgACAgIAAx0CU6lG9AADW2kpsoYRCOjQ4K7v1G0fbN1fUH0KAALYrTEb4EWpS5NXsHe5p5S7AQADAgADeQADOAQ",
+              "uniqueId": "AQAD2K0xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 796,
+            "file": {
+              "id": 17029,
+              "size": 141794,
+              "remoteId": "AgACAgIAAx0CU6lG9AADW2kpsoYRCOjQ4K7v1G0fbN1fUH0KAALYrTEb4EWpS5NXsHe5p5S7AQADAgADeAADOAQ",
+              "uniqueId": "AQAD2K0xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 318,
+            "file": {
+              "id": 17028,
+              "size": 31881,
+              "remoteId": "AgACAgIAAx0CU6lG9AADW2kpsoYRCOjQ4K7v1G0fbN1fUH0KAALYrTEb4EWpS5NXsHe5p5S7AQADAgADbQADOAQ",
+              "uniqueId": "AQAD2K0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 94371840,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593092543,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1135,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Thomas_Alva_Edison_Zauberer_des_Lichts.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17031,
+            "size": 114664744,
+            "expectedSize": 114664744,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADWmkpsoY-RBF-pw2uO1yajRWwIrGNAAIfCQAC4EWpS14l6JZQguLZOAQ",
+              "uniqueId": "AgADHwkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 114664744
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen  Folge  Thomas Alva Edison",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 93323264,
+      "chatId": -1001403602676,
+      "date": 1593092409,
+      "dateIso": "2020-06-25T13:40:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 225,
+            "height": 225,
+            "file": {
+              "id": 17032,
+              "size": 17273,
+              "remoteId": "AgACAgIAAx0CU6lG9AADWWkpsoYl45BKhwcxvpFHWcNpAYpRAALXrTEb4EWpS-3MCbQ8vgHCAQADAgADbQADOAQ",
+              "uniqueId": "AQAD160xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 92274688,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593092221,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1088,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Takla_Makan_Schätze_unter_glühendem_Sand.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17033,
+            "size": 68318822,
+            "expectedSize": 68318822,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADWGkpsoZyAkZ7ShiQ8ijHZjDkVoqLAAIWCQAC4EWpS5VF6T_YUySoOAQ",
+              "uniqueId": "AgADFgkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 68318822
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen   Folge Takla Makan",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 91226112,
+      "chatId": -1001403602676,
+      "date": 1593092114,
+      "dateIso": "2020-06-25T13:35:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 225,
+            "height": 225,
+            "file": {
+              "id": 17034,
+              "size": 16783,
+              "remoteId": "AgACAgIAAx0CU6lG9AADV2kpsoaOEi_I4_BsyAMtgGVDBexhAALWrTEb4EWpS4oLOVQSkvleAQADAgADbQADOAQ",
+              "uniqueId": "AQAD1q0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 90177536,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593091905,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1028,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Sir_Francis_Drake_Freibeuter_seiner_Majestät.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17035,
+            "size": 126651634,
+            "expectedSize": 126651634,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADVmkpsoZXdRYrTo2LcBEZ5ZOM6kYlAAILCQAC4EWpS2UZ2NA7y5XnOAQ",
+              "uniqueId": "AgADCwkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 126651634
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge  Sir Francis Drake",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 89128960,
+      "chatId": -1001403602676,
+      "date": 1593091767,
+      "dateIso": "2020-06-25T13:29:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1276,
+            "file": {
+              "id": 17038,
+              "size": 652566,
+              "remoteId": "AgACAgIAAx0CU6lG9AADVWkpsobpCd1U0XkZGMXjcitpkSheAALTrTEb4EWpS94MBsDCAWiNAQADAgADeQADOAQ",
+              "uniqueId": "AQAD060xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 797,
+            "file": {
+              "id": 17037,
+              "size": 247601,
+              "remoteId": "AgACAgIAAx0CU6lG9AADVWkpsobpCd1U0XkZGMXjcitpkSheAALTrTEb4EWpS94MBsDCAWiNAQADAgADeAADOAQ",
+              "uniqueId": "AQAD060xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 319,
+            "file": {
+              "id": 17036,
+              "size": 40092,
+              "remoteId": "AgACAgIAAx0CU6lG9AADVWkpsobpCd1U0XkZGMXjcitpkSheAALTrTEb4EWpS94MBsDCAWiNAQADAgADbQADOAQ",
+              "uniqueId": "AQAD060xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 88080384,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593091727,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1005,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Scott_und_Amundsen_Das_Rennen_zum_Südpol.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17039,
+            "size": 75523151,
+            "expectedSize": 75523151,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADVGkpsoa5LbkDzar1IpV-K786TXghAAIKCQAC4EWpS2eKLwLrxK4VOAQ",
+              "uniqueId": "AgADCgkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 75523151
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge Scott und Amundsen",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1001403602676,
+      "date": 1593091610,
+      "dateIso": "2020-06-25T13:26:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 225,
+            "height": 225,
+            "file": {
+              "id": 17040,
+              "size": 16262,
+              "remoteId": "AgACAgIAAx0CU6lG9AADU2kpsoZET7Qac7RIo_4SBaAjc4e8AALSrTEb4EWpS6esR2FKcbFmAQADAgADbQADOAQ",
+              "uniqueId": "AQAD0q0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 85983232,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593091469,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 963,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Richard_Francis_Burton_Erforscher_fremder_Welten.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17041,
+            "size": 136362959,
+            "expectedSize": 136362959,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADUmkpsobALASBcuiRGhnxlS3N86SJAAIJCQAC4EWpS0xmT7oc2pd0OAQ",
+              "uniqueId": "AgADCQkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 136362959
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge Richard Francis Burton",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1001403602676,
+      "date": 1593091363,
+      "dateIso": "2020-06-25T13:22:43Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1265,
+            "file": {
+              "id": 17044,
+              "size": 682150,
+              "remoteId": "AgACAgIAAx0CU6lG9AADUWkpsoYCgNTN0ul8sQa5hdLvxVBUAALRrTEb4EWpS4VoeGFWQ5wAAQEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD0a0xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 791,
+            "file": {
+              "id": 17043,
+              "size": 237471,
+              "remoteId": "AgACAgIAAx0CU6lG9AADUWkpsoYCgNTN0ul8sQa5hdLvxVBUAALRrTEb4EWpS4VoeGFWQ5wAAQEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD0a0xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 316,
+            "file": {
+              "id": 17042,
+              "size": 32591,
+              "remoteId": "AgACAgIAAx0CU6lG9AADUWkpsoYCgNTN0ul8sQa5hdLvxVBUAALRrTEb4EWpS4VoeGFWQ5wAAQEAAwIAA20AAzgE",
+              "uniqueId": "AQAD0a0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 83886080,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593091361,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 959,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Professor_Grzimek_Ein_Leben_für_die_Serengeti.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17045,
+            "size": 179879331,
+            "expectedSize": 179879331,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADUGkpsoZLybM2RO5ijK-C2C6vJUiuAAIICQAC4EWpS9prZA-ItztwOAQ",
+              "uniqueId": "AgADCAkAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 179879331
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge   Professor Grzimek",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 82837504,
+      "chatId": -1001403602676,
+      "date": 1593091139,
+      "dateIso": "2020-06-25T13:18:59Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1145,
+            "file": {
+              "id": 17048,
+              "size": 336719,
+              "remoteId": "AgACAgIAAx0CU6lG9AADT2kpsoYgjefpMLIaOvcvTAlCYkwtAALPrTEb4EWpSzrggO_0uDcUAQADAgADeQADOAQ",
+              "uniqueId": "AQADz60xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 716,
+            "file": {
+              "id": 17047,
+              "size": 166222,
+              "remoteId": "AgACAgIAAx0CU6lG9AADT2kpsoYgjefpMLIaOvcvTAlCYkwtAALPrTEb4EWpSzrggO_0uDcUAQADAgADeAADOAQ",
+              "uniqueId": "AQADz60xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 286,
+            "file": {
+              "id": 17046,
+              "size": 36872,
+              "remoteId": "AgACAgIAAx0CU6lG9AADT2kpsoYgjefpMLIaOvcvTAlCYkwtAALPrTEb4EWpSzrggO_0uDcUAQADAgADbQADOAQ",
+              "uniqueId": "AQADz60xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 81788928,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593090628,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 955,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Neil_Armstrong_Der_erste_Mensch_auf_dem_Mond.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17049,
+            "size": 143298870,
+            "expectedSize": 143298870,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADTmkpsobFGkM-ZrYsiEnUWvISOCNUAAL7CAAC4EWpS2BvBZvDLW38OAQ",
+              "uniqueId": "AgAD-wgAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 143298870
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge Neil Armstrong",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 80740352,
+      "chatId": -1001403602676,
+      "date": 1593090436,
+      "dateIso": "2020-06-25T13:07:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1258,
+            "file": {
+              "id": 17052,
+              "size": 641935,
+              "remoteId": "AgACAgIAAx0CU6lG9AADTWkpsoZS0rSf2lMpHw60bVeo6wtsAAK0rTEb4EWpS6kWqj7DJOOtAQADAgADeQADOAQ",
+              "uniqueId": "AQADtK0xG-BFqUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 786,
+            "file": {
+              "id": 17051,
+              "size": 237670,
+              "remoteId": "AgACAgIAAx0CU6lG9AADTWkpsoZS0rSf2lMpHw60bVeo6wtsAAK0rTEb4EWpS6kWqj7DJOOtAQADAgADeAADOAQ",
+              "uniqueId": "AQADtK0xG-BFqUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 314,
+            "file": {
+              "id": 17050,
+              "size": 35830,
+              "remoteId": "AgACAgIAAx0CU6lG9AADTWkpsoZS0rSf2lMpHw60bVeo6wtsAAK0rTEb4EWpS6kWqj7DJOOtAQADAgADbQADOAQ",
+              "uniqueId": "AQADtK0xG-BFqUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 79691776,
+      "senderId": {
+        "chatId": -1001403602676
+      },
+      "chatId": -1001403602676,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1593090397,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 948,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Abenteuer_\u0026_Wissen_Mount_Everest_Spurensuche_in_eisigen_Höhen.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17053,
+            "size": 77407857,
+            "expectedSize": 77407857,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CU6lG9AADTGkpsoYl85bnPAmD0rcIMSZV3p7BAAL6CAAC4EWpS64iSDxe5n6qOAQ",
+              "uniqueId": "AgAD-ggAAuBFqUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 77407857
+            }
+          }
+        },
+        "caption": {
+          "text": "Abenteuer \u0026 Wissen    Folge  Mount Everest",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

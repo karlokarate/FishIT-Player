@@ -1,0 +1,1123 @@
+{
+  "chatId": -1001592528794,
+  "title": "Regina Regenbogen",
+  "exportedAt": "2025-11-28T14:46:12.650182338Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 68157440,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 67108864,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 66060288,
+      "chatId": -1001592528794,
+      "date": 1645294601,
+      "dateIso": "2022-02-19T18:16:41Z",
+      "text": "Fehlt was? Fehler gefunden?\nHast Du Fragen zu diesem Kanal? Oder möchtest die Qualität bewerten?... \n\nIm @Hoerspiel_bot kannst Du Dich gerne dazu melden.",
+      "genres": []
+    },
+    {
+      "id": 65011712,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242846,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 301,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "S2 - Und Der Weihnachtsmann.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17562,
+            "size": 14562706,
+            "expectedSize": 14562706,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADPmkpsoaQc3IMassNSwc5tFMrVCteAAKKFgACkGiASLn5bKRdm7xPOAQ",
+              "uniqueId": "AgADihYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 14562706
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 63963136,
+      "chatId": -1001592528794,
+      "date": 1645242832,
+      "dateIso": "2022-02-19T03:53:52Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17564,
+              "size": 95855,
+              "remoteId": "AgACAgIAAx0CXuwPmgADPWkpsobZ7jtoeubBRjgOf483_8cpAALgtzEbkGiASEwpTehMhAcIAQADAgADeAADOAQ",
+              "uniqueId": "AQAD4LcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17563,
+              "size": 27909,
+              "remoteId": "AgACAgIAAx0CXuwPmgADPWkpsobZ7jtoeubBRjgOf483_8cpAALgtzEbkGiASEwpTehMhAcIAQADAgADbQADOAQ",
+              "uniqueId": "AQAD4LcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 62914560,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242688,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 219,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "S1 - Und Die Weihnachtsgeschenke.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17565,
+            "size": 15203494,
+            "expectedSize": 15203494,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADPGkpsobzDnQ72qMvd-o2Hz3XJlM8AAKJFgACkGiASPju8np7OdoROAQ",
+              "uniqueId": "AgADiRYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 15203494
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001592528794,
+      "date": 1645242672,
+      "dateIso": "2022-02-19T03:51:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17567,
+              "size": 120010,
+              "remoteId": "AgACAgIAAx0CXuwPmgADO2kpsoYgz3qzUpwjLz_UvBbtBfk2AALftzEbkGiASNzQuYQugniPAQADAgADeAADOAQ",
+              "uniqueId": "AQAD37cxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17566,
+              "size": 36896,
+              "remoteId": "AgACAgIAAx0CXuwPmgADO2kpsoYgz3qzUpwjLz_UvBbtBfk2AALftzEbkGiASNzQuYQugniPAQADAgADbQADOAQ",
+              "uniqueId": "AQAD37cxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 60817408,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242533,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 192,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "28 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17568,
+            "size": 19562598,
+            "expectedSize": 19562598,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADOmkpsoaU5J-Jc_BlHpJ-sZMmUscZAAKIFgACkGiASPFhMVZC8IvPOAQ",
+              "uniqueId": "AgADiBYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 19562598
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001592528794,
+      "date": 1645242517,
+      "dateIso": "2022-02-19T03:48:37Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17570,
+              "size": 111683,
+              "remoteId": "AgACAgIAAx0CXuwPmgADOWkpsoa7a-83UvmeKSW9VIuAw5esAALetzEbkGiASHw632aqBupyAQADAgADeAADOAQ",
+              "uniqueId": "AQAD3rcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17569,
+              "size": 33323,
+              "remoteId": "AgACAgIAAx0CXuwPmgADOWkpsoa7a-83UvmeKSW9VIuAw5esAALetzEbkGiASHw632aqBupyAQADAgADbQADOAQ",
+              "uniqueId": "AQAD3rcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 58720256,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242470,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 156,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "27 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17571,
+            "size": 18604714,
+            "expectedSize": 18604714,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADOGkpsoZ-tfhrKWEj5OxoPr-xUUyFAAKHFgACkGiASCYPZQfeF0TAOAQ",
+              "uniqueId": "AgADhxYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18604714
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001592528794,
+      "date": 1645242455,
+      "dateIso": "2022-02-19T03:47:35Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17573,
+              "size": 109096,
+              "remoteId": "AgACAgIAAx0CXuwPmgADN2kpsoY-PK8f9CM-1Gxvy7qMM6pLAALdtzEbkGiASIFvvIliCUrJAQADAgADeAADOAQ",
+              "uniqueId": "AQAD3bcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17572,
+              "size": 30213,
+              "remoteId": "AgACAgIAAx0CXuwPmgADN2kpsoY-PK8f9CM-1Gxvy7qMM6pLAALdtzEbkGiASIFvvIliCUrJAQADAgADbQADOAQ",
+              "uniqueId": "AQAD3bcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 56623104,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242419,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 141,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "26 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17574,
+            "size": 16144722,
+            "expectedSize": 16144722,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADNmkpsoberjX1Wov-7XviWfY3DXOGAAKGFgACkGiASHiUa9ouB1_EOAQ",
+              "uniqueId": "AgADhhYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 16144722
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001592528794,
+      "date": 1645242402,
+      "dateIso": "2022-02-19T03:46:42Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17576,
+              "size": 106680,
+              "remoteId": "AgACAgIAAx0CXuwPmgADNWkpsoa-ELtXTjP04ex80dWsrhjpAALctzEbkGiASMcNy3pOLv6_AQADAgADeAADOAQ",
+              "uniqueId": "AQAD3LcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17575,
+              "size": 30055,
+              "remoteId": "AgACAgIAAx0CXuwPmgADNWkpsoa-ELtXTjP04ex80dWsrhjpAALctzEbkGiASMcNy3pOLv6_AQADAgADbQADOAQ",
+              "uniqueId": "AQAD3LcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 54525952,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242361,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 128,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "25 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17577,
+            "size": 18963333,
+            "expectedSize": 18963333,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADNGkpsobZGkrah05ayMJ3zXoahnfqAAKFFgACkGiASH8tA5lRIFa6OAQ",
+              "uniqueId": "AgADhRYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18963333
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001592528794,
+      "date": 1645242346,
+      "dateIso": "2022-02-19T03:45:46Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17579,
+              "size": 108146,
+              "remoteId": "AgACAgIAAx0CXuwPmgADM2kpsoY7-Nl44N-OYSW_labbfaL1AALbtzEbkGiASICwPAJzhlTwAQADAgADeAADOAQ",
+              "uniqueId": "AQAD27cxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17578,
+              "size": 30351,
+              "remoteId": "AgACAgIAAx0CXuwPmgADM2kpsoY7-Nl44N-OYSW_labbfaL1AALbtzEbkGiASICwPAJzhlTwAQADAgADbQADOAQ",
+              "uniqueId": "AQAD27cxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 52428800,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242288,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 121,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "24 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17580,
+            "size": 17584096,
+            "expectedSize": 17584096,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADMmkpsoYUjEp0HKkKO9Apcb5yx5rWAAKEFgACkGiASB3NHQTUWoXJOAQ",
+              "uniqueId": "AgADhBYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 17584096
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 51380224,
+      "chatId": -1001592528794,
+      "date": 1645242273,
+      "dateIso": "2022-02-19T03:44:33Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17582,
+              "size": 99195,
+              "remoteId": "AgACAgIAAx0CXuwPmgADMWkpsoZeqDSusAzvQBgrsfLCbtZ5AALatzEbkGiASEKQLELvwvJaAQADAgADeAADOAQ",
+              "uniqueId": "AQAD2rcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17581,
+              "size": 28758,
+              "remoteId": "AgACAgIAAx0CXuwPmgADMWkpsoZeqDSusAzvQBgrsfLCbtZ5AALatzEbkGiASEKQLELvwvJaAQADAgADbQADOAQ",
+              "uniqueId": "AQAD2rcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 50331648,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242215,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 118,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "23 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17583,
+            "size": 17149435,
+            "expectedSize": 17149435,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADMGkpsoYCx-dglfd86O9_EMp2zg8HAAKDFgACkGiASKmEKOxADcGWOAQ",
+              "uniqueId": "AgADgxYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 17149435
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 49283072,
+      "chatId": -1001592528794,
+      "date": 1645242198,
+      "dateIso": "2022-02-19T03:43:18Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17585,
+              "size": 105531,
+              "remoteId": "AgACAgIAAx0CXuwPmgADL2kpsoYtt3za1lNhywp4y3a2qRIWAALZtzEbkGiASGSk-WJoFXY5AQADAgADeAADOAQ",
+              "uniqueId": "AQAD2bcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17584,
+              "size": 32833,
+              "remoteId": "AgACAgIAAx0CXuwPmgADL2kpsoYtt3za1lNhywp4y3a2qRIWAALZtzEbkGiASGSk-WJoFXY5AQADAgADbQADOAQ",
+              "uniqueId": "AQAD2bcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 48234496,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242137,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 115,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "22 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17586,
+            "size": 17421682,
+            "expectedSize": 17421682,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADLmkpsoYPcrI22ZhhsE7nhXbCql0oAAKCFgACkGiASOCwYK6nBP9bOAQ",
+              "uniqueId": "AgADghYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 17421682
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47185920,
+      "chatId": -1001592528794,
+      "date": 1645242097,
+      "dateIso": "2022-02-19T03:41:37Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17588,
+              "size": 97082,
+              "remoteId": "AgACAgIAAx0CXuwPmgADLWkpsoaNlyNw7v9jELjp6DJclpb3AALYtzEbkGiASAtk0G1CUkcTAQADAgADeAADOAQ",
+              "uniqueId": "AQAD2LcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17587,
+              "size": 29709,
+              "remoteId": "AgACAgIAAx0CXuwPmgADLWkpsoaNlyNw7v9jELjp6DJclpb3AALYtzEbkGiASAtk0G1CUkcTAQADAgADbQADOAQ",
+              "uniqueId": "AQAD2LcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46137344,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645242026,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 116,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "21 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17589,
+            "size": 19474898,
+            "expectedSize": 19474898,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADLGkpsoZKU81ideeelYunUFMUuEE7AAKBFgACkGiASEjV0FmItH6ROAQ",
+              "uniqueId": "AgADgRYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 19474898
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45088768,
+      "chatId": -1001592528794,
+      "date": 1645242012,
+      "dateIso": "2022-02-19T03:40:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17591,
+              "size": 114214,
+              "remoteId": "AgACAgIAAx0CXuwPmgADK2kpsob1KWCoiDYLZyi0gzJR0tTtAALXtzEbkGiASBXyNWFj-mSOAQADAgADeAADOAQ",
+              "uniqueId": "AQAD17cxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17590,
+              "size": 34047,
+              "remoteId": "AgACAgIAAx0CXuwPmgADK2kpsob1KWCoiDYLZyi0gzJR0tTtAALXtzEbkGiASBXyNWFj-mSOAQADAgADbQADOAQ",
+              "uniqueId": "AQAD17cxG5BogEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 44040192,
+      "senderId": {
+        "chatId": -1001592528794
+      },
+      "chatId": -1001592528794,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1645241960,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 111,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "20 - Regina Regenbogen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17592,
+            "size": 16156469,
+            "expectedSize": 16156469,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CXuwPmgADKmkpsobJH4eUepR0_d18i_rQ3sOyAAKAFgACkGiASJbloaqyJPrYOAQ",
+              "uniqueId": "AgADgBYAApBogEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 16156469
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1001592528794,
+      "date": 1645241927,
+      "dateIso": "2022-02-19T03:38:47Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 539,
+            "height": 768,
+            "file": {
+              "id": 17594,
+              "size": 111752,
+              "remoteId": "AgACAgIAAx0CXuwPmgADKWkpsoYvo9u3pVU2Iv9rikhHHagsAALWtzEbkGiASMgYkN0kGdtxAQADAgADeAADOAQ",
+              "uniqueId": "AQAD1rcxG5BogEh9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 17593,
+              "size": 33400,
+              "remoteId": "AgACAgIAAx0CXuwPmgADKWkpsoYvo9u3pVU2Iv9rikhHHagsAALWtzEbkGiASMgYkN0kGdtxAQADAgADbQADOAQ",
+              "uniqueId": "AQAD1rcxG5BogEhy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

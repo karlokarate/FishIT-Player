@@ -1,0 +1,39 @@
+{
+  "chatId": -1001126791947,
+  "title": "🎬 Serien in RAR \u0026 ZIP Dateien 🎬",
+  "exportedAt": "2025-11-28T14:46:20.386302560Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 2937061376,
+      "senderId": {
+        "chatId": -1001126791947
+      },
+      "chatId": -1001126791947,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1737330007,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 2936012800
+      }
+    }
+  ]
+}

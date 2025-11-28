@@ -1,0 +1,499 @@
+{
+  "chatId": -1001415874181,
+  "title": "Hammer House of Horror",
+  "exportedAt": "2025-11-28T14:46:38.765367001Z",
+  "count": 17,
+  "messages": [
+    {
+      "id": 22020096,
+      "chatId": -1001415874181,
+      "date": 1605404151,
+      "dateIso": "2020-11-15T01:35:51Z",
+      "text": "¦¦¦¦¦¦¦¦¦¦¦¦¦¦ Ende ¦¦¦¦¦¦¦¦¦¦¦¦¦¦",
+      "genres": []
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001415874181,
+      "date": 1605386229,
+      "dateIso": "2020-11-14T20:37:09Z",
+      "content": {
+        "duration": 3241,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e13_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19845,
+          "size": 839188436,
+          "remoteId": "BAACAgIAAx0CVGSGhQADEGkpsqSZnmQ4I891-bBk3WjlgygBAALACQACwWSASac0Rh7X7yezOAQ",
+          "uniqueId": "AgADwAkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19844,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMQaSmypJmeZDgjz3X5sGTdaOWDKAEAAsAJAALBZIBJpzRGHtfvJ7MBAAdtAAM4BA",
+            "uniqueId": "AQADwAkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 13 - Die Handlanger des Satans"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1001415874181,
+      "date": 1605385901,
+      "dateIso": "2020-11-14T20:31:41Z",
+      "content": {
+        "duration": 3238,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e12_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19847,
+          "size": 850590432,
+          "remoteId": "BAACAgIAAx0CVGSGhQADD2kpsqTqZM4qoBK-mx8t4kHxO1EuAAK-CQACwWSASbj7RaLx7lAVOAQ",
+          "uniqueId": "AgADvgkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19846,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMPaSmypOpkziqgEr6bHy3iQfE7US4AAr4JAALBZIBJuPtFovHuUBUBAAdtAAM4BA",
+            "uniqueId": "AQADvgkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 12 - Die zwei Gesichter des Bösen"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1001415874181,
+      "date": 1605385568,
+      "dateIso": "2020-11-14T20:26:08Z",
+      "content": {
+        "duration": 3241,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e11_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19849,
+          "size": 827948353,
+          "remoteId": "BAACAgIAAx0CVGSGhQADDmkpsqQAASm80XS2TXTxUIiHwePlrwACvQkAAsFkgEmhwVv2UwelGzgE",
+          "uniqueId": "AgADvQkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19848,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMOaSmypAABKbzRdLZNdPFQiIfB4-WvAAK9CQACwWSASaHBW_ZTB6UbAQAHbQADOAQ",
+            "uniqueId": "AQADvQkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 11 - Besucher aus dem Jenseits"
+      }
+    },
+    {
+      "id": 13631488,
+      "chatId": -1001415874181,
+      "date": 1605385230,
+      "dateIso": "2020-11-14T20:20:30Z",
+      "content": {
+        "duration": 3240,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e10_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19851,
+          "size": 845409593,
+          "remoteId": "BAACAgIAAx0CVGSGhQADDWkpsqQXuWbybjklKCn3Gn5_NfF7AAK6CQACwWSASUw6L6RtKkoEOAQ",
+          "uniqueId": "AgADugkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19850,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMNaSmypBe5ZvJuOSUoKfcafn818XsAAroJAALBZIBJTDovpG0qSgQBAAdtAAM4BA",
+            "uniqueId": "AQADugkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 10 - Der Wächter des Höllenschlunds"
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1001415874181,
+      "date": 1605384837,
+      "dateIso": "2020-11-14T20:13:57Z",
+      "content": {
+        "duration": 3241,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e09_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19853,
+          "size": 842746320,
+          "remoteId": "BAACAgIAAx0CVGSGhQADDGkpsqTJeoFb1z6pioYJq6Nwy70LAAKyCQACwWSASU4NZ7pwkjm4OAQ",
+          "uniqueId": "AgADsgkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19852,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMMaSmypMl6gVvXPqmKhgmro3DLvQsAArIJAALBZIBJTg1nunCSObgBAAdtAAM4BA",
+            "uniqueId": "AQADsgkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 09 - Das Vermächtnis des Falkners"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1001415874181,
+      "date": 1605384483,
+      "dateIso": "2020-11-14T20:08:03Z",
+      "content": {
+        "duration": 3241,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e08_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19855,
+          "size": 843380641,
+          "remoteId": "BAACAgIAAx0CVGSGhQADC2kpsqRX_PkhQFm5IjVH5W9JevIIAAKxCQACwWSASY6yG1EwF-pyOAQ",
+          "uniqueId": "AgADsQkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19854,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMLaSmypFf8-SFAWbkiNUflb0l68ggAArEJAALBZIBJjrIbUTAX6nIBAAdtAAM4BA",
+            "uniqueId": "AQADsQkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 08 - Kinder des Vollmonds"
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1001415874181,
+      "date": 1605384095,
+      "dateIso": "2020-11-14T20:01:35Z",
+      "content": {
+        "duration": 3242,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e07_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19857,
+          "size": 841923796,
+          "remoteId": "BAACAgIAAx0CVGSGhQADCmkpsqRg7eTFLl-TAg9NRMu_tXleAAKwCQACwWSASda7OGXeA_W9OAQ",
+          "uniqueId": "AgADsAkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19856,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMKaSmypGDt5MUuX5MCD01Ey7-1eV4AArAJAALBZIBJ1rs4Zd4D9b0BAAdtAAM4BA",
+            "uniqueId": "AQADsAkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 07 - Die Experiemente des Mr. Blueck"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1001415874181,
+      "date": 1605383755,
+      "dateIso": "2020-11-14T19:55:55Z",
+      "content": {
+        "duration": 3241,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e06_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19859,
+          "size": 820769687,
+          "remoteId": "BAACAgIAAx0CVGSGhQADCWkpsqRl-O2tSa0vOTpp2XyfC9fKAAKsCQACwWSASZzAMoIcsjiAOAQ",
+          "uniqueId": "AgADrAkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19858,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMJaSmypGX47a1JrS85OmnZfJ8L18oAAqwJAALBZIBJnMAyghyyOIABAAdtAAM4BA",
+            "uniqueId": "AQADrAkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 06 - Charlie Boy"
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1001415874181,
+      "date": 1605383427,
+      "dateIso": "2020-11-14T19:50:27Z",
+      "content": {
+        "duration": 3241,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e05_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19861,
+          "size": 837807749,
+          "remoteId": "BAACAgIAAx0CVGSGhQADCGkpsqTOTJcAATAfs2pKS_Vt1kc2kgACqAkAAsFkgEnYKDl0UDh5TzgE",
+          "uniqueId": "AgADqAkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19860,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMIaSmypM5MlwABMB-zakpL9W3WRzaSAAKoCQACwWSASdgoOXRQOHlPAQAHbQADOAQ",
+            "uniqueId": "AQADqAkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 05 - Das Haus des Grauens"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1001415874181,
+      "date": 1605383021,
+      "dateIso": "2020-11-14T19:43:41Z",
+      "content": {
+        "duration": 3256,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e04_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19863,
+          "size": 842923726,
+          "remoteId": "BAACAgIAAx0CVGSGhQADB2kpsqRmOBnIOEMccQ3WVXSXJM59AAKjCQACwWSAST0uP1aRDSrlOAQ",
+          "uniqueId": "AgADowkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19862,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMHaSmypGY4Gcg4QxxxDdZVdJckzn0AAqMJAALBZIBJPS4_VpENKuUBAAdtAAM4BA",
+            "uniqueId": "AQADowkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 04 - Die Rache der Ungeliebten"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1001415874181,
+      "date": 1605382700,
+      "dateIso": "2020-11-14T19:38:20Z",
+      "content": {
+        "duration": 3243,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e03_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19865,
+          "size": 821924076,
+          "remoteId": "BAACAgIAAx0CVGSGhQADBmkpsqRxyR3AFDelJ0xOZ3fQNtTFAAKbCQACwWSASQpepXQxeqlZOAQ",
+          "uniqueId": "AgADmwkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19864,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMGaSmypHHJHcAUN6UnTE5nd9A21MUAApsJAALBZIBJCl6ldDF6qVkBAAdtAAM4BA",
+            "uniqueId": "AQADmwkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 03 - Alptraum ohne Erwachen"
+      }
+    },
+    {
+      "id": 5242880,
+      "chatId": -1001415874181,
+      "date": 1605382366,
+      "dateIso": "2020-11-14T19:32:46Z",
+      "content": {
+        "duration": 3243,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e02_german_dl_fs_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19867,
+          "size": 843615262,
+          "remoteId": "BAACAgIAAx0CVGSGhQADBWkpsqQfpUq_eY9K6vHGpNw9DlBCAAKZCQACwWSASY7ztzA-sDz4OAQ",
+          "uniqueId": "AgADmQkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19866,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMFaSmypB-lSr95j0rq8cak3D0OUEIAApkJAALBZIBJjvO3MD6wPPgBAAdtAAM4BA",
+            "uniqueId": "AQADmQkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode 02 - Die Dinner-Party"
+      }
+    },
+    {
+      "id": 4194304,
+      "chatId": -1001415874181,
+      "date": 1605382029,
+      "dateIso": "2020-11-14T19:27:09Z",
+      "content": {
+        "duration": 3242,
+        "width": 960,
+        "height": 720,
+        "fileName": "hammer_house_of_horror_s01e01_german_dl_720p_bluray_x264_awards.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19869,
+          "size": 847379213,
+          "remoteId": "BAACAgIAAx0CVGSGhQADBGkpsqQGYFT-wn-Rc4AMIe57n6yOAAKTCQACwWSASZ0vx5SAMlStOAQ",
+          "uniqueId": "AgADkwkAAsFkgEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 19868,
+            "size": 734,
+            "remoteId": "AAMCAgADHQJUZIaFAAMEaSmypAZgVP7Cf5FzgAwh7nufrI4AApMJAALBZIBJnS_HlIAyVK0BAAdtAAM4BA",
+            "uniqueId": "AQADkwkAAsFkgEly"
+          }
+        },
+        "caption": "Hammer House of Horror - Staffel 01 - Episode - 01 - Die Hexe von Woodstock-Farm"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001415874181,
+      "date": 1605381743,
+      "dateIso": "2020-11-14T19:22:23Z",
+      "text": "Hammer House of Horror ist eine Horrorserie aus dem Jahr 1980 mit Denholm Elliott und Gary Bond.\n\nKannibalen! Werwölfe! Hexen! Das sind nur einige Bewohner des \"Hammer House of Horror\" in der gleichnamigen TV-Serie aus der Schmiede der legendären \"Hammer\"-Studios. Vor und hinter der Kamera versammelten sich \"Hammer\"-Veteranen und neue Gesichter wie der spätere \"James Bond\" Pierce Brosnan, um den Fernsehzuschauern zu beweisen, worin der Mythos um das Studio begründet liegt. Herausgekommen sind 13 ungewöhnlich blutige und freizügige Gothic-Horror-Geschichten, von denen manche zu den gelungensten Gruselstücken gehören, die je fürs Fernsehen produziert und in Deutschland als \"Gefrier-Schocker\" ausgestrahlt wurden.",
+      "genres": []
+    },
+    {
+      "id": 2097152,
+      "chatId": -1001415874181,
+      "date": 1605381196,
+      "dateIso": "2020-11-14T19:13:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 780,
+            "height": 1197,
+            "file": {
+              "id": 19872,
+              "size": 164643,
+              "remoteId": "AgACAgIAAx0CVGSGhQADAmkpsqTPucO6qlFY0iUQ8FjsE6VRAAKWsDEbwWSASa0NLUdJGOhVAQADAgADeQADOAQ",
+              "uniqueId": "AQADlrAxG8FkgEl-"
+            }
+          },
+          {
+            "width": 521,
+            "height": 800,
+            "file": {
+              "id": 19871,
+              "size": 113355,
+              "remoteId": "AgACAgIAAx0CVGSGhQADAmkpsqTPucO6qlFY0iUQ8FjsE6VRAAKWsDEbwWSASa0NLUdJGOhVAQADAgADeAADOAQ",
+              "uniqueId": "AQADlrAxG8FkgEl9"
+            }
+          },
+          {
+            "width": 208,
+            "height": 320,
+            "file": {
+              "id": 19870,
+              "size": 25562,
+              "remoteId": "AgACAgIAAx0CVGSGhQADAmkpsqTPucO6qlFY0iUQ8FjsE6VRAAKWsDEbwWSASa0NLUdJGOhVAQADAgADbQADOAQ",
+              "uniqueId": "AQADlrAxG8FkgEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001415874181
+      },
+      "chatId": -1001415874181,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1605381169,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Hammer House of Horror"
+      }
+    }
+  ]
+}

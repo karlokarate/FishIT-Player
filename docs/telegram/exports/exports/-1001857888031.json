@@ -1,0 +1,517 @@
+{
+  "chatId": -1001857888031,
+  "title": "Wii games (wbfs)",
+  "exportedAt": "2025-11-28T14:46:51.191649016Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 494927872,
+      "chatId": -1001857888031,
+      "date": 1706656736,
+      "dateIso": "2024-01-30T23:18:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1024,
+            "height": 680,
+            "file": {
+              "id": 5294,
+              "size": 219812,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdhpKbKkko4cmGtOAekhES5WDQK9kwACmtgxGz1n0UmNNM5n9YLaSgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADmtgxGz1n0Ul-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 531,
+            "file": {
+              "id": 5293,
+              "size": 166456,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdhpKbKkko4cmGtOAekhES5WDQK9kwACmtgxGz1n0UmNNM5n9YLaSgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADmtgxGz1n0Ul9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 5292,
+              "size": 34883,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdhpKbKkko4cmGtOAekhES5WDQK9kwACmtgxGz1n0UmNNM5n9YLaSgEAAwIAA20AAzgE",
+              "uniqueId": "AQADmtgxGz1n0Uly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 493879296,
+      "chatId": -1001857888031,
+      "date": 1706633068,
+      "dateIso": "2024-01-30T16:44:28Z",
+      "text": "title (EN) Scarface: The World Is Yours\nID RSCE7D\nregion NTSC-U\ntype Wii\nlanguages EN",
+      "genres": []
+    },
+    {
+      "id": 492830720,
+      "chatId": -1001857888031,
+      "date": 1706633066,
+      "dateIso": "2024-01-30T16:44:26Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19719,
+              "size": 55745,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdZpKbKkmY7UTBvx3r5zvGf1HKFeqwAC6NYxG_07yUnvkZT0hUbzHwEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD6NYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19718,
+              "size": 28067,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdZpKbKkmY7UTBvx3r5zvGf1HKFeqwAC6NYxG_07yUnvkZT0hUbzHwEAAwIAA20AAzgE",
+              "uniqueId": "AQAD6NYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 491782144,
+      "chatId": -1001857888031,
+      "date": 1706633060,
+      "dateIso": "2024-01-30T16:44:20Z",
+      "text": "title (EN) Rockstar Games Presents: Table Tennis\nID RT3E54\nregion NTSC-U\ntype Wii\nlanguages EN",
+      "genres": []
+    },
+    {
+      "id": 490733568,
+      "chatId": -1001857888031,
+      "date": 1706633058,
+      "dateIso": "2024-01-30T16:44:18Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19721,
+              "size": 70590,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdRpKbKkz8IAAQ-MqE9HK7aoMl0VnUYAAufWMRv9O8lJktCZ_NsZdKUBAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD59YxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19720,
+              "size": 31450,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdRpKbKkz8IAAQ-MqE9HK7aoMl0VnUYAAufWMRv9O8lJktCZ_NsZdKUBAAMCAANtAAM4BA",
+              "uniqueId": "AQAD59YxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 489684992,
+      "chatId": -1001857888031,
+      "date": 1706633052,
+      "dateIso": "2024-01-30T16:44:12Z",
+      "text": "title (EN) Need for Speed: Undercover\nID RX9E69\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 488636416,
+      "chatId": -1001857888031,
+      "date": 1706633050,
+      "dateIso": "2024-01-30T16:44:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19723,
+              "size": 63642,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdJpKbKk1JksQlT-Y9dDl_V77fBLSgAC5tYxG_07yUn5vvN5nchCaAEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD5tYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19722,
+              "size": 29092,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdJpKbKk1JksQlT-Y9dDl_V77fBLSgAC5tYxG_07yUn5vvN5nchCaAEAAwIAA20AAzgE",
+              "uniqueId": "AQAD5tYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 487587840,
+      "chatId": -1001857888031,
+      "date": 1706633044,
+      "dateIso": "2024-01-30T16:44:04Z",
+      "text": "title (EN) Need for Speed: The Run\nID SNVE69\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 486539264,
+      "chatId": -1001857888031,
+      "date": 1706633042,
+      "dateIso": "2024-01-30T16:44:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19725,
+              "size": 67335,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdBpKbKk6IAFqJXE_rjpFCyfW87NiAAC5dYxG_07yUluWqzPFjey6AEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD5dYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19724,
+              "size": 30173,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAdBpKbKk6IAFqJXE_rjpFCyfW87NiAAC5dYxG_07yUluWqzPFjey6AEAAwIAA20AAzgE",
+              "uniqueId": "AQAD5dYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 485490688,
+      "chatId": -1001857888031,
+      "date": 1706633036,
+      "dateIso": "2024-01-30T16:43:56Z",
+      "text": "title (EN) Need for Speed: ProStreet\nID RNPE69\nregion NTSC-U\ntype Wii\nlanguages EN",
+      "genres": []
+    },
+    {
+      "id": 484442112,
+      "chatId": -1001857888031,
+      "date": 1706633034,
+      "dateIso": "2024-01-30T16:43:54Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19727,
+              "size": 72222,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAc5pKbKkZjqlZ7uNMYARdCtuDPFqKQAC5NYxG_07yUlgwWQ5zkFXZAEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD5NYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19726,
+              "size": 33991,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAc5pKbKkZjqlZ7uNMYARdCtuDPFqKQAC5NYxG_07yUlgwWQ5zkFXZAEAAwIAA20AAzgE",
+              "uniqueId": "AQAD5NYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 483393536,
+      "chatId": -1001857888031,
+      "date": 1706633028,
+      "dateIso": "2024-01-30T16:43:48Z",
+      "text": "title (EN) Need for Speed: Nitro\nID R7XE69\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 482344960,
+      "chatId": -1001857888031,
+      "date": 1706633026,
+      "dateIso": "2024-01-30T16:43:46Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19729,
+              "size": 86640,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcxpKbKkM1KFBkUeEJxeBv1MsoQrXwAC49YxG_07yUkVI2JvTPZRSgEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD49YxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19728,
+              "size": 40415,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcxpKbKkM1KFBkUeEJxeBv1MsoQrXwAC49YxG_07yUkVI2JvTPZRSgEAAwIAA20AAzgE",
+              "uniqueId": "AQAD49YxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 481296384,
+      "chatId": -1001857888031,
+      "date": 1706633021,
+      "dateIso": "2024-01-30T16:43:41Z",
+      "text": "title (EN) Need for Speed: Hot Pursuit\nID SNHE69\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 480247808,
+      "chatId": -1001857888031,
+      "date": 1706633018,
+      "dateIso": "2024-01-30T16:43:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19731,
+              "size": 67651,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcppKbKkxNg9E80hh6XwP83Tpj-bRgAC4tYxG_07yUlUrPvHqL9P9wEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD4tYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19730,
+              "size": 32241,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcppKbKkxNg9E80hh6XwP83Tpj-bRgAC4tYxG_07yUlUrPvHqL9P9wEAAwIAA20AAzgE",
+              "uniqueId": "AQAD4tYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 479199232,
+      "chatId": -1001857888031,
+      "date": 1706633013,
+      "dateIso": "2024-01-30T16:43:33Z",
+      "text": "title (EN) Need for Speed Carbon\nID RNSE69\nregion NTSC-U\ntype Wii\nlanguages EN",
+      "genres": []
+    },
+    {
+      "id": 478150656,
+      "chatId": -1001857888031,
+      "date": 1706633010,
+      "dateIso": "2024-01-30T16:43:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19733,
+              "size": 66846,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAchpKbKk4bcq69nF3T4T9UgcByGeCAAC4dYxG_07yUkSQinK57u7_QEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD4dYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19732,
+              "size": 30863,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAchpKbKk4bcq69nF3T4T9UgcByGeCAAC4dYxG_07yUkSQinK57u7_QEAAwIAA20AAzgE",
+              "uniqueId": "AQAD4dYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 477102080,
+      "chatId": -1001857888031,
+      "date": 1706633005,
+      "dateIso": "2024-01-30T16:43:25Z",
+      "text": "title (EN) Driver: Parallel Lines\nID RDVE41\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 476053504,
+      "chatId": -1001857888031,
+      "date": 1706633002,
+      "dateIso": "2024-01-30T16:43:22Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19735,
+              "size": 78703,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcZpKbKkmzYLon7uqiAt9mKxUFKH9QAC4NYxG_07yUkWub9GaSUMnQEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD4NYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19734,
+              "size": 37451,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcZpKbKkmzYLon7uqiAt9mKxUFKH9QAC4NYxG_07yUkWub9GaSUMnQEAAwIAA20AAzgE",
+              "uniqueId": "AQAD4NYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 475004928,
+      "chatId": -1001857888031,
+      "date": 1706632997,
+      "dateIso": "2024-01-30T16:43:17Z",
+      "text": "title (EN) Driver: San Francisco\nID SDVE41\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 473956352,
+      "chatId": -1001857888031,
+      "date": 1706632995,
+      "dateIso": "2024-01-30T16:43:15Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19737,
+              "size": 68861,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcRpKbKkPLQgs3slJxAAAa2zaqDWJMgAAt_WMRv9O8lJKr-XvbFLhMUBAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD39YxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19736,
+              "size": 31763,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcRpKbKkPLQgs3slJxAAAa2zaqDWJMgAAt_WMRv9O8lJKr-XvbFLhMUBAAMCAANtAAM4BA",
+              "uniqueId": "AQAD39YxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 472907776,
+      "chatId": -1001857888031,
+      "date": 1706632989,
+      "dateIso": "2024-01-30T16:43:09Z",
+      "text": "title (EN) Bully: Scholarship Edition\nID RB7E54\nregion NTSC-U\ntype Wii\nlanguages EN, FR, ES",
+      "genres": []
+    },
+    {
+      "id": 471859200,
+      "chatId": -1001857888031,
+      "date": 1706632986,
+      "dateIso": "2024-01-30T16:43:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19739,
+              "size": 69946,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcJpKbKkLVRIt4j4QQz4mmzOkhQAARAAAt7WMRv9O8lJvR23_m7qGocBAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD3tYxG_07yUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19738,
+              "size": 31532,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcJpKbKkLVRIt4j4QQz4mmzOkhQAARAAAt7WMRv9O8lJvR23_m7qGocBAAMCAANtAAM4BA",
+              "uniqueId": "AQAD3tYxG_07yUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 470810624,
+      "chatId": -1001857888031,
+      "date": 1706123969,
+      "dateIso": "2024-01-24T19:19:29Z",
+      "text": "title (EN) Spider-Man: Shattered Dimensions\nID SPDE52\nregion NTSC-U\ntype Wii\nlanguages EN",
+      "genres": []
+    },
+    {
+      "id": 469762048,
+      "chatId": -1001857888031,
+      "date": 1706123967,
+      "dateIso": "2024-01-24T19:19:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 512,
+            "height": 340,
+            "file": {
+              "id": 19741,
+              "size": 81669,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcBpKbKkHRpNw5-hXdZb4aKlWq4IbQACz9UxG1N8kUkGtDc6ekvKGwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADz9UxG1N8kUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 212,
+            "file": {
+              "id": 19740,
+              "size": 38117,
+              "remoteId": "AgACAgIAAx0Cbr0fHwACAcBpKbKkHRpNw5-hXdZb4aKlWq4IbQACz9UxG1N8kUkGtDc6ekvKGwEAAwIAA20AAzgE",
+              "uniqueId": "AQADz9UxG1N8kUly"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

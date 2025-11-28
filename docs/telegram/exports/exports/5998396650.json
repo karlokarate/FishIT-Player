@@ -1,0 +1,37 @@
+{
+  "chatId": 5998396650,
+  "title": "Mike Zimmermann",
+  "exportedAt": "2025-11-28T14:47:22.878795635Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 41324380160,
+      "senderId": {
+        "userId": 5998396650
+      },
+      "chatId": 5998396650,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1685256879,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

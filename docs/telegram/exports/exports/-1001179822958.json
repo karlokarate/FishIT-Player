@@ -1,0 +1,1232 @@
+{
+  "chatId": -1001179822958,
+  "title": "#1 Hörbücher Arche Backup",
+  "exportedAt": "2025-11-28T14:45:09.914951314Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 193911062528,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1763286985,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 45,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Hallak_Please-unfollow_9783732484119.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 4578,
+            "size": 436689739,
+            "expectedSize": 436689739,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJgaSmySIaBG7JmZtm71DfDhe2aMa8AAsJ-AAJHcjFL6N1VbgilXCg4BA",
+              "uniqueId": "AgADwn4AAkdyMUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 436689739
+            }
+          }
+        },
+        "caption": {
+          "text": "Basma Hallak\nPlease unfollow\n\nDie ganze Welt weiß, wer sie ist – nur sie selbst hat keine Ahnung. \n\nDie siebzehnjährige Sherry landet in einem Camp für straffällige Jugendliche – nach einer Tat, die ihr ganzes Leben auf den Kopf gestellt hat. Zunächst genießt sie es, an einem Ort zu sein, an dem niemand ihre Vergangenheit kennt, denn online ist ihr Leben ein offenes Buch: Seit dem Tag ihrer Adoption haben Sherrys Eltern jede Einzelheit aus ihrem Leben mit einem Millionenpublikum auf Youtube geteilt. Egal, wie es Sherry ging, egal, wo ihre Bilder und Videos anschließend landeten, die Follower durften nicht enttäuscht werden. Hier, in dem Camp mitten in der Sächsischen Schweiz, hat sie endlich das Gefühl, sie selbst sein zu können und nicht performen zu müssen. Als Sherrys neue Clique jedoch von ihrem Geheimnis erfährt, droht ihr Leben erneut in Flammen aufzugehen.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193910013952,
+      "chatId": -1001179822958,
+      "date": 1763286984,
+      "dateIso": "2025-11-16T09:56:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 894,
+            "height": 894,
+            "file": {
+              "id": 5657,
+              "size": 117668,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJfaSmySB50J5oxLoWZEOGTc48I6ycAAikNaxvc_MhIJrJ0VydzcVUBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADKQ1rG9z8yEh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 5656,
+              "size": 129691,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJfaSmySB50J5oxLoWZEOGTc48I6ycAAikNaxvc_MhIJrJ0VydzcVUBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADKQ1rG9z8yEh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5655,
+              "size": 25206,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJfaSmySB50J5oxLoWZEOGTc48I6ycAAikNaxvc_MhIJrJ0VydzcVUBAAMCAANtAAM4BA",
+              "uniqueId": "AQADKQ1rG9z8yEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193908965376,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1762025822,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 73,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Cole Gibsen - Written on my heart.rar",
+          "mimeType": "application/rar",
+          "document": {
+            "id": 5658,
+            "size": 456118972,
+            "expectedSize": 456118972,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJeaSmySHxz2B7XunsAAaAJ6NvUXM6rAALtiAACmA85SAJguyWY1JnWOAQ",
+              "uniqueId": "AgAD7YgAApgPOUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 456118972
+            }
+          }
+        },
+        "caption": {
+          "text": "Cole Gibsen - Written on my heart\n\nSechs Monate ist es her, dass Ashlyn mitansehen musste, wie alles, was sie besaß, in Flammen aufging. Sechs Monate, seit sie die Stimme gegen ihren gewalttätigen Stiefvater erhob und mit einer gebrochenen Rippe vor die Tür gesetzt wurde. Jetzt versucht Ash, ihr Leben wieder auf die Reihe zu kriegen. Das Letzte, was sie gebrauchen kann, ist noch mehr Ärger – vor allem, wenn der in Gestalt des Tätowierers Lane Garrett daherkommt. Denn Lane ist zwar unglaublich attraktiv, aber der totale Bad Boy. Noch dazu interessiert er sich kein Stück für sie. Doch hinter seinen Tattoos und seiner ruppigen Art steckt ein Geheimnis, von dem Ashlyn noch nichts ahnt.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193907916800,
+      "chatId": -1001179822958,
+      "date": 1762025821,
+      "dateIso": "2025-11-01T19:37:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 894,
+            "height": 894,
+            "file": {
+              "id": 5661,
+              "size": 102592,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJdaSmySHVabc6_g5yo2qerPXfhJWIAAnX_MRuYDzlIv7Ox91nA_fwBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADdf8xG5gPOUh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 5660,
+              "size": 116177,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJdaSmySHVabc6_g5yo2qerPXfhJWIAAnX_MRuYDzlIv7Ox91nA_fwBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADdf8xG5gPOUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5659,
+              "size": 27222,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJdaSmySHVabc6_g5yo2qerPXfhJWIAAnX_MRuYDzlIv7Ox91nA_fwBAAMCAANtAAM4BA",
+              "uniqueId": "AQADdf8xG5gPOUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193906868224,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761313449,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 84,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Sangu_Mandanna_Miss_Swans_zauberhafte_Pension_für_magische_Gäste.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5662,
+            "size": 689880388,
+            "expectedSize": 689880388,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJcaSmySClKK4u7xZMeLk0EFbyLjkUAApyGAALEkdhLj-ue_EuIPXU4BA",
+              "uniqueId": "AgADnIYAAsSR2Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 689880388
+            }
+          }
+        },
+        "caption": {
+          "text": "Sangu Mandanna - Miss Swans zauberhafte Pension für magische Gäste\n\nSera Swan hätte die mächtigste Hexe Englands werden können. Aber aus Liebe beging sie einen unverzeihlichen Fehler und verlor ihre Magie. Seither leitet sie eine kleine Pension in Lancashire und kümmert sich um ihre außergewöhnlichen Gäste. Da entdeckt sie eine Möglichkeit, ihre Fähigkeiten zurückzugewinnen. Doch dafür benötigt sie die Unterstützung des abweisenden Historikers Luke Larsen. Der hat allerdings ganz eigene Gründe, sich nicht in die Machenschaften einer gewissen grummeligen Gastwirtin zu verstricken. Und niemand ist überraschter als er selbst, als er es doch tut – und es genießt.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193905819648,
+      "chatId": -1001179822958,
+      "date": 1761313449,
+      "dateIso": "2025-10-24T13:44:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 567,
+            "height": 567,
+            "file": {
+              "id": 5664,
+              "size": 82773,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJbaSmySB_cQNDEJhgTFghsfXpfTNQAAvn4MRvEkdhLFvVhJ7JBOf8BAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD-fgxG8SR2Et9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5663,
+              "size": 34833,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJbaSmySB_cQNDEJhgTFghsfXpfTNQAAvn4MRvEkdhLFvVhJ7JBOf8BAAMCAANtAAM4BA",
+              "uniqueId": "AQAD-fgxG8SR2Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193904771072,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761313448,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 54,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Ryan Holiday - Dein Ego ist dein Feind (BÜ).zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5665,
+            "size": 392781035,
+            "expectedSize": 392781035,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJaaSmySLK2oRAKa7vY5y3Enyp6rEQAApGGAALEkdhLqGuD0K-CYAo4BA",
+              "uniqueId": "AgADkYYAAsSR2Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 392781035
+            }
+          }
+        },
+        "caption": {
+          "text": "Ryan Holiday - Dein Ego ist dein Feind\nSo besiegst du deinen größten Gegner\n\nViele Menschen glauben, dass die Gründe, die sie daran hindern erfolgreich zu sein, in ihrer Umwelt zu finden sind. Aber in Wirklichkeit steckt der größte Feind in jedem von uns selbst: unser Ego. Es macht uns blind für unsere Fehler, verhindert, dass wir aus ihnen lernen, und hemmt unsere Entwicklung. Denn die wahre Herausforderung liegt darin, weniger Zeit in das Erzählen der eigenen Größe zu stecken und stattdessen die wirklich wichtigen Missionen des Lebens zu meistern.\n\nMit einer Fülle an Beispielen aus Literatur, Philosophie und Geschichte zeigt Ryan Holiday eindrucksvoll und praxisnah, wie die Überwindung des eigenen Egos zum unnachahmlichen Erfolg verhilft. Bewaffnet mit den Erkenntnissen aus diesem Hörbuch kann sich jeder seinem größten Feind stellen - dem eigenen Ego.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193903722496,
+      "chatId": -1001179822958,
+      "date": 1761313448,
+      "dateIso": "2025-10-24T13:44:08Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 567,
+            "height": 567,
+            "file": {
+              "id": 5667,
+              "size": 53014,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJZaSmySPIbmAIbtEN_GAYgeSgaBHIAAvf4MRvEkdhL21-k3UVDLH0BAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD9_gxG8SR2Et9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5666,
+              "size": 24542,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJZaSmySPIbmAIbtEN_GAYgeSgaBHIAAvf4MRvEkdhL21-k3UVDLH0BAAMCAANtAAM4BA",
+              "uniqueId": "AQAD9_gxG8SR2Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193902673920,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761313447,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 39,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Elya Adair - Melodie der Asche (BÜ).zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5668,
+            "size": 1053859120,
+            "expectedSize": 1053859120,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJYaSmySMPbicBV-S9GFvpF_rm9bqIAAoyGAALEkdhLqhDcZzPdras4BA",
+              "uniqueId": "AgADjIYAAsSR2Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1053859120
+            }
+          }
+        },
+        "caption": {
+          "text": "Elya Adair - Melodie der Asche\n\nDrei untrennbar verbundene Schicksale entscheiden über die Zukunft eines kriegszerrissenen Reiches. Inmitten des Konfliktes zwischen der Rebellion und dem grausamen Regime des Sha ist Caliyan der stärkste Magier seiner Zeit, doch man hat ihm alles genommen. Im Versuch seiner dunklen Bestimmung zu entfliehen, verliert er sich in Rache. Vaelen ist ein einfacher Fischer, der seine Vergangenheit nicht kennt. Das Einzige, das ihn ständig begleitet, ist eine unbestimmte Sehnsucht, getrieben von einer geheimnisvollen Melodie in seinem Inneren, die noch lauter erklingt, als er Laudan kennenlernt. Aber Laudan ist nicht nur ein Spion der Rebellen, sondern auch der Feldherr des Sha – und damit nicht der, für den Vaelen ihn hält. Laudan ist sofort fasziniert von dem jungen Fischer, seinem starken Willen, der Freiheit und der Anmut, die er ausstrahlt. Doch welche Chance hat eine so zarte Liebe, wenn um sie herum ein Kampf tobt? Wenn Laudan ihm nicht sagen kann, dass er nicht der ist, für den Vaelen ihn hält? Und Vaelen die Macht besitzt, den Frieden zu bringen oder alles zu zerstören, woran Laudan glaubt?",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193901625344,
+      "chatId": -1001179822958,
+      "date": 1761313447,
+      "dateIso": "2025-10-24T13:44:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 567,
+            "height": 567,
+            "file": {
+              "id": 5670,
+              "size": 74939,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJXaSmySITZjI5bfwuhv8iEo--UEr8AAvj4MRvEkdhLvb-aGUSAAAFtAQADAgADeAADOAQ",
+              "uniqueId": "AQAD-PgxG8SR2Et9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5669,
+              "size": 32821,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJXaSmySITZjI5bfwuhv8iEo--UEr8AAvj4MRvEkdhLvb-aGUSAAAFtAQADAgADbQADOAQ",
+              "uniqueId": "AQAD-PgxG8SR2Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193900576768,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761313446,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 38,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Prof. Dr. Ingo Froböse - Der Männer-Gesundheitscode (BÜ).zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 5671,
+            "size": 391947131,
+            "expectedSize": 391947131,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJWaSmySPPgdeN3kA2I-wIW6IBaiHEAAoGGAALEkdhLvZwRSwqYJmQ4BA",
+              "uniqueId": "AgADgYYAAsSR2Es",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 391947131
+            }
+          }
+        },
+        "caption": {
+          "text": "Prof. Dr. Ingo Froböse, Peter Großmann - Der Männer-Gesundheitscode\n\nOb wachsender Bauch, Haarausfall, Muskelabbau, Schlafstörungen, verringerte Libido oder Gelenkbeschwerden. Die meisten Veränderungen kommen nicht plötzlich wie ein unabwendbares Schicksal, sondern sind hausgemacht. Darin steckt aber auch eine gute Botschaft: wenn „Mann“ Einfluss hat, dann kann er auch Dinge verändern und zwar in jedem Alter. In ihrem Buch decken Bestsellerautor und Gesundheitsexperte Ingo Froböse und Fernsehmoderator Peter Großmann Mythen und Irrtümer rund ums Thema Männergesundheit auf, erzählen humorvoll von eigenen Erfahrungen und geben viele praktische Tipps, die jeden Mann zum Architekten seines eigenen Wohlbefindens machen. Mit ihrer Männergesundheitsformel zeigen die beiden Autoren, was „jederMann“ tun kann, um fitter, leistungsfähiger und ausgeglichenen zu sein und dies auch zu bleiben.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193899528192,
+      "chatId": -1001179822958,
+      "date": 1761313445,
+      "dateIso": "2025-10-24T13:44:05Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 567,
+            "height": 567,
+            "file": {
+              "id": 5673,
+              "size": 71720,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJVaSmySN9Wcr00L5p9vTiCpmJrHHEAAvb4MRvEkdhLP0uQdGtyL-cBAAMCAAN4AAM4BA",
+              "uniqueId": "AQAD9vgxG8SR2Et9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5672,
+              "size": 32461,
+              "remoteId": "AgACAgIAAx0CRlKrbgABAtJVaSmySN9Wcr00L5p9vTiCpmJrHHEAAvb4MRvEkdhLP0uQdGtyL-cBAAMCAANtAAM4BA",
+              "uniqueId": "AQAD9vgxG8SR2Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193898479616,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761305008,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 38,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Jana_Lukas_Die_Bergpraxis_02_Traummomente_in_der_Bergpraxis_Ungekürzt.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5674,
+            "size": 625250677,
+            "expectedSize": 625250677,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJUaSmySCfEYx8AAeffH-H5zyEImNf1AAKNiQACpz-gS78iVL2AGMq3OAQ",
+              "uniqueId": "AgADjYkAAqc_oEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 625250677
+            }
+          }
+        },
+        "caption": {
+          "text": "Lukas, Jana\nDie Bergpraxis 02\nTraummomente in der Bergpraxis\n\nFür Simon Thaler gibt es keinen schöneren Ort als Waldkirch. Bergtouren, Gleitschirmfliegen und seine Arbeit als Kinderarzt in der Bergpraxis seiner Familie erfüllen ihn. Marie Brunner wäre überall lieber als in Waldkirch. Vor vierzehn Jahren hat sie die Stadt nach einem schrecklichen Unglück verlassen. Doch jetzt muss sie sich um ihre Großmutter Fanny kümmern und nimmt einen Job als Arzthelferin in der Bergpraxis an. Ihr Chef Simon erleichtert ihr nicht nur den Neuanfang. Je mehr Zeit sie miteinander verbringen, desto weniger kann Marie die Schmetterlinge in ihrem Bauch ignorieren. Schon einmal hat ein Mann aus Waldkirch ihr das Herz gebrochen. Wird Simon sie davon überzeugen können, dass nicht nur er, sondern auch ihre Heimat eine Chance verdient haben?",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193897431040,
+      "chatId": -1001179822958,
+      "date": 1761305008,
+      "dateIso": "2025-10-24T11:23:28Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 5676,
+              "size": 48574,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJTaSmySF1uy6baasFrwJJwjN4AAX0fAAJTC2sbXh_YRwFBbBiP4uaKAQADAgADeAADOAQ",
+              "uniqueId": "AQADUwtrG14f2Ed9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5675,
+              "size": 34224,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJTaSmySF1uy6baasFrwJJwjN4AAX0fAAJTC2sbXh_YRwFBbBiP4uaKAQADAgADbQADOAQ",
+              "uniqueId": "AQADUwtrG14f2Edy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193896382464,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761305007,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 35,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Jana_Lukas_Die_Bergpraxis_01_Herzklopfen_in_der_Bergpraxis_Ungekürzt.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5677,
+            "size": 600232890,
+            "expectedSize": 600232890,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJSaSmySENcMPTWWpbyyMR7eaGPeI8AArl9AAJKtfFL8zYyrTPVqrA4BA",
+              "uniqueId": "AgADuX0AAkq18Us",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 600232890
+            }
+          }
+        },
+        "caption": {
+          "text": "Lukas, Jana\nDie Bergpraxis 01\nHerzklopfen in der Bergpraxis\n\nBei Risiken und Nebenwirkungen verliebe dich in deinen Arzt – Der Auftakt der gefühlvollen Trilogie inmitten der malerischen Alpen\n\nSanna Thaler ist Landärztin aus Leidenschaft. Die Patienten stehen für sie im Mittelpunkt. Geschickt ergänzt sie Schulmedizin mit dem, was ihre Heimat in den Alpen an Kräutern und Heilpflanzen zu bieten hat. Ganz im Gegensatz zu Mats Lindberg, Arzt in der Notaufnahme und brillant in seinem Job. Beruflich wie privat wahrt er stets Distanz. Kein Wunder, dass Sanna wenig von der Idee ihres Bruders Simon begeistert ist, seinen Freund Mats in ihrer Bergpraxis aushelfen zu lassen. Die sturen Bewohner von Waldkirch und Sannas Interesse an Naturmedizin stellen Mats vor so manche Herausforderung, weswegen sie ständig aneinandergeraten. Doch bald merkt er, dass es gar nicht so schlimm ist, Gefühle zuzulassen.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193895333888,
+      "chatId": -1001179822958,
+      "date": 1761305007,
+      "dateIso": "2025-10-24T11:23:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 5679,
+              "size": 54306,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJRaSmySMVU9eSuGxspz1VeqNoupsoAAlILaxteH9hHLAL8FBwKHzABAAMCAAN4AAM4BA",
+              "uniqueId": "AQADUgtrG14f2Ed9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5678,
+              "size": 37280,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJRaSmySMVU9eSuGxspz1VeqNoupsoAAlILaxteH9hHLAL8FBwKHzABAAMCAANtAAM4BA",
+              "uniqueId": "AQADUgtrG14f2Edy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193894285312,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761305006,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 33,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Annahita_Esmailzadeh_mit_Swantje_Allmers_Was_du_nicht_hören_willst.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5680,
+            "size": 348378980,
+            "expectedSize": 348378980,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJQaSmySL-dBypOFYmy75Ux8kYsXJEAAjaJAAKnP6BLRHhU_JRKGqA4BA",
+              "uniqueId": "AgADNokAAqc_oEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 348378980
+            }
+          }
+        },
+        "caption": {
+          "text": "Esmailzadeh, Annahita \nWas du nicht hören willst\nAber wissen solltest, um erfolgreich zu sein\n\nIn diesem Hörbuch teilt Esmailzadeh ungeschönt und ohne Umschweife ihre Erfolgsgeheimnisse – direkt aus den Führungsetagen der weltweit renommiertesten Konzerne. Sie deckt die unsichtbaren Spielregeln auf, die entscheidend sind, um in der modernen Geschäftswelt nicht nur zu überleben, sondern nachhaltig erfolgreich zu sein, und nimmt dabei kein Blatt vor den Mund.\n\nMit scharfsinnigem Blick entlarvt sie die subtilen Mechanismen und Machtstrukturen, die Karrieren beeinflussen, und zeigt, worauf es wirklich ankommt. Dieses Hörbuch ist nicht nur eine Sammlung von exklusiven Erfahrungen – es ist eine Anleitung, um in einem Umfeld, das von Komplexität und Konkurrenz geprägt ist, kraftvoll und selbstbestimmt den eigenen Weg zu gehen.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193893236736,
+      "chatId": -1001179822958,
+      "date": 1761305006,
+      "dateIso": "2025-10-24T11:23:26Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 5682,
+              "size": 37886,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJPaSmySGYQ8RLwJFOWwxgMiIo_J6AAAlELaxteH9hHx6CpNHeUrR4BAAMCAAN4AAM4BA",
+              "uniqueId": "AQADUQtrG14f2Ed9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5681,
+              "size": 27345,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJPaSmySGYQ8RLwJFOWwxgMiIo_J6AAAlELaxteH9hHx6CpNHeUrR4BAAMCAANtAAM4BA",
+              "uniqueId": "AQADUQtrG14f2Edy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193892188160,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761302160,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 31,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Mrs_Primrose_Mrs_Primrose_Folge_03_Drei_Haselnüsse_zum_Dessert.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5683,
+            "size": 77052550,
+            "expectedSize": 77052550,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJOaSmySHJ3F_IHnGi_mIbSWzwGHD4AAhCBAAJmyZFLvsK3DaqbInU4BA",
+              "uniqueId": "AgADEIEAAmbJkUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 77052550
+            }
+          }
+        },
+        "caption": {
+          "text": "McGuffin, Agatha\nMrs. Primrose 03\nDrei Haselnüsse zum Dessert\n\nIn Morris Carlyles \"Rosewood Café\" kommt es zu einem plötzlichen Todesfall. Scheinbar wurde dem unangenehmen Restaurantkritiker Roderick Appleby ein Dessert mit für ihn tödlichen Haselnüssen gereicht. Ein tragischer Unfall - oder etwa Mord? Zufällig befinden sich auch die Krimiautorin Jemima Primrose und Cassie Bannister zur Tatzeit im Café und geraten so in den erweiterten Kreis der Verdächtigen von Inspector Taylor. Doch schnell wird klar, dass einige der anderen Anwesenden weitaus mehr Veranlassung für einen Mord gehabt haben könnten, als die Hobby-Schnüfflerin und ihre Begleitung...",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193891139584,
+      "chatId": -1001179822958,
+      "date": 1761302159,
+      "dateIso": "2025-10-24T10:35:59Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 5685,
+              "size": 49510,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJNaSmySBZKE-5Obk8qwwWruyULJTQAAk8LaxteH9hHvd9GWl5ItFABAAMCAAN4AAM4BA",
+              "uniqueId": "AQADTwtrG14f2Ed9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5684,
+              "size": 33626,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJNaSmySBZKE-5Obk8qwwWruyULJTQAAk8LaxteH9hHvd9GWl5ItFABAAMCAANtAAM4BA",
+              "uniqueId": "AQADTwtrG14f2Edy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193890091008,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761302159,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 27,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Mrs_Primrose_Mrs_Primrose_Folge_02_Zwei_sind_einer_zuviel.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5686,
+            "size": 74189756,
+            "expectedSize": 74189756,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJMaSmySIm0nUG8vbcudlZSe1xzPdIAAmF3AAIiZQABS6vswCDtCrVgOAQ",
+              "uniqueId": "AgADYXcAAiJlAAFL",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 74189756
+            }
+          }
+        },
+        "caption": {
+          "text": "McGuffin, Agatha\nMrs. Primrose 02\nZwei sind einer zuviel\n\nGerade erst haben sich die Aufregungen um den \"Rosenmord\" gelegt, da stolpert die engagierte Kriminalautorin Jemima Primrose in ihrem neuen Zuhause in Nickle Hillock bereits in einen neuen Fall: In der Laientheatergruppe \"Nickle Hillock Company\" gibt es Knatsch um die Besetzung der männlichen Hauptrolle! Als es kurz darauf zu einem gefährlichen \"Unfall\" bei den Proben kommt, stellt sich sehr bald heraus, dass hier jemand absichtlich seine Finger im Spiel hatte... und, dass jede Menge Verdächtiger zur Auswahl stehen, die nicht gut auf das Opfer zu sprechen waren. Mit Hilfe ihrer neuen Freunde Basil Kingcade und Honor Grimshaw beginnt Mrs Primrose zu ermitteln.",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193889042432,
+      "chatId": -1001179822958,
+      "date": 1761302155,
+      "dateIso": "2025-10-24T10:35:55Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 5688,
+              "size": 51901,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJLaSmySLjqFYHbV1CTFXyuszfUKTwAAk4LaxteH9hHXkvq8P6TSqwBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADTgtrG14f2Ed9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5687,
+              "size": 34501,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJLaSmySLjqFYHbV1CTFXyuszfUKTwAAk4LaxteH9hHXkvq8P6TSqwBAAMCAANtAAM4BA",
+              "uniqueId": "AQADTgtrG14f2Edy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193887993856,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761302155,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 23,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Mrs_Primrose_Mrs_Primrose_Folge_01_Eine_Rose_für_den_Tod.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5689,
+            "size": 78198409,
+            "expectedSize": 78198409,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJKaSmySL97aASX7xrqdBqy4jssbqIAAg1zAAK-R4hJJFyvVp8qYz44BA",
+              "uniqueId": "AgADDXMAAr5HiEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 78198409
+            }
+          }
+        },
+        "caption": {
+          "text": "McGuffin, Agatha\nMrs. Primrose 01\nEine Rose für den Tod\n\nAls die junge Krimiautorin Jem(ima) Primrose nach Nickle Hillock in das Haus ihrer verstorbenen Tante zieht, kommt es bald darauf zu einem spektakulären Todesfall in dem bezaubernden Örtchen in den Cotswolds. Denn mitten in ihrer eigenen Hochzeitszeremonie fällt die Braut, die extrovertierte Tamzin Clutterfield, tot um! War es ein tragischer natürlicher Tod? Oder etwa Mord?! In Jemimas Kopf beginnt es zu arbeiten... Falls, also nur falls es Mord war, wer hätte einen triftigen Grund dafür haben können, die Braut aus dem Weg zu räumen? Etwa der Bruder der Braut, Petraick Clutterfield? Oder gar der charmante Bräutigam, Atticus Gloster? Oder vielleicht doch eher die ehemalige feste Freundin des Bräutigams, Cassandra Bannister? Oder...!? ...könnte der aufbrausende Geschäftspartner von Tamzin, Oscar Hathalook, der Täter sein? Und - warum schleicht ein gewisser Tom Hardy allzu auffällig durchs Gebüsch?",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 193886945280,
+      "chatId": -1001179822958,
+      "date": 1761302154,
+      "dateIso": "2025-10-24T10:35:54Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 5691,
+              "size": 55733,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJJaSmySMIQsLUnClxxWMmhTSF9Rf4AAk0LaxteH9hHUkGudFl1yOABAAMCAAN4AAM4BA",
+              "uniqueId": "AQADTQtrG14f2Ed9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5690,
+              "size": 37416,
+              "remoteId": "AgACAgEAAx0CRlKrbgABAtJJaSmySMIQsLUnClxxWMmhTSF9Rf4AAk0LaxteH9hHUkGudFl1yOABAAMCAANtAAM4BA",
+              "uniqueId": "AQADTQtrG14f2Edy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193885896704,
+      "senderId": {
+        "chatId": -1001179822958
+      },
+      "chatId": -1001179822958,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761302154,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 23,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Oliver Susami - Die Helfgott-Anni und der Tod.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5692,
+            "size": 111578990,
+            "expectedSize": 111578990,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CRlKrbgABAtJIaSmySMbaNGhMr_-ehmCX_rajOIgAAhGBAAJmyZFLvHehwbapdHc4BA",
+              "uniqueId": "AgADEYEAAmbJkUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 111578990
+            }
+          }
+        },
+        "caption": {
+          "text": "Susami, Oliver\nDie Helfgott-Anni und der Tod\nUnheimliche Geschichten von Oliver Susami\n\nNa, Anni, was bist du gewesen? Eine arme, kranke Frau, oder doch ein wandelnder Leichnam? Angst haben sie ja alle vor dir gehabt, nicht nur die Kinder! Damals, als du nicht in deinem Sarg bleiben wolltest, als du vor deiner eigenen Beerdigung davongelaufen bist. Gestandene Männer haben gezittert, als hätte sie der Leibhaftige selbst an der Gurgel. Und als sie dich unter der Erde hatten, auch da warst du nicht verschwunden. Ich bin dir begegnet, Anni, im Flur des Wirtshauses. Ich erinnere mich, sehe dich noch vor mir, mit deinem schäbigen Leichenhemd und dem verdrehten Genick.\n\nUnd jetzt will ich deine Geschichte erzählen. Ob sie so wahr ist? Ich weiß nur, was ich weiß. Was im Dunkel liegt, das bleibt auch dort, und langsam legt sich der Staub der Zeit darauf. Bald werde ich nicht mehr sein, und vielleicht bin ich der letzte, der von dir berichtet.",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

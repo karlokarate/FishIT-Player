@@ -1,0 +1,84 @@
+{
+  "chatId": 5825601136,
+  "title": "",
+  "exportedAt": "2025-11-28T14:47:18.915588299Z",
+  "count": 4,
+  "messages": [
+    {
+      "id": 41852862464,
+      "chatId": 5825601136,
+      "date": 1687971331,
+      "dateIso": "2023-06-28T16:55:31Z",
+      "text": "Süßes Video",
+      "genres": []
+    },
+    {
+      "id": 41813016576,
+      "chatId": 5825601136,
+      "date": 1687849685,
+      "dateIso": "2023-06-27T07:08:05Z",
+      "content": {
+        "duration": 69,
+        "width": 270,
+        "height": 480,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21102,
+          "size": 8736409,
+          "remoteId": "BAACAgIAAxkDAAKbxGkpssM-cqD1qul5blVmTNC0D8evAALHJwACENPYSOLyhNewlO1pOAQ",
+          "uniqueId": "AgADxycAAhDT2Eg"
+        },
+        "thumbnail": {
+          "width": 180,
+          "height": 320,
+          "file": {
+            "id": 21101,
+            "size": 19093,
+            "remoteId": "AAMCAgADGQMAApvEaSmywz5yoPWq6XluVWZM0LQPx68AAscnAAIQ09hI4vKE17CU7WkBAAdtAAM4BA",
+            "uniqueId": "AQADxycAAhDT2Ehy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 38440796160,
+      "chatId": 5825601136,
+      "date": 1669705483,
+      "dateIso": "2022-11-29T07:04:43Z",
+      "text": "Hi Chris, ich bin jetzt auch hier bei Telegram 😊",
+      "genres": []
+    },
+    {
+      "id": 38439747584,
+      "senderId": {
+        "userId": 5825601136
+      },
+      "chatId": 5825601136,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1669705435,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

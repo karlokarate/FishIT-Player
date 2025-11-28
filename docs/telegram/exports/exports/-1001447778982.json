@@ -1,0 +1,202 @@
+{
+  "chatId": -1001447778982,
+  "title": "🔊 Die Musik Welt 🔊",
+  "exportedAt": "2025-11-28T14:47:30.835718122Z",
+  "count": 7,
+  "messages": [
+    {
+      "id": 38797312,
+      "chatId": -1001447778982,
+      "date": 1616593463,
+      "dateIso": "2021-03-24T13:44:23Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 640,
+            "file": {
+              "id": 5593,
+              "size": 145983,
+              "remoteId": "AgACAgIAAx0CVktapgADJWkpssOWEEX4U8fa1CMk0q6ii7m8AALisjEb9obgSuu6Qqr8RxiHAQADAgADeAADOAQ",
+              "uniqueId": "AQAD4rIxG_aG4Ep9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 5592,
+              "size": 54244,
+              "remoteId": "AgACAgIAAx0CVktapgADJWkpssOWEEX4U8fa1CMk0q6ii7m8AALisjEb9obgSuu6Qqr8RxiHAQADAgADbQADOAQ",
+              "uniqueId": "AQAD4rIxG_aG4Epy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001447778982,
+      "date": 1610652776,
+      "dateIso": "2021-01-14T19:32:56Z",
+      "text": "Ihr müsst in allen Kanälen drin sein, damit eure Suche 🔎 zum Erfolg wird.\n\nWenn ihr in allen Kanälen drin seid, nutzt die globale Suche 🔎 \nDie globale Suche sucht alle Kanäle durch, in denen ihr seid, auch die archivierten. \nAber nicht die, wo ihr nicht beigetreten seid. Also immer auf beitreten klicken😉\n\nDas Suchen in einem einzelnen Kanal bezeichnet man als lokale Suche.",
+      "genres": []
+    },
+    {
+      "id": 32505856,
+      "senderId": {
+        "chatId": -1001447778982
+      },
+      "chatId": -1001447778982,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1610629051,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 30408704
+      }
+    },
+    {
+      "id": 28311552,
+      "chatId": -1001447778982,
+      "date": 1610628704,
+      "dateIso": "2021-01-14T12:51:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 496,
+            "height": 496,
+            "file": {
+              "id": 21306,
+              "size": 62741,
+              "remoteId": "AgACAgEAAx0CVktapgADG2kpssMPt9IRbizzx8uh8P5OLoxYAAKAqTEbZpEAAUQQf9kzN2t3xgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADgKkxG2aRAAFEfQ"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 21305,
+              "size": 36218,
+              "remoteId": "AgACAgEAAx0CVktapgADG2kpssMPt9IRbizzx8uh8P5OLoxYAAKAqTEbZpEAAUQQf9kzN2t3xgEAAwIAA20AAzgE",
+              "uniqueId": "AQADgKkxG2aRAAFEcg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 13631488,
+      "chatId": -1001447778982,
+      "date": 1608223531,
+      "dateIso": "2020-12-17T16:45:31Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 640,
+            "file": {
+              "id": 21308,
+              "size": 78940,
+              "remoteId": "AgACAgIAAx0CVktapgADDWkpssPL1gXGjH_qXJ8MP45RqqW9AAIjsTEb9lPgSi_0-GG03m-JAQADAgADeAADOAQ",
+              "uniqueId": "AQADI7ExG_ZT4Ep9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 21307,
+              "size": 34102,
+              "remoteId": "AgACAgIAAx0CVktapgADDWkpssPL1gXGjH_qXJ8MP45RqqW9AAIjsTEb9lPgSi_0-GG03m-JAQADAgADbQADOAQ",
+              "uniqueId": "AQADI7ExG_ZT4Epy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1001447778982,
+      "date": 1601300780,
+      "dateIso": "2020-09-28T13:46:20Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 640,
+            "file": {
+              "id": 21310,
+              "size": 135168,
+              "remoteId": "AgACAgEAAx0CVktapgADB2kpssMeNb04DGN_PninmmD_D0CNAAKgqDEbsZwAAUeG-9wHkEO-RQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADoKgxG7GcAAFHfQ"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 21309,
+              "size": 52056,
+              "remoteId": "AgACAgEAAx0CVktapgADB2kpssMeNb04DGN_PninmmD_D0CNAAKgqDEbsZwAAUeG-9wHkEO-RQEAAwIAA20AAzgE",
+              "uniqueId": "AQADoKgxG7GcAAFHcg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001447778982
+      },
+      "chatId": -1001447778982,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1601300447,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Die Musik 🌍"
+      }
+    }
+  ]
+}

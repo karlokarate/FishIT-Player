@@ -1,0 +1,357 @@
+{
+  "chatId": -1002166520060,
+  "title": "Trust - Full HD",
+  "exportedAt": "2025-11-28T14:46:35.312512195Z",
+  "count": 12,
+  "messages": [
+    {
+      "id": 12582912,
+      "chatId": -1002166520060,
+      "date": 1719490109,
+      "dateIso": "2024-06-27T12:08:29Z",
+      "content": {
+        "duration": 2931,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E10 - Konsequenzen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5267,
+          "size": 1938850162,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMMaSmyQYdSQMOUPx9T4NhXzNE3qpMAAp5RAAJ1PehLNrss6JltU704BA",
+          "uniqueId": "AgADnlEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 5266,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwxpKbJBh1JAw5Q_H1Pg2FfM0TeqkwACnlEAAnU96Es2uyzomW1TvQEAB20AAzgE",
+            "uniqueId": "AQADnlEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E10 - Konsequenzen"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1002166520060,
+      "date": 1719490105,
+      "dateIso": "2024-06-27T12:08:25Z",
+      "content": {
+        "duration": 3028,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E09 - Ein weißes Auto im Schneesturm.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33306,
+          "size": 1937130746,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMLaSm1y3_QKXVpl0l065O0q8xO5asAAnNRAAJ1PehLHdIfPtYwpqY4BA",
+          "uniqueId": "AgADc1EAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33305,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwtpKbXLf9ApdWmXSXTrk7SrzE7lqwACc1EAAnU96Esd0h8-1jCmpgEAB20AAzgE",
+            "uniqueId": "AQADc1EAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E09 - Ein weißes Auto im Schneesturm"
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1002166520060,
+      "date": 1719490102,
+      "dateIso": "2024-06-27T12:08:22Z",
+      "content": {
+        "duration": 2618,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Trust - S01 E08 - Im Namen des Vaters.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33308,
+          "size": 1922748744,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMKaSm1y2ds_JMv8gLQfUpnqcci_zoAAnBRAAJ1PehLOcQjOg7umUc4BA",
+          "uniqueId": "AgADcFEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 33307,
+            "size": 10423,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwppKbXLZ2z8ky_yAtB9SmepxyL_OgACcFEAAnU96Es5xCM6Du6ZRwEAB20AAzgE",
+            "uniqueId": "AQADcFEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E08 - Im Namen des Vaters"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1002166520060,
+      "date": 1719490099,
+      "dateIso": "2024-06-27T12:08:19Z",
+      "content": {
+        "duration": 3138,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E07 - Herz aus Stein.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33310,
+          "size": 1931476992,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMJaSm1y2kw_kZm0OYdQsbeim8RU6gAAmtRAAJ1PehL9nug4GV8cjE4BA",
+          "uniqueId": "AgADa1EAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33309,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwlpKbXLaTD-RmbQ5h1Cxt6KbxFTqAACa1EAAnU96Ev2e6DgZXxyMQEAB20AAzgE",
+            "uniqueId": "AQADa1EAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E07 - Herz aus Stein"
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1002166520060,
+      "date": 1719490096,
+      "dateIso": "2024-06-27T12:08:16Z",
+      "content": {
+        "duration": 3440,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E06 - Johannes, Kapitel 11.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33312,
+          "size": 1946581790,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMIaSm1y7EUrYpcBs18_xT86jjpEKUAAqBRAAJ1PehLfw-67m4Xnos4BA",
+          "uniqueId": "AgADoFEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33311,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwhpKbXLsRStilwGzXz_FPzqOOkQpQACoFEAAnU96Et_D7rubheeiwEAB20AAzgE",
+            "uniqueId": "AQADoFEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E06 - Johannes, Kapitel 11"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1002166520060,
+      "date": 1719490093,
+      "dateIso": "2024-06-27T12:08:13Z",
+      "content": {
+        "duration": 2763,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E05 - Schweigen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33314,
+          "size": 1933957157,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMHaSm1y9Phn8mTos8yPfFzgcP8nJsAAmFRAAJ1PehLrrLPkf-nNf04BA",
+          "uniqueId": "AgADYVEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33313,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwdpKbXL0-GfyZOizzI98XOBw_ycmwACYVEAAnU96Euuss-R_6c1_QEAB20AAzgE",
+            "uniqueId": "AQADYVEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E05 - Schweigen"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1002166520060,
+      "date": 1719490090,
+      "dateIso": "2024-06-27T12:08:10Z",
+      "content": {
+        "duration": 3292,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E04 - Das war s, Leute!.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33316,
+          "size": 1939664346,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMGaSm1y7sT5EHFXD4RZ72DfEOhjE8AAmRRAAJ1PehLdNxbbpgHUtE4BA",
+          "uniqueId": "AgADZFEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33315,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwZpKbXLuxPkQcVcPhFnvYN8Q6GMTwACZFEAAnU96Et03FtumAdS0QEAB20AAzgE",
+            "uniqueId": "AQADZFEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E04 - Das war’s, Leute!"
+      }
+    },
+    {
+      "id": 5242880,
+      "chatId": -1002166520060,
+      "date": 1719490086,
+      "dateIso": "2024-06-27T12:08:06Z",
+      "content": {
+        "duration": 3292,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E03 - La Dolce Vita.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33318,
+          "size": 1939821958,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMFaSm1y1jX9cAN5OKxaSPxvLwbSswAAl1RAAJ1PehLgSo45kYhD2Q4BA",
+          "uniqueId": "AgADXVEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33317,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwVpKbXLWNf1wA3k4rFpI_G8vBtKzAACXVEAAnU96EuBKjjmRiEPZAEAB20AAzgE",
+            "uniqueId": "AQADXVEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E03 - La Dolce Vita"
+      }
+    },
+    {
+      "id": 4194304,
+      "chatId": -1002166520060,
+      "date": 1719490083,
+      "dateIso": "2024-06-27T12:08:03Z",
+      "content": {
+        "duration": 3598,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E02 - Der einsame Cowboy.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33320,
+          "size": 1943616432,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMEaSm1y5kpHTkd9qTH6x6lNMMiC64AAlBRAAJ1PehLkVfyDetuzTQ4BA",
+          "uniqueId": "AgADUFEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33319,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwRpKbXLmSkdOR32pMfrHqU0wyILrgACUFEAAnU96EuRV_IN627NNAEAB20AAzgE",
+            "uniqueId": "AQADUFEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E02 - Der einsame Cowboy"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1002166520060,
+      "date": 1719490080,
+      "dateIso": "2024-06-27T12:08:00Z",
+      "content": {
+        "duration": 3755,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Trust - S01 E01 - Das Haus Getty.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 33322,
+          "size": 1955392939,
+          "remoteId": "BAACAgIAAyEFAASBInj8AAMDaSm1y-6IjKspzxlqx9j9kZfiBwQAAqRRAAJ1PehLcbe1jMqztJ04BA",
+          "uniqueId": "AgADpFEAAnU96Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 33321,
+            "size": 8354,
+            "remoteId": "AAMCAgADIQUABIEiePwAAwNpKbXL7oiMqynPGWrH2P2Rl-IHBAACpFEAAnU96Etxt7WMyrO0nQEAB20AAzgE",
+            "uniqueId": "AQADpFEAAnU96Ety"
+          }
+        },
+        "caption": "Trust - S01 E01 - Das Haus Getty"
+      }
+    },
+    {
+      "id": 2097152,
+      "chatId": -1002166520060,
+      "date": 1719490077,
+      "dateIso": "2024-06-27T12:07:57Z",
+      "text": "Im Jahr 1973 wird der junge John Paul Getty III (Harris Dickinson), Erbe der wohlhabenden Getty-Familie, in Rom von einigen Mafiosi entführt. Die Kidnapper hoffen mit ihrem Fang auf ein Lösegeld in Millionenhöhe. Doch scheinen sich weder Pauls Angehörige noch die Polizei sonderlich dafür zu interessieren, den Getty-Spross von seinen Qualen in den Händen der Entführer zu erlösen. Während die italienischen Gesetzeshüter das Ganze als Streich abtun, ist Pauls Vater (Michael Esper) in London im Dauer-Heroinrausch nicht in der Lage, ans Telefon zu gehen. Pauls Großvater (Donald Sutherland), der vermutlich reichste Mann der Welt, lässt es sich unterdessen abgeschottet von der Außenwelt in seinem Anwesen auf dem Land mit fünf Mätressen und seinem eigenen Löwen gut gehen. So ist es letztlich an Pauls Mutter Gail (Hilary Swank), mit den verzweifelten Entführern zu verhandeln – doch die ist leider pleite.\n\nSerie über die reale Getty-Familie, die von Oscarpreisträger Danny Boyle produziert und zum Teil inszeniert wird.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1002166520060
+      },
+      "chatId": -1002166520060,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1719490032,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Trust - Full HD"
+      }
+    }
+  ]
+}

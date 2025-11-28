@@ -1,0 +1,783 @@
+{
+  "chatId": -1002241569185,
+  "title": "BMF - Full HD",
+  "exportedAt": "2025-11-28T14:46:29.653055487Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 34603008,
+      "chatId": -1002241569185,
+      "date": 1720165205,
+      "dateIso": "2024-07-05T07:40:05Z",
+      "content": {
+        "duration": 3116,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E10 - Primetime.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5263,
+          "size": 1917083242,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMhaSmypNZoQoQJPagI3hEkqlVKSKYAAo1VAAIdbzhIVbECiTFkAAFoOAQ",
+          "uniqueId": "AgADjVUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5262,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAyFpKbKk1mhChAk9qAjeESSqVUpIpgACjVUAAh1vOEhVsQKJMWQAAWgBAAdtAAM4BA",
+            "uniqueId": "AQADjVUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E10 - Primetime"
+      }
+    },
+    {
+      "id": 33554432,
+      "chatId": -1002241569185,
+      "date": 1720165202,
+      "dateIso": "2024-07-05T07:40:02Z",
+      "content": {
+        "duration": 3108,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E09 - Todesfalle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19404,
+          "size": 1916897024,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMgaSmypFu6cZI8-251bArwVspweMEAAotVAAIdbzhIYvRM0UiAR3o4BA",
+          "uniqueId": "AgADi1UAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19403,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAyBpKbKkW7pxkjz7bnVsCvBWynB4wQACi1UAAh1vOEhi9EzRSIBHegEAB20AAzgE",
+            "uniqueId": "AQADi1UAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E09 - Todesfalle"
+      }
+    },
+    {
+      "id": 32505856,
+      "chatId": -1002241569185,
+      "date": 1720165198,
+      "dateIso": "2024-07-05T07:39:58Z",
+      "content": {
+        "duration": 3105,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E08 - Alarmstufe Rot.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19406,
+          "size": 1916722375,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMfaSmypJ1PBO9CbpXiJAABOZACFpKnAAKHVQACHW84SLrDoQmRX9hROAQ",
+          "uniqueId": "AgADh1UAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19405,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAx9pKbKknU8E70JuleIkAAE5kAIWkqcAAodVAAIdbzhIusOhCZFf2FEBAAdtAAM4BA",
+            "uniqueId": "AQADh1UAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E08 - Alarmstufe Rot"
+      }
+    },
+    {
+      "id": 31457280,
+      "chatId": -1002241569185,
+      "date": 1720165195,
+      "dateIso": "2024-07-05T07:39:55Z",
+      "content": {
+        "duration": 3068,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E07 - Bringt sie nach Hause.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19408,
+          "size": 1923410638,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMeaSmypP4Og35u5aWLqjeGpuQiQWcAAqhVAAIdbzhIdp7D7Pegaoc4BA",
+          "uniqueId": "AgADqFUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19407,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAx5pKbKk_g6Dfm7lpYuqN4am5CJBZwACqFUAAh1vOEh2nsPs96BqhwEAB20AAzgE",
+            "uniqueId": "AQADqFUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E07 - Bringt sie nach Hause"
+      }
+    },
+    {
+      "id": 30408704,
+      "chatId": -1002241569185,
+      "date": 1720165192,
+      "dateIso": "2024-07-05T07:39:52Z",
+      "content": {
+        "duration": 3175,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E06 - Opfer des Krieges.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19410,
+          "size": 1923197424,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMdaSmypHplUIMAAWF3dWoAAcdd1895MgACpFUAAh1vOEjuXOQAAXYKBJQ4BA",
+          "uniqueId": "AgADpFUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19409,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAx1pKbKkemVQgwABYXd1agABx13Xz3kyAAKkVQACHW84SO5c5AABdgoElAEAB20AAzgE",
+            "uniqueId": "AQADpFUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E06 - Opfer des Krieges"
+      }
+    },
+    {
+      "id": 29360128,
+      "chatId": -1002241569185,
+      "date": 1720165189,
+      "dateIso": "2024-07-05T07:39:49Z",
+      "content": {
+        "duration": 3127,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E05 - Die Schlacht von Techwood.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19412,
+          "size": 1915812888,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMcaSmypDNoOlObtJVv6MYIwXGfepUAAoVVAAIdbzhI9Cv8SX8OurY4BA",
+          "uniqueId": "AgADhVUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19411,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxxpKbKkM2g6U5u0lW_oxgjBcZ96lQAChVUAAh1vOEj0K_xJfw66tgEAB20AAzgE",
+            "uniqueId": "AQADhVUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E05 - Die Schlacht von Techwood"
+      }
+    },
+    {
+      "id": 28311552,
+      "chatId": -1002241569185,
+      "date": 1720165186,
+      "dateIso": "2024-07-05T07:39:46Z",
+      "content": {
+        "duration": 3055,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E04 - Die Rückkehr des begabten Sohnes.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19414,
+          "size": 1919763457,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMbaSmypA2i7IrrK--Vt6ol6wRUPUsAApVVAAIdbzhI_pcDYlgErt04BA",
+          "uniqueId": "AgADlVUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19413,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxtpKbKkDaLsiusr75W3qiXrBFQ9SwAClVUAAh1vOEj-lwNiWASu3QEAB20AAzgE",
+            "uniqueId": "AQADlVUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E04 - Die Rückkehr des begabten Sohnes"
+      }
+    },
+    {
+      "id": 27262976,
+      "chatId": -1002241569185,
+      "date": 1720165183,
+      "dateIso": "2024-07-05T07:39:43Z",
+      "content": {
+        "duration": 3130,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E03 - Zufluchtsort.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19416,
+          "size": 1915261991,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMaaSmypPQ5iWmdAjGFfI5w6w53UV4AAm5VAAIdbzhIMKoWzTs_uMA4BA",
+          "uniqueId": "AgADblUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19415,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxppKbKk9DmJaZ0CMYV8jnDrDndRXgACblUAAh1vOEgwqhbNOz-4wAEAB20AAzgE",
+            "uniqueId": "AQADblUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E03 - Zufluchtsort"
+      }
+    },
+    {
+      "id": 25165824,
+      "chatId": -1002241569185,
+      "date": 1720165169,
+      "dateIso": "2024-07-05T07:39:29Z",
+      "content": {
+        "duration": 3127,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E02 - Magische Macher.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19418,
+          "size": 1913632013,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMYaSmypIXnDsCFEPulhP45swU4pLcAAlxVAAIdbzhI7SaQgYz1gbU4BA",
+          "uniqueId": "AgADXFUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19417,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxhpKbKkhecOwIUQ-6WE_jmzBTiktwACXFUAAh1vOEjtJpCBjPWBtQEAB20AAzgE",
+            "uniqueId": "AQADXFUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E02 - Magische Macher"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1002241569185,
+      "date": 1720165166,
+      "dateIso": "2024-07-05T07:39:26Z",
+      "content": {
+        "duration": 3092,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S03 E01 - Detroit gegen alle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19420,
+          "size": 1921467115,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMXaSmypJsrp-mybseGkR4AAUUhR4v5AAKYVQACHW84SL2jK4ac0zGhOAQ",
+          "uniqueId": "AgADmFUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19419,
+            "size": 7691,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxdpKbKkmyun6bJux4aRHgABRSFHi_kAAphVAAIdbzhIvaMrhpzTMaEBAAdtAAM4BA",
+            "uniqueId": "AQADmFUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S03 E01 - Detroit gegen alle"
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1002241569185,
+      "date": 1720165163,
+      "dateIso": "2024-07-05T07:39:23Z",
+      "content": {
+        "duration": 3164,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E10 - Neustart.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19422,
+          "size": 1870823103,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMWaSmypIqKeGQw6aFlXVyCPARS14AAAtJUAAIdbzhIEUbyMcscQOo4BA",
+          "uniqueId": "AgAD0lQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19421,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxZpKbKkiop4ZDDpoWVdXII8BFLXgAAC0lQAAh1vOEgRRvIxyxxA6gEAB20AAzgE",
+            "uniqueId": "AQAD0lQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E10 - Neustart"
+      }
+    },
+    {
+      "id": 22020096,
+      "chatId": -1002241569185,
+      "date": 1720165160,
+      "dateIso": "2024-07-05T07:39:20Z",
+      "content": {
+        "duration": 3140,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E09 - Hochverrat.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19424,
+          "size": 1867067763,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMVaSmypOwQmjomcLpNbyCMEzJePs8AAqJUAAIdbzhI7rtByqfbrvw4BA",
+          "uniqueId": "AgADolQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19423,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxVpKbKk7BCaOiZwuk1vIIwTMl4-zwAColQAAh1vOEjuu0HKp9uu_AEAB20AAzgE",
+            "uniqueId": "AQADolQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E09 - Hochverrat"
+      }
+    },
+    {
+      "id": 20971520,
+      "chatId": -1002241569185,
+      "date": 1720165157,
+      "dateIso": "2024-07-05T07:39:17Z",
+      "content": {
+        "duration": 3120,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E08 - Bis ans Limit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19426,
+          "size": 1864302051,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMUaSmypHTUWjimfAEf6BkbVrSfkC0AApFUAAIdbzhIVECjflPfchI4BA",
+          "uniqueId": "AgADkVQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19425,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxRpKbKkdNRaOKZ8AR_oGRtWtJ-QLQACkVQAAh1vOEhUQKN-U99yEgEAB20AAzgE",
+            "uniqueId": "AQADkVQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E08 - Bis ans Limit"
+      }
+    },
+    {
+      "id": 18874368,
+      "chatId": -1002241569185,
+      "date": 1720165153,
+      "dateIso": "2024-07-05T07:39:13Z",
+      "content": {
+        "duration": 3126,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E07 - Zwei Seiten der Medaille.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19428,
+          "size": 1867828696,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMSaSmypK1IvzSd8GSYaO214pK5GnoAAsVUAAIdbzhIMCVHEv0iGKw4BA",
+          "uniqueId": "AgADxVQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19427,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxJpKbKkrUi_NJ3wZJho7bXikrkaegACxVQAAh1vOEgwJUcS_SIYrAEAB20AAzgE",
+            "uniqueId": "AQADxVQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E07 - Zwei Seiten der Medaille"
+      }
+    },
+    {
+      "id": 17825792,
+      "chatId": -1002241569185,
+      "date": 1720165150,
+      "dateIso": "2024-07-05T07:39:10Z",
+      "content": {
+        "duration": 3144,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E06 - Homecoming.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19430,
+          "size": 1880578444,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMRaSmypDWNuerTGK9mEANKvwngrn8AAhtVAAIdbzhI5DWG62390nA4BA",
+          "uniqueId": "AgADG1UAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19429,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxFpKbKkNY256tMYr2YQA0q_CeCufwACG1UAAh1vOEjkNYbrbf3ScAEAB20AAzgE",
+            "uniqueId": "AQADG1UAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E06 - Homecoming"
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1002241569185,
+      "date": 1720165147,
+      "dateIso": "2024-07-05T07:39:07Z",
+      "content": {
+        "duration": 3135,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E05 - Moment der Wahrheit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19432,
+          "size": 1916553156,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMQaSmypPoa6wZBqiyvOweCMlmX1dIAAoZVAAIdbzhIWTIoV7vPboo4BA",
+          "uniqueId": "AgADhlUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19431,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAxBpKbKk-hrrBkGqLK87B4IyWZfV0gAChlUAAh1vOEhZMihXu89uigEAB20AAzgE",
+            "uniqueId": "AQADhlUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E05 - Moment der Wahrheit"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1002241569185,
+      "date": 1720165144,
+      "dateIso": "2024-07-05T07:39:04Z",
+      "content": {
+        "duration": 3017,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E04 - Am Laufen halten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19434,
+          "size": 1878123895,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMPaSmypJur-jNjzcwix1ylKNt70rcAAuhUAAIdbzhIfPAII7UpsRg4BA",
+          "uniqueId": "AgAD6FQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19433,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAw9pKbKkm6v6M2PNzCLHXKUo23vStwAC6FQAAh1vOEh88AgjtSmxGAEAB20AAzgE",
+            "uniqueId": "AQAD6FQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E04 - Am Laufen halten"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1002241569185,
+      "date": 1720165141,
+      "dateIso": "2024-07-05T07:39:01Z",
+      "content": {
+        "duration": 3227,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E03 - Devil s Night.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19436,
+          "size": 1884029766,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMOaSmypCRLzd8hUUgqccYXd2bYHq0AAi5VAAIdbzhI-RMn59YVBNc4BA",
+          "uniqueId": "AgADLlUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19435,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAw5pKbKkJEvN3yFRSCpxxhd3ZtgerQACLlUAAh1vOEj5Eyfn1hUE1wEAB20AAzgE",
+            "uniqueId": "AQADLlUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E03 - Devil’s Night"
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1002241569185,
+      "date": 1720165116,
+      "dateIso": "2024-07-05T07:38:36Z",
+      "content": {
+        "duration": 3155,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E02 - Familienbetrieb.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19438,
+          "size": 1870634948,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMMaSmypMdEyNknK-5u_wAB1RBN4DnQAAKKVAACHW84SBJE4eXuLzz0OAQ",
+          "uniqueId": "AgADilQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19437,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwxpKbKkx0TI2Scr7m7_AAHVEE3gOdAAAopUAAIdbzhIEkTh5e4vPPQBAAdtAAM4BA",
+            "uniqueId": "AQADilQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E02 - Familienbetrieb"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1002241569185,
+      "date": 1720165113,
+      "dateIso": "2024-07-05T07:38:33Z",
+      "content": {
+        "duration": 3162,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S02 E01 - Familienessen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19440,
+          "size": 1878789328,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMLaSmypBVhVSUSr_nAHGZHczuj6n8AAvxUAAIdbzhIdC-MJlXmUnw4BA",
+          "uniqueId": "AgAD_FQAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19439,
+            "size": 8411,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwtpKbKkFWFVJRKv-cAcZkdzO6PqfwAC_FQAAh1vOEh0L4wmVeZSfAEAB20AAzgE",
+            "uniqueId": "AQAD_FQAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S02 E01 - Familienessen"
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1002241569185,
+      "date": 1720165110,
+      "dateIso": "2024-07-05T07:38:30Z",
+      "content": {
+        "duration": 3000,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "BMF - S01 E08 - Der König von Detroit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19442,
+          "size": 1967679307,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMKaSmypFsJYUuVmMPCtU9Sw9x5Dw8AArRVAAIdbzhIPWYhc-oHvBs4BA",
+          "uniqueId": "AgADtFUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19441,
+            "size": 9556,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwppKbKkWwlhS5WYw8K1T1LD3HkPDwACtFUAAh1vOEg9ZiFz6ge8GwEAB20AAzgE",
+            "uniqueId": "AQADtFUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S01 E08 - Der König von Detroit"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1002241569185,
+      "date": 1720165107,
+      "dateIso": "2024-07-05T07:38:27Z",
+      "content": {
+        "duration": 3064,
+        "width": 1920,
+        "height": 960,
+        "fileName": "BMF - S01 E07 - Alles in der Familie.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19444,
+          "size": 1919175155,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMJaSmypI-8EJe0U-Q8KFNbkEWbpe8AAo9VAAIdbzhIqWyWq6mzeBk4BA",
+          "uniqueId": "AgADj1UAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 19443,
+            "size": 7645,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwlpKbKkj7wQl7RT5DwoU1uQRZul7wACj1UAAh1vOEipbJarqbN4GQEAB20AAzgE",
+            "uniqueId": "AQADj1UAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S01 E07 - Alles in der Familie"
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1002241569185,
+      "date": 1720165104,
+      "dateIso": "2024-07-05T07:38:24Z",
+      "content": {
+        "duration": 3123,
+        "width": 1920,
+        "height": 960,
+        "fileName": "BMF - S01 E06 - Rein geschäftlich.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19446,
+          "size": 1922347455,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMIaSmypIdsHN3eL_r3eEw_PTOX_CwAAptVAAIdbzhIy_xesS80-0A4BA",
+          "uniqueId": "AgADm1UAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 19445,
+            "size": 7645,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwhpKbKkh2wc3d4v-vd4TD89M5f8LAACm1UAAh1vOEjL_F6xLzT7QAEAB20AAzgE",
+            "uniqueId": "AQADm1UAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S01 E06 - Rein geschäftlich"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1002241569185,
+      "date": 1720165101,
+      "dateIso": "2024-07-05T07:38:21Z",
+      "content": {
+        "duration": 3117,
+        "width": 1920,
+        "height": 960,
+        "fileName": "BMF - S01 E05 - Geheimnisse und Lügen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19448,
+          "size": 1914661917,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMHaSmypB1ntiFR40iUGnBJHwmJuYEAAmZVAAIdbzhIRuKjWEcfa1E4BA",
+          "uniqueId": "AgADZlUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 19447,
+            "size": 7645,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwdpKbKkHWe2IVHjSJQacEkfCYm5gQACZlUAAh1vOEhG4qNYRx9rUQEAB20AAzgE",
+            "uniqueId": "AQADZlUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S01 E05 - Geheimnisse und Lügen"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1002241569185,
+      "date": 1720165097,
+      "dateIso": "2024-07-05T07:38:17Z",
+      "content": {
+        "duration": 3122,
+        "width": 1920,
+        "height": 960,
+        "fileName": "BMF - S01 E04 - HELDEN.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19450,
+          "size": 1919908024,
+          "remoteId": "BAACAgIAAyEFAASFm6GhAAMGaSmypF4LJqpc0_tBPS0I6oBJDikAApJVAAIdbzhIFPsIq3QRJN04BA",
+          "uniqueId": "AgADklUAAh1vOEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 19449,
+            "size": 7645,
+            "remoteId": "AAMCAgADIQUABIWboaEAAwZpKbKkXgsmqlzT-0E9LQjqgEkOKQACklUAAh1vOEgU-wirdBEk3QEAB20AAzgE",
+            "uniqueId": "AQADklUAAh1vOEhy"
+          }
+        },
+        "caption": "BMF - S01 E04 - HELDEN"
+      }
+    }
+  ]
+}

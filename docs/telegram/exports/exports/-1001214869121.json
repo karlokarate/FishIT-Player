@@ -1,0 +1,1455 @@
+{
+  "chatId": -1001214869121,
+  "title": "Nintendo Wii Brasil",
+  "exportedAt": "2025-11-28T14:45:49.412099082Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 5145362432,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1755766542,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 9 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 5144313856,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104805,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1603272704,
+          "authorSignature": ""
+        },
+        "date": 1679671547,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1869,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984838440483633,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DRAGON QUEST SWORDS [RDQEGD].zip.002",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15365,
+            "size": 780160640,
+            "expectedSize": 780160640,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEyppKbJpY-NrXmqkXUOzLK-WEo6W-AAC8AQAAoPF8UR6Il3giVo3jDgE",
+              "uniqueId": "AgAD8AQAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 780160640
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5143265280,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104805,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1602224128,
+          "authorSignature": ""
+        },
+        "date": 1679671547,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1905,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984838440483633,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DRAGON QUEST SWORDS [RDQEGD].zip.001",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 15366,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEylpKbJpQ1hkWwcHyWPgWkOteWhtyQAC7QQAAoPF8URnChhwYfHrOjgE",
+              "uniqueId": "AgAD7QQAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5142216704,
+      "chatId": -1001214869121,
+      "date": 1748104805,
+      "dateIso": "2025-05-24T16:40:05Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 481,
+            "height": 680,
+            "file": {
+              "id": 15368,
+              "size": 96327,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyhpKbJpt-kqFWxQHuHTTN7qvRJengACBqsxG4PF8UQPp2YLW3DO6AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADBqsxG4PF8UR9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 15367,
+              "size": 30770,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyhpKbJpt-kqFWxQHuHTTN7qvRJengACBqsxG4PF8UQPp2YLW3DO6AEAAwIAA20AAzgE",
+              "uniqueId": "AQADBqsxG4PF8URy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5141168128,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104707,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1608515584,
+          "authorSignature": ""
+        },
+        "date": 1679679499,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1566,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837660384025,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Daisy Fuentes Pilates [R8ZE8P].zip.003",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15369,
+            "size": 547396760,
+            "expectedSize": 547396760,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEydpKbJpZoio8COdvMB4aDw7MEmsNgAC-gQAAoPF8US9l3-dLpJ3JjgE",
+              "uniqueId": "AgAD-gQAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 547396760
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5140119552,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104707,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1607467008,
+          "authorSignature": ""
+        },
+        "date": 1679679499,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1490,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837660384025,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Daisy Fuentes Pilates [R8ZE8P].zip.002",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15370,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEyZpKbJpejz72ZQq3KBed88_4fGc5gAC-QQAAoPF8URmfq3535x6wDgE",
+              "uniqueId": "AgAD-QQAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5139070976,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104707,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1606418432,
+          "authorSignature": ""
+        },
+        "date": 1679679499,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1471,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837660384025,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Daisy Fuentes Pilates [R8ZE8P].zip.001",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 15371,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEyVpKbJpmJfFK4xlMfeR4wgMT_hMCgAC-AQAAoPF8UQ9YQEYcli53zgE",
+              "uniqueId": "AgAD-AQAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5138022400,
+      "chatId": -1001214869121,
+      "date": 1748104707,
+      "dateIso": "2025-05-24T16:38:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 483,
+            "height": 680,
+            "file": {
+              "id": 15373,
+              "size": 70762,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyRpKbJp6iXKI6r2t9xsNc_nh7KOtwACC6sxG4PF8USIv05t3hjesAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADC6sxG4PF8UR9"
+            }
+          },
+          {
+            "width": 227,
+            "height": 320,
+            "file": {
+              "id": 15372,
+              "size": 25939,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyRpKbJp6iXKI6r2t9xsNc_nh7KOtwACC6sxG4PF8USIv05t3hjesAEAAwIAA20AAzgE",
+              "uniqueId": "AQADC6sxG4PF8URy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5136973824,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104698,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1611661312,
+          "authorSignature": ""
+        },
+        "date": 1679680650,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1212,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Dance Dance Revolution HOTTEST PARTY [RDDEA4].7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 15374,
+            "size": 643320784,
+            "expectedSize": 643320784,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEyNpKbJpOUfQoFzUnCARV6uHj2mKAgAC-wQAAoPF8URRP6Pb-QKhpjgE",
+              "uniqueId": "AgAD-wQAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 643320784
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5135925248,
+      "chatId": -1001214869121,
+      "date": 1748104698,
+      "dateIso": "2025-05-24T16:38:18Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 477,
+            "height": 680,
+            "file": {
+              "id": 15376,
+              "size": 74042,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyJpKbJph0WU9Hj6NBf7CvgW4XQjzgACF6sxG4PF8UQTpusS6y8y7wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADF6sxG4PF8UR9"
+            }
+          },
+          {
+            "width": 224,
+            "height": 320,
+            "file": {
+              "id": 15375,
+              "size": 27833,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyJpKbJph0WU9Hj6NBf7CvgW4XQjzgACF6sxG4PF8UQTpusS6y8y7wEAAwIAA20AAzgE",
+              "uniqueId": "AQADF6sxG4PF8URy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5134876672,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104691,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1614807040,
+          "authorSignature": ""
+        },
+        "date": 1679687258,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1105,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Dance Sensation! [SDEE5G].7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 15377,
+            "size": 1079334252,
+            "expectedSize": 1079334252,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEyFpKbJpHctNfOP_rEBuLdl57-Q60wACBgUAAoPF8US1cb6LLYopoDgE",
+              "uniqueId": "AgADBgUAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1079334252
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5133828096,
+      "chatId": -1001214869121,
+      "date": 1748104691,
+      "dateIso": "2025-05-24T16:38:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 481,
+            "height": 680,
+            "file": {
+              "id": 15379,
+              "size": 93114,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyBpKbJpHuIT5om2gU68u-Tb89zA7AACI6sxG4PF8UTTrxpuhK2JwAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADI6sxG4PF8UR9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 15378,
+              "size": 32285,
+              "remoteId": "AgACAgEAAx0CSGlugQACEyBpKbJpHuIT5om2gU68u-Tb89zA7AACI6sxG4PF8UTTrxpuhK2JwAEAAwIAA20AAzgE",
+              "uniqueId": "AQADI6sxG4PF8URy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5132779520,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104684,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1617952768,
+          "authorSignature": ""
+        },
+        "date": 1679691377,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1077,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Dance on Broadway [SBYE41].7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 15380,
+            "size": 546688298,
+            "expectedSize": 546688298,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEx9pKbJph395GrfTiyzvUVCKkbTjHQACCQUAAoPF8UQrQ3DJtBaqeTgE",
+              "uniqueId": "AgADCQUAAoPF8UQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 546688298
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5131730944,
+      "chatId": -1001214869121,
+      "date": 1748104684,
+      "dateIso": "2025-05-24T16:38:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 483,
+            "height": 680,
+            "file": {
+              "id": 15382,
+              "size": 102933,
+              "remoteId": "AgACAgEAAx0CSGlugQACEx5pKbJpEPv5A0gZYjOjkRMw4m5m0gACK6sxG4PF8UT5wIAAAcwVy7gBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADK6sxG4PF8UR9"
+            }
+          },
+          {
+            "width": 227,
+            "height": 320,
+            "file": {
+              "id": 15381,
+              "size": 35776,
+              "remoteId": "AgACAgEAAx0CSGlugQACEx5pKbJpEPv5A0gZYjOjkRMw4m5m0gACK6sxG4PF8UT5wIAAAcwVy7gBAAMCAANtAAM4BA",
+              "uniqueId": "AQADK6sxG4PF8URy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5130682368,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104676,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1623195648,
+          "authorSignature": ""
+        },
+        "date": 1679766022,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1122,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837411267673,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution HOTTEST PARTY 3 [RJREA4].zip.003",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15383,
+            "size": 599825650,
+            "expectedSize": 599825650,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACEx1pKbJpZlpCTMkldGchrb6UyNHGqAAC6AIAAqX7-ERK2kblq3bVzzgE",
+              "uniqueId": "AgAD6AIAAqX7-EQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 599825650
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5129633792,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104676,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1622147072,
+          "authorSignature": ""
+        },
+        "date": 1679766022,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1137,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837411267673,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution HOTTEST PARTY 3 [RJREA4].zip.002",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15384,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExxpKbJpbXu_aOkiQkDq8xlXgRLICQAC5wIAAqX7-ESLGzneR2PzKDgE",
+              "uniqueId": "AgAD5wIAAqX7-EQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5128585216,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104676,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1621098496,
+          "authorSignature": ""
+        },
+        "date": 1679766022,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 1012,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837411267673,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution HOTTEST PARTY 3 [RJREA4].zip.001",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 15385,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExtpKbJp7TNh0FEvgZTn2QLCR1YlbwAC5gIAAqX7-EQ_g-_jLAe_YjgE",
+              "uniqueId": "AgAD5gIAAqX7-EQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5127536640,
+      "chatId": -1001214869121,
+      "date": 1748104676,
+      "dateIso": "2025-05-24T16:37:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 482,
+            "height": 680,
+            "file": {
+              "id": 15387,
+              "size": 72671,
+              "remoteId": "AgACAgEAAx0CSGlugQACExppKbJpdt4EpAJKjstOSPwrjIQokwACMKsxG4PF8UTPq1P09M-LWQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADMKsxG4PF8UR9"
+            }
+          },
+          {
+            "width": 227,
+            "height": 320,
+            "file": {
+              "id": 15386,
+              "size": 25822,
+              "remoteId": "AgACAgEAAx0CSGlugQACExppKbJpdt4EpAJKjstOSPwrjIQokwACMKsxG4PF8UTPq1P09M-LWQEAAwIAA20AAzgE",
+              "uniqueId": "AQADMKsxG4PF8URy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5126488064,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104667,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1626341376,
+          "authorSignature": ""
+        },
+        "date": 1679925100,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 937,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution Hottest Party 2 [RD4EA4].7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 15388,
+            "size": 1770437269,
+            "expectedSize": 1770437269,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExlpKbJpnhYwy-bpxTXx153aVno1BAACiQIAAqVmCUVSmgViNhXGbDgE",
+              "uniqueId": "AgADiQIAAqVmCUU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1770437269
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5125439488,
+      "chatId": -1001214869121,
+      "date": 1748104667,
+      "dateIso": "2025-05-24T16:37:47Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 478,
+            "height": 680,
+            "file": {
+              "id": 15390,
+              "size": 77527,
+              "remoteId": "AgACAgEAAx0CSGlugQACExhpKbJp-ajvPTVtsOpWcL51lBmzBwACyKsxG6VmCUXdyOJlz84I2wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADyKsxG6VmCUV9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 15389,
+              "size": 28385,
+              "remoteId": "AgACAgEAAx0CSGlugQACExhpKbJp-ajvPTVtsOpWcL51lBmzBwACyKsxG6VmCUXdyOJlz84I2wEAAwIAA20AAzgE",
+              "uniqueId": "AQADyKsxG6VmCUVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5124390912,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104658,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1631584256,
+          "authorSignature": ""
+        },
+        "date": 1679931244,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 899,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837266485913,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution II [SUREA4].zip.003",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15391,
+            "size": 486579088,
+            "expectedSize": 486579088,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExdpKbJpKEbsqiZIiLglYjPOkA_9WQACxgIAAqVmEUXafFn0arNj1DgE",
+              "uniqueId": "AgADxgIAAqVmEUU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 486579088
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5123342336,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104658,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1630535680,
+          "authorSignature": ""
+        },
+        "date": 1679931244,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 935,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837266485913,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution II [SUREA4].zip.002",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15392,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExZpKbJpnhNLG02ahJQYy9kEU3U50wACxQIAAqVmEUUXx6tl-6z51TgE",
+              "uniqueId": "AgADxQIAAqVmEUU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5122293760,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104658,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1629487104,
+          "authorSignature": ""
+        },
+        "date": 1679931244,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 922,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837266485913,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution II [SUREA4].zip.001",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 15393,
+            "size": 1900000000,
+            "expectedSize": 1900000000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExVpKbJp7dgH-v-uB1vyJp2Vb8EOoAACxAIAAqVmEUXYXhSBIJPoBzgE",
+              "uniqueId": "AgADxAIAAqVmEUU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1900000000
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 5121245184,
+      "chatId": -1001214869121,
+      "date": 1748104658,
+      "dateIso": "2025-05-24T16:37:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 484,
+            "height": 680,
+            "file": {
+              "id": 15395,
+              "size": 70704,
+              "remoteId": "AgACAgEAAx0CSGlugQACExRpKbJptDGLIA-JXrUCB-zyiB1AtwACzKsxG6VmCUWGBoNQPIVjxwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADzKsxG6VmCUV9"
+            }
+          },
+          {
+            "width": 228,
+            "height": 320,
+            "file": {
+              "id": 15394,
+              "size": 25506,
+              "remoteId": "AgACAgEAAx0CSGlugQACExRpKbJptDGLIA-JXrUCB-zyiB1AtwACzKsxG6VmCUWGBoNQPIVjxwEAAwIAA20AAzgE",
+              "uniqueId": "AQADzKsxG6VmCUVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5120196608,
+      "senderId": {
+        "chatId": -1001214869121
+      },
+      "chatId": -1001214869121,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1748104648,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001509545401,
+          "messageId": 1635778560,
+          "authorSignature": ""
+        },
+        "date": 1679945186,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 944,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 13984837186259225,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "DanceDanceRevolution [SDYEA4].zip.002",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 15396,
+            "size": 1442860676,
+            "expectedSize": 1442860676,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CSGlugQACExNpKbJpiysk_eQOuir1m3s9POT7NwAC5wIAAqVmEUU61app9LQDITgE",
+              "uniqueId": "AgAD5wIAAqVmEUU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1442860676
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

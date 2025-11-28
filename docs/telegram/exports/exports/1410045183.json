@@ -1,0 +1,40 @@
+{
+  "chatId": 1410045183,
+  "title": "Any EPC",
+  "exportedAt": "2025-11-28T14:45:51.548221196Z",
+  "count": 4,
+  "messages": [
+    {
+      "id": 46585085952,
+      "chatId": 1410045183,
+      "date": 1754413753,
+      "dateIso": "2025-08-05T17:09:13Z",
+      "text": "What software?",
+      "genres": []
+    },
+    {
+      "id": 46584037376,
+      "chatId": 1410045183,
+      "date": 1754413747,
+      "dateIso": "2025-08-05T17:09:07Z",
+      "text": "Hi",
+      "genres": []
+    },
+    {
+      "id": 46582988800,
+      "chatId": 1410045183,
+      "date": 1754413742,
+      "dateIso": "2025-08-05T17:09:02Z",
+      "text": "i search for dialogys",
+      "genres": []
+    },
+    {
+      "id": 46581940224,
+      "chatId": 1410045183,
+      "date": 1754413729,
+      "dateIso": "2025-08-05T17:08:49Z",
+      "text": "hi",
+      "genres": []
+    }
+  ]
+}

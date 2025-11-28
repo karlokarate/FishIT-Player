@@ -1,0 +1,524 @@
+{
+  "chatId": 361223679,
+  "title": "Lisa Krassuski",
+  "exportedAt": "2025-11-28T14:47:07.211546948Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 42286972928,
+      "chatId": 361223679,
+      "date": 1691860349,
+      "dateIso": "2023-08-12T17:12:29Z",
+      "text": "Hi Chris, vielen Dank für die Nummer! Ich hatte bis heute morgen Dienst und freue mich jetzt auf zwei Monate Elternzeit und Eingewöhnung. Ich hoffe, für und euch geht es auch gut. Viele Grüße, Lisa",
+      "genres": []
+    },
+    {
+      "id": 42263904256,
+      "chatId": 361223679,
+      "date": 1691574550,
+      "dateIso": "2023-08-09T09:49:10Z",
+      "text": "Hi Lisa, hier hast auch Du die Telefonnummer von Jacky. Sie ist Elternvertreterin bei den Schmetterlingen und auch Vorsitzende im Elternbeirat. Solltest Du irgendwelche Fragen oder Anliegen haben, darfst du Dich immer gern bei ihr melden.\nIch hoffe, es geht Dir gut.\nLG, Chris",
+      "genres": []
+    },
+    {
+      "id": 42262855680,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 361223679,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1691574413,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "contact": {
+          "phoneNumber": "015158407530",
+          "firstName": "JACKY",
+          "lastName": "",
+          "vcard": "BEGIN:VCARD\nVERSION:2.1\nN;CHARSET\u003dUTF-8;ENCODING\u003dQUOTED-PRINTABLE:;\u003d4A\u003dC3\u003dA4\u003d63\u003d6B\u003d79;;;\nFN;CHARSET\u003dUTF-8;ENCODING\u003dQUOTED-PRINTABLE:\u003d4A\u003dC3\u003dA4\u003d63\u003d6B\u003d79\nTEL;CELL:015158407530\nEND:VCARD",
+          "userId": 0
+        }
+      }
+    },
+    {
+      "id": 41806725120,
+      "chatId": 361223679,
+      "date": 1687807074,
+      "dateIso": "2023-06-26T19:17:54Z",
+      "text": "Hi Chris, Juli hatte heute Nachmittag erhöhte Temperatur und bleibt deshalb morgen zu Hause. Viele Grüße",
+      "genres": []
+    },
+    {
+      "id": 41521512448,
+      "chatId": 361223679,
+      "date": 1685605825,
+      "dateIso": "2023-06-01T07:50:25Z",
+      "text": "Mach ich! Schnuppern geht um 10 Uhr los und circa eine halbe Stunde",
+      "genres": []
+    },
+    {
+      "id": 41520463872,
+      "chatId": 361223679,
+      "date": 1685605549,
+      "dateIso": "2023-06-01T07:45:49Z",
+      "text": "meldest du dich gleich?",
+      "genres": []
+    },
+    {
+      "id": 41519415296,
+      "chatId": 361223679,
+      "date": 1685605540,
+      "dateIso": "2023-06-01T07:45:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 720,
+            "height": 1280,
+            "file": {
+              "id": 23822,
+              "size": 158085,
+              "remoteId": "AgACAgIAAxkDAAKarGkpsuOxBJI_Ix7MazAaAAGQcrObFQACGMgxG1W7yEsdE2wyaWQt6AEAAwIAA3kAAzgE",
+              "uniqueId": "AQADGMgxG1W7yEt-"
+            }
+          },
+          {
+            "width": 450,
+            "height": 800,
+            "file": {
+              "id": 23821,
+              "size": 86420,
+              "remoteId": "AgACAgIAAxkDAAKarGkpsuOxBJI_Ix7MazAaAAGQcrObFQACGMgxG1W7yEsdE2wyaWQt6AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADGMgxG1W7yEt9"
+            }
+          },
+          {
+            "width": 180,
+            "height": 320,
+            "file": {
+              "id": 23820,
+              "size": 20504,
+              "remoteId": "AgACAgIAAxkDAAKarGkpsuOxBJI_Ix7MazAaAAGQcrObFQACGMgxG1W7yEsdE2wyaWQt6AEAAwIAA20AAzgE",
+              "uniqueId": "AQADGMgxG1W7yEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 40630222848,
+      "chatId": 361223679,
+      "date": 1680366708,
+      "dateIso": "2023-04-01T16:31:48Z",
+      "text": "Hi Chris, danke für die Fotos, sie haben mir am Donnerstag den Dienst versüßt 😊",
+      "genres": []
+    },
+    {
+      "id": 40600862720,
+      "chatId": 361223679,
+      "date": 1680183209,
+      "dateIso": "2023-03-30T13:33:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23825,
+              "size": 138934,
+              "remoteId": "AgACAgIAAxkDAAKXQGkpsuMX5yxQrvGS3LNga2d6-tE3AAJ7xTEb8asoSUBFbRe_EYmiAQADAgADeQADOAQ",
+              "uniqueId": "AQADe8UxG_GrKEl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23824,
+              "size": 76714,
+              "remoteId": "AgACAgIAAxkDAAKXQGkpsuMX5yxQrvGS3LNga2d6-tE3AAJ7xTEb8asoSUBFbRe_EYmiAQADAgADeAADOAQ",
+              "uniqueId": "AQADe8UxG_GrKEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23823,
+              "size": 19908,
+              "remoteId": "AgACAgIAAxkDAAKXQGkpsuMX5yxQrvGS3LNga2d6-tE3AAJ7xTEb8asoSUBFbRe_EYmiAQADAgADbQADOAQ",
+              "uniqueId": "AQADe8UxG_GrKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 40599814144,
+      "chatId": 361223679,
+      "date": 1680183209,
+      "dateIso": "2023-03-30T13:33:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23828,
+              "size": 96170,
+              "remoteId": "AgACAgIAAxkDAAKXP2kpsuMN0tQiqXSqJxdBRGbrnE8dAAJ6xTEb8asoSRQbn8u-SVl0AQADAgADeQADOAQ",
+              "uniqueId": "AQADesUxG_GrKEl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23827,
+              "size": 48331,
+              "remoteId": "AgACAgIAAxkDAAKXP2kpsuMN0tQiqXSqJxdBRGbrnE8dAAJ6xTEb8asoSRQbn8u-SVl0AQADAgADeAADOAQ",
+              "uniqueId": "AQADesUxG_GrKEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23826,
+              "size": 11731,
+              "remoteId": "AgACAgIAAxkDAAKXP2kpsuMN0tQiqXSqJxdBRGbrnE8dAAJ6xTEb8asoSRQbn8u-SVl0AQADAgADbQADOAQ",
+              "uniqueId": "AQADesUxG_GrKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 40598765568,
+      "chatId": 361223679,
+      "date": 1680183209,
+      "dateIso": "2023-03-30T13:33:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23831,
+              "size": 116710,
+              "remoteId": "AgACAgIAAxkDAAKXPmkpsuMcBrgefnmABF6GndJta-tfAAJ5xTEb8asoSUFzum7mQzV3AQADAgADeQADOAQ",
+              "uniqueId": "AQADecUxG_GrKEl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23830,
+              "size": 61973,
+              "remoteId": "AgACAgIAAxkDAAKXPmkpsuMcBrgefnmABF6GndJta-tfAAJ5xTEb8asoSUFzum7mQzV3AQADAgADeAADOAQ",
+              "uniqueId": "AQADecUxG_GrKEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23829,
+              "size": 15556,
+              "remoteId": "AgACAgIAAxkDAAKXPmkpsuMcBrgefnmABF6GndJta-tfAAJ5xTEb8asoSUFzum7mQzV3AQADAgADbQADOAQ",
+              "uniqueId": "AQADecUxG_GrKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39170605056,
+      "chatId": 361223679,
+      "date": 1672908371,
+      "dateIso": "2023-01-05T08:46:11Z",
+      "content": {
+        "duration": 33,
+        "width": 854,
+        "height": 480,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23833,
+          "size": 6943419,
+          "remoteId": "BAACAgIAAxkDAAKR7GkpsuM0CxiBLvY33PWaCQQqyc0RAALgJQAChfm5SWEj2w5UCxUzOAQ",
+          "uniqueId": "AgAD4CUAAoX5uUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23832,
+            "size": 16906,
+            "remoteId": "AAMCAgADGQMAApHsaSmy4zQLGIEu9jfc9ZoJBCrJzREAAuAlAAKF-blJYSPbDlQLFTMBAAdtAAM4BA",
+            "uniqueId": "AQAD4CUAAoX5uUly"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 39169556480,
+      "chatId": 361223679,
+      "date": 1672906729,
+      "dateIso": "2023-01-05T08:18:49Z",
+      "text": "gern zur Kita heute",
+      "genres": []
+    },
+    {
+      "id": 39168507904,
+      "chatId": 361223679,
+      "date": 1672906007,
+      "dateIso": "2023-01-05T08:06:47Z",
+      "text": "Sollen wir zu dir kommen oder woanders hin?",
+      "genres": []
+    },
+    {
+      "id": 39167459328,
+      "chatId": 361223679,
+      "date": 1672905976,
+      "dateIso": "2023-01-05T08:06:16Z",
+      "text": "Wir haben schon wieder einen Drama-Morgen und sind erst um halb 10 da",
+      "genres": []
+    },
+    {
+      "id": 39116079104,
+      "chatId": 361223679,
+      "date": 1672736936,
+      "dateIso": "2023-01-03T09:08:56Z",
+      "text": "Danke 😊",
+      "genres": []
+    },
+    {
+      "id": 39115030528,
+      "chatId": 361223679,
+      "date": 1672736756,
+      "dateIso": "2023-01-03T09:05:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23836,
+              "size": 140862,
+              "remoteId": "AgACAgIAAxkDAAKRt2kpsuMFbSdhjEmSpI2BeuW246QPAAJExDEbDhOhScp1PE_bPpIqAQADAgADeQADOAQ",
+              "uniqueId": "AQADRMQxGw4ToUl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23835,
+              "size": 79108,
+              "remoteId": "AgACAgIAAxkDAAKRt2kpsuMFbSdhjEmSpI2BeuW246QPAAJExDEbDhOhScp1PE_bPpIqAQADAgADeAADOAQ",
+              "uniqueId": "AQADRMQxGw4ToUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23834,
+              "size": 20778,
+              "remoteId": "AgACAgIAAxkDAAKRt2kpsuMFbSdhjEmSpI2BeuW246QPAAJExDEbDhOhScp1PE_bPpIqAQADAgADbQADOAQ",
+              "uniqueId": "AQADRMQxGw4ToUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39113981952,
+      "chatId": 361223679,
+      "date": 1672736055,
+      "dateIso": "2023-01-03T08:54:15Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23839,
+              "size": 121704,
+              "remoteId": "AgACAgIAAxkDAAKRtmkpsuMNj9RheKLHJDXr_Uy6Kl2MAAIxxDEbDhOhSSb_cB8gXaU-AQADAgADeQADOAQ",
+              "uniqueId": "AQADMcQxGw4ToUl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23838,
+              "size": 65380,
+              "remoteId": "AgACAgIAAxkDAAKRtmkpsuMNj9RheKLHJDXr_Uy6Kl2MAAIxxDEbDhOhSSb_cB8gXaU-AQADAgADeAADOAQ",
+              "uniqueId": "AQADMcQxGw4ToUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23837,
+              "size": 16590,
+              "remoteId": "AgACAgIAAxkDAAKRtmkpsuMNj9RheKLHJDXr_Uy6Kl2MAAIxxDEbDhOhSSb_cB8gXaU-AQADAgADbQADOAQ",
+              "uniqueId": "AQADMcQxGw4ToUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39112933376,
+      "chatId": 361223679,
+      "date": 1672736055,
+      "dateIso": "2023-01-03T08:54:15Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23842,
+              "size": 247100,
+              "remoteId": "AgACAgIAAxkDAAKRtWkpsuMCEVnZE3SXB7LPXO8u0mI3AAIwxDEbDhOhSSZ5kMpoRNMQAQADAgADeQADOAQ",
+              "uniqueId": "AQADMMQxGw4ToUl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23841,
+              "size": 129150,
+              "remoteId": "AgACAgIAAxkDAAKRtWkpsuMCEVnZE3SXB7LPXO8u0mI3AAIwxDEbDhOhSSZ5kMpoRNMQAQADAgADeAADOAQ",
+              "uniqueId": "AQADMMQxGw4ToUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23840,
+              "size": 27412,
+              "remoteId": "AgACAgIAAxkDAAKRtWkpsuMCEVnZE3SXB7LPXO8u0mI3AAIwxDEbDhOhSSZ5kMpoRNMQAQADAgADbQADOAQ",
+              "uniqueId": "AQADMMQxGw4ToUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39111884800,
+      "chatId": 361223679,
+      "date": 1672736044,
+      "dateIso": "2023-01-03T08:54:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 23845,
+              "size": 405847,
+              "remoteId": "AgACAgIAAxkDAAKRtGkpsuMrvFPDnOrBEIGsiGgFizWsAAIvxDEbDhOhSTtgpzZtJUcnAQADAgADeQADOAQ",
+              "uniqueId": "AQADL8QxGw4ToUl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 23844,
+              "size": 183748,
+              "remoteId": "AgACAgIAAxkDAAKRtGkpsuMrvFPDnOrBEIGsiGgFizWsAAIvxDEbDhOhSTtgpzZtJUcnAQADAgADeAADOAQ",
+              "uniqueId": "AQADL8QxGw4ToUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 23843,
+              "size": 30325,
+              "remoteId": "AgACAgIAAxkDAAKRtGkpsuMrvFPDnOrBEIGsiGgFizWsAAIvxDEbDhOhSTtgpzZtJUcnAQADAgADbQADOAQ",
+              "uniqueId": "AQADL8QxGw4ToUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39110836224,
+      "chatId": 361223679,
+      "date": 1672732993,
+      "dateIso": "2023-01-03T08:03:13Z",
+      "text": "Guten Morgen Chris, wir kommen ein bisschen zu spät wg einem Anzieh-Drama 🙈",
+      "genres": []
+    },
+    {
+      "id": 38606471168,
+      "chatId": 361223679,
+      "date": 1670450712,
+      "dateIso": "2022-12-07T22:05:12Z",
+      "text": "Hi Chris, weißt du schon, wann du nächstes Jahr Urlaub nimmst?",
+      "genres": []
+    },
+    {
+      "id": 38208012288,
+      "chatId": 361223679,
+      "date": 1668671206,
+      "dateIso": "2022-11-17T07:46:46Z",
+      "text": "ok, danke für die Info",
+      "genres": []
+    },
+    {
+      "id": 38206963712,
+      "chatId": 361223679,
+      "date": 1668671145,
+      "dateIso": "2022-11-17T07:45:45Z",
+      "text": "Hi Chris, Juli und Marlene geht es schon deutlich besser, ich würde sie heute aber noch zu Hause lassen und morgen wieder zu dir bringen. viele Grüße, Lisa",
+      "genres": []
+    },
+    {
+      "id": 38151389184,
+      "chatId": 361223679,
+      "date": 1668408660,
+      "dateIso": "2022-11-14T06:51:00Z",
+      "text": "Guten Morgen! Juli und Marlene sind leider krank und kommen daher heute nicht. VG",
+      "genres": []
+    }
+  ]
+}

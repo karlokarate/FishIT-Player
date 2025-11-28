@@ -1,0 +1,37 @@
+{
+  "chatId": 6417778637,
+  "title": "Dominika",
+  "exportedAt": "2025-11-28T14:46:58.512180289Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42642440192,
+      "senderId": {
+        "userId": 6417778637
+      },
+      "chatId": 6417778637,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1696823216,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

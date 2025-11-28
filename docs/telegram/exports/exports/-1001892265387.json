@@ -1,0 +1,39 @@
+{
+  "chatId": -1001892265387,
+  "title": "Yellowstone - für Unterwegs / HD",
+  "exportedAt": "2025-11-28T14:46:25.470988111Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 80740352,
+      "chatId": -1001892265387,
+      "date": 1734727754,
+      "dateIso": "2024-12-20T20:49:14Z",
+      "content": {
+        "duration": 5019,
+        "width": 1280,
+        "height": 640,
+        "fileName": "Yellowstone - S05 E14 - Das Leben ist ein Versprechen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5134,
+          "size": 1186042372,
+          "remoteId": "BAACAgIAAx0CcMmtqwADTWkpskABywVSzIHwrvTdRnx5bN3iAAJiZwACslAoS5L1wkKZfBZKOAQ",
+          "uniqueId": "AgADYmcAArJQKEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 5133,
+            "size": 5549,
+            "remoteId": "AAMCAgADHQJwya2rAANNaSmyQAHLBVLMgfCu9N1GfHls3eIAAmJnAAKyUChLkvXCQpl8FkoBAAdtAAM4BA",
+            "uniqueId": "AQADYmcAArJQKEty"
+          }
+        },
+        "caption": "Yellowstone - S05 E14 - Das Leben ist ein Versprechen"
+      }
+    }
+  ]
+}

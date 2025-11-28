@@ -1,0 +1,39 @@
+{
+  "chatId": -1002233306452,
+  "title": "Exploding Kittens - Full HD",
+  "exportedAt": "2025-11-28T14:46:09.173645071Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 11534336,
+      "chatId": -1002233306452,
+      "date": 1720949955,
+      "dateIso": "2024-07-14T09:39:15Z",
+      "content": {
+        "duration": 1617,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Exploding Kittens - S01 E09 - Die Westminster-Menschenschau.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5259,
+          "size": 974369173,
+          "remoteId": "BAACAgIAAyEFAASFHY1UAAMLaSmyQZZZQj-Pg8MepMIAAXU4DS1dAAIJTQAC2uaQSCjWBaV80QnHOAQ",
+          "uniqueId": "AgADCU0AAtrmkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5258,
+            "size": 6362,
+            "remoteId": "AAMCAgADIQUABIUdjVQAAwtpKbJBlllCP4-Dwx6kwgABdTgNLV0AAglNAALa5pBIKNYFpXzRCccBAAdtAAM4BA",
+            "uniqueId": "AQADCU0AAtrmkEhy"
+          }
+        },
+        "caption": "Exploding Kittens - S01 E09 - Die Westminster-Menschenschau"
+      }
+    }
+  ]
+}

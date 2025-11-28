@@ -1,0 +1,349 @@
+{
+  "chatId": -1001824571928,
+  "title": "The Crowded Room - Full HD",
+  "exportedAt": "2025-11-28T14:47:08.737701649Z",
+  "count": 11,
+  "messages": [
+    {
+      "id": 45088768,
+      "chatId": -1001824571928,
+      "date": 1690620402,
+      "dateIso": "2023-07-29T08:46:42Z",
+      "content": {
+        "duration": 2623,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E10 - Judgment.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5306,
+          "size": 2014504726,
+          "remoteId": "BAACAgIAAx0CbMDCGAADK2kpsuOX_ckyqam2EbxMDVqni4VSAAKONwACL9cgSmU0JXCX9ubSOAQ",
+          "uniqueId": "AgADjjcAAi_XIEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5305,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMraSmy45f9yTKpqbYRvEwNWqeLhVIAAo43AAIv1yBKZTQlcJf25tIBAAdtAAM4BA",
+            "uniqueId": "AQADjjcAAi_XIEpy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E10 - Judgment"
+      }
+    },
+    {
+      "id": 40894464,
+      "chatId": -1001824571928,
+      "date": 1690299420,
+      "dateIso": "2023-07-25T15:37:00Z",
+      "content": {
+        "duration": 3184,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E09 - Familie.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23762,
+          "size": 1994896410,
+          "remoteId": "BAACAgIAAx0CbMDCGAADJ2kpsuPxsxKq6BJBqecaKLDxsvdFAAJiLAACxhHgSZDMVD7CZSCxOAQ",
+          "uniqueId": "AgADYiwAAsYR4Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23761,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMnaSmy4_GzEqroEkGp5xoosPGy90UAAmIsAALGEeBJkMxUPsJlILEBAAdtAAM4BA",
+            "uniqueId": "AQADYiwAAsYR4Ely"
+          }
+        },
+        "caption": "The Crowded Room - S01 E09 - Familie"
+      }
+    },
+    {
+      "id": 35651584,
+      "chatId": -1001824571928,
+      "date": 1689374113,
+      "dateIso": "2023-07-14T22:35:13Z",
+      "content": {
+        "duration": 2876,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E08 - Wieder vereint.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23764,
+          "size": 1997837415,
+          "remoteId": "BAACAgIAAx0CbMDCGAADImkpsuPWmQIX5fABDYV6xXmi5b_JAALIKwACiiuRSRAC4Um_lsPaOAQ",
+          "uniqueId": "AgADyCsAAoorkUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23763,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMiaSmy49aZAhfl8AENhXrFeaLlv8kAAsgrAAKKK5FJEALhSb-Ww9oBAAdtAAM4BA",
+            "uniqueId": "AQADyCsAAoorkUly"
+          }
+        },
+        "caption": "The Crowded Room - S01 E08 - Wieder vereint"
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001824571928,
+      "date": 1689374110,
+      "dateIso": "2023-07-14T22:35:10Z",
+      "content": {
+        "duration": 2608,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E07 - The Crowded Room.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23766,
+          "size": 1998381195,
+          "remoteId": "BAACAgIAAx0CbMDCGAADIWkpsuNa_E8swc9CP8Ph7tOrFifLAALEKwACiiuRSQliKEOMPcilOAQ",
+          "uniqueId": "AgADxCsAAoorkUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23765,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMhaSmy41r8TyzBz0I_w-Hu06sWJ8sAAsQrAAKKK5FJCWIoQ4w9yKUBAAdtAAM4BA",
+            "uniqueId": "AQADxCsAAoorkUly"
+          }
+        },
+        "caption": "The Crowded Room - S01 E07 - The Crowded Room"
+      }
+    },
+    {
+      "id": 29360128,
+      "chatId": -1001824571928,
+      "date": 1688168384,
+      "dateIso": "2023-06-30T23:39:44Z",
+      "content": {
+        "duration": 3396,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E06 - Rya.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23768,
+          "size": 2024621037,
+          "remoteId": "BAACAgIAAx0CbMDCGAADHGkpsuMETq4gW65hNUSvFZ_Z0kNkAAL5MQACeIj5SE8dVu1VvwOkOAQ",
+          "uniqueId": "AgAD-TEAAniI-Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23767,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMcaSmy4wROriBbrmE1RK8Vn9nSQ2QAAvkxAAJ4iPlITx1W7VW_A6QBAAdtAAM4BA",
+            "uniqueId": "AQAD-TEAAniI-Uhy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E06 - Rya"
+      }
+    },
+    {
+      "id": 28311552,
+      "chatId": -1001824571928,
+      "date": 1688168381,
+      "dateIso": "2023-06-30T23:39:41Z",
+      "content": {
+        "duration": 2541,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E05 - Retter.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23770,
+          "size": 2014140411,
+          "remoteId": "BAACAgIAAx0CbMDCGAADG2kpsuMdgL1iv4z359qdhkDwayRCAAL0MQACeIj5SDRL78u6-kjGOAQ",
+          "uniqueId": "AgAD9DEAAniI-Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23769,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMbaSmy4x2AvWK_jPfn2p2GQPBrJEIAAvQxAAJ4iPlINEvvy7r6SMYBAAdtAAM4BA",
+            "uniqueId": "AQAD9DEAAniI-Uhy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E05 - Retter"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1001824571928,
+      "date": 1686957836,
+      "dateIso": "2023-06-16T23:23:56Z",
+      "content": {
+        "duration": 2284,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E04 - London.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23772,
+          "size": 1972241767,
+          "remoteId": "BAACAgIAAx0CbMDCGAADF2kpsuODll37_Q6gFd60BbSpH2OaAALxNQACHRJoSPK07UUGHGVTOAQ",
+          "uniqueId": "AgAD8TUAAh0SaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23771,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMXaSmy44OWXfv9DqAV3rQFtKkfY5oAAvE1AAIdEmhI8rTtRQYcZVMBAAdtAAM4BA",
+            "uniqueId": "AQAD8TUAAh0SaEhy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E04 - London"
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1001824571928,
+      "date": 1686957833,
+      "dateIso": "2023-06-16T23:23:53Z",
+      "content": {
+        "duration": 2565,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E03 - Mord.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23774,
+          "size": 2036560066,
+          "remoteId": "BAACAgIAAx0CbMDCGAADFmkpsuPY8xTwaRCB2qMNc1wWDegdAAI-MAACwxdoSPiYTTBAkPNhOAQ",
+          "uniqueId": "AgADPjAAAsMXaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23773,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMWaSmy49jzFPBpEIHaow1zXBYN6B0AAj4wAALDF2hI-JhNMECQ82EBAAdtAAM4BA",
+            "uniqueId": "AQADPjAAAsMXaEhy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E03 - Mord"
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001824571928,
+      "date": 1686957260,
+      "dateIso": "2023-06-16T23:14:20Z",
+      "content": {
+        "duration": 2690,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E02 - Zuflucht.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23776,
+          "size": 1999464341,
+          "remoteId": "BAACAgIAAx0CbMDCGAADEGkpsuMmrkZ53d4z4wyTEYKAzQ-wAALyNQACHRJoSNIxJJ6V4QMmOAQ",
+          "uniqueId": "AgAD8jUAAh0SaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23775,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMQaSmy4yauRnnd3jPjDJMRgoDND7AAAvI1AAIdEmhI0jEknpXhAyYBAAdtAAM4BA",
+            "uniqueId": "AQAD8jUAAh0SaEhy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E02 - Zuflucht"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1001824571928,
+      "date": 1686957257,
+      "dateIso": "2023-06-16T23:14:17Z",
+      "content": {
+        "duration": 3396,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crowded Room - S01 E01 - Exodus.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23778,
+          "size": 2013412018,
+          "remoteId": "BAACAgIAAx0CbMDCGAADD2kpsuO57ZzOLuXvTge7nH3j8tW8AALoNQACHRJoSBRaZB2SXZEVOAQ",
+          "uniqueId": "AgAD6DUAAh0SaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 23777,
+            "size": 8549,
+            "remoteId": "AAMCAgADHQJswMIYAAMPaSmy47ntnM4u5e9OB7ucfePy1bwAAug1AAIdEmhIFFpkHZJdkRUBAAdtAAM4BA",
+            "uniqueId": "AQAD6DUAAh0SaEhy"
+          }
+        },
+        "caption": "The Crowded Room - S01 E01 - Exodus"
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001824571928
+      },
+      "chatId": -1001824571928,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1686924473,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "The Crowded Room - Full HD"
+      }
+    }
+  ]
+}

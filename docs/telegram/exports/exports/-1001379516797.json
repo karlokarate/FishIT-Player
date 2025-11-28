@@ -1,0 +1,39 @@
+{
+  "chatId": -1001379516797,
+  "title": "Die Dinos HD",
+  "exportedAt": "2025-11-28T14:46:34.083541580Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 106954752,
+      "chatId": -1001379516797,
+      "date": 1658407204,
+      "dateIso": "2022-07-21T12:40:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 540,
+            "height": 794,
+            "file": {
+              "id": 5570,
+              "size": 67072,
+              "remoteId": "AgACAgEAAx0CUjnBfQADZmkpskGDra_liAYnfgXzHVAyXC5iAAIpqjEbdkvQRn66mlCJdVuqAQADAgADeAADOAQ",
+              "uniqueId": "AQADKaoxG3ZL0EZ9"
+            }
+          },
+          {
+            "width": 218,
+            "height": 320,
+            "file": {
+              "id": 5569,
+              "size": 19184,
+              "remoteId": "AgACAgEAAx0CUjnBfQADZmkpskGDra_liAYnfgXzHVAyXC5iAAIpqjEbdkvQRn66mlCJdVuqAQADAgADbQADOAQ",
+              "uniqueId": "AQADKaoxG3ZL0EZy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

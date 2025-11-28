@@ -1,0 +1,793 @@
+{
+  "chatId": -1001295098792,
+  "title": "Die Fraggles",
+  "exportedAt": "2025-11-28T14:47:23.284557013Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 252706816,
+      "chatId": -1001295098792,
+      "date": 1685129947,
+      "dateIso": "2023-05-26T19:39:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 480,
+            "file": {
+              "id": 4231,
+              "size": 50368,
+              "remoteId": "AgACAgIAAx0CTTGjqAAD8WkpssN94T2NDXUnE0b0lkMdVpfrAAKOrjEbiE4oSNoHiSjH64CtAQADAgADeQADOAQ",
+              "uniqueId": "AQADjq4xG4hOKEh-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 4230,
+              "size": 52976,
+              "remoteId": "AgACAgIAAx0CTTGjqAAD8WkpssN94T2NDXUnE0b0lkMdVpfrAAKOrjEbiE4oSNoHiSjH64CtAQADAgADeAADOAQ",
+              "uniqueId": "AQADjq4xG4hOKEh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 4229,
+              "size": 10860,
+              "remoteId": "AgACAgIAAx0CTTGjqAAD8WkpssN94T2NDXUnE0b0lkMdVpfrAAKOrjEbiE4oSNoHiSjH64CtAQADAgADbQADOAQ",
+              "uniqueId": "AQADjq4xG4hOKEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 248512512,
+      "chatId": -1001295098792,
+      "date": 1685129547,
+      "dateIso": "2023-05-26T19:32:27Z",
+      "content": {
+        "duration": 1507,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E13 - Adressänderung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22067,
+          "size": 224573563,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD7WkpssOiHCcoVdY81-aHXQNFnoGpAALFLQACyV-BSyzQwvNGj2K6OAQ",
+          "uniqueId": "AgADxS0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22066,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPtaSmyw6IcJyhV1jzX5oddA0WegakAAsUtAALJX4FLLNDC80aPYroBAAdtAAM4BA",
+            "uniqueId": "AQADxS0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E13 - Adressänderung"
+      }
+    },
+    {
+      "id": 247463936,
+      "chatId": -1001295098792,
+      "date": 1685129544,
+      "dateIso": "2023-05-26T19:32:24Z",
+      "content": {
+        "duration": 1475,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E12 - Der Honk der Honks.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22069,
+          "size": 219782935,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD7GkpssPIWVF8KCGcFkE2e4NiS5mZAAKoLQACyV-BS9WWMzoQQS0GOAQ",
+          "uniqueId": "AgADqC0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22068,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPsaSmyw8hZUXwoIZwWQTZ7g2JLmZkAAqgtAALJX4FL1ZYzOhBBLQYBAAdtAAM4BA",
+            "uniqueId": "AQADqC0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E12 - Der Honk der Honks"
+      }
+    },
+    {
+      "id": 246415360,
+      "chatId": -1001295098792,
+      "date": 1685129541,
+      "dateIso": "2023-05-26T19:32:21Z",
+      "content": {
+        "duration": 1476,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E11 - Der Gorg der König sein wollte.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22071,
+          "size": 218079756,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD62kpssM3BUm0lA3AoQ7vSLoD0T98AAJ8LQACyV-BSxkKYoEqUjCkOAQ",
+          "uniqueId": "AgADfC0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22070,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPraSmywzcFSbSUDcChDu9IugPRP3wAAnwtAALJX4FLGQpigSpSMKQBAAdtAAM4BA",
+            "uniqueId": "AQADfC0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E11 - Der Gorg der König sein wollte"
+      }
+    },
+    {
+      "id": 245366784,
+      "chatId": -1001295098792,
+      "date": 1685129538,
+      "dateIso": "2023-05-26T19:32:18Z",
+      "content": {
+        "duration": 1481,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S05 E10 - Inspektor Red.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22073,
+          "size": 424860294,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD6mkpssPXLb0kpR-MDJ7DYupH-qofAAKEKgAChyp4S-wIkTfEk9n9OAQ",
+          "uniqueId": "AgADhCoAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22072,
+            "size": 15766,
+            "remoteId": "AAMCAgADHQJNMaOoAAPqaSmyw9ctvSSlH4wMnsNi6kf6qh8AAoQqAAKHKnhL7AiRN8ST2f0BAAdtAAM4BA",
+            "uniqueId": "AQADhCoAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E10 - Inspektor Red"
+      }
+    },
+    {
+      "id": 244318208,
+      "chatId": -1001295098792,
+      "date": 1685129534,
+      "dateIso": "2023-05-26T19:32:14Z",
+      "content": {
+        "duration": 1490,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E09 - Ring um den Felsen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22075,
+          "size": 220395744,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD6WkpssOee1JaJsNidQPyYByBVdESAAKzLQACyV-BS5NUShSLEmkyOAQ",
+          "uniqueId": "AgADsy0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22074,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPpaSmyw557Ulomw2J1A_JgHIFV0RIAArMtAALJX4FLk1RKFIsSaTIBAAdtAAM4BA",
+            "uniqueId": "AQADsy0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E09 - Ring um den Felsen"
+      }
+    },
+    {
+      "id": 243269632,
+      "chatId": -1001295098792,
+      "date": 1685129531,
+      "dateIso": "2023-05-26T19:32:11Z",
+      "content": {
+        "duration": 1476,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E08 - Mokey, damals und heute.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22077,
+          "size": 218643677,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD6GkpssMB70Wjo16kVzxCeQ3L_HLDAAKKLQACyV-BSyUKXvJ5dXMWOAQ",
+          "uniqueId": "AgADii0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22076,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPoaSmywwHvRaOjXqRXPEJ5Dcv8csMAAootAALJX4FLJQpe8nl1cxYBAAdtAAM4BA",
+            "uniqueId": "AQADii0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E08 - Mokey, damals und heute"
+      }
+    },
+    {
+      "id": 241172480,
+      "chatId": -1001295098792,
+      "date": 1685129521,
+      "dateIso": "2023-05-26T19:32:01Z",
+      "content": {
+        "duration": 1465,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S05 E07 - Aus den Augen, nicht aus dem Sinn.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22079,
+          "size": 420001330,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD5mkpssOm7lan2-NRe84xepqs1jHsAAIDKQAChyp4S72i-DUIpK5KOAQ",
+          "uniqueId": "AgADAykAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22078,
+            "size": 15766,
+            "remoteId": "AAMCAgADHQJNMaOoAAPmaSmyw6buVqfb41F7zjF6mqzWMewAAgMpAAKHKnhLvaL4NQikrkoBAAdtAAM4BA",
+            "uniqueId": "AQADAykAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E07 - Aus den Augen, nicht aus dem Sinn"
+      }
+    },
+    {
+      "id": 240123904,
+      "chatId": -1001295098792,
+      "date": 1685129518,
+      "dateIso": "2023-05-26T19:31:58Z",
+      "content": {
+        "duration": 1483,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S05 E06 - Jenseits des Teiches.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22081,
+          "size": 425238411,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD5WkpssOJlKKZ9IUwO7yYSSLiPgfcAAKVKgAChyp4S5sQAmTgD4nHOAQ",
+          "uniqueId": "AgADlSoAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22080,
+            "size": 15766,
+            "remoteId": "AAMCAgADHQJNMaOoAAPlaSmyw4mUopn0hTA7vJhJIuI-B9wAApUqAAKHKnhLmxACZOAPiccBAAdtAAM4BA",
+            "uniqueId": "AQADlSoAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E06 - Jenseits des Teiches"
+      }
+    },
+    {
+      "id": 239075328,
+      "chatId": -1001295098792,
+      "date": 1685129514,
+      "dateIso": "2023-05-26T19:31:54Z",
+      "content": {
+        "duration": 1465,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S05 E05 - Der Strom des Lebens.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22083,
+          "size": 420151181,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD5GkpssN2sKVGiR3iA1PJKV4AAYbGOgACCikAAocqeEsj5LUj6oXgxzgE",
+          "uniqueId": "AgADCikAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22082,
+            "size": 15766,
+            "remoteId": "AAMCAgADHQJNMaOoAAPkaSmyw3awpUaJHeIDU8kpXgABhsY6AAIKKQAChyp4SyPktSPqheDHAQAHbQADOAQ",
+            "uniqueId": "AQADCikAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E05 - Der Strom des Lebens"
+      }
+    },
+    {
+      "id": 238026752,
+      "chatId": -1001295098792,
+      "date": 1685129511,
+      "dateIso": "2023-05-26T19:31:51Z",
+      "content": {
+        "duration": 1475,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E04 - Vorarbeiter Doozer muss vor Gericht.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22085,
+          "size": 219054301,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD42kpssN1YgkxPiufrNW8AW0rI5g5AAKbLQACyV-BS3s2x9HDkf41OAQ",
+          "uniqueId": "AgADmy0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22084,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPjaSmyw3ViCTE-K5-s1bwBbSsjmDkAApstAALJX4FLezbH0cOR_jUBAAdtAAM4BA",
+            "uniqueId": "AQADmy0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E04 - Vorarbeiter Doozer muss vor Gericht"
+      }
+    },
+    {
+      "id": 236978176,
+      "chatId": -1001295098792,
+      "date": 1685129508,
+      "dateIso": "2023-05-26T19:31:48Z",
+      "content": {
+        "duration": 1469,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E03 - Die innere Stimme.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22087,
+          "size": 219716083,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD4mkpssM2yfqV2R6ERbL9TjG1oNTyAAJxLQACyV-BS-u7u4zz4pf4OAQ",
+          "uniqueId": "AgADcS0AAslfgUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22086,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPiaSmywzbJ-pXZHoRFsv1OMbWg1PIAAnEtAALJX4FL67u7jPPil_gBAAdtAAM4BA",
+            "uniqueId": "AQADcS0AAslfgUty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E03 - Die innere Stimme"
+      }
+    },
+    {
+      "id": 235929600,
+      "chatId": -1001295098792,
+      "date": 1685129505,
+      "dateIso": "2023-05-26T19:31:45Z",
+      "content": {
+        "duration": 1467,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S05 E02 - Das Rätsel von Rhyming Rock.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22089,
+          "size": 218759723,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD4WkpssOXoQFxGbxPqdIkNT6IF7i2AAL4JwAChyp4S8Q2kWxi_HaxOAQ",
+          "uniqueId": "AgAD-CcAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22088,
+            "size": 15982,
+            "remoteId": "AAMCAgADHQJNMaOoAAPhaSmyw5ehAXEZvE-p0iQ1PogXuLYAAvgnAAKHKnhLxDaRbGL8drEBAAdtAAM4BA",
+            "uniqueId": "AQAD-CcAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E02 - Das Rätsel von Rhyming Rock"
+      }
+    },
+    {
+      "id": 234881024,
+      "chatId": -1001295098792,
+      "date": 1685129502,
+      "dateIso": "2023-05-26T19:31:42Z",
+      "content": {
+        "duration": 1473,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S05 E01 - Der zerbrochene Spiegel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22091,
+          "size": 422331856,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD4GkpssPguyOPlXhUS1_ymW9fHf4gAAK-KQAChyp4S4btN4TCdg6lOAQ",
+          "uniqueId": "AgADvikAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22090,
+            "size": 15766,
+            "remoteId": "AAMCAgADHQJNMaOoAAPgaSmyw-C7I4-VeFRLX_KZb18d_iAAAr4pAAKHKnhLhu03hMJ2DqUBAAdtAAM4BA",
+            "uniqueId": "AQADvikAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S05 E01 - Der zerbrochene Spiegel"
+      }
+    },
+    {
+      "id": 233832448,
+      "chatId": -1001295098792,
+      "date": 1685129498,
+      "dateIso": "2023-05-26T19:31:38Z",
+      "content": {
+        "duration": 1470,
+        "width": 512,
+        "height": 384,
+        "fileName": "Die Fraggles - S04 E13 - Gorg Boober.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22093,
+          "size": 240709064,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD32kpssO87DozyiNHY0K6_T3y6Px4AAL9JwAChyp4SyTKCC0tJkeiOAQ",
+          "uniqueId": "AgAD_ScAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22092,
+            "size": 17700,
+            "remoteId": "AAMCAgADHQJNMaOoAAPfaSmyw7zsOjPKI0djQrr9PfLo_HgAAv0nAAKHKnhLJMoILS0mR6IBAAdtAAM4BA",
+            "uniqueId": "AQAD_ScAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E13 - Gorg Boober"
+      }
+    },
+    {
+      "id": 232783872,
+      "chatId": -1001295098792,
+      "date": 1685129495,
+      "dateIso": "2023-05-26T19:31:35Z",
+      "content": {
+        "duration": 1468,
+        "width": 512,
+        "height": 384,
+        "fileName": "Die Fraggles - S04 E12 - Der fremde Frosch.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22095,
+          "size": 241529917,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD3mkpssMjiIXLyPU_cszRYOtL46KTAAIBKAAChyp4S241Q7H7M4smOAQ",
+          "uniqueId": "AgADASgAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22094,
+            "size": 17700,
+            "remoteId": "AAMCAgADHQJNMaOoAAPeaSmywyOIhcvI9T9yzNFg60vjopMAAgEoAAKHKnhLbjVDsfsziyYBAAdtAAM4BA",
+            "uniqueId": "AQADASgAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E12 - Der fremde Frosch"
+      }
+    },
+    {
+      "id": 231735296,
+      "chatId": -1001295098792,
+      "date": 1685129492,
+      "dateIso": "2023-05-26T19:31:32Z",
+      "content": {
+        "duration": 1462,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E11 - Der Wunderberg.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22097,
+          "size": 419130700,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD3WkpssP8QVnVDhXiNC99p70t35E8AALRKAAChyp4S0wLo0uDEnh6OAQ",
+          "uniqueId": "AgAD0SgAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22096,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPdaSmyw_xBWdUOFeI0L32nvS3fkTwAAtEoAAKHKnhLTAujS4MSeHoBAAdtAAM4BA",
+            "uniqueId": "AQAD0SgAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E11 - Der Wunderberg"
+      }
+    },
+    {
+      "id": 229638144,
+      "chatId": -1001295098792,
+      "date": 1685129482,
+      "dateIso": "2023-05-26T19:31:22Z",
+      "content": {
+        "duration": 1467,
+        "width": 644,
+        "height": 484,
+        "fileName": "Die Fraggles - S04 E10 - Reds blauer Drache.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22099,
+          "size": 218858416,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD22kpssMrLuSnPkG2k8CMXSrOsjh1AAL2JwAChyp4S__THWi2skzlOAQ",
+          "uniqueId": "AgAD9icAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22098,
+            "size": 18266,
+            "remoteId": "AAMCAgADHQJNMaOoAAPbaSmywysu5Kc-QbaTwIxdKs6yOHUAAvYnAAKHKnhL_9MdaLayTOUBAAdtAAM4BA",
+            "uniqueId": "AQAD9icAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E10 - Reds blauer Drache"
+      }
+    },
+    {
+      "id": 228589568,
+      "chatId": -1001295098792,
+      "date": 1685129479,
+      "dateIso": "2023-05-26T19:31:19Z",
+      "content": {
+        "duration": 1469,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E09 - Wembleys Flug.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22101,
+          "size": 421055826,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD2mkpssNe9Ur15uRjidoXTV73sae3AAJaKQAChyp4S9sTixGOb8eaOAQ",
+          "uniqueId": "AgADWikAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22100,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPaaSmyw171SvXm5GOJ2hdNXvexp7cAAlopAAKHKnhL2xOLEY5vx5oBAAdtAAM4BA",
+            "uniqueId": "AQADWikAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E09 - Wembleys Flug"
+      }
+    },
+    {
+      "id": 227540992,
+      "chatId": -1001295098792,
+      "date": 1685129476,
+      "dateIso": "2023-05-26T19:31:16Z",
+      "content": {
+        "duration": 1470,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E08 - A Brush with Jealousy.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22103,
+          "size": 421524542,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD2WkpssP0D0V-4EQfUo7-7U3TAi3XAAJqKQAChyp4SwhfMUzmuOaNOAQ",
+          "uniqueId": "AgADaikAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22102,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPZaSmyw_QPRX7gRB9Sjv7tTdMCLdcAAmopAAKHKnhLCF8xTOa45o0BAAdtAAM4BA",
+            "uniqueId": "AQADaikAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E08 - A Brush with Jealousy"
+      }
+    },
+    {
+      "id": 226492416,
+      "chatId": -1001295098792,
+      "date": 1685129473,
+      "dateIso": "2023-05-26T19:31:13Z",
+      "content": {
+        "duration": 1461,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E07 - Die blaue Kugel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22105,
+          "size": 418932468,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD2GkpssNnFdKu5jiXRxh0jzEepqulAALLKAAChyp4S2NJAAFfWkf0ijgE",
+          "uniqueId": "AgADyygAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22104,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPYaSmyw2cV0q7mOJdHGHSPMR6mq6UAAssoAAKHKnhLY0kAAV9aR_SKAQAHbQADOAQ",
+            "uniqueId": "AQADyygAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E07 - Die blaue Kugel"
+      }
+    },
+    {
+      "id": 225443840,
+      "chatId": -1001295098792,
+      "date": 1685129469,
+      "dateIso": "2023-05-26T19:31:09Z",
+      "content": {
+        "duration": 1478,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E06 - Ein Lied für zwei.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22107,
+          "size": 423674506,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD12kpssPNPIZec-hu60sD2gJJCdk4AALwKQAChyp4S3qugy2ku_cROAQ",
+          "uniqueId": "AgAD8CkAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22106,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPXaSmyw808hl5z6G7rSwPaAkkJ2TgAAvApAAKHKnhLeq6DLaS79xEBAAdtAAM4BA",
+            "uniqueId": "AQAD8CkAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E06 - Ein Lied für zwei"
+      }
+    },
+    {
+      "id": 224395264,
+      "chatId": -1001295098792,
+      "date": 1685129466,
+      "dateIso": "2023-05-26T19:31:06Z",
+      "content": {
+        "duration": 1480,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E05 - Das neue Lied.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22109,
+          "size": 424430368,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD1mkpssN18i97pSKLIMSzbAS-xgV3AAIRKgAChyp4S83c-NKA39fHOAQ",
+          "uniqueId": "AgADESoAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22108,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPWaSmyw3XyL3ulIosgxLNsBL7GBXcAAhEqAAKHKnhLzdz40oDf18cBAAdtAAM4BA",
+            "uniqueId": "AQADESoAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E05 - Das neue Lied"
+      }
+    },
+    {
+      "id": 223346688,
+      "chatId": -1001295098792,
+      "date": 1685129463,
+      "dateIso": "2023-05-26T19:31:03Z",
+      "content": {
+        "duration": 1465,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E04 - Onkel Matts Entdeckung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22111,
+          "size": 420043199,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD1WkpssPkRNQDo_fkbO-UUMEj2rTCAALqKAAChyp4S0HJMZlsqon9OAQ",
+          "uniqueId": "AgAD6igAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22110,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPVaSmyw-RE1AOj9-Rs75RQwSPatMIAAuooAAKHKnhLQckxmWyqif0BAAdtAAM4BA",
+            "uniqueId": "AQAD6igAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E04 - Onkel Matts Entdeckung"
+      }
+    },
+    {
+      "id": 222298112,
+      "chatId": -1001295098792,
+      "date": 1685129460,
+      "dateIso": "2023-05-26T19:31:00Z",
+      "content": {
+        "duration": 1493,
+        "width": 576,
+        "height": 432,
+        "fileName": "Die Fraggles - S04 E03 - Sidebottoms Blues.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22113,
+          "size": 428093377,
+          "remoteId": "BAACAgIAAx0CTTGjqAAD1GkpssO11LhIXpdwUNbV_CJt4ObpAAIYKwAChyp4S6ZLe3kCnLQ-OAQ",
+          "uniqueId": "AgADGCsAAocqeEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 22112,
+            "size": 17985,
+            "remoteId": "AAMCAgADHQJNMaOoAAPUaSmyw7XUuEhel3BQ1tX8Im3g5ukAAhgrAAKHKnhLpkt7eQKctD4BAAdtAAM4BA",
+            "uniqueId": "AQADGCsAAocqeEty"
+          }
+        },
+        "caption": "Die Fraggles - S04 E03 - Sidebottoms Blues"
+      }
+    }
+  ]
+}

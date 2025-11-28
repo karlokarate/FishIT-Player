@@ -1,0 +1,414 @@
+{
+  "chatId": 5834953278,
+  "title": "Jan BEXTER",
+  "exportedAt": "2025-11-28T14:46:33.475633293Z",
+  "count": 6,
+  "messages": [
+    {
+      "id": 45097156608,
+      "chatId": 5834953278,
+      "date": 1729594121,
+      "dateIso": "2024-10-22T10:48:41Z",
+      "content": {
+        "duration": 174,
+        "width": 640,
+        "height": 352,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5247,
+          "size": 20518786,
+          "remoteId": "BAACAgIAAxkDAAKn-mkptbjaC0E3lghN1msXfnAdZ663AAKEWAACuD7ASPXY8ace4xprOAQ",
+          "uniqueId": "AgADhFgAArg-wEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 176,
+          "file": {
+            "id": 5246,
+            "size": 10872,
+            "remoteId": "AAMCAgADGQMAAqf6aSm1uNoLQTeWCE3Waxd-cB1nrrcAAoRYAAK4PsBI9djxpx7jGmsBAAdtAAM4BA",
+            "uniqueId": "AQADhFgAArg-wEhy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 45096108032,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 5834953278,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729594121,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "audio": {
+          "duration": 151,
+          "title": "",
+          "performer": "",
+          "fileName": "Sprache 016-63.MP3",
+          "mimeType": "audio/mpeg",
+          "externalAlbumCovers": [],
+          "audio": {
+            "id": 32137,
+            "size": 1963900,
+            "expectedSize": 1963900,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CQACAgIAAxkDAAKn_2kptcl_L25r5w30nYp6IgABL7VtYwACgVgAArg-wEhr_xuU5gOnnDgE",
+              "uniqueId": "AgADgVgAArg-wEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1963900
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45095059456,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 5834953278,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729594121,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "audio": {
+          "duration": 98,
+          "title": "Mein Song 2",
+          "performer": "Chris",
+          "fileName": "Mein Song 2-382.MP3",
+          "mimeType": "audio/mpeg",
+          "externalAlbumCovers": [
+            {
+              "format": {},
+              "width": 100,
+              "height": 100,
+              "file": {
+                "id": 32139,
+                "size": 0,
+                "expectedSize": 0,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAgdI2F1ZGlvX3QjTWVpbiBTb25nIDIjQ2hyaXMjMSMAAgM",
+                  "uniqueId": "_wAIHSNhdWRpb190I01laW4gU29uZyAyI0NocmlzIzEjAAI",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 0
+                }
+              }
+            },
+            {
+              "format": {},
+              "width": 600,
+              "height": 600,
+              "file": {
+                "id": 32140,
+                "size": 0,
+                "expectedSize": 0,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAgdI2F1ZGlvX3QjTWVpbiBTb25nIDIjQ2hyaXMjMCMAAgM",
+                  "uniqueId": "_wAIHSNhdWRpb190I01laW4gU29uZyAyI0NocmlzIzAjAAI",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 0
+                }
+              }
+            }
+          ],
+          "audio": {
+            "id": 32138,
+            "size": 2186434,
+            "expectedSize": 2186434,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CQACAgIAAxkDAAKn_mkptckRF5GnElsAAYfbg6Y2_SWVUQACeVgAArg-wEgcg4hTt2_IuDgE",
+              "uniqueId": "AgADeVgAArg-wEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 2186434
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45094010880,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 5834953278,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729594121,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "audio": {
+          "duration": 153,
+          "title": "",
+          "performer": "",
+          "fileName": "giving me a chance2-940.MP3",
+          "mimeType": "audio/mpeg",
+          "externalAlbumCovers": [],
+          "audio": {
+            "id": 32141,
+            "size": 1841634,
+            "expectedSize": 1841634,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CQACAgIAAxkDAAKn_WkptckHlriljyCLhmzq7-7lDo94AAJ0WAACuD7ASOk8myLPLOGcOAQ",
+              "uniqueId": "AgADdFgAArg-wEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1841634
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45092962304,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 5834953278,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729594121,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "audio": {
+          "duration": 144,
+          "title": "",
+          "performer": "",
+          "fileName": "Barbara alpha-769.MP3",
+          "mimeType": "audio/mpeg",
+          "externalAlbumCovers": [],
+          "audio": {
+            "id": 32142,
+            "size": 1737212,
+            "expectedSize": 1737212,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CQACAgIAAxkDAAKn_GkptcmN9kPyxobB8VrkBVeiI8bYAAJyWAACuD7ASIzU9FiORDDLOAQ",
+              "uniqueId": "AgADclgAArg-wEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1737212
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45091913728,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 5834953278,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729594121,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "audio": {
+          "duration": 178,
+          "title": "",
+          "performer": "",
+          "fileName": "weihnachtszeit2-1.MP3",
+          "mimeType": "audio/mpeg",
+          "externalAlbumCovers": [],
+          "audio": {
+            "id": 32143,
+            "size": 2102584,
+            "expectedSize": 2102584,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CQACAgIAAxkDAAKn-2kptcmDoki2VnsN4JjF2ydVtyrhAAJtWAACuD7ASNFLVxx2yE1HOAQ",
+              "uniqueId": "AgADbVgAArg-wEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 2102584
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

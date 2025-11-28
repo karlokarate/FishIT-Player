@@ -1,0 +1,37 @@
+{
+  "chatId": 2088467751,
+  "title": "Lex",
+  "exportedAt": "2025-11-28T14:47:42.656659161Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 27070038016,
+      "senderId": {
+        "userId": 2088467751
+      },
+      "chatId": 2088467751,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1634397218,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

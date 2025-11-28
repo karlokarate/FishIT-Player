@@ -1,0 +1,1945 @@
+{
+  "chatId": -1001373728122,
+  "title": "|WW|DatenKeller",
+  "exportedAt": "2025-11-28T14:45:25.913876556Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 213909504,
+      "senderId": {
+        "chatId": -1001373728122
+      },
+      "chatId": -1001373728122,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764199516,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 46,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "4.6.0.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 4851,
+            "size": 64803052,
+            "expectedSize": 64803052,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CUeFtegADzGkpslUybULq_X2GONwwE7p_ThC0AAK7fQACXFxASVXOB0VEauSBOAQ",
+              "uniqueId": "AgADu30AAlxcQEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 64803052
+            }
+          }
+        },
+        "caption": {
+          "text": "Cloudstream3",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 212860928,
+      "chatId": -1001373728122,
+      "date": 1764199136,
+      "dateIso": "2025-11-26T23:18:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 582,
+            "file": {
+              "id": 12122,
+              "size": 67343,
+              "remoteId": "AgACAgIAAx0CUeFtegADy2kpslWo6K4C_OI0czSVIgT2kJTaAAI4C2sbXFxASZ7kfdmHQ646AQADAgADeQADOAQ",
+              "uniqueId": "AQADOAtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 364,
+            "file": {
+              "id": 12121,
+              "size": 37899,
+              "remoteId": "AgACAgIAAx0CUeFtegADy2kpslWo6K4C_OI0czSVIgT2kJTaAAI4C2sbXFxASZ7kfdmHQ646AQADAgADeAADOAQ",
+              "uniqueId": "AQADOAtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 146,
+            "file": {
+              "id": 12120,
+              "size": 10796,
+              "remoteId": "AgACAgIAAx0CUeFtegADy2kpslWo6K4C_OI0czSVIgT2kJTaAAI4C2sbXFxASZ7kfdmHQ646AQADAgADbQADOAQ",
+              "uniqueId": "AQADOAtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 211812352,
+      "chatId": -1001373728122,
+      "date": 1764199112,
+      "dateIso": "2025-11-26T23:18:32Z",
+      "text": "Mega repository : \n https://raw.githubusercontent.com/self-similarity/MegaRepo/builds/repo.json",
+      "genres": []
+    },
+    {
+      "id": 210763776,
+      "chatId": -1001373728122,
+      "date": 1764199084,
+      "dateIso": "2025-11-26T23:18:04Z",
+      "text": "Als erstes geht ihr auf Einstellungen öffnet dann die Erweiterungen drückt unten Rechts das Kreuz geben sie in Repository hinzufügen Mega repository : \n https://raw.githubusercontent.com/self-similarity/MegaRepo/builds/repo.json\nein dann erscheint das Repo Mega Repository drücken sie ein Mal darauf sie sind dann im Menü Mega drücken sie auf der Rechten Seite den Pfeil jetzt werden alle Aktiven Repos Runtergeladen die es gibt das Repo Vietnamese Extension oder doGior\u0027s Had Enough erscheint benützen sie eins der Repo Menüs um Wagas Freizuschalten im Menü steht IPTV drücken sie drauf dann noch Mal rechts auf das Zeichen es öffnet sich dann das unter Menü von IPTV  drücken sie auf Add Link geben sie bei Namen WAGAS ein und bei Link den API dann Save drücken das war\u0027s",
+      "genres": []
+    },
+    {
+      "id": 208666624,
+      "chatId": -1001373728122,
+      "date": 1764199039,
+      "dateIso": "2025-11-26T23:17:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 578,
+            "height": 1280,
+            "file": {
+              "id": 12126,
+              "size": 64498,
+              "remoteId": "AgACAgIAAx0CUeFtegADx2kpslXDIKO-tDNhS7FWn_D2Yw5KAAI3C2sbXFxASRXAbmmUhxZ8AQADAgADeQADOAQ",
+              "uniqueId": "AQADNwtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 361,
+            "height": 800,
+            "file": {
+              "id": 12125,
+              "size": 35701,
+              "remoteId": "AgACAgIAAx0CUeFtegADx2kpslXDIKO-tDNhS7FWn_D2Yw5KAAI3C2sbXFxASRXAbmmUhxZ8AQADAgADeAADOAQ",
+              "uniqueId": "AQADNwtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 144,
+            "height": 320,
+            "file": {
+              "id": 12124,
+              "size": 11480,
+              "remoteId": "AgACAgIAAx0CUeFtegADx2kpslXDIKO-tDNhS7FWn_D2Yw5KAAI3C2sbXFxASRXAbmmUhxZ8AQADAgADbQADOAQ",
+              "uniqueId": "AQADNwtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 207618048,
+      "chatId": -1001373728122,
+      "date": 1764199039,
+      "dateIso": "2025-11-26T23:17:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 580,
+            "height": 1280,
+            "file": {
+              "id": 12129,
+              "size": 96227,
+              "remoteId": "AgACAgIAAx0CUeFtegADxmkpslWaQLtX743Mom1o0UCGY0kLAAI2C2sbXFxAScG14b6mVkZ7AQADAgADeQADOAQ",
+              "uniqueId": "AQADNgtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 362,
+            "height": 800,
+            "file": {
+              "id": 12128,
+              "size": 54742,
+              "remoteId": "AgACAgIAAx0CUeFtegADxmkpslWaQLtX743Mom1o0UCGY0kLAAI2C2sbXFxAScG14b6mVkZ7AQADAgADeAADOAQ",
+              "uniqueId": "AQADNgtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 145,
+            "height": 320,
+            "file": {
+              "id": 12127,
+              "size": 16348,
+              "remoteId": "AgACAgIAAx0CUeFtegADxmkpslWaQLtX743Mom1o0UCGY0kLAAI2C2sbXFxAScG14b6mVkZ7AQADAgADbQADOAQ",
+              "uniqueId": "AQADNgtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 206569472,
+      "chatId": -1001373728122,
+      "date": 1764199039,
+      "dateIso": "2025-11-26T23:17:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 579,
+            "height": 1280,
+            "file": {
+              "id": 12132,
+              "size": 75373,
+              "remoteId": "AgACAgIAAx0CUeFtegADxWkpslV1SZbvZMTE0TZHDErLJEklAAI1C2sbXFxASfq14k-UjRMOAQADAgADeQADOAQ",
+              "uniqueId": "AQADNQtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 362,
+            "height": 800,
+            "file": {
+              "id": 12131,
+              "size": 42550,
+              "remoteId": "AgACAgIAAx0CUeFtegADxWkpslV1SZbvZMTE0TZHDErLJEklAAI1C2sbXFxASfq14k-UjRMOAQADAgADeAADOAQ",
+              "uniqueId": "AQADNQtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 145,
+            "height": 320,
+            "file": {
+              "id": 12130,
+              "size": 12778,
+              "remoteId": "AgACAgIAAx0CUeFtegADxWkpslV1SZbvZMTE0TZHDErLJEklAAI1C2sbXFxASfq14k-UjRMOAQADAgADbQADOAQ",
+              "uniqueId": "AQADNQtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 205520896,
+      "chatId": -1001373728122,
+      "date": 1764199039,
+      "dateIso": "2025-11-26T23:17:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 569,
+            "height": 1280,
+            "file": {
+              "id": 12135,
+              "size": 52084,
+              "remoteId": "AgACAgIAAx0CUeFtegADxGkpslW8WiG6NYe7uJIOSR1L90-hAAI0C2sbXFxASVLda5cAAdeMvAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADNAtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 356,
+            "height": 800,
+            "file": {
+              "id": 12134,
+              "size": 31823,
+              "remoteId": "AgACAgIAAx0CUeFtegADxGkpslW8WiG6NYe7uJIOSR1L90-hAAI0C2sbXFxASVLda5cAAdeMvAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADNAtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 142,
+            "height": 320,
+            "file": {
+              "id": 12133,
+              "size": 9635,
+              "remoteId": "AgACAgIAAx0CUeFtegADxGkpslW8WiG6NYe7uJIOSR1L90-hAAI0C2sbXFxASVLda5cAAdeMvAEAAwIAA20AAzgE",
+              "uniqueId": "AQADNAtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 204472320,
+      "chatId": -1001373728122,
+      "date": 1764199039,
+      "dateIso": "2025-11-26T23:17:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 577,
+            "height": 1280,
+            "file": {
+              "id": 12138,
+              "size": 65987,
+              "remoteId": "AgACAgIAAx0CUeFtegADw2kpslVgWpEVrZ66o-i9NH7yK3JZAAIzC2sbXFxASRGwQBT7MGiZAQADAgADeQADOAQ",
+              "uniqueId": "AQADMwtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 361,
+            "height": 800,
+            "file": {
+              "id": 12137,
+              "size": 38836,
+              "remoteId": "AgACAgIAAx0CUeFtegADw2kpslVgWpEVrZ66o-i9NH7yK3JZAAIzC2sbXFxASRGwQBT7MGiZAQADAgADeAADOAQ",
+              "uniqueId": "AQADMwtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 144,
+            "height": 320,
+            "file": {
+              "id": 12136,
+              "size": 11712,
+              "remoteId": "AgACAgIAAx0CUeFtegADw2kpslVgWpEVrZ66o-i9NH7yK3JZAAIzC2sbXFxASRGwQBT7MGiZAQADAgADbQADOAQ",
+              "uniqueId": "AQADMwtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 203423744,
+      "chatId": -1001373728122,
+      "date": 1764199039,
+      "dateIso": "2025-11-26T23:17:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 577,
+            "height": 1280,
+            "file": {
+              "id": 12141,
+              "size": 76273,
+              "remoteId": "AgACAgIAAx0CUeFtegADwmkpslX1YHG0FSn3BI3KCSUVEu5BAAIyC2sbXFxASVYy9yoe-eRRAQADAgADeQADOAQ",
+              "uniqueId": "AQADMgtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 361,
+            "height": 800,
+            "file": {
+              "id": 12140,
+              "size": 45378,
+              "remoteId": "AgACAgIAAx0CUeFtegADwmkpslX1YHG0FSn3BI3KCSUVEu5BAAIyC2sbXFxASVYy9yoe-eRRAQADAgADeAADOAQ",
+              "uniqueId": "AQADMgtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 144,
+            "height": 320,
+            "file": {
+              "id": 12139,
+              "size": 13491,
+              "remoteId": "AgACAgIAAx0CUeFtegADwmkpslX1YHG0FSn3BI3KCSUVEu5BAAIyC2sbXFxASVYy9yoe-eRRAQADAgADbQADOAQ",
+              "uniqueId": "AQADMgtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 202375168,
+      "chatId": -1001373728122,
+      "date": 1764199021,
+      "dateIso": "2025-11-26T23:17:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 575,
+            "height": 1280,
+            "file": {
+              "id": 12144,
+              "size": 71906,
+              "remoteId": "AgACAgIAAx0CUeFtegADwWkpslVQVRdU6BE07lcwe6b3JTTxAAInC2sbXFxASVLXSLaf-XuLAQADAgADeQADOAQ",
+              "uniqueId": "AQADJwtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 359,
+            "height": 800,
+            "file": {
+              "id": 12143,
+              "size": 41777,
+              "remoteId": "AgACAgIAAx0CUeFtegADwWkpslVQVRdU6BE07lcwe6b3JTTxAAInC2sbXFxASVLXSLaf-XuLAQADAgADeAADOAQ",
+              "uniqueId": "AQADJwtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 144,
+            "height": 320,
+            "file": {
+              "id": 12142,
+              "size": 12211,
+              "remoteId": "AgACAgIAAx0CUeFtegADwWkpslVQVRdU6BE07lcwe6b3JTTxAAInC2sbXFxASVLXSLaf-XuLAQADAgADbQADOAQ",
+              "uniqueId": "AQADJwtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 201326592,
+      "chatId": -1001373728122,
+      "date": 1764199021,
+      "dateIso": "2025-11-26T23:17:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 575,
+            "height": 1280,
+            "file": {
+              "id": 12147,
+              "size": 34736,
+              "remoteId": "AgACAgIAAx0CUeFtegADwGkpslWDVQo5HZ9KNk2ysKOkjfptAAImC2sbXFxASZcUVYa222DTAQADAgADeQADOAQ",
+              "uniqueId": "AQADJgtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 359,
+            "height": 800,
+            "file": {
+              "id": 12146,
+              "size": 20066,
+              "remoteId": "AgACAgIAAx0CUeFtegADwGkpslWDVQo5HZ9KNk2ysKOkjfptAAImC2sbXFxASZcUVYa222DTAQADAgADeAADOAQ",
+              "uniqueId": "AQADJgtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 144,
+            "height": 320,
+            "file": {
+              "id": 12145,
+              "size": 7067,
+              "remoteId": "AgACAgIAAx0CUeFtegADwGkpslWDVQo5HZ9KNk2ysKOkjfptAAImC2sbXFxASZcUVYa222DTAQADAgADbQADOAQ",
+              "uniqueId": "AQADJgtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 200278016,
+      "chatId": -1001373728122,
+      "date": 1764199021,
+      "dateIso": "2025-11-26T23:17:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 573,
+            "height": 1280,
+            "file": {
+              "id": 12150,
+              "size": 67030,
+              "remoteId": "AgACAgIAAx0CUeFtegADv2kpslWocLUZvlhNtk3DdgUSq0LoAAIlC2sbXFxASSLRq3JY9vxDAQADAgADeQADOAQ",
+              "uniqueId": "AQADJQtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 358,
+            "height": 800,
+            "file": {
+              "id": 12149,
+              "size": 39945,
+              "remoteId": "AgACAgIAAx0CUeFtegADv2kpslWocLUZvlhNtk3DdgUSq0LoAAIlC2sbXFxASSLRq3JY9vxDAQADAgADeAADOAQ",
+              "uniqueId": "AQADJQtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 143,
+            "height": 320,
+            "file": {
+              "id": 12148,
+              "size": 12467,
+              "remoteId": "AgACAgIAAx0CUeFtegADv2kpslWocLUZvlhNtk3DdgUSq0LoAAIlC2sbXFxASSLRq3JY9vxDAQADAgADbQADOAQ",
+              "uniqueId": "AQADJQtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 199229440,
+      "chatId": -1001373728122,
+      "date": 1764199021,
+      "dateIso": "2025-11-26T23:17:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 568,
+            "height": 1280,
+            "file": {
+              "id": 12153,
+              "size": 66993,
+              "remoteId": "AgACAgIAAx0CUeFtegADvmkpslUPR-Bphb6DgIJ-FU7pjAPSAAIkC2sbXFxASetQsPkF9_w_AQADAgADeQADOAQ",
+              "uniqueId": "AQADJAtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 355,
+            "height": 800,
+            "file": {
+              "id": 12152,
+              "size": 40578,
+              "remoteId": "AgACAgIAAx0CUeFtegADvmkpslUPR-Bphb6DgIJ-FU7pjAPSAAIkC2sbXFxASetQsPkF9_w_AQADAgADeAADOAQ",
+              "uniqueId": "AQADJAtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 142,
+            "height": 320,
+            "file": {
+              "id": 12151,
+              "size": 11599,
+              "remoteId": "AgACAgIAAx0CUeFtegADvmkpslUPR-Bphb6DgIJ-FU7pjAPSAAIkC2sbXFxASetQsPkF9_w_AQADAgADbQADOAQ",
+              "uniqueId": "AQADJAtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 198180864,
+      "chatId": -1001373728122,
+      "date": 1764199021,
+      "dateIso": "2025-11-26T23:17:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 571,
+            "height": 1280,
+            "file": {
+              "id": 12156,
+              "size": 63305,
+              "remoteId": "AgACAgIAAx0CUeFtegADvWkpslV0AqUuXaoIGtpDFvpumUCqAAIiC2sbXFxASfTjMBHC0MvwAQADAgADeQADOAQ",
+              "uniqueId": "AQADIgtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 357,
+            "height": 800,
+            "file": {
+              "id": 12155,
+              "size": 37612,
+              "remoteId": "AgACAgIAAx0CUeFtegADvWkpslV0AqUuXaoIGtpDFvpumUCqAAIiC2sbXFxASfTjMBHC0MvwAQADAgADeAADOAQ",
+              "uniqueId": "AQADIgtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 143,
+            "height": 320,
+            "file": {
+              "id": 12154,
+              "size": 11733,
+              "remoteId": "AgACAgIAAx0CUeFtegADvWkpslV0AqUuXaoIGtpDFvpumUCqAAIiC2sbXFxASfTjMBHC0MvwAQADAgADbQADOAQ",
+              "uniqueId": "AQADIgtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 197132288,
+      "chatId": -1001373728122,
+      "date": 1764199021,
+      "dateIso": "2025-11-26T23:17:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 878,
+            "height": 1280,
+            "file": {
+              "id": 12159,
+              "size": 38584,
+              "remoteId": "AgACAgIAAx0CUeFtegADvGkpslUuHVJ59GGkteu-vdukxdnzAAIhC2sbXFxASVcmtjcz6u-OAQADAgADeQADOAQ",
+              "uniqueId": "AQADIQtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 549,
+            "height": 800,
+            "file": {
+              "id": 12158,
+              "size": 23048,
+              "remoteId": "AgACAgIAAx0CUeFtegADvGkpslUuHVJ59GGkteu-vdukxdnzAAIhC2sbXFxASVcmtjcz6u-OAQADAgADeAADOAQ",
+              "uniqueId": "AQADIQtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 220,
+            "height": 320,
+            "file": {
+              "id": 12157,
+              "size": 7027,
+              "remoteId": "AgACAgIAAx0CUeFtegADvGkpslUuHVJ59GGkteu-vdukxdnzAAIhC2sbXFxASVcmtjcz6u-OAQADAgADbQADOAQ",
+              "uniqueId": "AQADIQtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 196083712,
+      "chatId": -1001373728122,
+      "date": 1764198995,
+      "dateIso": "2025-11-26T23:16:35Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 753,
+            "height": 807,
+            "file": {
+              "id": 12162,
+              "size": 51279,
+              "remoteId": "AgACAgIAAx0CUeFtegADu2kpslURk_FnrAuQh97eKOK9dV-oAAI8C2sbXFxASbhpMxTVvCOqAQADAgADeQADOAQ",
+              "uniqueId": "AQADPAtrG1xcQEl-"
+            }
+          },
+          {
+            "width": 746,
+            "height": 800,
+            "file": {
+              "id": 12161,
+              "size": 55828,
+              "remoteId": "AgACAgIAAx0CUeFtegADu2kpslURk_FnrAuQh97eKOK9dV-oAAI8C2sbXFxASbhpMxTVvCOqAQADAgADeAADOAQ",
+              "uniqueId": "AQADPAtrG1xcQEl9"
+            }
+          },
+          {
+            "width": 298,
+            "height": 320,
+            "file": {
+              "id": 12160,
+              "size": 16431,
+              "remoteId": "AgACAgIAAx0CUeFtegADu2kpslURk_FnrAuQh97eKOK9dV-oAAI8C2sbXFxASbhpMxTVvCOqAQADAgADbQADOAQ",
+              "uniqueId": "AQADPAtrG1xcQEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 193986560,
+      "chatId": -1001373728122,
+      "date": 1757296384,
+      "dateIso": "2025-09-08T01:53:04Z",
+      "text": "In das Suchfeld Huhu.to Vavoo.to oha.to oder Kool.to eingeben es ist ein Browser der da für hergestellt wurde viel Spaß",
+      "genres": []
+    },
+    {
+      "id": 192937984,
+      "senderId": {
+        "userId": 7379401984
+      },
+      "chatId": -1001373728122,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1757296240,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "senderUserId": 7379401984
+        },
+        "date": 1757014104,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 263,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Flashandi",
+      "mediaAlbumId": 14058369922262090,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Lokke-v1.0.27-universal-43b6e00 (1).apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 12163,
+            "size": 118511790,
+            "expectedSize": 118511790,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CUeFtegADuGkpslVcphnL24xhpjsh_ImyI1JCAAKyiAACCsnRST26gpPlcUhcOAQ",
+              "uniqueId": "AgADsogAAgrJ0Uk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 118511790
+            }
+          }
+        },
+        "caption": {
+          "text": "Lokke-v1.0.27-universal-43b6e00 (1).apk",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 191889408,
+      "senderId": {
+        "userId": 7379401984
+      },
+      "chatId": -1001373728122,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1757296240,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "senderUserId": 7379401984
+        },
+        "date": 1757014060,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 262,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Flashandi",
+      "mediaAlbumId": 14058369922262090,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Lokke_1.0.2.ipa",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 12164,
+            "size": 26355595,
+            "expectedSize": 26355595,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CUeFtegADt2kpslU7X1ZqKB13RQc4d5bl20uFAAKwiAACCsnRSaRf-te8QkhZOAQ",
+              "uniqueId": "AgADsIgAAgrJ0Uk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 26355595
+            }
+          }
+        },
+        "caption": {
+          "text": "Lokke_1.0.2.ipa",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 190840832,
+      "chatId": -1001373728122,
+      "date": 1757296216,
+      "dateIso": "2025-09-08T01:50:16Z",
+      "text": "Immer den Vpn anlassen ihr könnt da Premium TV schauen",
+      "genres": []
+    },
+    {
+      "id": 189792256,
+      "chatId": -1001373728122,
+      "date": 1757296178,
+      "dateIso": "2025-09-08T01:49:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 601,
+            "height": 1280,
+            "file": {
+              "id": 12167,
+              "size": 141856,
+              "remoteId": "AgACAgIAAx0CUeFtegADtWkpslVC2fyC9rBo3_YkVDkKPKpnAALH8zEbuNnxSS1TGTVDBu1kAQADAgADeQADOAQ",
+              "uniqueId": "AQADx_MxG7jZ8Ul-"
+            }
+          },
+          {
+            "width": 376,
+            "height": 800,
+            "file": {
+              "id": 12166,
+              "size": 77923,
+              "remoteId": "AgACAgIAAx0CUeFtegADtWkpslVC2fyC9rBo3_YkVDkKPKpnAALH8zEbuNnxSS1TGTVDBu1kAQADAgADeAADOAQ",
+              "uniqueId": "AQADx_MxG7jZ8Ul9"
+            }
+          },
+          {
+            "width": 150,
+            "height": 320,
+            "file": {
+              "id": 12165,
+              "size": 18343,
+              "remoteId": "AgACAgIAAx0CUeFtegADtWkpslVC2fyC9rBo3_YkVDkKPKpnAALH8zEbuNnxSS1TGTVDBu1kAQADAgADbQADOAQ",
+              "uniqueId": "AQADx_MxG7jZ8Uly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 188743680,
+      "chatId": -1001373728122,
+      "date": 1757296178,
+      "dateIso": "2025-09-08T01:49:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 620,
+            "file": {
+              "id": 12170,
+              "size": 99174,
+              "remoteId": "AgACAgIAAx0CUeFtegADtGkpslVZROl_C4BlHIXVEW7tbV3wAALG8zEbuNnxSUIFNwoqKQ0GAQADAgADeQADOAQ",
+              "uniqueId": "AQADxvMxG7jZ8Ul-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 387,
+            "file": {
+              "id": 12169,
+              "size": 55649,
+              "remoteId": "AgACAgIAAx0CUeFtegADtGkpslVZROl_C4BlHIXVEW7tbV3wAALG8zEbuNnxSUIFNwoqKQ0GAQADAgADeAADOAQ",
+              "uniqueId": "AQADxvMxG7jZ8Ul9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 155,
+            "file": {
+              "id": 12168,
+              "size": 14952,
+              "remoteId": "AgACAgIAAx0CUeFtegADtGkpslVZROl_C4BlHIXVEW7tbV3wAALG8zEbuNnxSUIFNwoqKQ0GAQADAgADbQADOAQ",
+              "uniqueId": "AQADxvMxG7jZ8Uly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 187695104,
+      "senderId": {
+        "chatId": -1001373728122
+      },
+      "chatId": -1001373728122,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1749154676,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "photo": {
+          "id": 5337300058980349017,
+          "addedDate": 1749154676,
+          "minithumbnail": {
+            "width": 40,
+            "height": 40,
+            "data": [
+              -1,
+              -40,
+              -1,
+              -32,
+              0,
+              16,
+              74,
+              70,
+              73,
+              70,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0,
+              -1,
+              -37,
+              0,
+              67,
+              0,
+              40,
+              28,
+              30,
+              35,
+              30,
+              25,
+              40,
+              35,
+              33,
+              35,
+              45,
+              43,
+              40,
+              48,
+              60,
+              100,
+              65,
+              60,
+              55,
+              55,
+              60,
+              123,
+              88,
+              93,
+              73,
+              100,
+              -111,
+              -128,
+              -103,
+              -106,
+              -113,
+              -128,
+              -116,
+              -118,
+              -96,
+              -76,
+              -26,
+              -61,
+              -96,
+              -86,
+              -38,
+              -83,
+              -118,
+              -116,
+              -56,
+              -1,
+              -53,
+              -38,
+              -18,
+              -11,
+              -1,
+              -1,
+              -1,
+              -101,
+              -63,
+              -1,
+              -1,
+              -1,
+              -6,
+              -1,
+              -26,
+              -3,
+              -1,
+              -8,
+              -1,
+              -37,
+              0,
+              67,
+              1,
+              43,
+              45,
+              45,
+              60,
+              53,
+              60,
+              118,
+              65,
+              65,
+              118,
+              -8,
+              -91,
+              -116,
+              -91,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -8,
+              -1,
+              -64,
+              0,
+              17,
+              8,
+              0,
+              40,
+              0,
+              40,
+              3,
+              1,
+              34,
+              0,
+              2,
+              17,
+              1,
+              3,
+              17,
+              1,
+              -1,
+              -60,
+              0,
+              31,
+              0,
+              0,
+              1,
+              5,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              -1,
+              -60,
+              0,
+              -75,
+              16,
+              0,
+              2,
+              1,
+              3,
+              3,
+              2,
+              4,
+              3,
+              5,
+              5,
+              4,
+              4,
+              0,
+              0,
+              1,
+              125,
+              1,
+              2,
+              3,
+              0,
+              4,
+              17,
+              5,
+              18,
+              33,
+              49,
+              65,
+              6,
+              19,
+              81,
+              97,
+              7,
+              34,
+              113,
+              20,
+              50,
+              -127,
+              -111,
+              -95,
+              8,
+              35,
+              66,
+              -79,
+              -63,
+              21,
+              82,
+              -47,
+              -16,
+              36,
+              51,
+              98,
+              114,
+              -126,
+              9,
+              10,
+              22,
+              23,
+              24,
+              25,
+              26,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88,
+              89,
+              90,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121,
+              122,
+              -125,
+              -124,
+              -123,
+              -122,
+              -121,
+              -120,
+              -119,
+              -118,
+              -110,
+              -109,
+              -108,
+              -107,
+              -106,
+              -105,
+              -104,
+              -103,
+              -102,
+              -94,
+              -93,
+              -92,
+              -91,
+              -90,
+              -89,
+              -88,
+              -87,
+              -86,
+              -78,
+              -77,
+              -76,
+              -75,
+              -74,
+              -73,
+              -72,
+              -71,
+              -70,
+              -62,
+              -61,
+              -60,
+              -59,
+              -58,
+              -57,
+              -56,
+              -55,
+              -54,
+              -46,
+              -45,
+              -44,
+              -43,
+              -42,
+              -41,
+              -40,
+              -39,
+              -38,
+              -31,
+              -30,
+              -29,
+              -28,
+              -27,
+              -26,
+              -25,
+              -24,
+              -23,
+              -22,
+              -15,
+              -14,
+              -13,
+              -12,
+              -11,
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -1,
+              -60,
+              0,
+              31,
+              1,
+              0,
+              3,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              -1,
+              -60,
+              0,
+              -75,
+              17,
+              0,
+              2,
+              1,
+              2,
+              4,
+              4,
+              3,
+              4,
+              7,
+              5,
+              4,
+              4,
+              0,
+              1,
+              2,
+              119,
+              0,
+              1,
+              2,
+              3,
+              17,
+              4,
+              5,
+              33,
+              49,
+              6,
+              18,
+              65,
+              81,
+              7,
+              97,
+              113,
+              19,
+              34,
+              50,
+              -127,
+              8,
+              20,
+              66,
+              -111,
+              -95,
+              -79,
+              -63,
+              9,
+              35,
+              51,
+              82,
+              -16,
+              21,
+              98,
+              114,
+              -47,
+              10,
+              22,
+              36,
+              52,
+              -31,
+              37,
+              -15,
+              23,
+              24,
+              25,
+              26,
+              38,
+              39,
+              40,
+              41,
+              42,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88,
+              89,
+              90,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121,
+              122,
+              -126,
+              -125,
+              -124,
+              -123,
+              -122,
+              -121,
+              -120,
+              -119,
+              -118,
+              -110,
+              -109,
+              -108,
+              -107,
+              -106,
+              -105,
+              -104,
+              -103,
+              -102,
+              -94,
+              -93,
+              -92,
+              -91,
+              -90,
+              -89,
+              -88,
+              -87,
+              -86,
+              -78,
+              -77,
+              -76,
+              -75,
+              -74,
+              -73,
+              -72,
+              -71,
+              -70,
+              -62,
+              -61,
+              -60,
+              -59,
+              -58,
+              -57,
+              -56,
+              -55,
+              -54,
+              -46,
+              -45,
+              -44,
+              -43,
+              -42,
+              -41,
+              -40,
+              -39,
+              -38,
+              -30,
+              -29,
+              -28,
+              -27,
+              -26,
+              -25,
+              -24,
+              -23,
+              -22,
+              -14,
+              -13,
+              -12,
+              -11,
+              -10,
+              -9,
+              -8,
+              -7,
+              -6,
+              -1,
+              -38,
+              0,
+              12,
+              3,
+              1,
+              0,
+              2,
+              17,
+              3,
+              17,
+              0,
+              63,
+              0,
+              -52,
+              -5,
+              59,
+              -19,
+              -50,
+              86,
+              -105,
+              -20,
+              -52,
+              8,
+              -27,
+              121,
+              -9,
+              -87,
+              -55,
+              -7,
+              63,
+              1,
+              79,
+              -37,
+              -112,
+              14,
+              71,
+              83,
+              -127,
+              -21,
+              -59,
+              103,
+              -52,
+              -50,
+              -73,
+              74,
+              11,
+              114,
+              -85,
+              64,
+              87,
+              29,
+              14,
+              125,
+              41,
+              -115,
+              25,
+              21,
+              113,
+              -68,
+              -44,
+              -61,
+              8,
+              -61,
+              14,
+              -124,
+              53,
+              95,
+              69,
+              -75,
+              107,
+              82,
+              -37,
+              54,
+              -56,
+              1,
+              56,
+              61,
+              -115,
+              90,
+              -37,
+              83,
+              -98,
+              105,
+              41,
+              52,
+              -116,
+              18,
+              48,
+              113,
+              69,
+              62,
+              69,
+              -63,
+              -94,
+              -103,
+              4,
+              -53,
+              42,
+              -107,
+              25,
+              56,
+              56,
+              -25,
+              52,
+              -8,
+              -26,
+              13,
+              -107,
+              76,
+              100,
+              100,
+              -126,
+              71,
+              63,
+              -123,
+              83,
+              20,
+              -24,
+              -91,
+              104,
+              95,
+              122,
+              -29,
+              56,
+              35,
+              -102,
+              -98,
+              84,
+              107,
+              -19,
+              -92,
+              -43,
+              -103,
+              121,
+              25,
+              -28,
+              108,
+              -127,
+              -76,
+              14,
+              -97,
+              46,
+              51,
+              -2,
+              115,
+              66,
+              -121,
+              15,
+              -68,
+              -109,
+              -57,
+              -73,
+              108,
+              -26,
+              -93,
+              -122,
+              -31,
+              -100,
+              30,
+              0,
+              -58,
+              7,
+              -7,
+              -4,
+              -86,
+              67,
+              33,
+              108,
+              -25,
+              -71,
+              -92,
+              -35,
+              -115,
+              33,
+              14,
+              107,
+              54,
+              -120,
+              -92,
+              -120,
+              48,
+              45,
+              -109,
+              -45,
+              52,
+              82,
+              -109,
+              -5,
+              -77,
+              -12,
+              52,
+              80,
+              -101,
+              9,
+              -62,
+              42,
+              -38,
+              20,
+              -88,
+              -21,
+              69,
+              21,
+              103,
+              49,
+              36,
+              79,
+              -80,
+              -98,
+              -32,
+              -44,
+              -122,
+              113,
+              -58,
+              20,
+              -2,
+              52,
+              81,
+              74,
+              -55,
+              -105,
+              26,
+              -110,
+              -118,
+              -78,
+              98,
+              60,
+              -32,
+              -87,
+              10,
+              14,
+              79,
+              115,
+              69,
+              20,
+              80,
+              -110,
+              66,
+              -108,
+              -36,
+              -75,
+              103,
+              -1,
+              -39
+            ]
+          },
+          "sizes": [
+            {
+              "type": "a",
+              "photo": {
+                "id": 12171,
+                "size": 9114,
+                "expectedSize": 9114,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AgACAgIAAx0CUeFtegADs2kpslWCHwpup28xUfK0VxCFtw5fAAJZ9DEbIOYRSrkjFHYqj4zeAQADAgADYQADOAQ",
+                  "uniqueId": "AQADWfQxGyDmEUoAAQ",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 9114
+                }
+              },
+              "width": 160,
+              "height": 160,
+              "progressiveSizes": []
+            },
+            {
+              "type": "b",
+              "photo": {
+                "id": 12172,
+                "size": 22910,
+                "expectedSize": 22910,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AgACAgIAAx0CUeFtegADs2kpslWCHwpup28xUfK0VxCFtw5fAAJZ9DEbIOYRSrkjFHYqj4zeAQADAgADYgADOAQ",
+                  "uniqueId": "AQADWfQxGyDmEUpn",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 22910
+                }
+              },
+              "width": 320,
+              "height": 320,
+              "progressiveSizes": []
+            },
+            {
+              "type": "c",
+              "photo": {
+                "id": 12173,
+                "size": 50076,
+                "expectedSize": 50076,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AgACAgIAAx0CUeFtegADs2kpslWCHwpup28xUfK0VxCFtw5fAAJZ9DEbIOYRSrkjFHYqj4zeAQADAgADYwADOAQ",
+                  "uniqueId": "AQADWfQxGyDmEUoB",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 50076
+                }
+              },
+              "width": 640,
+              "height": 640,
+              "progressiveSizes": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 186646528,
+      "senderId": {
+        "userId": 7379401984
+      },
+      "chatId": -1001373728122,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1744399143,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 550,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Flashandi",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "MediaGet  2.0.300.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 12174,
+            "size": 29003630,
+            "expectedSize": 29003630,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CUeFtegADsmkpslUDlFIqovB0YTnjvhOigSu9AAJUdAACsK7JSwalWVjhZrW0OAQ",
+              "uniqueId": "AgADVHQAArCuyUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 29003630
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

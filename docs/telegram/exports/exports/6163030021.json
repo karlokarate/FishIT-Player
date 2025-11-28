@@ -1,0 +1,37 @@
+{
+  "chatId": 6163030021,
+  "title": "Halit Yilmaz",
+  "exportedAt": "2025-11-28T14:47:00.038220169Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42499833856,
+      "senderId": {
+        "userId": 6163030021
+      },
+      "chatId": 6163030021,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1695140096,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

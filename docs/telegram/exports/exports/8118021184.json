@@ -1,0 +1,37 @@
+{
+  "chatId": 8118021184,
+  "title": "Constanze Wallenwein",
+  "exportedAt": "2025-11-28T14:46:31.650273074Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45196771328,
+      "senderId": {
+        "userId": 8118021184
+      },
+      "chatId": 8118021184,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1730112515,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

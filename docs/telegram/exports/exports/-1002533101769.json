@@ -1,0 +1,595 @@
+{
+  "chatId": -1002533101769,
+  "title": "Bad Sisters - Full HD",
+  "exportedAt": "2025-11-28T14:46:01.110013420Z",
+  "count": 20,
+  "messages": [
+    {
+      "id": 26214400,
+      "chatId": -1002533101769,
+      "date": 1746649794,
+      "dateIso": "2025-05-07T20:29:54Z",
+      "content": {
+        "duration": 3152,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E08 - Kliff-Hänger.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5098,
+          "size": 1903290045,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMZaSmyhlX9Gdadu3qTsWX8_zFKzl8AAoZzAAJJdNhI3-TK0ZVf6LE4BA",
+          "uniqueId": "AgADhnMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 5097,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxlpKbKGVf0Z1p27epOxZfz_MUrOXwAChnMAAkl02Ejf5MrRlV_osQEAB20AAzgE",
+            "uniqueId": "AQADhnMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E08 - Kliff-Hänger"
+      }
+    },
+    {
+      "id": 25165824,
+      "chatId": -1002533101769,
+      "date": 1746649791,
+      "dateIso": "2025-05-07T20:29:51Z",
+      "content": {
+        "duration": 3206,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E07 - Aufgepasst bei der Männerwahl!.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16924,
+          "size": 1897186806,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMYaSmyht73RwEVD2t1UasRB6NDYjAAAmVzAAJJdNhIRHV8kBtqaUo4BA",
+          "uniqueId": "AgADZXMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16923,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxhpKbKG3vdHARUPa3VRqxEHo0NiMAACZXMAAkl02EhEdXyQG2ppSgEAB20AAzgE",
+            "uniqueId": "AQADZXMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E07 - Aufgepasst bei der Männerwahl!"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1002533101769,
+      "date": 1746649788,
+      "dateIso": "2025-05-07T20:29:48Z",
+      "content": {
+        "duration": 2907,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E06 - Stille Wasser sind tief.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16926,
+          "size": 1881864930,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMXaSmyhr2oTllAify8jIfAtsQ3L3gAAglzAAJJdNhIKrcYamLelF44BA",
+          "uniqueId": "AgADCXMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16925,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxdpKbKGvahOWUCJ_LyMh8C2xDcveAACCXMAAkl02EgqtxhqYt6UXgEAB20AAzgE",
+            "uniqueId": "AQADCXMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E06 - Stille Wasser sind tief"
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1002533101769,
+      "date": 1746649784,
+      "dateIso": "2025-05-07T20:29:44Z",
+      "content": {
+        "duration": 2995,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E05 - Platsch.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16928,
+          "size": 1891733908,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMWaSmyhjdV_HaXQnRCc6KO3OL5rI8AAlJzAAJJdNhIuOIPc77t3ZQ4BA",
+          "uniqueId": "AgADUnMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16927,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxZpKbKGN1X8dpdCdEJzoo7c4vmsjwACUnMAAkl02Ei44g9zvu3dlAEAB20AAzgE",
+            "uniqueId": "AQADUnMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E05 - Platsch"
+      }
+    },
+    {
+      "id": 22020096,
+      "chatId": -1002533101769,
+      "date": 1746649781,
+      "dateIso": "2025-05-07T20:29:41Z",
+      "content": {
+        "duration": 2661,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E04 - Im Fokus.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16930,
+          "size": 1879409654,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMVaSmyhsP6o8xV_mXloNYI-RqY7Z4AAvZyAAJJdNhI9h4PXg9rEBE4BA",
+          "uniqueId": "AgAD9nIAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16929,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxVpKbKGw_qjzFX-ZeWg1gj5GpjtngAC9nIAAkl02Ej2Hg9eD2sQEQEAB20AAzgE",
+            "uniqueId": "AQAD9nIAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E04 - Im Fokus"
+      }
+    },
+    {
+      "id": 20971520,
+      "chatId": -1002533101769,
+      "date": 1746649778,
+      "dateIso": "2025-05-07T20:29:38Z",
+      "content": {
+        "duration": 3002,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E03 - Vermisst.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16932,
+          "size": 1883012082,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMUaSmyhuvsYW_hSpV8k_5ANySo1fkAAiVzAAJJdNhIEq9yqxWusww4BA",
+          "uniqueId": "AgADJXMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16931,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxRpKbKG6-xhb-FKlXyT_kA3JKjV-QACJXMAAkl02EgSr3KrFa6zDAEAB20AAzgE",
+            "uniqueId": "AQADJXMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E03 - Vermisst"
+      }
+    },
+    {
+      "id": 19922944,
+      "chatId": -1002533101769,
+      "date": 1746649775,
+      "dateIso": "2025-05-07T20:29:35Z",
+      "content": {
+        "duration": 3011,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E02 - Gewissensbisse.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16934,
+          "size": 1878793327,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMTaSmyhljsPnULnjX7_kGd51pX1YkAAudyAAJJdNhIdUqclsdocWs4BA",
+          "uniqueId": "AgAD53IAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16933,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxNpKbKGWOw-dQueNfv-QZ3nWlfViQAC53IAAkl02Eh1SpyWx2hxawEAB20AAzgE",
+            "uniqueId": "AQAD53IAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E02 - Gewissensbisse"
+      }
+    },
+    {
+      "id": 18874368,
+      "chatId": -1002533101769,
+      "date": 1746649772,
+      "dateIso": "2025-05-07T20:29:32Z",
+      "content": {
+        "duration": 3143,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S02 E01 - Gute Schwestern.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16936,
+          "size": 1888719562,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMSaSmyhisiEYc-rrERPu0NrbUXTJcAAkBzAAJJdNhIKfdbEyuV2J44BA",
+          "uniqueId": "AgADQHMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16935,
+            "size": 6420,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAxJpKbKGKyIRhz6usRE-7Q2ttRdMlwACQHMAAkl02Egp91sTK5XYngEAB20AAzgE",
+            "uniqueId": "AQADQHMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S02 E01 - Gute Schwestern"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1002533101769,
+      "date": 1746649733,
+      "dateIso": "2025-05-07T20:28:53Z",
+      "content": {
+        "duration": 3499,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E10 - Rettende Gnade.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16938,
+          "size": 1913257305,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMPaSmyhggJwzYMLKyDM9ZMZJmg0iUAApVzAAJJdNhIMmG285gu7qo4BA",
+          "uniqueId": "AgADlXMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16937,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAw9pKbKGCAnDNgwsrIMz1kxkmaDSJQAClXMAAkl02EgyYbbzmC7uqgEAB20AAzgE",
+            "uniqueId": "AQADlXMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E10 - Rettende Gnade"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1002533101769,
+      "date": 1746649730,
+      "dateIso": "2025-05-07T20:28:50Z",
+      "content": {
+        "duration": 2951,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E09 - Ein Schurkenspiel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16940,
+          "size": 1888012470,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMOaSmyhk3WfbAOS3kuIzjaVNHZphoAAtFyAAJJdNhIUNZDJuSb_Lo4BA",
+          "uniqueId": "AgAD0XIAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16939,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAw5pKbKGTdZ9sA5LeS4jONpU0dmmGgAC0XIAAkl02EhQ1kMm5Jv8ugEAB20AAzgE",
+            "uniqueId": "AQAD0XIAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E09 - Ein Schurkenspiel"
+      }
+    },
+    {
+      "id": 13631488,
+      "chatId": -1002533101769,
+      "date": 1746649727,
+      "dateIso": "2025-05-07T20:28:47Z",
+      "content": {
+        "duration": 3307,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E08 - Die kalte Wahrheit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16942,
+          "size": 1884418564,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMNaSmyhmXKMNNJP5hliO4YRBrUcpkAAsByAAJJdNhIOJ_bvRLLqwE4BA",
+          "uniqueId": "AgADwHIAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16941,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAw1pKbKGZcow00k_mGWI7hhEGtRymQACwHIAAkl02Eg4n9u9EsurAQEAB20AAzgE",
+            "uniqueId": "AQADwHIAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E08 - Die kalte Wahrheit"
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1002533101769,
+      "date": 1746649724,
+      "dateIso": "2025-05-07T20:28:44Z",
+      "content": {
+        "duration": 2984,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E07 - Ruhe in Frieden.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16944,
+          "size": 1872265455,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMMaSmyhsh7XiHUVfRsT0IfJwNZhMUAAqZyAAJJdNhI9Z5p6MQites4BA",
+          "uniqueId": "AgADpnIAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16943,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAwxpKbKGyHteIdRV9GxPQh8nA1mExQACpnIAAkl02Ej1nmnoxCK16wEAB20AAzgE",
+            "uniqueId": "AQADpnIAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E07 - Ruhe in Frieden"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1002533101769,
+      "date": 1746649721,
+      "dateIso": "2025-05-07T20:28:41Z",
+      "content": {
+        "duration": 3037,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E06 - Der Aufprall.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16946,
+          "size": 1888795549,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMLaSmyhpNK0Yq7lwbK9msL67KVfi8AApdyAAJJdNhIb-M_MIhu-Kc4BA",
+          "uniqueId": "AgADl3IAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16945,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAwtpKbKGk0rRiruXBsr2awvrspV-LwACl3IAAkl02Ehv4z8wiG74pwEAB20AAzgE",
+            "uniqueId": "AQADl3IAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E06 - Der Aufprall"
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1002533101769,
+      "date": 1746649718,
+      "dateIso": "2025-05-07T20:28:38Z",
+      "content": {
+        "duration": 3298,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E05 - Auge um Auge.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16948,
+          "size": 1902762884,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMKaSmyhkoXv9rAj3tewSr1cHOevWAAAnlzAAJJdNhIalvvyVJGRSc4BA",
+          "uniqueId": "AgADeXMAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16947,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAwppKbKGShe_2sCPe17BKvVwc569YAACeXMAAkl02EhqW-_JUkZFJwEAB20AAzgE",
+            "uniqueId": "AQADeXMAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E05 - Auge um Auge"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1002533101769,
+      "date": 1746649714,
+      "dateIso": "2025-05-07T20:28:34Z",
+      "content": {
+        "duration": 2986,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E04 - Baby Becka.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16950,
+          "size": 1879345550,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMJaSmyhjPl9mCbBD8sG801FtPMHqMAAntyAAJJdNhITGT_oHk_D6I4BA",
+          "uniqueId": "AgADe3IAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16949,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAwlpKbKGM-X2YJsEPywbzTUW08weowACe3IAAkl02EhMZP-geT8PogEAB20AAzgE",
+            "uniqueId": "AQADe3IAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E04 - Baby Becka"
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1002533101769,
+      "date": 1746649711,
+      "dateIso": "2025-05-07T20:28:31Z",
+      "content": {
+        "duration": 3353,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E03 - Geschnittene Leber.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16952,
+          "size": 1888093231,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMIaSmyhoCGSkpE2uj35kOBwbntnYoAAmhyAAJJdNhI9yJI1HOIDQ04BA",
+          "uniqueId": "AgADaHIAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16951,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAwhpKbKGgIZKSkTa6PfmQ4HBue2digACaHIAAkl02Ej3IkjUc4gNDQEAB20AAzgE",
+            "uniqueId": "AQADaHIAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E03 - Geschnittene Leber"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1002533101769,
+      "date": 1746649708,
+      "dateIso": "2025-05-07T20:28:28Z",
+      "content": {
+        "duration": 3202,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E02 - Jag ihn in die Luft.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16954,
+          "size": 1890041092,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMHaSmyhrk-1hNEDyyZ5p6wp1NnQkAAAlVyAAJJdNhIj3lFbFLaS0c4BA",
+          "uniqueId": "AgADVXIAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 16953,
+            "size": 5868,
+            "remoteId": "AAMCAgADIQUABJb8EMkAAwdpKbKGuT7WE0QPLJnmnrCnU2dCQAACVXIAAkl02EiPeUVsUtpLRwEAB20AAzgE",
+            "uniqueId": "AQADVXIAAkl02Ehy"
+          }
+        },
+        "caption": "Bad Sisters - S01 E02 - Jag ihn in die Luft"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1002533101769,
+      "date": 1746649705,
+      "dateIso": "2025-05-07T20:28:25Z",
+      "content": {
+        "duration": 2963,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Bad Sisters - S01 E01 - Der Drecksack.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 16955,
+          "size": 1883960773,
+          "remoteId": "BAACAgIAAyEFAASW_BDJAAMGaSmyhtTadbLMhhmSvJ9Io0aeWxcAArdtAAIqf9lIMvZJFBJ6__84BA",
+          "uniqueId": "AgADt20AAip_2Ug"
+        },
+        "caption": "Bad Sisters - S01 E01 - Der Drecksack"
+      }
+    },
+    {
+      "id": 5242880,
+      "chatId": -1002533101769,
+      "date": 1746649702,
+      "dateIso": "2025-05-07T20:28:22Z",
+      "text": "Die eng verbundenen Garvey-Schwestern waren immer füreinander da. Doch als der toxische Schwager, den sie alle tot sehen wollten, tatsächlich stirbt, wird ihr Leben auf den Kopf gestellt und ihr Zusammenhalt auf eine harte Probe gestellt.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1002533101769
+      },
+      "chatId": -1002533101769,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1746649654,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Bad Sisters - Full HD"
+      }
+    }
+  ]
+}
