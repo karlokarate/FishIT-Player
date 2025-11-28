@@ -1,0 +1,1019 @@
+{
+  "chatId": -1002018942512,
+  "title": "Download🍿",
+  "exportedAt": "2025-11-28T14:45:20.589451695Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 2131755008,
+      "chatId": -1002018942512,
+      "date": 1764320273,
+      "dateIso": "2025-11-28T08:57:53Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 562,
+            "height": 1280,
+            "file": {
+              "id": 4831,
+              "size": 100565,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB_FpKbJRr2zKzoI7MRPhbN8RI57vfAAChAxrG7b9SVHxqYtQ3unm1wEAAwIAA3kAAzgE",
+              "uniqueId": "AQADhAxrG7b9SVF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 4830,
+              "size": 56839,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB_FpKbJRr2zKzoI7MRPhbN8RI57vfAAChAxrG7b9SVHxqYtQ3unm1wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADhAxrG7b9SVF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 4829,
+              "size": 13576,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB_FpKbJRr2zKzoI7MRPhbN8RI57vfAAChAxrG7b9SVHxqYtQ3unm1wEAAwIAA20AAzgE",
+              "uniqueId": "AQADhAxrG7b9SVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2130706432,
+      "senderId": {
+        "chatId": -1002018942512
+      },
+      "chatId": -1002018942512,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764312650,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 181,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "base (2).apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 11120,
+            "size": 30000808,
+            "expectedSize": 30000808,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CeFaeMAACB8JpKbJRIgTn_yLjV1lgSNsb2onK5AACTxoAAsWeeVAoPuLlpXk6FjgE",
+              "uniqueId": "AgADTxoAAsWeeVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 30000808
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2129657856,
+      "chatId": -1002018942512,
+      "date": 1764312649,
+      "dateIso": "2025-11-28T06:50:49Z",
+      "content": {
+        "duration": 722,
+        "width": 560,
+        "height": 1280,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11136,
+          "size": 182067644,
+          "remoteId": "BAACAgQAAx0CeFaeMAACB8FpKbJR5m5BRtpM0v8EwLaOX0zcqwACVxgAArrXIFBqR448GowgUDgE",
+          "uniqueId": "AgADVxgAArrXIFA"
+        },
+        "thumbnail": {
+          "width": 141,
+          "height": 320,
+          "file": {
+            "id": 11135,
+            "size": 8641,
+            "remoteId": "AAMCBAADHQJ4Vp4wAAIHwWkpslHmbkFG2kzS_wTAto5fTNyrAAJXGAACutcgUGpHjjwajCBQAQAHbQADOAQ",
+            "uniqueId": "AQADVxgAArrXIFBy"
+          }
+        },
+        "caption": "HERE IS A VIDEO OF HOW TO MAKE UP TO 100k DAILY BY JUST MINING CRYPTO\n\nDm me: @BoiResidence\n\nWatch this video till the end and listen carefully. It works on all devices eg: IPhone, Android, Laptop. And it also works in all countries.\n\n\nUse this link 🔗 below 👇 or the application.\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\n👇Android App Below👇\n\n\nJOIN NOW 💯💯 LEGIT"
+      }
+    },
+    {
+      "id": 2128609280,
+      "chatId": -1002018942512,
+      "date": 1764267682,
+      "dateIso": "2025-11-27T18:21:22Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 11139,
+              "size": 110576,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-5pKbJRwVCRBj5gagNtESYI95jzpAACowtrG_QUSFEVzVxnAAFZvWUBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADowtrG_QUSFF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 11138,
+              "size": 58649,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-5pKbJRwVCRBj5gagNtESYI95jzpAACowtrG_QUSFEVzVxnAAFZvWUBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADowtrG_QUSFF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 11137,
+              "size": 13720,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-5pKbJRwVCRBj5gagNtESYI95jzpAACowtrG_QUSFEVzVxnAAFZvWUBAAMCAANtAAM4BA",
+              "uniqueId": "AQADowtrG_QUSFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2127560704,
+      "chatId": -1002018942512,
+      "date": 1764241502,
+      "dateIso": "2025-11-27T11:05:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 586,
+            "height": 1280,
+            "file": {
+              "id": 11142,
+              "size": 118175,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-1pKbJRr9t645nz1DQmxV7R4lvNmgACMQxrG_QUQFHWEFCL-qrIvAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADMQxrG_QUQFF-"
+            }
+          },
+          {
+            "width": 366,
+            "height": 800,
+            "file": {
+              "id": 11141,
+              "size": 64205,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-1pKbJRr9t645nz1DQmxV7R4lvNmgACMQxrG_QUQFHWEFCL-qrIvAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADMQxrG_QUQFF9"
+            }
+          },
+          {
+            "width": 146,
+            "height": 320,
+            "file": {
+              "id": 11140,
+              "size": 14730,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-1pKbJRr9t645nz1DQmxV7R4lvNmgACMQxrG_QUQFHWEFCL-qrIvAEAAwIAA20AAzgE",
+              "uniqueId": "AQADMQxrG_QUQFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2126512128,
+      "chatId": -1002018942512,
+      "date": 1764163570,
+      "dateIso": "2025-11-26T13:26:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 11145,
+              "size": 122990,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-xpKbJRHRb2egKVjLMPOO1qWbKHCAACQAxrG5aGOFER2-GUpE5zqAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADQAxrG5aGOFF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 11144,
+              "size": 64111,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-xpKbJRHRb2egKVjLMPOO1qWbKHCAACQAxrG5aGOFER2-GUpE5zqAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADQAxrG5aGOFF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 11143,
+              "size": 14136,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-xpKbJRHRb2egKVjLMPOO1qWbKHCAACQAxrG5aGOFER2-GUpE5zqAEAAwIAA20AAzgE",
+              "uniqueId": "AQADQAxrG5aGOFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2125463552,
+      "chatId": -1002018942512,
+      "date": 1764144957,
+      "dateIso": "2025-11-26T08:15:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 11148,
+              "size": 119018,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-tpKbJRUtkLVYGdyhMxZkc26VK-mgACdwtrG-fYOFFqwXk8IYjqSgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADdwtrG-fYOFF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 11147,
+              "size": 62708,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-tpKbJRUtkLVYGdyhMxZkc26VK-mgACdwtrG-fYOFFqwXk8IYjqSgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADdwtrG-fYOFF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 11146,
+              "size": 14492,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-tpKbJRUtkLVYGdyhMxZkc26VK-mgACdwtrG-fYOFFqwXk8IYjqSgEAAwIAA20AAzgE",
+              "uniqueId": "AQADdwtrG-fYOFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2124414976,
+      "senderId": {
+        "chatId": -1002018942512
+      },
+      "chatId": -1002018942512,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764140483,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 253,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "base (2).apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 11120,
+            "size": 30000808,
+            "expectedSize": 30000808,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CeFaeMAACB8JpKbJRIgTn_yLjV1lgSNsb2onK5AACTxoAAsWeeVAoPuLlpXk6FjgE",
+              "uniqueId": "AgADTxoAAsWeeVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 30000808
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2123366400,
+      "chatId": -1002018942512,
+      "date": 1764140483,
+      "dateIso": "2025-11-26T07:01:23Z",
+      "content": {
+        "duration": 722,
+        "width": 560,
+        "height": 1280,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11136,
+          "size": 182067644,
+          "remoteId": "BAACAgQAAx0CeFaeMAACB8FpKbJR5m5BRtpM0v8EwLaOX0zcqwACVxgAArrXIFBqR448GowgUDgE",
+          "uniqueId": "AgADVxgAArrXIFA"
+        },
+        "thumbnail": {
+          "width": 141,
+          "height": 320,
+          "file": {
+            "id": 11135,
+            "size": 8641,
+            "remoteId": "AAMCBAADHQJ4Vp4wAAIHwWkpslHmbkFG2kzS_wTAto5fTNyrAAJXGAACutcgUGpHjjwajCBQAQAHbQADOAQ",
+            "uniqueId": "AQADVxgAArrXIFBy"
+          }
+        },
+        "caption": "HERE IS A VIDEO OF HOW TO MAKE UP TO 100k DAILY BY JUST MINING CRYPTO\n\nDm me: @BoiResidence\n\nWatch this video till the end and listen carefully. It works on all devices eg: IPhone, Android, Laptop. And it also works in all countries.\n\n\nUse this link 🔗 below 👇 or the application.\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\n👇Android App Below👇\n\n\nJOIN NOW 💯💯 LEGIT"
+      }
+    },
+    {
+      "id": 2122317824,
+      "chatId": -1002018942512,
+      "date": 1764078441,
+      "dateIso": "2025-11-25T13:47:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 698,
+            "height": 1280,
+            "file": {
+              "id": 11151,
+              "size": 153991,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-hpKbJRDaop7Js8LxaxQkW2jvEMjwACtwtrG-fYMFHWGqo13LdU0QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADtwtrG-fYMFF-"
+            }
+          },
+          {
+            "width": 436,
+            "height": 800,
+            "file": {
+              "id": 11150,
+              "size": 95371,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-hpKbJRDaop7Js8LxaxQkW2jvEMjwACtwtrG-fYMFHWGqo13LdU0QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADtwtrG-fYMFF9"
+            }
+          },
+          {
+            "width": 174,
+            "height": 320,
+            "file": {
+              "id": 11149,
+              "size": 22016,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-hpKbJRDaop7Js8LxaxQkW2jvEMjwACtwtrG-fYMFHWGqo13LdU0QEAAwIAA20AAzgE",
+              "uniqueId": "AQADtwtrG-fYMFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2121269248,
+      "chatId": -1002018942512,
+      "date": 1764074190,
+      "dateIso": "2025-11-25T12:36:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 11154,
+              "size": 119251,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-dpKbJRDhHKr0_nBp13lNVzqnwaZgACrgtrG-fYMFGvbu2ZtwxoDQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADrgtrG-fYMFF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 11153,
+              "size": 62715,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-dpKbJRDhHKr0_nBp13lNVzqnwaZgACrgtrG-fYMFGvbu2ZtwxoDQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADrgtrG-fYMFF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 11152,
+              "size": 13390,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-dpKbJRDhHKr0_nBp13lNVzqnwaZgACrgtrG-fYMFGvbu2ZtwxoDQEAAwIAA20AAzgE",
+              "uniqueId": "AQADrgtrG-fYMFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2120220672,
+      "chatId": -1002018942512,
+      "date": 1764073412,
+      "dateIso": "2025-11-25T12:23:32Z",
+      "text": "If your having any issues on the USDT MINER, or any other thing, you can dm me and i will assist you.. dm @BoiResidence",
+      "genres": []
+    },
+    {
+      "id": 2119172096,
+      "chatId": -1002018942512,
+      "date": 1764071420,
+      "dateIso": "2025-11-25T11:50:20Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 679,
+            "height": 1280,
+            "file": {
+              "id": 11157,
+              "size": 140324,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-VpKbJRrOoT2iZmGRPKk1wwvep1zwACowtrG-fYMFEz6FwNBF-qrQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADowtrG-fYMFF-"
+            }
+          },
+          {
+            "width": 424,
+            "height": 800,
+            "file": {
+              "id": 11156,
+              "size": 87414,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-VpKbJRrOoT2iZmGRPKk1wwvep1zwACowtrG-fYMFEz6FwNBF-qrQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADowtrG-fYMFF9"
+            }
+          },
+          {
+            "width": 170,
+            "height": 320,
+            "file": {
+              "id": 11155,
+              "size": 19573,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-VpKbJRrOoT2iZmGRPKk1wwvep1zwACowtrG-fYMFEz6FwNBF-qrQEAAwIAA20AAzgE",
+              "uniqueId": "AQADowtrG-fYMFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2118123520,
+      "chatId": -1002018942512,
+      "date": 1764055165,
+      "dateIso": "2025-11-25T07:19:25Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 673,
+            "height": 1280,
+            "file": {
+              "id": 11160,
+              "size": 112702,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-RpKbJRsKJBHiQyIvREOj56Z1tkuAACXAxrGyCYKVHIly88tmr7ngEAAwIAA3kAAzgE",
+              "uniqueId": "AQADXAxrGyCYKVF-"
+            }
+          },
+          {
+            "width": 421,
+            "height": 800,
+            "file": {
+              "id": 11159,
+              "size": 85492,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-RpKbJRsKJBHiQyIvREOj56Z1tkuAACXAxrGyCYKVHIly88tmr7ngEAAwIAA3gAAzgE",
+              "uniqueId": "AQADXAxrGyCYKVF9"
+            }
+          },
+          {
+            "width": 168,
+            "height": 320,
+            "file": {
+              "id": 11158,
+              "size": 19142,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-RpKbJRsKJBHiQyIvREOj56Z1tkuAACXAxrGyCYKVHIly88tmr7ngEAAwIAA20AAzgE",
+              "uniqueId": "AQADXAxrGyCYKVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2117074944,
+      "chatId": -1002018942512,
+      "date": 1763991766,
+      "dateIso": "2025-11-24T13:42:46Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 11163,
+              "size": 109450,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-NpKbJRiVO0Bd3ptFCrq4Th-sIEIgACAQxrG1vfIVFQWYwmW93ASgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADAQxrG1vfIVF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 11162,
+              "size": 58534,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-NpKbJRiVO0Bd3ptFCrq4Th-sIEIgACAQxrG1vfIVFQWYwmW93ASgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADAQxrG1vfIVF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 11161,
+              "size": 14409,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-NpKbJRiVO0Bd3ptFCrq4Th-sIEIgACAQxrG1vfIVFQWYwmW93ASgEAAwIAA20AAzgE",
+              "uniqueId": "AQADAQxrG1vfIVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2116026368,
+      "chatId": -1002018942512,
+      "date": 1763910186,
+      "dateIso": "2025-11-23T15:03:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1233,
+            "file": {
+              "id": 11166,
+              "size": 105345,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-JpKbJR5E6JU-SK8YWCZ2xPknGq7QAC0gtrG1vfGVEcLAMYtt_Y9QEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD0gtrG1vfGVF-"
+            }
+          },
+          {
+            "width": 364,
+            "height": 800,
+            "file": {
+              "id": 11165,
+              "size": 59938,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-JpKbJR5E6JU-SK8YWCZ2xPknGq7QAC0gtrG1vfGVEcLAMYtt_Y9QEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD0gtrG1vfGVF9"
+            }
+          },
+          {
+            "width": 146,
+            "height": 320,
+            "file": {
+              "id": 11164,
+              "size": 13851,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-JpKbJR5E6JU-SK8YWCZ2xPknGq7QAC0gtrG1vfGVEcLAMYtt_Y9QEAAwIAA20AAzgE",
+              "uniqueId": "AQAD0gtrG1vfGVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2114977792,
+      "chatId": -1002018942512,
+      "date": 1763898671,
+      "dateIso": "2025-11-23T11:51:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 586,
+            "height": 1280,
+            "file": {
+              "id": 11169,
+              "size": 113171,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-FpKbJRJvEMrHObL2AKVI7ARLR9yQACgQtrG1vfGVEthbe3FubGfAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADgQtrG1vfGVF-"
+            }
+          },
+          {
+            "width": 366,
+            "height": 800,
+            "file": {
+              "id": 11168,
+              "size": 61705,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-FpKbJRJvEMrHObL2AKVI7ARLR9yQACgQtrG1vfGVEthbe3FubGfAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADgQtrG1vfGVF9"
+            }
+          },
+          {
+            "width": 146,
+            "height": 320,
+            "file": {
+              "id": 11167,
+              "size": 14811,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-FpKbJRJvEMrHObL2AKVI7ARLR9yQACgQtrG1vfGVEthbe3FubGfAEAAwIAA20AAzgE",
+              "uniqueId": "AQADgQtrG1vfGVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2113929216,
+      "chatId": -1002018942512,
+      "date": 1763898671,
+      "dateIso": "2025-11-23T11:51:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 584,
+            "height": 1280,
+            "file": {
+              "id": 11172,
+              "size": 106844,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-BpKbJReolBawACvJ8SW0tV_o0_pAACggtrG1vfGVHx3EKcdpotWQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADggtrG1vfGVF-"
+            }
+          },
+          {
+            "width": 365,
+            "height": 800,
+            "file": {
+              "id": 11171,
+              "size": 57924,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-BpKbJReolBawACvJ8SW0tV_o0_pAACggtrG1vfGVHx3EKcdpotWQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADggtrG1vfGVF9"
+            }
+          },
+          {
+            "width": 146,
+            "height": 320,
+            "file": {
+              "id": 11170,
+              "size": 14075,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB-BpKbJReolBawACvJ8SW0tV_o0_pAACggtrG1vfGVHx3EKcdpotWQEAAwIAA20AAzgE",
+              "uniqueId": "AQADggtrG1vfGVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2112880640,
+      "chatId": -1002018942512,
+      "date": 1763896364,
+      "dateIso": "2025-11-23T11:12:44Z",
+      "text": "If You have done the USDT MINER you can send me screenshots in my dm @BoiResidence\n\nNOTE: Anyone that purchase from Machine 3 and above i will be adding you to my VIP CHANNEL",
+      "genres": []
+    },
+    {
+      "id": 2111832064,
+      "chatId": -1002018942512,
+      "date": 1763887197,
+      "dateIso": "2025-11-23T08:39:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 10743,
+              "size": 112320,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB95pKbJRYZ6kUz9YtcY5r8iOSYpkrwACDgtrG2dzGVEHSiBJ0E87-QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADDgtrG2dzGVF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 10742,
+              "size": 60131,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB95pKbJRYZ6kUz9YtcY5r8iOSYpkrwACDgtrG2dzGVEHSiBJ0E87-QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADDgtrG2dzGVF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 10741,
+              "size": 13534,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB95pKbJRYZ6kUz9YtcY5r8iOSYpkrwACDgtrG2dzGVEHSiBJ0E87-QEAAwIAA20AAzgE",
+              "uniqueId": "AQADDgtrG2dzGVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2110783488,
+      "senderId": {
+        "chatId": -1002018942512
+      },
+      "chatId": -1002018942512,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1763880174,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 321,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "base (2).apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 11120,
+            "size": 30000808,
+            "expectedSize": 30000808,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CeFaeMAACB8JpKbJRIgTn_yLjV1lgSNsb2onK5AACTxoAAsWeeVAoPuLlpXk6FjgE",
+              "uniqueId": "AgADTxoAAsWeeVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 30000808
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2109734912,
+      "chatId": -1002018942512,
+      "date": 1763880174,
+      "dateIso": "2025-11-23T06:42:54Z",
+      "content": {
+        "duration": 722,
+        "width": 560,
+        "height": 1280,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11136,
+          "size": 182067644,
+          "remoteId": "BAACAgQAAx0CeFaeMAACB8FpKbJR5m5BRtpM0v8EwLaOX0zcqwACVxgAArrXIFBqR448GowgUDgE",
+          "uniqueId": "AgADVxgAArrXIFA"
+        },
+        "thumbnail": {
+          "width": 141,
+          "height": 320,
+          "file": {
+            "id": 11135,
+            "size": 8641,
+            "remoteId": "AAMCBAADHQJ4Vp4wAAIHwWkpslHmbkFG2kzS_wTAto5fTNyrAAJXGAACutcgUGpHjjwajCBQAQAHbQADOAQ",
+            "uniqueId": "AQADVxgAArrXIFBy"
+          }
+        },
+        "caption": "HERE IS A VIDEO OF HOW TO MAKE UP TO 100k DAILY BY JUST MINING CRYPTO\n\nDm me: @BoiResidence\n\nWatch this video till the end and listen carefully. It works on all devices eg: IPhone, Android, Laptop. And it also works in all countries.\n\n\nUse this link 🔗 below 👇 or the application.\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\n👇Android App Below👇\n\n\nJOIN NOW 💯💯 LEGIT"
+      }
+    },
+    {
+      "id": 2108686336,
+      "chatId": -1002018942512,
+      "date": 1763807541,
+      "dateIso": "2025-11-22T10:32:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 561,
+            "height": 1280,
+            "file": {
+              "id": 10749,
+              "size": 109352,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB9tpKbJRL1gbzulbexhguTdgq1uS-AACegtrG2dzCVH5yfDuphPRhAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADegtrG2dzCVF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 10748,
+              "size": 57937,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB9tpKbJRL1gbzulbexhguTdgq1uS-AACegtrG2dzCVH5yfDuphPRhAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADegtrG2dzCVF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 10747,
+              "size": 13034,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB9tpKbJRL1gbzulbexhguTdgq1uS-AACegtrG2dzCVH5yfDuphPRhAEAAwIAA20AAzgE",
+              "uniqueId": "AQADegtrG2dzCVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2107637760,
+      "senderId": {
+        "chatId": -1002018942512
+      },
+      "chatId": -1002018942512,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1763799233,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 357,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "base (2).apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 11120,
+            "size": 30000808,
+            "expectedSize": 30000808,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CeFaeMAACB8JpKbJRIgTn_yLjV1lgSNsb2onK5AACTxoAAsWeeVAoPuLlpXk6FjgE",
+              "uniqueId": "AgADTxoAAsWeeVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 30000808
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 2106589184,
+      "chatId": -1002018942512,
+      "date": 1763799233,
+      "dateIso": "2025-11-22T08:13:53Z",
+      "content": {
+        "duration": 722,
+        "width": 560,
+        "height": 1280,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11136,
+          "size": 182067644,
+          "remoteId": "BAACAgQAAx0CeFaeMAACB8FpKbJR5m5BRtpM0v8EwLaOX0zcqwACVxgAArrXIFBqR448GowgUDgE",
+          "uniqueId": "AgADVxgAArrXIFA"
+        },
+        "thumbnail": {
+          "width": 141,
+          "height": 320,
+          "file": {
+            "id": 11135,
+            "size": 8641,
+            "remoteId": "AAMCBAADHQJ4Vp4wAAIHwWkpslHmbkFG2kzS_wTAto5fTNyrAAJXGAACutcgUGpHjjwajCBQAQAHbQADOAQ",
+            "uniqueId": "AQADVxgAArrXIFBy"
+          }
+        },
+        "caption": "HERE IS A VIDEO OF HOW TO MAKE UP TO 100k DAILY BY JUST MINING CRYPTO\n\nDm me: @BoiResidence\n\nWatch this video till the end and listen carefully. It works on all devices eg: IPhone, Android, Laptop. And it also works in all countries.\n\n\nUse this link 🔗 below 👇 or the application.\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\nhttps://minecore.c9jaonline.com\n\n👇Android App Below👇\n\n\nJOIN NOW 💯💯 LEGIT"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1179 @@
+{
+  "chatId": -1001306103034,
+  "title": "Bob der Baumeister",
+  "exportedAt": "2025-11-28T14:46:11.429915667Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 127926272,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 126877696,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 125829120,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595262011,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 711,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Das Mega-Team (Hörspiel zum Kinofilm 2017).rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17094,
+            "size": 150261701,
+            "expectedSize": 150261701,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADeGkpsoZvhoFXp3phIFYZ8iFaME73AALWCQACtKGxSBxUusgC82QnOAQ",
+              "uniqueId": "AgAD1gkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 150261701
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister   Extra   Hörspiel zum Kino Film",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 124780544,
+      "chatId": -1001306103034,
+      "date": 1595261864,
+      "dateIso": "2020-07-20T16:17:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17096,
+              "size": 147474,
+              "remoteId": "AgACAgIAAx0CTdmM-gADd2kpsoZ7auiHArrBGFvyFBYdvhLiAAJQrzEbtKGxSAwvXc_j9BrHAQADAgADeAADOAQ",
+              "uniqueId": "AQADUK8xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17095,
+              "size": 39081,
+              "remoteId": "AgACAgIAAx0CTdmM-gADd2kpsoZ7auiHArrBGFvyFBYdvhLiAAJQrzEbtKGxSAwvXc_j9BrHAQADAgADbQADOAQ",
+              "uniqueId": "AQADUK8xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 123731968,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595261812,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 567,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "16 - Die allerbeste Weihnachtsfeier.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17097,
+            "size": 124993287,
+            "expectedSize": 124993287,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADdmkpsoaYk13758g57zdsCQzT12mWAALMCQACtKGxSFzQb3Uw1MoNOAQ",
+              "uniqueId": "AgADzAkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 124993287
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister  2.Hörspielserie  Folge 16",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 122683392,
+      "chatId": -1001306103034,
+      "date": 1595261666,
+      "dateIso": "2020-07-20T16:14:26Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17099,
+              "size": 175409,
+              "remoteId": "AgACAgIAAx0CTdmM-gADdWkpsobAxQdgd6kNQunBXmaEU74GAAJPrzEbtKGxSKy6VqqBV4SXAQADAgADeAADOAQ",
+              "uniqueId": "AQADT68xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17098,
+              "size": 44164,
+              "remoteId": "AgACAgIAAx0CTdmM-gADdWkpsobAxQdgd6kNQunBXmaEU74GAAJPrzEbtKGxSKy6VqqBV4SXAQADAgADbQADOAQ",
+              "uniqueId": "AQADT68xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 121634816,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595261583,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 404,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "15 - Das Buddel-Kuddel-Muddel.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17100,
+            "size": 127995696,
+            "expectedSize": 127995696,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADdGkpsoaoAePmhkjYRxvxZjV1ZO8hAALACQACtKGxSDffboV5-M7XOAQ",
+              "uniqueId": "AgADwAkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 127995696
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister  2.Hörspielserie  Folge 15",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 120586240,
+      "chatId": -1001306103034,
+      "date": 1595261452,
+      "dateIso": "2020-07-20T16:10:52Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17102,
+              "size": 165660,
+              "remoteId": "AgACAgIAAx0CTdmM-gADc2kpsoYxB0w0QWfl9HeSWYpblnrmAAJNrzEbtKGxSBLZxTXIuFvnAQADAgADeAADOAQ",
+              "uniqueId": "AQADTa8xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17101,
+              "size": 42285,
+              "remoteId": "AgACAgIAAx0CTdmM-gADc2kpsoYxB0w0QWfl9HeSWYpblnrmAAJNrzEbtKGxSBLZxTXIuFvnAQADAgADbQADOAQ",
+              "uniqueId": "AQADTa8xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 119537664,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595261065,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 339,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "14 - Strandgut und Treibgut.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17103,
+            "size": 128864505,
+            "expectedSize": 128864505,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADcmkpsoZ6QxL-jDq98TanZ5lSt_tEAAK4CQACtKGxSEb757CikVqCOAQ",
+              "uniqueId": "AgADuAkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 128864505
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister  2. Hörspielserie  Folge 14",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 118489088,
+      "chatId": -1001306103034,
+      "date": 1595260869,
+      "dateIso": "2020-07-20T16:01:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17105,
+              "size": 161956,
+              "remoteId": "AgACAgIAAx0CTdmM-gADcWkpsob-1F_LXBkl4f6YrtESDuzqAAJFrzEbtKGxSFDl4XJIX59JAQADAgADeAADOAQ",
+              "uniqueId": "AQADRa8xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17104,
+              "size": 41628,
+              "remoteId": "AgACAgIAAx0CTdmM-gADcWkpsob-1F_LXBkl4f6YrtESDuzqAAJFrzEbtKGxSFDl4XJIX59JAQADAgADbQADOAQ",
+              "uniqueId": "AQADRa8xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 117440512,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595260786,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 279,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "13 - Mixis Piraten.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17106,
+            "size": 122064984,
+            "expectedSize": 122064984,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADcGkpsoaNENEeicEsB8eytU4W6537AAKxCQACtKGxSF00zv6HFAkVOAQ",
+              "uniqueId": "AgADsQkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 122064984
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister  2.Hörspielserie  Folge 13",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 116391936,
+      "chatId": -1001306103034,
+      "date": 1595260624,
+      "dateIso": "2020-07-20T15:57:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17108,
+              "size": 158662,
+              "remoteId": "AgACAgIAAx0CTdmM-gADb2kpsobmuhw7UFS_I-55OJX-bD5kAAJDrzEbtKGxSOZF_DrjIfP1AQADAgADeAADOAQ",
+              "uniqueId": "AQADQ68xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17107,
+              "size": 41204,
+              "remoteId": "AgACAgIAAx0CTdmM-gADb2kpsobmuhw7UFS_I-55OJX-bD5kAAJDrzEbtKGxSOZF_DrjIfP1AQADAgADbQADOAQ",
+              "uniqueId": "AQADQ68xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 115343360,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595260548,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 251,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "12 - Die kleinste Rakete im Weltall.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17109,
+            "size": 117455671,
+            "expectedSize": 117455671,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADbmkpsoY_Zvje1gb8obhdk59az353AAKwCQACtKGxSEMyZQ3eTA9cOAQ",
+              "uniqueId": "AgADsAkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 117455671
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister   2. Hörspielserie  Folge 12",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 114294784,
+      "chatId": -1001306103034,
+      "date": 1595260408,
+      "dateIso": "2020-07-20T15:53:28Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17111,
+              "size": 135610,
+              "remoteId": "AgACAgIAAx0CTdmM-gADbWkpsoYNyT47HMvbUiLO-DOsL-bSAAJCrzEbtKGxSETiCmkaVx1NAQADAgADeAADOAQ",
+              "uniqueId": "AQADQq8xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17110,
+              "size": 39028,
+              "remoteId": "AgACAgIAAx0CTdmM-gADbWkpsoYNyT47HMvbUiLO-DOsL-bSAAJCrzEbtKGxSETiCmkaVx1NAQADAgADbQADOAQ",
+              "uniqueId": "AQADQq8xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 113246208,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595260360,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 230,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "11 - Das Milchshake-Durcheinander.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17112,
+            "size": 105671147,
+            "expectedSize": 105671147,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADbGkpsoZ8f59DOu7m_Yp_H8xXpuBjAAKvCQACtKGxSCBQ9ARhrIg0OAQ",
+              "uniqueId": "AgADrwkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 105671147
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister   2. Hörspielserie  Folge11",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 112197632,
+      "chatId": -1001306103034,
+      "date": 1595260250,
+      "dateIso": "2020-07-20T15:50:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17114,
+              "size": 161751,
+              "remoteId": "AgACAgIAAx0CTdmM-gADa2kpsoZwQlKHp2twsyd145sS8bAQAAJBrzEbtKGxSL4IbH4jmCyNAQADAgADeAADOAQ",
+              "uniqueId": "AQADQa8xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17113,
+              "size": 41399,
+              "remoteId": "AgACAgIAAx0CTdmM-gADa2kpsoZwQlKHp2twsyd145sS8bAQAAJBrzEbtKGxSL4IbH4jmCyNAQADAgADbQADOAQ",
+              "uniqueId": "AQADQa8xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 111149056,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595258875,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 214,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "10 - Ein Dino für Hochhausen.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17115,
+            "size": 108693780,
+            "expectedSize": 108693780,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADamkpsoZxQ_LNGLSbsKSeag368vU1AAKdCQACtKGxSNZcG-xDwN-sOAQ",
+              "uniqueId": "AgADnQkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 108693780
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister  2.Hörspielserie  Folge 10",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 110100480,
+      "chatId": -1001306103034,
+      "date": 1595258725,
+      "dateIso": "2020-07-20T15:25:25Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17117,
+              "size": 144843,
+              "remoteId": "AgACAgIAAx0CTdmM-gADaWkpsobmBQH86SPvShJMI1jTUz40AAI3rzEbtKGxSGy4zAf4tjL5AQADAgADeAADOAQ",
+              "uniqueId": "AQADN68xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17116,
+              "size": 38186,
+              "remoteId": "AgACAgIAAx0CTdmM-gADaWkpsobmBQH86SPvShJMI1jTUz40AAI3rzEbtKGxSGy4zAf4tjL5AQADAgADbQADOAQ",
+              "uniqueId": "AQADN68xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 109051904,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595258573,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 195,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "09 - Buddel und der Elefant.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17118,
+            "size": 117557390,
+            "expectedSize": 117557390,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADaGkpsoYmuZ3kbvVYZXsbEJJhau5WAAKcCQACtKGxSCzKyBhG7ozaOAQ",
+              "uniqueId": "AgADnAkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 117557390
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister  2. Hörspielserie   Folge 09",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 108003328,
+      "chatId": -1001306103034,
+      "date": 1595258432,
+      "dateIso": "2020-07-20T15:20:32Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17120,
+              "size": 161170,
+              "remoteId": "AgACAgIAAx0CTdmM-gADZ2kpsobOj6SGD9yjUC_LPgABqhHfLwACNq8xG7ShsUi1MciCGE0FoQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADNq8xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17119,
+              "size": 41602,
+              "remoteId": "AgACAgIAAx0CTdmM-gADZ2kpsobOj6SGD9yjUC_LPgABqhHfLwACNq8xG7ShsUi1MciCGE0FoQEAAwIAA20AAzgE",
+              "uniqueId": "AQADNq8xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 106954752,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595249395,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 188,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "08 - Baggi allein zu Haus.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17121,
+            "size": 125389486,
+            "expectedSize": 125389486,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADZmkpsoZrhJN5USnWj332mJ-iBOKvAAJSCQACtKGxSCVkrMsovG2nOAQ",
+              "uniqueId": "AgADUgkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 125389486
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister   2. Hörspielserie  Folge 08",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 105906176,
+      "chatId": -1001306103034,
+      "date": 1595248128,
+      "dateIso": "2020-07-20T12:28:48Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17123,
+              "size": 144867,
+              "remoteId": "AgACAgIAAx0CTdmM-gADZWkpsoYlZr0DwLh2sw3_ncGR2gnjAAL_rjEbtKGxSDM0So_KNrazAQADAgADeAADOAQ",
+              "uniqueId": "AQAD_64xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17122,
+              "size": 38802,
+              "remoteId": "AgACAgIAAx0CTdmM-gADZWkpsoYlZr0DwLh2sw3_ncGR2gnjAAL_rjEbtKGxSDM0So_KNrazAQADAgADbQADOAQ",
+              "uniqueId": "AQAD_64xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 104857600,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595246604,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 182,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "07 - Das Winterfest.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17124,
+            "size": 124966205,
+            "expectedSize": 124966205,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADZGkpsoa6IdXA46e8J7iWa39Aoh1DAAIiCQACtKGxSNh8nlx39GXIOAQ",
+              "uniqueId": "AgADIgkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 124966205
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister   2.Hörspielserie  Folge 07",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 103809024,
+      "chatId": -1001306103034,
+      "date": 1595246192,
+      "dateIso": "2020-07-20T11:56:32Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17126,
+              "size": 145463,
+              "remoteId": "AgACAgIAAx0CTdmM-gADY2kpsoao8RzNrfm0WOo7v8hTFdUFAALvrjEbtKGxSCcNFHz5eS9SAQADAgADeAADOAQ",
+              "uniqueId": "AQAD764xG7ShsUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17125,
+              "size": 39624,
+              "remoteId": "AgACAgIAAx0CTdmM-gADY2kpsoao8RzNrfm0WOo7v8hTFdUFAALvrjEbtKGxSCcNFHz5eS9SAQADAgADbQADOAQ",
+              "uniqueId": "AQAD764xG7ShsUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 102760448,
+      "senderId": {
+        "chatId": -1001306103034
+      },
+      "chatId": -1001306103034,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595245440,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 192,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "06 - Der Geist aus der Kiste.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 17127,
+            "size": 123688711,
+            "expectedSize": 123688711,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CTdmM-gADYmkpsoZkhP0xnRueURFR1H67bhFQAAISCQACtKGxSBHdAAHqmXUSoDgE",
+              "uniqueId": "AgADEgkAArShsUg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 123688711
+            }
+          }
+        },
+        "caption": {
+          "text": "Bob der Baumeister   2.Hörspielserie   Folge 06",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

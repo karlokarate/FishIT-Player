@@ -1,0 +1,39 @@
+{
+  "chatId": -1001866511652,
+  "title": "From - Full HD (2022)",
+  "exportedAt": "2025-11-28T14:46:26.909818586Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 71303168,
+      "chatId": -1001866511652,
+      "date": 1733772789,
+      "dateIso": "2024-12-09T19:33:09Z",
+      "content": {
+        "duration": 3601,
+        "width": 800,
+        "height": 450,
+        "fileName": "FROM - S03E10 - Offenbarungen - Teil 2.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5136,
+          "size": 3031944405,
+          "remoteId": "BAACAgQAAx0Cb0C1JAADRGkpskDXE3c22zKQQOHKLUEk-fUyAAIMFgACHju4UtDyyC4lKXbcOAQ",
+          "uniqueId": "AgADDBYAAh47uFI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5135,
+            "size": 13887,
+            "remoteId": "AAMCBAADHQJvQLUkAANEaSmyQNcTdzbbMpBA4cotQST59TIAAgwWAAIeO7hS0PLILiUpdtwBAAdtAAM4BA",
+            "uniqueId": "AQADDBYAAh47uFJy"
+          }
+        },
+        "caption": "FROM - S03 E10 - Offenbarungen - Teil 2"
+      }
+    }
+  ]
+}

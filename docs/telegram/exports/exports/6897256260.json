@@ -1,0 +1,37 @@
+{
+  "chatId": 6897256260,
+  "title": "",
+  "exportedAt": "2025-11-28T14:46:55.355955273Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 43198185472,
+      "senderId": {
+        "userId": 6897256260
+      },
+      "chatId": 6897256260,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1700297954,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

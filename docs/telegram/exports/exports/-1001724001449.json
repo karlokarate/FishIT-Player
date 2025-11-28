@@ -1,0 +1,315 @@
+{
+  "chatId": -1001724001449,
+  "title": "Spy City | HD",
+  "exportedAt": "2025-11-28T14:46:56.575306189Z",
+  "count": 10,
+  "messages": [
+    {
+      "id": 25165824,
+      "chatId": -1001724001449,
+      "date": 1639173396,
+      "dateIso": "2021-12-10T21:56:36Z",
+      "text": "Original Hochgeladen von Join The Links 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 19922944,
+      "chatId": -1001724001449,
+      "date": 1639172722,
+      "dateIso": "2021-12-10T21:45:22Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 480,
+            "file": {
+              "id": 18317,
+              "size": 50262,
+              "remoteId": "AgACAgIAAx0CZq5xQgADXWkpsuItI7bWYZUOuw3Fp1J7st-QAAJssjEbO_VgS9n6sSu2qa2hAQADAgADeQADOAQ",
+              "uniqueId": "AQADbLIxGzv1YEt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 18316,
+              "size": 53000,
+              "remoteId": "AgACAgIAAx0CZq5xQgADXWkpsuItI7bWYZUOuw3Fp1J7st-QAAJssjEbO_VgS9n6sSu2qa2hAQADAgADeAADOAQ",
+              "uniqueId": "AQADbLIxGzv1YEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 18315,
+              "size": 10884,
+              "remoteId": "AgACAgIAAx0CZq5xQgADXWkpsuItI7bWYZUOuw3Fp1J7st-QAAJssjEbO_VgS9n6sSu2qa2hAQADAgADbQADOAQ",
+              "uniqueId": "AQADbLIxGzv1YEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001724001449,
+      "date": 1639172664,
+      "dateIso": "2021-12-10T21:44:24Z",
+      "content": {
+        "duration": 2852,
+        "width": 1280,
+        "height": 638,
+        "fileName": "Spy City - S01 E06 - Die Mauer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18319,
+          "size": 1549241827,
+          "remoteId": "BAACAgEAAx0CZsIsqQADEGkpsqMep4fmoE-fbAgvk1vFtRulAAL0AQAC7FyZRSvv9jPhMi3XOAQ",
+          "uniqueId": "AgAD9AEAAuxcmUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18318,
+            "size": 5764,
+            "remoteId": "AAMCAQADHQJmwiypAAMQaSmyox6nh-agT59sCC-TW8W1G6UAAvQBAALsXJlFK-_2M-EyLdcBAAdtAAM4BA",
+            "uniqueId": "AQAD9AEAAuxcmUVy"
+          }
+        },
+        "caption": "Spy City - S01 E06 - Die Mauer"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1001724001449,
+      "date": 1639172660,
+      "dateIso": "2021-12-10T21:44:20Z",
+      "content": {
+        "duration": 2719,
+        "width": 1280,
+        "height": 638,
+        "fileName": "Spy City - S01 E05 - Düstere Vorahnung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18321,
+          "size": 1564871122,
+          "remoteId": "BAACAgEAAx0CZsIsqQADD2kpsqNKDHBu2dIe8_vt8J3YGJcmAAL1AQAC7FyZRchge4EoO3JWOAQ",
+          "uniqueId": "AgAD9QEAAuxcmUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18320,
+            "size": 5764,
+            "remoteId": "AAMCAQADHQJmwiypAAMPaSmyo0oMcG7Z0h7z--3wndgYlyYAAvUBAALsXJlFyGB7gSg7clYBAAdtAAM4BA",
+            "uniqueId": "AQAD9QEAAuxcmUVy"
+          }
+        },
+        "caption": "Spy City - S01 E05 - Düstere Vorahnung"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1001724001449,
+      "date": 1639172657,
+      "dateIso": "2021-12-10T21:44:17Z",
+      "content": {
+        "duration": 2829,
+        "width": 1280,
+        "height": 638,
+        "fileName": "Spy City - S01 E04 - Auf Leben und Tod.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18323,
+          "size": 1567708675,
+          "remoteId": "BAACAgEAAx0CZsIsqQADDmkpsqMvCUXD-9Q4oDVMuqTCpzNxAAL2AQAC7FyZReliKQWy5IOpOAQ",
+          "uniqueId": "AgAD9gEAAuxcmUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18322,
+            "size": 5764,
+            "remoteId": "AAMCAQADHQJmwiypAAMOaSmyoy8JRcP71DigNUy6pMKnM3EAAvYBAALsXJlF6WIpBbLkg6kBAAdtAAM4BA",
+            "uniqueId": "AQAD9gEAAuxcmUVy"
+          }
+        },
+        "caption": "Spy City - S01 E04 - Auf Leben und Tod"
+      }
+    },
+    {
+      "id": 13631488,
+      "chatId": -1001724001449,
+      "date": 1639172654,
+      "dateIso": "2021-12-10T21:44:14Z",
+      "content": {
+        "duration": 2874,
+        "width": 1280,
+        "height": 638,
+        "fileName": "Spy City - S01 E03 - Der Feind meines Feindes.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18325,
+          "size": 1568784670,
+          "remoteId": "BAACAgEAAx0CZsIsqQADDWkpsqMNA7vz4QABRYjK5zZhLavVxQAC9wEAAuxcmUUY8y9S9-buJTgE",
+          "uniqueId": "AgAD9wEAAuxcmUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18324,
+            "size": 5764,
+            "remoteId": "AAMCAQADHQJmwiypAAMNaSmyow0Du_PhAAFFiMrnNmEtq9XFAAL3AQAC7FyZRRjzL1L35u4lAQAHbQADOAQ",
+            "uniqueId": "AQAD9wEAAuxcmUVy"
+          }
+        },
+        "caption": "Spy City - S01 E03 - Der Feind meines Feindes"
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1001724001449,
+      "date": 1639172651,
+      "dateIso": "2021-12-10T21:44:11Z",
+      "content": {
+        "duration": 2852,
+        "width": 1280,
+        "height": 638,
+        "fileName": "Spy City - S01 E02 - Räuber und Gendarm.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18327,
+          "size": 1562445737,
+          "remoteId": "BAACAgEAAx0CZsIsqQADDGkpsqNDHVpCpk66PfOipYMoJqt0AALzAQAC7FyZRTCUB2JlkIzyOAQ",
+          "uniqueId": "AgAD8wEAAuxcmUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18326,
+            "size": 5764,
+            "remoteId": "AAMCAQADHQJmwiypAAMMaSmyo0MdWkKmTro986Klgygmq3QAAvMBAALsXJlFMJQHYmWQjPIBAAdtAAM4BA",
+            "uniqueId": "AQAD8wEAAuxcmUVy"
+          }
+        },
+        "caption": "Spy City - S01 E02 - Räuber und Gendarm"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1001724001449,
+      "date": 1639172648,
+      "dateIso": "2021-12-10T21:44:08Z",
+      "content": {
+        "duration": 2751,
+        "width": 1280,
+        "height": 638,
+        "fileName": "Spy City - S01 E01 - Codename Beethoven.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18329,
+          "size": 1540677406,
+          "remoteId": "BAACAgEAAx0CZsIsqQADC2kpsqOk-PUgWvGpZzTyy_yv6h-iAAKFAgAC7FyRRanCGW__ROEtOAQ",
+          "uniqueId": "AgADhQIAAuxckUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18328,
+            "size": 5764,
+            "remoteId": "AAMCAQADHQJmwiypAAMLaSmyo6T49SBa8alnNPLL_K_qH6IAAoUCAALsXJFFqcIZb_9E4S0BAAdtAAM4BA",
+            "uniqueId": "AQADhQIAAuxckUVy"
+          }
+        },
+        "caption": "Spy City - S01 E01 - Codename Beethoven"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001724001449,
+      "date": 1638817330,
+      "dateIso": "2021-12-06T19:02:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 720,
+            "file": {
+              "id": 18332,
+              "size": 92970,
+              "remoteId": "AgACAgIAAx0CZsIsqQADA2kpsqP_-HoRwK5bGUdRQ2mbpImOAAJ5tTEbWrx5ScGQFpHHMDFOAQADAgADeQADOAQ",
+              "uniqueId": "AQADebUxG1q8eUl-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 18331,
+              "size": 51857,
+              "remoteId": "AgACAgIAAx0CZsIsqQADA2kpsqP_-HoRwK5bGUdRQ2mbpImOAAJ5tTEbWrx5ScGQFpHHMDFOAQADAgADeAADOAQ",
+              "uniqueId": "AQADebUxG1q8eUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 18330,
+              "size": 13147,
+              "remoteId": "AgACAgIAAx0CZsIsqQADA2kpsqP_-HoRwK5bGUdRQ2mbpImOAAJ5tTEbWrx5ScGQFpHHMDFOAQADAgADbQADOAQ",
+              "uniqueId": "AQADebUxG1q8eUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001724001449
+      },
+      "chatId": -1001724001449,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1638816965,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Spy City | HD"
+      }
+    }
+  ]
+}

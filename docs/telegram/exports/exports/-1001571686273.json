@@ -1,0 +1,606 @@
+{
+  "chatId": -1001571686273,
+  "title": "🏴‍☠️Telegram-Underground🏴‍☠️",
+  "exportedAt": "2025-11-28T14:45:44.929044968Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 510656512,
+      "senderId": {
+        "chatId": -1001571686273
+      },
+      "chatId": -1001571686273,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1758338315,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 11 months. If they remain inactive for the next 30 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 509607936,
+      "senderId": {
+        "chatId": -1001571686273
+      },
+      "chatId": -1001571686273,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1737138179,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 1 month. If they remain inactive for the next 7 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 464519168,
+      "chatId": -1001571686273,
+      "date": 1673856307,
+      "dateIso": "2023-01-16T08:05:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 938,
+            "file": {
+              "id": 15197,
+              "size": 153462,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIZpKbJtzsyCI9uw1DGZsE0vQb2tEgACUqoxG_kCsUaF7P7zb29A9AEAAwIAA3kAAzgE",
+              "uniqueId": "AQADUqoxG_kCsUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 586,
+            "file": {
+              "id": 15196,
+              "size": 93955,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIZpKbJtzsyCI9uw1DGZsE0vQb2tEgACUqoxG_kCsUaF7P7zb29A9AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADUqoxG_kCsUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 234,
+            "file": {
+              "id": 15195,
+              "size": 23669,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIZpKbJtzsyCI9uw1DGZsE0vQb2tEgACUqoxG_kCsUaF7P7zb29A9AEAAwIAA20AAzgE",
+              "uniqueId": "AQADUqoxG_kCsUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 463470592,
+      "chatId": -1001571686273,
+      "date": 1673856307,
+      "dateIso": "2023-01-16T08:05:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1080,
+            "height": 887,
+            "file": {
+              "id": 15200,
+              "size": 146914,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEZpKbJtXiBEaCu8FXCMKLLSTfjSawACJ6oxG24hkUabvpUBHcewHgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADJ6oxG24hkUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 657,
+            "file": {
+              "id": 15199,
+              "size": 116010,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEZpKbJtXiBEaCu8FXCMKLLSTfjSawACJ6oxG24hkUabvpUBHcewHgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADJ6oxG24hkUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 263,
+            "file": {
+              "id": 15198,
+              "size": 27529,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEZpKbJtXiBEaCu8FXCMKLLSTfjSawACJ6oxG24hkUabvpUBHcewHgEAAwIAA20AAzgE",
+              "uniqueId": "AQADJ6oxG24hkUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 462422016,
+      "chatId": -1001571686273,
+      "date": 1673856307,
+      "dateIso": "2023-01-16T08:05:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 720,
+            "height": 499,
+            "file": {
+              "id": 15202,
+              "size": 63811,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEVpKbJt-iNNDygQzB6dm6-j0vJSlwACIqkxG83TkEY1wnx1lbwlcAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADIqkxG83TkEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 222,
+            "file": {
+              "id": 15201,
+              "size": 20043,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEVpKbJt-iNNDygQzB6dm6-j0vJSlwACIqkxG83TkEY1wnx1lbwlcAEAAwIAA20AAzgE",
+              "uniqueId": "AQADIqkxG83TkEZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 461373440,
+      "chatId": -1001571686273,
+      "date": 1673856307,
+      "dateIso": "2023-01-16T08:05:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 720,
+            "height": 493,
+            "file": {
+              "id": 15204,
+              "size": 73965,
+              "remoteId": "AgACAgEAAx0CTv44FgACBERpKbJtL7ZqDJnS_PYrb0eTTXGdOAACIakxG83TkEYR2Wienv2NGAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADIakxG83TkEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 219,
+            "file": {
+              "id": 15203,
+              "size": 24333,
+              "remoteId": "AgACAgEAAx0CTv44FgACBERpKbJtL7ZqDJnS_PYrb0eTTXGdOAACIakxG83TkEYR2Wienv2NGAEAAwIAA20AAzgE",
+              "uniqueId": "AQADIakxG83TkEZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 460324864,
+      "chatId": -1001571686273,
+      "date": 1673856306,
+      "dateIso": "2023-01-16T08:05:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1080,
+            "height": 730,
+            "file": {
+              "id": 15207,
+              "size": 113252,
+              "remoteId": "AgACAgEAAx0CTv44FgACBENpKbJtffg1j8jP-YaQEwZTuifVGgACJ6kxG83TkEZpvJlPYGZbBwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADJ6kxG83TkEZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 541,
+            "file": {
+              "id": 15206,
+              "size": 88246,
+              "remoteId": "AgACAgEAAx0CTv44FgACBENpKbJtffg1j8jP-YaQEwZTuifVGgACJ6kxG83TkEZpvJlPYGZbBwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADJ6kxG83TkEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 216,
+            "file": {
+              "id": 15205,
+              "size": 22165,
+              "remoteId": "AgACAgEAAx0CTv44FgACBENpKbJtffg1j8jP-YaQEwZTuifVGgACJ6kxG83TkEZpvJlPYGZbBwEAAwIAA20AAzgE",
+              "uniqueId": "AQADJ6kxG83TkEZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 459276288,
+      "chatId": -1001571686273,
+      "date": 1673856306,
+      "dateIso": "2023-01-16T08:05:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 948,
+            "file": {
+              "id": 15210,
+              "size": 156085,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEJpKbJtB2BagyDDQj8AAVjWW-hDJeIAApKpMRudlrlGNtj7VwABe36BAQADAgADeQADOAQ",
+              "uniqueId": "AQADkqkxG52WuUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 592,
+            "file": {
+              "id": 15209,
+              "size": 95461,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEJpKbJtB2BagyDDQj8AAVjWW-hDJeIAApKpMRudlrlGNtj7VwABe36BAQADAgADeAADOAQ",
+              "uniqueId": "AQADkqkxG52WuUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 237,
+            "file": {
+              "id": 15208,
+              "size": 24560,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEJpKbJtB2BagyDDQj8AAVjWW-hDJeIAApKpMRudlrlGNtj7VwABe36BAQADAgADbQADOAQ",
+              "uniqueId": "AQADkqkxG52WuUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 458227712,
+      "chatId": -1001571686273,
+      "date": 1673856306,
+      "dateIso": "2023-01-16T08:05:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 883,
+            "file": {
+              "id": 15213,
+              "size": 107221,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEFpKbJtQm9l42t6N9HcBVCZBcP14gACY6oxG_kCsUbBAml7SCZewQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADY6oxG_kCsUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 552,
+            "file": {
+              "id": 15212,
+              "size": 66588,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEFpKbJtQm9l42t6N9HcBVCZBcP14gACY6oxG_kCsUbBAml7SCZewQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADY6oxG_kCsUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 221,
+            "file": {
+              "id": 15211,
+              "size": 18698,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEFpKbJtQm9l42t6N9HcBVCZBcP14gACY6oxG_kCsUbBAml7SCZewQEAAwIAA20AAzgE",
+              "uniqueId": "AQADY6oxG_kCsUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 457179136,
+      "chatId": -1001571686273,
+      "date": 1673856306,
+      "dateIso": "2023-01-16T08:05:06Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 962,
+            "height": 588,
+            "file": {
+              "id": 15216,
+              "size": 110048,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEBpKbJtTEYHPbXoxchNwDsMgD8i7gACI6kxG83TkEYGM3U_p8kVAQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADI6kxG83TkEZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 489,
+            "file": {
+              "id": 15215,
+              "size": 89785,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEBpKbJtTEYHPbXoxchNwDsMgD8i7gACI6kxG83TkEYGM3U_p8kVAQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADI6kxG83TkEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 196,
+            "file": {
+              "id": 15214,
+              "size": 23470,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEBpKbJtTEYHPbXoxchNwDsMgD8i7gACI6kxG83TkEYGM3U_p8kVAQEAAwIAA20AAzgE",
+              "uniqueId": "AQADI6kxG83TkEZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 448790528,
+      "chatId": -1001571686273,
+      "date": 1654703272,
+      "dateIso": "2022-06-08T15:47:52Z",
+      "text": "ℹ️Neuer Link zu dieser Gruppe \u003d https://t.me/+qY3ptnLqi1YyODEy",
+      "genres": []
+    },
+    {
+      "id": 443547648,
+      "chatId": -1001571686273,
+      "date": 1646672821,
+      "dateIso": "2022-03-07T17:07:01Z",
+      "text": "https://www.kpfiretv.com/",
+      "genres": []
+    },
+    {
+      "id": 441450496,
+      "chatId": -1001571686273,
+      "date": 1646400401,
+      "dateIso": "2022-03-04T13:26:41Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 431,
+            "height": 476,
+            "file": {
+              "id": 15218,
+              "size": 18396,
+              "remoteId": "AgACAgIAAx0CXa4HgQACAaVpKbJpk6QZUHUal-6Wdmokl1NV5gACwrsxGwQ7EElf0m5vTtZwAQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADwrsxGwQ7EEl9"
+            }
+          },
+          {
+            "width": 290,
+            "height": 320,
+            "file": {
+              "id": 15217,
+              "size": 12187,
+              "remoteId": "AgACAgIAAx0CXa4HgQACAaVpKbJpk6QZUHUal-6Wdmokl1NV5gACwrsxGwQ7EElf0m5vTtZwAQEAAwIAA20AAzgE",
+              "uniqueId": "AQADwrsxGwQ7EEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 433061888,
+      "chatId": -1001571686273,
+      "date": 1644089654,
+      "dateIso": "2022-02-05T19:34:14Z",
+      "text": "https://apkgoogle.org/de/",
+      "genres": []
+    },
+    {
+      "id": 428867584,
+      "chatId": -1001571686273,
+      "date": 1642789631,
+      "dateIso": "2022-01-21T18:27:11Z",
+      "text": "https://t.me/FreePayAccounts",
+      "genres": []
+    },
+    {
+      "id": 427819008,
+      "chatId": -1001571686273,
+      "date": 1642788587,
+      "dateIso": "2022-01-21T18:09:47Z",
+      "text": "https://t.me/joinchat/AAAAAERAngKhEHF8h23qDQ",
+      "genres": []
+    },
+    {
+      "id": 425721856,
+      "chatId": -1001571686273,
+      "date": 1642258148,
+      "dateIso": "2022-01-15T14:49:08Z",
+      "text": "Wichtig: \nAlle Kunden die bei Pulse-Media / DreamWorldFuture (DWF) waren und dessen Kodi Eigenentwicklung benutzt haben inklusive Line \u0026 VIP sollten Vorkehrungen treffen.  \n\nInsbesondere wenn man  dann  per Paypal / Überweisung auf dessen Real-Daten gezahlt hat.😂😂😂 \n\nDer fahrlässige Anbieter wurde bereits 11/2021 gebusted und alles sichergeestellt‼️‼️‼️⚠️",
+      "genres": []
+    },
+    {
+      "id": 424673280,
+      "senderId": {
+        "chatId": -1001571686273
+      },
+      "chatId": -1001571686273,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1642258144,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1353,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 5373210258611112778,
+          "setId": 3765388340820443139,
+          "width": 512,
+          "height": 512,
+          "emoji": "👮‍♀️",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 15219,
+              "size": 25300,
+              "expectedSize": 25300,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADHQJdrgeBAAIBlWkpsmk3oi-P2Mf4UjCk3z5cejueAAJKCwACQ3qRSt4W0wrItxfkAQAHbQADOAQ",
+                "uniqueId": "AQADSgsAAkN6kUpy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 25300
+              }
+            }
+          },
+          "sticker": {
+            "id": 15220,
+            "size": 50820,
+            "expectedSize": 50820,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAx0CXa4HgQACAZVpKbJpN6Ivj9jH-FIwpN8-XHo7ngACSgsAAkN6kUreFtMKyLcX5DgE",
+              "uniqueId": "AgADSgsAAkN6kUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 50820
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 423624704,
+      "chatId": -1001571686273,
+      "date": 1642139961,
+      "dateIso": "2022-01-14T05:59:21Z",
+      "text": "https://t.me/apksoulofficial",
+      "genres": []
+    },
+    {
+      "id": 419430400,
+      "chatId": -1001571686273,
+      "date": 1638350598,
+      "dateIso": "2021-12-01T09:23:18Z",
+      "text": "https://t.me/allapkforfree",
+      "genres": []
+    },
+    {
+      "id": 417333248,
+      "chatId": -1001571686273,
+      "date": 1637794639,
+      "dateIso": "2021-11-24T22:57:19Z",
+      "text": "https://t.me/crackedpcsoftwares",
+      "genres": []
+    },
+    {
+      "id": 415236096,
+      "chatId": -1001571686273,
+      "date": 1637624158,
+      "dateIso": "2021-11-22T23:35:58Z",
+      "text": "https://t.me/starkmodsworld",
+      "genres": []
+    },
+    {
+      "id": 413138944,
+      "chatId": -1001571686273,
+      "date": 1631903424,
+      "dateIso": "2021-09-17T18:30:24Z",
+      "text": "https://t.me/joinchat/UoqXjxQaHsVhNjIy",
+      "genres": []
+    },
+    {
+      "id": 412090368,
+      "chatId": -1001571686273,
+      "date": 1631534741,
+      "dateIso": "2021-09-13T12:05:41Z",
+      "text": "Mobile Application \u0026 Desktop Applications📱💻\nhttps://t.me/ticnia",
+      "genres": []
+    },
+    {
+      "id": 411041792,
+      "chatId": -1001571686273,
+      "date": 1631520693,
+      "dateIso": "2021-09-13T08:11:33Z",
+      "text": "https://t.me/ApkGeek",
+      "genres": []
+    }
+  ]
+}

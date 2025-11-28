@@ -1,0 +1,737 @@
+{
+  "chatId": -1001253186380,
+  "title": "Paw Patrol Deutsche Folgen",
+  "exportedAt": "2025-11-28T14:45:22.653110650Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 807403520,
+      "chatId": -1001253186380,
+      "date": 1764280175,
+      "dateIso": "2025-11-27T21:49:35Z",
+      "text": "Am 01. Dezember geht es mit Staffel 11 weiter. \nMan kann die Staffel sozusagen als Adventskalender sehen.😉",
+      "genres": []
+    },
+    {
+      "id": 806354944,
+      "chatId": -1001253186380,
+      "date": 1762975611,
+      "dateIso": "2025-11-12T19:26:51Z",
+      "text": "Im Dezember geht es mit Staffel 11 weiter.😉",
+      "genres": []
+    },
+    {
+      "id": 804257792,
+      "chatId": -1001253186380,
+      "date": 1760599518,
+      "dateIso": "2025-10-16T07:25:18Z",
+      "content": {
+        "duration": 1398,
+        "width": 1280,
+        "height": 720,
+        "fileName": "S10E26 - @ArcheMovie - PAW Patrol.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11671,
+          "size": 236076281,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAv9pKbJT_RQvx5p9C87XyASJ7IExqQACuX0AAqP_sUomNvRATPt29jgE",
+          "uniqueId": "AgADuX0AAqP_sUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11670,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC_2kpslP9FC_Hmn0LztfIBInsgTGpAAK5fQACo_-xSiY29EBM-3b2AQAHbQADOAQ",
+            "uniqueId": "AQADuX0AAqP_sUpy"
+          }
+        },
+        "caption": "26  Der Monstertruck-Bürgermeister"
+      }
+    },
+    {
+      "id": 803209216,
+      "chatId": -1001253186380,
+      "date": 1760599511,
+      "dateIso": "2025-10-16T07:25:11Z",
+      "content": {
+        "duration": 1393,
+        "width": 1280,
+        "height": 720,
+        "fileName": "S10E25 - @ArcheMovie - PAW Patrol.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11673,
+          "size": 223680880,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAv5pKbJTXHEzYFkvvNg1CbgWsgyYrAACuH0AAqP_sUr5ptSI6cIrzjgE",
+          "uniqueId": "AgADuH0AAqP_sUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11672,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC_mkpslNccTNgWS-82DUJuBayDJisAAK4fQACo_-xSvmm1IjpwivOAQAHbQADOAQ",
+            "uniqueId": "AQADuH0AAqP_sUpy"
+          }
+        },
+        "caption": "25  Das entlaufene Kätzchen + Die Käseziege"
+      }
+    },
+    {
+      "id": 802160640,
+      "chatId": -1001253186380,
+      "date": 1760599504,
+      "dateIso": "2025-10-16T07:25:04Z",
+      "content": {
+        "duration": 1393,
+        "width": 1280,
+        "height": 720,
+        "fileName": "S10E24 - @ArcheMovie - PAW Patrol.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11675,
+          "size": 227982476,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAv1pKbJTCAKX41XWbfuFnjHe6anOKAACtn0AAqP_sUpxTs9EyEBh5TgE",
+          "uniqueId": "AgADtn0AAqP_sUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11674,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC_WkpslMIApfjVdZt-4WeMd7pqc4oAAK2fQACo_-xSnFOz0TIQGHlAQAHbQADOAQ",
+            "uniqueId": "AQADtn0AAqP_sUpy"
+          }
+        },
+        "caption": "24  Rasende Roboter-Handtasche außer Kontrolle + Ein abenteuerliches Buggy-Rennen"
+      }
+    },
+    {
+      "id": 801112064,
+      "chatId": -1001253186380,
+      "date": 1760599499,
+      "dateIso": "2025-10-16T07:24:59Z",
+      "content": {
+        "duration": 1398,
+        "width": 1280,
+        "height": 720,
+        "fileName": "S10E23 - @ArcheMovie - PAW Patrol.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11677,
+          "size": 238821897,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvxpKbJT8udIEc_XaLxlk5_I2heD0gACtX0AAqP_sUovOqP-c85hajgE",
+          "uniqueId": "AgADtX0AAqP_sUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11676,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC_GkpslPy50gRz9dovGWTn8jaF4PSAAK1fQACo_-xSi86o_5zzmFqAQAHbQADOAQ",
+            "uniqueId": "AQADtX0AAqP_sUpy"
+          }
+        },
+        "caption": "23  Monstertruck-Chaos in der Abenteuerbucht"
+      }
+    },
+    {
+      "id": 800063488,
+      "chatId": -1001253186380,
+      "date": 1760599491,
+      "dateIso": "2025-10-16T07:24:51Z",
+      "content": {
+        "duration": 1392,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11679,
+          "size": 797207942,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvtpKbJTwlvZQ--xNJN10vuSdf11GwACEF8AAlObkUrWxlu8-Xtj3jgE",
+          "uniqueId": "AgADEF8AAlObkUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11678,
+            "size": 1118,
+            "remoteId": "AAMCAgADHQJKshtMAAIC-2kpslPCW9lD77E0k3XS-5J1_XUbAAIQXwACU5uRStbGW7z5e2PeAQAHbQADOAQ",
+            "uniqueId": "AQADEF8AAlObkUpy"
+          }
+        },
+        "caption": "22  Alex hat einen Traum + Der schönste Schatz der Abenteuerbucht"
+      }
+    },
+    {
+      "id": 799014912,
+      "chatId": -1001253186380,
+      "date": 1760599484,
+      "dateIso": "2025-10-16T07:24:44Z",
+      "content": {
+        "duration": 1392,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11681,
+          "size": 798078032,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvppKbJTVzNaBbceI7-ql7Gw9-9IZgACxmcAAkDMiUonOTn0SvtpQDgE",
+          "uniqueId": "AgADxmcAAkDMiUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11680,
+            "size": 1118,
+            "remoteId": "AAMCAgADHQJKshtMAAIC-mkpslNXM1oFtx4jv6qXsbD370hmAALGZwACQMyJSic5OfRK-2lAAQAHbQADOAQ",
+            "uniqueId": "AQADxmcAAkDMiUpy"
+          }
+        },
+        "caption": "21  Die Mäuse-Invasion + Die Tollpatschs im Wettstreit"
+      }
+    },
+    {
+      "id": 797966336,
+      "chatId": -1001253186380,
+      "date": 1760599476,
+      "dateIso": "2025-10-16T07:24:36Z",
+      "content": {
+        "duration": 1392,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11683,
+          "size": 797885416,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvlpKbJToR33tj0yD_FnbMjdLIuBJgACDmgAAvvTeErpuEtyUWfLmjgE",
+          "uniqueId": "AgADDmgAAvvTeEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11682,
+            "size": 1118,
+            "remoteId": "AAMCAgADHQJKshtMAAIC-WkpslOhHfe2PTIP8WdsyN0si4EmAAIOaAAC-9N4Sum4S3JRZ8uaAQAHbQADOAQ",
+            "uniqueId": "AQADDmgAAvvTeEpy"
+          }
+        },
+        "caption": "20  Die Besserwisser-Drohnen-Reflektoren + Capybara in Gefahr"
+      }
+    },
+    {
+      "id": 796917760,
+      "chatId": -1001253186380,
+      "date": 1760599470,
+      "dateIso": "2025-10-16T07:24:30Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E19_Pups_Save_the_Elephant_Spa_Pups_Save_an_Underwater.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11685,
+          "size": 799596434,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvhpKbJT5L3kinR4tJrJ9gutP6d17gAClWUAAnQhcUonj8YO6-JLvzgE",
+          "uniqueId": "AgADlWUAAnQhcUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11684,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC-GkpslPkveSKdHi0msn2C60_p3XuAAKVZQACdCFxSiePxg7r4ku_AQAHbQADOAQ",
+            "uniqueId": "AQADlWUAAnQhcUpy"
+          }
+        },
+        "caption": "19  Der Reisende Reinhard im Dschungel + Onkel Herbert und der Unterwasser-Schatz"
+      }
+    },
+    {
+      "id": 795869184,
+      "chatId": -1001253186380,
+      "date": 1760599464,
+      "dateIso": "2025-10-16T07:24:24Z",
+      "content": {
+        "duration": 1392,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11687,
+          "size": 797577307,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvdpKbJTzYuOryTe2LI_Pq3bfMNTgQACSF8AAlwfaUoW-rsZGoc6UjgE",
+          "uniqueId": "AgADSF8AAlwfaUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11686,
+            "size": 1118,
+            "remoteId": "AAMCAgADHQJKshtMAAIC92kpslPNi46vJN7Ysj8-rdt8w1OBAAJIXwACXB9pShb6uxkahzpSAQAHbQADOAQ",
+            "uniqueId": "AQADSF8AAlwfaUpy"
+          }
+        },
+        "caption": "18  Die abenteuerliche Rettung der Flunder + Rollentausch mit Hindernissen"
+      }
+    },
+    {
+      "id": 794820608,
+      "chatId": -1001253186380,
+      "date": 1760599457,
+      "dateIso": "2025-10-16T07:24:17Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E17_Mighty_Pups_Stop_the_Mighty_Queen_Mighty_Pups.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11689,
+          "size": 791605760,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvZpKbJTcZP3BvUw-LCFBviylJSNwwACh1cAAlwfWUpM4HBjKfatTjgE",
+          "uniqueId": "AgADh1cAAlwfWUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11688,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC9mkpslNxk_cG9TD4sIUG-LKUlI3DAAKHVwACXB9ZSkzgcGMp9q1OAQAHbQADOAQ",
+            "uniqueId": "AQADh1cAAlwfWUpy"
+          }
+        },
+        "caption": "17  Die Super-Königin + Der Super-Schluckauf"
+      }
+    },
+    {
+      "id": 793772032,
+      "chatId": -1001253186380,
+      "date": 1760599451,
+      "dateIso": "2025-10-16T07:24:11Z",
+      "content": {
+        "duration": 1392,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11691,
+          "size": 791643480,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvVpKbJTypogxWDV0mpRl_M9vdTtpwACBFwAAn46UEoepN3H_hYPfDgE",
+          "uniqueId": "AgADBFwAAn46UEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11690,
+            "size": 1118,
+            "remoteId": "AAMCAgADHQJKshtMAAIC9WkpslPKmiDFYNXSalGX8z291O2nAAIEXAACfjpQSh6k3cf-Fg98AQAHbQADOAQ",
+            "uniqueId": "AQADBFwAAn46UEpy"
+          }
+        },
+        "caption": "16  Die Superhunde in der eisigen Abenteuerbucht + Die Superhunde und die Gepardin"
+      }
+    },
+    {
+      "id": 792723456,
+      "chatId": -1001253186380,
+      "date": 1760599441,
+      "dateIso": "2025-10-16T07:24:01Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E15_Pups_Save_a_Baby_Caribou_Pups_Save_Luke_and_His.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11693,
+          "size": 791322947,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvRpKbJTfB3RMrOK1ZesTq_sGytIsgACZ10AAvOhSEozk0-l9aUuQDgE",
+          "uniqueId": "AgADZ10AAvOhSEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11692,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC9GkpslN8HdEys4rVl6xOr-wbK0iyAAJnXQAC86FISjOTT6X1pS5AAQAHbQADOAQ",
+            "uniqueId": "AQADZ10AAvOhSEpy"
+          }
+        },
+        "caption": "15  Das verirrte Karibu-Baby + Das Wüstenkonzert"
+      }
+    },
+    {
+      "id": 791674880,
+      "chatId": -1001253186380,
+      "date": 1760599435,
+      "dateIso": "2025-10-16T07:23:55Z",
+      "content": {
+        "duration": 1404,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Staffel 10 Episode 14 .mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11695,
+          "size": 234128152,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvNpKbJTt7ysMyGE5RuI0DWzOimVQQACv4UAArJooUqIA0oM3lQCbTgE",
+          "uniqueId": "AgADv4UAArJooUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11694,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC82kpslO3vKwzIYTlG4jQNbM6KZVBAAK_hQACsmihSogDSgzeVAJtAQAHbQADOAQ",
+            "uniqueId": "AQADv4UAArJooUpy"
+          }
+        },
+        "caption": "14  Chargers Weihnachtsabenteuer + Der Eishockey-Wettkampf"
+      }
+    },
+    {
+      "id": 790626304,
+      "chatId": -1001253186380,
+      "date": 1760599428,
+      "dateIso": "2025-10-16T07:23:48Z",
+      "content": {
+        "duration": 1392,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11697,
+          "size": 794958792,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvJpKbJTeP4tTPS5Iuc9WJJHc8igxAACVFcAAg4fOUr6U5JBiy5gVzgE",
+          "uniqueId": "AgADVFcAAg4fOUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11696,
+            "size": 1118,
+            "remoteId": "AAMCAgADHQJKshtMAAIC8mkpslN4_i1M9Lki5z1YkkdzyKDEAAJUVwACDh85SvpTkkGLLmBXAQAHbQADOAQ",
+            "uniqueId": "AQADVFcAAg4fOUpy"
+          }
+        },
+        "caption": "13  Die Superhunde und der Bürgermeister des Universums"
+      }
+    },
+    {
+      "id": 789577728,
+      "chatId": -1001253186380,
+      "date": 1760599422,
+      "dateIso": "2025-10-16T07:23:42Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E12_Pups_Save_a_Hum_ñata_Pups_Stop_the_Foggy_Skies.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11699,
+          "size": 784384024,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvFpKbJTVkD6rwXa9r3qJxsQPzj7WQACT10AAs72KUoop0xHME9vbjgE",
+          "uniqueId": "AgADT10AAs72KUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11698,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC8WkpslNWQPqvBdr2veonGxA_OPtZAAJPXQACzvYpSiinTEcwT29uAQAHbQADOAQ",
+            "uniqueId": "AQADT10AAs72KUpy"
+          }
+        },
+        "caption": "12  Die Besserwisser-Piñata + Das vernebelte Drachenfest"
+      }
+    },
+    {
+      "id": 788529152,
+      "chatId": -1001253186380,
+      "date": 1760599416,
+      "dateIso": "2025-10-16T07:23:36Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E11_Pups_Stop_the_Falling_Space_Junk_Pups_Stop_the.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11701,
+          "size": 792193847,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAvBpKbJTr6akvQf2zCh2A_fwhR0sCQAC9XQAAu-ZGErvyUaL_Ksx7DgE",
+          "uniqueId": "AgAD9XQAAu-ZGEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11700,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC8GkpslOvpqS9B_bMKHYD9_CFHSwJAAL1dAAC75kYSu_JRov8qzHsAQAHbQADOAQ",
+            "uniqueId": "AQAD9XQAAu-ZGEpy"
+          }
+        },
+        "caption": "11  Schrott aus dem All + Eine Kuckucksuhr für die Abenteuerbucht"
+      }
+    },
+    {
+      "id": 787480576,
+      "chatId": -1001253186380,
+      "date": 1760599410,
+      "dateIso": "2025-10-16T07:23:30Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E10_Liberty\u0027s_Mountain_Rescue_Pups_Save_a_Flying_Farmer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11703,
+          "size": 790213692,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAu9pKbJTBO1CyQ5wxpwzg7Sq-kfI3gACmlkAAlsBCUrFbY9RNcyPiDgE",
+          "uniqueId": "AgADmlkAAlsBCUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11702,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC72kpslME7ULJDnDGnDODtKr6R8jeAAKaWQACWwEJSsVtj1E1zI-IAQAHbQADOAQ",
+            "uniqueId": "AQADmlkAAlsBCUpy"
+          }
+        },
+        "caption": "10  Libertys Bergrettung + Ein Windrad hebt ab"
+      }
+    },
+    {
+      "id": 786432000,
+      "chatId": -1001253186380,
+      "date": 1760599403,
+      "dateIso": "2025-10-16T07:23:23Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E09_Pups_Stop_a_Gold_Finding_Machine_Pups_Help_Mayor.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11705,
+          "size": 789415836,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAu5pKbJTHWTLBjjtRiBQPJLPgK9LqgACxVUAAkUEAAFKAAEM6u_LJ6bsOAQ",
+          "uniqueId": "AgADxVUAAkUEAAFK"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11704,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC7mkpslMdZMsGOO1GIFA8ks-Ar0uqAALFVQACRQQAAUoAAQzq78snpuwBAAdtAAM4BA",
+            "uniqueId": "AQADxVUAAkUEAAFKcg"
+          }
+        },
+        "caption": "09  Auf der Suche nach der Goldader + Bürgermeister Besserwisser in der Patsche"
+      }
+    },
+    {
+      "id": 785383424,
+      "chatId": -1001253186380,
+      "date": 1760599396,
+      "dateIso": "2025-10-16T07:23:16Z",
+      "content": {
+        "duration": 1399,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E08_Jungle_Pups_Pups_Save_a_Golden_Sweetie_Jungle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11707,
+          "size": 791654991,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAu1pKbJTyYM2wX7grWrxtxfv8yJMUAACkWAAAkUE-Emt1OtR0TbiDTgE",
+          "uniqueId": "AgADkWAAAkUE-Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11706,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC7WkpslPJgzbBfuCtavG3F-_zIkxQAAKRYAACRQT4Sa3U61HRNuINAQAHbQADOAQ",
+            "uniqueId": "AQADkWAAAkUE-Ely"
+          }
+        },
+        "caption": "08  Die Dschungel-Helfer retten das goldene Schnuffinchen + Die Dschungel-Helfer retten die Riesenameisen"
+      }
+    },
+    {
+      "id": 784334848,
+      "chatId": -1001253186380,
+      "date": 1760599390,
+      "dateIso": "2025-10-16T07:23:10Z",
+      "content": {
+        "duration": 1399,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E07_Jungle_Pups_Pups_Save_the_Meerkat_Pirates_Jungle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11709,
+          "size": 792835137,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAuxpKbJTD5Wqq6fAFMzFFfiQkCy5oAAC91gAAhYL8UnZ9VzlPecClzgE",
+          "uniqueId": "AgAD91gAAhYL8Uk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11708,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC7GkpslMPlaqrp8AUzMUV-JCQLLmgAAL3WAACFgvxSdn1XOU95wKXAQAHbQADOAQ",
+            "uniqueId": "AQAD91gAAhYL8Uly"
+          }
+        },
+        "caption": "07  Die Dschungel-Helfer retten Piraten + Die Dschungel-Helfer retten das Lila-Nili-Pferd"
+      }
+    },
+    {
+      "id": 783286272,
+      "chatId": -1001253186380,
+      "date": 1760599384,
+      "dateIso": "2025-10-16T07:23:04Z",
+      "content": {
+        "duration": 1399,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E06_Jungle_Pups_Pups_Save_the_Big,_Big_Animals.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11711,
+          "size": 789069026,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAutpKbJTfu8GFJZEi9IN-Td-qh_VFAACM2AAAulS4EkirTrttBvBPDgE",
+          "uniqueId": "AgADM2AAAulS4Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11710,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC62kpslN-7wYUlkSL0g35N36qH9UUAAIzYAAC6VLgSSKtOu20G8E8AQAHbQADOAQ",
+            "uniqueId": "AQADM2AAAulS4Ely"
+          }
+        },
+        "caption": "06  Die Dschungel-Helfer in der Eiszeit"
+      }
+    },
+    {
+      "id": 782237696,
+      "chatId": -1001253186380,
+      "date": 1760599376,
+      "dateIso": "2025-10-16T07:22:56Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E05_Pups_Save_Their_Digi_Tal_Friends_Pups_Save_the.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11713,
+          "size": 782034837,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAuppKbJTIq6tyjpy0XYatEoFXL0IswACU1MAApGx2EnLb8nyFaskpjgE",
+          "uniqueId": "AgADU1MAApGx2Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11712,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC6mkpslMirq3KOnLRdhq0SgVcvQizAAJTUwACkbHYSctvyfIVqySmAQAHbQADOAQ",
+            "uniqueId": "AQADU1MAApGx2Ely"
+          }
+        },
+        "caption": "05  Die Digi-Tal-Nachbarn + Farbe weg, alles weg!"
+      }
+    },
+    {
+      "id": 781189120,
+      "chatId": -1001253186380,
+      "date": 1760599369,
+      "dateIso": "2025-10-16T07:22:49Z",
+      "content": {
+        "duration": 1393,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "PAW_Patrol_S10E04_Pups_Save_a_Windswept_Polar_Bear_Cub_Pups_Save.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11715,
+          "size": 793650083,
+          "remoteId": "BAACAgIAAx0CSrIbTAACAulpKbJT8lYUOHFc0OqZHu3VCMNbfwAC51UAAhI40Ekss0I3dTkCwjgE",
+          "uniqueId": "AgAD51UAAhI40Ek"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11714,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJKshtMAAIC6WkpslPyVhQ4cVzQ6pke7dUIw1t_AALnVQACEjjQSSyzQjd1OQLCAQAHbQADOAQ",
+            "uniqueId": "AQAD51UAAhI40Ely"
+          }
+        },
+        "caption": "04  Das Eisbärenjunge + Der Autokino-Abend"
+      }
+    }
+  ]
+}

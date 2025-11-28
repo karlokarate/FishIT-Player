@@ -1,0 +1,357 @@
+{
+  "chatId": -1002569318884,
+  "title": "Those who kill - Full HD",
+  "exportedAt": "2025-11-28T14:46:00.288837746Z",
+  "count": 12,
+  "messages": [
+    {
+      "id": 12582912,
+      "chatId": -1002569318884,
+      "date": 1746650280,
+      "dateIso": "2025-05-07T20:38:00Z",
+      "content": {
+        "duration": 2432,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E10 - Der letzte Schuss.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5096,
+          "size": 1786991662,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMMaSmyhsuu5vf1W3An-kiA_UUVXfIAAj11AAJJdNhI2zHMvEhMXBE4BA",
+          "uniqueId": "AgADPXUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5095,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwxpKbKGy67m9_VbcCf6SID9RRVd8gACPXUAAkl02EjbMcy8SExcEQEAB20AAzgE",
+            "uniqueId": "AQADPXUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E10 - Der letzte Schuss"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1002569318884,
+      "date": 1746650277,
+      "dateIso": "2025-05-07T20:37:57Z",
+      "content": {
+        "duration": 2451,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E09 - Der Space Cowboy.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17196,
+          "size": 1787379823,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMLaSmyhv-cj_9S_ASKIfDQW_JGjhEAAmV1AAJJdNhITfa6rwEKZd84BA",
+          "uniqueId": "AgADZXUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17195,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwtpKbKG_5yP_1L8BIoh8NBb8kaOEQACZXUAAkl02EhN9rqvAQpl3wEAB20AAzgE",
+            "uniqueId": "AQADZXUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E09 - Der Space Cowboy"
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1002569318884,
+      "date": 1746650274,
+      "dateIso": "2025-05-07T20:37:54Z",
+      "content": {
+        "duration": 2484,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E08 - Schlaflos.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17198,
+          "size": 1777623507,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMKaSmyht5GzJwZUjpk28n4tWYJqCcAAgl1AAJJdNhIW6D8LAw5U5c4BA",
+          "uniqueId": "AgADCXUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17197,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwppKbKG3kbMnBlSOmTbyfi1ZgmoJwACCXUAAkl02EhboPwsDDlTlwEAB20AAzgE",
+            "uniqueId": "AQADCXUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E08 - Schlaflos"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1002569318884,
+      "date": 1746650271,
+      "dateIso": "2025-05-07T20:37:51Z",
+      "content": {
+        "duration": 2482,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E07 - Wir sind im Himmel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17200,
+          "size": 1787759416,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMJaSmyhl7osojCeHPnjk-nLhTsDA0AApN1AAJJdNhIybJISOvqpNo4BA",
+          "uniqueId": "AgADk3UAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17199,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwlpKbKGXuiyiMJ4c-eOT6cuFOwMDQACk3UAAkl02EjJskhI6-qk2gEAB20AAzgE",
+            "uniqueId": "AQADk3UAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E07 - Wir sind im Himmel"
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1002569318884,
+      "date": 1746650267,
+      "dateIso": "2025-05-07T20:37:47Z",
+      "content": {
+        "duration": 2467,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E06 - Immer der Vater.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17202,
+          "size": 1787016811,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMIaSmyhpja8nwVTWA7anlRUiztxJMAAiB1AAJJdNhITE8iXLB76-o4BA",
+          "uniqueId": "AgADIHUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17201,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwhpKbKGmNryfBVNYDtqeVFSLO3EkwACIHUAAkl02EhMTyJcsHvr6gEAB20AAzgE",
+            "uniqueId": "AQADIHUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E06 - Immer der Vater"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1002569318884,
+      "date": 1746650264,
+      "dateIso": "2025-05-07T20:37:44Z",
+      "content": {
+        "duration": 2482,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E05 - Das silberne Schwein.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17204,
+          "size": 1797596112,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMHaSmyhiq8fnu8ETN8XagmSg3RuXsAAiJ2AAJJdNhI752vtsHd-H04BA",
+          "uniqueId": "AgADInYAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17203,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwdpKbKGKrx-e7wRM3xdqCZKDdG5ewACInYAAkl02Ejvna-2wd34fQEAB20AAzgE",
+            "uniqueId": "AQADInYAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E05 - Das silberne Schwein"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1002569318884,
+      "date": 1746650261,
+      "dateIso": "2025-05-07T20:37:41Z",
+      "content": {
+        "duration": 2483,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Those who kill - S01 E04 - Menschen und Uhren.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17206,
+          "size": 1787957244,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMGaSmyhlpp0OJjid_juwg84JyxxskAArp1AAJJdNhIDAiXr2UTQoc4BA",
+          "uniqueId": "AgADunUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17205,
+            "size": 7084,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwZpKbKGWmnQ4mOJ3-O7CDzgnLHGyQACunUAAkl02EgMCJevZRNChwEAB20AAzgE",
+            "uniqueId": "AQADunUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E04 - Menschen und Uhren"
+      }
+    },
+    {
+      "id": 5242880,
+      "chatId": -1002569318884,
+      "date": 1746650258,
+      "dateIso": "2025-05-07T20:37:38Z",
+      "content": {
+        "duration": 2483,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "Those who kill - S01 E03 - Unter der Brücke.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17208,
+          "size": 1794690938,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMFaSmyhsxB8zQayOVU5CKDnDco2JgAAt51AAJJdNhIYlHeVpwKWk04BA",
+          "uniqueId": "AgAD3nUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 17207,
+            "size": 6901,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwVpKbKGzEHzNBrI5VTkIoOcNyjYmAAC3nUAAkl02EhiUd5WnApaTQEAB20AAzgE",
+            "uniqueId": "AQAD3nUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E03 - Unter der Brücke"
+      }
+    },
+    {
+      "id": 4194304,
+      "chatId": -1002569318884,
+      "date": 1746650255,
+      "dateIso": "2025-05-07T20:37:35Z",
+      "content": {
+        "duration": 2425,
+        "width": 1916,
+        "height": 1076,
+        "fileName": "Those who kill - S01 E02 - Ich bin.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17210,
+          "size": 1780382615,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMEaSmyhnQmF2Nb5sDws6LBF-gfCfMAAhJ1AAJJdNhI2GfSlFgbJJc4BA",
+          "uniqueId": "AgADEnUAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 17209,
+            "size": 7016,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwRpKbKGdCYXY1vmwPCzosEX6B8J8wACEnUAAkl02EjYZ9KUWBsklwEAB20AAzgE",
+            "uniqueId": "AQADEnUAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E02 - Ich bin …"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1002569318884,
+      "date": 1746650252,
+      "dateIso": "2025-05-07T20:37:32Z",
+      "content": {
+        "duration": 2832,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "Those who kill - S01 E01 - Gekreuzte Arme.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 17212,
+          "size": 1797229783,
+          "remoteId": "BAACAgIAAyEFAASZJLHkAAMDaSmyhpHVfw9_0Ntr5mj7me-FmvcAAgJ2AAJJdNhIqttMDmg4oz84BA",
+          "uniqueId": "AgADAnYAAkl02Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 17211,
+            "size": 6901,
+            "remoteId": "AAMCAgADIQUABJkkseQAAwNpKbKGkdV_D3_Q22vmaPuZ74Wa9wACAnYAAkl02Eiq20wOaDijPwEAB20AAzgE",
+            "uniqueId": "AQADAnYAAkl02Ehy"
+          }
+        },
+        "caption": "Those who kill - S01 E01 - Gekreuzte Arme"
+      }
+    },
+    {
+      "id": 2097152,
+      "chatId": -1002569318884,
+      "date": 1746650248,
+      "dateIso": "2025-05-07T20:37:28Z",
+      "text": "Catherine Jensen wurde kürzlich zur Mordermittlerin befördert und beschäftigt sich mit der Jagd auf Serienkiller. Seit ihr Bruder verschwunden ist und ihr Stiefvater in Verdacht geriet, selbst ein Serienmörder zu sein, verfügt Jensen über ein starkes Einfühlungsvermögen in das Schicksal von Mordopfern. Weniger sensibel ist sie im Umgang mit ihren Vorgesetzten, da sie des Öfteren Grenzen überschreitet, um den Opfern Gerechtigkeit zu verschaffen.\n\nAn ihrer Seite ermittelt der forensische Psychologe Thomas Schaeffer. Auch er entwickelt stets emotionale Beziehungen zu ihren Fällen, allerdings versetzt er sich eher in die Rolle der Täter. Die Verbindung zwischen den beiden Ermittlern hilft ihnen, ihre inneren Dämonen im Zaum zu halten, könnte aber auch neue Verletzungen verursachen.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1002569318884
+      },
+      "chatId": -1002569318884,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1746650186,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Those who kill - Full HD"
+      }
+    }
+  ]
+}

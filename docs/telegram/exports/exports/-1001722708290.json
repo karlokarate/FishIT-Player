@@ -1,0 +1,429 @@
+{
+  "chatId": -1001722708290,
+  "title": "Infiltration | HD",
+  "exportedAt": "2025-11-28T14:46:59.734163114Z",
+  "count": 14,
+  "messages": [
+    {
+      "id": 98566144,
+      "chatId": -1001722708290,
+      "date": 1639260698,
+      "dateIso": "2021-12-11T22:11:38Z",
+      "text": "Original Hochgeladen von Join The Links 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 97517568,
+      "chatId": -1001722708290,
+      "date": 1639260697,
+      "dateIso": "2021-12-11T22:11:37Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 480,
+            "file": {
+              "id": 18317,
+              "size": 50262,
+              "remoteId": "AgACAgIAAx0CZq5xQgADXWkpsuItI7bWYZUOuw3Fp1J7st-QAAJssjEbO_VgS9n6sSu2qa2hAQADAgADeQADOAQ",
+              "uniqueId": "AQADbLIxGzv1YEt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 18316,
+              "size": 53000,
+              "remoteId": "AgACAgIAAx0CZq5xQgADXWkpsuItI7bWYZUOuw3Fp1J7st-QAAJssjEbO_VgS9n6sSu2qa2hAQADAgADeAADOAQ",
+              "uniqueId": "AQADbLIxGzv1YEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 18315,
+              "size": 10884,
+              "remoteId": "AgACAgIAAx0CZq5xQgADXWkpsuItI7bWYZUOuw3Fp1J7st-QAAJssjEbO_VgS9n6sSu2qa2hAQADAgADbQADOAQ",
+              "uniqueId": "AQADbLIxGzv1YEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 94371840,
+      "chatId": -1001722708290,
+      "date": 1639246505,
+      "dateIso": "2021-12-11T18:15:05Z",
+      "content": {
+        "duration": 3476,
+        "width": 1356,
+        "height": 678,
+        "fileName": "Infiltration - S01 E10 - Der Kompass.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23497,
+          "size": 2015650762,
+          "remoteId": "BAACAgEAAx0CZq5xQgADWmkpsuKEMZ0865wdSLvjQQ3d1cB1AAIjAgACB5OpRaoz68bKyvX7OAQ",
+          "uniqueId": "AgADIwIAAgeTqUU"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23496,
+            "size": 6388,
+            "remoteId": "AAMCAQADHQJmrnFCAANaaSmy4oQxnTzrnB1Iu-NBDd3VwHUAAiMCAAIHk6lFqjPrxsrK9fsBAAdtAAM4BA",
+            "uniqueId": "AQADIwIAAgeTqUVy"
+          }
+        },
+        "caption": "Infiltration - S01 E10 - Der Kompass"
+      }
+    },
+    {
+      "id": 78643200,
+      "chatId": -1001722708290,
+      "date": 1638557592,
+      "dateIso": "2021-12-03T18:53:12Z",
+      "content": {
+        "duration": 3480,
+        "width": 1356,
+        "height": 678,
+        "fileName": "Infiltration - S01E09 - Gegenangriff.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23499,
+          "size": 1835082859,
+          "remoteId": "BAACAgIAAx0CZq5xQgADS2kpsuIMoAWSK6Zdg7s56j8jJI22AAL7EgAChC5QScRQS6AwoqfeOAQ",
+          "uniqueId": "AgAD-xIAAoQuUEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23498,
+            "size": 587,
+            "remoteId": "AAMCAgADHQJmrnFCAANLaSmy4gygBZIrpl2DuznqPyMkjbYAAvsSAAKELlBJxFBLoDCip94BAAdtAAM4BA",
+            "uniqueId": "AQAD-xIAAoQuUEly"
+          }
+        },
+        "caption": "Infiltration - S01E09 - Gegenangriff"
+      }
+    },
+    {
+      "id": 73400320,
+      "chatId": -1001722708290,
+      "date": 1637870515,
+      "dateIso": "2021-11-25T20:01:55Z",
+      "content": {
+        "duration": 2889,
+        "width": 1356,
+        "height": 678,
+        "fileName": "Infiltration - S01 E08 - Übertragung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23501,
+          "size": 1934424770,
+          "remoteId": "BAACAgIAAx0CZq5xQgADRmkpsuLZu7WA6hCYk4fHMQOrjW9GAAKnFgACNgYAAUlNndKoeUl1bTgE",
+          "uniqueId": "AgADpxYAAjYGAAFJ"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23500,
+            "size": 6388,
+            "remoteId": "AAMCAgADHQJmrnFCAANGaSmy4tm7tYDqEJiTh8cxA6uNb0YAAqcWAAI2BgABSU2d0qh5SXVtAQAHbQADOAQ",
+            "uniqueId": "AQADpxYAAjYGAAFJcg"
+          }
+        },
+        "caption": "Infiltration - S01 E08 - Übertragung"
+      }
+    },
+    {
+      "id": 66060288,
+      "chatId": -1001722708290,
+      "date": 1637523071,
+      "dateIso": "2021-11-21T19:31:11Z",
+      "content": {
+        "duration": 2893,
+        "width": 1356,
+        "height": 678,
+        "fileName": "Infiltration - S01 E07 - Der letzte Flug.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23503,
+          "size": 1534088897,
+          "remoteId": "BAACAgIAAx0CZq5xQgADP2kpsuJMwBZAEErSq6qNfOWPSIrfAAJ0EgAC2azZSK4O2A2fLLr6OAQ",
+          "uniqueId": "AgADdBIAAtms2Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23502,
+            "size": 6388,
+            "remoteId": "AAMCAgADHQJmrnFCAAM_aSmy4kzAFkAQStKrqo185Y9Iit8AAnQSAALZrNlIrg7YDZ8suvoBAAdtAAM4BA",
+            "uniqueId": "AQADdBIAAtms2Uhy"
+          }
+        },
+        "caption": "Infiltration - S01 E07 - Der letzte Flug"
+      }
+    },
+    {
+      "id": 54525952,
+      "chatId": -1001722708290,
+      "date": 1637025367,
+      "dateIso": "2021-11-16T01:16:07Z",
+      "content": {
+        "duration": 1985,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Infiltration - S01 E06 - Leise.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23505,
+          "size": 2009405185,
+          "remoteId": "BAACAgIAAx0CZq5xQgADNGkpsuIqvL1PrvOfaJIFeusR1fiuAAI8EAACOB6YSMxxp1PCPWNvOAQ",
+          "uniqueId": "AgADPBAAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23504,
+            "size": 6393,
+            "remoteId": "AAMCAgADHQJmrnFCAAM0aSmy4iq8vU-u859okgV66xHV-K4AAjwQAAI4HphIzHGnU8I9Y28BAAdtAAM4BA",
+            "uniqueId": "AQADPBAAAjgemEhy"
+          }
+        },
+        "caption": "Infiltration - S01 E06 - Leise"
+      }
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001722708290,
+      "date": 1637025364,
+      "dateIso": "2021-11-16T01:16:04Z",
+      "content": {
+        "duration": 2472,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Infiltration - S01 E05 - Gewissheit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23507,
+          "size": 1997750273,
+          "remoteId": "BAACAgIAAx0CZq5xQgADM2kpsuLA1orsRduE2xPW_Nj6niQTAAIsEAACOB6YSEFzln9Ma0hSOAQ",
+          "uniqueId": "AgADLBAAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23506,
+            "size": 6393,
+            "remoteId": "AAMCAgADHQJmrnFCAAMzaSmy4sDWiuxF24TbE9b82PqeJBMAAiwQAAI4HphIQXOWf0xrSFIBAAdtAAM4BA",
+            "uniqueId": "AQADLBAAAjgemEhy"
+          }
+        },
+        "caption": "Infiltration - S01 E05 - Gewissheit"
+      }
+    },
+    {
+      "id": 52428800,
+      "chatId": -1001722708290,
+      "date": 1637025361,
+      "dateIso": "2021-11-16T01:16:01Z",
+      "content": {
+        "duration": 3387,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Infiltration - S01 E04 - Oben und unten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23509,
+          "size": 2045953597,
+          "remoteId": "BAACAgIAAx0CZq5xQgADMmkpsuIRW34WpG0PAh8K96_QN4J3AAILEQACOB6YSJwRWbDuvpE6OAQ",
+          "uniqueId": "AgADCxEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23508,
+            "size": 6393,
+            "remoteId": "AAMCAgADHQJmrnFCAAMyaSmy4hFbfhakbQ8CHwr3r9A3gncAAgsRAAI4HphInBFZsO6-kToBAAdtAAM4BA",
+            "uniqueId": "AQADCxEAAjgemEhy"
+          }
+        },
+        "caption": "Infiltration - S01 E04 - Oben und unten"
+      }
+    },
+    {
+      "id": 51380224,
+      "chatId": -1001722708290,
+      "date": 1637025357,
+      "dateIso": "2021-11-16T01:15:57Z",
+      "content": {
+        "duration": 3135,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Infiltration - S01 E03 - Wajo.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23511,
+          "size": 2025612910,
+          "remoteId": "BAACAgIAAx0CZq5xQgADMWkpsuIG7H6FJvZ7tBIEHG5FxKo3AAIKEQACOB6YSBacc6X0yHd4OAQ",
+          "uniqueId": "AgADChEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23510,
+            "size": 6393,
+            "remoteId": "AAMCAgADHQJmrnFCAAMxaSmy4gbsfoUm9nu0EgQcbkXEqjcAAgoRAAI4HphIFpxzpfTId3gBAAdtAAM4BA",
+            "uniqueId": "AQADChEAAjgemEhy"
+          }
+        },
+        "caption": "Infiltration - S01 E03 - Wajo"
+      }
+    },
+    {
+      "id": 50331648,
+      "chatId": -1001722708290,
+      "date": 1637025354,
+      "dateIso": "2021-11-16T01:15:54Z",
+      "content": {
+        "duration": 3463,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Infiltration - S01 E02 - Kontakt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23513,
+          "size": 2026149419,
+          "remoteId": "BAACAgIAAx0CZq5xQgADMGkpsuIkr7WKtrzUzhXDYBK9U0sLAAIJEQACOB6YSPWc3qF32SA8OAQ",
+          "uniqueId": "AgADCREAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23512,
+            "size": 6393,
+            "remoteId": "AAMCAgADHQJmrnFCAAMwaSmy4iSvtYq2vNTOFcNgEr1TSwsAAgkRAAI4HphI9ZzeoXfZIDwBAAdtAAM4BA",
+            "uniqueId": "AQADCREAAjgemEhy"
+          }
+        },
+        "caption": "Infiltration - S01 E02 - Kontakt"
+      }
+    },
+    {
+      "id": 49283072,
+      "chatId": -1001722708290,
+      "date": 1637025351,
+      "dateIso": "2021-11-16T01:15:51Z",
+      "content": {
+        "duration": 3350,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Infiltration - S01 E01 - Zeichen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 23515,
+          "size": 2015964453,
+          "remoteId": "BAACAgIAAx0CZq5xQgADL2kpsuIqNhs2ZAABjgL8NlElnevjWAACCBEAAjgemEihRt8FdWYVijgE",
+          "uniqueId": "AgADCBEAAjgemEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 23514,
+            "size": 6393,
+            "remoteId": "AAMCAgADHQJmrnFCAAMvaSmy4io2GzZkAAGOAvw2USWd6-NYAAIIEQACOB6YSKFG3wV1ZhWKAQAHbQADOAQ",
+            "uniqueId": "AQADCBEAAjgemEhy"
+          }
+        },
+        "caption": "Infiltration - S01 E01 - Zeichen"
+      }
+    },
+    {
+      "id": 4194304,
+      "chatId": -1001722708290,
+      "date": 1635541932,
+      "dateIso": "2021-10-29T21:12:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 390,
+            "height": 234,
+            "file": {
+              "id": 23517,
+              "size": 12164,
+              "remoteId": "AgACAgIAAx0CZq5xQgADBGkpsuIpR9Z5Lk9uN1Rd52QEcOQXAALFtjEbdrfgS7lQslpe4cPgAQADAgADeAADOAQ",
+              "uniqueId": "AQADxbYxG3a34Et9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 192,
+            "file": {
+              "id": 23516,
+              "size": 10920,
+              "remoteId": "AgACAgIAAx0CZq5xQgADBGkpsuIpR9Z5Lk9uN1Rd52QEcOQXAALFtjEbdrfgS7lQslpe4cPgAQADAgADbQADOAQ",
+              "uniqueId": "AQADxbYxG3a34Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001722708290
+      },
+      "chatId": -1001722708290,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1635541598,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Infiltration"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1173 @@
+{
+  "chatId": -1001710102248,
+  "title": "Project Elixir | Updates",
+  "exportedAt": "2025-11-28T14:45:48.598542575Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 4027580416,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1757055676,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 4026531840
+      }
+    },
+    {
+      "id": 4026531840,
+      "chatId": -1001710102248,
+      "date": 1757055665,
+      "dateIso": "2025-09-05T07:01:05Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1920,
+            "height": 852,
+            "file": {
+              "id": 15079,
+              "size": 151604,
+              "remoteId": "AgACAgUAAx0CZbpe_gABCNr3aSmyfAGh4UKzvbPAyfmtow1kaW8AAk3OMRt29MhVG8zPIzHy7rkBAAMCAAN3AAM4BA",
+              "uniqueId": "AQADTc4xG3b0yFV8"
+            }
+          },
+          {
+            "width": 1280,
+            "height": 568,
+            "file": {
+              "id": 15078,
+              "size": 127462,
+              "remoteId": "AgACAgUAAx0CZbpe_gABCNr3aSmyfAGh4UKzvbPAyfmtow1kaW8AAk3OMRt29MhVG8zPIzHy7rkBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADTc4xG3b0yFV-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 355,
+            "file": {
+              "id": 15077,
+              "size": 55688,
+              "remoteId": "AgACAgUAAx0CZbpe_gABCNr3aSmyfAGh4UKzvbPAyfmtow1kaW8AAk3OMRt29MhVG8zPIzHy7rkBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADTc4xG3b0yFV9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 142,
+            "file": {
+              "id": 15076,
+              "size": 12358,
+              "remoteId": "AgACAgUAAx0CZbpe_gABCNr3aSmyfAGh4UKzvbPAyfmtow1kaW8AAk3OMRt29MhVG8zPIzHy7rkBAAMCAANtAAM4BA",
+              "uniqueId": "AQADTc4xG3b0yFVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4025483264,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1757055665,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 8723,
+        "forwardCount": 0,
+        "replyInfo": {
+          "replyCount": 0,
+          "recentReplierIds": [],
+          "lastReadInboxMessageId": 0,
+          "lastReadOutboxMessageId": 0,
+          "lastMessageId": 0
+        }
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6338876617951020328,
+          "setId": 3653789353710190626,
+          "width": 512,
+          "height": 288,
+          "emoji": "🤩",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 15080,
+              "size": 184,
+              "expectedSize": 184,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJl7hboAAIO12kpsmnJMbgHs0WAno5DKYrjHMjYAAIoBQACszb4V-yu1eK37cuGAQAHbQADOAQ",
+                "uniqueId": "AQADKAUAArM2-Fdy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 184
+              }
+            }
+          },
+          "sticker": {
+            "id": 15081,
+            "size": 18345,
+            "expectedSize": 18345,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CZe4W6AACDtdpKbJpyTG4B7NFgJ6OQymK4xzI2AACKAUAArM2-FfsrtXit-3LhjgE",
+              "uniqueId": "AgADKAUAArM2-Fc",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18345
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 4024434688,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1753961007,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 4018143232
+      }
+    },
+    {
+      "id": 4023386112,
+      "chatId": -1001710102248,
+      "date": 1753960994,
+      "dateIso": "2025-07-31T11:23:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15084,
+              "size": 67703,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDv1pKbJpjFgrPMyOeAX3zTo2m85nbwACPMQxGyLtWFRRoGj2VHsSQgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADPMQxGyLtWFR-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15083,
+              "size": 40230,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDv1pKbJpjFgrPMyOeAX3zTo2m85nbwACPMQxGyLtWFRRoGj2VHsSQgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADPMQxGyLtWFR9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15082,
+              "size": 10196,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDv1pKbJpjFgrPMyOeAX3zTo2m85nbwACPMQxGyLtWFRRoGj2VHsSQgEAAwIAA20AAzgE",
+              "uniqueId": "AQADPMQxGyLtWFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4022337536,
+      "chatId": -1001710102248,
+      "date": 1753960994,
+      "dateIso": "2025-07-31T11:23:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15087,
+              "size": 31281,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvxpKbJpmGPOWB4C6QorIJSTyFqfhgACSsQxGyLtWFRXu9y23oSBUAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADSsQxGyLtWFR-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15086,
+              "size": 18633,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvxpKbJpmGPOWB4C6QorIJSTyFqfhgACSsQxGyLtWFRXu9y23oSBUAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADSsQxGyLtWFR9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15085,
+              "size": 5670,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvxpKbJpmGPOWB4C6QorIJSTyFqfhgACSsQxGyLtWFRXu9y23oSBUAEAAwIAA20AAzgE",
+              "uniqueId": "AQADSsQxGyLtWFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4021288960,
+      "chatId": -1001710102248,
+      "date": 1753960994,
+      "dateIso": "2025-07-31T11:23:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15090,
+              "size": 49601,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvtpKbJpuRHLspsHQFAYMkIHTvEkDwACO8QxGyLtWFRJiTjzKyKhRAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADO8QxGyLtWFR-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15089,
+              "size": 28472,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvtpKbJpuRHLspsHQFAYMkIHTvEkDwACO8QxGyLtWFRJiTjzKyKhRAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADO8QxGyLtWFR9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15088,
+              "size": 8310,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvtpKbJpuRHLspsHQFAYMkIHTvEkDwACO8QxGyLtWFRJiTjzKyKhRAEAAwIAA20AAzgE",
+              "uniqueId": "AQADO8QxGyLtWFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4020240384,
+      "chatId": -1001710102248,
+      "date": 1753960994,
+      "dateIso": "2025-07-31T11:23:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15093,
+              "size": 88318,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvppKbJplE8zIXYlhMHsD2iqhRc5-gACOsQxGyLtWFRX_2DmxV5drQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADOsQxGyLtWFR-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15092,
+              "size": 53943,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvppKbJplE8zIXYlhMHsD2iqhRc5-gACOsQxGyLtWFRX_2DmxV5drQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADOsQxGyLtWFR9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15091,
+              "size": 15173,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvppKbJplE8zIXYlhMHsD2iqhRc5-gACOsQxGyLtWFRX_2DmxV5drQEAAwIAA20AAzgE",
+              "uniqueId": "AQADOsQxGyLtWFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4019191808,
+      "chatId": -1001710102248,
+      "date": 1753960994,
+      "dateIso": "2025-07-31T11:23:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15096,
+              "size": 44981,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvlpKbJpmOjjqhpdOVQbTASU3FXy_wACOcQxGyLtWFTTEUP22wQ99AEAAwIAA3kAAzgE",
+              "uniqueId": "AQADOcQxGyLtWFR-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15095,
+              "size": 26607,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvlpKbJpmOjjqhpdOVQbTASU3FXy_wACOcQxGyLtWFTTEUP22wQ99AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADOcQxGyLtWFR9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15094,
+              "size": 7830,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvlpKbJpmOjjqhpdOVQbTASU3FXy_wACOcQxGyLtWFTTEUP22wQ99AEAAwIAA20AAzgE",
+              "uniqueId": "AQADOcQxGyLtWFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4018143232,
+      "chatId": -1001710102248,
+      "date": 1753960994,
+      "dateIso": "2025-07-31T11:23:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15099,
+              "size": 71787,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvhpKbJpGKoEl4Mtj22BAAFMneV3ERkAAjjEMRsi7VhUr5keplKOqDIBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADOMQxGyLtWFR-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15098,
+              "size": 42844,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvhpKbJpGKoEl4Mtj22BAAFMneV3ERkAAjjEMRsi7VhUr5keplKOqDIBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADOMQxGyLtWFR9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15097,
+              "size": 12425,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvhpKbJpGKoEl4Mtj22BAAFMneV3ERkAAjjEMRsi7VhUr5keplKOqDIBAAMCAANtAAM4BA",
+              "uniqueId": "AQADOMQxGyLtWFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4017094656,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1753960993,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 9958,
+        "forwardCount": 1,
+        "replyInfo": {
+          "replyCount": 0,
+          "recentReplierIds": [],
+          "lastReadInboxMessageId": 0,
+          "lastReadOutboxMessageId": 0,
+          "lastMessageId": 0
+        }
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6338876617951020328,
+          "setId": 3653789353710190626,
+          "width": 512,
+          "height": 288,
+          "emoji": "🤩",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 15080,
+              "size": 184,
+              "expectedSize": 184,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJl7hboAAIO12kpsmnJMbgHs0WAno5DKYrjHMjYAAIoBQACszb4V-yu1eK37cuGAQAHbQADOAQ",
+                "uniqueId": "AQADKAUAArM2-Fdy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 184
+              }
+            }
+          },
+          "sticker": {
+            "id": 15081,
+            "size": 18345,
+            "expectedSize": 18345,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CZe4W6AACDtdpKbJpyTG4B7NFgJ6OQymK4xzI2AACKAUAArM2-FfsrtXit-3LhjgE",
+              "uniqueId": "AgADKAUAArM2-Fc",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18345
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 4016046080,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1753959976,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 4008706048
+      }
+    },
+    {
+      "id": 4014997504,
+      "chatId": -1001710102248,
+      "date": 1751401578,
+      "dateIso": "2025-07-01T20:26:18Z",
+      "text": "- OnePlus Nord 4 (avalon) \n- Samsung Galaxy S23 Ultra (dm3q)\n\nMentioned devices has been added to official list\n\nMantainership Application of Project Elixir シ \nhttps://docs.google.com/forms/d/1eme8i0nXFNpv2fEfbskoANIwLUGy4KcYXssluWv6obE",
+      "genres": []
+    },
+    {
+      "id": 4013948928,
+      "chatId": -1001710102248,
+      "date": 1750275960,
+      "dateIso": "2025-06-18T19:46:00Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15102,
+              "size": 52943,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvRpKbJpsoBWrpTbvpkhuYzNBvWUDgACXsgxG6MUiFaReOEgU5C4wgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADXsgxG6MUiFZ-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15101,
+              "size": 29598,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvRpKbJpsoBWrpTbvpkhuYzNBvWUDgACXsgxG6MUiFaReOEgU5C4wgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADXsgxG6MUiFZ9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15100,
+              "size": 8263,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvRpKbJpsoBWrpTbvpkhuYzNBvWUDgACXsgxG6MUiFaReOEgU5C4wgEAAwIAA20AAzgE",
+              "uniqueId": "AQADXsgxG6MUiFZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4012900352,
+      "chatId": -1001710102248,
+      "date": 1750275960,
+      "dateIso": "2025-06-18T19:46:00Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15105,
+              "size": 30859,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvNpKbJpT0Feb_IYOnkgJkyoAs3lNwACmMMxG6ycmVYGUOML34ajpwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADmMMxG6ycmVZ-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15104,
+              "size": 18499,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvNpKbJpT0Feb_IYOnkgJkyoAs3lNwACmMMxG6ycmVYGUOML34ajpwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADmMMxG6ycmVZ9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15103,
+              "size": 5622,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvNpKbJpT0Feb_IYOnkgJkyoAs3lNwACmMMxG6ycmVYGUOML34ajpwEAAwIAA20AAzgE",
+              "uniqueId": "AQADmMMxG6ycmVZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4011851776,
+      "chatId": -1001710102248,
+      "date": 1750275960,
+      "dateIso": "2025-06-18T19:46:00Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15108,
+              "size": 76664,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvJpKbJptN7P2ihxcD-9BjMwF47LgQACXMgxG6MUiFYWycXImTIUVgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADXMgxG6MUiFZ-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15107,
+              "size": 41241,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvJpKbJptN7P2ihxcD-9BjMwF47LgQACXMgxG6MUiFYWycXImTIUVgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADXMgxG6MUiFZ9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15106,
+              "size": 10598,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvJpKbJptN7P2ihxcD-9BjMwF47LgQACXMgxG6MUiFYWycXImTIUVgEAAwIAA20AAzgE",
+              "uniqueId": "AQADXMgxG6MUiFZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4010803200,
+      "chatId": -1001710102248,
+      "date": 1750275959,
+      "dateIso": "2025-06-18T19:45:59Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15111,
+              "size": 151534,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvFpKbJp0dDClEFQqrzomM0AAfkt55YAAlvIMRujFIhWSN90WolaAAH6AQADAgADeQADOAQ",
+              "uniqueId": "AQADW8gxG6MUiFZ-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15110,
+              "size": 83457,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvFpKbJp0dDClEFQqrzomM0AAfkt55YAAlvIMRujFIhWSN90WolaAAH6AQADAgADeAADOAQ",
+              "uniqueId": "AQADW8gxG6MUiFZ9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15109,
+              "size": 18866,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvFpKbJp0dDClEFQqrzomM0AAfkt55YAAlvIMRujFIhWSN90WolaAAH6AQADAgADbQADOAQ",
+              "uniqueId": "AQADW8gxG6MUiFZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4009754624,
+      "chatId": -1001710102248,
+      "date": 1750275959,
+      "dateIso": "2025-06-18T19:45:59Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15114,
+              "size": 45244,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvBpKbJpeWTzhcYBXM2CeJZPJ1mczgACWsgxG6MUiFbwYfizF30axAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADWsgxG6MUiFZ-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15113,
+              "size": 26949,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvBpKbJpeWTzhcYBXM2CeJZPJ1mczgACWsgxG6MUiFbwYfizF30axAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADWsgxG6MUiFZ9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15112,
+              "size": 7756,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDvBpKbJpeWTzhcYBXM2CeJZPJ1mczgACWsgxG6MUiFbwYfizF30axAEAAwIAA20AAzgE",
+              "uniqueId": "AQADWsgxG6MUiFZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4008706048,
+      "chatId": -1001710102248,
+      "date": 1750275959,
+      "dateIso": "2025-06-18T19:45:59Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15117,
+              "size": 149130,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDu9pKbJp2wh-_hZU1qGxG__m9zc6YgACq8MxG4lbkVbONDB_VP7HwAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADq8MxG4lbkVZ-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15116,
+              "size": 81420,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDu9pKbJp2wh-_hZU1qGxG__m9zc6YgACq8MxG4lbkVbONDB_VP7HwAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADq8MxG4lbkVZ9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15115,
+              "size": 18067,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDu9pKbJp2wh-_hZU1qGxG__m9zc6YgACq8MxG4lbkVbONDB_VP7HwAEAAwIAA20AAzgE",
+              "uniqueId": "AQADq8MxG4lbkVZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4007657472,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1750275959,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 12131,
+        "forwardCount": 0,
+        "replyInfo": {
+          "replyCount": 0,
+          "recentReplierIds": [],
+          "lastReadInboxMessageId": 0,
+          "lastReadOutboxMessageId": 0,
+          "lastMessageId": 0
+        }
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6338876617951020328,
+          "setId": 3653789353710190626,
+          "width": 512,
+          "height": 288,
+          "emoji": "🤩",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 15080,
+              "size": 184,
+              "expectedSize": 184,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJl7hboAAIO12kpsmnJMbgHs0WAno5DKYrjHMjYAAIoBQACszb4V-yu1eK37cuGAQAHbQADOAQ",
+                "uniqueId": "AQADKAUAArM2-Fdy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 184
+              }
+            }
+          },
+          "sticker": {
+            "id": 15081,
+            "size": 18345,
+            "expectedSize": 18345,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CZe4W6AACDtdpKbJpyTG4B7NFgJ6OQymK4xzI2AACKAUAArM2-FfsrtXit-3LhjgE",
+              "uniqueId": "AgADKAUAArM2-Fc",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18345
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 4006608896,
+      "chatId": -1001710102248,
+      "date": 1747856297,
+      "dateIso": "2025-05-21T19:38:17Z",
+      "text": "RIP legacy checks in Play Integrity API 🕊️\n\nNow Device verdict is like old Strong.",
+      "genres": []
+    },
+    {
+      "id": 4005560320,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1747856297,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 15706,
+        "forwardCount": 0,
+        "replyInfo": {
+          "replyCount": 0,
+          "recentReplierIds": [],
+          "lastReadInboxMessageId": 0,
+          "lastReadOutboxMessageId": 0,
+          "lastMessageId": 0
+        }
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6338876617951020328,
+          "setId": 3653789353710190626,
+          "width": 512,
+          "height": 288,
+          "emoji": "🤩",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 15080,
+              "size": 184,
+              "expectedSize": 184,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJl7hboAAIO12kpsmnJMbgHs0WAno5DKYrjHMjYAAIoBQACszb4V-yu1eK37cuGAQAHbQADOAQ",
+                "uniqueId": "AQADKAUAArM2-Fdy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 184
+              }
+            }
+          },
+          "sticker": {
+            "id": 15081,
+            "size": 18345,
+            "expectedSize": 18345,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CZe4W6AACDtdpKbJpyTG4B7NFgJ6OQymK4xzI2AACKAUAArM2-FfsrtXit-3LhjgE",
+              "uniqueId": "AgADKAUAArM2-Fc",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18345
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 4004511744,
+      "senderId": {
+        "chatId": -1001710102248
+      },
+      "chatId": -1001710102248,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1747224115,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 3995074560
+      }
+    },
+    {
+      "id": 4003463168,
+      "chatId": -1001710102248,
+      "date": 1747224113,
+      "dateIso": "2025-05-14T12:01:53Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15120,
+              "size": 69587,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDuppKbJpU4eATpjfKQlBxXtreBK-mQACfccxG0J2KFV9eJ-qYsPagAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADfccxG0J2KFV-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15119,
+              "size": 41949,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDuppKbJpU4eATpjfKQlBxXtreBK-mQACfccxG0J2KFV9eJ-qYsPagAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADfccxG0J2KFV9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15118,
+              "size": 11013,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDuppKbJpU4eATpjfKQlBxXtreBK-mQACfccxG0J2KFV9eJ-qYsPagAEAAwIAA20AAzgE",
+              "uniqueId": "AQADfccxG0J2KFVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4002414592,
+      "chatId": -1001710102248,
+      "date": 1747224113,
+      "dateIso": "2025-05-14T12:01:53Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 591,
+            "height": 1280,
+            "file": {
+              "id": 15123,
+              "size": 104477,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDulpKbJpJlhsVHLjF10Zag68wjh9LgACfMcxG0J2KFWPIdmxUWd-2QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADfMcxG0J2KFV-"
+            }
+          },
+          {
+            "width": 369,
+            "height": 800,
+            "file": {
+              "id": 15122,
+              "size": 59147,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDulpKbJpJlhsVHLjF10Zag68wjh9LgACfMcxG0J2KFWPIdmxUWd-2QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADfMcxG0J2KFV9"
+            }
+          },
+          {
+            "width": 148,
+            "height": 320,
+            "file": {
+              "id": 15121,
+              "size": 15262,
+              "remoteId": "AgACAgUAAx0CZe4W6AACDulpKbJpJlhsVHLjF10Zag68wjh9LgACfMcxG0J2KFWPIdmxUWd-2QEAAwIAA20AAzgE",
+              "uniqueId": "AQADfMcxG0J2KFVy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

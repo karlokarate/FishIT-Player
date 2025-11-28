@@ -1,0 +1,388 @@
+{
+  "chatId": -1002058768696,
+  "title": "The Crossing - HD",
+  "exportedAt": "2025-11-28T14:46:43.880383055Z",
+  "count": 13,
+  "messages": [
+    {
+      "id": 47185920,
+      "chatId": -1002058768696,
+      "date": 1717284989,
+      "dateIso": "2024-06-01T23:36:29Z",
+      "content": {
+        "duration": 2422,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E11 - Spurlos verschwunden.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5272,
+          "size": 1859898799,
+          "remoteId": "BAACAgIAAx0CerZROAADLWkpsqR4Hjpldi9Pr0RO8r2BUAR_AAKsPAAC99ZoSCo0DAs20VNGOAQ",
+          "uniqueId": "AgADrDwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5271,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMtaSmypHgeOmV2L0-vRE7yvYFQBH8AAqw8AAL31mhIKjQMCzbRU0YBAAdtAAM4BA",
+            "uniqueId": "AQADrDwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E11 - Spurlos verschwunden"
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1002058768696,
+      "date": 1717284911,
+      "dateIso": "2024-06-01T23:35:11Z",
+      "content": {
+        "duration": 2439,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Crossing - S01 E10 - Die Höhle der Löwen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19251,
+          "size": 1775269125,
+          "remoteId": "BAACAgIAAx0CerZROAADKWkpsqTOn_9ErwrPYzn8QiD3vycmAAJmWwACPo_YSnqthianIf3uOAQ",
+          "uniqueId": "AgADZlsAAj6P2Eo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19250,
+            "size": 7337,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMpaSmypM6f_0SvCs9jOfxCIPe_JyYAAmZbAAI-j9hKeq2GJqch_e4BAAdtAAM4BA",
+            "uniqueId": "AQADZlsAAj6P2Epy"
+          }
+        },
+        "caption": "The Crossing - S01 E10 - Die Höhle der Löwen"
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1002058768696,
+      "date": 1712124919,
+      "dateIso": "2024-04-03T06:15:19Z",
+      "content": {
+        "duration": 2433,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E09 - Hoffnungsschimmer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19253,
+          "size": 1864837112,
+          "remoteId": "BAACAgIAAx0CerZROAADDGkpsqQsrAqw2HTx2dP00dgfrrk6AAKtPAAC99ZoSHdBkkLrTth8OAQ",
+          "uniqueId": "AgADrTwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19252,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMMaSmypCysCrDYdPHZ0_TR2B-uuToAAq08AAL31mhId0GSQutO2HwBAAdtAAM4BA",
+            "uniqueId": "AQADrTwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E09 - Hoffnungsschimmer"
+      }
+    },
+    {
+      "id": 11534336,
+      "chatId": -1002058768696,
+      "date": 1712124915,
+      "dateIso": "2024-04-03T06:15:15Z",
+      "content": {
+        "duration": 2385,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E08 - Das lange Warten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19255,
+          "size": 1846630042,
+          "remoteId": "BAACAgIAAx0CerZROAADC2kpsqTzfMEXd-D-ZzXQfJ47TNr1AAKgPAAC99ZoSD6f4IWq4QuAOAQ",
+          "uniqueId": "AgADoDwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19254,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMLaSmypPN8wRd34P5nNdB8njtM2vUAAqA8AAL31mhIPp_gharhC4ABAAdtAAM4BA",
+            "uniqueId": "AQADoDwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E08 - Das lange Warten"
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1002058768696,
+      "date": 1712124912,
+      "dateIso": "2024-04-03T06:15:12Z",
+      "content": {
+        "duration": 2469,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E07 - Das Medaillon.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19257,
+          "size": 1866751283,
+          "remoteId": "BAACAgIAAx0CerZROAADCmkpsqQlmQ2GCLKxxHf2QnC2Ra3EAAKwPAAC99ZoSC2_FPkNunvbOAQ",
+          "uniqueId": "AgADsDwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19256,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMKaSmypCWZDYYIsrHEd_ZCcLZFrcQAArA8AAL31mhILb8U-Q26e9sBAAdtAAM4BA",
+            "uniqueId": "AQADsDwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E07 - Das Medaillon"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1002058768696,
+      "date": 1712124909,
+      "dateIso": "2024-04-03T06:15:09Z",
+      "content": {
+        "duration": 2426,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E06 - Isolation.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19259,
+          "size": 1877983961,
+          "remoteId": "BAACAgIAAx0CerZROAADCWkpsqTrAjTWhtyOLI0XzYMF1xqMAAK0PAAC99ZoSOAedjzqz1JDOAQ",
+          "uniqueId": "AgADtDwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19258,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMJaSmypOsCNNaG3I4sjRfNgwXXGowAArQ8AAL31mhI4B52POrPUkMBAAdtAAM4BA",
+            "uniqueId": "AQADtDwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E06 - Isolation"
+      }
+    },
+    {
+      "id": 8388608,
+      "chatId": -1002058768696,
+      "date": 1712124906,
+      "dateIso": "2024-04-03T06:15:06Z",
+      "content": {
+        "duration": 2381,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E05 - Die erste Welle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19261,
+          "size": 1857966781,
+          "remoteId": "BAACAgIAAx0CerZROAADCGkpsqRH4k_7qBMy8YfEnMxp4aH2AAKpPAAC99ZoSFspHjJj8xPcOAQ",
+          "uniqueId": "AgADqTwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19260,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMIaSmypEfiT_uoEzLxh8SczGnhofYAAqk8AAL31mhIWykeMmPzE9wBAAdtAAM4BA",
+            "uniqueId": "AQADqTwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E05 - Die erste Welle"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1002058768696,
+      "date": 1712124903,
+      "dateIso": "2024-04-03T06:15:03Z",
+      "content": {
+        "duration": 2448,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E04 - In Vergessenheit geraten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19263,
+          "size": 1924509086,
+          "remoteId": "BAACAgIAAx0CerZROAADB2kpsqTok2E_c0V4NS7EBin0IR8xAAK4PAAC99ZoSHFh6UVGtsEDOAQ",
+          "uniqueId": "AgADuDwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19262,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMHaSmypOiTYT9zRXg1LsQGKfQhHzEAArg8AAL31mhIcWHpRUa2wQMBAAdtAAM4BA",
+            "uniqueId": "AQADuDwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E04 - In Vergessenheit geraten"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1002058768696,
+      "date": 1712124900,
+      "dateIso": "2024-04-03T06:15:00Z",
+      "content": {
+        "duration": 2412,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E03 - Gesprächsbedarf.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19265,
+          "size": 1929916972,
+          "remoteId": "BAACAgIAAx0CerZROAADBmkpsqS-q6ZUdC6fk9maFGMV9fpOAAK8PAAC99ZoSOsUXFc7WLzLOAQ",
+          "uniqueId": "AgADvDwAAvfWaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19264,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMGaSmypL6rplR0Lp-T2ZoUYxX1-k4AArw8AAL31mhI6xRcVztYvMsBAAdtAAM4BA",
+            "uniqueId": "AQADvDwAAvfWaEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E03 - Gesprächsbedarf"
+      }
+    },
+    {
+      "id": 5242880,
+      "chatId": -1002058768696,
+      "date": 1712124897,
+      "dateIso": "2024-04-03T06:14:57Z",
+      "content": {
+        "duration": 2426,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The_Crossing_S01_E02_Schatten_der_zukünftigen_Vergangenh.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19267,
+          "size": 1857303614,
+          "remoteId": "BAACAgIAAx0CerZROAADBWkpsqRrCacoCX3TWXK53a297cq3AAK4SwAC99ZgSO6p9YXsnDL0OAQ",
+          "uniqueId": "AgADuEsAAvfWYEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19266,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMFaSmypGsJpygJfdNZcrndrb3tyrcAArhLAAL31mBI7qn1heycMvQBAAdtAAM4BA",
+            "uniqueId": "AQADuEsAAvfWYEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E02 - Schatten der zukünftigen Vergangenheit"
+      }
+    },
+    {
+      "id": 4194304,
+      "chatId": -1002058768696,
+      "date": 1712124894,
+      "dateIso": "2024-04-03T06:14:54Z",
+      "content": {
+        "duration": 2459,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Crossing - S01 E01 - Die Gestrandeten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 19269,
+          "size": 1922693082,
+          "remoteId": "BAACAgIAAx0CerZROAADBGkpsqT27Z2-ulC-AAF1tGswit3crQACbkwAAvfWYEi1asUpHwwgxDgE",
+          "uniqueId": "AgADbkwAAvfWYEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 19268,
+            "size": 7350,
+            "remoteId": "AAMCAgADHQJ6tlE4AAMEaSmypPbtnb66UL4AAXW0azCK3dytAAJuTAAC99ZgSLVqxSkfDCDEAQAHbQADOAQ",
+            "uniqueId": "AQADbkwAAvfWYEhy"
+          }
+        },
+        "caption": "The Crossing - S01 E01 - Die Gestrandeten"
+      }
+    },
+    {
+      "id": 2097152,
+      "chatId": -1002058768696,
+      "date": 1712124882,
+      "dateIso": "2024-04-03T06:14:42Z",
+      "text": "Flüchtlinge aus einem vom Krieg verwüsteten Land erreichen eine kleine amerikanische Küstenstadt und bitten um Asyl. Bald wird deutlich, dass das verwüstete Land Amerika ist und dass der vernichtende Krieg erst in der Zukunft ausbrechen wird.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1002058768696
+      },
+      "chatId": -1002058768696,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1712124851,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "The Crossing - HD"
+      }
+    }
+  ]
+}

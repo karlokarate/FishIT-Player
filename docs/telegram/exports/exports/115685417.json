@@ -1,0 +1,151 @@
+{
+  "chatId": 115685417,
+  "title": "Fabian Frieler",
+  "exportedAt": "2025-11-28T14:47:22.575782861Z",
+  "count": 4,
+  "messages": [
+    {
+      "id": 41481666560,
+      "senderId": {
+        "userId": 115685417
+      },
+      "chatId": 115685417,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1685473964,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "animatedEmoji": {
+          "sticker": {
+            "id": 5181593617004757506,
+            "setId": 1258816259751983,
+            "width": 512,
+            "height": 512,
+            "emoji": "👍",
+            "format": {},
+            "fullType": {},
+            "thumbnail": {
+              "format": {},
+              "width": 128,
+              "height": 128,
+              "file": {
+                "id": 50,
+                "size": 3848,
+                "expectedSize": 3848,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAMCAQADFQABaSmyNc0ZIbckrMHT0vXYiVSo7jMAAgICAALxt-hH75Umgn47BZABAAdtAAM4BA",
+                  "uniqueId": "AQADAgIAAvG36Edy",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 3848
+                }
+              }
+            },
+            "sticker": {
+              "id": 49,
+              "size": 25835,
+              "expectedSize": 25835,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "CAACAgEAAxUAAWkpsjXNGSG3JKzB09L12IlUqO4zAAICAgAC8bfoR--VJoJ-OwWQOAQ",
+                "uniqueId": "AgADAgIAAvG36Ec",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 25835
+              }
+            }
+          },
+          "stickerWidth": 512,
+          "stickerHeight": 512,
+          "fitzpatrickType": 2
+        },
+        "emoji": "👍🏻"
+      }
+    },
+    {
+      "id": 41480617984,
+      "chatId": 115685417,
+      "date": 1685473960,
+      "dateIso": "2023-05-30T19:12:40Z",
+      "text": "sry",
+      "genres": []
+    },
+    {
+      "id": 41479569408,
+      "chatId": 115685417,
+      "date": 1685473955,
+      "dateIso": "2023-05-30T19:12:35Z",
+      "text": "?",
+      "genres": []
+    },
+    {
+      "id": 41478520832,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 115685417,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1685473943,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    }
+  ]
+}

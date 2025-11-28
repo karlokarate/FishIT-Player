@@ -1,0 +1,105 @@
+{
+  "chatId": 7643984871,
+  "title": "",
+  "exportedAt": "2025-11-28T14:45:35.775911948Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 47093645312,
+      "chatId": 7643984871,
+      "date": 1761930938,
+      "dateIso": "2025-10-31T17:15:38Z",
+      "text": "Hallo, bist du nicht Thomas?",
+      "genres": []
+    },
+    {
+      "id": 47092596736,
+      "senderId": {
+        "userId": 7643984871
+      },
+      "chatId": 7643984871,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1761930938,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 750766425144033730,
+          "setId": 750766425144033288,
+          "width": 512,
+          "height": 512,
+          "emoji": "😂",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 128,
+            "file": {
+              "id": 14685,
+              "size": 4618,
+              "expectedSize": 4618,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADGQEAAq9vaSmyaJzLMHLEhcWGf3Ftr5ASbDcAAsIBAAIWQmsK2j0dCHXgbNcBAAdtAAM4BA",
+                "uniqueId": "AQADwgEAAhZCawpy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 4618
+              }
+            }
+          },
+          "sticker": {
+            "id": 14686,
+            "size": 7573,
+            "expectedSize": 7573,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAxkBAAKvb2kpsmicyzByxIXFhn9xba-QEmw3AALCAQACFkJrCto9HQh14GzXOAQ",
+              "uniqueId": "AgADwgEAAhZCawo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 7573
+            }
+          }
+        },
+        "isPremium": false
+      }
+    }
+  ]
+}

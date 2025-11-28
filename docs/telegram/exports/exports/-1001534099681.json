@@ -1,0 +1,822 @@
+{
+  "chatId": -1001534099681,
+  "title": "Isnogud",
+  "exportedAt": "2025-11-28T14:47:36.538418976Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 48234496,
+      "chatId": -1001534099681,
+      "date": 1627340330,
+      "dateIso": "2021-07-26T22:58:50Z",
+      "text": "Original Hochgeladen von Join The Links 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 40894464,
+      "senderId": {
+        "chatId": -1001534099681
+      },
+      "chatId": -1001534099681,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1627336587,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 99,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 712179395279717913,
+          "setId": 712179395279716371,
+          "width": 512,
+          "height": 512,
+          "emoji": "🔚",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 128,
+            "file": {
+              "id": 20352,
+              "size": 7108,
+              "expectedSize": 7108,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADHQJbcIDhAAMnaSmywmSPraiB-JFLIZQP7MnKHMUAAhkGAAJjK-IJ0fRZjsUFp_YBAAdtAAM4BA",
+                "uniqueId": "AQADGQYAAmMr4gly",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 7108
+              }
+            }
+          },
+          "sticker": {
+            "id": 20353,
+            "size": 46656,
+            "expectedSize": 46656,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAx0CW3CA4QADJ2kpssJkj62ogfiRSyGUD-zJyhzFAAIZBgACYyviCdH0WY7FBaf2OAQ",
+              "uniqueId": "AgADGQYAAmMr4gk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 46656
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 37748736,
+      "chatId": -1001534099681,
+      "date": 1627335049,
+      "dateIso": "2021-07-26T21:30:49Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E26 - Auf Tigerjagd - Das Zauberpüppchen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20355,
+          "size": 247459338,
+          "remoteId": "BAACAgIAAx0CW3CA4QADJGkpssIAAYLUUA4FUcfUfUt3CpfTtgACsQ4AAtyk-Evxkcq7FqVBDDgE",
+          "uniqueId": "AgADsQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20354,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMkaSmywgABgtRQDgVRx9R9S3cKl9O2AAKxDgAC3KT4S_GRyrsWpUEMAQAHbQADOAQ",
+            "uniqueId": "AQADsQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E26 - Auf Tigerjagd - Das Zauberpüppchen"
+      }
+    },
+    {
+      "id": 36700160,
+      "chatId": -1001534099681,
+      "date": 1627335046,
+      "dateIso": "2021-07-26T21:30:46Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud_S01_E25_Das_Labyrinth_Ein_Dschinni_löst_Proble.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20357,
+          "size": 246732579,
+          "remoteId": "BAACAgIAAx0CW3CA4QADI2kpssKrY0upW6K79u7kzizASG9oAAKdDgAC3KT4S9WfT0yXKOh-OAQ",
+          "uniqueId": "AgADnQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20356,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMjaSmywqtjS6lborv27uTOLMBIb2gAAp0OAALcpPhL1Z9PTJco6H4BAAdtAAM4BA",
+            "uniqueId": "AQADnQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E25 - Das Labyrinth - Ein Dschinni löst Probleme"
+      }
+    },
+    {
+      "id": 35651584,
+      "chatId": -1001534099681,
+      "date": 1627335043,
+      "dateIso": "2021-07-26T21:30:43Z",
+      "content": {
+        "duration": 1397,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E24 - Das Souvenir-Kästchen - Andenkeninsel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20359,
+          "size": 246983597,
+          "remoteId": "BAACAgIAAx0CW3CA4QADImkpssKxwM2xdabYJVn-EBtit6KGAAKhDgAC3KT4S8F0W9QrtO2EOAQ",
+          "uniqueId": "AgADoQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20358,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMiaSmywrHAzbF1ptglWf4QG2K3ooYAAqEOAALcpPhLwXRb1Cu07YQBAAdtAAM4BA",
+            "uniqueId": "AQADoQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E24 - Das Souvenir-Kästchen - Andenkeninsel"
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001534099681,
+      "date": 1627335040,
+      "dateIso": "2021-07-26T21:30:40Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E23 - Die unsichtbare Bedrohung - Der Zauberte.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20361,
+          "size": 246872229,
+          "remoteId": "BAACAgIAAx0CW3CA4QADIWkpssJLmcELLkBxq1ApIX9VRXQSAAKcDgAC3KT4S-V_T7LKJEo_OAQ",
+          "uniqueId": "AgADnA4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20360,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMhaSmywkuZwQsuQHGrUCkhf1VFdBIAApwOAALcpPhL5X9PssokSj8BAAdtAAM4BA",
+            "uniqueId": "AQADnA4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E23 - Die unsichtbare Bedrohung - Der Zauberteppich"
+      }
+    },
+    {
+      "id": 33554432,
+      "chatId": -1001534099681,
+      "date": 1627335036,
+      "dateIso": "2021-07-26T21:30:36Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E22 - Eier aus Ur - Die Straße nach Nirgendwo.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20363,
+          "size": 246812591,
+          "remoteId": "BAACAgIAAx0CW3CA4QADIGkpssI5u0_fMPZB-gFBEIPQoZq3AAKeDgAC3KT4SwJDnemdNqh3OAQ",
+          "uniqueId": "AgADng4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20362,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMgaSmywjm7T98w9kH6AUEQg9ChmrcAAp4OAALcpPhLAkOd6Z02qHcBAAdtAAM4BA",
+            "uniqueId": "AQADng4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E22 - Eier aus Ur - Die Straße nach Nirgendwo"
+      }
+    },
+    {
+      "id": 32505856,
+      "chatId": -1001534099681,
+      "date": 1627335033,
+      "dateIso": "2021-07-26T21:30:33Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E21 - Schwarzmalereien - Die geheimnisvolle Sa.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20365,
+          "size": 246892817,
+          "remoteId": "BAACAgIAAx0CW3CA4QADH2kpssKzCd1TVwhvHHN9G5LCQWDDAAKfDgAC3KT4S6EhMVs1priHOAQ",
+          "uniqueId": "AgADnw4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20364,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMfaSmywrMJ3VNXCG8cc30bksJBYMMAAp8OAALcpPhLoSExWzWmuIcBAAdtAAM4BA",
+            "uniqueId": "AQADnw4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E21 - Schwarzmalereien - Die geheimnisvolle Salbe"
+      }
+    },
+    {
+      "id": 30408704,
+      "chatId": -1001534099681,
+      "date": 1627335022,
+      "dateIso": "2021-07-26T21:30:22Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E20 - Der Trank des Scheichs - Der Narrentag.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20367,
+          "size": 247057573,
+          "remoteId": "BAACAgIAAx0CW3CA4QADHWkpssKOmvItW2aJRAYmq0iLorZyAAKlDgAC3KT4S1e0MIJgnL8pOAQ",
+          "uniqueId": "AgADpQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20366,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMdaSmywo6a8i1bZolEBiarSIuitnIAAqUOAALcpPhLV7QwgmCcvykBAAdtAAM4BA",
+            "uniqueId": "AQADpQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E20 - Der Trank des Scheichs - Der Narrentag"
+      }
+    },
+    {
+      "id": 29360128,
+      "chatId": -1001534099681,
+      "date": 1627335018,
+      "dateIso": "2021-07-26T21:30:18Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud_S01_E19_Sommerferien_Der_große_Talisman_des_Ka.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20369,
+          "size": 247088633,
+          "remoteId": "BAACAgIAAx0CW3CA4QADHGkpssIWN-dEpdhwD-KFpLPE1Pq6AAKrDgAC3KT4S1_8KIC4rH06OAQ",
+          "uniqueId": "AgADqw4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20368,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMcaSmywhY350Sl2HAP4oWks8TU-roAAqsOAALcpPhLX_wogLisfToBAAdtAAM4BA",
+            "uniqueId": "AQADqw4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E19 - Sommerferien - Der große Talisman des Kalifen"
+      }
+    },
+    {
+      "id": 28311552,
+      "chatId": -1001534099681,
+      "date": 1627335015,
+      "dateIso": "2021-07-26T21:30:15Z",
+      "content": {
+        "duration": 1397,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud_S01_E18_Hin_und_Her_und_Kreuz_und_Quer_Der_Tür.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20371,
+          "size": 246975467,
+          "remoteId": "BAACAgIAAx0CW3CA4QADG2kpssLko4m21qGtm6vNDWP27FUrAAKiDgAC3KT4S_HdRPx-g2zxOAQ",
+          "uniqueId": "AgADog4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20370,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMbaSmywuSjibbWoa2bq80NY_bsVSsAAqIOAALcpPhL8d1E_H6DbPEBAAdtAAM4BA",
+            "uniqueId": "AQADog4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E18 - Hin und Her und Kreuz und Quer - Der Türkenkopf"
+      }
+    },
+    {
+      "id": 27262976,
+      "chatId": -1001534099681,
+      "date": 1627335012,
+      "dateIso": "2021-07-26T21:30:12Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E17 - Der Tataran-Talisman - Einfach Fabelhaft.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20373,
+          "size": 246993463,
+          "remoteId": "BAACAgIAAx0CW3CA4QADGmkpssInlH-kTHFORPh-cgwoT0xuAAKgDgAC3KT4Sy59LWoldXyTOAQ",
+          "uniqueId": "AgADoA4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20372,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMaaSmywieUf6RMcU5E-H5yDChPTG4AAqAOAALcpPhLLn0taiV1fJMBAAdtAAM4BA",
+            "uniqueId": "AQADoA4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E17 - Der Tataran-Talisman - Einfach Fabelhaft"
+      }
+    },
+    {
+      "id": 26214400,
+      "chatId": -1001534099681,
+      "date": 1627335008,
+      "dateIso": "2021-07-26T21:30:08Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E16 - Der Wahlspiegel - Duft des Vergessens.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20375,
+          "size": 246884872,
+          "remoteId": "BAACAgIAAx0CW3CA4QADGWkpssLpqurGf65ZftWHCu36mRBvAAKbDgAC3KT4S3kDVwl0ekLaOAQ",
+          "uniqueId": "AgADmw4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20374,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMZaSmywumq6sZ_rll-1YcK7fqZEG8AApsOAALcpPhLeQNXCXR6QtoBAAdtAAM4BA",
+            "uniqueId": "AQADmw4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E16 - Der Wahlspiegel - Duft des Vergessens"
+      }
+    },
+    {
+      "id": 25165824,
+      "chatId": -1001534099681,
+      "date": 1627335005,
+      "dateIso": "2021-07-26T21:30:05Z",
+      "content": {
+        "duration": 1397,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E15 - Wahl im Kalifat - Das Wachsfigurenkabine.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20377,
+          "size": 246803553,
+          "remoteId": "BAACAgIAAx0CW3CA4QADGGkpssIO-9gYNvy8yIpiteSeDYCLAAKaDgAC3KT4Swg3cjzeklc9OAQ",
+          "uniqueId": "AgADmg4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20376,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMYaSmywg772Bg2_LzIimK15J4NgIsAApoOAALcpPhLCDdyPN6SVz0BAAdtAAM4BA",
+            "uniqueId": "AQADmg4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E15 - Wahl im Kalifat - Das Wachsfigurenkabinett"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1001534099681,
+      "date": 1627335002,
+      "dateIso": "2021-07-26T21:30:02Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E14 - Die Insel der Riesen - Skandal in Bagdad.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20379,
+          "size": 247129304,
+          "remoteId": "BAACAgIAAx0CW3CA4QADF2kpssIJOgrm_jGPlL27Cc9fCMjtAAKnDgAC3KT4S3mtAAGRuvxWozgE",
+          "uniqueId": "AgADpw4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20378,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMXaSmywgk6Cub-MY-UvbsJz18IyO0AAqcOAALcpPhLea0AAZG6_FajAQAHbQADOAQ",
+            "uniqueId": "AQADpw4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E14 - Die Insel der Riesen - Skandal in Bagdad"
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1001534099681,
+      "date": 1627334998,
+      "dateIso": "2021-07-26T21:29:58Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud_S01_E13_Der_Kalif_auf_Kreuzfahrt_Ein_verhängni.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20381,
+          "size": 247068147,
+          "remoteId": "BAACAgIAAx0CW3CA4QADFmkpssJ-WKDeKwY_HqESPvYtK0ZEAAKZDgAC3KT4S3_vXx_LQuFXOAQ",
+          "uniqueId": "AgADmQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20380,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMWaSmywn5YoN4rBj8eoRI-9i0rRkQAApkOAALcpPhLf-9fH8tC4VcBAAdtAAM4BA",
+            "uniqueId": "AQADmQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E13 - Der Kalif auf Kreuzfahrt - Ein verhängnisvolles Nickerchen"
+      }
+    },
+    {
+      "id": 22020096,
+      "chatId": -1001534099681,
+      "date": 1627334995,
+      "dateIso": "2021-07-26T21:29:55Z",
+      "content": {
+        "duration": 1397,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E12 - Die Herausforderung - Die Schlittenfahrt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20383,
+          "size": 247062808,
+          "remoteId": "BAACAgIAAx0CW3CA4QADFWkpssIkHeevJzXqz2NGrPpt4IJaAAKkDgAC3KT4SxJtLSPj0lWvOAQ",
+          "uniqueId": "AgADpA4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20382,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMVaSmywiQd568nNerPY0as-m3ggloAAqQOAALcpPhLEm0tI-PSVa8BAAdtAAM4BA",
+            "uniqueId": "AQADpA4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E12 - Die Herausforderung - Die Schlittenfahrt im Kalifat"
+      }
+    },
+    {
+      "id": 20971520,
+      "chatId": -1001534099681,
+      "date": 1627334992,
+      "dateIso": "2021-07-26T21:29:52Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E11 - Der Unglücksdiamant - Weltraumzauber.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20385,
+          "size": 246969471,
+          "remoteId": "BAACAgIAAx0CW3CA4QADFGkpssLTdQ8Q2sEqO1liVGr1G-47AAKWDgAC3KT4Sz9PCY7E17YXOAQ",
+          "uniqueId": "AgADlg4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20384,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMUaSmywtN1DxDawSo7WWJUavUb7jsAApYOAALcpPhLP08JjsTXthcBAAdtAAM4BA",
+            "uniqueId": "AQADlg4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E11 - Der Unglücksdiamant - Weltraumzauber"
+      }
+    },
+    {
+      "id": 18874368,
+      "chatId": -1001534099681,
+      "date": 1627334968,
+      "dateIso": "2021-07-26T21:29:28Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E10 - Hast du Töne - Die Zauberkiste.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20387,
+          "size": 247096305,
+          "remoteId": "BAACAgIAAx0CW3CA4QADEmkpssJsAAH4K0NNVwlcPCVyxyRcIQACqg4AAtyk-EvvLEV32KBtazgE",
+          "uniqueId": "AgADqg4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20386,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMSaSmywmwAAfgrQ01XCVw8JXLHJFwhAAKqDgAC3KT4S-8sRXfYoG1rAQAHbQADOAQ",
+            "uniqueId": "AQADqg4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E10 - Hast du Töne - Die Zauberkiste"
+      }
+    },
+    {
+      "id": 17825792,
+      "chatId": -1001534099681,
+      "date": 1627334964,
+      "dateIso": "2021-07-26T21:29:24Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E09 - Der fürchterliche Vergolder - Inkognito.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20389,
+          "size": 247141542,
+          "remoteId": "BAACAgIAAx0CW3CA4QADEWkpssLip4LQTu_SwCX5UY1HgWaUAAKwDgAC3KT4SypIVWnFUHSGOAQ",
+          "uniqueId": "AgADsA4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20388,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMRaSmywuKngtBO79LAJflRjUeBZpQAArAOAALcpPhLKkhVacVQdIYBAAdtAAM4BA",
+            "uniqueId": "AQADsA4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E09 - Der fürchterliche Vergolder - Inkognito"
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001534099681,
+      "date": 1627334961,
+      "dateIso": "2021-07-26T21:29:21Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E08 - Der Muckefuck - Der Dschinni.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20391,
+          "size": 247140936,
+          "remoteId": "BAACAgIAAx0CW3CA4QADEGkpssJNLHHJy6jIEEbkjZO42svnAAKtDgAC3KT4S9abt6AW_DcNOAQ",
+          "uniqueId": "AgADrQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20390,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMQaSmywk0sccnLqMgQRuSNk7jay-cAAq0OAALcpPhL1pu3oBb8Nw0BAAdtAAM4BA",
+            "uniqueId": "AQADrQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E08 - Der Muckefuck - Der Dschinni"
+      }
+    },
+    {
+      "id": 15728640,
+      "chatId": -1001534099681,
+      "date": 1627334958,
+      "dateIso": "2021-07-26T21:29:18Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E07 - Das Picknick - Der Doppelgänger.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20393,
+          "size": 247721546,
+          "remoteId": "BAACAgIAAx0CW3CA4QADD2kpssLiHInf9CHNbt-RFdFUZ1-wAAK0DgAC3KT4S8wxtm3Sy6MHOAQ",
+          "uniqueId": "AgADtA4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20392,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMPaSmywuIcid_0Ic1u35EV0VRnX7AAArQOAALcpPhLzDG2bdLLowcBAAdtAAM4BA",
+            "uniqueId": "AQADtA4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E07 - Das Picknick - Der Doppelgänger"
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1001534099681,
+      "date": 1627334955,
+      "dateIso": "2021-07-26T21:29:15Z",
+      "content": {
+        "duration": 1397,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E06 - Der Staatsbesuch - Der geheimnisvolle Pl.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20395,
+          "size": 247055073,
+          "remoteId": "BAACAgIAAx0CW3CA4QADDmkpssI67jusreC1ExIn9qMundwMAAKVDgAC3KT4SwRrwdTljUcOOAQ",
+          "uniqueId": "AgADlQ4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20394,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMOaSmywjruO6yt4LUTEif2oy6d3AwAApUOAALcpPhLBGvB1OWNRw4BAAdtAAM4BA",
+            "uniqueId": "AQADlQ4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E06 - Der Staatsbesuch - Der geheimnisvolle Plakatkleber"
+      }
+    },
+    {
+      "id": 13631488,
+      "chatId": -1001534099681,
+      "date": 1627334951,
+      "dateIso": "2021-07-26T21:29:11Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E05 - Es quakt im Kalifat - Die Flasche des He.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20397,
+          "size": 247876062,
+          "remoteId": "BAACAgIAAx0CW3CA4QADDWkpssLs8Q0grFY4u3X9GGxi4c6KAAK4DgAC3KT4S8RD1eJUlEKtOAQ",
+          "uniqueId": "AgADuA4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20396,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMNaSmywuzxDSCsVji7df0YbGLhzooAArgOAALcpPhLxEPV4lSUQq0BAAdtAAM4BA",
+            "uniqueId": "AQADuA4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E05 - Es quakt im Kalifat - Die Flasche des Herrn Gasbutan"
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1001534099681,
+      "date": 1627334948,
+      "dateIso": "2021-07-26T21:29:08Z",
+      "content": {
+        "duration": 1398,
+        "width": 576,
+        "height": 432,
+        "fileName": "Isnogud - S01 E04 - Augenschmaus - Die Zeitmaschine.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20399,
+          "size": 247867137,
+          "remoteId": "BAACAgIAAx0CW3CA4QADDGkpssKD6bgD2e1i6Ob3dO7rEnlTAAK6DgAC3KT4S6cTAu18f2srOAQ",
+          "uniqueId": "AgADug4AAtyk-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 240,
+          "file": {
+            "id": 20398,
+            "size": 16480,
+            "remoteId": "AAMCAgADHQJbcIDhAAMMaSmywoPpuAPZ7WLo5vd07usSeVMAAroOAALcpPhLpxMC7Xx_aysBAAdtAAM4BA",
+            "uniqueId": "AQADug4AAtyk-Ety"
+          }
+        },
+        "caption": "Isnogud - S01 E04 - Augenschmaus - Die Zeitmaschine"
+      }
+    }
+  ]
+}

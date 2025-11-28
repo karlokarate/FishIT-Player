@@ -1,0 +1,37 @@
+{
+  "chatId": 7519696423,
+  "title": "Johanna Graf",
+  "exportedAt": "2025-11-28T14:46:33.069867227Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45149585408,
+      "senderId": {
+        "userId": 7519696423
+      },
+      "chatId": 7519696423,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1729679680,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

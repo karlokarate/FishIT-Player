@@ -1,0 +1,49 @@
+{
+  "chatId": 8328384975,
+  "title": "Ty Torres",
+  "exportedAt": "2025-11-28T14:45:52.970894797Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 46567260160,
+      "chatId": 8328384975,
+      "date": 1754035332,
+      "dateIso": "2025-08-01T08:02:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1273,
+            "height": 1240,
+            "file": {
+              "id": 5073,
+              "size": 158641,
+              "remoteId": "AgACAgUAAxkBAAKtemkpsm169DCqSSBSyF-TDQh1rPvJAALhyTEbhNlhVFNWZnqFe61GAQADAgADeQADOAQ",
+              "uniqueId": "AQAD4ckxG4TZYVR-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 779,
+            "file": {
+              "id": 5072,
+              "size": 122151,
+              "remoteId": "AgACAgUAAxkBAAKtemkpsm169DCqSSBSyF-TDQh1rPvJAALhyTEbhNlhVFNWZnqFe61GAQADAgADeAADOAQ",
+              "uniqueId": "AQAD4ckxG4TZYVR9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 312,
+            "file": {
+              "id": 5071,
+              "size": 32634,
+              "remoteId": "AgACAgUAAxkBAAKtemkpsm169DCqSSBSyF-TDQh1rPvJAALhyTEbhNlhVFNWZnqFe61GAQADAgADbQADOAQ",
+              "uniqueId": "AQAD4ckxG4TZYVRy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

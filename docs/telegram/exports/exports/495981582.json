@@ -1,0 +1,409 @@
+{
+  "chatId": 495981582,
+  "title": "Felix Frieler",
+  "exportedAt": "2025-11-28T14:47:43.880418867Z",
+  "count": 15,
+  "messages": [
+    {
+      "id": 12706643968,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 495981582,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608238229,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 1184
+      }
+    },
+    {
+      "id": 12705595392,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 495981582,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608237038,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 12704546816,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": 495981582,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608237036,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 12703498240,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 495981582,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608237032,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 255
+      }
+    },
+    {
+      "id": 12702449664,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": 495981582,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608236769,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 12701401088,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": 495981582,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608236736,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 127
+      }
+    },
+    {
+      "id": 12700352512,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 495981582,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608236601,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 12699303936,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": 495981582,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608236545,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 12698255360,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": 495981582,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608236525,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 9194962944,
+      "chatId": 495981582,
+      "date": 1589813600,
+      "dateIso": "2020-05-18T14:53:20Z",
+      "text": "ist jetzt das 3. Kind was nie heult",
+      "genres": []
+    },
+    {
+      "id": 9193914368,
+      "chatId": 495981582,
+      "date": 1589813583,
+      "dateIso": "2020-05-18T14:53:03Z",
+      "text": "den Body habt ihr uns zur Hochzeit geschenkt",
+      "genres": []
+    },
+    {
+      "id": 9192865792,
+      "chatId": 495981582,
+      "date": 1589813567,
+      "dateIso": "2020-05-18T14:52:47Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 956,
+            "height": 1276,
+            "file": {
+              "id": 22907,
+              "size": 243687,
+              "remoteId": "AgACAgIAAxkDAAIiP2kpsuH-j21sJbe318VSj2ai_I8FAAKUrTEbvmsYSnLjnyMg98ZqAQADAgADeQADOAQ",
+              "uniqueId": "AQADlK0xG75rGEp-"
+            }
+          },
+          {
+            "width": 599,
+            "height": 800,
+            "file": {
+              "id": 22906,
+              "size": 133188,
+              "remoteId": "AgACAgIAAxkDAAIiP2kpsuH-j21sJbe318VSj2ai_I8FAAKUrTEbvmsYSnLjnyMg98ZqAQADAgADeAADOAQ",
+              "uniqueId": "AQADlK0xG75rGEp9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 22905,
+              "size": 27531,
+              "remoteId": "AgACAgIAAxkDAAIiP2kpsuH-j21sJbe318VSj2ai_I8FAAKUrTEbvmsYSnLjnyMg98ZqAQADAgADbQADOAQ",
+              "uniqueId": "AQADlK0xG75rGEpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7832862720,
+      "chatId": 495981582,
+      "date": 1582293896,
+      "dateIso": "2020-02-21T14:04:56Z",
+      "text": "Hey, sorry. Ich wollte noch drauf reagieren, aber habs vergessen. Ich meld mich später, ok? Alles gut. Haben noch bisschen Zuwachs fürs Schiff bekommen.",
+      "genres": []
+    },
+    {
+      "id": 7831814144,
+      "chatId": 495981582,
+      "date": 1582291137,
+      "dateIso": "2020-02-21T13:18:57Z",
+      "text": "moin, alles ok?",
+      "genres": []
+    },
+    {
+      "id": 6567231488,
+      "chatId": 495981582,
+      "date": 1557394377,
+      "dateIso": "2019-05-09T09:32:57Z",
+      "content": {
+        "duration": 96,
+        "width": 640,
+        "height": 360,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22909,
+          "size": 14042235,
+          "remoteId": "BAACAgIAAxkDAAIYd2kpsuFUX4q3LOStmyeX6A6pLMUwAAKWAwAC-dChStBa44dqJ5XSOAQ",
+          "uniqueId": "AgADlgMAAvnQoUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 22908,
+            "size": 15486,
+            "remoteId": "AAMCAgADGQMAAhh3aSmy4VRfircs5K2bJ5foDqksxTAAApYDAAL50KFK0Frjh2onldIBAAdtAAM4BA",
+            "uniqueId": "AQADlgMAAvnQoUpy"
+          }
+        },
+        "caption": ""
+      }
+    }
+  ]
+}

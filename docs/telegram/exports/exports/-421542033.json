@@ -1,0 +1,557 @@
+{
+  "chatId": -421542033,
+  "title": "Antifa Sailing Team",
+  "exportedAt": "2025-11-28T14:47:43.469419611Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 13075742720,
+      "chatId": -421542033,
+      "date": 1610398124,
+      "dateIso": "2021-01-11T20:48:44Z",
+      "text": "Und pack mal den Wikinger für den Sperminator rein",
+      "genres": []
+    },
+    {
+      "id": 13074694144,
+      "chatId": -421542033,
+      "date": 1610398073,
+      "dateIso": "2021-01-11T20:47:53Z",
+      "text": "Himmel-fart oder Pfingsten?",
+      "genres": []
+    },
+    {
+      "id": 12812550144,
+      "chatId": -421542033,
+      "date": 1608844523,
+      "dateIso": "2020-12-24T21:15:23Z",
+      "text": "fck unter normalen Umständen kann ich immer noch behaupten, es waren ja so viele Leute da..",
+      "genres": []
+    },
+    {
+      "id": 12811501568,
+      "chatId": -421542033,
+      "date": 1608844504,
+      "dateIso": "2020-12-24T21:15:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 960,
+            "height": 1280,
+            "file": {
+              "id": 22914,
+              "size": 150271,
+              "remoteId": "AgACAgIAAxkDAAIvumkpsuFZU466bw24_Eg8q7UhE1IBAAJksTEb67gpS8wbTn0Ma7B0AQADAgADeQADOAQ",
+              "uniqueId": "AQADZLExG-u4KUt-"
+            }
+          },
+          {
+            "width": 600,
+            "height": 800,
+            "file": {
+              "id": 22913,
+              "size": 90375,
+              "remoteId": "AgACAgIAAxkDAAIvumkpsuFZU466bw24_Eg8q7UhE1IBAAJksTEb67gpS8wbTn0Ma7B0AQADAgADeAADOAQ",
+              "uniqueId": "AQADZLExG-u4KUt9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 22912,
+              "size": 21804,
+              "remoteId": "AgACAgIAAxkDAAIvumkpsuFZU466bw24_Eg8q7UhE1IBAAJksTEb67gpS8wbTn0Ma7B0AQADAgADbQADOAQ",
+              "uniqueId": "AQADZLExG-u4KUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12807307264,
+      "chatId": -421542033,
+      "date": 1608843416,
+      "dateIso": "2020-12-24T20:56:56Z",
+      "text": "Lass dich kastrieren - wir brauchen den Smutje wieder!",
+      "genres": []
+    },
+    {
+      "id": 12804161536,
+      "chatId": -421542033,
+      "date": 1608842947,
+      "dateIso": "2020-12-24T20:49:07Z",
+      "text": "Du Maschine",
+      "genres": []
+    },
+    {
+      "id": 12803112960,
+      "chatId": -421542033,
+      "date": 1608839064,
+      "dateIso": "2020-12-24T19:44:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 960,
+            "file": {
+              "id": 22917,
+              "size": 139352,
+              "remoteId": "AgACAgIAAxkDAAIvsmkpsuFBcjvg72339UBStWF0n86QAAJNsTEb67gpS8xJSyo0LcKAAQADAgADeQADOAQ",
+              "uniqueId": "AQADTbExG-u4KUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 600,
+            "file": {
+              "id": 22916,
+              "size": 87310,
+              "remoteId": "AgACAgIAAxkDAAIvsmkpsuFBcjvg72339UBStWF0n86QAAJNsTEb67gpS8xJSyo0LcKAAQADAgADeAADOAQ",
+              "uniqueId": "AQADTbExG-u4KUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 22915,
+              "size": 21681,
+              "remoteId": "AgACAgIAAxkDAAIvsmkpsuFBcjvg72339UBStWF0n86QAAJNsTEb67gpS8xJSyo0LcKAAQADAgADbQADOAQ",
+              "uniqueId": "AQADTbExG-u4KUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12802064384,
+      "chatId": -421542033,
+      "date": 1608839028,
+      "dateIso": "2020-12-24T19:43:48Z",
+      "text": "ähäm..",
+      "genres": []
+    },
+    {
+      "id": 12801015808,
+      "chatId": -421542033,
+      "date": 1608838420,
+      "dateIso": "2020-12-24T19:33:40Z",
+      "text": "Glückwunsch, Nr 2 oder 3?",
+      "genres": []
+    },
+    {
+      "id": 12799967232,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -421542033,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608821251,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "audio": {
+          "duration": 178,
+          "title": "weihnachtszeit2-1",
+          "performer": "\u003cunknown\u003e",
+          "fileName": "weihnachtszeit2-1.MP3",
+          "mimeType": "audio/MP3",
+          "externalAlbumCovers": [
+            {
+              "format": {},
+              "width": 100,
+              "height": 100,
+              "file": {
+                "id": 22919,
+                "size": 0,
+                "expectedSize": 0,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAgnI2F1ZGlvX3Qjd2VpaG5hY2h0c3plaXQyLTEjPHVua25vd24-IzEjAw",
+                  "uniqueId": "_wAIJyNhdWRpb190I3dlaWhuYWNodHN6ZWl0Mi0xIzx1bmtub3duPiMxIw",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 0
+                }
+              }
+            },
+            {
+              "format": {},
+              "width": 600,
+              "height": 600,
+              "file": {
+                "id": 22920,
+                "size": 0,
+                "expectedSize": 0,
+                "local": {
+                  "path": "",
+                  "canBeDownloaded": true,
+                  "canBeDeleted": false,
+                  "isDownloadingActive": false,
+                  "isDownloadingCompleted": false,
+                  "downloadOffset": 0,
+                  "downloadedPrefixSize": 0,
+                  "downloadedSize": 0
+                },
+                "remote": {
+                  "id": "AAgnI2F1ZGlvX3Qjd2VpaG5hY2h0c3plaXQyLTEjPHVua25vd24-IzAjAw",
+                  "uniqueId": "_wAIJyNhdWRpb190I3dlaWhuYWNodHN6ZWl0Mi0xIzx1bmtub3duPiMwIw",
+                  "isUploadingActive": false,
+                  "isUploadingCompleted": true,
+                  "uploadedSize": 0
+                }
+              }
+            }
+          ],
+          "audio": {
+            "id": 22918,
+            "size": 2102584,
+            "expectedSize": 2102584,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CQACAgIAAxkDAAIvr2kpsuFU6h5r4uQUfwTR50astEVXAAKtCQACXQcRS44pw7VIts1POAQ",
+              "uniqueId": "AgADrQkAAl0HEUs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 2102584
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 12798918656,
+      "chatId": -421542033,
+      "date": 1608817928,
+      "dateIso": "2020-12-24T13:52:08Z",
+      "text": "Glückwunsch trotzdem! 😄",
+      "genres": []
+    },
+    {
+      "id": 12797870080,
+      "chatId": -421542033,
+      "date": 1608817801,
+      "dateIso": "2020-12-24T13:50:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 960,
+            "height": 1280,
+            "file": {
+              "id": 22923,
+              "size": 73157,
+              "remoteId": "AgACAgIAAxkDAAIvrWkpsuHpw1PiO4GjLUWGNorunsyNAAKzrzEb67ghSyz3pZ-_wj3-AQADAgADeQADOAQ",
+              "uniqueId": "AQADs68xG-u4IUt-"
+            }
+          },
+          {
+            "width": 600,
+            "height": 800,
+            "file": {
+              "id": 22922,
+              "size": 47478,
+              "remoteId": "AgACAgIAAxkDAAIvrWkpsuHpw1PiO4GjLUWGNorunsyNAAKzrzEb67ghSyz3pZ-_wj3-AQADAgADeAADOAQ",
+              "uniqueId": "AQADs68xG-u4IUt9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 22921,
+              "size": 13438,
+              "remoteId": "AgACAgIAAxkDAAIvrWkpsuHpw1PiO4GjLUWGNorunsyNAAKzrzEb67ghSyz3pZ-_wj3-AQADAgADbQADOAQ",
+              "uniqueId": "AQADs68xG-u4IUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12796821504,
+      "chatId": -421542033,
+      "date": 1608817797,
+      "dateIso": "2020-12-24T13:49:57Z",
+      "text": "Jungs, keine Ahnung was mit meinem Sperma los ist, aber ich bin dann wohl raus.. Frohe Weihnachten!",
+      "genres": []
+    },
+    {
+      "id": 12710838272,
+      "chatId": -421542033,
+      "date": 1608273967,
+      "dateIso": "2020-12-18T06:46:07Z",
+      "text": "warte mal noch. wenn alle mitkommen, sind wir ja schon zu sechst. Aber geil wärs natürlich.",
+      "genres": []
+    },
+    {
+      "id": 12709789696,
+      "chatId": -421542033,
+      "date": 1608267258,
+      "dateIso": "2020-12-18T04:54:18Z",
+      "text": "Felix Grau ist wieder in Deutschland. Er hat noch seine alte Nummer. Soll ich fragen, ob er Bock hat?",
+      "genres": []
+    },
+    {
+      "id": 12697206784,
+      "chatId": -421542033,
+      "date": 1608234275,
+      "dateIso": "2020-12-17T19:44:35Z",
+      "text": "Warten wir mal ab. Hoffe und denke, dass man sich demnächst für solche Sachen wie Urlaub und Veranstaltungen testen lassen kann. Abwarten",
+      "genres": []
+    },
+    {
+      "id": 12696158208,
+      "chatId": -421542033,
+      "date": 1608233788,
+      "dateIso": "2020-12-17T19:36:28Z",
+      "text": "Das ist glaub ich fast ein bisschen zu optimistisch gedacht. Dieses Jahr gingen seit der shit angefangen hat so schnell so viele Monate ins Land, dass ich kaum glaube, dass wir uns dann schon wieder im Normalmodus bewegen können.. Dennoch, wenn es geht, wär ich gern dabei.",
+      "genres": []
+    },
+    {
+      "id": 12695109632,
+      "chatId": -421542033,
+      "date": 1608233053,
+      "dateIso": "2020-12-17T19:24:13Z",
+      "text": "Ich kann es leider noch überhaupt nicht sagen. Müssen erstmal gucken wie Anna das mit zwei Kindern alles gebacken kriegt. Würde mich also eher für die 7. Koje eintragen",
+      "genres": []
+    },
+    {
+      "id": 12694061056,
+      "chatId": -421542033,
+      "date": 1608232298,
+      "dateIso": "2020-12-17T19:11:38Z",
+      "text": "Ich bin 2021 wieder am Start. Himmelfahrt klingt gut für mich",
+      "genres": []
+    },
+    {
+      "id": 12693012480,
+      "chatId": -421542033,
+      "date": 1608232268,
+      "dateIso": "2020-12-17T19:11:08Z",
+      "text": "Vielen Dank für den warmen Empfang.",
+      "genres": []
+    },
+    {
+      "id": 12691963904,
+      "chatId": -421542033,
+      "date": 1608212152,
+      "dateIso": "2020-12-17T13:35:52Z",
+      "text": "Männer, ich würde Himmelfahrt vorschlagen. Ostsee, in der Hoffnung, das da irgendwas geht und dass die Kontaktbeschränkungen segeln mit sechs Haushalten dann wieder zulassen. Wie siehts grundsätzlich aus bei euch? Dann würde ich mal ein Schiff anfragen.",
+      "genres": []
+    },
+    {
+      "id": 12690915328,
+      "senderId": {
+        "userId": 495981582
+      },
+      "chatId": -421542033,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608208913,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "memberUserIds": [
+          1436817967
+        ]
+      }
+    },
+    {
+      "id": 12689866752,
+      "chatId": -421542033,
+      "date": 1608207110,
+      "dateIso": "2020-12-17T12:11:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 719,
+            "height": 1280,
+            "file": {
+              "id": 22926,
+              "size": 70337,
+              "remoteId": "AgACAgIAAxkBAAIvRmkpsuFE0gp53hxfsivpHuV25ZxTAAKurjEbOH_hSvFq-PGqTqLNAQADAgADeQADOAQ",
+              "uniqueId": "AQADrq4xGzh_4Up-"
+            }
+          },
+          {
+            "width": 449,
+            "height": 800,
+            "file": {
+              "id": 22925,
+              "size": 41611,
+              "remoteId": "AgACAgIAAxkBAAIvRmkpsuFE0gp53hxfsivpHuV25ZxTAAKurjEbOH_hSvFq-PGqTqLNAQADAgADeAADOAQ",
+              "uniqueId": "AQADrq4xGzh_4Up9"
+            }
+          },
+          {
+            "width": 180,
+            "height": 320,
+            "file": {
+              "id": 22924,
+              "size": 8470,
+              "remoteId": "AgACAgIAAxkBAAIvRmkpsuFE0gp53hxfsivpHuV25ZxTAAKurjEbOH_hSvFq-PGqTqLNAQADAgADbQADOAQ",
+              "uniqueId": "AQADrq4xGzh_4Upy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12685672448,
+      "senderId": {
+        "userId": 126880927
+      },
+      "chatId": -421542033,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1608195280,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 794326550395748449,
+          "setId": 794326550395748354,
+          "width": 512,
+          "height": 512,
+          "emoji": "😂",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 128,
+            "height": 128,
+            "file": {
+              "id": 22927,
+              "size": 6244,
+              "expectedSize": 6244,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADGQEAAi9CaSmy4bFPzCyPXZFjMw_v2Bu4I3AAAmEAA8oDBgv4tTykXbXirgEAB20AAzgE",
+                "uniqueId": "AQADYQADygMGC3I",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 6244
+              }
+            }
+          },
+          "sticker": {
+            "id": 22928,
+            "size": 39100,
+            "expectedSize": 39100,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAxkBAAIvQmkpsuGxT8wsj12RYzMP79gbuCNwAAJhAAPKAwYL-LU8pF214q44BA",
+              "uniqueId": "AgADYQADygMGCw",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 39100
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 12684623872,
+      "chatId": -421542033,
+      "date": 1608191121,
+      "dateIso": "2020-12-17T07:45:21Z",
+      "text": "Pümmel",
+      "genres": []
+    }
+  ]
+}

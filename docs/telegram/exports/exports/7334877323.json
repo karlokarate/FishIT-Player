@@ -1,0 +1,37 @@
+{
+  "chatId": 7334877323,
+  "title": "mohammad Boshara",
+  "exportedAt": "2025-11-28T14:46:15.601568782Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45778731008,
+      "senderId": {
+        "userId": 7334877323
+      },
+      "chatId": 7334877323,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1738827408,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,1444 @@
+{
+  "chatId": -1001495931490,
+  "title": "Ritter Rost ( HÖRSPIEL )",
+  "exportedAt": "2025-11-28T14:46:41.824690867Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 35651584,
+      "chatId": -1001495931490,
+      "date": 1560250688,
+      "dateIso": "2019-06-11T10:58:08Z",
+      "text": "Fehlt was? Fehler gefunden?\nHast Du Fragen zu diesem Kanal? Oder möchtest die Qualität bewerten?... \n\nIm @Hoerspiel_bot kannst Du Dich gerne dazu melden.",
+      "genres": []
+    },
+    {
+      "id": 34603008,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554803469,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 191,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 33554432,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "15 - Das Phantom.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18589,
+            "size": 108658490,
+            "expectedSize": 108658490,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADIWkpsqOeSzdUZeRgnru8Ony70fs6AAIEBgACI4thUWvj53c1wKmbOAQ",
+              "uniqueId": "AgADBAYAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 108658490
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 15\n- Das Phantom\n━━━━━━━━━━━━━━\n🔟: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 320 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 89,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 33554432,
+      "chatId": -1001495931490,
+      "date": 1554803386,
+      "dateIso": "2019-04-09T09:49:46Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1271,
+            "file": {
+              "id": 18592,
+              "size": 363283,
+              "remoteId": "AgACAgQAAx0CWSoaYgADIGkpsqMoCfXIc1yazQABCiCls6_BNQACGbMxGyOLYVGRY8lkgircFQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADGbMxGyOLYVF-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 794,
+            "file": {
+              "id": 18591,
+              "size": 171869,
+              "remoteId": "AgACAgQAAx0CWSoaYgADIGkpsqMoCfXIc1yazQABCiCls6_BNQACGbMxGyOLYVGRY8lkgircFQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADGbMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 318,
+            "file": {
+              "id": 18590,
+              "size": 40294,
+              "remoteId": "AgACAgQAAx0CWSoaYgADIGkpsqMoCfXIc1yazQABCiCls6_BNQACGbMxGyOLYVGRY8lkgircFQEAAwIAA20AAzgE",
+              "uniqueId": "AQADGbMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 32505856,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554803386,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 114,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 31457280,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "14  - Die Sportskanone.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18593,
+            "size": 66417340,
+            "expectedSize": 66417340,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADH2kpsqPPd0ZGl9y4DmX9BoGbzwABnAACAwYAAiOLYVFfwQZgpSqoPDgE",
+              "uniqueId": "AgADAwYAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 66417340
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 14\n- Die Sportskanone\n━━━━━━━━━━━━━━\n1️⃣2️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 192 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 98,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 31457280,
+      "chatId": -1001495931490,
+      "date": 1554803323,
+      "dateIso": "2019-04-09T09:48:43Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 18596,
+              "size": 342963,
+              "remoteId": "AgACAgQAAx0CWSoaYgADHmkpsqM-TDSz6RJJS1LpekDo-QXfAAIYszEbI4thUdqGWo0BfzviAQADAgADeQADOAQ",
+              "uniqueId": "AQADGLMxGyOLYVF-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 18595,
+              "size": 164270,
+              "remoteId": "AgACAgQAAx0CWSoaYgADHmkpsqM-TDSz6RJJS1LpekDo-QXfAAIYszEbI4thUdqGWo0BfzviAQADAgADeAADOAQ",
+              "uniqueId": "AQADGLMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 18594,
+              "size": 38810,
+              "remoteId": "AgACAgQAAx0CWSoaYgADHmkpsqM-TDSz6RJJS1LpekDo-QXfAAIYszEbI4thUdqGWo0BfzviAQADAgADbQADOAQ",
+              "uniqueId": "AQADGLMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 30408704,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554803322,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 91,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 29360128,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "13 - Der Roboter.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18597,
+            "size": 102015733,
+            "expectedSize": 102015733,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADHWkpsqPElDqFDJqiQ4qB3PPS6MZVAAICBgACI4thUQpCY2V9S5QyOAQ",
+              "uniqueId": "AgADAgYAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 102015733
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 13\n- Der Roboter\n━━━━━━━━━━━━━━\n4️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 320 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 90,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 29360128,
+      "chatId": -1001495931490,
+      "date": 1554803229,
+      "dateIso": "2019-04-09T09:47:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 18600,
+              "size": 397915,
+              "remoteId": "AgACAgQAAx0CWSoaYgADHGkpsqOi2gF4v_vPilhvCrzCX1vFAAIXszEbI4thUS2BAceughJFAQADAgADeQADOAQ",
+              "uniqueId": "AQADF7MxGyOLYVF-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 18599,
+              "size": 190255,
+              "remoteId": "AgACAgQAAx0CWSoaYgADHGkpsqOi2gF4v_vPilhvCrzCX1vFAAIXszEbI4thUS2BAceughJFAQADAgADeAADOAQ",
+              "uniqueId": "AQADF7MxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 18598,
+              "size": 42995,
+              "remoteId": "AgACAgQAAx0CWSoaYgADHGkpsqOi2gF4v_vPilhvCrzCX1vFAAIXszEbI4thUS2BAceughJFAQADAgADbQADOAQ",
+              "uniqueId": "AQADF7MxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 28311552,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554803192,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 80,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 27262976,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "12 - Die Zauberfee.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18601,
+            "size": 45248388,
+            "expectedSize": 45248388,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADG2kpsqPIkJcAAaY84iLo6dlkEVrfFgACAQYAAiOLYVGzQ2cPURnbUTgE",
+              "uniqueId": "AgADAQYAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 45248388
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 12\n- Die Zauberfee\n━━━━━━━━━━━━━━\n1️⃣4️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 140 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 95,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 27262976,
+      "chatId": -1001495931490,
+      "date": 1554803140,
+      "dateIso": "2019-04-09T09:45:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 18603,
+              "size": 65831,
+              "remoteId": "AgACAgQAAx0CWSoaYgADGmkpsqNTM0bilJP4x7weC4y_ieZrAAIWszEbI4thUUQgiz1hg2pxAQADAgADeAADOAQ",
+              "uniqueId": "AQADFrMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 18602,
+              "size": 34136,
+              "remoteId": "AgACAgQAAx0CWSoaYgADGmkpsqNTM0bilJP4x7weC4y_ieZrAAIWszEbI4thUUQgiz1hg2pxAQADAgADbQADOAQ",
+              "uniqueId": "AQADFrMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 26214400,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554803031,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 76,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 25165824,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "11 - Jäger des verlorenen Geschirrs.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18604,
+            "size": 32993366,
+            "expectedSize": 32993366,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADGWkpsqM5sDAfnMR3VP_pGP56AAEJaAADBgACI4thUYHwoO9yanGtOAQ",
+              "uniqueId": "AgAEBgACI4thUQ",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 32993366
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 11\n- Jäger des verlorenen Geschirrs\n━━━━━━━━━━━━━━\n1️⃣3️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 192 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 112,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 25165824,
+      "chatId": -1001495931490,
+      "date": 1554802981,
+      "dateIso": "2019-04-09T09:43:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 496,
+            "file": {
+              "id": 18606,
+              "size": 68813,
+              "remoteId": "AgACAgQAAx0CWSoaYgADGGkpsqMI04uaW2C5E3ZcNxyDD7zdAAISszEbI4thUQcJts704bujAQADAgADeAADOAQ",
+              "uniqueId": "AQADErMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 317,
+            "file": {
+              "id": 18605,
+              "size": 35424,
+              "remoteId": "AgACAgQAAx0CWSoaYgADGGkpsqMI04uaW2C5E3ZcNxyDD7zdAAISszEbI4thUQcJts704bujAQADAgADbQADOAQ",
+              "uniqueId": "AQADErMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 24117248,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554802981,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 75,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 23068672,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "10 - Im Weltraum.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18607,
+            "size": 63789342,
+            "expectedSize": 63789342,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADF2kpsqMeuuzG6jwJVOfz4sBuWSYFAAL_BQACI4thUeH9l2FfiYTlOAQ",
+              "uniqueId": "AgAD_wUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 63789342
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 10\n- Im Weltraum\n━━━━━━━━━━━━━━\n1️⃣4️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 192 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 93,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 23068672,
+      "chatId": -1001495931490,
+      "date": 1554802876,
+      "dateIso": "2019-04-09T09:41:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 498,
+            "file": {
+              "id": 18609,
+              "size": 72482,
+              "remoteId": "AgACAgQAAx0CWSoaYgADFmkpsqNl1NavqHW3W2VnrEwAASvVpwACD7MxGyOLYVGTzsbQZ19o-gEAAwIAA3gAAzgE",
+              "uniqueId": "AQADD7MxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 319,
+            "file": {
+              "id": 18608,
+              "size": 35929,
+              "remoteId": "AgACAgQAAx0CWSoaYgADFmkpsqNl1NavqHW3W2VnrEwAASvVpwACD7MxGyOLYVGTzsbQZ19o-gEAAwIAA20AAzgE",
+              "uniqueId": "AQADD7MxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 22020096,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554802720,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 76,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "09 - der Babysitter.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18610,
+            "size": 70127156,
+            "expectedSize": 70127156,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADFWkpsqNSql56o3D2YZhgiRmP8FurAAL-BQACI4thUbzuoU-WXQ2GOAQ",
+              "uniqueId": "AgAD_gUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 70127156
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 09\n- Der Babysitter\n━━━━━━━━━━━━━━\n1️⃣2️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 200 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 96,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 20971520,
+      "chatId": -1001495931490,
+      "date": 1554802589,
+      "dateIso": "2019-04-09T09:36:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 492,
+            "file": {
+              "id": 18612,
+              "size": 62685,
+              "remoteId": "AgACAgQAAx0CWSoaYgADFGkpsqPZtnqbf_8YezOPKbWZ0DmKAAIOszEbI4thUdHugXXKUp7MAQADAgADeAADOAQ",
+              "uniqueId": "AQADDrMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 315,
+            "file": {
+              "id": 18611,
+              "size": 33733,
+              "remoteId": "AgACAgQAAx0CWSoaYgADFGkpsqPZtnqbf_8YezOPKbWZ0DmKAAIOszEbI4thUdHugXXKUp7MAQADAgADbQADOAQ",
+              "uniqueId": "AQADDrMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 19922944,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554801868,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 73,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 18874368,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "08 - Feuerstuhl.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18613,
+            "size": 31434124,
+            "expectedSize": 31434124,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADE2kpsqMI3CbkMm_KkMAtD5zfWX69AAL8BQACI4thUdqhb55xDlLuOAQ",
+              "uniqueId": "AgAD_AUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 31434124
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 08\n- Feuerstuhl\n━━━━━━━━━━━━━━\n1️⃣3️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 100 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 92,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 18874368,
+      "chatId": -1001495931490,
+      "date": 1554801807,
+      "dateIso": "2019-04-09T09:23:27Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 500,
+            "file": {
+              "id": 18615,
+              "size": 66391,
+              "remoteId": "AgACAgQAAx0CWSoaYgADEmkpsqMO2wIlhJhcoYS3WAfBsjC1AAIKszEbI4thUVANH5Bc1goBAQADAgADeAADOAQ",
+              "uniqueId": "AQADCrMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 18614,
+              "size": 34016,
+              "remoteId": "AgACAgQAAx0CWSoaYgADEmkpsqMO2wIlhJhcoYS3WAfBsjC1AAIKszEbI4thUVANH5Bc1goBAQADAgADbQADOAQ",
+              "uniqueId": "AQADCrMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 17825792,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554801755,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 72,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 16777216,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "07 - Unter Wasser.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18616,
+            "size": 51063609,
+            "expectedSize": 51063609,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADEWkpsqOMPy2XOscpqnWpKIsbxpKsAAL7BQACI4thUaIDqhphTzb2OAQ",
+              "uniqueId": "AgAD-wUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 51063609
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 07\n- Unter Wasser\n━━━━━━━━━━━━━━\n1️⃣4️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 150 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 94,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001495931490,
+      "date": 1554801183,
+      "dateIso": "2019-04-09T09:13:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 488,
+            "file": {
+              "id": 18618,
+              "size": 68801,
+              "remoteId": "AgACAgQAAx0CWSoaYgADEGkpsqNSI4lzlOY2QmTKWMUCEwz8AAIGszEbI4thUWXsyoutByy2AQADAgADeAADOAQ",
+              "uniqueId": "AQADBrMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 312,
+            "file": {
+              "id": 18617,
+              "size": 34999,
+              "remoteId": "AgACAgQAAx0CWSoaYgADEGkpsqNSI4lzlOY2QmTKWMUCEwz8AAIGszEbI4thUWXsyoutByy2AQADAgADbQADOAQ",
+              "uniqueId": "AQADBrMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 15728640,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554801177,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 66,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 14680064,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "06 - Der doppelte Koks.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18619,
+            "size": 64407815,
+            "expectedSize": 64407815,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADD2kpsqP6wiY-ccS4bpPmoDJCjLtNAAL5BQACI4thUfn0dvp_5GYGOAQ",
+              "uniqueId": "AgAD-QUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 64407815
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 06\n- Der doppelte Koks\n━━━━━━━━━━━━━━\n1️⃣4️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 192 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 99,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 14680064,
+      "chatId": -1001495931490,
+      "date": 1554801098,
+      "dateIso": "2019-04-09T09:11:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 496,
+            "height": 500,
+            "file": {
+              "id": 18621,
+              "size": 61077,
+              "remoteId": "AgACAgQAAx0CWSoaYgADDmkpsqNWbTMkTH12RoOmo73e419kAAIFszEbI4thUZA1R89CRcUqAQADAgADeAADOAQ",
+              "uniqueId": "AQADBbMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 317,
+            "height": 320,
+            "file": {
+              "id": 18620,
+              "size": 32432,
+              "remoteId": "AgACAgQAAx0CWSoaYgADDmkpsqNWbTMkTH12RoOmo73e419kAAIFszEbI4thUZA1R89CRcUqAQADAgADbQADOAQ",
+              "uniqueId": "AQADBbMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 13631488,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554801098,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 62,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 12582912,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "05 - Die Windmühlen.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18622,
+            "size": 79108521,
+            "expectedSize": 79108521,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADDWkpsqPpVyDLr3WVrBKt2tZWfaTUAAL4BQACI4thUV0ko8NkEWntOAQ",
+              "uniqueId": "AgAD-AUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 79108521
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 05\n- Die Windmühlen\n━━━━━━━━━━━━━━\n1️⃣8️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 192 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 96,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 12582912,
+      "chatId": -1001495931490,
+      "date": 1554801019,
+      "dateIso": "2019-04-09T09:10:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 493,
+            "file": {
+              "id": 18624,
+              "size": 78262,
+              "remoteId": "AgACAgQAAx0CWSoaYgADDGkpsqOUcwF9CfjS8DSVw5-eRpYLAAIEszEbI4thUaIND37UaWNoAQADAgADeAADOAQ",
+              "uniqueId": "AQADBLMxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 316,
+            "file": {
+              "id": 18623,
+              "size": 39458,
+              "remoteId": "AgACAgQAAx0CWSoaYgADDGkpsqOUcwF9CfjS8DSVw5-eRpYLAAIEszEbI4thUaIND37UaWNoAQADAgADbQADOAQ",
+              "uniqueId": "AQADBLMxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 11534336,
+      "senderId": {
+        "chatId": -1001495931490
+      },
+      "chatId": -1001495931490,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1554801019,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 60,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001495931490,
+        "messageId": 10485760,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "04 - Die fantastischen Fuenf.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 18625,
+            "size": 103904070,
+            "expectedSize": 103904070,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWSoaYgADC2kpsqMFCeNXy8QOQmlQoRVsIuWeAAL3BQACI4thUbhyp3JCs-YtOAQ",
+              "uniqueId": "AgAD9wUAAiOLYVE",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 103904070
+            }
+          }
+        },
+        "caption": {
+          "text": "✅ : Ritter Rost (Hörspiel)\n━━━━━━━━━━━━━━\n🆚 : Folge 04\n- Die fantastischen Fünf\n━━━━━━━━━━━━━━\n1️⃣8️⃣: Track (s)\n⏯ : MP3 + Cover\n⚙️ : 280 kBit/s",
+          "entities": [
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            },
+            {
+              "offset": 47,
+              "length": 5,
+              "type": {}
+            },
+            {
+              "offset": 104,
+              "length": 5,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 10485760,
+      "chatId": -1001495931490,
+      "date": 1554800913,
+      "dateIso": "2019-04-09T09:08:33Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 498,
+            "file": {
+              "id": 18627,
+              "size": 74076,
+              "remoteId": "AgACAgQAAx0CWSoaYgADCmkpsqPSaN6CP9klv5DGT2OYoagPAAIDszEbI4thUUOi3HMfve5RAQADAgADeAADOAQ",
+              "uniqueId": "AQADA7MxGyOLYVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 319,
+            "file": {
+              "id": 18626,
+              "size": 39066,
+              "remoteId": "AgACAgQAAx0CWSoaYgADCmkpsqPSaN6CP9klv5DGT2OYoagPAAIDszEbI4thUUOi3HMfve5RAQADAgADbQADOAQ",
+              "uniqueId": "AQADA7MxGyOLYVFy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "chatId": -827806482,
+  "title": "Twinpower",
+  "exportedAt": "2025-11-28T14:47:32.469098883Z",
+  "count": 5,
+  "messages": [
+    {
+      "id": 40037777408,
+      "chatId": -827806482,
+      "date": 1677590115,
+      "dateIso": "2023-02-28T13:15:15Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 576,
+            "height": 1280,
+            "file": {
+              "id": 5542,
+              "size": 131082,
+              "remoteId": "AgACAgIAAxkDAAKVJ2kpssNJCcWEHCva8vZ5Bxy1K-ywAALnxzEbh-HwSygMBQUcfGk7AQADAgADeQADOAQ",
+              "uniqueId": "AQAD58cxG4fh8Et-"
+            }
+          },
+          {
+            "width": 360,
+            "height": 800,
+            "file": {
+              "id": 5541,
+              "size": 65219,
+              "remoteId": "AgACAgIAAxkDAAKVJ2kpssNJCcWEHCva8vZ5Bxy1K-ywAALnxzEbh-HwSygMBQUcfGk7AQADAgADeAADOAQ",
+              "uniqueId": "AQAD58cxG4fh8Et9"
+            }
+          },
+          {
+            "width": 144,
+            "height": 320,
+            "file": {
+              "id": 5540,
+              "size": 13415,
+              "remoteId": "AgACAgIAAxkDAAKVJ2kpssNJCcWEHCva8vZ5Bxy1K-ywAALnxzEbh-HwSygMBQUcfGk7AQADAgADbQADOAQ",
+              "uniqueId": "AQAD58cxG4fh8Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 40036728832,
+      "chatId": -827806482,
+      "date": 1677590085,
+      "dateIso": "2023-02-28T13:14:45Z",
+      "text": "Erkrankung hat mich erst erreicht, als die Mädels bereits bei mir und ihr schon weg wart. Befremdlich empfinde ich es darüber hinaus, dass ihr gemeinsam trotz wissentlich positiv kamt, um eure Kinder zu bringen. Das kann ich absolut nicht verstehen und ist konträr zu meinen persönlichen Werten.\nLG, Chris",
+      "genres": []
+    },
+    {
+      "id": 40035680256,
+      "chatId": -827806482,
+      "date": 1677589927,
+      "dateIso": "2023-02-28T13:12:07Z",
+      "text": "Wie bereits geschrieben, können wir gerne einen gemeinsamen Videocall dazu vereinbaren. Lieber wäre es mir, mit euch persönlich zu sprechen. Es gibt dazu eine klare Linie, die ich vertraglich unter 5.2 vorgegeben habe und die verbindlich für Alle ist. Darüber hinaus haben wir alle eine moralische Verpflichtung gegenüber allen Anderen, die für mich persönlich noch viel wichtiger ist, als irgendein Vertrag. \nEure Nachricht über eure Covid",
+      "genres": []
+    },
+    {
+      "id": 40031485952,
+      "chatId": -827806482,
+      "date": 1677588290,
+      "dateIso": "2023-02-28T12:44:50Z",
+      "text": "hallo ihr Lieben!\nZum bereits in der Gruppe angesprochenen Thema, fände ich es gut, wenn wir am Ende der Woche einmal einen Termin finden könnten, um uns vielleicht in einem Videocall darüber austauschen zu können.  Am Sonntag Nachmittag würde es mir gut passen.\nLG, Chris",
+      "genres": []
+    },
+    {
+      "id": 40030437376,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -827806482,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1677588137,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Twinpower",
+        "memberUserIds": [
+          143846926,
+          10381748,
+          361223679
+        ]
+      }
+    }
+  ]
+}

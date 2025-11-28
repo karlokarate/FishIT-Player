@@ -1,0 +1,80 @@
+{
+  "chatId": -1001924196565,
+  "title": "HD Stranger Things 5 Vol 1-2-3",
+  "exportedAt": "2025-11-28T14:45:36.485901447Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 1065353216,
+      "chatId": -1001924196565,
+      "date": 1761892932,
+      "dateIso": "2025-10-31T06:42:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 688,
+            "file": {
+              "id": 4898,
+              "size": 53339,
+              "remoteId": "AgACAgUAAx0CcrDo1QACA_hpKbJnZhUL-ht817AWQrQiUtyffwACMQ5rGxjOKFSmvq4XTTYkhAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADMQ5rGxjOKFR-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 430,
+            "file": {
+              "id": 4897,
+              "size": 32489,
+              "remoteId": "AgACAgUAAx0CcrDo1QACA_hpKbJnZhUL-ht817AWQrQiUtyffwACMQ5rGxjOKFSmvq4XTTYkhAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADMQ5rGxjOKFR9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 172,
+            "file": {
+              "id": 4896,
+              "size": 8887,
+              "remoteId": "AgACAgUAAx0CcrDo1QACA_hpKbJnZhUL-ht817AWQrQiUtyffwACMQ5rGxjOKFSmvq4XTTYkhAEAAwIAA20AAzgE",
+              "uniqueId": "AQADMQ5rGxjOKFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001924196565
+      },
+      "chatId": -1001924196565,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1696753532,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Fair play Ballerina"
+      }
+    }
+  ]
+}

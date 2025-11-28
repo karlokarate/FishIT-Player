@@ -1,0 +1,328 @@
+{
+  "chatId": -1001755699835,
+  "title": "Gaslit FHD",
+  "exportedAt": "2025-11-28T14:47:33.690743572Z",
+  "count": 10,
+  "messages": [
+    {
+      "id": 33554432,
+      "chatId": -1001755699835,
+      "date": 1654840602,
+      "dateIso": "2022-06-10T05:56:42Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 447,
+            "file": {
+              "id": 5573,
+              "size": 65396,
+              "remoteId": "AgACAgIAAx0CaKXaewADIGkpsuTEOy-LxMnjZ7imTa7R-bqSAAIxujEbGewYSVf4HetYNNStAQADAgADeAADOAQ",
+              "uniqueId": "AQADMboxGxnsGEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 223,
+            "file": {
+              "id": 5572,
+              "size": 16328,
+              "remoteId": "AgACAgIAAx0CaKXaewADIGkpsuTEOy-LxMnjZ7imTa7R-bqSAAIxujEbGewYSVf4HetYNNStAQADAgADbQADOAQ",
+              "uniqueId": "AQADMboxGxnsGEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 32505856,
+      "chatId": -1001755699835,
+      "date": 1654840561,
+      "dateIso": "2022-06-10T05:56:01Z",
+      "content": {
+        "duration": 3431,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Gaslit - S01 E07 - Das Jahr der Ratte.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24413,
+          "size": 1784306948,
+          "remoteId": "BAACAgIAAx0CaKXaewADH2kpsuTqgJLIBAS92XXhq53knNP2AAKUFwAC36AYSav2iZnIETGLOAQ",
+          "uniqueId": "AgADlBcAAt-gGEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24412,
+            "size": 5464,
+            "remoteId": "AAMCAgADHQJopdp7AAMfaSmy5OqAksgEBL3ZdeGrneSc0_YAApQXAALfoBhJq_aJmcgRMYsBAAdtAAM4BA",
+            "uniqueId": "AQADlBcAAt-gGEly"
+          }
+        },
+        "caption": "Gaslit - S01 E07 - Das Jahr der Ratte"
+      }
+    },
+    {
+      "id": 28311552,
+      "chatId": -1001755699835,
+      "date": 1653949098,
+      "dateIso": "2022-05-30T22:18:18Z",
+      "content": {
+        "duration": 3527,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Gaslit - S01 E06 - Tuffy.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24415,
+          "size": 2078806519,
+          "remoteId": "BAACAgIAAx0CaKXaewADG2kpsuSOeCISsevDQ-fP1IXGRa8TAAJGHAACDnCoSMikGVZpY3g6OAQ",
+          "uniqueId": "AgADRhwAAg5wqEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24414,
+            "size": 5447,
+            "remoteId": "AAMCAgADHQJopdp7AAMbaSmy5I54IhKx68ND58_UhcZFrxMAAkYcAAIOcKhIyKQZVmljeDoBAAdtAAM4BA",
+            "uniqueId": "AQADRhwAAg5wqEhy"
+          }
+        },
+        "caption": "Gaslit - S01 E06 - Tuffy"
+      }
+    },
+    {
+      "id": 24117248,
+      "chatId": -1001755699835,
+      "date": 1653296483,
+      "dateIso": "2022-05-23T09:01:23Z",
+      "content": {
+        "duration": 3465,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Gaslit - S01 E05 - Honeymoon.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24417,
+          "size": 2078317148,
+          "remoteId": "BAACAgIAAx0CaKXaewADF2kpsuSaFHmQ2TNnabY26BtFExa2AALAFQACwLdYSDQIU-GTrrmKOAQ",
+          "uniqueId": "AgADwBUAAsC3WEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24416,
+            "size": 5447,
+            "remoteId": "AAMCAgADHQJopdp7AAMXaSmy5JoUeZDZM2dptjboG0UTFrYAAsAVAALAt1hINAhT4ZOuuYoBAAdtAAM4BA",
+            "uniqueId": "AQADwBUAAsC3WEhy"
+          }
+        },
+        "caption": "Gaslit - S01 E05 - Honeymoon"
+      }
+    },
+    {
+      "id": 9437184,
+      "chatId": -1001755699835,
+      "date": 1652655849,
+      "dateIso": "2022-05-15T23:04:09Z",
+      "content": {
+        "duration": 3224,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Gaslit - S01 E04 - Malum In Se (Böse an sich).mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24419,
+          "size": 2077981297,
+          "remoteId": "BAACAgIAAx0CaKXaewADCWkpsuRrFfnDD9MrtdEpPZVVRv-aAAIbGQAC66ERSBP26fdjIpeZOAQ",
+          "uniqueId": "AgADGxkAAuuhEUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24418,
+            "size": 5447,
+            "remoteId": "AAMCAgADHQJopdp7AAMJaSmy5GsV-cMP0yu10Sk9lVVG_5oAAhsZAALroRFIE_bp92Mil5kBAAdtAAM4BA",
+            "uniqueId": "AQADGxkAAuuhEUhy"
+          }
+        },
+        "caption": "Gaslit - S01 E04 - Malum In Se (Böse an sich)"
+      }
+    },
+    {
+      "id": 7340032,
+      "chatId": -1001755699835,
+      "date": 1652053093,
+      "dateIso": "2022-05-08T23:38:13Z",
+      "content": {
+        "duration": 3488,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Gaslit -S01 E03 - King George.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24421,
+          "size": 2076974386,
+          "remoteId": "BAACAgIAAx0CaKXaewADB2kpsuTIz8rg01y1jn2ad4AG-yHIAAJtFwACWejASxu-sJSTElNJOAQ",
+          "uniqueId": "AgADbRcAAlnowEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24420,
+            "size": 5447,
+            "remoteId": "AAMCAgADHQJopdp7AAMHaSmy5MjPyuDTXLWOfZp3gAb7IcgAAm0XAAJZ6MBLG76wlJMSU0kBAAdtAAM4BA",
+            "uniqueId": "AQADbRcAAlnowEty"
+          }
+        },
+        "caption": "Gaslit -S01 E03 - King George"
+      }
+    },
+    {
+      "id": 6291456,
+      "chatId": -1001755699835,
+      "date": 1651423983,
+      "dateIso": "2022-05-01T16:53:03Z",
+      "content": {
+        "duration": 3273,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Gaslit - S01 E02 - Californien.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24423,
+          "size": 2017751151,
+          "remoteId": "BAACAgIAAx0CaKXaewADBmkpsuRNEF6YvXqz2N4SlnXzogABLwACjhkAAuJTeUuJWnqB6IBieDgE",
+          "uniqueId": "AgADjhkAAuJTeUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24422,
+            "size": 5447,
+            "remoteId": "AAMCAgADHQJopdp7AAMGaSmy5E0QXpi9erPY3hKWdfOiAAEvAAKOGQAC4lN5S4laeoHogGJ4AQAHbQADOAQ",
+            "uniqueId": "AQADjhkAAuJTeUty"
+          }
+        },
+        "caption": "Gaslit - S01 E02 - Californien"
+      }
+    },
+    {
+      "id": 5242880,
+      "chatId": -1001755699835,
+      "date": 1651423968,
+      "dateIso": "2022-05-01T16:52:48Z",
+      "content": {
+        "duration": 3493,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Gaslit - S01 E01 - Wille.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 24425,
+          "size": 2025678245,
+          "remoteId": "BAACAgIAAx0CaKXaewADBWkpsuRqtc4z6Kwi1mcAAWMUxNgt_gACjRkAAuJTeUvbiPnncNLQXTgE",
+          "uniqueId": "AgADjRkAAuJTeUs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 24424,
+            "size": 5447,
+            "remoteId": "AAMCAgADHQJopdp7AAMFaSmy5Gq1zjPorCLWZwABYxTE2C3-AAKNGQAC4lN5S9uI-edw0tBdAQAHbQADOAQ",
+            "uniqueId": "AQADjRkAAuJTeUty"
+          }
+        },
+        "caption": "Gaslit - S01 E01 - Wille"
+      }
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001755699835,
+      "date": 1651419864,
+      "dateIso": "2022-05-01T15:44:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 24428,
+              "size": 125909,
+              "remoteId": "AgACAgIAAx0CaKXaewADA2kpsuS3t6kakTc8sxgwdiuLZ2ukAAL1ujEbyoFwSzo6EVq6rNkGAQADAgADeQADOAQ",
+              "uniqueId": "AQAD9boxG8qBcEt-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 24427,
+              "size": 67496,
+              "remoteId": "AgACAgIAAx0CaKXaewADA2kpsuS3t6kakTc8sxgwdiuLZ2ukAAL1ujEbyoFwSzo6EVq6rNkGAQADAgADeAADOAQ",
+              "uniqueId": "AQAD9boxG8qBcEt9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 24426,
+              "size": 15943,
+              "remoteId": "AgACAgIAAx0CaKXaewADA2kpsuS3t6kakTc8sxgwdiuLZ2ukAAL1ujEbyoFwSzo6EVq6rNkGAQADAgADbQADOAQ",
+              "uniqueId": "AQAD9boxG8qBcEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001755699835
+      },
+      "chatId": -1001755699835,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1651419832,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Gaslit FHD"
+      }
+    }
+  ]
+}

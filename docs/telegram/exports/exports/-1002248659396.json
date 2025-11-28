@@ -1,0 +1,822 @@
+{
+  "chatId": -1002248659396,
+  "title": "The Strain FULL HD",
+  "exportedAt": "2025-11-28T14:46:26.300136765Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 123731968,
+      "chatId": -1002248659396,
+      "date": 1725685928,
+      "dateIso": "2024-09-07T05:12:08Z",
+      "text": "Zum Anfang",
+      "genres": []
+    },
+    {
+      "id": 122683392,
+      "senderId": {
+        "chatId": -1002248659396
+      },
+      "chatId": -1002248659396,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1725685874,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 237,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 5345887832747552043,
+          "setId": 1617972587663458309,
+          "width": 512,
+          "height": 288,
+          "emoji": "⛔",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 5080,
+              "size": 4918,
+              "expectedSize": 4918,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADIQUABIYH0cQAA3VpKbKkHc5Gm98-CcPHeCe8R25T7gACKy0AAqloMEonKMyih9thtgEAB20AAzgE",
+                "uniqueId": "AQADKy0AAqloMEpy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 4918
+              }
+            }
+          },
+          "sticker": {
+            "id": 5081,
+            "size": 11638,
+            "expectedSize": 11638,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAyEFAASGB9HEAAN1aSmypB3ORpvfPgnDx3gnvEduU-4AAistAAKpaDBKJyjMoofbYbY4BA",
+              "uniqueId": "AgADKy0AAqloMEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 11638
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 121634816,
+      "chatId": -1002248659396,
+      "date": 1725685867,
+      "dateIso": "2024-09-07T05:11:07Z",
+      "content": {
+        "duration": 2613,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E10 - Das letzte Opfer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20019,
+          "size": 3483122602,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAAN0aSmypImWB2iybYYUjhB5HOajK3wAAnsXAAIbhNlSh-egOWo0yBY4BA",
+          "uniqueId": "AgADexcAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20018,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA3RpKbKkiZYHaLJthhSOEHkc5qMrfAACexcAAhuE2VKH56A5ajTIFgEAB20AAzgE",
+            "uniqueId": "AQADexcAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E10 - Das letzte Opfer"
+      }
+    },
+    {
+      "id": 120586240,
+      "chatId": -1002248659396,
+      "date": 1725684635,
+      "dateIso": "2024-09-07T04:50:35Z",
+      "content": {
+        "duration": 2394,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E08 - Ein Flackern in der Dunkelheit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20021,
+          "size": 3243823867,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANzaSmypL97UYKgOmaaWgABWdjRa1xhAAJ5FwACG4TZUuA9rpB7JxnlOAQ",
+          "uniqueId": "AgADeRcAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20020,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA3NpKbKkv3tRgqA6ZppaAAFZ2NFrXGEAAnkXAAIbhNlS4D2ukHsnGeUBAAdtAAM4BA",
+            "uniqueId": "AQADeRcAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E08 - Ein Flackern in der Dunkelheit"
+      }
+    },
+    {
+      "id": 119537664,
+      "chatId": -1002248659396,
+      "date": 1725684192,
+      "dateIso": "2024-09-07T04:43:12Z",
+      "content": {
+        "duration": 2657,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E07 - Die Brücken von Manhattan.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20023,
+          "size": 2979133407,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANyaSmypELWWHcCJFSdzRwJkBSvO8IAAiMXAAIbhNlStiBb3K6IkUs4BA",
+          "uniqueId": "AgADIxcAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20022,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA3JpKbKkQtZYdwIkVJ3NHAmQFK87wgACIxcAAhuE2VK2IFvcroiRSwEAB20AAzgE",
+            "uniqueId": "AQADIxcAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E07 - Die Brücken von Manhattan"
+      }
+    },
+    {
+      "id": 118489088,
+      "chatId": -1002248659396,
+      "date": 1725655068,
+      "dateIso": "2024-09-06T20:37:48Z",
+      "content": {
+        "duration": 2415,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E06 - Verschmähte Liebe.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20025,
+          "size": 3007319260,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANxaSmypJ0qs3jmlyvV3bM1evk9DHIAAh4XAAIbhNlSJUfd_-1rWeg4BA",
+          "uniqueId": "AgADHhcAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20024,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA3FpKbKknSqzeOaXK9XdszV6-T0McgACHhcAAhuE2VIlR93_7WtZ6AEAB20AAzgE",
+            "uniqueId": "AQADHhcAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E06 - Verschmähte Liebe"
+      }
+    },
+    {
+      "id": 117440512,
+      "chatId": -1002248659396,
+      "date": 1725655068,
+      "dateIso": "2024-09-06T20:37:48Z",
+      "content": {
+        "duration": 2798,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E05 - Farmer und Vieh.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20027,
+          "size": 3557768938,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANwaSmypNc9xjihwxeiIHZx0RzSlOMAAg8XAAIbhNlSVDuR11FDMYg4BA",
+          "uniqueId": "AgADDxcAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20026,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA3BpKbKk1z3GOKHDF6IgdnHRHNKU4wACDxcAAhuE2VJUO5HXUUMxiAEAB20AAzgE",
+            "uniqueId": "AQADDxcAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E05 - Farmer und Vieh"
+      }
+    },
+    {
+      "id": 116391936,
+      "chatId": -1002248659396,
+      "date": 1725655051,
+      "dateIso": "2024-09-06T20:37:31Z",
+      "content": {
+        "duration": 2340,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E04 - Baby-Ernte.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20029,
+          "size": 2382377452,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANvaSmypGHUqk_-3jFiJvyrXT51nIgAAhcXAAIbhNlSrAiOm5u_cQo4BA",
+          "uniqueId": "AgADFxcAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20028,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA29pKbKkYdSqT_7eMWIm_KtdPnWciAACFxcAAhuE2VKsCI6bm79xCgEAB20AAzgE",
+            "uniqueId": "AQADFxcAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E04 - Baby-Ernte"
+      }
+    },
+    {
+      "id": 115343360,
+      "chatId": -1002248659396,
+      "date": 1725643650,
+      "dateIso": "2024-09-06T17:27:30Z",
+      "content": {
+        "duration": 2430,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E03 - Augen voller Blut.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20031,
+          "size": 2087280178,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANuaSmypJdWFaIrAAE1SX_wje6aKWl4AALZFgACVWPYUmcftAP6kddOOAQ",
+          "uniqueId": "AgAD2RYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20030,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA25pKbKkl1YVoisAATVJf_CN7popaXgAAtkWAAJVY9hSZx-0A_qR104BAAdtAAM4BA",
+            "uniqueId": "AQAD2RYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S04E03 - Augen voller Blut"
+      }
+    },
+    {
+      "id": 114294784,
+      "chatId": -1002248659396,
+      "date": 1725643649,
+      "dateIso": "2024-09-06T17:27:29Z",
+      "content": {
+        "duration": 2456,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E02 - B-Positiv.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20033,
+          "size": 3486045158,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANtaSmypGGXNn1NikTmarv_9zWNwvAAAsIWAAIbhNlSpxZV-s34xSc4BA",
+          "uniqueId": "AgADwhYAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20032,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA21pKbKkYZc2fU2KROZqu__3NY3C8AACwhYAAhuE2VKnFlX6zfjFJwEAB20AAzgE",
+            "uniqueId": "AQADwhYAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E02 - B-Positiv"
+      }
+    },
+    {
+      "id": 113246208,
+      "chatId": -1002248659396,
+      "date": 1725635747,
+      "dateIso": "2024-09-06T15:15:47Z",
+      "content": {
+        "duration": 2640,
+        "width": 1280,
+        "height": 800,
+        "fileName": "The Strain - S04E01 - Nuklearer Winter.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20035,
+          "size": 3644402697,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANsaSmypC99WYyd-Vmo46Z8iFXvlHcAArwWAAIbhNlSOYmL2e0TAAFqOAQ",
+          "uniqueId": "AgADvBYAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 200,
+          "file": {
+            "id": 20034,
+            "size": 8632,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2xpKbKkL31ZjJ35WajjpnyIVe-UdwACvBYAAhuE2VI5iYvZ7RMAAWoBAAdtAAM4BA",
+            "uniqueId": "AQADvBYAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S04E01 - Nuklearer Winter"
+      }
+    },
+    {
+      "id": 112197632,
+      "chatId": -1002248659396,
+      "date": 1725635094,
+      "dateIso": "2024-09-06T15:04:54Z",
+      "content": {
+        "duration": 2655,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E10 - Die letzten Tage der Menschheit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20037,
+          "size": 2376855531,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANraSmypG-FriwwcOg9FaoU49ziHWoAArQWAAIbhNlSgQl-Fj_Iomc4BA",
+          "uniqueId": "AgADtBYAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20036,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2tpKbKkb4WuLDBw6D0VqhTj3OIdagACtBYAAhuE2VKBCX4WP8iiZwEAB20AAzgE",
+            "uniqueId": "AQADtBYAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S03E10 - Die letzten Tage der Menschheit"
+      }
+    },
+    {
+      "id": 111149056,
+      "chatId": -1002248659396,
+      "date": 1725634451,
+      "dateIso": "2024-09-06T14:54:11Z",
+      "content": {
+        "duration": 2570,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E09 - Der Pakt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20039,
+          "size": 1920471964,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANqaSmypAABqUKbqZZzjqYD75fOUxKDAAK7FgACVWPYUig1OZuOGMDTOAQ",
+          "uniqueId": "AgADuxYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20038,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2ppKbKkAAGpQpuplnOOpgPvl85TEoMAArsWAAJVY9hSKDU5m44YwNMBAAdtAAM4BA",
+            "uniqueId": "AQADuxYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S03E09 - Der Pakt"
+      }
+    },
+    {
+      "id": 110100480,
+      "chatId": -1002248659396,
+      "date": 1725634451,
+      "dateIso": "2024-09-06T14:54:11Z",
+      "content": {
+        "duration": 2659,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E08 - Die Blutfabrik.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20041,
+          "size": 2164528267,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANpaSmypHDe4Tiy3LCiMSZz_8QHvswAAqAWAAIbhNlSiAlXHQKy8VM4BA",
+          "uniqueId": "AgADoBYAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20040,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2lpKbKkcN7hOLLcsKIxJnP_xAe-zAACoBYAAhuE2VKICVcdArLxUwEAB20AAzgE",
+            "uniqueId": "AQADoBYAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S03E08 - Die Blutfabrik"
+      }
+    },
+    {
+      "id": 109051904,
+      "chatId": -1002248659396,
+      "date": 1725633031,
+      "dateIso": "2024-09-06T14:30:31Z",
+      "content": {
+        "duration": 2413,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E07 - Nur ein Tropfen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20043,
+          "size": 2154181455,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANoaSmypChF4JL-mzjRaVRn0j1tQyMAApcWAAIbhNlSZOpOtxvcGVU4BA",
+          "uniqueId": "AgADlxYAAhuE2VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20042,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2hpKbKkKEXgkv6bONFpVGfSPW1DIwAClxYAAhuE2VJk6k63G9wZVQEAB20AAzgE",
+            "uniqueId": "AQADlxYAAhuE2VJy"
+          }
+        },
+        "caption": "The Strain - S03E07 - Nur ein Tropfen"
+      }
+    },
+    {
+      "id": 108003328,
+      "chatId": -1002248659396,
+      "date": 1725633031,
+      "dateIso": "2024-09-06T14:30:31Z",
+      "content": {
+        "duration": 2602,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E06 - Das Nest.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20045,
+          "size": 1949465092,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANnaSmypGhmHed2gtQQGnKFAAExPJYzAAKzFgACVWPYUibyEHQNhG37OAQ",
+          "uniqueId": "AgADsxYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20044,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2dpKbKkaGYd53aC1BAacoUAATE8ljMAArMWAAJVY9hSJvIQdA2EbfsBAAdtAAM4BA",
+            "uniqueId": "AQADsxYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S03E06 - Das Nest"
+      }
+    },
+    {
+      "id": 106954752,
+      "chatId": -1002248659396,
+      "date": 1725630738,
+      "dateIso": "2024-09-06T13:52:18Z",
+      "content": {
+        "duration": 2540,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E05 - Nah am Wahnsinn.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20047,
+          "size": 2041788882,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANmaSmypNsiDcT8i4ruRrypLHBaMOcAAoMWAAJVY9hSKh7GNJlX7V04BA",
+          "uniqueId": "AgADgxYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20046,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2ZpKbKk2yINxPyLiu5GvKkscFow5wACgxYAAlVj2FIqHsY0mVftXQEAB20AAzgE",
+            "uniqueId": "AQADgxYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S03E05 - Nah am Wahnsinn"
+      }
+    },
+    {
+      "id": 105906176,
+      "chatId": -1002248659396,
+      "date": 1725623737,
+      "dateIso": "2024-09-06T11:55:37Z",
+      "content": {
+        "duration": 2572,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E04 - Mann ohne Plan.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20049,
+          "size": 2357905323,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANlaSmypK1zyfvSKxr2lmcvVg9kST0AAngRAAIbhNFS_8ai3iv2qMA4BA",
+          "uniqueId": "AgADeBEAAhuE0VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20048,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2VpKbKkrXPJ-9IrGvaWZy9WD2RJPQACeBEAAhuE0VL_xqLeK_aowAEAB20AAzgE",
+            "uniqueId": "AQADeBEAAhuE0VJy"
+          }
+        },
+        "caption": "The Strain - S03E04 - Mann ohne Plan"
+      }
+    },
+    {
+      "id": 104857600,
+      "chatId": -1002248659396,
+      "date": 1725621345,
+      "dateIso": "2024-09-06T11:15:45Z",
+      "content": {
+        "duration": 2565,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E03 - Saat der Zerstörung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20051,
+          "size": 2040497064,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANkaSmypDFPLOJ2Aa-28xSUylzmnbsAAmUWAAJVY9hS27lmW7EUNwQ4BA",
+          "uniqueId": "AgADZRYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20050,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2RpKbKkMU8s4nYBr7bzFJTKXOaduwACZRYAAlVj2FLbuWZbsRQ3BAEAB20AAzgE",
+            "uniqueId": "AQADZRYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S03E03 - Saat der Zerstörung"
+      }
+    },
+    {
+      "id": 103809024,
+      "chatId": -1002248659396,
+      "date": 1725618750,
+      "dateIso": "2024-09-06T10:32:30Z",
+      "content": {
+        "duration": 2703,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E02 - Die stille Stimme.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20053,
+          "size": 1940783376,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANjaSmypN6nNltEc3mDEuhQUCk7Q_MAAlMWAAJVY9hSX_ZNoxZhuE44BA",
+          "uniqueId": "AgADUxYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20052,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2NpKbKk3qc2W0RzeYMS6FBQKTtD8wACUxYAAlVj2FJf9k2jFmG4TgEAB20AAzgE",
+            "uniqueId": "AQADUxYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S03E02 - Die stille Stimme"
+      }
+    },
+    {
+      "id": 102760448,
+      "chatId": -1002248659396,
+      "date": 1725617504,
+      "dateIso": "2024-09-06T10:11:44Z",
+      "content": {
+        "duration": 2567,
+        "width": 1280,
+        "height": 720,
+        "fileName": "The Strain - S03E01 - New York Strong.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20055,
+          "size": 1945659572,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANiaSmypCoWiKHqe2SdNyR2ZB5WOC4AAkEWAAJVY9hS935_1f22p3o4BA",
+          "uniqueId": "AgADQRYAAlVj2FI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20054,
+            "size": 17689,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2JpKbKkKhaIoep7ZJ03JHZkHlY4LgACQRYAAlVj2FL3fn_V_banegEAB20AAzgE",
+            "uniqueId": "AQADQRYAAlVj2FJy"
+          }
+        },
+        "caption": "The Strain - S03E01 - New York Strong"
+      }
+    },
+    {
+      "id": 101711872,
+      "chatId": -1002248659396,
+      "date": 1725613730,
+      "dateIso": "2024-09-06T09:08:50Z",
+      "content": {
+        "duration": 2744,
+        "width": 1200,
+        "height": 675,
+        "fileName": "The Strain - S02E13 - Der letzte Zug.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20057,
+          "size": 2823798460,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANhaSmypBw04hU1X0xnOxQwoHIwmGoAAjoRAAIbhNFS6eac1iFh3Rs4BA",
+          "uniqueId": "AgADOhEAAhuE0VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20056,
+            "size": 9631,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2FpKbKkHDTiFTVfTGc7FDCgcjCYagACOhEAAhuE0VLp5pzWIWHdGwEAB20AAzgE",
+            "uniqueId": "AQADOhEAAhuE0VJy"
+          }
+        },
+        "caption": "The Strain - S02E13 - Der letzte Zug"
+      }
+    },
+    {
+      "id": 100663296,
+      "chatId": -1002248659396,
+      "date": 1725611708,
+      "dateIso": "2024-09-06T08:35:08Z",
+      "content": {
+        "duration": 2619,
+        "width": 1200,
+        "height": 675,
+        "fileName": "The Strain - S02E12 - Weißes Blut.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20059,
+          "size": 2351635092,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANgaSmypIk4YiHxMfjtF4jBLVjnQfwAArUWAAKgs9FSi8pXKpHGxhM4BA",
+          "uniqueId": "AgADtRYAAqCz0VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20058,
+            "size": 9631,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA2BpKbKkiThiIfEx-O0XiMEtWOdB_AACtRYAAqCz0VKLylcqkcbGEwEAB20AAzgE",
+            "uniqueId": "AQADtRYAAqCz0VJy"
+          }
+        },
+        "caption": "The Strain - S02E12 - Weißes Blut"
+      }
+    },
+    {
+      "id": 99614720,
+      "chatId": -1002248659396,
+      "date": 1725611708,
+      "dateIso": "2024-09-06T08:35:08Z",
+      "content": {
+        "duration": 2865,
+        "width": 1200,
+        "height": 675,
+        "fileName": "The Strain - S02E11 - Mayfield Hotel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20061,
+          "size": 3319791862,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANfaSmypPZ6ZjBk1oNGJRkVNN7VUOUAArAWAAKgs9FSSrawTfnVKJM4BA",
+          "uniqueId": "AgADsBYAAqCz0VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20060,
+            "size": 9631,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA19pKbKk9npmMGTWg0YlGRU03tVQ5QACsBYAAqCz0VJKtrBN-dUokwEAB20AAzgE",
+            "uniqueId": "AQADsBYAAqCz0VJy"
+          }
+        },
+        "caption": "The Strain - S02E11 - Mayfield Hotel"
+      }
+    },
+    {
+      "id": 98566144,
+      "chatId": -1002248659396,
+      "date": 1725611708,
+      "dateIso": "2024-09-06T08:35:08Z",
+      "content": {
+        "duration": 2505,
+        "width": 1200,
+        "height": 675,
+        "fileName": "The Strain - S02E10 - Der Anschlag.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20063,
+          "size": 2556483808,
+          "remoteId": "BAACAgQAAyEFAASGB9HEAANeaSmypH-GrgKrK9JQVAIkBRqWf_wAAqcWAAKgs9FSzlKJ7ndaTo44BA",
+          "uniqueId": "AgADpxYAAqCz0VI"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 20062,
+            "size": 9631,
+            "remoteId": "AAMCBAADIQUABIYH0cQAA15pKbKkf4auAqsr0lBUAiQFGpZ__AACpxYAAqCz0VLOUonud1pOjgEAB20AAzgE",
+            "uniqueId": "AQADpxYAAqCz0VJy"
+          }
+        },
+        "caption": "The Strain - S02E10 - Der Anschlag"
+      }
+    }
+  ]
+}

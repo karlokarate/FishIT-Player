@@ -1,0 +1,39 @@
+{
+  "chatId": -1002218043061,
+  "title": "Aus Mangel an Beweisen - Full HD",
+  "exportedAt": "2025-11-28T14:46:39.069398232Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 41943040,
+      "chatId": -1002218043061,
+      "date": 1721817304,
+      "dateIso": "2024-07-24T10:35:04Z",
+      "content": {
+        "duration": 3013,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Aus Mangel an Beweisen - S01 E08 - Das Urteil.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5251,
+          "size": 2090119778,
+          "remoteId": "BAACAgIAAyEFAASENKa1AAMoaSmyQc2C-6cvaCE7Il8biVfCaNoAAudZAAKRmAFJjsQM_i-u3uA4BA",
+          "uniqueId": "AgAD51kAApGYAUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 5250,
+            "size": 5591,
+            "remoteId": "AAMCAgADIQUABIQ0prUAAyhpKbJBzYL7py9oITsiXxuJV8Jo2gAC51kAApGYAUmOxAz-L67e4AEAB20AAzgE",
+            "uniqueId": "AQAD51kAApGYAUly"
+          }
+        },
+        "caption": "Aus Mangel an Beweisen - S01 E08 - Das Urteil"
+      }
+    }
+  ]
+}

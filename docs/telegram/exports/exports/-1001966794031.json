@@ -1,0 +1,49 @@
+{
+  "chatId": -1001966794031,
+  "title": "Nigeria cinema 🍿🎥",
+  "exportedAt": "2025-11-28T14:45:18.145826367Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 49283072,
+      "chatId": -1001966794031,
+      "date": 1764324174,
+      "dateIso": "2025-11-28T10:02:54Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 562,
+            "height": 1280,
+            "file": {
+              "id": 4831,
+              "size": 100565,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB_FpKbJRr2zKzoI7MRPhbN8RI57vfAAChAxrG7b9SVHxqYtQ3unm1wEAAwIAA3kAAzgE",
+              "uniqueId": "AQADhAxrG7b9SVF-"
+            }
+          },
+          {
+            "width": 351,
+            "height": 800,
+            "file": {
+              "id": 4830,
+              "size": 56839,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB_FpKbJRr2zKzoI7MRPhbN8RI57vfAAChAxrG7b9SVHxqYtQ3unm1wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADhAxrG7b9SVF9"
+            }
+          },
+          {
+            "width": 140,
+            "height": 320,
+            "file": {
+              "id": 4829,
+              "size": 13576,
+              "remoteId": "AgACAgQAAx0CeFaeMAACB_FpKbJRr2zKzoI7MRPhbN8RI57vfAAChAxrG7b9SVHxqYtQ3unm1wEAAwIAA20AAzgE",
+              "uniqueId": "AQADhAxrG7b9SVFy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,751 @@
+{
+  "chatId": 6104181776,
+  "title": "",
+  "exportedAt": "2025-11-28T14:46:49.972673569Z",
+  "count": 21,
+  "messages": [
+    {
+      "id": 44002443264,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1708959612,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-pumpcontrol-release_3.2.0.3.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 5285,
+            "size": 69393779,
+            "expectedSize": 69393779,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKj7GkpsqOJE6AZdgzYXrA5Vr1hT9MtAAJlSgACxFDpSoTeu0DH9GD5OAQ",
+              "uniqueId": "AgADZUoAAsRQ6Uo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 69393779
+            }
+          }
+        },
+        "caption": {
+          "text": "app-pumpcontrol-release_3.2.0.3.apk",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 44000346112,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1708948253,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "app-aapsclient-release_3.2.0.3.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 18480,
+            "size": 69393759,
+            "expectedSize": 69393759,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKj6mkpsqPQ9QU1Xyr2VXxZtsFk87PpAAKhSAACxFDpSnQfm9FF6fDdOAQ",
+              "uniqueId": "AgADoUgAAsRQ6Uo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 69393759
+            }
+          }
+        },
+        "caption": {
+          "text": "app-aapsclient-release_3.2.0.3.apk",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 43999297536,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1708948152,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "2024-02-26_124517_pumpcontrol.json",
+          "mimeType": "application/json",
+          "document": {
+            "id": 18481,
+            "size": 27250,
+            "expectedSize": 27250,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkBAAKj6WkpsqNZRPWAqjtxoaASfbqHY1SkAAKcSAACxFDpSra-oPfK9OTJOAQ",
+              "uniqueId": "AgADnEgAAsRQ6Uo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 27250
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 43996151808,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1708854712,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": true,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 43139465216,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1699695823,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 41038118912,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1683029992,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 40
+      }
+    },
+    {
+      "id": 41037070336,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1683029942,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 41036021760,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1683027391,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 164
+      }
+    },
+    {
+      "id": 41023438848,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1682681578,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 89
+      }
+    },
+    {
+      "id": 40848326656,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681551193,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 40847278080,
+      "chatId": 6104181776,
+      "date": 1681551129,
+      "dateIso": "2023-04-15T09:32:09Z",
+      "content": {
+        "duration": 5118,
+        "width": 1500,
+        "height": 720,
+        "fileName": "Der.Super.Mario.Bros.Film.2023.TS.MD.German.1080p.x264-MTZ.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18483,
+          "size": 998543700,
+          "remoteId": "BAACAgIAAxkDAAKYK2kpsqNvxmtM1foyiTLpOzgSOSaJAAIvKAACwgmBSZLi0QciTWeJOAQ",
+          "uniqueId": "AgADLygAAsIJgUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 154,
+          "file": {
+            "id": 18482,
+            "size": 1110,
+            "remoteId": "AAMCAgADGQMAApgraSmyo2_Ga0zV-jKJMuk7OBI5JokAAi8oAALCCYFJkuLRByJNZ4kBAAdtAAM4BA",
+            "uniqueId": "AQADLygAAsIJgUly"
+          }
+        },
+        "caption": "Der Super Mario Bros (2023)\n!Mikrofon Ton!"
+      }
+    },
+    {
+      "id": 40829452288,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681388053,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 53
+      }
+    },
+    {
+      "id": 40827355136,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": 6104181776,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681382562,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 256
+      }
+    },
+    {
+      "id": 40826306560,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681382291,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 0
+      }
+    },
+    {
+      "id": 40822112256,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681367734,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": true,
+        "discardReason": {},
+        "duration": 46
+      }
+    },
+    {
+      "id": 40821063680,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681367621,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": true,
+        "discardReason": {},
+        "duration": 68
+      }
+    },
+    {
+      "id": 40816869376,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681301005,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 24
+      }
+    },
+    {
+      "id": 40814772224,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681297570,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 11
+      }
+    },
+    {
+      "id": 40813723648,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681297011,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "isVideo": false,
+        "discardReason": {},
+        "duration": 11
+      }
+    },
+    {
+      "id": 40812675072,
+      "chatId": 6104181776,
+      "date": 1681296509,
+      "dateIso": "2023-04-12T10:48:29Z",
+      "text": "Hier der Link zum Join the Links Hauptkanal. Dieser ist 5 Minuten gültig. Link: https://t.me/+VFYUp1ZrFdgzYTYy",
+      "genres": []
+    },
+    {
+      "id": 40810577920,
+      "senderId": {
+        "userId": 6104181776
+      },
+      "chatId": 6104181776,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1681296435,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

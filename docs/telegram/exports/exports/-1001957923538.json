@@ -1,0 +1,39 @@
+{
+  "chatId": -1001957923538,
+  "title": "Silo Full HD",
+  "exportedAt": "2025-11-28T14:46:20.689649416Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 117440512,
+      "chatId": -1001957923538,
+      "date": 1737297729,
+      "dateIso": "2025-01-19T14:42:09Z",
+      "content": {
+        "duration": 3594,
+        "width": 1918,
+        "height": 802,
+        "fileName": "Silo - S02 E10 - Ins Feuer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5121,
+          "size": 2090986232,
+          "remoteId": "BAACAgIAAx0CdLOK0gADcGkpskDgcV3Kg04SnPTTBufvuYs9AALrZQACjgRoSDbLDozUnYC_OAQ",
+          "uniqueId": "AgAD62UAAo4EaEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 5120,
+            "size": 4513,
+            "remoteId": "AAMCAgADHQJ0s4rSAANwaSmyQOBxXcqDThKc9NMG5--5iz0AAutlAAKOBGhINssOjNSdgL8BAAdtAAM4BA",
+            "uniqueId": "AQAD62UAAo4EaEhy"
+          }
+        },
+        "caption": "Silo - S02 E10 - Ins Feuer"
+      }
+    }
+  ]
+}

@@ -1,0 +1,530 @@
+{
+  "chatId": -830994116,
+  "title": "From St2",
+  "exportedAt": "2025-11-28T14:46:32.766099501Z",
+  "count": 10,
+  "messages": [
+    {
+      "id": 45152731136,
+      "chatId": -830994116,
+      "date": 1729747068,
+      "dateIso": "2024-10-24T05:17:48Z",
+      "text": "https://t.me/+RnrHQHfpLI8zYWIx",
+      "genres": []
+    },
+    {
+      "id": 42240835584,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1691089645,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e07.german.dl.1080p.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19221,
+            "size": 1663186393,
+            "expectedSize": 1663186393,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKdXGkpsqRYXjwczC39-EGX6zqiL2fZAAI3NwACptNhSlp4OYd3XNx8OAQ",
+              "uniqueId": "AgADNzcAAqbTYUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1663186393
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 42239787008,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1691088667,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.2022.xvd.207.avi",
+          "mimeType": "video/avi",
+          "document": {
+            "id": 19222,
+            "size": 470150636,
+            "expectedSize": 470150636,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKdW2kpsqRtPPD75fKDKl6dC85as-6iAAILNwACptNhSts2QVkMaW7cOAQ",
+              "uniqueId": "AgADCzcAAqbTYUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 470150636
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 42214621184,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1690482381,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e06.german.dl.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19223,
+            "size": 629398160,
+            "expectedSize": 629398160,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKdQ2kpsqT9xvYRcR8_jt7Lcud6RClBAALCMgAC0lUZSpFRCI9e7-kVOAQ",
+              "uniqueId": "AgADwjIAAtJVGUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 629398160
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 42081452032,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1689103460,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e05.german.dl.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19224,
+            "size": 684304881,
+            "expectedSize": 684304881,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKcxGkpsqRJXvAG2YvsBcHRW1dlaNwLAALWPAACH05wSdyOD3FtAgAB7DgE",
+              "uniqueId": "AgAD1jwAAh9OcEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 684304881
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 41937797120,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688240655,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e04.german.dl.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19225,
+            "size": 616983004,
+            "expectedSize": 616983004,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKcO2kpsqQb080AAT3lIK-9NGJCduDjcgACfjEAAoIfCUkq9zqjC4j-djgE",
+              "uniqueId": "AgADfjEAAoIfCUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 616983004
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 41936748544,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688240502,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e03.german.dl.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19226,
+            "size": 656245479,
+            "expectedSize": 656245479,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKcOmkpsqSpc6g8v4CuNWLjvEVxQO80AAJ7MQACgh8JSQWqSQABpSP8NDgE",
+              "uniqueId": "AgADezEAAoIfCUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 656245479
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 41935699968,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688240383,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e02.german.dl.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19227,
+            "size": 594090896,
+            "expectedSize": 594090896,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKcOWkpsqQo3ar3WpM042K7A8h8m7oVAAJ6MQACgh8JSbnfdZrbl2rZOAQ",
+              "uniqueId": "AgADejEAAoIfCUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 594090896
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 41934651392,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688240105,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "from.s02e01.german.dl.web.x264-fsx.mp4",
+          "mimeType": "video/mp4",
+          "document": {
+            "id": 19228,
+            "size": 612504017,
+            "expectedSize": 612504017,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAxkDAAKcOGkpsqQC8m0KaDZVNNw2tSME5MjFAAJ2MQACgh8JSQhjwmsK5BR6OAQ",
+              "uniqueId": "AgADdjEAAoIfCUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 612504017
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 41933602816,
+      "senderId": {
+        "userId": 143846926
+      },
+      "chatId": -830994116,
+      "isOutgoing": true,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688240009,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "From St2",
+        "memberUserIds": [
+          143846926
+        ]
+      }
+    }
+  ]
+}

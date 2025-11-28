@@ -1,0 +1,39 @@
+{
+  "chatId": -1001257511595,
+  "title": "OmU (Original mit Deutschem Untertitel)",
+  "exportedAt": "2025-11-28T14:45:51.141267979Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 1860173824,
+      "chatId": -1001257511595,
+      "date": 1754456188,
+      "dateIso": "2025-08-06T04:56:28Z",
+      "content": {
+        "duration": 4686,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Bouncer - Der Türsteher - 2024.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5070,
+          "size": 2016117409,
+          "remoteId": "BAACAgIAAx0CSvQaqwACBu5pKbJrRgvdVDnj_54ldvqXhg7eFQACdX4AAriviEj7phzTE9TU3jgE",
+          "uniqueId": "AgADdX4AAriviEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 5069,
+            "size": 10188,
+            "remoteId": "AAMCAgADHQJK9BqrAAIG7mkpsmtGC91UOeP_niV2-peGDt4VAAJ1fgACuK-ISPumHNMT1NTeAQAHbQADOAQ",
+            "uniqueId": "AQADdX4AAriviEhy"
+          }
+        },
+        "caption": "The Bouncer - Der Türsteher - 2024"
+      }
+    }
+  ]
+}

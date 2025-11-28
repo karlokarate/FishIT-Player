@@ -1,0 +1,737 @@
+{
+  "chatId": -1001862763419,
+  "title": "The Wire FULL HD",
+  "exportedAt": "2025-11-28T14:47:20.543182009Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 184549376,
+      "chatId": -1001862763419,
+      "date": 1687509248,
+      "dateIso": "2023-06-23T08:34:08Z",
+      "text": "Original Hochgeladen von Join The Links 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 183500800,
+      "chatId": -1001862763419,
+      "date": 1687509234,
+      "dateIso": "2023-06-23T08:33:54Z",
+      "text": "https://www.filmstarts.de/nachrichten/1000016935.html",
+      "genres": []
+    },
+    {
+      "id": 181403648,
+      "chatId": -1001862763419,
+      "date": 1687509215,
+      "dateIso": "2023-06-23T08:33:35Z",
+      "content": {
+        "duration": 5591,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E10 - Die Welt dreht sich weiter.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21881,
+          "size": 2095830350,
+          "remoteId": "BAACAgIAAx0CbweDmwADrWkpssMl95tbWb8lmqziO-Mm_4GpAAJbLwACzFaZSE4W3SBFaq5hOAQ",
+          "uniqueId": "AgADWy8AAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21880,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOtaSmywyX3m1tZvyWarOI74yb_gakAAlsvAALMVplIThbdIEVqrmEBAAdtAAM4BA",
+            "uniqueId": "AQADWy8AAsxWmUhy"
+          }
+        },
+        "caption": "The Wire - S05 E10 - Die Welt dreht sich weiter"
+      }
+    },
+    {
+      "id": 180355072,
+      "chatId": -1001862763419,
+      "date": 1687509212,
+      "dateIso": "2023-06-23T08:33:32Z",
+      "content": {
+        "duration": 3594,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "The Wire - S05 E09 - Späte Einsichten.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21883,
+          "size": 2073280481,
+          "remoteId": "BAACAgIAAx0CbweDmwADrGkpssP-HJZ0olU5ZuOKSDb7ZcmAAAKlLgACzFaZSOd9re1_g9xUOAQ",
+          "uniqueId": "AgADpS4AAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 21882,
+            "size": 7041,
+            "remoteId": "AAMCAgADHQJvB4ObAAOsaSmyw_4clnSiVTlm44pINvtlyYAAAqUuAALMVplI532t7X-D3FQBAAdtAAM4BA",
+            "uniqueId": "AQADpS4AAsxWmUhy"
+          }
+        },
+        "caption": "The Wire - S05 E09 - Späte Einsichten"
+      }
+    },
+    {
+      "id": 179306496,
+      "chatId": -1001862763419,
+      "date": 1687509208,
+      "dateIso": "2023-06-23T08:33:28Z",
+      "content": {
+        "duration": 3515,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E08 - Klarstellungen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21885,
+          "size": 2091909815,
+          "remoteId": "BAACAgIAAx0CbweDmwADq2kpssNyUQ8a9Hwswb1yqUkZhxvMAAI3LwACzFaZSP_3_BDAwxUSOAQ",
+          "uniqueId": "AgADNy8AAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21884,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOraSmyw3JRDxr0fCzBvXKpSRmHG8wAAjcvAALMVplI__f8EMDDFRIBAAdtAAM4BA",
+            "uniqueId": "AQADNy8AAsxWmUhy"
+          }
+        },
+        "caption": "The Wire - S05 E08 - Klarstellungen"
+      }
+    },
+    {
+      "id": 178257920,
+      "chatId": -1001862763419,
+      "date": 1687509205,
+      "dateIso": "2023-06-23T08:33:25Z",
+      "content": {
+        "duration": 3515,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E07 - Wer Recht spricht.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21887,
+          "size": 2094522900,
+          "remoteId": "BAACAgIAAx0CbweDmwADqmkpssOU6J14RBOoF8_Blv-lRUFMAALHKwACzFaZSCWTIsvqLCDEOAQ",
+          "uniqueId": "AgADxysAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21886,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOqaSmyw5TonXhEE6gXz8GW_6VFQUwAAscrAALMVplIJZMiy-osIMQBAAdtAAM4BA",
+            "uniqueId": "AQADxysAAsxWmUhy"
+          }
+        },
+        "caption": "The Wire - S05 E07 - Wer Recht spricht"
+      }
+    },
+    {
+      "id": 177209344,
+      "chatId": -1001862763419,
+      "date": 1687509202,
+      "dateIso": "2023-06-23T08:33:22Z",
+      "content": {
+        "duration": 3515,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E06 - Der Dickens sche Aspekt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21889,
+          "size": 2093499848,
+          "remoteId": "BAACAgIAAx0CbweDmwADqWkpssN90lY0re4b1nrA2VwgB6gyAAL-LwACzFaRSIaECRhFecToOAQ",
+          "uniqueId": "AgAD_i8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21888,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOpaSmyw33SVjSt7hvWesDZXCAHqDIAAv4vAALMVpFIhoQJGEV5xOgBAAdtAAM4BA",
+            "uniqueId": "AQAD_i8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S05 E06 - Der Dickens’sche Aspekt"
+      }
+    },
+    {
+      "id": 176160768,
+      "chatId": -1001862763419,
+      "date": 1687509198,
+      "dateIso": "2023-06-23T08:33:18Z",
+      "content": {
+        "duration": 3515,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E05 - Stimmenfang.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21891,
+          "size": 2092428609,
+          "remoteId": "BAACAgIAAx0CbweDmwADqGkpssOQiTIGR434-KJ_qF6tM4ZeAALBLwACzFaRSFu3rsZqzFPaOAQ",
+          "uniqueId": "AgADwS8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21890,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOoaSmyw5CJMgZHjfj4on-oXq0zhl4AAsEvAALMVpFIW7euxmrMU9oBAAdtAAM4BA",
+            "uniqueId": "AQADwS8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S05 E05 - Stimmenfang"
+      }
+    },
+    {
+      "id": 175112192,
+      "chatId": -1001862763419,
+      "date": 1687509195,
+      "dateIso": "2023-06-23T08:33:15Z",
+      "content": {
+        "duration": 3513,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E04 - Jäger und Gejagte.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21893,
+          "size": 2093427800,
+          "remoteId": "BAACAgIAAx0CbweDmwADp2kpssPOmLf8YqAcQBvKU9EjGswvAALGLwACzFaRSAxyloWszojOOAQ",
+          "uniqueId": "AgADxi8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21892,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOnaSmyw86Yt_xioBxAG8pT0SMazC8AAsYvAALMVpFIDHKWhazOiM4BAAdtAAM4BA",
+            "uniqueId": "AQADxi8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S05 E04 - Jäger und Gejagte"
+      }
+    },
+    {
+      "id": 174063616,
+      "chatId": -1001862763419,
+      "date": 1687509192,
+      "dateIso": "2023-06-23T08:33:12Z",
+      "content": {
+        "duration": 3515,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E03 - Erfolgsmeldungen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21895,
+          "size": 2093660192,
+          "remoteId": "BAACAgIAAx0CbweDmwADpmkpssMwpGIeuNzhbyj0dc6-7ZDUAAL2LwACzFaRSIvtambDx67-OAQ",
+          "uniqueId": "AgAD9i8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21894,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOmaSmywzCkYh643OFvKPR1zr7tkNQAAvYvAALMVpFIi-1qZsPHrv4BAAdtAAM4BA",
+            "uniqueId": "AQAD9i8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S05 E03 - Erfolgsmeldungen"
+      }
+    },
+    {
+      "id": 173015040,
+      "chatId": -1001862763419,
+      "date": 1687509188,
+      "dateIso": "2023-06-23T08:33:08Z",
+      "content": {
+        "duration": 3519,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E02 - Schlagzeilen gefragt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21897,
+          "size": 2092775918,
+          "remoteId": "BAACAgIAAx0CbweDmwADpWkpssNaBtwNe7pDIySabkEuekvUAAKTLwACzFaRSEiXRxnMDUgoOAQ",
+          "uniqueId": "AgADky8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21896,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOlaSmyw1oG3A17ukMjJJpuQS56S9QAApMvAALMVpFISJdHGcwNSCgBAAdtAAM4BA",
+            "uniqueId": "AQADky8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S05 E02 - Schlagzeilen gefragt"
+      }
+    },
+    {
+      "id": 170917888,
+      "chatId": -1001862763419,
+      "date": 1687509179,
+      "dateIso": "2023-06-23T08:32:59Z",
+      "content": {
+        "duration": 3520,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S05 E01 - Nägel ohne Köpfe.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21899,
+          "size": 2095151214,
+          "remoteId": "BAACAgIAAx0CbweDmwADo2kpssPPuQRkdsA9Z7D5rP-BTd-vAALXKwACzFaZSNdt49xYWeTaOAQ",
+          "uniqueId": "AgAD1ysAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21898,
+            "size": 6982,
+            "remoteId": "AAMCAgADHQJvB4ObAAOjaSmyw8-5BGR2wD1nsPms_4FN368AAtcrAALMVplI123j3FhZ5NoBAAdtAAM4BA",
+            "uniqueId": "AQAD1ysAAsxWmUhy"
+          }
+        },
+        "caption": "The Wire - S05 E01 - Nägel ohne Köpfe"
+      }
+    },
+    {
+      "id": 169869312,
+      "chatId": -1001862763419,
+      "date": 1687509176,
+      "dateIso": "2023-06-23T08:32:56Z",
+      "content": {
+        "duration": 4721,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E13 - Unterm Strich.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21901,
+          "size": 2096732539,
+          "remoteId": "BAACAgIAAx0CbweDmwADomkpssOZBReDdV7Ynoky_wt9_J3KAAJqLwACzFaZSJGPbRm3RvAoOAQ",
+          "uniqueId": "AgADai8AAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21900,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOiaSmyw5kFF4N1XtieiTL_C338ncoAAmovAALMVplIkY9tGbdG8CgBAAdtAAM4BA",
+            "uniqueId": "AQADai8AAsxWmUhy"
+          }
+        },
+        "caption": "The Wire - S04 E13 - Unterm Strich"
+      }
+    },
+    {
+      "id": 168820736,
+      "chatId": -1001862763419,
+      "date": 1687509173,
+      "dateIso": "2023-06-23T08:32:53Z",
+      "content": {
+        "duration": 3512,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E12 - Auf eigenen Füßen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21903,
+          "size": 2093613738,
+          "remoteId": "BAACAgIAAx0CbweDmwADoWkpssMw7uJXEYywyMzuyRR9O9riAAITMAACzFaRSJZsSEaJVasKOAQ",
+          "uniqueId": "AgADEzAAAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21902,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOhaSmywzDu4lcRjLDIzO7JFH072uIAAhMwAALMVpFIlmxIRolVqwoBAAdtAAM4BA",
+            "uniqueId": "AQADEzAAAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E12 - Auf eigenen Füßen"
+      }
+    },
+    {
+      "id": 167772160,
+      "chatId": -1001862763419,
+      "date": 1687509169,
+      "dateIso": "2023-06-23T08:32:49Z",
+      "content": {
+        "duration": 3513,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E11 - Ein neuer Tag.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21905,
+          "size": 2093343812,
+          "remoteId": "BAACAgIAAx0CbweDmwADoGkpssNhAzkcG7nMUcA7x8FGN6QzAALrLwACzFaRSKBNvcCQl2FyOAQ",
+          "uniqueId": "AgAD6y8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21904,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOgaSmyw2EDORwbucxRwDvHwUY3pDMAAusvAALMVpFIoE29wJCXYXIBAAdtAAM4BA",
+            "uniqueId": "AQAD6y8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E11 - Ein neuer Tag"
+      }
+    },
+    {
+      "id": 166723584,
+      "chatId": -1001862763419,
+      "date": 1687509166,
+      "dateIso": "2023-06-23T08:32:46Z",
+      "content": {
+        "duration": 3505,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E10 - Alles für die Statistik.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21907,
+          "size": 2093053955,
+          "remoteId": "BAACAgIAAx0CbweDmwADn2kpssPrnN6hXmBnvWEUFXbq-cSVAALVLwACzFaRSEutkRRDT-AsOAQ",
+          "uniqueId": "AgAD1S8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21906,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOfaSmyw-uc3qFeYGe9YRQVdur5xJUAAtUvAALMVpFIS62RFENP4CwBAAdtAAM4BA",
+            "uniqueId": "AQAD1S8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E10 - Alles für die Statistik"
+      }
+    },
+    {
+      "id": 165675008,
+      "chatId": -1001862763419,
+      "date": 1687509163,
+      "dateIso": "2023-06-23T08:32:43Z",
+      "content": {
+        "duration": 3516,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E09 - Die jungen Wilden.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21909,
+          "size": 2092925589,
+          "remoteId": "BAACAgIAAx0CbweDmwADnmkpssNuMssd98c-X7FvaDYbCVInAAKJLwACzFaRSHt0jOKtqXvoOAQ",
+          "uniqueId": "AgADiS8AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21908,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOeaSmyw24yyx33xz5fsW9oNhsJUicAAokvAALMVpFIe3SM4q2pe-gBAAdtAAM4BA",
+            "uniqueId": "AQADiS8AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E09 - Die jungen Wilden"
+      }
+    },
+    {
+      "id": 164626432,
+      "chatId": -1001862763419,
+      "date": 1687509159,
+      "dateIso": "2023-06-23T08:32:39Z",
+      "content": {
+        "duration": 3515,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E08 - Eckverbindungen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21911,
+          "size": 2094128019,
+          "remoteId": "BAACAgIAAx0CbweDmwADnWkpssO4RWSsFWNEc-iorZS73CzRAAIpLgACzFaRSL-4ggWB22bHOAQ",
+          "uniqueId": "AgADKS4AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21910,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOdaSmyw7hFZKwVY0Rz6KitlLvcLNEAAikuAALMVpFIv7iCBYHbZscBAAdtAAM4BA",
+            "uniqueId": "AQADKS4AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E08 - Eckverbindungen"
+      }
+    },
+    {
+      "id": 163577856,
+      "chatId": -1001862763419,
+      "date": 1687509156,
+      "dateIso": "2023-06-23T08:32:36Z",
+      "content": {
+        "duration": 3508,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E07 - Was du nicht willst, das man dir tut.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21913,
+          "size": 2093251969,
+          "remoteId": "BAACAgIAAx0CbweDmwADnGkpssOwm8D6JfIOb8Nw2jGGuxNrAAKZLQACzFaRSCLMx3TFVSKbOAQ",
+          "uniqueId": "AgADmS0AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21912,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOcaSmyw7CbwPol8g5vw3DaMYa7E2sAApktAALMVpFIIszHdMVVIpsBAAdtAAM4BA",
+            "uniqueId": "AQADmS0AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E07 - Was du nicht willst, das man dir tut …"
+      }
+    },
+    {
+      "id": 162529280,
+      "chatId": -1001862763419,
+      "date": 1687509152,
+      "dateIso": "2023-06-23T08:32:32Z",
+      "content": {
+        "duration": 3480,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E06 - Alles für Baltimore.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21915,
+          "size": 2092700574,
+          "remoteId": "BAACAgIAAx0CbweDmwADm2kpssPzC8GxHq9O-QxrUZNvu_uaAAJ8LQACzFaRSOvkMARNtHOBOAQ",
+          "uniqueId": "AgADfC0AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21914,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAObaSmyw_MLwbEer075DGtRk2-7-5oAAnwtAALMVpFI6-QwBE20c4EBAAdtAAM4BA",
+            "uniqueId": "AQADfC0AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E06 - Alles für Baltimore"
+      }
+    },
+    {
+      "id": 161480704,
+      "chatId": -1001862763419,
+      "date": 1687509149,
+      "dateIso": "2023-06-23T08:32:29Z",
+      "content": {
+        "duration": 3516,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E05 - Was wird aus Baltimore.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21917,
+          "size": 2093677858,
+          "remoteId": "BAACAgIAAx0CbweDmwADmmkpssOJjI3dkemO0dTM7znKytp_AAL1LQACzFaRSOKSLqZhnNjBOAQ",
+          "uniqueId": "AgAD9S0AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21916,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOaaSmyw4mMjd2R6Y7R1MzvOcrK2n8AAvUtAALMVpFI4pIupmGc2MEBAAdtAAM4BA",
+            "uniqueId": "AQAD9S0AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E05 - Was wird aus Baltimore"
+      }
+    },
+    {
+      "id": 158334976,
+      "chatId": -1001862763419,
+      "date": 1687504007,
+      "dateIso": "2023-06-23T07:06:47Z",
+      "content": {
+        "duration": 3514,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E04 - Friedensbemühungen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21919,
+          "size": 2094361413,
+          "remoteId": "BAACAgIAAx0CbweDmwADl2kpssNM4tTekDDq3Fl2arx88pa8AAISLgACzFaRSNlkf7S3gCpsOAQ",
+          "uniqueId": "AgADEi4AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21918,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOXaSmyw0zi1N6QMOrcWXZqvHzylrwAAhIuAALMVpFI2WR_tLeAKmwBAAdtAAM4BA",
+            "uniqueId": "AQADEi4AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E04 - Friedensbemühungen"
+      }
+    },
+    {
+      "id": 157286400,
+      "chatId": -1001862763419,
+      "date": 1687504004,
+      "dateIso": "2023-06-23T07:06:44Z",
+      "content": {
+        "duration": 3516,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E03 - Blut im Klassenzimmer.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21921,
+          "size": 2093502862,
+          "remoteId": "BAACAgIAAx0CbweDmwADlmkpssP29vaLy92wZm8zJc_DblyMAALfLQACzFaRSLgXQm-aDOuXOAQ",
+          "uniqueId": "AgAD3y0AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21920,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOWaSmyw_b29ovL3bBmbzMlz8NuXIwAAt8tAALMVpFIuBdCb5oM65cBAAdtAAM4BA",
+            "uniqueId": "AQAD3y0AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E03 - Blut im Klassenzimmer"
+      }
+    },
+    {
+      "id": 156237824,
+      "chatId": -1001862763419,
+      "date": 1687504000,
+      "dateIso": "2023-06-23T07:06:40Z",
+      "content": {
+        "duration": 3500,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E02 - Sanfte Augen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21923,
+          "size": 2093474029,
+          "remoteId": "BAACAgIAAx0CbweDmwADlWkpssPIrmdNV48XieLf3kmY1hG6AALQLQACzFaRSLIif0vkQ_-jOAQ",
+          "uniqueId": "AgAD0C0AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21922,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOVaSmyw8iuZ01XjxeJ4t_eSZjWEboAAtAtAALMVpFIsiJ_S-RD_6MBAAdtAAM4BA",
+            "uniqueId": "AQAD0C0AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E02 - Sanfte Augen"
+      }
+    },
+    {
+      "id": 155189248,
+      "chatId": -1001862763419,
+      "date": 1687503997,
+      "dateIso": "2023-06-23T07:06:37Z",
+      "content": {
+        "duration": 3506,
+        "width": 1912,
+        "height": 1072,
+        "fileName": "The Wire - S04 E01 - Ruhe in Baltimore.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21925,
+          "size": 2093081459,
+          "remoteId": "BAACAgIAAx0CbweDmwADlGkpssO972pCao71BOyLtpsw_kwLAAK6LQACzFaRSOoSn8TVmpBnOAQ",
+          "uniqueId": "AgADui0AAsxWkUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 21924,
+            "size": 10927,
+            "remoteId": "AAMCAgADHQJvB4ObAAOUaSmyw73vakJqjvUE7Iu2mzD-TAsAArotAALMVpFI6hKfxNWakGcBAAdtAAM4BA",
+            "uniqueId": "AQADui0AAsxWkUhy"
+          }
+        },
+        "caption": "The Wire - S04 E01 - Ruhe in Baltimore"
+      }
+    }
+  ]
+}

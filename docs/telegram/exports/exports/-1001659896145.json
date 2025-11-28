@@ -1,0 +1,72 @@
+{
+  "chatId": -1001659896145,
+  "title": "Spongebob Schwammkopf",
+  "exportedAt": "2025-11-28T14:46:24.044664600Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 125829120,
+      "senderId": {
+        "chatId": -1001659896145
+      },
+      "chatId": -1001659896145,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1636542079,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 933,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "SpongeBob Schwammkopf Folge 49.zip",
+          "mimeType": "application/x-zip-compressed",
+          "document": {
+            "id": 5577,
+            "size": 97989829,
+            "expectedSize": 97989829,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CYvABUQADeGkpskGUyNsZRMEKkiJufGjrOsXNAALKFQACY2xgSBGaZuvdokS-OAQ",
+              "uniqueId": "AgADyhUAAmNsYEg",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 97989829
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

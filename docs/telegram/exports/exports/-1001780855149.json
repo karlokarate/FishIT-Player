@@ -1,0 +1,1608 @@
+{
+  "chatId": -1001780855149,
+  "title": "WII Wads e Homebrews",
+  "exportedAt": "2025-11-28T14:46:53.218457773Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 427819008,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466037,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3326,
+        "forwardCount": 12
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728299606457,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Metal Slug 4 [NG] [NTSC(U)] by Aldo.wad",
+          "mimeType": "",
+          "document": {
+            "id": 5571,
+            "size": 44321152,
+            "expectedSize": 44321152,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZhpKbKkZxTdzfaWIruRba5aKKP-6QAC0AMAAvXg4EXLj55hERJwezgE",
+              "uniqueId": "AgAD0AMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 44321152
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 426770432,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466037,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3288,
+        "forwardCount": 12
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728299606457,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Metal Slug 3 [NG] [NTSC(U)] by Aldo.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19457,
+            "size": 49589120,
+            "expectedSize": 49589120,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZdpKbKkFEgyYISb3Py0OBoZ5rjzBAACzwMAAvXg4EUfbWcqRX0TPzgE",
+              "uniqueId": "AgADzwMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 49589120
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 425721856,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466037,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3277,
+        "forwardCount": 10
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728299606457,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Metal Slug 2 [NG] [NTSC(U)] by Aldo.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19458,
+            "size": 31847808,
+            "expectedSize": 31847808,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZZpKbKkTuqGhdcmAkqYssyICCQTNAACzgMAAvXg4EVMNh81Ny58hTgE",
+              "uniqueId": "AgADzgMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 31847808
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 424673280,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466037,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3275,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728299606457,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Metal Slug [NG] [NTSC(U)] by Aldo.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19459,
+            "size": 41948736,
+            "expectedSize": 41948736,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZVpKbKkqNEm2buc7fAAAZhc_H2iNeQAAs0DAAL14OBFMYZRD2CS5XU4BA",
+              "uniqueId": "AgADzQMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 41948736
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 423624704,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466037,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3306,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728299606457,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "International_Superstar_Soccer_Deluxe_SNES_NTSCU_by_Aldo.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19460,
+            "size": 20120320,
+            "expectedSize": 20120320,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZRpKbKkNdR2xBb_19f_U9wcRD1XZgACzAMAAvXg4EWqQBRzgFrOfDgE",
+              "uniqueId": "AgADzAMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 20120320
+            }
+          }
+        },
+        "caption": {
+          "text": "Outros Games",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 422576128,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466002,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3266,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728020769657,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Zombies Ate My Neighbors (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19461,
+            "size": 12502464,
+            "expectedSize": 12502464,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZNpKbKkMns3keYhz6BCmQjBKshQnAACywMAAvXg4EWzK64gi-Sg5zgE",
+              "uniqueId": "AgADywMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12502464
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 421527552,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656466002,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3241,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251728020769657,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Wild Guns NTSCU.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19462,
+            "size": 12792128,
+            "expectedSize": 12792128,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZJpKbKkDKrzfNpuQ37tbKpPe14VqAACygMAAvXg4EXFldLLHNVZLzgE",
+              "uniqueId": "AgADygMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12792128
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 420478976,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465998,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3138,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Vegas Stakes (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19463,
+            "size": 13827520,
+            "expectedSize": 13827520,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZFpKbKkQLVUjW3xS7XvSKZ43Hcn2gACyQMAAvXg4EVYvSwRdfowkTgE",
+              "uniqueId": "AgADyQMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13827520
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 419430400,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465998,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3041,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Uncharted_Waters_New_Horizons_USA_SNES_Virtual_Console.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19464,
+            "size": 13721472,
+            "expectedSize": 13721472,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAZBpKbKkjr-tGoncU4DWARJJ8Cx4rQACyAMAAvXg4EV-4oJBxyhPejgE",
+              "uniqueId": "AgADyAMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13721472
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 418381824,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465998,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2988,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Turrican 2 (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19465,
+            "size": 15153472,
+            "expectedSize": 15153472,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAY9pKbKkZ5TFuSZGUlCgJdXwIRFgcAACxwMAAvXg4EWZ_1YXpYATxzgE",
+              "uniqueId": "AgADxwMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 15153472
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 417333248,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465998,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2949,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Turrican (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19466,
+            "size": 13819584,
+            "expectedSize": 13819584,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAY5pKbKkNMUHjGf8OGUYaCIKvws4ngACxgMAAvXg4EUUW7FLlp1kWDgE",
+              "uniqueId": "AgADxgMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13819584
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 416284672,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465998,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2935,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super_Street_Fighter_II_The_New_Challengers_USA_SNES_Virtual_Console.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19467,
+            "size": 18418688,
+            "expectedSize": 18418688,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAY1pKbKko5JD_dSZR-yW32zNV1CxBwACxQMAAvXg4EV9BaFOJDqEIzgE",
+              "uniqueId": "AgADxQMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 18418688
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 415236096,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465998,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2921,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Star Wars (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19468,
+            "size": 12968512,
+            "expectedSize": 12968512,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYxpKbKkX9ty0lTALAbUEgp8ty8nQgACxAMAAvXg4EVYenziHuBf3TgE",
+              "uniqueId": "AgADxAMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12968512
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 414187520,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465997,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2905,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super_Star_Wars_The_Empire_Strikes_Back_USA_SNES_Virtual_Console.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19469,
+            "size": 13452352,
+            "expectedSize": 13452352,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYtpKbKk_HdKQnKY0xGI2Bvj0eVWlgACwwMAAvXg4EUH29orhH8s1TgE",
+              "uniqueId": "AgADwwMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13452352
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 413138944,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465997,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2866,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super_Star_Wars_Return_of_the_Jedi_USA_SNES_Virtual_Console.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19470,
+            "size": 14001472,
+            "expectedSize": 14001472,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYppKbKkh71O1fUMTSzdk7h2Act29AACwgMAAvXg4EWe-rbdFglfezgE",
+              "uniqueId": "AgADwgMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 14001472
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 412090368,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465997,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2669,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super R-Type (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19471,
+            "size": 13833472,
+            "expectedSize": 13833472,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYlpKbKk5nZ_GujMdWwMySgF9PAKdgACwQMAAvXg4EX2sa2aMv0JDzgE",
+              "uniqueId": "AgADwQMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13833472
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 411041792,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465997,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2575,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727982503065,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Punch-Out!! (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19472,
+            "size": 14329024,
+            "expectedSize": 14329024,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYhpKbKkbfZXcuR0tKhNCdXS7FD_EAACwAMAAvXg4EWu9goWsBE1GjgE",
+              "uniqueId": "AgADwAMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 14329024
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 409993216,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2614,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Metroid (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19473,
+            "size": 17879232,
+            "expectedSize": 17879232,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYdpKbKkzftofg23m0yYQi2PMMo7kQACvwMAAvXg4EW_mdhpvRW2-TgE",
+              "uniqueId": "AgADvwMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 17879232
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 408944640,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2580,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Mario World (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19474,
+            "size": 13373824,
+            "expectedSize": 13373824,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYZpKbKkzvYYEi1CXwi3wBpv0NH7wwACvgMAAvXg4EUuU15R8HJotTgE",
+              "uniqueId": "AgADvgMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 13373824
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 407896064,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2555,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Mario RPG (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19475,
+            "size": 17659840,
+            "expectedSize": 17659840,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYVpKbKkUH9U_j89eqKmhRmbIHZ0_gACvQMAAvXg4EVaMEBNLFzo1TgE",
+              "uniqueId": "AgADvQMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 17659840
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 406847488,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2397,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Mario Kart (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19476,
+            "size": 12508032,
+            "expectedSize": 12508032,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYRpKbKk1cwQII8zoGqV6ZF9v7ccUQACvAMAAvXg4EUomGSr6loWBTgE",
+              "uniqueId": "AgADvAMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12508032
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 405798912,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2374,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Ghouls \u0027n Ghosts (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19477,
+            "size": 14744064,
+            "expectedSize": 14744064,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYNpKbKkh_ZNk59IDAW7FYcTfPDzngACuwMAAvXg4EVeKj1VVR8i0jgE",
+              "uniqueId": "AgADuwMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 14744064
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 404750336,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2348,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super E.D.F. Earth Defense Force NTSCU.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19478,
+            "size": 12614976,
+            "expectedSize": 12614976,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYJpKbKkZqRVfKPsK8SoQJNPvKkxLQACugMAAvXg4EUd_O2SLvH6LTgE",
+              "uniqueId": "AgADugMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12614976
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 403701760,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2337,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Castlevania IV (USA) (SNES) (Virtual Console).wad",
+          "mimeType": "",
+          "document": {
+            "id": 19479,
+            "size": 15036736,
+            "expectedSize": 15036736,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYFpKbKkBHYVfsMDjW0EcgJQuZfPHQACuQMAAvXg4EVqaVtDsDIgbjgE",
+              "uniqueId": "AgADuQMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 15036736
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 402653184,
+      "senderId": {
+        "chatId": -1001780855149
+      },
+      "chatId": -1001780855149,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1656465971,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2289,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "Leandro",
+      "mediaAlbumId": 13251727771728777,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Super Bonk NTSCU.wad",
+          "mimeType": "",
+          "document": {
+            "id": 19480,
+            "size": 12845376,
+            "expectedSize": 12845376,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgEAAx0CaiWxbQACAYBpKbKkwOLFeOL1yrpA8PlaBtL0FAACuAMAAvXg4EUWw7GC39LRBTgE",
+              "uniqueId": "AgADuAMAAvXg4EU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 12845376
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

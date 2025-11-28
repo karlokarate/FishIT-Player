@@ -1,0 +1,831 @@
+{
+  "chatId": -1001180440610,
+  "title": "🎬 Filme von 2011 bis 2019 🎥",
+  "exportedAt": "2025-11-28T14:45:21.838635006Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 29321330688,
+      "chatId": -1001180440610,
+      "date": 1764294604,
+      "dateIso": "2025-11-28T01:50:04Z",
+      "content": {
+        "duration": 5387,
+        "width": 856,
+        "height": 480,
+        "fileName": "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4839,
+          "size": 1594150543,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbTtpKbJSxyvG8YLCFZ49gZ_-an3UMgAC-4YAAtWaAAFJEE1voH3fqOQ4BA",
+          "uniqueId": "AgAD-4YAAtWaAAFJ"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 179,
+          "file": {
+            "id": 4838,
+            "size": 9455,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtO2kpslLHK8bxgsIVnj2Bn_5qfdQyAAL7hgAC1ZoAAUkQTW-gfd-o5AEAB20AAzgE",
+            "uniqueId": "AQAD-4YAAtWaAAFJcg"
+          }
+        },
+        "caption": "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012"
+      }
+    },
+    {
+      "id": 29320282112,
+      "chatId": -1001180440610,
+      "date": 1764294604,
+      "dateIso": "2025-11-28T01:50:04Z",
+      "text": "󠄿Titel: Das Ende der Welt - Die 12 Prophezeiungen der Maya\nOriginaltitel: The 12 Disasters of Christmas\nErscheinungsjahr: 2012\nLänge: 89 Minuten\nProduktionsland: Kanada\nFSK: 12\nRegie: Steven R. Monroe\nTMDbRating: 4.456\nGenres: TV-Film, Action, Science Fiction",
+      "year": 2012,
+      "lengthMinutes": 89,
+      "fsk": 12,
+      "originalTitle": "The 12 Disasters of Christmas",
+      "productionCountry": "Kanada",
+      "director": "Steven R. Monroe",
+      "tmdbRating": 4.456,
+      "genres": [
+        "TV-Film",
+        "Action",
+        "Science Fiction"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/149722-The-12-Disasters-of-Christmas?language\u003dde-DE"
+    },
+    {
+      "id": 29319233536,
+      "chatId": -1001180440610,
+      "date": 1764294604,
+      "dateIso": "2025-11-28T01:50:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 520,
+            "height": 780,
+            "file": {
+              "id": 11483,
+              "size": 81037,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTlpKbJSWU3nI6QBGruLlim8mT2bqAACCgtrG1A4NFGAjRHYPL9biAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADCgtrG1A4NFF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11482,
+              "size": 25398,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTlpKbJSWU3nI6QBGruLlim8mT2bqAACCgtrG1A4NFGAjRHYPL9biAEAAwIAA20AAzgE",
+              "uniqueId": "AQADCgtrG1A4NFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29318184960,
+      "chatId": -1001180440610,
+      "date": 1764208204,
+      "dateIso": "2025-11-27T01:50:04Z",
+      "content": {
+        "duration": 5873,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Terrordactyl - Die Killer Saurier - 2016.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11485,
+          "size": 2088371968,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbThpKbJSK8jv1utCTNiheNeha8czzwAChXgAAlKJ-EgOpYrW9uLwZzgE",
+          "uniqueId": "AgADhXgAAlKJ-Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11484,
+            "size": 10922,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtOGkpslIryO_W60JM2KF416FrxzPPAAKFeAACUon4SA6litb24vBnAQAHbQADOAQ",
+            "uniqueId": "AQADhXgAAlKJ-Ehy"
+          }
+        },
+        "caption": "Terrordactyl - Die Killer Saurier - 2016"
+      }
+    },
+    {
+      "id": 29317136384,
+      "chatId": -1001180440610,
+      "date": 1764208204,
+      "dateIso": "2025-11-27T01:50:04Z",
+      "text": "󠄿Titel: Terrordactyl - Die Killer Saurier\nOriginaltitel: Terrordactyl\nErscheinungsjahr: 2016\nLänge: 98 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nRegie: Don Bitters III\nTMDbRating: 4.8\nGenres: Action, Komödie, Science Fiction",
+      "year": 2016,
+      "lengthMinutes": 98,
+      "fsk": 16,
+      "originalTitle": "Terrordactyl",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Don Bitters III",
+      "tmdbRating": 4.8,
+      "genres": [
+        "Action",
+        "Komödie",
+        "Science Fiction"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/382638-Terrordactyl?language\u003dde-DE"
+    },
+    {
+      "id": 29316087808,
+      "chatId": -1001180440610,
+      "date": 1764208203,
+      "dateIso": "2025-11-27T01:50:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 11489,
+              "size": 314688,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTZpKbJSuqQ4cCJYd6aGxU0KuFM80gAC77cxGyKebVK65NKSlDWjIgEAAwIAA3cAAzgE",
+              "uniqueId": "AQAD77cxGyKebVJ8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11488,
+              "size": 304691,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTZpKbJSuqQ4cCJYd6aGxU0KuFM80gAC77cxGyKebVK65NKSlDWjIgEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD77cxGyKebVJ-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11487,
+              "size": 144634,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTZpKbJSuqQ4cCJYd6aGxU0KuFM80gAC77cxGyKebVK65NKSlDWjIgEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD77cxGyKebVJ9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11486,
+              "size": 30470,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTZpKbJSuqQ4cCJYd6aGxU0KuFM80gAC77cxGyKebVK65NKSlDWjIgEAAwIAA20AAzgE",
+              "uniqueId": "AQAD77cxGyKebVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29315039232,
+      "chatId": -1001180440610,
+      "date": 1764121804,
+      "dateIso": "2025-11-26T01:50:04Z",
+      "content": {
+        "duration": 4762,
+        "width": 1920,
+        "height": 800,
+        "fileName": "Mega Time Squad - 2018.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11491,
+          "size": 1995179613,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbTVpKbJSjrLLnA3WBXxoQ_6RciWt1gACXXgAAlKJ-EjQoH7Y6xs1cDgE",
+          "uniqueId": "AgADXXgAAlKJ-Eg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 11490,
+            "size": 6975,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtNWkpslKOssucDdYFfGhD_pFyJa3WAAJdeAACUon4SNCgftjrGzVwAQAHbQADOAQ",
+            "uniqueId": "AQADXXgAAlKJ-Ehy"
+          }
+        },
+        "caption": "Mega Time Squad - 2018"
+      }
+    },
+    {
+      "id": 29313990656,
+      "chatId": -1001180440610,
+      "date": 1764121804,
+      "dateIso": "2025-11-26T01:50:04Z",
+      "text": "󠄿Titel: Mega Time Squad\nErscheinungsjahr: 2018\nLänge: 86 Minuten\nProduktionsland: Neuseeland\nFSK: 16\nRegie: Tim van Dammen\nTMDbRating: 6.143\nGenres: Komödie, Science Fiction, Action, Krimi, Abenteuer",
+      "year": 2018,
+      "lengthMinutes": 86,
+      "fsk": 16,
+      "productionCountry": "Neuseeland",
+      "director": "Tim van Dammen",
+      "tmdbRating": 6.143,
+      "genres": [
+        "Komödie",
+        "Science Fiction",
+        "Action",
+        "Krimi",
+        "Abenteuer"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/521936-Mega-Time-Squad?language\u003dde-DE"
+    },
+    {
+      "id": 29312942080,
+      "chatId": -1001180440610,
+      "date": 1764121804,
+      "dateIso": "2025-11-26T01:50:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 11495,
+              "size": 1402781,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTNpKbJSqRSwdbaJdnIa2m3PM_5kEgACDKwxG3_7jFM_WRAFjuhGFAEAAwIAA3cAAzgE",
+              "uniqueId": "AQADDKwxG3_7jFN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11494,
+              "size": 420416,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTNpKbJSqRSwdbaJdnIa2m3PM_5kEgACDKwxG3_7jFM_WRAFjuhGFAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADDKwxG3_7jFN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11493,
+              "size": 172600,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTNpKbJSqRSwdbaJdnIa2m3PM_5kEgACDKwxG3_7jFM_WRAFjuhGFAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADDKwxG3_7jFN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11492,
+              "size": 33257,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTNpKbJSqRSwdbaJdnIa2m3PM_5kEgACDKwxG3_7jFM_WRAFjuhGFAEAAwIAA20AAzgE",
+              "uniqueId": "AQADDKwxG3_7jFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29311893504,
+      "chatId": -1001180440610,
+      "date": 1764035404,
+      "dateIso": "2025-11-25T01:50:04Z",
+      "content": {
+        "duration": 5058,
+        "width": 1920,
+        "height": 1080,
+        "fileName": "Liebesgrüße aus der Weihnachtsbäckerei - 2014.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11497,
+          "size": 2095729151,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbTJpKbJSiv09mhTZSvoF3DAU4cLSmAACj6cAAgxt8UiAakpyikMnATgE",
+          "uniqueId": "AgADj6cAAgxt8Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11496,
+            "size": 10204,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtMmkpslKK_T2aFNlK-gXcMBThwtKYAAKPpwACDG3xSIBqSnKKQycBAQAHbQADOAQ",
+            "uniqueId": "AQADj6cAAgxt8Uhy"
+          }
+        },
+        "caption": "Liebesgrüße aus der Weihnachtsbäckerei - 2014"
+      }
+    },
+    {
+      "id": 29310844928,
+      "chatId": -1001180440610,
+      "date": 1764035404,
+      "dateIso": "2025-11-25T01:50:04Z",
+      "text": "󠄿Titel: Liebesgrüße aus der Weihnachtsbäckerei\nOriginaltitel: A Cookie Cutter Christmas\nErscheinungsjahr: 2014\nLänge: 86 Minuten\nProduktionsland: Kanada\nFSK: 0\nRegie: Christie Will Wolf\nTMDbRating: 6.1\nGenres: TV-Film, Komödie, Liebesfilm",
+      "year": 2014,
+      "lengthMinutes": 86,
+      "fsk": 0,
+      "originalTitle": "A Cookie Cutter Christmas",
+      "productionCountry": "Kanada",
+      "director": "Christie Will Wolf",
+      "tmdbRating": 6.1,
+      "genres": [
+        "TV-Film",
+        "Komödie",
+        "Liebesfilm"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/299578-A-Cookie-Cutter-Christmas?language\u003dde-DE"
+    },
+    {
+      "id": 29309796352,
+      "chatId": -1001180440610,
+      "date": 1764035403,
+      "dateIso": "2025-11-25T01:50:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1536,
+            "height": 2048,
+            "file": {
+              "id": 11501,
+              "size": 383948,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTBpKbJSm9sDEnO68NEajVDKWzcs5AACvAtrG7ICBFH1V6tZYgh1_wEAAwIAA3cAAzgE",
+              "uniqueId": "AQADvAtrG7ICBFF8"
+            }
+          },
+          {
+            "width": 960,
+            "height": 1280,
+            "file": {
+              "id": 11500,
+              "size": 236655,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTBpKbJSm9sDEnO68NEajVDKWzcs5AACvAtrG7ICBFH1V6tZYgh1_wEAAwIAA3kAAzgE",
+              "uniqueId": "AQADvAtrG7ICBFF-"
+            }
+          },
+          {
+            "width": 600,
+            "height": 800,
+            "file": {
+              "id": 11499,
+              "size": 110505,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTBpKbJSm9sDEnO68NEajVDKWzcs5AACvAtrG7ICBFH1V6tZYgh1_wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADvAtrG7ICBFF9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 11498,
+              "size": 26498,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbTBpKbJSm9sDEnO68NEajVDKWzcs5AACvAtrG7ICBFH1V6tZYgh1_wEAAwIAA20AAzgE",
+              "uniqueId": "AQADvAtrG7ICBFFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29308747776,
+      "chatId": -1001180440610,
+      "date": 1763949004,
+      "dateIso": "2025-11-24T01:50:04Z",
+      "content": {
+        "duration": 7034,
+        "width": 1920,
+        "height": 1036,
+        "fileName": "Beziehungsweise New York - 2013.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11503,
+          "size": 2080540469,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbS9pKbJS7MQrWgSztKW-_twEHptGXwAC1H8AArQLmEidzGVoOKPzlDgE",
+          "uniqueId": "AgAD1H8AArQLmEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 11502,
+            "size": 9611,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtL2kpslLsxCtaBLO0pb7-3AQem0ZfAALUfwACtAuYSJ3MZWg4o_OUAQAHbQADOAQ",
+            "uniqueId": "AQAD1H8AArQLmEhy"
+          }
+        },
+        "caption": "Beziehungsweise New York - 2013"
+      }
+    },
+    {
+      "id": 29307699200,
+      "chatId": -1001180440610,
+      "date": 1763949004,
+      "dateIso": "2025-11-24T01:50:04Z",
+      "text": "󠄿Titel: Beziehungsweise New York\nOriginaltitel: Casse-Tête Chinois\nErscheinungsjahr: 2013\nLänge: 117 Minuten\nProduktionsland: Belgien\nFSK: 6\nFilmreihe: L\u0027Auberge espagnole Filmreihe\nRegie: Cédric Klapisch\nTMDbRating: 6.57\nGenres: Komödie, Drama, Liebesfilm",
+      "year": 2013,
+      "lengthMinutes": 117,
+      "fsk": 6,
+      "collection": "L\u0027Auberge espagnole Filmreihe",
+      "originalTitle": "Casse-Tête Chinois",
+      "productionCountry": "Belgien",
+      "director": "Cédric Klapisch",
+      "tmdbRating": 6.57,
+      "genres": [
+        "Komödie",
+        "Drama",
+        "Liebesfilm"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/206408-Casse-Tête-Chinois?language\u003dde-DE"
+    },
+    {
+      "id": 29306650624,
+      "chatId": -1001180440610,
+      "date": 1763949003,
+      "dateIso": "2025-11-24T01:50:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1400,
+            "height": 2100,
+            "file": {
+              "id": 11507,
+              "size": 240540,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbS1pKbJSbfBPJCT6nRCP0uK8n3GMVAAC27cxGzppNFM0ML6R_ghoOQEAAwIAA3cAAzgE",
+              "uniqueId": "AQAD27cxGzppNFN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11506,
+              "size": 194723,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbS1pKbJSbfBPJCT6nRCP0uK8n3GMVAAC27cxGzppNFM0ML6R_ghoOQEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD27cxGzppNFN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11505,
+              "size": 96917,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbS1pKbJSbfBPJCT6nRCP0uK8n3GMVAAC27cxGzppNFM0ML6R_ghoOQEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD27cxGzppNFN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11504,
+              "size": 24450,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbS1pKbJSbfBPJCT6nRCP0uK8n3GMVAAC27cxGzppNFM0ML6R_ghoOQEAAwIAA20AAzgE",
+              "uniqueId": "AQAD27cxGzppNFNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29305602048,
+      "chatId": -1001180440610,
+      "date": 1763862604,
+      "dateIso": "2025-11-23T01:50:04Z",
+      "content": {
+        "duration": 5480,
+        "width": 1920,
+        "height": 800,
+        "fileName": "The Final Girls - 2015.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4883,
+          "size": 2038262115,
+          "remoteId": "BAACAgIAAx0CVuxOyAACLrdpKbJbJWKhbQuvzgYJE_BJ_AsivQACSH4AArQLmEjEz0_FvFMlpDgE",
+          "uniqueId": "AgADSH4AArQLmEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 4882,
+            "size": 6180,
+            "remoteId": "AAMCAgADHQJW7E7IAAIut2kpslslYqFtC6_OBgkT8En8CyK9AAJIfgACtAuYSMTPT8W8UyWkAQAHbQADOAQ",
+            "uniqueId": "AQADSH4AArQLmEhy"
+          }
+        },
+        "caption": "The Final Girls - 2015"
+      }
+    },
+    {
+      "id": 29304553472,
+      "chatId": -1001180440610,
+      "date": 1763862604,
+      "dateIso": "2025-11-23T01:50:04Z",
+      "text": "󠄿Titel: The Final Girls\nErscheinungsjahr: 2015\nLänge: 91 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nRegie: Todd Strauss-Schulson\nTMDbRating: 6.395\nGenres: Komödie, Horror",
+      "year": 2015,
+      "lengthMinutes": 91,
+      "fsk": 16,
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Todd Strauss-Schulson",
+      "tmdbRating": 6.395,
+      "genres": [
+        "Komödie",
+        "Horror"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/293970-The-Final-Girls?language\u003dde-DE"
+    },
+    {
+      "id": 29303504896,
+      "chatId": -1001180440610,
+      "date": 1763862604,
+      "dateIso": "2025-11-23T01:50:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 11511,
+              "size": 285888,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSppKbJSFaMkpfPypMG2GKRr5ucYOQACdAxrG5eh3FN_TQ1F_6jU3gEAAwIAA3cAAzgE",
+              "uniqueId": "AQADdAxrG5eh3FN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11510,
+              "size": 250880,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSppKbJSFaMkpfPypMG2GKRr5ucYOQACdAxrG5eh3FN_TQ1F_6jU3gEAAwIAA3kAAzgE",
+              "uniqueId": "AQADdAxrG5eh3FN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11509,
+              "size": 115426,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSppKbJSFaMkpfPypMG2GKRr5ucYOQACdAxrG5eh3FN_TQ1F_6jU3gEAAwIAA3gAAzgE",
+              "uniqueId": "AQADdAxrG5eh3FN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11508,
+              "size": 25746,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSppKbJSFaMkpfPypMG2GKRr5ucYOQACdAxrG5eh3FN_TQ1F_6jU3gEAAwIAA20AAzgE",
+              "uniqueId": "AQADdAxrG5eh3FNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29302456320,
+      "chatId": -1001180440610,
+      "date": 1763776204,
+      "dateIso": "2025-11-22T01:50:04Z",
+      "content": {
+        "duration": 5300,
+        "width": 1280,
+        "height": 720,
+        "fileName": "Die Auserwählten 2014.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11513,
+          "size": 1886408099,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbSlpKbJSxdAvwpSBE0dQFkFeH0zYTgACLoQAAhhqkEiPrXH3MgWvVzgE",
+          "uniqueId": "AgADLoQAAhhqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 11512,
+            "size": 8794,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtKWkpslLF0C_ClIETR1AWQV4fTNhOAAIuhAACGGqQSI-tcfcyBa9XAQAHbQADOAQ",
+            "uniqueId": "AQADLoQAAhhqkEhy"
+          }
+        },
+        "caption": "Die Auserwählten - 2014"
+      }
+    },
+    {
+      "id": 29301407744,
+      "chatId": -1001180440610,
+      "date": 1763776204,
+      "dateIso": "2025-11-22T01:50:04Z",
+      "text": "󠄿Titel: Die Auserwählten\nErscheinungsjahr: 2014\nLänge: 89 Minuten\nProduktionsland: Deutschland\nFSK: 12\nRegie: Christoph Röhl\nTMDbRating: 5.147\nGenres: TV-Film, Drama",
+      "year": 2014,
+      "lengthMinutes": 89,
+      "fsk": 12,
+      "productionCountry": "Deutschland",
+      "director": "Christoph Röhl",
+      "tmdbRating": 5.147,
+      "genres": [
+        "TV-Film",
+        "Drama"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/296081-Die-Auserwählten?language\u003dde-DE"
+    },
+    {
+      "id": 29300359168,
+      "chatId": -1001180440610,
+      "date": 1763776203,
+      "dateIso": "2025-11-22T01:50:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1500,
+            "file": {
+              "id": 11517,
+              "size": 212786,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSdpKbJSiEE4hIulAcbufVZl8tFhhwACqboxG6UY_FNiJsEFn8rCvwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADqboxG6UY_FN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11516,
+              "size": 189214,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSdpKbJSiEE4hIulAcbufVZl8tFhhwACqboxG6UY_FNiJsEFn8rCvwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADqboxG6UY_FN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11515,
+              "size": 93638,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSdpKbJSiEE4hIulAcbufVZl8tFhhwACqboxG6UY_FNiJsEFn8rCvwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADqboxG6UY_FN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11514,
+              "size": 22472,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSdpKbJSiEE4hIulAcbufVZl8tFhhwACqboxG6UY_FNiJsEFn8rCvwEAAwIAA20AAzgE",
+              "uniqueId": "AQADqboxG6UY_FNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29299310592,
+      "chatId": -1001180440610,
+      "date": 1763689804,
+      "dateIso": "2025-11-21T01:50:04Z",
+      "content": {
+        "duration": 6380,
+        "width": 1920,
+        "height": 808,
+        "fileName": "In meinem Kopf ein Universum - 2013.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11519,
+          "size": 2087594652,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbSZpKbJSViWjjTYEa4btfQc6Qx4QQQACbYQAAhhqkEhNo8ctF7gGhDgE",
+          "uniqueId": "AgADbYQAAhhqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 135,
+          "file": {
+            "id": 11518,
+            "size": 5802,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtJmkpslJWJaONNgRrhu19BzpDHhBBAAJthAACGGqQSE2jxy0XuAaEAQAHbQADOAQ",
+            "uniqueId": "AQADbYQAAhhqkEhy"
+          }
+        },
+        "caption": "In meinem Kopf ein Universum - 2013"
+      }
+    },
+    {
+      "id": 29298262016,
+      "chatId": -1001180440610,
+      "date": 1763689804,
+      "dateIso": "2025-11-21T01:50:04Z",
+      "text": "󠄿Titel: In meinem Kopf ein Universum\nOriginaltitel: Chce się żyć\nErscheinungsjahr: 2013\nLänge: 111 Minuten\nProduktionsland: Polen\nFSK: 6\nRegie: Maciej Pieprzyca\nTMDbRating: 7.3\nGenres: Drama",
+      "year": 2013,
+      "lengthMinutes": 111,
+      "fsk": 6,
+      "originalTitle": "Chce się żyć",
+      "productionCountry": "Polen",
+      "director": "Maciej Pieprzyca",
+      "tmdbRating": 7.3,
+      "genres": [
+        "Drama"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/226437-Chce-się-żyć?language\u003dde-DE"
+    },
+    {
+      "id": 29297213440,
+      "chatId": -1001180440610,
+      "date": 1763689804,
+      "dateIso": "2025-11-21T01:50:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1400,
+            "height": 2100,
+            "file": {
+              "id": 11523,
+              "size": 468351,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSRpKbJSKyOXndWU_0fpVlic4hh6jwACwqwxG9GPxVHy8c_KG5RKHgEAAwIAA3cAAzgE",
+              "uniqueId": "AQADwqwxG9GPxVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 11522,
+              "size": 252890,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSRpKbJSKyOXndWU_0fpVlic4hh6jwACwqwxG9GPxVHy8c_KG5RKHgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADwqwxG9GPxVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 11521,
+              "size": 108577,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSRpKbJSKyOXndWU_0fpVlic4hh6jwACwqwxG9GPxVHy8c_KG5RKHgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADwqwxG9GPxVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 11520,
+              "size": 23493,
+              "remoteId": "AgACAgQAAx0CRlwYIgACbSRpKbJSKyOXndWU_0fpVlic4hh6jwACwqwxG9GPxVHy8c_KG5RKHgEAAwIAA20AAzgE",
+              "uniqueId": "AQADwqwxG9GPxVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 29296164864,
+      "chatId": -1001180440610,
+      "date": 1763603404,
+      "dateIso": "2025-11-20T01:50:04Z",
+      "content": {
+        "duration": 4984,
+        "width": 1920,
+        "height": 800,
+        "fileName": "American Justice - Im Sumpf der Gesetzlosigkeit - 2015.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 11525,
+          "size": 2085821695,
+          "remoteId": "BAACAgIAAx0CRlwYIgACbSNpKbJSqsrC8U4jfLaPzzl2XDbHeQACXYQAAhhqkEhF8A1DAi-7lzgE",
+          "uniqueId": "AgADXYQAAhhqkEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 11524,
+            "size": 6911,
+            "remoteId": "AAMCAgADHQJGXBgiAAJtI2kpslKqysLxTiN8to_POXZcNsd5AAJdhAACGGqQSEXwDUMCL7uXAQAHbQADOAQ",
+            "uniqueId": "AQADXYQAAhhqkEhy"
+          }
+        },
+        "caption": "American Justice - Im Sumpf der Gesetzlosigkeit - 2015"
+      }
+    }
+  ]
+}

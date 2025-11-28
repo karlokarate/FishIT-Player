@@ -1,0 +1,39 @@
+{
+  "chatId": 250485656,
+  "title": "Nurcan Illigens",
+  "exportedAt": "2025-11-28T14:47:02.063696368Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42393927680,
+      "chatId": 250485656,
+      "date": 1694004312,
+      "dateIso": "2023-09-06T12:45:12Z",
+      "content": {
+        "duration": 26,
+        "width": 574,
+        "height": 854,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5304,
+          "size": 5130931,
+          "remoteId": "BAACAgIAAxkDAAKd7mkpsuJPcNWqkvhxjhXaHBUbAmStAAI-HQACYtVoS1ySpE0j847hOAQ",
+          "uniqueId": "AgADPh0AAmLVaEs"
+        },
+        "thumbnail": {
+          "width": 215,
+          "height": 320,
+          "file": {
+            "id": 5303,
+            "size": 10385,
+            "remoteId": "AAMCAgADGQMAAp3uaSmy4k9w1aqS-HGOFdocFRsCZK0AAj4dAAJi1WhLXJKkTSPzjuEBAAdtAAM4BA",
+            "uniqueId": "AQADPh0AAmLVaEty"
+          }
+        },
+        "caption": "JSoDFoGn_FqOoN3T.mp4"
+      }
+    }
+  ]
+}

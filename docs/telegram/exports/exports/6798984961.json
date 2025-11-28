@@ -1,0 +1,37 @@
+{
+  "chatId": 6798984961,
+  "title": "Klaudia",
+  "exportedAt": "2025-11-28T14:46:51.798678250Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 43775950848,
+      "senderId": {
+        "userId": 6798984961
+      },
+      "chatId": 6798984961,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1706256937,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,783 @@
+{
+  "chatId": -1001725981584,
+  "title": "For All Mankind - Full HD",
+  "exportedAt": "2025-11-28T14:46:50.378771674Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 65011712,
+      "chatId": -1001725981584,
+      "date": 1708543077,
+      "dateIso": "2024-02-21T19:17:57Z",
+      "content": {
+        "duration": 4609,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E10 - Perestroika.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 5289,
+          "size": 2045316614,
+          "remoteId": "BAACAgIAAx0CZuBjkAADPmkpsqR6s7fZ0Idh5do0IylYq1VRAAIeSgACI1CxSpb9tvgFtK5HOAQ",
+          "uniqueId": "AgADHkoAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 5288,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM-aSmypHqzt9nQh2Hl2jQjKVirVVEAAh5KAAIjULFKlv22-AW0rkcBAAdtAAM4BA",
+            "uniqueId": "AQADHkoAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E10 - Perestroika"
+      }
+    },
+    {
+      "id": 63963136,
+      "chatId": -1001725981584,
+      "date": 1708543074,
+      "dateIso": "2024-02-21T19:17:54Z",
+      "content": {
+        "duration": 2768,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E09 - Brasilien.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18943,
+          "size": 1737012725,
+          "remoteId": "BAACAgIAAx0CZuBjkAADPWkpsqQg3qAgoJeq2CnK9w6G4WsbAAJVSQACI1CxSrPRe-DyFiILOAQ",
+          "uniqueId": "AgADVUkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18942,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM9aSmypCDeoCCgl6rYKcr3DobhaxsAAlVJAAIjULFKs9F74PIWIgsBAAdtAAM4BA",
+            "uniqueId": "AQADVUkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E09 - Brasilien"
+      }
+    },
+    {
+      "id": 62914560,
+      "chatId": -1001725981584,
+      "date": 1708543071,
+      "dateIso": "2024-02-21T19:17:51Z",
+      "content": {
+        "duration": 3109,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E08 - Ein perfekter Plan.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18945,
+          "size": 1958940133,
+          "remoteId": "BAACAgIAAx0CZuBjkAADPGkpsqQ3j1dxeLm9Mf6LO6DCQ49BAALKSQACI1CxSpSRfhs648JDOAQ",
+          "uniqueId": "AgADykkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18944,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM8aSmypDePV3F4ub0x_os7oMJDj0EAAspJAAIjULFKlJF-GzrjwkMBAAdtAAM4BA",
+            "uniqueId": "AQADykkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E08 - Ein perfekter Plan"
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001725981584,
+      "date": 1708543067,
+      "dateIso": "2024-02-21T19:17:47Z",
+      "content": {
+        "duration": 2578,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E07 - Überschrittene Linien.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18947,
+          "size": 1614541670,
+          "remoteId": "BAACAgIAAx0CZuBjkAADO2kpsqQtLNrgFm65W7by0NVMTroHAAI-SQACI1CxSqwGowdqXOSCOAQ",
+          "uniqueId": "AgADPkkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18946,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM7aSmypC0s2uAWbrlbtvLQ1UxOugcAAj5JAAIjULFKrAajB2pc5IIBAAdtAAM4BA",
+            "uniqueId": "AQADPkkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E07 - Überschrittene Linien"
+      }
+    },
+    {
+      "id": 60817408,
+      "chatId": -1001725981584,
+      "date": 1708543064,
+      "dateIso": "2024-02-21T19:17:44Z",
+      "content": {
+        "duration": 3330,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E06 - Leningrad.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18949,
+          "size": 1896813545,
+          "remoteId": "BAACAgIAAx0CZuBjkAADOmkpsqQRWlR0rPX64btiBFNML8ITAAKFSQACI1CxSrDeoadOqkAiOAQ",
+          "uniqueId": "AgADhUkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18948,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM6aSmypBFaVHSs9frhu2IEU0wvwhMAAoVJAAIjULFKsN6hp06qQCIBAAdtAAM4BA",
+            "uniqueId": "AQADhUkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E06 - Leningrad"
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001725981584,
+      "date": 1708543061,
+      "dateIso": "2024-02-21T19:17:41Z",
+      "content": {
+        "duration": 3347,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E05 - Goldlöckchen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18951,
+          "size": 1899650373,
+          "remoteId": "BAACAgIAAx0CZuBjkAADOWkpsqT3wJm1qZqHMx4JeGsvbylAAAKlSQACI1CxSla3FaHJr6z8OAQ",
+          "uniqueId": "AgADpUkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18950,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM5aSmypPfAmbWpmoczHgl4ay9vKUAAAqVJAAIjULFKVrcVocmvrPwBAAdtAAM4BA",
+            "uniqueId": "AQADpUkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E05 - Goldlöckchen"
+      }
+    },
+    {
+      "id": 58720256,
+      "chatId": -1001725981584,
+      "date": 1708543058,
+      "dateIso": "2024-02-21T19:17:38Z",
+      "content": {
+        "duration": 3534,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E04 - Zerreißprobe.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18953,
+          "size": 2013995970,
+          "remoteId": "BAACAgIAAx0CZuBjkAADOGkpsqTGlz0CFVlabjSXbEKurRteAAL_SQACI1CxSok9-qcosxxwOAQ",
+          "uniqueId": "AgAD_0kAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18952,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM4aSmypMaXPQIVWVpuNJdsQq6tG14AAv9JAAIjULFKiT36pyizHHABAAdtAAM4BA",
+            "uniqueId": "AQAD_0kAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E04 - Zerreißprobe"
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001725981584,
+      "date": 1708543054,
+      "dateIso": "2024-02-21T19:17:34Z",
+      "content": {
+        "duration": 4218,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E03 - Die Übernahme.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18955,
+          "size": 1871790954,
+          "remoteId": "BAACAgIAAx0CZuBjkAADN2kpsqS8-mhQSz0ljNpKDOfFYEi4AAJnSQACI1CxSrecsr9UM1uLOAQ",
+          "uniqueId": "AgADZ0kAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18954,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM3aSmypLz6aFBLPSWM2koM58VgSLgAAmdJAAIjULFKt5yyv1QzW4sBAAdtAAM4BA",
+            "uniqueId": "AQADZ0kAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E03 - Die Übernahme"
+      }
+    },
+    {
+      "id": 56623104,
+      "chatId": -1001725981584,
+      "date": 1708543051,
+      "dateIso": "2024-02-21T19:17:31Z",
+      "content": {
+        "duration": 3157,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E02 - Wir wünschen einen schönen Sol.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18957,
+          "size": 1989460115,
+          "remoteId": "BAACAgIAAx0CZuBjkAADNmkpsqRzd58t0GiRUt1TPeehER5CAALmSQACI1CxSvtyw6Rjnn9UOAQ",
+          "uniqueId": "AgAD5kkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18956,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM2aSmypHN3ny3QaJFS3VM956ERHkIAAuZJAAIjULFK-3LDpGOef1QBAAdtAAM4BA",
+            "uniqueId": "AQAD5kkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E02 - Wir wünschen einen schönen Sol"
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001725981584,
+      "date": 1708543048,
+      "dateIso": "2024-02-21T19:17:28Z",
+      "content": {
+        "duration": 3938,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S04 E01 - Glasnost.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18959,
+          "size": 1742840989,
+          "remoteId": "BAACAgIAAx0CZuBjkAADNWkpsqQpp-xropZfOno2Wd2gibi6AAIuSQACI1CxSmMXeZYbGZzVOAQ",
+          "uniqueId": "AgADLkkAAiNQsUo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18958,
+            "size": 6068,
+            "remoteId": "AAMCAgADHQJm4GOQAAM1aSmypCmn7Guill86ejZZ3aCJuLoAAi5JAAIjULFKYxd5lhsZnNUBAAdtAAM4BA",
+            "uniqueId": "AQADLkkAAiNQsUpy"
+          }
+        },
+        "caption": "For All Mankind - S04 E01 - Glasnost"
+      }
+    },
+    {
+      "id": 50331648,
+      "chatId": -1001725981584,
+      "date": 1663535894,
+      "dateIso": "2022-09-18T21:18:14Z",
+      "content": {
+        "duration": 4955,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E10 - Fremder in einem fremden Land.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18961,
+          "size": 2062328047,
+          "remoteId": "BAACAgIAAx0CZuBjkAADMGkpsqTj5mRCB4Z3WksJJ-BDNh_5AAKfIQACRmk5SQtaGmvZp_RvOAQ",
+          "uniqueId": "AgADnyEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18960,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMwaSmypOPmZEIHhndaSwkn4EM2H_kAAp8hAAJGaTlJC1oaa9mn9G8BAAdtAAM4BA",
+            "uniqueId": "AQADnyEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E10 - Fremder in einem fremden Land"
+      }
+    },
+    {
+      "id": 49283072,
+      "chatId": -1001725981584,
+      "date": 1663535891,
+      "dateIso": "2022-09-18T21:18:11Z",
+      "content": {
+        "duration": 2812,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E09 - Heimkehr.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18963,
+          "size": 2031931597,
+          "remoteId": "BAACAgIAAx0CZuBjkAADL2kpsqT7CaNPXpVhyYaCUPHeXBDdAAKyIAACRmk5SUwo5yllhxS6OAQ",
+          "uniqueId": "AgADsiAAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18962,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMvaSmypPsJo09elWHJhoJQ8d5cEN0AArIgAAJGaTlJTCjnKWWHFLoBAAdtAAM4BA",
+            "uniqueId": "AQADsiAAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E09 - Heimkehr"
+      }
+    },
+    {
+      "id": 48234496,
+      "chatId": -1001725981584,
+      "date": 1663535888,
+      "dateIso": "2022-09-18T21:18:08Z",
+      "content": {
+        "duration": 3862,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E08 - Der Schrecken des Ares.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18965,
+          "size": 2045364333,
+          "remoteId": "BAACAgIAAx0CZuBjkAADLmkpsqSuZJuzCm6UC80Ce8EPzqbZAALMIAACRmk5SSYGGMBQYZh4OAQ",
+          "uniqueId": "AgADzCAAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18964,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMuaSmypK5km7MKbpQLzQJ7wQ_OptkAAswgAAJGaTlJJgYYwFBhmHgBAAdtAAM4BA",
+            "uniqueId": "AQADzCAAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E08 - Der Schrecken des Ares"
+      }
+    },
+    {
+      "id": 47185920,
+      "chatId": -1001725981584,
+      "date": 1663535885,
+      "dateIso": "2022-09-18T21:18:05Z",
+      "content": {
+        "duration": 3471,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E07 - Enthüllungen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18967,
+          "size": 2045781821,
+          "remoteId": "BAACAgIAAx0CZuBjkAADLWkpsqSo2FzX9jr-tD-JdELZRUf0AALXIAACRmk5SSs3d-E9woXKOAQ",
+          "uniqueId": "AgAD1yAAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18966,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMtaSmypKjYXNf2Ov60P4l0QtlFR_QAAtcgAAJGaTlJKzd34T3ChcoBAAdtAAM4BA",
+            "uniqueId": "AQAD1yAAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E07 - Enthüllungen"
+      }
+    },
+    {
+      "id": 46137344,
+      "chatId": -1001725981584,
+      "date": 1663535881,
+      "dateIso": "2022-09-18T21:18:01Z",
+      "content": {
+        "duration": 3655,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E06 - New Eden.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18969,
+          "size": 2051131552,
+          "remoteId": "BAACAgIAAx0CZuBjkAADLGkpsqQn-KEUPWOqNRSSHNZn5d52AAJAIQACRmk5SWpvVItVxqwGOAQ",
+          "uniqueId": "AgADQCEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18968,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMsaSmypCf4oRQ9Y6o1FJIc1mfl3nYAAkAhAAJGaTlJam9Ui1XGrAYBAAdtAAM4BA",
+            "uniqueId": "AQADQCEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E06 - New Eden"
+      }
+    },
+    {
+      "id": 45088768,
+      "chatId": -1001725981584,
+      "date": 1663535878,
+      "dateIso": "2022-09-18T21:17:58Z",
+      "content": {
+        "duration": 3817,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E05 - Sieben Minuten des Schreckens.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18971,
+          "size": 2051323799,
+          "remoteId": "BAACAgIAAx0CZuBjkAADK2kpsqSglKFiWHAZHmJxRY3Wekt3AAI1IQACRmk5SSAHD5iwaKwtOAQ",
+          "uniqueId": "AgADNSEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18970,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMraSmypKCUoWJYcBkeYnFFjdZ6S3cAAjUhAAJGaTlJIAcPmLBorC0BAAdtAAM4BA",
+            "uniqueId": "AQADNSEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E05 - Sieben Minuten des Schreckens"
+      }
+    },
+    {
+      "id": 44040192,
+      "chatId": -1001725981584,
+      "date": 1663535875,
+      "dateIso": "2022-09-18T21:17:55Z",
+      "content": {
+        "duration": 3124,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E04 - Happy Valley.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18973,
+          "size": 2025671351,
+          "remoteId": "BAACAgIAAx0CZuBjkAADKmkpsqRoJLlKEtkT27zvmJQvgTPRAAKjIAACRmk5SR_dU3maGBdnOAQ",
+          "uniqueId": "AgADoyAAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18972,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMqaSmypGgkuUoS2RPbvO-YlC-BM9EAAqMgAAJGaTlJH91TeZoYF2cBAAdtAAM4BA",
+            "uniqueId": "AQADoyAAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E04 - Happy Valley"
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1001725981584,
+      "date": 1663535872,
+      "dateIso": "2022-09-18T21:17:52Z",
+      "content": {
+        "duration": 3661,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E03 - Alles auf Sieg.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18975,
+          "size": 2052227453,
+          "remoteId": "BAACAgIAAx0CZuBjkAADKWkpsqR5Br__6rIJUd7t2MqzfQ0XAAJXIQACRmk5Sf2hA9CcEOAqOAQ",
+          "uniqueId": "AgADVyEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18974,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMpaSmypHkGv__qsglR3u3YyrN9DRcAAlchAAJGaTlJ_aED0JwQ4CoBAAdtAAM4BA",
+            "uniqueId": "AQADVyEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E03 - Alles auf Sieg"
+      }
+    },
+    {
+      "id": 41943040,
+      "chatId": -1001725981584,
+      "date": 1663535869,
+      "dateIso": "2022-09-18T21:17:49Z",
+      "content": {
+        "duration": 3735,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E02 - Rollenwechsel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18977,
+          "size": 2052106044,
+          "remoteId": "BAACAgIAAx0CZuBjkAADKGkpsqQ67R5KcbzgWwLvNvNNCQaeAAJfIQACRmk5SU_camzMYCBAOAQ",
+          "uniqueId": "AgADXyEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18976,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMoaSmypDrtHkpxvOBbAu82800JBp4AAl8hAAJGaTlJT9xqbMxgIEABAAdtAAM4BA",
+            "uniqueId": "AQADXyEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E02 - Rollenwechsel"
+      }
+    },
+    {
+      "id": 40894464,
+      "chatId": -1001725981584,
+      "date": 1663535866,
+      "dateIso": "2022-09-18T21:17:46Z",
+      "content": {
+        "duration": 3442,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S03 E01 - Polaris.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18979,
+          "size": 2039318237,
+          "remoteId": "BAACAgIAAx0CZuBjkAADJ2kpsqTtXtiLBoBBL_V6fwQZaNEAA7wgAAJGaTlJNw1lgb8wk1U4BA",
+          "uniqueId": "AgADvCAAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18978,
+            "size": 5745,
+            "remoteId": "AAMCAgADHQJm4GOQAAMnaSmypO1e2IsGgEEv9Xp_BBlo0QADvCAAAkZpOUk3DWWBvzCTVQEAB20AAzgE",
+            "uniqueId": "AQADvCAAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S03 E01 - Polaris"
+      }
+    },
+    {
+      "id": 38797312,
+      "chatId": -1001725981584,
+      "date": 1663535674,
+      "dateIso": "2022-09-18T21:14:34Z",
+      "content": {
+        "duration": 4591,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S02 E10 - Eskalation.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18981,
+          "size": 2065012846,
+          "remoteId": "BAACAgIAAx0CZuBjkAADJWkpsqTw8MkAAdNemsAZcvft-F5x_wACpSEAAkZpOUlZrWH6fVoGbDgE",
+          "uniqueId": "AgADpSEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18980,
+            "size": 7288,
+            "remoteId": "AAMCAgADHQJm4GOQAAMlaSmypPDwyQAB016awBly9-34XnH_AAKlIQACRmk5SVmtYfp9WgZsAQAHbQADOAQ",
+            "uniqueId": "AQADpSEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S02 E10 - Eskalation"
+      }
+    },
+    {
+      "id": 37748736,
+      "chatId": -1001725981584,
+      "date": 1663535671,
+      "dateIso": "2022-09-18T21:14:31Z",
+      "content": {
+        "duration": 3388,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S02 E09 - Triage.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18983,
+          "size": 2051822090,
+          "remoteId": "BAACAgIAAx0CZuBjkAADJGkpsqQa8uX_-piGvfhd1a7IVRunAAJEIQACRmk5SSbANVOt3lEoOAQ",
+          "uniqueId": "AgADRCEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18982,
+            "size": 7288,
+            "remoteId": "AAMCAgADHQJm4GOQAAMkaSmypBry5f_6mIa9-F3VrshVG6cAAkQhAAJGaTlJJsA1U63eUSgBAAdtAAM4BA",
+            "uniqueId": "AQADRCEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S02 E09 - Triage"
+      }
+    },
+    {
+      "id": 36700160,
+      "chatId": -1001725981584,
+      "date": 1663535668,
+      "dateIso": "2022-09-18T21:14:28Z",
+      "content": {
+        "duration": 4194,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S02 E08 - Feindkontakt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18985,
+          "size": 2060986524,
+          "remoteId": "BAACAgIAAx0CZuBjkAADI2kpsqT_4UEgBCqzICgMyZiwTNDLAAKeIQACRmk5SX_dER6T0rFQOAQ",
+          "uniqueId": "AgADniEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18984,
+            "size": 7288,
+            "remoteId": "AAMCAgADHQJm4GOQAAMjaSmypP_hQSAEKrMgKAzJmLBM0MsAAp4hAAJGaTlJf90RHpPSsVABAAdtAAM4BA",
+            "uniqueId": "AQADniEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S02 E08 - Feindkontakt"
+      }
+    },
+    {
+      "id": 35651584,
+      "chatId": -1001725981584,
+      "date": 1663535665,
+      "dateIso": "2022-09-18T21:14:25Z",
+      "content": {
+        "duration": 3729,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S02 E07 - KAL-007.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18987,
+          "size": 2053009163,
+          "remoteId": "BAACAgIAAx0CZuBjkAADImkpsqSwu5gY4r2De-c1mx1zNg0iAAJoIQACRmk5SfuEzahsvpGOOAQ",
+          "uniqueId": "AgADaCEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18986,
+            "size": 7288,
+            "remoteId": "AAMCAgADHQJm4GOQAAMiaSmypLC7mBjivYN75zWbHXM2DSIAAmghAAJGaTlJ-4TNqGy-kY4BAAdtAAM4BA",
+            "uniqueId": "AQADaCEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S02 E07 - KAL-007"
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001725981584,
+      "date": 1663535662,
+      "dateIso": "2022-09-18T21:14:22Z",
+      "content": {
+        "duration": 3574,
+        "width": 1920,
+        "height": 960,
+        "fileName": "For All Mankind - S02 E06 - Neue Pläne.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 18989,
+          "size": 2052877153,
+          "remoteId": "BAACAgIAAx0CZuBjkAADIWkpsqQYKUxhVkV2iw9oW6sv-2FiAAJiIQACRmk5SYZ_RM24JN_yOAQ",
+          "uniqueId": "AgADYiEAAkZpOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 18988,
+            "size": 7288,
+            "remoteId": "AAMCAgADHQJm4GOQAAMhaSmypBgpTGFWRXaLD2hbqy_7YWIAAmIhAAJGaTlJhn9Ezbgk3_IBAAdtAAM4BA",
+            "uniqueId": "AQADYiEAAkZpOUly"
+          }
+        },
+        "caption": "For All Mankind - S02 E06 - Neue Pläne"
+      }
+    }
+  ]
+}

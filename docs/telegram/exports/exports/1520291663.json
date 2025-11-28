@@ -1,0 +1,102 @@
+{
+  "chatId": 1520291663,
+  "title": "Kik",
+  "exportedAt": "2025-11-28T14:47:43.064354197Z",
+  "count": 5,
+  "messages": [
+    {
+      "id": 17911775232,
+      "chatId": 1520291663,
+      "date": 1618952307,
+      "dateIso": "2021-04-20T20:58:27Z",
+      "text": "👍🏻👍🏻🎂🎂",
+      "genres": []
+    },
+    {
+      "id": 17798529024,
+      "chatId": 1520291663,
+      "date": 1618899141,
+      "dateIso": "2021-04-20T06:12:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 960,
+            "height": 1280,
+            "file": {
+              "id": 23339,
+              "size": 342218,
+              "remoteId": "AgACAgIAAxkDAAJCTmkpsuG65U-NW9j2OkU7n1DxiTo2AAIpszEb4ovwS0KJGzBVUcioAQADAgADeQADOAQ",
+              "uniqueId": "AQADKbMxG-KL8Et-"
+            }
+          },
+          {
+            "width": 600,
+            "height": 800,
+            "file": {
+              "id": 23338,
+              "size": 156738,
+              "remoteId": "AgACAgIAAxkDAAJCTmkpsuG65U-NW9j2OkU7n1DxiTo2AAIpszEb4ovwS0KJGzBVUcioAQADAgADeAADOAQ",
+              "uniqueId": "AQADKbMxG-KL8Et9"
+            }
+          },
+          {
+            "width": 240,
+            "height": 320,
+            "file": {
+              "id": 23337,
+              "size": 27308,
+              "remoteId": "AgACAgIAAxkDAAJCTmkpsuG65U-NW9j2OkU7n1DxiTo2AAIpszEb4ovwS0KJGzBVUcioAQADAgADbQADOAQ",
+              "uniqueId": "AQADKbMxG-KL8Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 13525581824,
+      "chatId": 1520291663,
+      "date": 1612262915,
+      "dateIso": "2021-02-02T10:48:35Z",
+      "text": "oder noch einfacher: nur wenn es euch gut geht, geht es auch Eda gut. Das bedeutet auch, dass ihr als Eltern deutlich macht, dass ihr sie nicht in den Schlaf begleiten könnt, weil euch das einen Teil eurer eigenen Lebensqualität nimmt. Kinder verstehen soetwas viel besser, als so mancher denkt. Man darf sich nicht scheuen eigene Befindlichkeiten auch vor seinen Kindern zu äußern.\nSchön, dass du da warst!",
+      "genres": []
+    },
+    {
+      "id": 13524533248,
+      "chatId": 1520291663,
+      "date": 1612262628,
+      "dateIso": "2021-02-02T10:43:48Z",
+      "text": "ein kurzer Nachsatz:\nZum Wohle des eigenen Kindes/der Kinder ist es denke ich besonders wichtig, dass das Familienleben insgesamt gut funktioniert. Das bedeutet meiner Meinung nach, dass die Bedürfnisse aller Familienmitglieder gleichwertig wichtig sind und nicht das Bedürfnis z.B. des einzelnen Kindes über das Eigene gestellt werden darf. Ein besonders wichtiger Lernprozess für Kinder und Eltern, bei denen das Kind immer und bei Allem im Mittelpunkt stehen muss. ❤️",
+      "genres": []
+    },
+    {
+      "id": 13447987200,
+      "senderId": {
+        "userId": 1520291663
+      },
+      "chatId": 1520291663,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1611928894,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

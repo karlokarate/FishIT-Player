@@ -1,0 +1,59 @@
+{
+  "chatId": -1002059364160,
+  "title": "APKPure_Official",
+  "exportedAt": "2025-11-28T14:45:17.406619200Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 2100297728,
+      "chatId": -1002059364160,
+      "date": 1764330157,
+      "dateIso": "2025-11-28T11:42:37Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1531,
+            "height": 861,
+            "file": {
+              "id": 4828,
+              "size": 247039,
+              "remoteId": "AgACAgQAAx0Cer9nQAACB9NpKbJPXFzXM7YgCW3WzcpRo94MywACuAtrGzkgVVFoT88JDfoOlgEAAwIAA3cAAzgE",
+              "uniqueId": "AQADuAtrGzkgVVF8"
+            }
+          },
+          {
+            "width": 1280,
+            "height": 720,
+            "file": {
+              "id": 4827,
+              "size": 215375,
+              "remoteId": "AgACAgQAAx0Cer9nQAACB9NpKbJPXFzXM7YgCW3WzcpRo94MywACuAtrGzkgVVFoT88JDfoOlgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADuAtrGzkgVVF-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 4826,
+              "size": 107897,
+              "remoteId": "AgACAgQAAx0Cer9nQAACB9NpKbJPXFzXM7YgCW3WzcpRo94MywACuAtrGzkgVVFoT88JDfoOlgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADuAtrGzkgVVF9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 4825,
+              "size": 25050,
+              "remoteId": "AgACAgQAAx0Cer9nQAACB9NpKbJPXFzXM7YgCW3WzcpRo94MywACuAtrGzkgVVFoT88JDfoOlgEAAwIAA20AAzgE",
+              "uniqueId": "AQADuAtrGzkgVVFy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

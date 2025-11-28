@@ -1,0 +1,676 @@
+{
+  "chatId": -1001325283350,
+  "title": "🎬🎥🔊Hauptkanal - Join the Links JtL 🙂 🎞🎙",
+  "exportedAt": "2025-11-28T14:45:54.192597744Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 1246756864,
+      "senderId": {
+        "chatId": -1001325283350
+      },
+      "chatId": -1001325283350,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1753356798,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 1245708288
+      }
+    },
+    {
+      "id": 1244659712,
+      "senderId": {
+        "chatId": -1001325283350
+      },
+      "chatId": -1001325283350,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1753291261,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 1243611136
+      }
+    },
+    {
+      "id": 1242562560,
+      "chatId": -1001325283350,
+      "date": 1748072628,
+      "dateIso": "2025-05-24T07:43:48Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 863,
+            "file": {
+              "id": 15875,
+              "size": 142172,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJRpKbJt0ZQmCYo-esVNG0wHkVj_JQAClqkxG52WuUYpu7jhRXF1JwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADlqkxG52WuUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 539,
+            "file": {
+              "id": 15874,
+              "size": 93625,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJRpKbJt0ZQmCYo-esVNG0wHkVj_JQAClqkxG52WuUYpu7jhRXF1JwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADlqkxG52WuUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 216,
+            "file": {
+              "id": 15873,
+              "size": 22289,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJRpKbJt0ZQmCYo-esVNG0wHkVj_JQAClqkxG52WuUYpu7jhRXF1JwEAAwIAA20AAzgE",
+              "uniqueId": "AQADlqkxG52WuUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1238368256,
+      "chatId": -1001325283350,
+      "date": 1744141374,
+      "dateIso": "2025-04-08T19:42:54Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 957,
+            "height": 695,
+            "file": {
+              "id": 15878,
+              "size": 85585,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJ1pKbJt9k4fBQMc2b5ytf4eYBqMYgAC1vkxG4w6qUsfH-GWI-w28gEAAwIAA3kAAzgE",
+              "uniqueId": "AQAD1vkxG4w6qUt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 581,
+            "file": {
+              "id": 15877,
+              "size": 77561,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJ1pKbJt9k4fBQMc2b5ytf4eYBqMYgAC1vkxG4w6qUsfH-GWI-w28gEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD1vkxG4w6qUt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 232,
+            "file": {
+              "id": 15876,
+              "size": 19640,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJ1pKbJt9k4fBQMc2b5ytf4eYBqMYgAC1vkxG4w6qUsfH-GWI-w28gEAAwIAA20AAzgE",
+              "uniqueId": "AQAD1vkxG4w6qUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1237319680,
+      "chatId": -1001325283350,
+      "date": 1743793664,
+      "dateIso": "2025-04-04T19:07:44Z",
+      "text": "Den 4k max 16gb können wir für Tevegram empfehlen",
+      "genres": []
+    },
+    {
+      "id": 1236271104,
+      "chatId": -1001325283350,
+      "date": 1743793628,
+      "dateIso": "2025-04-04T19:07:08Z",
+      "text": "https://stadt-bremerhaven.de/amazon-fire-tv-stick-4k-und-amazon-fire-tv-stick-4k-max-wieder-zu-haben/",
+      "genres": []
+    },
+    {
+      "id": 1235222528,
+      "chatId": -1001325283350,
+      "date": 1739734993,
+      "dateIso": "2025-02-16T19:43:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1333,
+            "height": 1334,
+            "file": {
+              "id": 15886,
+              "size": 174679,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJppKbJtie02KwABa9oETZ-1wNwKBNkAArnwMRspUZBJ59gT-Lvgdo4BAAMCAAN3AAM4BA",
+              "uniqueId": "AQADufAxGylRkEl8"
+            }
+          },
+          {
+            "width": 1279,
+            "height": 1280,
+            "file": {
+              "id": 15885,
+              "size": 171917,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJppKbJtie02KwABa9oETZ-1wNwKBNkAArnwMRspUZBJ59gT-Lvgdo4BAAMCAAN5AAM4BA",
+              "uniqueId": "AQADufAxGylRkEl-"
+            }
+          },
+          {
+            "width": 799,
+            "height": 800,
+            "file": {
+              "id": 15884,
+              "size": 92718,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJppKbJtie02KwABa9oETZ-1wNwKBNkAArnwMRspUZBJ59gT-Lvgdo4BAAMCAAN4AAM4BA",
+              "uniqueId": "AQADufAxGylRkEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 15883,
+              "size": 26998,
+              "remoteId": "AgACAgIAAx0CTv44FgACBJppKbJtie02KwABa9oETZ-1wNwKBNkAArnwMRspUZBJ59gT-Lvgdo4BAAMCAANtAAM4BA",
+              "uniqueId": "AQADufAxGylRkEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1231028224,
+      "senderId": {
+        "chatId": -1001325283350
+      },
+      "chatId": -1001325283350,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1737329949,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 1229979648
+      }
+    },
+    {
+      "id": 1229979648,
+      "chatId": -1001325283350,
+      "date": 1737329945,
+      "dateIso": "2025-01-19T23:39:05Z",
+      "text": "ℹ️ Infopost ℹ️ \n\nBitte jeden Link von uns 2 x anklicken, der erste Klick sagt dem Bot \"Hallo, da bin ich\". \nDer Bot gleicht dann ab, ob du im Hauptkanal bist, und beim 2. Klick lässt er dich in den gewünschten Kanal rein (wenn du im Hauptkanal bist).",
+      "genres": []
+    },
+    {
+      "id": 1228931072,
+      "chatId": -1001325283350,
+      "date": 1734805233,
+      "dateIso": "2024-12-21T18:20:33Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 863,
+            "file": {
+              "id": 15875,
+              "size": 142172,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJRpKbJt0ZQmCYo-esVNG0wHkVj_JQAClqkxG52WuUYpu7jhRXF1JwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADlqkxG52WuUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 539,
+            "file": {
+              "id": 15874,
+              "size": 93625,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJRpKbJt0ZQmCYo-esVNG0wHkVj_JQAClqkxG52WuUYpu7jhRXF1JwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADlqkxG52WuUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 216,
+            "file": {
+              "id": 15873,
+              "size": 22289,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJRpKbJt0ZQmCYo-esVNG0wHkVj_JQAClqkxG52WuUYpu7jhRXF1JwEAAwIAA20AAzgE",
+              "uniqueId": "AQADlqkxG52WuUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1226833920,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1080,
+            "height": 1082,
+            "file": {
+              "id": 15889,
+              "size": 109873,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJJpKbJtRZ8XzIxQBE5_ckNq7yU8HwACw6wxGynfQUedUvASjExtSQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADw6wxGynfQUd-"
+            }
+          },
+          {
+            "width": 799,
+            "height": 800,
+            "file": {
+              "id": 15888,
+              "size": 78961,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJJpKbJtRZ8XzIxQBE5_ckNq7yU8HwACw6wxGynfQUedUvASjExtSQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADw6wxGynfQUd9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 15887,
+              "size": 22460,
+              "remoteId": "AgACAgEAAx0CTv44FgACBJJpKbJtRZ8XzIxQBE5_ckNq7yU8HwACw6wxGynfQUedUvASjExtSQEAAwIAA20AAzgE",
+              "uniqueId": "AQADw6wxGynfQUdy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1225785344,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "text": "‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️\n\n\nAchja, der TMP scheint erstmal nicht mehr zu funktionieren, ein Ersatz findet ihr bei Tipps und Tricks mit der App \"Tevegram\" oder in den App stores.\n\n\n‼️‼️‼️‼️‼️‼️‼️‼️‼️",
+      "genres": []
+    },
+    {
+      "id": 1223688192,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "text": "👆🏻👆🏻👆🏻‼️‼️‼️👆🏻👆🏻👆🏻",
+      "genres": []
+    },
+    {
+      "id": 1222639616,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1000,
+            "height": 1000,
+            "file": {
+              "id": 15892,
+              "size": 259890,
+              "remoteId": "AgACAgEAAx0CTv44FgACBI5pKbJtTfBGSs0wbYtmZ0VBKE8_7AACdqsxG5BjEETKnhvdv3s16wEAAwIAA3kAAzgE",
+              "uniqueId": "AQADdqsxG5BjEER-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 15891,
+              "size": 188984,
+              "remoteId": "AgACAgEAAx0CTv44FgACBI5pKbJtTfBGSs0wbYtmZ0VBKE8_7AACdqsxG5BjEETKnhvdv3s16wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADdqsxG5BjEER9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 15890,
+              "size": 36696,
+              "remoteId": "AgACAgEAAx0CTv44FgACBI5pKbJtTfBGSs0wbYtmZ0VBKE8_7AACdqsxG5BjEETKnhvdv3s16wEAAwIAA20AAzgE",
+              "uniqueId": "AQADdqsxG5BjEERy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1221591040,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "text": "⚠️⚠️ ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️\n\n\n\n⚠️Keine neuen Links mehr⚠️\n\nWir müssen euch leider mitteilen, das ihr für Freunde und Verwandte keine neuen Links mehr holen könnt, für den Hauptkanal.\nEs wird derzeit einfach zu viel weitergeleitet, was das ganze System in Gefahr bringt.\nBedankt euch bei denen, die es einfach nicht lassen können. Für alle anderen die sich immer an die Regeln gehalten haben, tut es uns leid.",
+      "genres": []
+    },
+    {
+      "id": 1220542464,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "text": "🎬🎬🎬🎬🎬🎬🎬🎬🎬🎬🎬  \n\n\n\n\nDie Anleitung wie man Ordner und vieles mehr erstellt, findet ihr hier👇🏻👇🏻\nhttps://t.me/+ZUAvTwFgkIA1YWE5",
+      "genres": []
+    },
+    {
+      "id": 1218445312,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "text": "‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️\n\n\n\nLiebe User, wir haben unser System ein wenig verbessert, um es für euch und uns abzusichern, sodass nicht immer wieder Kanäle gesperrt werden und Personen außerhalb von JTL nichts mit den Links anfangen können.\n\n\nJetzt WICHTIG!!!\n\n1: BLEIBT IN DIESEM KANAL, SONST KOMMT IHR BALD NIRGENDWO MEHR REIN.\n\nTipp: Einfach diesen Kanal oben anheften. Oder ab ins Archiv damit. Von diesem Kanal aus kommt ihr weiterhin überall hin.\n\n2: Es kommt jetzt immer, wenn ihr einem Kanal betreten wollt, \u0027ne Anfrage das euch ein Admin freischalten muss. Das passiert dann sofort und automatisch, ihr müsst dann nur ein 2. mal auf den Link drücken wo ihr rein wollt.\n\nDas Team von JTL wünscht euch weiterhin viel Vergnügen 😊\n\n\n‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️",
+      "genres": []
+    },
+    {
+      "id": 1217396736,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 850,
+            "height": 851,
+            "file": {
+              "id": 15898,
+              "size": 198412,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIlpKbJtpN3AC0Coo1HxTiIkKIhS1gACRKoxGxcGaEYCvi6TYBsLOQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADRKoxGxcGaEZ-"
+            }
+          },
+          {
+            "width": 799,
+            "height": 800,
+            "file": {
+              "id": 15897,
+              "size": 185173,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIlpKbJtpN3AC0Coo1HxTiIkKIhS1gACRKoxGxcGaEYCvi6TYBsLOQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADRKoxGxcGaEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 15896,
+              "size": 36112,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIlpKbJtpN3AC0Coo1HxTiIkKIhS1gACRKoxGxcGaEYCvi6TYBsLOQEAAwIAA20AAzgE",
+              "uniqueId": "AQADRKoxGxcGaEZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1215299584,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "text": "‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️   \n\n\n\nSooo, ich lese hier des öfteren mal, das die Filme hin und wieder in der Tonspur versetzt sind (auch asynchron genannt). \nDas liegt häufig an den Playern, die sich bei den streams sozusagen verschlucken.\nAbhilfe schafft zu 95%, mal kurz zurück zu spulen. \nAn diesen Umständen können wir leider nichts machen.\n\nSollte aber eine Datei doch auch durch mehrmaliges spulen nicht richten, dann könnt ihr euch selbstverständlich gerne melden und die Datei wird, wenn möglich, ersetz\n\n\n‼️ ‼️ ‼️ ‼️ ‼️ ‼️ ‼️ ‼️",
+      "genres": []
+    },
+    {
+      "id": 1214251008,
+      "chatId": -1001325283350,
+      "date": 1734804804,
+      "dateIso": "2024-12-21T18:13:24Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 938,
+            "file": {
+              "id": 15197,
+              "size": 153462,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIZpKbJtzsyCI9uw1DGZsE0vQb2tEgACUqoxG_kCsUaF7P7zb29A9AEAAwIAA3kAAzgE",
+              "uniqueId": "AQADUqoxG_kCsUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 586,
+            "file": {
+              "id": 15196,
+              "size": 93955,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIZpKbJtzsyCI9uw1DGZsE0vQb2tEgACUqoxG_kCsUaF7P7zb29A9AEAAwIAA3gAAzgE",
+              "uniqueId": "AQADUqoxG_kCsUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 234,
+            "file": {
+              "id": 15195,
+              "size": 23669,
+              "remoteId": "AgACAgEAAx0CTv44FgACBIZpKbJtzsyCI9uw1DGZsE0vQb2tEgACUqoxG_kCsUaF7P7zb29A9AEAAwIAA20AAzgE",
+              "uniqueId": "AQADUqoxG_kCsUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1213202432,
+      "senderId": {
+        "chatId": -1001325283350
+      },
+      "chatId": -1001325283350,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1726479723,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 1212153856
+      }
+    },
+    {
+      "id": 1211105280,
+      "senderId": {
+        "chatId": -1001325283350
+      },
+      "chatId": -1001325283350,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1723205172,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 1210056704
+      }
+    },
+    {
+      "id": 1147142144,
+      "chatId": -1001325283350,
+      "date": 1641492706,
+      "dateIso": "2022-01-06T18:11:46Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1080,
+            "height": 887,
+            "file": {
+              "id": 15200,
+              "size": 146914,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEZpKbJtXiBEaCu8FXCMKLLSTfjSawACJ6oxG24hkUabvpUBHcewHgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADJ6oxG24hkUZ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 657,
+            "file": {
+              "id": 15199,
+              "size": 116010,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEZpKbJtXiBEaCu8FXCMKLLSTfjSawACJ6oxG24hkUabvpUBHcewHgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADJ6oxG24hkUZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 263,
+            "file": {
+              "id": 15198,
+              "size": 27529,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEZpKbJtXiBEaCu8FXCMKLLSTfjSawACJ6oxG24hkUabvpUBHcewHgEAAwIAA20AAzgE",
+              "uniqueId": "AQADJ6oxG24hkUZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1146093568,
+      "chatId": -1001325283350,
+      "date": 1641492698,
+      "dateIso": "2022-01-06T18:11:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 720,
+            "height": 499,
+            "file": {
+              "id": 15202,
+              "size": 63811,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEVpKbJt-iNNDygQzB6dm6-j0vJSlwACIqkxG83TkEY1wnx1lbwlcAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADIqkxG83TkEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 222,
+            "file": {
+              "id": 15201,
+              "size": 20043,
+              "remoteId": "AgACAgEAAx0CTv44FgACBEVpKbJt-iNNDygQzB6dm6-j0vJSlwACIqkxG83TkEY1wnx1lbwlcAEAAwIAA20AAzgE",
+              "uniqueId": "AQADIqkxG83TkEZy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1145044992,
+      "chatId": -1001325283350,
+      "date": 1641492690,
+      "dateIso": "2022-01-06T18:11:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 720,
+            "height": 493,
+            "file": {
+              "id": 15204,
+              "size": 73965,
+              "remoteId": "AgACAgEAAx0CTv44FgACBERpKbJtL7ZqDJnS_PYrb0eTTXGdOAACIakxG83TkEYR2Wienv2NGAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADIakxG83TkEZ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 219,
+            "file": {
+              "id": 15203,
+              "size": 24333,
+              "remoteId": "AgACAgEAAx0CTv44FgACBERpKbJtL7ZqDJnS_PYrb0eTTXGdOAACIakxG83TkEYR2Wienv2NGAEAAwIAA20AAzgE",
+              "uniqueId": "AQADIakxG83TkEZy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,819 @@
+{
+  "chatId": -1001104913808,
+  "title": "🎬🎞 Trickfilm-Serien in RAR \u0026 ZIP Dateien🎥",
+  "exportedAt": "2025-11-28T14:47:38.829812076Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 313524224,
+      "chatId": -1001104913808,
+      "date": 1668245545,
+      "dateIso": "2022-11-12T09:32:25Z",
+      "text": "Updates folgende aber es dauert. Lg",
+      "genres": []
+    },
+    {
+      "id": 298844160,
+      "chatId": -1001104913808,
+      "date": 1601318897,
+      "dateIso": "2020-09-28T18:48:17Z",
+      "text": "Inspector Gadget",
+      "genres": []
+    },
+    {
+      "id": 297795584,
+      "chatId": -1001104913808,
+      "date": 1601318761,
+      "dateIso": "2020-09-28T18:46:01Z",
+      "text": "Titel: Inspector Gadget\nProduktionsland: Kanada\nOriginalsprache: Englisch\nLänge: 22 Minuten pro Folge\nEpisoden: 87 Episoden in 3 Staffeln\nGenres: Animation, Action, Adventure, Comedy, Family, Sci-Fi\nAusstrahlung: seit 27-03-2015\nimDbRating: 4.4 bei 428 Stimmen\nWeitere Infos: Wikipedia, Homepage\nSL1AT",
+      "title": "Inspector Gadget",
+      "productionCountry": "Kanada",
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Comedy",
+        "Family",
+        "Sci-Fi"
+      ]
+    },
+    {
+      "id": 296747008,
+      "chatId": -1001104913808,
+      "date": 1601318675,
+      "dateIso": "2020-09-28T18:44:35Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 480,
+            "height": 360,
+            "file": {
+              "id": 21412,
+              "size": 42917,
+              "remoteId": "AgACAgEAAx0CQdulkAACARtpKbLDIjfGMjn26JEC1w5_OkGJBgACqqgxG39akEe7HvX3G5EfWgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADqqgxG39akEd9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 240,
+            "file": {
+              "id": 21411,
+              "size": 28604,
+              "remoteId": "AgACAgEAAx0CQdulkAACARtpKbLDIjfGMjn26JEC1w5_OkGJBgACqqgxG39akEe7HvX3G5EfWgEAAwIAA20AAzgE",
+              "uniqueId": "AQADqqgxG39akEdy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 287309824,
+      "chatId": -1001104913808,
+      "date": 1589095286,
+      "dateIso": "2020-05-10T07:21:26Z",
+      "text": "Mega Man",
+      "genres": []
+    },
+    {
+      "id": 286261248,
+      "chatId": -1001104913808,
+      "date": 1589095144,
+      "dateIso": "2020-05-10T07:19:04Z",
+      "text": "Titel: Mega Man\nJahr: (1994–1995)\nFSK: 6\nKategorie: Animation, Action, Adventure\nLaufzeit: 22min",
+      "title": "Mega Man",
+      "fsk": 6,
+      "genres": []
+    },
+    {
+      "id": 285212672,
+      "chatId": -1001104913808,
+      "date": 1589095112,
+      "dateIso": "2020-05-10T07:18:32Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 738,
+            "height": 545,
+            "file": {
+              "id": 21414,
+              "size": 58202,
+              "remoteId": "AgACAgIAAx0CQdulkAACARBpKbLDZvONvGBn3emRH_qc9scrVwACP64xG9YlwUmhV0luxAZICQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADP64xG9YlwUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 236,
+            "file": {
+              "id": 21413,
+              "size": 22919,
+              "remoteId": "AgACAgIAAx0CQdulkAACARBpKbLDZvONvGBn3emRH_qc9scrVwACP64xG9YlwUmhV0luxAZICQEAAwIAA20AAzgE",
+              "uniqueId": "AQADP64xG9YlwUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 284164096,
+      "chatId": -1001104913808,
+      "date": 1588964011,
+      "dateIso": "2020-05-08T18:53:31Z",
+      "text": "In der Kanal Info gibt es eine neue Beschreibung.",
+      "genres": []
+    },
+    {
+      "id": 281018368,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1586381479,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 279969792
+      }
+    },
+    {
+      "id": 279969792,
+      "chatId": -1001104913808,
+      "date": 1586381475,
+      "dateIso": "2020-04-08T21:31:15Z",
+      "text": "Wir möchten euch nur noch einmal mitteilen das es bei den Emoji unter den Covers um die Bewertung der Serie geht.\nSprich ob die Serie euch gefällt.\nWir versuchen die Qualität euch so gut es geht anzubieten. Lg und viel Spaß 😉",
+      "genres": []
+    },
+    {
+      "id": 277872640,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1586367542,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 276824064
+      }
+    },
+    {
+      "id": 275775488,
+      "chatId": -1001104913808,
+      "date": 1586366908,
+      "dateIso": "2020-04-08T17:28:28Z",
+      "text": "Die Simpsons",
+      "genres": []
+    },
+    {
+      "id": 274726912,
+      "chatId": -1001104913808,
+      "date": 1586366517,
+      "dateIso": "2020-04-08T17:21:57Z",
+      "text": "Titel: Die Simpsons\nJahr: (1989- )\nFSK: 12\nKategorie: Comedy, Satire\nLaufzeit: 22min",
+      "title": "Die Simpsons",
+      "fsk": 12,
+      "genres": []
+    },
+    {
+      "id": 273678336,
+      "chatId": -1001104913808,
+      "date": 1586366438,
+      "dateIso": "2020-04-08T17:20:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 683,
+            "height": 1024,
+            "file": {
+              "id": 21417,
+              "size": 128909,
+              "remoteId": "AgACAgIAAx0CQdulkAACAQVpKbLDoJ6DyevAFd7UkUSsVIgktgACnK4xG5VlcEjhQS2yKgnfowEAAwIAA3kAAzgE",
+              "uniqueId": "AQADnK4xG5VlcEh-"
+            }
+          },
+          {
+            "width": 534,
+            "height": 800,
+            "file": {
+              "id": 21416,
+              "size": 115479,
+              "remoteId": "AgACAgIAAx0CQdulkAACAQVpKbLDoJ6DyevAFd7UkUSsVIgktgACnK4xG5VlcEjhQS2yKgnfowEAAwIAA3gAAzgE",
+              "uniqueId": "AQADnK4xG5VlcEh9"
+            }
+          },
+          {
+            "width": 214,
+            "height": 320,
+            "file": {
+              "id": 21415,
+              "size": 30900,
+              "remoteId": "AgACAgIAAx0CQdulkAACAQVpKbLDoJ6DyevAFd7UkUSsVIgktgACnK4xG5VlcEjhQS2yKgnfowEAAwIAA20AAzgE",
+              "uniqueId": "AQADnK4xG5VlcEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 272629760,
+      "chatId": -1001104913808,
+      "date": 1585606630,
+      "dateIso": "2020-03-30T22:17:10Z",
+      "text": "Die Dinos (umgelagert)",
+      "genres": []
+    },
+    {
+      "id": 271581184,
+      "chatId": -1001104913808,
+      "date": 1585606583,
+      "dateIso": "2020-03-30T22:16:23Z",
+      "text": "Titel: Die Dinos\nJahr: (1991–1994)\nFSK: 6\nKategorie: Kinder- und Jugendfernsehserie\nLaufzeit: 22min",
+      "title": "Die Dinos",
+      "fsk": 6,
+      "genres": []
+    },
+    {
+      "id": 270532608,
+      "chatId": -1001104913808,
+      "date": 1585606530,
+      "dateIso": "2020-03-30T22:15:30Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 735,
+            "file": {
+              "id": 21419,
+              "size": 100792,
+              "remoteId": "AgACAgIAAx0CQdulkAACAQJpKbLDxc8xz7paKeXVlL9Xn-yYhQACBq0xG7WgGEjX-8fFGgv8DgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADBq0xG7WgGEh9"
+            }
+          },
+          {
+            "width": 218,
+            "height": 320,
+            "file": {
+              "id": 21418,
+              "size": 27718,
+              "remoteId": "AgACAgIAAx0CQdulkAACAQJpKbLDxc8xz7paKeXVlL9Xn-yYhQACBq0xG7WgGEjX-8fFGgv8DgEAAwIAA20AAzgE",
+              "uniqueId": "AQADBq0xG7WgGEhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 268435456,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582444645,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6909,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 9 - Episode 422-427.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21420,
+            "size": 1045643861,
+            "expectedSize": 1045643861,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAACAQABaSmywz4J-Mqpu1JB26HHe6hiqIQAAq8FAAJ0PpBKJPrM_wRPe244BA",
+              "uniqueId": "AgADrwUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1045643861
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 267386880,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582443541,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6598,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 9 - Episode 416-421.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21421,
+            "size": 1042752979,
+            "expectedSize": 1042752979,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD_2kpssP9Vm5O1eWWwp3nWor3TTp1AAKkBQACdD6QSrRnkkeCSiYFOAQ",
+              "uniqueId": "AgADpAUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1042752979
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 266338304,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582442426,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6436,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 9 - Episode 407-415.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21422,
+            "size": 1562278782,
+            "expectedSize": 1562278782,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD_mkpssM8v-iUcOrv44LExa1WrZtuAAKiBQACdD6QSuzsjNWM1oflOAQ",
+              "uniqueId": "AgADogUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1562278782
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 265289728,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582440778,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6274,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 9 - Episode 398-406.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21423,
+            "size": 1562829277,
+            "expectedSize": 1562829277,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD_WkpssMzLVJSnvpmVcYjBDAdPusIAAKcBQACdD6QSjvV3-OfdCzcOAQ",
+              "uniqueId": "AgADnAUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1562829277
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 264241152,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582439133,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6146,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 9 - Episode 389-397.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21424,
+            "size": 1563576177,
+            "expectedSize": 1563576177,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD_GkpssO_5Iw2ECpsrFlus4T615KBAAKXBQACdD6QSix30U0-mCgqOAQ",
+              "uniqueId": "AgADlwUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1563576177
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 263192576,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582437487,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 6068,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 8 - Episode 381-388.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21425,
+            "size": 1305061191,
+            "expectedSize": 1305061191,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD-2kpssNjAvPwPZv2HdVhD5--zszTAAKUBQACdD6QSpEAAQgGRN93czgE",
+              "uniqueId": "AgADlAUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1305061191
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 262144000,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582436115,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5937,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 8 - Episode 374-380.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21426,
+            "size": 1438652444,
+            "expectedSize": 1438652444,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD-mkpssP988cIazHlambh9CHTaJTaAAKOBQACdD6QSvuoY6FPu_fiOAQ",
+              "uniqueId": "AgADjgUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1438652444
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 261095424,
+      "senderId": {
+        "chatId": -1001104913808
+      },
+      "chatId": -1001104913808,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1582434598,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5819,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Schlümpfe - Staffel 8 - Episode 365-373.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 21427,
+            "size": 1437584761,
+            "expectedSize": 1437584761,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CQdulkAAD-WkpssPXPg2nelrLSAz4iW-zoN2qAAKMBQACdD6QSkCJt8nyzPoaOAQ",
+              "uniqueId": "AgADjAUAAnQ-kEo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1437584761
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

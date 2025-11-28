@@ -1,0 +1,37 @@
+{
+  "chatId": 7837335144,
+  "title": "Maler",
+  "exportedAt": "2025-11-28T14:46:23.437521467Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 45501906944,
+      "senderId": {
+        "userId": 7837335144
+      },
+      "chatId": 7837335144,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1736081976,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

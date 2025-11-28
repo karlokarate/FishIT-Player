@@ -1,0 +1,1212 @@
+{
+  "chatId": -1002346644042,
+  "title": "HappyModPro",
+  "exportedAt": "2025-11-28T14:45:17.081566047Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 3556769792,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764330184,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1498,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Project Drift 2.0   Online [Unlimited money] 137.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 4824,
+            "size": 1019090308,
+            "expectedSize": 1019090308,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINQGkpsk7SRmt5m7EL1ytFqWS28Z_JAALvGQACcKtRVRxt2_8MT_QrOAQ",
+              "uniqueId": "AgAD7xkAAnCrUVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1019090308
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3555721216,
+      "chatId": -1002346644042,
+      "date": 1764330122,
+      "dateIso": "2025-11-28T11:42:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10392,
+              "size": 20726,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINP2kpsk6J_da5s5KTQNaRbvJLvHm1AAJuDGsbcKtRVWGhGrR2NbnwAQADAgADeAADOAQ",
+              "uniqueId": "AQADbgxrG3CrUVV9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10391,
+              "size": 7231,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINP2kpsk6J_da5s5KTQNaRbvJLvHm1AAJuDGsbcKtRVWGhGrR2NbnwAQADAgADbQADOAQ",
+              "uniqueId": "AQADbgxrG3CrUVVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3554672640,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764321405,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2323,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Racing in Car 2021 [Unlimited money] 3.7.0.2.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10393,
+            "size": 611465986,
+            "expectedSize": 611465986,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINPmkpsk5C7wsIM7luPJG_3LESbGjmAAKvGQACcKtRVSCyJ-iWMcBcOAQ",
+              "uniqueId": "AgADrxkAAnCrUVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 611465986
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3553624064,
+      "chatId": -1002346644042,
+      "date": 1764321361,
+      "dateIso": "2025-11-28T09:16:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10395,
+              "size": 51502,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINPWkpsk7w4w6cRfAEi3jbJ_BWia9aAAJTDmsbjTkwVPbrCnztbElkAQADAgADeAADOAQ",
+              "uniqueId": "AQADUw5rG405MFR9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10394,
+              "size": 18125,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINPWkpsk7w4w6cRfAEi3jbJ_BWia9aAAJTDmsbjTkwVPbrCnztbElkAQADAgADbQADOAQ",
+              "uniqueId": "AQADUw5rG405MFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3552575488,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764312539,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2834,
+        "forwardCount": 8
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "CarX Rally [Unlimited money] 29333.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10396,
+            "size": 836672102,
+            "expectedSize": 836672102,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINPGkpsk6dYJnbQIK7TvOEoO0XozK5AAJTGQACcKtRVWzV0I2d5YBKOAQ",
+              "uniqueId": "AgADUxkAAnCrUVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 836672102
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3551526912,
+      "chatId": -1002346644042,
+      "date": 1764312482,
+      "dateIso": "2025-11-28T06:48:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10398,
+              "size": 78012,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINO2kpsk7z_0WKylTqcwtcWhgo0gIQAAJkC2sbcKtRVVBdQ8CZOdw0AQADAgADeAADOAQ",
+              "uniqueId": "AQADZAtrG3CrUVV9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10397,
+              "size": 21516,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINO2kpsk7z_0WKylTqcwtcWhgo0gIQAAJkC2sbcKtRVVBdQ8CZOdw0AQADAgADbQADOAQ",
+              "uniqueId": "AQADZAtrG3CrUVVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3550478336,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764303740,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3110,
+        "forwardCount": 11
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Galaxy Defense  Fortress TD [Unlimited money] 0.13.2.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10399,
+            "size": 298819099,
+            "expectedSize": 298819099,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINOmkpsk5yFtWQZSp-t3NG0PH3XwHuAAIDGQACcKtRVV7IcH-iWceOOAQ",
+              "uniqueId": "AgADAxkAAnCrUVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 298819099
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3549429760,
+      "chatId": -1002346644042,
+      "date": 1764303721,
+      "dateIso": "2025-11-28T04:22:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10401,
+              "size": 26876,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINOWkpsk403ZJYpkG2UB9pn2WMISHeAAJYDWsbjTk4VEjeEYxxeZalAQADAgADeAADOAQ",
+              "uniqueId": "AQADWA1rG405OFR9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10400,
+              "size": 9934,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINOWkpsk403ZJYpkG2UB9pn2WMISHeAAJYDWsbjTk4VEjeEYxxeZalAQADAgADbQADOAQ",
+              "uniqueId": "AQADWA1rG405OFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3548381184,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764294986,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3237,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "EMERGENCY_HQ_firefighter_game_Free_purchase;Unlimited_money_2.xapk",
+          "mimeType": "",
+          "document": {
+            "id": 10402,
+            "size": 1618899947,
+            "expectedSize": 1618899947,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINOGkpsk5VfFh0zbZHDTlORYeqYEKWAAKaGgACcKtJVbJxYRuOeXu-OAQ",
+              "uniqueId": "AgADmhoAAnCrSVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1618899947
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3547332608,
+      "chatId": -1002346644042,
+      "date": 1764294842,
+      "dateIso": "2025-11-28T01:54:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10404,
+              "size": 72911,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINN2kpsk4PFQzukBMvdY6rnc-3oAxuAAJfC2sbbSQYVA_EDO58uTxLAQADAgADeAADOAQ",
+              "uniqueId": "AQADXwtrG20kGFR9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10403,
+              "size": 20556,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINN2kpsk4PFQzukBMvdY6rnc-3oAxuAAJfC2sbbSQYVA_EDO58uTxLAQADAgADbQADOAQ",
+              "uniqueId": "AQADXwtrG20kGFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3546284032,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764285977,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3448,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Pocket Champs  3D Racing Games [Mod Menu] 7.2.0.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10405,
+            "size": 223651489,
+            "expectedSize": 223651489,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINNmkpsk58TuBcK8y-9-m8YQPXdVu6AAJzGgACcKtJVdByGM6ySmmmOAQ",
+              "uniqueId": "AgADcxoAAnCrSVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 223651489
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3545235456,
+      "chatId": -1002346644042,
+      "date": 1764285962,
+      "dateIso": "2025-11-27T23:26:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10407,
+              "size": 28114,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINNWkpsk6oRDePRu-9NZ7dJ-Y9GmbZAAKfDGsbcKtJVS8o76FjIflQAQADAgADeAADOAQ",
+              "uniqueId": "AQADnwxrG3CrSVV9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10406,
+              "size": 10739,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINNWkpsk6oRDePRu-9NZ7dJ-Y9GmbZAAKfDGsbcKtJVS8o76FjIflQAQADAgADbQADOAQ",
+              "uniqueId": "AQADnwxrG3CrSVVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3544186880,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764277223,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3746,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Fallout Shelter [Unlimited money] 1.22.9.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10408,
+            "size": 342765726,
+            "expectedSize": 342765726,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINNGkpsk5HWIOcG1YZ_bRKAAF2gNICxAACYxoAAnCrSVUG6DSC6ZQYQjgE",
+              "uniqueId": "AgADYxoAAnCrSVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 342765726
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3543138304,
+      "chatId": -1002346644042,
+      "date": 1764277202,
+      "dateIso": "2025-11-27T21:00:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10410,
+              "size": 50680,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINM2kpsk50352g7eJOxNUZ7Qx3k0UzAAJqDWsbuRZwVJWonq208DMzAQADAgADeAADOAQ",
+              "uniqueId": "AQADag1rG7kWcFR9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10409,
+              "size": 16986,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINM2kpsk50352g7eJOxNUZ7Qx3k0UzAAJqDWsbuRZwVJWonq208DMzAQADAgADbQADOAQ",
+              "uniqueId": "AQADag1rG7kWcFRy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3542089728,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764243872,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5542,
+        "forwardCount": 15
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "RFS - Real Flight Simulator 3.0.9.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10411,
+            "size": 473324811,
+            "expectedSize": 473324811,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINMmkpsk6G8LRJuQABGnLUSQzZCruLTwACSxkAAnCrSVUDS0_AGv5bAjgE",
+              "uniqueId": "AgADSxkAAnCrSVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 473324811
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3541041152,
+      "chatId": -1002346644042,
+      "date": 1764243842,
+      "dateIso": "2025-11-27T11:44:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10413,
+              "size": 25001,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINMWkpsk5OfHbK5D90IQ3NaqTnIlv4AAKDDGsbGXMZVzyT5vHUh1iSAQADAgADeAADOAQ",
+              "uniqueId": "AQADgwxrGxlzGVd9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10412,
+              "size": 8567,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINMWkpsk5OfHbK5D90IQ3NaqTnIlv4AAKDDGsbGXMZVzyT5vHUh1iSAQADAgADbQADOAQ",
+              "uniqueId": "AQADgwxrGxlzGVdy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3539992576,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764234981,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5717,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Cup Heroes [Unlimited money] 2.8.0.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10414,
+            "size": 325085705,
+            "expectedSize": 325085705,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINMGkpsk6qVGRWfwG-acmot5nRVcrbAALwGwACcKtBVbDMGM8UxEapOAQ",
+              "uniqueId": "AgAD8BsAAnCrQVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 325085705
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3538944000,
+      "chatId": -1002346644042,
+      "date": 1764234962,
+      "dateIso": "2025-11-27T09:16:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10416,
+              "size": 58629,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINL2kpsk5JMYJBeRSmMJKSA026m7LJAAJVDGsb7I6gV5BjZQ_OgZbSAQADAgADeAADOAQ",
+              "uniqueId": "AQADVQxrG-yOoFd9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10415,
+              "size": 19785,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINL2kpsk5JMYJBeRSmMJKSA026m7LJAAJVDGsb7I6gV5BjZQ_OgZbSAQADAgADbQADOAQ",
+              "uniqueId": "AQADVQxrG-yOoFdy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3537895424,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764226241,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5400,
+        "forwardCount": 10
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Monster Survivors [Free purchase] 1.26.1.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10417,
+            "size": 593953861,
+            "expectedSize": 593953861,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINLmkpsk5BhMfPqYgr-kzUA9cwoQABQAACkRsAAnCrQVVIkGgxDbXKZDgE",
+              "uniqueId": "AgADkRsAAnCrQVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 593953861
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3536846848,
+      "chatId": -1002346644042,
+      "date": 1764226202,
+      "dateIso": "2025-11-27T06:50:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10419,
+              "size": 47372,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINLWkpsk6KJYR5P5aT2lBB8oAXUA-VAALrDGsb0GUBV_2kePJ2JY2QAQADAgADeAADOAQ",
+              "uniqueId": "AQAD6wxrG9BlAVd9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10418,
+              "size": 17604,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINLWkpsk6KJYR5P5aT2lBB8oAXUA-VAALrDGsb0GUBV_2kePJ2JY2QAQADAgADbQADOAQ",
+              "uniqueId": "AQAD6wxrG9BlAVdy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3535798272,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764217493,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5458,
+        "forwardCount": 16
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Football Manager 26 Mobile [Unlocked] 26.0.2.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10420,
+            "size": 1834882070,
+            "expectedSize": 1834882070,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINLGkpsk5nWVLoOQu3JBU0GxMDYW-EAAIJGwACcKtBVQO2CD36JWKuOAQ",
+              "uniqueId": "AgADCRsAAnCrQVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 1834882070
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3534749696,
+      "chatId": -1002346644042,
+      "date": 1764217323,
+      "dateIso": "2025-11-27T04:22:03Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10422,
+              "size": 59350,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINK2kpsk42qnA_TXZks2t95EmIM2rxAAKWDGsbcKtBVURlzgKcwCDMAQADAgADeAADOAQ",
+              "uniqueId": "AQADlgxrG3CrQVV9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10421,
+              "size": 18324,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINK2kpsk42qnA_TXZks2t95EmIM2rxAAKWDGsbcKtBVURlzgKcwCDMAQADAgADbQADOAQ",
+              "uniqueId": "AQADlgxrG3CrQVVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3533701120,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764208340,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5198,
+        "forwardCount": 26
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Xtreme Drift 2 [Unlimited money] 3.1.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10423,
+            "size": 293220924,
+            "expectedSize": 293220924,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINKmkpsk6rFQ21DmGi6ETzK4ftfcPrAAKhGgACcKtBVVS4nA6LVlL0OAQ",
+              "uniqueId": "AgADoRoAAnCrQVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 293220924
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 3532652544,
+      "chatId": -1002346644042,
+      "date": 1764208322,
+      "dateIso": "2025-11-27T01:52:02Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 312,
+            "file": {
+              "id": 10425,
+              "size": 36177,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINKWkpsk7294eQwOF24zI5T8zHTPntAAJdDGsbcKtBVU91qlWcidcoAQADAgADeAADOAQ",
+              "uniqueId": "AQADXQxrG3CrQVV9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 156,
+            "file": {
+              "id": 10424,
+              "size": 12349,
+              "remoteId": "AgACAgUAAyEFAASL3vJKAAINKWkpsk7294eQwOF24zI5T8zHTPntAAJdDGsbcKtBVU91qlWcidcoAQADAgADbQADOAQ",
+              "uniqueId": "AQADXQxrG3CrQVVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3531603968,
+      "senderId": {
+        "chatId": -1002346644042
+      },
+      "chatId": -1002346644042,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764199593,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 5342,
+        "forwardCount": 9
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Soul Knight [Mod Menu] 7.7.0.apk",
+          "mimeType": "application/octet-stream",
+          "document": {
+            "id": 10426,
+            "size": 534723776,
+            "expectedSize": 534723776,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgUAAyEFAASL3vJKAAINKGkpsk7lYBbiSCyc77KfctTE_3gzAAJsGQACXko5VWb6mdO_4emeOAQ",
+              "uniqueId": "AgADbBkAAl5KOVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 534723776
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "chatId": 6630580155,
+  "title": "Diana",
+  "exportedAt": "2025-11-28T14:47:01.052479830Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 42448453632,
+      "senderId": {
+        "userId": 6630580155
+      },
+      "chatId": 6630580155,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1694645873,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,803 @@
+{
+  "chatId": -1001408560132,
+  "title": "|WW|Zeichentrick",
+  "exportedAt": "2025-11-28T14:45:44.519424009Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 213909504,
+      "chatId": -1001408560132,
+      "date": 1758363418,
+      "dateIso": "2025-09-20T10:16:58Z",
+      "content": {
+        "duration": 5102,
+        "width": 852,
+        "height": 480,
+        "fileName": "Kiriku und die Männer und Frauen (2012) XD.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4920,
+          "size": 296027038,
+          "remoteId": "BAACAgIAAx0CU_TsBAADzGkpsmjTzDz89cWM-Q5rA49gfiXLAAKXGAACjhPRSCxEVLDaMlo_OAQ",
+          "uniqueId": "AgADlxgAAo4T0Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 4919,
+            "size": 644,
+            "remoteId": "AAMCAgADHQJT9OwEAAPMaSmyaNPMPPz1xYz5DmsDj2B-JcsAApcYAAKOE9FILERUsNoyWj8BAAdtAAM4BA",
+            "uniqueId": "AQADlxgAAo4T0Uhy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 212860928,
+      "chatId": -1001408560132,
+      "date": 1758363418,
+      "dateIso": "2025-09-20T10:16:58Z",
+      "content": {
+        "duration": 4306,
+        "width": 872,
+        "height": 480,
+        "fileName": "Kiriku und die wilden Tiere (2005)  XD.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14830,
+          "size": 313781780,
+          "remoteId": "BAACAgIAAx0CU_TsBAADy2kpsmgHrMZFqSWuLiz-HmUUsZE1AAKTGAACjhPRSMwnRHWkTO95OAQ",
+          "uniqueId": "AgADkxgAAo4T0Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 176,
+          "file": {
+            "id": 14829,
+            "size": 614,
+            "remoteId": "AAMCAgADHQJT9OwEAAPLaSmyaAesxkWpJa4uLP4eZRSxkTUAApMYAAKOE9FIzCdEdaRM73kBAAdtAAM4BA",
+            "uniqueId": "AQADkxgAAo4T0Uhy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 211812352,
+      "chatId": -1001408560132,
+      "date": 1758363418,
+      "dateIso": "2025-09-20T10:16:58Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 420,
+            "height": 587,
+            "file": {
+              "id": 14832,
+              "size": 45961,
+              "remoteId": "AgACAgIAAx0CU_TsBAADymkpsmgK0oKpkBEJOaj34IVQT9fxAAL4uzEbjhPRSP7NM16yjA34AQADAgADeAADOAQ",
+              "uniqueId": "AQAD-LsxG44T0Uh9"
+            }
+          },
+          {
+            "width": 229,
+            "height": 320,
+            "file": {
+              "id": 14831,
+              "size": 22344,
+              "remoteId": "AgACAgIAAx0CU_TsBAADymkpsmgK0oKpkBEJOaj34IVQT9fxAAL4uzEbjhPRSP7NM16yjA34AQADAgADbQADOAQ",
+              "uniqueId": "AQAD-LsxG44T0Uhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 210763776,
+      "chatId": -1001408560132,
+      "date": 1758363418,
+      "dateIso": "2025-09-20T10:16:58Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 600,
+            "height": 841,
+            "file": {
+              "id": 14835,
+              "size": 87600,
+              "remoteId": "AgACAgIAAx0CU_TsBAADyWkpsmiHMgYg1mkNU4-D8SRQdwNCAAL5uzEbjhPRSN7mrwHiJVFsAQADAgADeQADOAQ",
+              "uniqueId": "AQAD-bsxG44T0Uh-"
+            }
+          },
+          {
+            "width": 571,
+            "height": 800,
+            "file": {
+              "id": 14834,
+              "size": 117837,
+              "remoteId": "AgACAgIAAx0CU_TsBAADyWkpsmiHMgYg1mkNU4-D8SRQdwNCAAL5uzEbjhPRSN7mrwHiJVFsAQADAgADeAADOAQ",
+              "uniqueId": "AQAD-bsxG44T0Uh9"
+            }
+          },
+          {
+            "width": 228,
+            "height": 320,
+            "file": {
+              "id": 14833,
+              "size": 30932,
+              "remoteId": "AgACAgIAAx0CU_TsBAADyWkpsmiHMgYg1mkNU4-D8SRQdwNCAAL5uzEbjhPRSN7mrwHiJVFsAQADAgADbQADOAQ",
+              "uniqueId": "AQAD-bsxG44T0Uhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 209715200,
+      "chatId": -1001408560132,
+      "date": 1758361889,
+      "dateIso": "2025-09-20T09:51:29Z",
+      "content": {
+        "duration": 4264,
+        "width": 792,
+        "height": 480,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14837,
+          "size": 944157165,
+          "remoteId": "BAACAgIAAx0CU_TsBAADyGkpsmh3C9x9tAp2OCTKB6x4jlHZAAJaiwACMSNwSnBtEEzrCQfKOAQ",
+          "uniqueId": "AgADWosAAjEjcEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 193,
+          "file": {
+            "id": 14836,
+            "size": 11440,
+            "remoteId": "AAMCAgADHQJT9OwEAAPIaSmyaHcL3H20CnY4JMoHrHiOUdkAAlqLAAIxI3BKcG0QTOsJB8oBAAdtAAM4BA",
+            "uniqueId": "AQADWosAAjEjcEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 208666624,
+      "chatId": -1001408560132,
+      "date": 1758361889,
+      "dateIso": "2025-09-20T09:51:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 746,
+            "height": 1258,
+            "file": {
+              "id": 14840,
+              "size": 79519,
+              "remoteId": "AgACAgIAAx0CU_TsBAADx2kpsmh955dG6xOdAkg-VBZD6E-bAAL8-jEbpONxSlthksg5EGEbAQADAgADeQADOAQ",
+              "uniqueId": "AQAD_PoxG6TjcUp-"
+            }
+          },
+          {
+            "width": 474,
+            "height": 800,
+            "file": {
+              "id": 14839,
+              "size": 50032,
+              "remoteId": "AgACAgIAAx0CU_TsBAADx2kpsmh955dG6xOdAkg-VBZD6E-bAAL8-jEbpONxSlthksg5EGEbAQADAgADeAADOAQ",
+              "uniqueId": "AQAD_PoxG6TjcUp9"
+            }
+          },
+          {
+            "width": 190,
+            "height": 320,
+            "file": {
+              "id": 14838,
+              "size": 15683,
+              "remoteId": "AgACAgIAAx0CU_TsBAADx2kpsmh955dG6xOdAkg-VBZD6E-bAAL8-jEbpONxSlthksg5EGEbAQADAgADbQADOAQ",
+              "uniqueId": "AQAD_PoxG6TjcUpy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 207618048,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1458,
+        "width": 1280,
+        "height": 720,
+        "fileName": "26 Die Welt von morgen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14842,
+          "size": 494897408,
+          "remoteId": "BAACAgIAAx0CU_TsBAADxmkpsmjq_66TgxpJ4JSeibGsho1dAAK-FAACeiNQSowtBKfnXXqrOAQ",
+          "uniqueId": "AgADvhQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14841,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPGaSmyaOr_rpODGknglJ6JsayGjV0AAr4UAAJ6I1BKjC0Ep-ddeqsBAAdtAAM4BA",
+            "uniqueId": "AQADvhQAAnojUEpy"
+          }
+        },
+        "caption": "Es war einmal... \nStaffel 07 - Unsere Erde [Folge 19-26]\n\nS07E19 - Frauen weltweit\nS07E20 - Kinderarbeit\nS07E21 - Alternative Energien\nS07E22 - Das Haus und die Stadt\nS07E23 - Klimawandel, was tun?\nS07E24 - Gesundheit und Bildung\nS07E25 - Neue Technologien\nS07E26 - Die Welt von morgen"
+      }
+    },
+    {
+      "id": 206569472,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1463,
+        "width": 1280,
+        "height": 720,
+        "fileName": "25 Neue Technologien.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14844,
+          "size": 496657735,
+          "remoteId": "BAACAgIAAx0CU_TsBAADxWkpsmhzqvfvLLcZM5pscHPjjF_oAAK6FAACeiNQSlkhHjM-_87XOAQ",
+          "uniqueId": "AgADuhQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14843,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPFaSmyaHOq9-8stxkzmmxwc-OMX-gAAroUAAJ6I1BKWSEeMz7_ztcBAAdtAAM4BA",
+            "uniqueId": "AQADuhQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 205520896,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1468,
+        "width": 1280,
+        "height": 720,
+        "fileName": "24 Gesundheit und Bildung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14846,
+          "size": 497487620,
+          "remoteId": "BAACAgIAAx0CU_TsBAADxGkpsmiWZ2wwj7y5QJuRmvWBjrfGAAK5FAACeiNQSiiAsNU9YxHXOAQ",
+          "uniqueId": "AgADuRQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14845,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPEaSmyaJZnbDCPvLlAm5Ga9YGOt8YAArkUAAJ6I1BKKICw1T1jEdcBAAdtAAM4BA",
+            "uniqueId": "AQADuRQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 204472320,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1476,
+        "width": 1280,
+        "height": 720,
+        "fileName": "23 Klimawandel, was tun_.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14848,
+          "size": 501653272,
+          "remoteId": "BAACAgIAAx0CU_TsBAADw2kpsmjDgKCMouMhoUzEJPQGUY86AAKyFAACeiNQSr1y2DMdQbguOAQ",
+          "uniqueId": "AgADshQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14847,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPDaSmyaMOAoIyi4yGhTMQk9AZRjzoAArIUAAJ6I1BKvXLYMx1BuC4BAAdtAAM4BA",
+            "uniqueId": "AQADshQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 203423744,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1467,
+        "width": 1280,
+        "height": 720,
+        "fileName": "22 Das Haus und die Stadt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14850,
+          "size": 490649156,
+          "remoteId": "BAACAgIAAx0CU_TsBAADwmkpsmjH-fJ2yU_LxXwnmRcPWb1RAAKsFAACeiNQSkhOiU0tm0aIOAQ",
+          "uniqueId": "AgADrBQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14849,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPCaSmyaMf58nbJT8vFfCeZFw9ZvVEAAqwUAAJ6I1BKSE6JTS2bRogBAAdtAAM4BA",
+            "uniqueId": "AQADrBQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 202375168,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1464,
+        "width": 1280,
+        "height": 720,
+        "fileName": "21 Alternative Energien.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14852,
+          "size": 245721288,
+          "remoteId": "BAACAgIAAx0CU_TsBAADwWkpsmjXhjd4LPydk9sa3khTuCPfAAKnFAACeiNQSvRoLdWBtTVxOAQ",
+          "uniqueId": "AgADpxQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14851,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPBaSmyaNeGN3gs_J2T2xreSFO4I98AAqcUAAJ6I1BK9Ggt1YG1NXEBAAdtAAM4BA",
+            "uniqueId": "AQADpxQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 201326592,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1470,
+        "width": 1280,
+        "height": 720,
+        "fileName": "20 Kinderarbeit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14854,
+          "size": 499546327,
+          "remoteId": "BAACAgIAAx0CU_TsBAADwGkpsmjwI3psAAGWEwJmhCxZb9_U9QACphQAAnojUEqIU0xoIaFrEjgE",
+          "uniqueId": "AgADphQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14853,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAPAaSmyaPAjemwAAZYTAmaELFlv39T1AAKmFAACeiNQSohTTGghoWsSAQAHbQADOAQ",
+            "uniqueId": "AQADphQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 200278016,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1469,
+        "width": 1280,
+        "height": 720,
+        "fileName": "19 Frauen weltweit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14856,
+          "size": 495996534,
+          "remoteId": "BAACAgIAAx0CU_TsBAADv2kpsmjutZISazC_kJfEAAH1D1M2ZgACoBQAAnojUEpXXo_3KViepDgE",
+          "uniqueId": "AgADoBQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14855,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO_aSmyaO61khJrML-Ql8QAAfUPUzZmAAKgFAACeiNQSldej_cpWJ6kAQAHbQADOAQ",
+            "uniqueId": "AQADoBQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 199229440,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1469,
+        "width": 1280,
+        "height": 720,
+        "fileName": "18 Recycling.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14858,
+          "size": 500739742,
+          "remoteId": "BAACAgIAAx0CU_TsBAADvmkpsmj4exjmP9Ibuwy9OyLIT3H9AAKcFAACeiNQSsYhkDP0j3nnOAQ",
+          "uniqueId": "AgADnBQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14857,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO-aSmyaPh7GOY_0hu7DL07IshPcf0AApwUAAJ6I1BKxiGQM_SPeecBAAdtAAM4BA",
+            "uniqueId": "AQADnBQAAnojUEpy"
+          }
+        },
+        "caption": "Es war einmal... \nStaffel 07 - Unsere Erde [Folge 10-18]\n\nS07E10 - Wasser, das blaue Gold\nS07E11 - Die Armut in der Welt\nS07E12 - Unsere Wälder\nS07E13 - Die Überfischung der Meere\nS07E14 - Woher kommt der Klimawandel?\nS07E15 - Landwirtschaft\nS07E16 - Artenvielfalt\nS07E17 - Die Folgen der Klimaerwärmung\nS07E18 - Recycling"
+      }
+    },
+    {
+      "id": 198180864,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1459,
+        "width": 1280,
+        "height": 720,
+        "fileName": "17 Die Folgen der Klimaerwärmung.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14860,
+          "size": 496047430,
+          "remoteId": "BAACAgIAAx0CU_TsBAADvWkpsmg_cNT9H0HF2LWeQLdB8yQuAAKZFAACeiNQSihlaAtDGI2pOAQ",
+          "uniqueId": "AgADmRQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14859,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO9aSmyaD9w1P0fQcXYtZ5At0HzJC4AApkUAAJ6I1BKKGVoC0MYjakBAAdtAAM4BA",
+            "uniqueId": "AQADmRQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 197132288,
+      "chatId": -1001408560132,
+      "date": 1751644068,
+      "dateIso": "2025-07-04T15:47:48Z",
+      "content": {
+        "duration": 1475,
+        "width": 1280,
+        "height": 720,
+        "fileName": "16 Artenvielfalt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14862,
+          "size": 503442277,
+          "remoteId": "BAACAgIAAx0CU_TsBAADvGkpsmipr8_-GlOt84iksGa68aH5AAKYFAACeiNQSuR_RmA08n4aOAQ",
+          "uniqueId": "AgADmBQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14861,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO8aSmyaKmvz_4aU63ziKSwZrrxofkAApgUAAJ6I1BK5H9GYDTyfhoBAAdtAAM4BA",
+            "uniqueId": "AQADmBQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 196083712,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1478,
+        "width": 1280,
+        "height": 720,
+        "fileName": "15 Landwirtschaft.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14864,
+          "size": 499594354,
+          "remoteId": "BAACAgIAAx0CU_TsBAADu2kpsmhUgd__Ua34jPwh6mprj9hhAAKWFAACeiNQSqlQvSOrJYrgOAQ",
+          "uniqueId": "AgADlhQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14863,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO7aSmyaFSB3_9RrfiM_CHqamuP2GEAApYUAAJ6I1BKqVC9I6sliuABAAdtAAM4BA",
+            "uniqueId": "AQADlhQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 195035136,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1463,
+        "width": 1280,
+        "height": 720,
+        "fileName": "14 Woher kommt der Klimawandel_.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14866,
+          "size": 494120208,
+          "remoteId": "BAACAgIAAx0CU_TsBAADumkpsmio124lyb-PE1hkHIK-LEupAAKVFAACeiNQSleeGd-sHpy4OAQ",
+          "uniqueId": "AgADlRQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14865,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO6aSmyaKjXbiXJv48TWGQcgr4sS6kAApUUAAJ6I1BKV54Z36wenLgBAAdtAAM4BA",
+            "uniqueId": "AQADlRQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 193986560,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1456,
+        "width": 1280,
+        "height": 720,
+        "fileName": "13 Die Überfischung der Meere.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14868,
+          "size": 492537781,
+          "remoteId": "BAACAgIAAx0CU_TsBAADuWkpsmiFfs7oyiFRl7gjNTCVWASxAAKPFAACeiNQSsxlg_9gR-VgOAQ",
+          "uniqueId": "AgADjxQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14867,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO5aSmyaIV-zujKIVGXuCM1MJVYBLEAAo8UAAJ6I1BKzGWD_2BH5WABAAdtAAM4BA",
+            "uniqueId": "AQADjxQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 192937984,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1473,
+        "width": 1280,
+        "height": 720,
+        "fileName": "12 Unsere Wälder.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14870,
+          "size": 494754218,
+          "remoteId": "BAACAgIAAx0CU_TsBAADuGkpsmhfnekU73BZh6BN9X79voO_AAKLFAACeiNQSnwdh_6rocljOAQ",
+          "uniqueId": "AgADixQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14869,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO4aSmyaF-d6RTvcFmHoE31fv2-g78AAosUAAJ6I1BKfB2H_quhyWMBAAdtAAM4BA",
+            "uniqueId": "AQADixQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 191889408,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1470,
+        "width": 1280,
+        "height": 720,
+        "fileName": "11 Die Armut in der Welt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14872,
+          "size": 498297798,
+          "remoteId": "BAACAgIAAx0CU_TsBAADt2kpsmjAVKFkJ1x22SRjmUXyyurUAAKJFAACeiNQSmURYq71JWWHOAQ",
+          "uniqueId": "AgADiRQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14871,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO3aSmyaMBUoWQnXHbZJGOZRfLK6tQAAokUAAJ6I1BKZRFirvUlZYcBAAdtAAM4BA",
+            "uniqueId": "AQADiRQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 190840832,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1493,
+        "width": 1280,
+        "height": 720,
+        "fileName": "10 Wasser, das blaue Gold.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14874,
+          "size": 503742158,
+          "remoteId": "BAACAgIAAx0CU_TsBAADtmkpsmjqaerdcDyl4uFcda4gU8qeAAKHFAACeiNQSm8_p8mO4eeWOAQ",
+          "uniqueId": "AgADhxQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14873,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO2aSmyaOpp6t1wPKXi4Vx1riBTyp4AAocUAAJ6I1BKbz-nyY7h55YBAAdtAAM4BA",
+            "uniqueId": "AQADhxQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    },
+    {
+      "id": 189792256,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1472,
+        "width": 1280,
+        "height": 720,
+        "fileName": "9 Die Ökosysteme.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14876,
+          "size": 497943630,
+          "remoteId": "BAACAgIAAx0CU_TsBAADtWkpsmgLiINKYaNzbmspFrvDiY5GAAKGFAACeiNQSnkK8FM-3bP5OAQ",
+          "uniqueId": "AgADhhQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14875,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO1aSmyaAuIg0pho3NuaykWu8OJjkYAAoYUAAJ6I1BKeQrwUz7ds_kBAAdtAAM4BA",
+            "uniqueId": "AQADhhQAAnojUEpy"
+          }
+        },
+        "caption": "Es war einmal... \nStaffel 07 - Unsere Erde [Folge 01-09]\n\nS07E01 - Die Erben des Planeten\nS07E02 - Klimawandel: Der Treibhauseffekt\nS07E03 - Wasserversorgung in Indien\nS07E04 - Wasserversorgung in der Sahelzone\nS07E05 - Der tropische Regenwald\nS07E06 - Woher kommt unsere Energie?\nS07E07 - Fairer Handel\nS07E08 - Verschmutzung der Meere\nS07E09 - Die Ökosysteme"
+      }
+    },
+    {
+      "id": 188743680,
+      "chatId": -1001408560132,
+      "date": 1751644063,
+      "dateIso": "2025-07-04T15:47:43Z",
+      "content": {
+        "duration": 1484,
+        "width": 1280,
+        "height": 720,
+        "fileName": "8 Verschmutzung der Meere.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 14878,
+          "size": 503946498,
+          "remoteId": "BAACAgIAAx0CU_TsBAADtGkpsmh7lHhjHfsBlUbesooK6Uz7AAJ-FAACeiNQSkxEAlc2Kd-lOAQ",
+          "uniqueId": "AgADfhQAAnojUEo"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 180,
+          "file": {
+            "id": 14877,
+            "size": 645,
+            "remoteId": "AAMCAgADHQJT9OwEAAO0aSmyaHuUeGMd-wGVRt6yigrpTPsAAn4UAAJ6I1BKTEQCVzYp36UBAAdtAAM4BA",
+            "uniqueId": "AQADfhQAAnojUEpy"
+          }
+        },
+        "caption": ""
+      }
+    }
+  ]
+}

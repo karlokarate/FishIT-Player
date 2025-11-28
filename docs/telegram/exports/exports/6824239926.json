@@ -1,0 +1,37 @@
+{
+  "chatId": 6824239926,
+  "title": "Stefan Maibeck",
+  "exportedAt": "2025-11-28T14:46:49.566053019Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 44068503552,
+      "senderId": {
+        "userId": 6824239926
+      },
+      "chatId": 6824239926,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1709500464,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

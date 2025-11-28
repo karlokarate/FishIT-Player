@@ -1,0 +1,1123 @@
+{
+  "chatId": -1001733076843,
+  "title": "Tabaluga",
+  "exportedAt": "2025-11-28T14:46:13.463314259Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 63963136,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 62914560,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001733076843,
+      "date": 1647164746,
+      "dateIso": "2022-03-13T09:45:46Z",
+      "text": "Fehlt was? Fehler gefunden?\nHast Du Fragen zu diesem Kanal? Oder möchtest die Qualität bewerten?... \n\nIm @Hoerspiel_bot kannst Du Dich gerne dazu melden.",
+      "genres": []
+    },
+    {
+      "id": 60817408,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647164741,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 453,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Tabaluga und Leo - Das Weihnachtshörspiel.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17490,
+            "size": 179154141,
+            "expectedSize": 179154141,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADOmkpsoYaRVBu7uhCAAE4imVRJk6IXAAC5xYAAvZbcUlLETibpdab2zgE",
+              "uniqueId": "AgAD5xYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 179154141
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001733076843,
+      "date": 1647164659,
+      "dateIso": "2022-03-13T09:44:19Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17492,
+              "size": 102522,
+              "remoteId": "AgACAgIAAx0CZ0ynawADOWkpsoZ5NQ3LjZUtIic5DBcygRg6AALnuzEb9ltxSZdK6xNHo9E0AQADAgADeAADOAQ",
+              "uniqueId": "AQAD57sxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17491,
+              "size": 33932,
+              "remoteId": "AgACAgIAAx0CZ0ynawADOWkpsoZ5NQ3LjZUtIic5DBcygRg6AALnuzEb9ltxSZdK6xNHo9E0AQADAgADbQADOAQ",
+              "uniqueId": "AQAD57sxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 58720256,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647164430,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 360,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Tabaluga - Der Film.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17493,
+            "size": 188309387,
+            "expectedSize": 188309387,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADOGkpsoZvnPDNNHWCrQYns-MBCKC6AALdFgAC9ltxSTQlc3zS6sNeOAQ",
+              "uniqueId": "AgAD3RYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 188309387
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001733076843,
+      "date": 1647164351,
+      "dateIso": "2022-03-13T09:39:11Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17495,
+              "size": 124643,
+              "remoteId": "AgACAgIAAx0CZ0ynawADN2kpsobptoY8qFnP0rPNk7nUThVFAALfuzEb9ltxScX2MrzHFjp_AQADAgADeAADOAQ",
+              "uniqueId": "AQAD37sxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17494,
+              "size": 37216,
+              "remoteId": "AgACAgIAAx0CZ0ynawADN2kpsobptoY8qFnP0rPNk7nUThVFAALfuzEb9ltxScX2MrzHFjp_AQADAgADbQADOAQ",
+              "uniqueId": "AQAD37sxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 56623104,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647164220,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 286,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "26 - Der verhängnisvolle Sandsturm - Kopf oder Zahl.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17496,
+            "size": 138968044,
+            "expectedSize": 138968044,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADNmkpsoZKdzmjyBH8y-Cyw1iy7K7gAALZFgAC9ltxSXX3EUzqtqj_OAQ",
+              "uniqueId": "AgAD2RYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 138968044
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001733076843,
+      "date": 1647164164,
+      "dateIso": "2022-03-13T09:36:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17498,
+              "size": 113621,
+              "remoteId": "AgACAgIAAx0CZ0ynawADNWkpsoaiiRZXGyUinL9m5nEOSDEiAALcuzEb9ltxSUDtiEmWvyr8AQADAgADeAADOAQ",
+              "uniqueId": "AQAD3LsxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17497,
+              "size": 35440,
+              "remoteId": "AgACAgIAAx0CZ0ynawADNWkpsoaiiRZXGyUinL9m5nEOSDEiAALcuzEb9ltxSUDtiEmWvyr8AQADAgADbQADOAQ",
+              "uniqueId": "AQAD3LsxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 54525952,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647162751,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 241,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "25_Das_Rätsel_um_die_Kristallkugel_Prüfung_mit_Hindernissen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17499,
+            "size": 139171738,
+            "expectedSize": 139171738,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADNGkpsob0quCt_RDx6vNXyAJakvGZAALMFgAC9ltxSeDo9PPrk3xeOAQ",
+              "uniqueId": "AgADzBYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 139171738
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001733076843,
+      "date": 1647162695,
+      "dateIso": "2022-03-13T09:11:35Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17501,
+              "size": 129074,
+              "remoteId": "AgACAgIAAx0CZ0ynawADM2kpsoa8qTKVoG4-v_hrCA6TXS2JAAK_uzEb9ltxSX0o6TvoSGxPAQADAgADeAADOAQ",
+              "uniqueId": "AQADv7sxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17500,
+              "size": 37604,
+              "remoteId": "AgACAgIAAx0CZ0ynawADM2kpsoa8qTKVoG4-v_hrCA6TXS2JAAK_uzEb9ltxSX0o6TvoSGxPAQADAgADbQADOAQ",
+              "uniqueId": "AQADv7sxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 52428800,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647162604,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 219,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "24 - König der Lüfte - Der Bulle und die Sonnenblumen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17502,
+            "size": 141708276,
+            "expectedSize": 141708276,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADMmkpsoYvSudN9nrWdkPMAXb7vaQ9AALLFgAC9ltxSVX-Q8ogYEVfOAQ",
+              "uniqueId": "AgADyxYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 141708276
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 51380224,
+      "chatId": -1001733076843,
+      "date": 1647162541,
+      "dateIso": "2022-03-13T09:09:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17504,
+              "size": 130811,
+              "remoteId": "AgACAgIAAx0CZ0ynawADMWkpsoZAccPvm4AjrUgFh56EudFPAAK8uzEb9ltxSTMBdBjjXsRBAQADAgADeAADOAQ",
+              "uniqueId": "AQADvLsxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17503,
+              "size": 40229,
+              "remoteId": "AgACAgIAAx0CZ0ynawADMWkpsoZAccPvm4AjrUgFh56EudFPAAK8uzEb9ltxSTMBdBjjXsRBAQADAgADbQADOAQ",
+              "uniqueId": "AQADvLsxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 50331648,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647162459,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 196,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "23 - Die Entführung - Schlaf gut, Humsin.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17505,
+            "size": 136733972,
+            "expectedSize": 136733972,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADMGkpsoZRQluqZbRBO2qsgf9Xt8-pAALIFgAC9ltxSaltB7qyunCtOAQ",
+              "uniqueId": "AgADyBYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 136733972
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 49283072,
+      "chatId": -1001733076843,
+      "date": 1647162400,
+      "dateIso": "2022-03-13T09:06:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17507,
+              "size": 131472,
+              "remoteId": "AgACAgIAAx0CZ0ynawADL2kpsobTR5FZy3_ym9VWd875zh4EAAKXuzEb9ltxSdxTG5SAUxDCAQADAgADeAADOAQ",
+              "uniqueId": "AQADl7sxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17506,
+              "size": 38111,
+              "remoteId": "AgACAgIAAx0CZ0ynawADL2kpsobTR5FZy3_ym9VWd875zh4EAAKXuzEb9ltxSdxTG5SAUxDCAQADAgADbQADOAQ",
+              "uniqueId": "AQADl7sxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 48234496,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647162291,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 169,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "22 - Spiel für den Frieden - Morris, der Zauberer.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17508,
+            "size": 134680822,
+            "expectedSize": 134680822,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADLmkpsoaLici-C1bA4qRaKpM9UKmYAALDFgAC9ltxSWFW4E9CyQMMOAQ",
+              "uniqueId": "AgADwxYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 134680822
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47185920,
+      "chatId": -1001733076843,
+      "date": 1647162231,
+      "dateIso": "2022-03-13T09:03:51Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17510,
+              "size": 151187,
+              "remoteId": "AgACAgIAAx0CZ0ynawADLWkpsoZsbK4BUf82aUZ4XEiXhMXRAAKWuzEb9ltxSeFg1sM5w9W6AQADAgADeAADOAQ",
+              "uniqueId": "AQADlrsxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17509,
+              "size": 43044,
+              "remoteId": "AgACAgIAAx0CZ0ynawADLWkpsoZsbK4BUf82aUZ4XEiXhMXRAAKWuzEb9ltxSeFg1sM5w9W6AQADAgADbQADOAQ",
+              "uniqueId": "AQADlrsxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46137344,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647162070,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 166,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "21 - Das Schneemonster - Wer ist wer.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17511,
+            "size": 139037549,
+            "expectedSize": 139037549,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADLGkpsobh_xEbVdoB3nqRhQKarbj_AAK8FgAC9ltxSbR4guTlt28COAQ",
+              "uniqueId": "AgADvBYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 139037549
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45088768,
+      "chatId": -1001733076843,
+      "date": 1647162012,
+      "dateIso": "2022-03-13T09:00:12Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17513,
+              "size": 111724,
+              "remoteId": "AgACAgIAAx0CZ0ynawADK2kpsoYNlk9aatJvRFlr626iDOGaAAKUuzEb9ltxSfcfj7Gxee0tAQADAgADeAADOAQ",
+              "uniqueId": "AQADlLsxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17512,
+              "size": 34547,
+              "remoteId": "AgACAgIAAx0CZ0ynawADK2kpsoYNlk9aatJvRFlr626iDOGaAAKUuzEb9ltxSfcfj7Gxee0tAQADAgADbQADOAQ",
+              "uniqueId": "AQADlLsxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 44040192,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647161945,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 156,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "20 - Der ersehnte Retter - Mein Baby!.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17514,
+            "size": 130186406,
+            "expectedSize": 130186406,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADKmkpsoY0PbISbCyjfav-wV4LWhtMAAK2FgAC9ltxSRz65pmJnAcjOAQ",
+              "uniqueId": "AgADthYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 130186406
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1001733076843,
+      "date": 1647161893,
+      "dateIso": "2022-03-13T08:58:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17516,
+              "size": 128619,
+              "remoteId": "AgACAgIAAx0CZ0ynawADKWkpsoYRzeW7PqmUpFzgWw5lvVHvAAKOuzEb9ltxSVGWzyfdmrH0AQADAgADeAADOAQ",
+              "uniqueId": "AQADjrsxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17515,
+              "size": 39169,
+              "remoteId": "AgACAgIAAx0CZ0ynawADKWkpsoYRzeW7PqmUpFzgWw5lvVHvAAKOuzEb9ltxSVGWzyfdmrH0AQADAgADbQADOAQ",
+              "uniqueId": "AQADjrsxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 41943040,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647161797,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 152,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "19 - Seltsame Verwandlung - Sandflöhe.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17517,
+            "size": 134322807,
+            "expectedSize": 134322807,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADKGkpsobwiejayCSzjeMVH3YyljLsAAK1FgAC9ltxSfAjmfRHndCXOAQ",
+              "uniqueId": "AgADtRYAAvZbcUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 134322807
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 40894464,
+      "chatId": -1001733076843,
+      "date": 1647161721,
+      "dateIso": "2022-03-13T08:55:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17519,
+              "size": 134043,
+              "remoteId": "AgACAgIAAx0CZ0ynawADJ2kpsoYQgEf8AlW6B72WMdjYovOhAAKNuzEb9ltxSYFysFXtk6NjAQADAgADeAADOAQ",
+              "uniqueId": "AQADjbsxG_ZbcUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17518,
+              "size": 39459,
+              "remoteId": "AgACAgIAAx0CZ0ynawADJ2kpsoYQgEf8AlW6B72WMdjYovOhAAKNuzEb9ltxSYFysFXtk6NjAQADAgADbQADOAQ",
+              "uniqueId": "AQADjbsxG_ZbcUly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39845888,
+      "senderId": {
+        "chatId": -1001733076843
+      },
+      "chatId": -1001733076843,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1647150696,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 149,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "18 - Grünland unter Wasser - Der Zauberlehrling.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17520,
+            "size": 137186768,
+            "expectedSize": 137186768,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0ynawADJmkpsoYK2pdFUcR2oVuq_JSDyuyXAAJ0FwAC9LdpSS1-ktoFBqlVOAQ",
+              "uniqueId": "AgADdBcAAvS3aUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 137186768
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 38797312,
+      "chatId": -1001733076843,
+      "date": 1647150639,
+      "dateIso": "2022-03-13T05:50:39Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17522,
+              "size": 137131,
+              "remoteId": "AgACAgIAAx0CZ0ynawADJWkpsoav1uy5ZSB9M68I4yC43VITAALUuzEb9LdpSXjBv91MoeUtAQADAgADeAADOAQ",
+              "uniqueId": "AQAD1LsxG_S3aUl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17521,
+              "size": 41485,
+              "remoteId": "AgACAgIAAx0CZ0ynawADJWkpsoav1uy5ZSB9M68I4yC43VITAALUuzEb9LdpSXjBv91MoeUtAQADAgADbQADOAQ",
+              "uniqueId": "AQAD1LsxG_S3aUly"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

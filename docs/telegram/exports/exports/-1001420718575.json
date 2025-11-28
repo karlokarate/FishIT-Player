@@ -1,0 +1,1444 @@
+{
+  "chatId": -1001420718575,
+  "title": "Die drei Ausrufezeichen!!!",
+  "exportedAt": "2025-11-28T14:46:45.102352017Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 289406976,
+      "chatId": -1001420718575,
+      "date": 1666420994,
+      "dateIso": "2022-10-22T06:43:14Z",
+      "text": "!",
+      "genres": []
+    },
+    {
+      "id": 287309824,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649535753,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1296,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 286261248,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "078.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19306,
+            "size": 171325269,
+            "expectedSize": 171325269,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACARJpKbKk1SxBTtffgfHuZsHREOHKKQAC9gkAAreSkVIOPvizeUSeCjgE",
+              "uniqueId": "AgAD9gkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 171325269
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 78 - Das Bienengeheimnis\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 59,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 286261248,
+      "chatId": -1001420718575,
+      "date": 1649535609,
+      "dateIso": "2022-04-09T20:20:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 19309,
+              "size": 248216,
+              "remoteId": "AgACAgQAAx0CVK5x7wACARFpKbKkqe5X67WEd_gWHFaKSUuBeQACSrgxG7eSkVLqjzrQ9GmLegEAAwIAA3kAAzgE",
+              "uniqueId": "AQADSrgxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19308,
+              "size": 142039,
+              "remoteId": "AgACAgQAAx0CVK5x7wACARFpKbKkqe5X67WEd_gWHFaKSUuBeQACSrgxG7eSkVLqjzrQ9GmLegEAAwIAA3gAAzgE",
+              "uniqueId": "AQADSrgxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19307,
+              "size": 37086,
+              "remoteId": "AgACAgQAAx0CVK5x7wACARFpKbKkqe5X67WEd_gWHFaKSUuBeQACSrgxG7eSkVLqjzrQ9GmLegEAAwIAA20AAzgE",
+              "uniqueId": "AQADSrgxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 285212672,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649535212,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1037,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 284164096,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "077.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19310,
+            "size": 181851015,
+            "expectedSize": 181851015,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACARBpKbKkW27VRlFajJrbVvt8UGZAVQAC7wkAAreSkVKYXSn6z7jsDDgE",
+              "uniqueId": "AgAD7wkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 181851015
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 77 - Achtung, Gaunerzeichen!\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 63,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 284164096,
+      "chatId": -1001420718575,
+      "date": 1649535042,
+      "dateIso": "2022-04-09T20:10:42Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 19313,
+              "size": 230435,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQ9pKbKkESLcFmC53nKdKaIUtEJLgAACRbgxG7eSkVLkzye0AAGnhwUBAAMCAAN5AAM4BA",
+              "uniqueId": "AQADRbgxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19312,
+              "size": 135471,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQ9pKbKkESLcFmC53nKdKaIUtEJLgAACRbgxG7eSkVLkzye0AAGnhwUBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADRbgxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19311,
+              "size": 36712,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQ9pKbKkESLcFmC53nKdKaIUtEJLgAACRbgxG7eSkVLkzye0AAGnhwUBAAMCAANtAAM4BA",
+              "uniqueId": "AQADRbgxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 283115520,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649534946,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 859,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 282066944,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "076.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19314,
+            "size": 202039929,
+            "expectedSize": 202039929,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQ5pKbKksf_JSEGJGLDoDaNMDALOBwAC6gkAAreSkVKqI8JSXfd73DgE",
+              "uniqueId": "AgAD6gkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 202039929
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 76 - Falscher Ruhm\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 53,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 282066944,
+      "chatId": -1001420718575,
+      "date": 1649534814,
+      "dateIso": "2022-04-09T20:06:54Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 19317,
+              "size": 166239,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQ1pKbKkCcQi8PMN6-ncrsrEdlIcdgACRLgxG7eSkVIOo8Wc2NpLbAEAAwIAA3kAAzgE",
+              "uniqueId": "AQADRLgxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19316,
+              "size": 101469,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQ1pKbKkCcQi8PMN6-ncrsrEdlIcdgACRLgxG7eSkVIOo8Wc2NpLbAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADRLgxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19315,
+              "size": 29126,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQ1pKbKkCcQi8PMN6-ncrsrEdlIcdgACRLgxG7eSkVIOo8Wc2NpLbAEAAwIAA20AAzgE",
+              "uniqueId": "AQADRLgxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 281018368,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649534796,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 800,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 279969792,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "075 a+b+c.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19318,
+            "size": 528269019,
+            "expectedSize": 528269019,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQxpKbKkjVYAAds5Yl83je1tsuxuXRcAAukJAAK3kpFSTnG6X_P2gPE4BA",
+              "uniqueId": "AgAD6QkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 528269019
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 75 - Tatort Hollywood (3CDs)\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 63,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 279969792,
+      "chatId": -1001420718575,
+      "date": 1649534501,
+      "dateIso": "2022-04-09T20:01:41Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 950,
+            "height": 950,
+            "file": {
+              "id": 19321,
+              "size": 148500,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQtpKbKk4Fu4Ofz2nCkihO_pzKZ-swACQrgxG7eSkVLPYz-iZ-3sEgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADQrgxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19320,
+              "size": 127785,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQtpKbKk4Fu4Ofz2nCkihO_pzKZ-swACQrgxG7eSkVLPYz-iZ-3sEgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADQrgxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19319,
+              "size": 37376,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQtpKbKk4Fu4Ofz2nCkihO_pzKZ-swACQrgxG7eSkVLPYz-iZ-3sEgEAAwIAA20AAzgE",
+              "uniqueId": "AQADQrgxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 278921216,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649534361,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 742,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 277872640,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "074.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19322,
+            "size": 182921923,
+            "expectedSize": 182921923,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQppKbKkICr8oAmP5M5b9gABTnveyssAAucJAAK3kpFSWLDtpUhNwa84BA",
+              "uniqueId": "AgAD5wkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 182921923
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 74 - Rätsel der Vergangenheit\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 64,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 277872640,
+      "chatId": -1001420718575,
+      "date": 1649534189,
+      "dateIso": "2022-04-09T19:56:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 19325,
+              "size": 252347,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQlpKbKkWa8fshGQp2CS1nO-S_APfAACQbgxG7eSkVJwajvUrBo3lgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADQbgxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19324,
+              "size": 148166,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQlpKbKkWa8fshGQp2CS1nO-S_APfAACQbgxG7eSkVJwajvUrBo3lgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADQbgxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19323,
+              "size": 40127,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQlpKbKkWa8fshGQp2CS1nO-S_APfAACQbgxG7eSkVJwajvUrBo3lgEAAwIAA20AAzgE",
+              "uniqueId": "AQADQbgxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 276824064,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649534131,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 707,
+        "forwardCount": 4
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 275775488,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "073.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19326,
+            "size": 193702333,
+            "expectedSize": 193702333,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQhpKbKkYnkz57cEl9BsUQ4cncMH5AAC5gkAAreSkVLnulM1gOWOpzgE",
+              "uniqueId": "AgAD5gkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 193702333
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 73 - Legende der Einhörner\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 61,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 275775488,
+      "chatId": -1001420718575,
+      "date": 1649533959,
+      "dateIso": "2022-04-09T19:52:39Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 19329,
+              "size": 217556,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQdpKbKkDZO1xWK2iKpkpnJuI-o4uwACP7gxG7eSkVLbegVVOBNhgwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADP7gxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19328,
+              "size": 128237,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQdpKbKkDZO1xWK2iKpkpnJuI-o4uwACP7gxG7eSkVLbegVVOBNhgwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADP7gxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19327,
+              "size": 35052,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQdpKbKkDZO1xWK2iKpkpnJuI-o4uwACP7gxG7eSkVLbegVVOBNhgwEAAwIAA20AAzgE",
+              "uniqueId": "AQADP7gxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 274726912,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649533824,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 687,
+        "forwardCount": 3
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 273678336,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "072.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19330,
+            "size": 200797009,
+            "expectedSize": 200797009,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQZpKbKk6TRjTr_kpzuQhTLrHQAB0jIAAuIJAAK3kpFSue_6iJq3ehM4BA",
+              "uniqueId": "AgAD4gkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 200797009
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 71 - Gefahr in den Ruinen\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 60,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 273678336,
+      "chatId": -1001420718575,
+      "date": 1649533705,
+      "dateIso": "2022-04-09T19:48:25Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1200,
+            "height": 1200,
+            "file": {
+              "id": 19333,
+              "size": 206054,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQVpKbKklHjdra8IX-e0VSqD04dkaAACL7gxG7eSkVKIYBayajbMagEAAwIAA3kAAzgE",
+              "uniqueId": "AQADL7gxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19332,
+              "size": 127853,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQVpKbKklHjdra8IX-e0VSqD04dkaAACL7gxG7eSkVKIYBayajbMagEAAwIAA3gAAzgE",
+              "uniqueId": "AQADL7gxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19331,
+              "size": 33719,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQVpKbKklHjdra8IX-e0VSqD04dkaAACL7gxG7eSkVKIYBayajbMagEAAwIAA20AAzgE",
+              "uniqueId": "AQADL7gxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 272629760,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1649533306,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 716,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 271581184,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "071.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19334,
+            "size": 191471749,
+            "expectedSize": 191471749,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQRpKbKkSIlITQTCBMB8fZOu2s70bwAC3wkAAreSkVKzOaZUS0NiBzgE",
+              "uniqueId": "AgAD3wkAAreSkVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 191471749
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 71 - Gefahr in den Ruinen\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 60,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 271581184,
+      "chatId": -1001420718575,
+      "date": 1649533178,
+      "dateIso": "2022-04-09T19:39:38Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 1280,
+            "file": {
+              "id": 19337,
+              "size": 187372,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQNpKbKkwdVVL6lyaHIJfFoMclqQmAACLLgxG7eSkVKlUG-j3dia7QEAAwIAA3kAAzgE",
+              "uniqueId": "AQADLLgxG7eSkVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19336,
+              "size": 114154,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQNpKbKkwdVVL6lyaHIJfFoMclqQmAACLLgxG7eSkVKlUG-j3dia7QEAAwIAA3gAAzgE",
+              "uniqueId": "AQADLLgxG7eSkVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19335,
+              "size": 32261,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQNpKbKkwdVVL6lyaHIJfFoMclqQmAACLLgxG7eSkVKlUG-j3dia7QEAAwIAA20AAzgE",
+              "uniqueId": "AQADLLgxG7eSkVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 270532608,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1648665528,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 739,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 269484032,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die drei !!! - 070_Gefährliches Spiel.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19338,
+            "size": 218966852,
+            "expectedSize": 218966852,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQJpKbKk0Nq-D0Iq3Px9YzxtYihbLgACSQwAAsWVIVJClBIyy2bggzgE",
+              "uniqueId": "AgADSQwAAsWVIVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 218966852
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 70 - Gefährliches Spiel\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 58,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 269484032,
+      "chatId": -1001420718575,
+      "date": 1648665336,
+      "dateIso": "2022-03-30T18:35:36Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1200,
+            "height": 1200,
+            "file": {
+              "id": 19341,
+              "size": 313720,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQFpKbKkdKNyCaPZ_TtzwUMIH2dBCgACTbcxG8WVIVIOb7p0Pe75TgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADTbcxG8WVIVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19340,
+              "size": 201182,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQFpKbKkdKNyCaPZ_TtzwUMIH2dBCgACTbcxG8WVIVIOb7p0Pe75TgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADTbcxG8WVIVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19339,
+              "size": 42807,
+              "remoteId": "AgACAgQAAx0CVK5x7wACAQFpKbKkdKNyCaPZ_TtzwUMIH2dBCgACTbcxG8WVIVIOb7p0Pe75TgEAAwIAA20AAzgE",
+              "uniqueId": "AQADTbcxG8WVIVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 268435456,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1648665314,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 701,
+        "forwardCount": 7
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 267386880,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die drei !!! - 069_Nacht der Wölfe.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19342,
+            "size": 212839087,
+            "expectedSize": 212839087,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wACAQABaSmypKcmapkf0iFm-nrx6ty7ibIAAkgMAALFlSFSIXPIb1satOA4BA",
+              "uniqueId": "AgADSAwAAsWVIVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 212839087
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 69 - Nacht der Wölfe\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 55,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 267386880,
+      "chatId": -1001420718575,
+      "date": 1648665064,
+      "dateIso": "2022-03-30T18:31:04Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1200,
+            "height": 1200,
+            "file": {
+              "id": 19345,
+              "size": 229309,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD_2kpsqQHkl_VZq9stMnxqOJI3e5jAAJMtzEbxZUhUm1UJkB6tGk6AQADAgADeQADOAQ",
+              "uniqueId": "AQADTLcxG8WVIVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19344,
+              "size": 139305,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD_2kpsqQHkl_VZq9stMnxqOJI3e5jAAJMtzEbxZUhUm1UJkB6tGk6AQADAgADeAADOAQ",
+              "uniqueId": "AQADTLcxG8WVIVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19343,
+              "size": 34275,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD_2kpsqQHkl_VZq9stMnxqOJI3e5jAAJMtzEbxZUhUm1UJkB6tGk6AQADAgADbQADOAQ",
+              "uniqueId": "AQADTLcxG8WVIVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 266338304,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1648664990,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 665,
+        "forwardCount": 5
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 265289728,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die drei !!! - 068_Gefahr im Netz.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19346,
+            "size": 202782949,
+            "expectedSize": 202782949,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wAD_mkpsqR_51GAoB3ObjcrF22n5zf4AAJHDAACxZUhUhrXkj4imx2ROAQ",
+              "uniqueId": "AgADRwwAAsWVIVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 202782949
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 68 - Gefahr im Netz\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 54,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 265289728,
+      "chatId": -1001420718575,
+      "date": 1648664761,
+      "dateIso": "2022-03-30T18:26:01Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1200,
+            "height": 1200,
+            "file": {
+              "id": 19349,
+              "size": 205759,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD_WkpsqRm1SSA7XjXBKTcTluiqivOAAJLtzEbxZUhUrHeZeS5KLFOAQADAgADeQADOAQ",
+              "uniqueId": "AQADS7cxG8WVIVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19348,
+              "size": 125804,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD_WkpsqRm1SSA7XjXBKTcTluiqivOAAJLtzEbxZUhUrHeZeS5KLFOAQADAgADeAADOAQ",
+              "uniqueId": "AQADS7cxG8WVIVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19347,
+              "size": 31740,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD_WkpsqRm1SSA7XjXBKTcTluiqivOAAJLtzEbxZUhUrHeZeS5KLFOAQADAgADbQADOAQ",
+              "uniqueId": "AQADS7cxG8WVIVJy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 264241152,
+      "senderId": {
+        "chatId": -1001420718575
+      },
+      "chatId": -1001420718575,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": false,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1648664736,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 666,
+        "forwardCount": 6
+      },
+      "unreadReactions": [],
+      "replyTo": {
+        "chatId": -1001420718575,
+        "messageId": 263192576,
+        "checklistTaskId": 0,
+        "originSendDate": 0
+      },
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die drei !!! - 067_Tatort Geisterbahn.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 19350,
+            "size": 190886033,
+            "expectedSize": 190886033,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CVK5x7wAD_GkpsqQxL6xPZKl-70s9JhqNBrqBAAJGDAACxZUhUoTi-DiiTEZ-OAQ",
+              "uniqueId": "AgADRgwAAsWVIVI",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 190886033
+            }
+          }
+        },
+        "caption": {
+          "text": "Folge 67 - Tatort Geisterbahn\n━━━━━━━━━━━━━━\n💿 : Made by Hörspiel Index",
+          "entities": [
+            {
+              "offset": 58,
+              "length": 14,
+              "type": {
+                "url": "https://t.me/joinchat/Smm6qCVMX3dHgeD4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 263192576,
+      "chatId": -1001420718575,
+      "date": 1648664578,
+      "dateIso": "2022-03-30T18:22:58Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1200,
+            "height": 1200,
+            "file": {
+              "id": 19353,
+              "size": 163840,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD-2kpsqSgJ1Pd9ue0ls85rlX4W0P7AAJKtzEbxZUhUpY4hCvi-UI_AQADAgADeQADOAQ",
+              "uniqueId": "AQADSrcxG8WVIVJ-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 19352,
+              "size": 113012,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD-2kpsqSgJ1Pd9ue0ls85rlX4W0P7AAJKtzEbxZUhUpY4hCvi-UI_AQADAgADeAADOAQ",
+              "uniqueId": "AQADSrcxG8WVIVJ9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 19351,
+              "size": 29946,
+              "remoteId": "AgACAgQAAx0CVK5x7wAD-2kpsqSgJ1Pd9ue0ls85rlX4W0P7AAJKtzEbxZUhUpY4hCvi-UI_AQADAgADbQADOAQ",
+              "uniqueId": "AQADSrcxG8WVIVJy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

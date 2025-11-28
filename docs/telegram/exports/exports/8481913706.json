@@ -1,0 +1,37 @@
+{
+  "chatId": 8481913706,
+  "title": "Timmi",
+  "exportedAt": "2025-11-28T14:45:49.717288100Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 46595571712,
+      "senderId": {
+        "userId": 8481913706
+      },
+      "chatId": 8481913706,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": false,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1755503143,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {}
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "chatId": -1001665035379,
+  "title": "Skinamarink Movie HD",
+  "exportedAt": "2025-11-28T14:47:02.469334320Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 5242880,
+      "chatId": -1001665035379,
+      "date": 1672368202,
+      "dateIso": "2022-12-30T02:43:22Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 5552,
+              "size": 134504,
+              "remoteId": "AgACAgEAAx0CYz5scwADBWkpsuP4TkOQpvV83bWqTEcNzVLjAAJ6qzEb73dwRaI3mjJnPiwzAQADAgADeQADOAQ",
+              "uniqueId": "AQADeqsxG-93cEV-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 5551,
+              "size": 76247,
+              "remoteId": "AgACAgEAAx0CYz5scwADBWkpsuP4TkOQpvV83bWqTEcNzVLjAAJ6qzEb73dwRaI3mjJnPiwzAQADAgADeAADOAQ",
+              "uniqueId": "AQADeqsxG-93cEV9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 5550,
+              "size": 13392,
+              "remoteId": "AgACAgEAAx0CYz5scwADBWkpsuP4TkOQpvV83bWqTEcNzVLjAAJ6qzEb73dwRaI3mjJnPiwzAQADAgADbQADOAQ",
+              "uniqueId": "AQADeqsxG-93cEVy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001665035379
+      },
+      "chatId": -1001665035379,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1671502188,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Julie \u0026 Julia Movie HD"
+      }
+    }
+  ]
+}

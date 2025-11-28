@@ -1,0 +1,760 @@
+{
+  "chatId": -1001457863380,
+  "title": "Bob der Baumeister",
+  "exportedAt": "2025-11-28T14:47:35.724697874Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 104857600,
+      "chatId": -1001457863380,
+      "date": 1620466941,
+      "dateIso": "2021-05-08T09:42:21Z",
+      "text": "Original Hochgeladen von Join The Links 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 102760448,
+      "chatId": -1001457863380,
+      "date": 1620466941,
+      "dateIso": "2021-05-08T09:42:21Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S06 E04 - Umzug mit Wendy.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20157,
+          "size": 190341595,
+          "remoteId": "BAACAgIAAx0CVuU61AADYmkpssFHNqvT_FeYh6Cz54CNLBnmAAJuEAACJIgwSJflOkIvPZhpOAQ",
+          "uniqueId": "AgADbhAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20156,
+            "size": 18810,
+            "remoteId": "AAMCAgADHQJW5TrUAANiaSmywUc2q9P8V5iHoLPngI0sGeYAAm4QAAIkiDBIl-U6Qi89mGkBAAdtAAM4BA",
+            "uniqueId": "AQADbhAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S06 E04 - Umzug mit Wendy"
+      }
+    },
+    {
+      "id": 101711872,
+      "chatId": -1001457863380,
+      "date": 1620466938,
+      "dateIso": "2021-05-08T09:42:18Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S06 E03 - Herr Barner als Heimwerker.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20159,
+          "size": 180548265,
+          "remoteId": "BAACAgIAAx0CVuU61AADYWkpssGlZZSiNtTUtiYjVERxn9uxAAJUEAACJIgwSLBiArr8GweTOAQ",
+          "uniqueId": "AgADVBAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20158,
+            "size": 17090,
+            "remoteId": "AAMCAgADHQJW5TrUAANhaSmywaVllKI21NS2JiNURHGf27EAAlQQAAIkiDBIsGICuvwbB5MBAAdtAAM4BA",
+            "uniqueId": "AQADVBAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S06 E03 - Herr Barner als Heimwerker"
+      }
+    },
+    {
+      "id": 100663296,
+      "chatId": -1001457863380,
+      "date": 1620466934,
+      "dateIso": "2021-05-08T09:42:14Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S06 E02 - Bobs Metalldetektor.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20161,
+          "size": 180529076,
+          "remoteId": "BAACAgIAAx0CVuU61AADYGkpssHdfYPqo5Qi2omgQifW3BttAAJWEAACJIgwSNmAWlvpNxg4OAQ",
+          "uniqueId": "AgADVhAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20160,
+            "size": 17090,
+            "remoteId": "AAMCAgADHQJW5TrUAANgaSmywd19g-qjlCLaiaBCJ9bcG20AAlYQAAIkiDBI2YBaW-k3GDgBAAdtAAM4BA",
+            "uniqueId": "AQADVhAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S06 E02 - Bobs Metalldetektor"
+      }
+    },
+    {
+      "id": 99614720,
+      "chatId": -1001457863380,
+      "date": 1620466931,
+      "dateIso": "2021-05-08T09:42:11Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S06 E01 - Der neue Pizza-Ofen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20163,
+          "size": 180532523,
+          "remoteId": "BAACAgIAAx0CVuU61AADX2kpssE7m5XFk4IGiIURCJVeQyyGAAJVEAACJIgwSETjfFOqpXUJOAQ",
+          "uniqueId": "AgADVRAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20162,
+            "size": 17090,
+            "remoteId": "AAMCAgADHQJW5TrUAANfaSmywTublcWTggaIhREIlV5DLIYAAlUQAAIkiDBIRON8U6qldQkBAAdtAAM4BA",
+            "uniqueId": "AQADVRAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S06 E01 - Der neue Pizza-Ofen"
+      }
+    },
+    {
+      "id": 98566144,
+      "chatId": -1001457863380,
+      "date": 1620466928,
+      "dateIso": "2021-05-08T09:42:08Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S05 E13 - Eskimo Bob.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20165,
+          "size": 180549779,
+          "remoteId": "BAACAgIAAx0CVuU61AADXmkpssGDiFyZaMBaa_VNOgvyW_5iAAJXEAACJIgwSOGGIcxduhU_OAQ",
+          "uniqueId": "AgADVxAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20164,
+            "size": 17483,
+            "remoteId": "AAMCAgADHQJW5TrUAANeaSmywYOIXJlowFpr9U06C_Jb_mIAAlcQAAIkiDBI4YYhzF26FT8BAAdtAAM4BA",
+            "uniqueId": "AQADVxAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E13 - Eskimo Bob"
+      }
+    },
+    {
+      "id": 97517568,
+      "chatId": -1001457863380,
+      "date": 1620466924,
+      "dateIso": "2021-05-08T09:42:04Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E12 - Rollo im Pech.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20167,
+          "size": 192589563,
+          "remoteId": "BAACAgIAAx0CVuU61AADXWkpssH3wPrOvY00yxtvBP-CcH95AAKJEAACJIgwSBAc7Pn7rEmoOAQ",
+          "uniqueId": "AgADiRAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20166,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANdaSmywffA-s69jTTLG28E_4Jwf3kAAokQAAIkiDBIEBzs-fusSagBAAdtAAM4BA",
+            "uniqueId": "AQADiRAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E12 - Rollo im Pech"
+      }
+    },
+    {
+      "id": 96468992,
+      "chatId": -1001457863380,
+      "date": 1620466921,
+      "dateIso": "2021-05-08T09:42:01Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S05 E11 - Plötzlich wird es Winter.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20169,
+          "size": 180007093,
+          "remoteId": "BAACAgIAAx0CVuU61AADXGkpssG1sDfLAiTbCuWahZIKfG6NAAJOEAACJIgwSCW_D4D-anbbOAQ",
+          "uniqueId": "AgADThAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20168,
+            "size": 17483,
+            "remoteId": "AAMCAgADHQJW5TrUAANcaSmywbWwN8sCJNsK5ZqFkgp8bo0AAk4QAAIkiDBIJb8PgP5qdtsBAAdtAAM4BA",
+            "uniqueId": "AQADThAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E11 - Plötzlich wird es Winter"
+      }
+    },
+    {
+      "id": 95420416,
+      "chatId": -1001457863380,
+      "date": 1620466918,
+      "dateIso": "2021-05-08T09:41:58Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S05 E10 - Besuch von der Tante.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20171,
+          "size": 180286520,
+          "remoteId": "BAACAgIAAx0CVuU61AADW2kpssHGi7fRmZS2fAAB2P3u-CSsugACUBAAAiSIMEhTpQ7pldxVhTgE",
+          "uniqueId": "AgADUBAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20170,
+            "size": 17483,
+            "remoteId": "AAMCAgADHQJW5TrUAANbaSmywcaLt9GZlLZ8AAHY_e74JKy6AAJQEAACJIgwSFOlDumV3FWFAQAHbQADOAQ",
+            "uniqueId": "AQADUBAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E10 - Besuch von der Tante"
+      }
+    },
+    {
+      "id": 94371840,
+      "chatId": -1001457863380,
+      "date": 1620466915,
+      "dateIso": "2021-05-08T09:41:55Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E09 - Bobs Versteck.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20173,
+          "size": 190835213,
+          "remoteId": "BAACAgIAAx0CVuU61AADWmkpssH2YuvxQ3PTULEEZeu3O6NtAAJvEAACJIgwSEvlKdYa1aNqOAQ",
+          "uniqueId": "AgADbxAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20172,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANaaSmywfZi6_FDc9NQsQRl67c7o20AAm8QAAIkiDBIS-Up1hrVo2oBAAdtAAM4BA",
+            "uniqueId": "AQADbxAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E09 - Bobs Versteck"
+      }
+    },
+    {
+      "id": 93323264,
+      "chatId": -1001457863380,
+      "date": 1620466911,
+      "dateIso": "2021-05-08T09:41:51Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E08 - Kuschels großer Tag.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20175,
+          "size": 192926206,
+          "remoteId": "BAACAgIAAx0CVuU61AADWWkpssHRkREi3Qz5oWKy5ghXeV9IAAKXEAACJIgwSIKveFtOomyyOAQ",
+          "uniqueId": "AgADlxAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20174,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANZaSmywdGRESLdDPmhYrLmCFd5X0gAApcQAAIkiDBIgq94W06ibLIBAAdtAAM4BA",
+            "uniqueId": "AQADlxAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E08 - Kuschels großer Tag"
+      }
+    },
+    {
+      "id": 91226112,
+      "chatId": -1001457863380,
+      "date": 1620466869,
+      "dateIso": "2021-05-08T09:41:09Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E07 - Knolle, der Drache.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20177,
+          "size": 192916810,
+          "remoteId": "BAACAgIAAx0CVuU61AADV2kpssF_nkn_2Uw3wolB7lJFaqaVAAKUEAACJIgwSL1yIRqVuGaNOAQ",
+          "uniqueId": "AgADlBAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20176,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANXaSmywX-eSf_ZTDfCiUHuUkVqppUAApQQAAIkiDBIvXIhGpW4Zo0BAAdtAAM4BA",
+            "uniqueId": "AQADlBAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E07 - Knolle, der Drache"
+      }
+    },
+    {
+      "id": 90177536,
+      "chatId": -1001457863380,
+      "date": 1620466866,
+      "dateIso": "2021-05-08T09:41:06Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E06 - Buddel und das Gully-Monster.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20179,
+          "size": 192933444,
+          "remoteId": "BAACAgIAAx0CVuU61AADVmkpssFNoldHNqxuToTVZOflHZ_iAAKZEAACJIgwSDmyr9Fpz0paOAQ",
+          "uniqueId": "AgADmRAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20178,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANWaSmywU2iV0c2rG5OhNVk5-Udn-IAApkQAAIkiDBIObKv0WnPSloBAAdtAAM4BA",
+            "uniqueId": "AQADmRAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E06 - Buddel und das Gully-Monster"
+      }
+    },
+    {
+      "id": 89128960,
+      "chatId": -1001457863380,
+      "date": 1620466863,
+      "dateIso": "2021-05-08T09:41:03Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E05 - Skateboard-Knolle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20181,
+          "size": 192935992,
+          "remoteId": "BAACAgIAAx0CVuU61AADVWkpssGoZI0x90YehZGaTcfIyo53AAKWEAACJIgwSLrwlO7IGwxUOAQ",
+          "uniqueId": "AgADlhAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20180,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANVaSmywahkjTH3Rh6FkZpNx8jKjncAApYQAAIkiDBIuvCU7sgbDFQBAAdtAAM4BA",
+            "uniqueId": "AQADlhAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E05 - Skateboard-Knolle"
+      }
+    },
+    {
+      "id": 88080384,
+      "chatId": -1001457863380,
+      "date": 1620466859,
+      "dateIso": "2021-05-08T09:40:59Z",
+      "content": {
+        "duration": 611,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E04 - Wendys Überraschungsparty.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20183,
+          "size": 196131912,
+          "remoteId": "BAACAgIAAx0CVuU61AADVGkpssE0TGQGfbV2hy6_ud_S18QhAALaEAACJIgwSPBahnmOvxHCOAQ",
+          "uniqueId": "AgAD2hAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20182,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANUaSmywTRMZAZ9tXaHLr-539LXxCEAAtoQAAIkiDBI8FqGeY6_EcIBAAdtAAM4BA",
+            "uniqueId": "AQAD2hAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E04 - Wendys Überraschungsparty"
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1001457863380,
+      "date": 1620466856,
+      "dateIso": "2021-05-08T09:40:56Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E03 - Knolle und das Küken.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20185,
+          "size": 192770255,
+          "remoteId": "BAACAgIAAx0CVuU61AADU2kpssFq2QuUP3sqX5mIPtZqDOZ9AAKQEAACJIgwSCjWfmQFouKkOAQ",
+          "uniqueId": "AgADkBAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20184,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANTaSmywWrZC5Q_eypfmYg-1moM5n0AApAQAAIkiDBIKNZ-ZAWi4qQBAAdtAAM4BA",
+            "uniqueId": "AQADkBAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E03 - Knolle und das Küken"
+      }
+    },
+    {
+      "id": 85983232,
+      "chatId": -1001457863380,
+      "date": 1620466853,
+      "dateIso": "2021-05-08T09:40:53Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E02 - Bauinspektor Knolle.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20187,
+          "size": 192764382,
+          "remoteId": "BAACAgIAAx0CVuU61AADUmkpssF87uTSX21wv0-fUWLUNjR8AAKMEAACJIgwSK_o9TYIufoVOAQ",
+          "uniqueId": "AgADjBAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20186,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANSaSmywXzu5NJfbXC_T59RYtQ2NHwAAowQAAIkiDBIr-j1Ngi5-hUBAAdtAAM4BA",
+            "uniqueId": "AQADjBAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E02 - Bauinspektor Knolle"
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1001457863380,
+      "date": 1620466849,
+      "dateIso": "2021-05-08T09:40:49Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S05 E01 - Bello, der Buddelkönig.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20189,
+          "size": 192790127,
+          "remoteId": "BAACAgIAAx0CVuU61AADUWkpssEBAun2-sFAS1EFuTnuXdR1AAKKEAACJIgwSMCNAAFZcCUiwjgE",
+          "uniqueId": "AgADihAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20188,
+            "size": 19368,
+            "remoteId": "AAMCAgADHQJW5TrUAANRaSmywQEC6fb6wUBLUQW5Oe5d1HUAAooQAAIkiDBIwI0AAVlwJSLCAQAHbQADOAQ",
+            "uniqueId": "AQADihAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S05 E01 - Bello, der Buddelkönig"
+      }
+    },
+    {
+      "id": 83886080,
+      "chatId": -1001457863380,
+      "date": 1620466846,
+      "dateIso": "2021-05-08T09:40:46Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 544,
+        "fileName": "Bob der Baumeister - S04 E14 - Wendy malt ein Bild.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20191,
+          "size": 180500359,
+          "remoteId": "BAACAgIAAx0CVuU61AADUGkpssEb6rXg8LoIZPZE8PxYiSUQAAJNEAACJIgwSEjAdU5XuSI4OAQ",
+          "uniqueId": "AgADTRAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 242,
+          "file": {
+            "id": 20190,
+            "size": 17117,
+            "remoteId": "AAMCAgADHQJW5TrUAANQaSmywRvqteDwughk9kTw_FiJJRAAAk0QAAIkiDBISMB1Tle5IjgBAAdtAAM4BA",
+            "uniqueId": "AQADTRAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E14 - Wendy malt ein Bild"
+      }
+    },
+    {
+      "id": 82837504,
+      "chatId": -1001457863380,
+      "date": 1620466843,
+      "dateIso": "2021-05-08T09:40:43Z",
+      "content": {
+        "duration": 606,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S04 E13 - Bello der Detektiv.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20193,
+          "size": 192283022,
+          "remoteId": "BAACAgIAAx0CVuU61AADT2kpssGOcJj-sSMB8VCUL348k9wbAAJ6EAACJIgwSHnPtLjpzvjLOAQ",
+          "uniqueId": "AgADehAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20192,
+            "size": 18951,
+            "remoteId": "AAMCAgADHQJW5TrUAANPaSmywY5wmP6xIwHxUJQvfjyT3BsAAnoQAAIkiDBIec-0uOnO-MsBAAdtAAM4BA",
+            "uniqueId": "AQADehAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E13 - Bello der Detektiv"
+      }
+    },
+    {
+      "id": 81788928,
+      "chatId": -1001457863380,
+      "date": 1620466839,
+      "dateIso": "2021-05-08T09:40:39Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S04 E12 - Der Knoten im Taschentuch.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20195,
+          "size": 192518200,
+          "remoteId": "BAACAgIAAx0CVuU61AADTmkpssFxtJv_e3Ws94ZLAAFEl76cFQAChxAAAiSIMEg3-cchVghj8jgE",
+          "uniqueId": "AgADhxAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20194,
+            "size": 18951,
+            "remoteId": "AAMCAgADHQJW5TrUAANOaSmywXG0m_97daz3hksAAUSXvpwVAAKHEAACJIgwSDf5xyFWCGPyAQAHbQADOAQ",
+            "uniqueId": "AQADhxAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E12 - Der Knoten im Taschentuch"
+      }
+    },
+    {
+      "id": 79691776,
+      "chatId": -1001457863380,
+      "date": 1620466833,
+      "dateIso": "2021-05-08T09:40:33Z",
+      "content": {
+        "duration": 600,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S04 E11 - Bob und der Langlauf.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20197,
+          "size": 192370929,
+          "remoteId": "BAACAgIAAx0CVuU61AADTGkpssH7Sf2-q3OtaPfHMKOW-SG6AAKDEAACJIgwSHmvGPXoT0P2OAQ",
+          "uniqueId": "AgADgxAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20196,
+            "size": 18951,
+            "remoteId": "AAMCAgADHQJW5TrUAANMaSmywftJ_b6rc61o98cwo5b5IboAAoMQAAIkiDBIea8Y9ehPQ_YBAAdtAAM4BA",
+            "uniqueId": "AQADgxAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E11 - Bob und der Langlauf"
+      }
+    },
+    {
+      "id": 78643200,
+      "chatId": -1001457863380,
+      "date": 1620466830,
+      "dateIso": "2021-05-08T09:40:30Z",
+      "content": {
+        "duration": 601,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S04 E10 - Die Meerschweinchen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20199,
+          "size": 192842202,
+          "remoteId": "BAACAgIAAx0CVuU61AADS2kpssE3ZJy9tNzqM2mynoVMnXwyAAKTEAACJIgwSHsk3eJUCvg8OAQ",
+          "uniqueId": "AgADkxAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20198,
+            "size": 18951,
+            "remoteId": "AAMCAgADHQJW5TrUAANLaSmywTdknL203OozabKehUydfDIAApMQAAIkiDBIeyTd4lQK-DwBAAdtAAM4BA",
+            "uniqueId": "AQADkxAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E10 - Die Meerschweinchen"
+      }
+    },
+    {
+      "id": 77594624,
+      "chatId": -1001457863380,
+      "date": 1620466826,
+      "dateIso": "2021-05-08T09:40:26Z",
+      "content": {
+        "duration": 602,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S04 E09 - Mit Musik geht alles besser.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20201,
+          "size": 193248733,
+          "remoteId": "BAACAgIAAx0CVuU61AADSmkpssHol9MkHdY1Ct-koNXViCVSAAKtEAACJIgwSLjEJ0UJwcogOAQ",
+          "uniqueId": "AgADrRAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20200,
+            "size": 18951,
+            "remoteId": "AAMCAgADHQJW5TrUAANKaSmyweiX0yQd1jUK36Sg1dWIJVIAAq0QAAIkiDBIuMQnRQnByiABAAdtAAM4BA",
+            "uniqueId": "AQADrRAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E09 - Mit Musik geht alles besser"
+      }
+    },
+    {
+      "id": 76546048,
+      "chatId": -1001457863380,
+      "date": 1620466823,
+      "dateIso": "2021-05-08T09:40:23Z",
+      "content": {
+        "duration": 602,
+        "width": 720,
+        "height": 592,
+        "fileName": "Bob der Baumeister - S04 E08 - Vorsicht, Knolle kommt.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 20203,
+          "size": 193267686,
+          "remoteId": "BAACAgIAAx0CVuU61AADSWkpssFf35D2bs6-1OhVSCk1NCN6AAK0EAACJIgwSEta8ObxPv5mOAQ",
+          "uniqueId": "AgADtBAAAiSIMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 263,
+          "file": {
+            "id": 20202,
+            "size": 18951,
+            "remoteId": "AAMCAgADHQJW5TrUAANJaSmywV_fkPZuzr7U6FVIKTU0I3oAArQQAAIkiDBIS1rw5vE-_mYBAAdtAAM4BA",
+            "uniqueId": "AQADtBAAAiSIMEhy"
+          }
+        },
+        "caption": "Bob der Baumeister - S04 E08 - Vorsicht, Knolle kommt"
+      }
+    }
+  ]
+}

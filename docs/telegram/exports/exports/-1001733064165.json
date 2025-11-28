@@ -1,0 +1,514 @@
+{
+  "chatId": -1001733064165,
+  "title": "Shining Girls FHD",
+  "exportedAt": "2025-11-28T14:47:16.058526261Z",
+  "count": 14,
+  "messages": [
+    {
+      "id": 42991616,
+      "senderId": {
+        "chatId": -1001733064165
+      },
+      "chatId": -1001733064165,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688511028,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 88,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Lauren Beukes - Shining Girls.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 5317,
+            "size": 635441965,
+            "expectedSize": 635441965,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CZ0x15QADKWkpssO7YY6wqUrG8-viHcl1yLU2AALkLQACgRkoSfhUwvPY3w4WOAQ",
+              "uniqueId": "AgAD5C0AAoEZKEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 635441965
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 41943040,
+      "chatId": -1001733064165,
+      "date": 1688511028,
+      "dateIso": "2023-07-04T22:50:28Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 181,
+            "height": 278,
+            "file": {
+              "id": 21283,
+              "size": 11374,
+              "remoteId": "AgACAgIAAx0CZ0x15QADKGkpssPkspYRmxmzrRxsXsPGrHscAALGyzEbgRkoSeasTMDKaf5GAQADAgADbQADOAQ",
+              "uniqueId": "AQADxssxG4EZKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 40894464,
+      "senderId": {
+        "chatId": -1001733064165
+      },
+      "chatId": -1001733064165,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1688511009,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 88,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 6156811678668292640,
+          "setId": 5082616684078956546,
+          "width": 512,
+          "height": 447,
+          "emoji": "⚔",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 279,
+            "file": {
+              "id": 21284,
+              "size": 17130,
+              "expectedSize": 17130,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCBQADHQJnTHXlAAMnaSmyw5uWN43tSzvq-aE5yZYvaloAAiACAAKaY3FVrTtfNssvVWoBAAdtAAM4BA",
+                "uniqueId": "AQADIAIAAppjcVVy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 17130
+              }
+            }
+          },
+          "sticker": {
+            "id": 21285,
+            "size": 28578,
+            "expectedSize": 28578,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgUAAx0CZ0x15QADJ2kpssObljeN7Us76vmhOcmWL2paAAIgAgACmmNxVa07XzbLL1VqOAQ",
+              "uniqueId": "AgADIAIAAppjcVU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 28578
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 38797312,
+      "chatId": -1001733064165,
+      "date": 1654273279,
+      "dateIso": "2022-06-03T16:21:19Z",
+      "content": {
+        "duration": 3175,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E08 - 30.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21287,
+          "size": 2023262940,
+          "remoteId": "BAACAgIAAx0CZ0x15QADJWkpssM-nt_ikg5YkU28vf0o7yTQAAJYGQACqpXRSAnI8Yv1HHO9OAQ",
+          "uniqueId": "AgADWBkAAqqV0Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21286,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMlaSmywz6e3-KSDliRTby9_SjvJNAAAlgZAAKqldFICcjxi_Ucc70BAAdtAAM4BA",
+            "uniqueId": "AQADWBkAAqqV0Uhy"
+          }
+        },
+        "caption": "Shining Girls - S01 E08 - 30"
+      }
+    },
+    {
+      "id": 35651584,
+      "chatId": -1001733064165,
+      "date": 1653690075,
+      "dateIso": "2022-05-27T22:21:15Z",
+      "content": {
+        "duration": 2653,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E07 - An ihrem größten Tag.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21289,
+          "size": 2013888681,
+          "remoteId": "BAACAgIAAx0CZ0x15QADImkpssOJvArP75L7AnFI2Y1NYkI-AAI9IAACXr2JSEn1aZy6t4CzOAQ",
+          "uniqueId": "AgADPSAAAl69iUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21288,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMiaSmyw4m8Cs_vkvsCcUjZjU1iQj4AAj0gAAJevYlISfVpnLq3gLMBAAdtAAM4BA",
+            "uniqueId": "AQADPSAAAl69iUhy"
+          }
+        },
+        "caption": "Shining Girls - S01 E07 - An ihrem größten Tag"
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001733064165,
+      "date": 1653155157,
+      "dateIso": "2022-05-21T17:45:57Z",
+      "content": {
+        "duration": 2789,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E06 - Das leuchtende Mädchen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21291,
+          "size": 2017428101,
+          "remoteId": "BAACAgIAAx0CZ0x15QADIWkpssM8GoJxdO9ciMJZroB_WTOFAAIiGgAC4JRISJKllERD43BpOAQ",
+          "uniqueId": "AgADIhoAAuCUSEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21290,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMhaSmywzwagnF071yIwlmugH9ZM4UAAiIaAALglEhIkqWUREPjcGkBAAdtAAM4BA",
+            "uniqueId": "AQADIhoAAuCUSEhy"
+          }
+        },
+        "caption": "Shining Girls - S01 E06 - Das leuchtende Mädchen"
+      }
+    },
+    {
+      "id": 20971520,
+      "chatId": -1001733064165,
+      "date": 1652508213,
+      "dateIso": "2022-05-14T06:03:33Z",
+      "content": {
+        "duration": 2781,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E05 - Déja Vu.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21293,
+          "size": 2009446447,
+          "remoteId": "BAACAgIAAx0CZ0x15QADFGkpssOwqTAqHI5gWjS-oZDaS04TAAJYIAACHiD4Sx6AEVCHi2i_OAQ",
+          "uniqueId": "AgADWCAAAh4g-Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21292,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMUaSmyw7CpMCocjmBaNL6hkNpLThMAAlggAAIeIPhLHoARUIeLaL8BAAdtAAM4BA",
+            "uniqueId": "AQADWCAAAh4g-Ety"
+          }
+        },
+        "caption": "Shining Girls - S01 E05 - Déja Vu"
+      }
+    },
+    {
+      "id": 19922944,
+      "chatId": -1001733064165,
+      "date": 1652086333,
+      "dateIso": "2022-05-09T08:52:13Z",
+      "content": {
+        "duration": 2513,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E04 - Anrufe aus der Zukunft.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21295,
+          "size": 2004358128,
+          "remoteId": "BAACAgIAAx0CZ0x15QADE2kpssOcV3gSdGwOo6WUWH2XKJ0KAAJwGAACWejAS3-j0wG-_3FFOAQ",
+          "uniqueId": "AgADcBgAAlnowEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21294,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMTaSmyw5xXeBJ0bA6jpZRYfZconQoAAnAYAAJZ6MBLf6PTAb7_cUUBAAdtAAM4BA",
+            "uniqueId": "AQADcBgAAlnowEty"
+          }
+        },
+        "caption": "Shining Girls - S01 E04 - Anrufe aus der Zukunft"
+      }
+    },
+    {
+      "id": 18874368,
+      "chatId": -1001733064165,
+      "date": 1651262967,
+      "dateIso": "2022-04-29T20:09:27Z",
+      "content": {
+        "duration": 3581,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E03 - Episode 3.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21297,
+          "size": 2041217775,
+          "remoteId": "BAACAgIAAx0CZ0x15QADEmkpssP2soAbNBBVO-myXZuHyVRFAALjGQACA9lgSyB8HfPHIsTfOAQ",
+          "uniqueId": "AgAD4xkAAgPZYEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21296,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMSaSmyw_aygBs0EFU76bJdm4fJVEUAAuMZAAID2WBLIHwd88cixN8BAAdtAAM4BA",
+            "uniqueId": "AQAD4xkAAgPZYEty"
+          }
+        },
+        "caption": "Shining Girls - S01 E03 - Viele Opfer"
+      }
+    },
+    {
+      "id": 17825792,
+      "chatId": -1001733064165,
+      "date": 1651262912,
+      "dateIso": "2022-04-29T20:08:32Z",
+      "content": {
+        "duration": 2807,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E02 - Episode 2.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21299,
+          "size": 2013002826,
+          "remoteId": "BAACAgIAAx0CZ0x15QADEWkpssM-dtZXu0XTxEj9EBvmP9N5AALiGQACA9lgS-veUhM6_jnCOAQ",
+          "uniqueId": "AgAD4hkAAgPZYEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21298,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMRaSmywz521le7RdPESP0QG-Y_03kAAuIZAAID2WBL695SEzr-OcIBAAdtAAM4BA",
+            "uniqueId": "AQAD4hkAAgPZYEty"
+          }
+        },
+        "caption": "Shining Girls - S01 E02 - Eine Frage des Vertrauens"
+      }
+    },
+    {
+      "id": 16777216,
+      "chatId": -1001733064165,
+      "date": 1651262617,
+      "dateIso": "2022-04-29T20:03:37Z",
+      "content": {
+        "duration": 3281,
+        "width": 1918,
+        "height": 954,
+        "fileName": "Shining Girls - S01 E01 - Episode 1.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21301,
+          "size": 2021645368,
+          "remoteId": "BAACAgIAAx0CZ0x15QADEGkpssNwGxwf1iSBloseP5-mljtwAALVGQACA9lgS53PebRntc5SOAQ",
+          "uniqueId": "AgAD1RkAAgPZYEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 159,
+          "file": {
+            "id": 21300,
+            "size": 5532,
+            "remoteId": "AAMCAgADHQJnTHXlAAMQaSmyw3AbHB_WJIGWix4_n6aWO3AAAtUZAAID2WBLnc95tGe1zlIBAAdtAAM4BA",
+            "uniqueId": "AQAD1RkAAgPZYEty"
+          }
+        },
+        "caption": "Shining Girls - S01 E01 - Eine besondere Frau"
+      }
+    },
+    {
+      "id": 4194304,
+      "chatId": -1001733064165,
+      "date": 1651237934,
+      "dateIso": "2022-04-29T13:12:14Z",
+      "text": "Shining Girls\nUSA 2022–\nDrama\nThriller\nbisher 8 Folgen in 1 Staffel\nDeutsche Online-Premiere\n29.04.2022 \nApple TV+\nOriginalsprache Englisch\n\nSerien-Adaption der Buchvorlage: Chicago zur Zeit der Großen Depression. Harper Curtis ist kaltblütig, hochgefährlich, von Wahnvorstellungen getrieben und lebt auf der Straße. Seitdem er die hübsche Tänzerin Jeanette sah, träumt er von seinen „Shining Girls“ und will nur eines: ihr Licht für immer auslöschen. Durch einen Zufall findet er ein Portal, mit dem er durch die Zeit reisen kann – um zu töten. Niemand scheint ihn stoppen zu können, da die Spuren, die er am Tatort hinterlässt, nicht gedeutet werden können.\n\nDoch dann überlebt eines von Harpers Opfern. Elisabeth Moss verkörpert eine Reporterin aus Chicago, die den brutalen Angriff überlebt. Sie setzt alles daran, ihren Angreifer zu jagen und fängt an, die verwirrenden Puzzleteile zusammenzusetzen. Es beginnt eine Killer-Jagd durch die Zeit. ",
+      "genres": []
+    },
+    {
+      "id": 3145728,
+      "chatId": -1001733064165,
+      "date": 1651237837,
+      "dateIso": "2022-04-29T13:10:37Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1280,
+            "height": 720,
+            "file": {
+              "id": 21304,
+              "size": 62135,
+              "remoteId": "AgACAgIAAx0CZ0x15QADA2kpssMI08jbUr8ryRtcy2zpnoP2AAJgvTEbWJNgS7bYmQd5gC0FAQADAgADeQADOAQ",
+              "uniqueId": "AQADYL0xG1iTYEt-"
+            }
+          },
+          {
+            "width": 800,
+            "height": 450,
+            "file": {
+              "id": 21303,
+              "size": 40041,
+              "remoteId": "AgACAgIAAx0CZ0x15QADA2kpssMI08jbUr8ryRtcy2zpnoP2AAJgvTEbWJNgS7bYmQd5gC0FAQADAgADeAADOAQ",
+              "uniqueId": "AQADYL0xG1iTYEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 180,
+            "file": {
+              "id": 21302,
+              "size": 10839,
+              "remoteId": "AgACAgIAAx0CZ0x15QADA2kpssMI08jbUr8ryRtcy2zpnoP2AAJgvTEbWJNgS7bYmQd5gC0FAQADAgADbQADOAQ",
+              "uniqueId": "AQADYL0xG1iTYEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001733064165
+      },
+      "chatId": -1001733064165,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1651237814,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Shining Girls FHD"
+      }
+    }
+  ]
+}

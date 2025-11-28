@@ -1,0 +1,1224 @@
+{
+  "chatId": -1001497382024,
+  "title": "Tabaluga (Neuauflage)",
+  "exportedAt": "2025-11-28T14:46:13.057333347Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 66060288,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 65011712,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193051,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 63963136,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595265591,
+      "editDate": 1595265610,
+      "interactionInfo": {
+        "viewCount": 250,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Folge 15.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16364,
+            "size": 38818444,
+            "expectedSize": 38818444,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWUA8iAADPWkpsoVdtFF0sKQbDVXvI8tXJGYIAAKnBQACYoNBUH_MGe3kFgF0OAQ",
+              "uniqueId": "AgADpwUAAmKDQVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 38818444
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga Folge 15\nNachtrag zu https://t.me/c/1497382024/32",
+          "entities": [
+            {
+              "offset": 30,
+              "length": 28,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 61865984,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1595189835,
+      "editDate": 1595189987,
+      "interactionInfo": {
+        "viewCount": 251,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Folge 07.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 16365,
+            "size": 37268721,
+            "expectedSize": 37268721,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgQAAx0CWUA8iAADO2kpsoWUjQhrrfUNNKR_qEU99g4aAAKfBQACYoNBUI3SlNG2EnIEOAQ",
+              "uniqueId": "AgADnwUAAmKDQVA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 37268721
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga Folge 07\nNachtrag zu https://t.me/c/1497382024/17",
+          "entities": [
+            {
+              "offset": 30,
+              "length": 28,
+              "type": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 60817408,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130976,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 275,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Tabaluga und Leo - Der Weihnachtsfilm.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16366,
+            "size": 179080079,
+            "expectedSize": 179080079,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADOmkpsoXVl6c7hl-zefw4llaaV9NWAAJTBwAC_-wwS_Cu5Qc_tFUAATgE",
+              "uniqueId": "AgADUwcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 179080079
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Der Weihnachtsfilm",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001497382024,
+      "date": 1592130764,
+      "dateIso": "2020-06-14T10:32:44Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16368,
+              "size": 104547,
+              "remoteId": "AgACAgIAAx0CWUA8iAADOWkpsoXc2CZ5UHsB8Lg6uCEWKzfDAALLrTEb_-wwS_RkfX0_4XayAQADAgADeAADOAQ",
+              "uniqueId": "AQADy60xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16367,
+              "size": 33220,
+              "remoteId": "AgACAgIAAx0CWUA8iAADOWkpsoXc2CZ5UHsB8Lg6uCEWKzfDAALLrTEb_-wwS_RkfX0_4XayAQADAgADbQADOAQ",
+              "uniqueId": "AQADy60xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 58720256,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130764,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 165,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Tabaluga - Der Film.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16369,
+            "size": 188089952,
+            "expectedSize": 188089952,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADOGkpsoWKcfRtdrS-4XdKYIAdcwABCwACUgcAAv_sMEsdNevGpKhoajgE",
+              "uniqueId": "AgADUgcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 188089952
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Der Film",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001497382024,
+      "date": 1592130591,
+      "dateIso": "2020-06-14T10:29:51Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16371,
+              "size": 125229,
+              "remoteId": "AgACAgIAAx0CWUA8iAADN2kpsoVnDzttMvIbhJR3ewGA49OdAALKrTEb_-wwS2LtnKKoJM-dAQADAgADeAADOAQ",
+              "uniqueId": "AQADyq0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16370,
+              "size": 36590,
+              "remoteId": "AgACAgIAAx0CWUA8iAADN2kpsoVnDzttMvIbhJR3ewGA49OdAALKrTEb_-wwS2LtnKKoJM-dAQADAgADbQADOAQ",
+              "uniqueId": "AQADyq0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 56623104,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130590,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 140,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "26 - Der verhängnisvolle Sandsturm - Kopf oder Zahl.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16372,
+            "size": 138698131,
+            "expectedSize": 138698131,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADNmkpsoXsoOg_r4xMl5G1maZjH28WAAJRBwAC_-wwS89yqQ4BlhBuOAQ",
+              "uniqueId": "AgADUQcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 138698131
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge 26",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001497382024,
+      "date": 1592130467,
+      "dateIso": "2020-06-14T10:27:47Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16374,
+              "size": 114308,
+              "remoteId": "AgACAgIAAx0CWUA8iAADNWkpsoU3XFiYikZD5hqkA_GY25SCAALIrTEb_-wwS1GcHyrS9WfIAQADAgADeAADOAQ",
+              "uniqueId": "AQADyK0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16373,
+              "size": 34743,
+              "remoteId": "AgACAgIAAx0CWUA8iAADNWkpsoU3XFiYikZD5hqkA_GY25SCAALIrTEb_-wwS1GcHyrS9WfIAQADAgADbQADOAQ",
+              "uniqueId": "AQADyK0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 54525952,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130467,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 119,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "25_Das_Rätsel_um_die_Kristallkugel_Prüfung_mit_Hindernissen.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16375,
+            "size": 138847684,
+            "expectedSize": 138847684,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADNGkpsoUrqpDkHdYcDSQUSzgLNx_2AAJLBwAC_-wwS2or-tpxvWEPOAQ",
+              "uniqueId": "AgADSwcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 138847684
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge  25",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 53477376,
+      "chatId": -1001497382024,
+      "date": 1592130353,
+      "dateIso": "2020-06-14T10:25:53Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16377,
+              "size": 130916,
+              "remoteId": "AgACAgIAAx0CWUA8iAADM2kpsoVOsGDy8ml0YNtjhxTh3rXvAALHrTEb_-wwS2ZOVi47UlhXAQADAgADeAADOAQ",
+              "uniqueId": "AQADx60xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16376,
+              "size": 36994,
+              "remoteId": "AgACAgIAAx0CWUA8iAADM2kpsoVOsGDy8ml0YNtjhxTh3rXvAALHrTEb_-wwS2ZOVi47UlhXAQADAgADbQADOAQ",
+              "uniqueId": "AQADx60xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 52428800,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130352,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 111,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "24 - König der Lüfte - Der Bulle und die Sonnenblumen.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16378,
+            "size": 141404465,
+            "expectedSize": 141404465,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADMmkpsoVveynBEHCovVkLvcQLWV65AAJKBwAC_-wwS-j0rUhty7qFOAQ",
+              "uniqueId": "AgADSgcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 141404465
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge 24",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 51380224,
+      "chatId": -1001497382024,
+      "date": 1592130227,
+      "dateIso": "2020-06-14T10:23:47Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16380,
+              "size": 132361,
+              "remoteId": "AgACAgIAAx0CWUA8iAADMWkpsoXA7a8i_yDnqIDzLopNV7HMAALGrTEb_-wwSyVxdVCseMQ5AQADAgADeAADOAQ",
+              "uniqueId": "AQADxq0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16379,
+              "size": 39439,
+              "remoteId": "AgACAgIAAx0CWUA8iAADMWkpsoXA7a8i_yDnqIDzLopNV7HMAALGrTEb_-wwSyVxdVCseMQ5AQADAgADbQADOAQ",
+              "uniqueId": "AQADxq0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 50331648,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130226,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 100,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "23 - Die Entführung - Schlaf gut Humsin.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16381,
+            "size": 136428002,
+            "expectedSize": 136428002,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADMGkpsoWv3hcnlfZ9qYptFMveF5XsAAJJBwAC_-wwS4ZmsWzEAnFcOAQ",
+              "uniqueId": "AgADSQcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 136428002
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge  23",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 49283072,
+      "chatId": -1001497382024,
+      "date": 1592130118,
+      "dateIso": "2020-06-14T10:21:58Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16383,
+              "size": 133048,
+              "remoteId": "AgACAgIAAx0CWUA8iAADL2kpsoUj05ELiyOrI-WXWiSR8u_SAALFrTEb_-wwS2Boq5xbjU-sAQADAgADeAADOAQ",
+              "uniqueId": "AQADxa0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16382,
+              "size": 37491,
+              "remoteId": "AgACAgIAAx0CWUA8iAADL2kpsoUj05ELiyOrI-WXWiSR8u_SAALFrTEb_-wwS2Boq5xbjU-sAQADAgADbQADOAQ",
+              "uniqueId": "AQADxa0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 48234496,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130117,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 91,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "22 - Spiel für den Frieden - Morris, der Zauberer.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16384,
+            "size": 134348000,
+            "expectedSize": 134348000,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADLmkpsoXdr4jiJGaA899zomii4AHvAAJIBwAC_-wwS-rB0PbcB62POAQ",
+              "uniqueId": "AgADSAcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 134348000
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge  22",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 47185920,
+      "chatId": -1001497382024,
+      "date": 1592130016,
+      "dateIso": "2020-06-14T10:20:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16386,
+              "size": 153542,
+              "remoteId": "AgACAgIAAx0CWUA8iAADLWkpsoVUaZx0PCtpwUUqq2wHpPmiAALErTEb_-wwS2R8IJ1ha36UAQADAgADeAADOAQ",
+              "uniqueId": "AQADxK0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16385,
+              "size": 42359,
+              "remoteId": "AgACAgIAAx0CWUA8iAADLWkpsoVUaZx0PCtpwUUqq2wHpPmiAALErTEb_-wwS2R8IJ1ha36UAQADAgADbQADOAQ",
+              "uniqueId": "AQADxK0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 46137344,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592130015,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 92,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "21 - Das Schneemonster - Wer ist wer-.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16387,
+            "size": 138741850,
+            "expectedSize": 138741850,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADLGkpsoUK6XJPcVJ7RpUAAXXMSTBZ6QACRwcAAv_sMEvY9BTAdlaATjgE",
+              "uniqueId": "AgADRwcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 138741850
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge  21",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 45088768,
+      "chatId": -1001497382024,
+      "date": 1592129896,
+      "dateIso": "2020-06-14T10:18:16Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16389,
+              "size": 114004,
+              "remoteId": "AgACAgIAAx0CWUA8iAADK2kpsoUHGjYopOkZNjv8lKtG-gWJAALDrTEb_-wwSz_vorvg8vfBAQADAgADeAADOAQ",
+              "uniqueId": "AQADw60xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16388,
+              "size": 33889,
+              "remoteId": "AgACAgIAAx0CWUA8iAADK2kpsoUHGjYopOkZNjv8lKtG-gWJAALDrTEb_-wwSz_vorvg8vfBAQADAgADbQADOAQ",
+              "uniqueId": "AQADw60xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 44040192,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592129810,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 89,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "20 - Der ersehnte Retter - Mein Baby!.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16390,
+            "size": 129900730,
+            "expectedSize": 129900730,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADKmkpsoWa-OEG1sfazkLl5MP_AjujAAJGBwAC_-wwS0iXYIoeCscJOAQ",
+              "uniqueId": "AgADRgcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 129900730
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge 20",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1001497382024,
+      "date": 1592129707,
+      "dateIso": "2020-06-14T10:15:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16392,
+              "size": 130404,
+              "remoteId": "AgACAgIAAx0CWUA8iAADKWkpsoXBgAdWt4LN3TLYDO5y0c2mAALBrTEb_-wwS6o6hSuIEzbJAQADAgADeAADOAQ",
+              "uniqueId": "AQADwa0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16391,
+              "size": 38434,
+              "remoteId": "AgACAgIAAx0CWUA8iAADKWkpsoXBgAdWt4LN3TLYDO5y0c2mAALBrTEb_-wwS6o6hSuIEzbJAQADAgADbQADOAQ",
+              "uniqueId": "AQADwa0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 41943040,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592129706,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 87,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "19 - Seltsame Verwandlung - Sandflöhe.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16393,
+            "size": 134044773,
+            "expectedSize": 134044773,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADKGkpsoXSLC28--Y5N4aGNVGorDSjAAJEBwAC_-wwS0qx90BbgR2pOAQ",
+              "uniqueId": "AgADRAcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 134044773
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge  19",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 40894464,
+      "chatId": -1001497382024,
+      "date": 1592129615,
+      "dateIso": "2020-06-14T10:13:35Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 16395,
+              "size": 135878,
+              "remoteId": "AgACAgIAAx0CWUA8iAADJ2kpsoVjj2XcRAQfKs5dhExfrGp7AALArTEb_-wwSz0b_qGAbzd2AQADAgADeAADOAQ",
+              "uniqueId": "AQADwK0xG__sMEt9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 16394,
+              "size": 38753,
+              "remoteId": "AgACAgIAAx0CWUA8iAADJ2kpsoVjj2XcRAQfKs5dhExfrGp7AALArTEb_-wwSz0b_qGAbzd2AQADAgADbQADOAQ",
+              "uniqueId": "AQADwK0xG__sMEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 39845888,
+      "senderId": {
+        "chatId": -1001497382024
+      },
+      "chatId": -1001497382024,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1592129615,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 87,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "18 - Grünland unter Wasser - Der Zauberlehrling.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 16396,
+            "size": 136916498,
+            "expectedSize": 136916498,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWUA8iAADJmkpsoX36SWyy5mKp40Imcb_Wm9MAAJDBwAC_-wwS7Xo1kQOAgocOAQ",
+              "uniqueId": "AgADQwcAAv_sMEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 136916498
+            }
+          }
+        },
+        "caption": {
+          "text": "Tabaluga   Folge 18",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

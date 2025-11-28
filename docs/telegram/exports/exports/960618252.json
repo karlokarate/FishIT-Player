@@ -1,0 +1,24 @@
+{
+  "chatId": 960618252,
+  "title": "Sandra Gärtner",
+  "exportedAt": "2025-11-28T14:47:41.067855273Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 38667288576,
+      "chatId": 960618252,
+      "date": 1670823985,
+      "dateIso": "2022-12-12T05:46:25Z",
+      "text": "habt ihr Platz heute?",
+      "genres": []
+    },
+    {
+      "id": 38666240000,
+      "chatId": 960618252,
+      "date": 1670823985,
+      "dateIso": "2022-12-12T05:46:25Z",
+      "text": "Guten Morgen! ich habe Zuhause 4 kranke Kinder plus 1 kranke Frau.",
+      "genres": []
+    }
+  ]
+}

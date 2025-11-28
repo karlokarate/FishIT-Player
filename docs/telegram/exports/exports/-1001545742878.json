@@ -1,0 +1,614 @@
+{
+  "chatId": -1001545742878,
+  "title": "Der Frühe Vogel",
+  "exportedAt": "2025-11-28T14:45:28.407564065Z",
+  "count": 20,
+  "messages": [
+    {
+      "id": 1089470464,
+      "chatId": -1001545742878,
+      "date": 1764050709,
+      "dateIso": "2025-11-25T06:05:09Z",
+      "content": {
+        "duration": 6743,
+        "width": 1920,
+        "height": 804,
+        "fileName": "Tron Ares (2025).mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 4867,
+          "size": 1995555540,
+          "remoteId": "BAACAgIAAx0CXCIqHgACBA9pKbJXUEUr3Ohu-xTb0bTdplPF2gACbYsAAmUEKEkJ1C4SzlzGzjgE",
+          "uniqueId": "AgADbYsAAmUEKEk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 4866,
+            "size": 744,
+            "remoteId": "AAMCAgADHQJcIioeAAIED2kpsldQRSvc6G77FNvRtN2mU8XaAAJtiwACZQQoSQnULhLOXMbOAQAHbQADOAQ",
+            "uniqueId": "AQADbYsAAmUEKEly"
+          }
+        },
+        "caption": "Tron Ares (2025)\n\nTS - MD"
+      }
+    },
+    {
+      "id": 1088421888,
+      "chatId": -1001545742878,
+      "date": 1764050708,
+      "dateIso": "2025-11-25T06:05:08Z",
+      "text": "Titel: Tron: Ares\nOriginaltitel: TRON: Ares\nErscheinungsjahr: 2025\nLänge: 118 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 12\nFilmreihe: Tron Filmreihe\nRegie: Joachim Rønning\nTMDbRating: 6.3 bei 413 Stimmen\nGenres: Science Fiction, Abenteuer, Action",
+      "title": "Tron: Ares",
+      "year": 2025,
+      "lengthMinutes": 118,
+      "fsk": 12,
+      "collection": "Tron Filmreihe",
+      "originalTitle": "TRON: Ares",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Joachim Rønning",
+      "genres": [
+        "Science Fiction",
+        "Abenteuer",
+        "Action"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/533533-TRON:-Ares?language\u003dde-DE"
+    },
+    {
+      "id": 1087373312,
+      "chatId": -1001545742878,
+      "date": 1764050708,
+      "dateIso": "2025-11-25T06:05:08Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 12624,
+              "size": 736692,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBA1pKbJXbzWoTcaUOAnZEI8y-_zFDAACfQxrG57ZLVHNjFn-luzMfgEAAwIAA3cAAzgE",
+              "uniqueId": "AQADfQxrG57ZLVF8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 12623,
+              "size": 238399,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBA1pKbJXbzWoTcaUOAnZEI8y-_zFDAACfQxrG57ZLVHNjFn-luzMfgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADfQxrG57ZLVF-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 12622,
+              "size": 108692,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBA1pKbJXbzWoTcaUOAnZEI8y-_zFDAACfQxrG57ZLVHNjFn-luzMfgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADfQxrG57ZLVF9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 12621,
+              "size": 23315,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBA1pKbJXbzWoTcaUOAnZEI8y-_zFDAACfQxrG57ZLVHNjFn-luzMfgEAAwIAA20AAzgE",
+              "uniqueId": "AQADfQxrG57ZLVFy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1086324736,
+      "chatId": -1001545742878,
+      "date": 1763313890,
+      "dateIso": "2025-11-16T17:24:50Z",
+      "content": {
+        "duration": 5879,
+        "width": 2206,
+        "height": 1080,
+        "fileName": "Predator BadLand - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12626,
+          "size": 1703803842,
+          "remoteId": "BAACAgIAAx0CXCIqHgACBAxpKbJXGl6brujGJrI711Sp9YpOhgACSZIAAkRD0UgatyKhYNDq4jgE",
+          "uniqueId": "AgADSZIAAkRD0Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 157,
+          "file": {
+            "id": 12625,
+            "size": 974,
+            "remoteId": "AAMCAgADHQJcIioeAAIEDGkpslcaXpuu6MYmsjvXVKn1ik6GAAJJkgACREPRSBq3IqFg0OriAQAHbQADOAQ",
+            "uniqueId": "AQADSZIAAkRD0Uhy"
+          }
+        },
+        "caption": "Predator: Badlands - 2025\n\ncam ld oder sowas"
+      }
+    },
+    {
+      "id": 1085276160,
+      "chatId": -1001545742878,
+      "date": 1763313890,
+      "dateIso": "2025-11-16T17:24:50Z",
+      "text": "Titel: Predator: Badlands\nErscheinungsjahr: 2025\nLänge: 107 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nFilmreihe: Predator Filmreihe\nRegie: Dan Trachtenberg\nTMDbRating: 7.318 bei 311 Stimmen\nGenres: Action, Science Fiction, Abenteuer",
+      "title": "Predator: Badlands",
+      "year": 2025,
+      "lengthMinutes": 107,
+      "fsk": 16,
+      "collection": "Predator Filmreihe",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Dan Trachtenberg",
+      "genres": [
+        "Action",
+        "Science Fiction",
+        "Abenteuer"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1242898-Predator:-Badlands?language\u003dde-DE"
+    },
+    {
+      "id": 1084227584,
+      "chatId": -1001545742878,
+      "date": 1763313890,
+      "dateIso": "2025-11-16T17:24:50Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 595,
+            "height": 842,
+            "file": {
+              "id": 12629,
+              "size": 131249,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAppKbJXex7Bwy31Rzzmpl__QKrZ2QACnQtrG6nalVBJ99T2Mu8GoQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADnQtrG6nalVB-"
+            }
+          },
+          {
+            "width": 565,
+            "height": 800,
+            "file": {
+              "id": 12628,
+              "size": 133863,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAppKbJXex7Bwy31Rzzmpl__QKrZ2QACnQtrG6nalVBJ99T2Mu8GoQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADnQtrG6nalVB9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 12627,
+              "size": 26983,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAppKbJXex7Bwy31Rzzmpl__QKrZ2QACnQtrG6nalVBJ99T2Mu8GoQEAAwIAA20AAzgE",
+              "uniqueId": "AQADnQtrG6nalVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1083179008,
+      "chatId": -1001545742878,
+      "date": 1762074816,
+      "dateIso": "2025-11-02T09:13:36Z",
+      "content": {
+        "duration": 5793,
+        "width": 1918,
+        "height": 802,
+        "fileName": "Gabby s Dollhouse - Der Film - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12631,
+          "size": 1903366975,
+          "remoteId": "BAACAgIAAx0CXCIqHgACBAlpKbJXDNtB5jnugvQZIUYLSR77AgACC48AAqVDMEhs998_wZjhQTgE",
+          "uniqueId": "AgADC48AAqVDMEg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 134,
+          "file": {
+            "id": 12630,
+            "size": 6807,
+            "remoteId": "AAMCAgADHQJcIioeAAIECWkpslcM20HmOe6C9BkhRgtJHvsCAAILjwACpUMwSGz33z_BmOFBAQAHbQADOAQ",
+            "uniqueId": "AQADC48AAqVDMEhy"
+          }
+        },
+        "caption": "Gabby\u0027s Dollhouse - Der Film - 2025\n\nTS/MD"
+      }
+    },
+    {
+      "id": 1082130432,
+      "chatId": -1001545742878,
+      "date": 1762074809,
+      "dateIso": "2025-11-02T09:13:29Z",
+      "text": "Titel: Gabby\u0027s Dollhouse: Der Film\nOriginaltitel: Gabby\u0027s Dollhouse: The Movie\nErscheinungsjahr: 2025\nLänge: 98 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 0\nRegie: Ryan Crego\nTMDbRating: 6.7 bei 33 Stimmen\nGenres: Familie, Komödie, Abenteuer, Animation",
+      "title": "Gabby\u0027s Dollhouse: Der Film",
+      "year": 2025,
+      "lengthMinutes": 98,
+      "fsk": 0,
+      "originalTitle": "Gabby\u0027s Dollhouse: The Movie",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Ryan Crego",
+      "genres": [
+        "Familie",
+        "Komödie",
+        "Abenteuer",
+        "Animation"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1280282-Gabby\u0027s-Dollhouse:-The-Movie?language\u003dde-DE"
+    },
+    {
+      "id": 1081081856,
+      "chatId": -1001545742878,
+      "date": 1762074809,
+      "dateIso": "2025-11-02T09:13:29Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 750,
+            "file": {
+              "id": 12633,
+              "size": 115896,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAdpKbJX3wifeNhjYRTFO-DOmaWW9AACswtrG04-PVDCfin2ypwIYAEAAwIAA3gAAzgE",
+              "uniqueId": "AQADswtrG04-PVB9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 12632,
+              "size": 30266,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAdpKbJX3wifeNhjYRTFO-DOmaWW9AACswtrG04-PVDCfin2ypwIYAEAAwIAA20AAzgE",
+              "uniqueId": "AQADswtrG04-PVBy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1080033280,
+      "chatId": -1001545742878,
+      "date": 1761487214,
+      "dateIso": "2025-10-26T14:00:14Z",
+      "content": {
+        "duration": 6561,
+        "width": 1560,
+        "height": 720,
+        "fileName": "Black Phone 2 - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12635,
+          "size": 1031750660,
+          "remoteId": "BAACAgIAAx0CXCIqHgACBAZpKbJXHeOjnihuSOWkvWgXx97rjgACeIQAAjFV8UuBccVvEKX6TjgE",
+          "uniqueId": "AgADeIQAAjFV8Us"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 148,
+          "file": {
+            "id": 12634,
+            "size": 684,
+            "remoteId": "AAMCAgADHQJcIioeAAIEBmkpslcd46OeKG5I5aS9aBfH3uuOAAJ4hAACMVXxS4FxxW8QpfpOAQAHbQADOAQ",
+            "uniqueId": "AQADeIQAAjFV8Uty"
+          }
+        },
+        "caption": "Black Phone 2 - 2025\n\nCam\nMD"
+      }
+    },
+    {
+      "id": 1078984704,
+      "chatId": -1001545742878,
+      "date": 1761487207,
+      "dateIso": "2025-10-26T14:00:07Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 905,
+            "height": 1280,
+            "file": {
+              "id": 12638,
+              "size": 183412,
+              "remoteId": "AgACAgIAAx0CXCIqHgACBAVpKbJX7QiXHJdxVeqXKve2zQIRKwACZvUxG1C18EsGoKjtJYR2jgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADZvUxG1C18Et-"
+            }
+          },
+          {
+            "width": 566,
+            "height": 800,
+            "file": {
+              "id": 12637,
+              "size": 88544,
+              "remoteId": "AgACAgIAAx0CXCIqHgACBAVpKbJX7QiXHJdxVeqXKve2zQIRKwACZvUxG1C18EsGoKjtJYR2jgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADZvUxG1C18Et9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 12636,
+              "size": 19333,
+              "remoteId": "AgACAgIAAx0CXCIqHgACBAVpKbJX7QiXHJdxVeqXKve2zQIRKwACZvUxG1C18EsGoKjtJYR2jgEAAwIAA20AAzgE",
+              "uniqueId": "AQADZvUxG1C18Ety"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1075838976,
+      "chatId": -1001545742878,
+      "date": 1761420359,
+      "dateIso": "2025-10-25T19:25:59Z",
+      "content": {
+        "duration": 9210,
+        "width": 1920,
+        "height": 1040,
+        "fileName": "Demon Slayer - Kimetsu no Yaiba Infinity Castle - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12640,
+          "size": 2085234364,
+          "remoteId": "BAACAgIAAx0CXCIqHgACBAJpKbJXBFTniNLsjy0KElxBB5vrHgACRpcAAnLU6EtZDhQwxmeEJzgE",
+          "uniqueId": "AgADRpcAAnLU6Es"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 173,
+          "file": {
+            "id": 12639,
+            "size": 10615,
+            "remoteId": "AAMCAgADHQJcIioeAAIEAmkpslcEVOeI0uyPLQoSXEEHm-seAAJGlwACctToS1kOFDDGZ4QnAQAHbQADOAQ",
+            "uniqueId": "AQADRpcAAnLU6Ety"
+          }
+        },
+        "caption": "Demon Slayer - Kimetsu no Yaiba Infinity Castle - 2025\n\nWebRIP\nKackton, MD vermutlich"
+      }
+    },
+    {
+      "id": 1074790400,
+      "chatId": -1001545742878,
+      "date": 1761420359,
+      "dateIso": "2025-10-25T19:25:59Z",
+      "text": "Titel: Demon Slayer: Kimetsu no Yaiba Infinity Castle\nOriginaltitel: 劇場版「鬼滅の刃」無限城編 第一章 猗窩座再来\nErscheinungsjahr: 2025\nLänge: 155 Minuten\nProduktionsland: Japan\nFSK: 16\nFilmreihe: Demon Slayer Filmreihe\nRegie: 外崎春雄\nTMDbRating: 7.794 bei 480 Stimmen\nGenres: Animation, Action, Fantasy, Thriller",
+      "title": "Demon Slayer: Kimetsu no Yaiba Infinity Castle",
+      "year": 2025,
+      "lengthMinutes": 155,
+      "fsk": 16,
+      "collection": "Demon Slayer Filmreihe",
+      "originalTitle": "劇場版「鬼滅の刃」無限城編 第一章 猗窩座再来",
+      "productionCountry": "Japan",
+      "director": "外崎春雄",
+      "genres": [
+        "Animation",
+        "Action",
+        "Fantasy",
+        "Thriller"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/1311031-劇場版「鬼滅の刃」無限城編-第一章-猗窩座再来?language\u003dde-DE"
+    },
+    {
+      "id": 1073741824,
+      "chatId": -1001545742878,
+      "date": 1761420359,
+      "dateIso": "2025-10-25T19:25:59Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 500,
+            "height": 750,
+            "file": {
+              "id": 12642,
+              "size": 134276,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAABaSmyV80jsIzRfY8aFTYb_fVUakgAAkwMaxtLQ-xTJehpHYkCihYBAAMCAAN4AAM4BA",
+              "uniqueId": "AQADTAxrG0tD7FN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 12641,
+              "size": 33584,
+              "remoteId": "AgACAgQAAx0CXCIqHgACBAABaSmyV80jsIzRfY8aFTYb_fVUakgAAkwMaxtLQ-xTJehpHYkCihYBAAMCAANtAAM4BA",
+              "uniqueId": "AQADTAxrG0tD7FNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 1072693248,
+      "chatId": -1001545742878,
+      "date": 1761200079,
+      "dateIso": "2025-10-23T06:14:39Z",
+      "content": {
+        "duration": 6282,
+        "width": 1920,
+        "height": 800,
+        "fileName": "The Long Walk - Todesmarsch - 2025.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12644,
+          "size": 2043691357,
+          "remoteId": "BAACAgIAAx0CXCIqHgACA_9pKbJXjKllCQkmcgABAsyIQOtIwecAApSAAAJM8NFL5ickeGD76cM4BA",
+          "uniqueId": "AgADlIAAAkzw0Us"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 133,
+          "file": {
+            "id": 12643,
+            "size": 4898,
+            "remoteId": "AAMCAgADHQJcIioeAAID_2kpsleMqWUJCSZyAAECzIhA60jB5wAClIAAAkzw0UvmJyR4YPvpwwEAB20AAzgE",
+            "uniqueId": "AQADlIAAAkzw0Uty"
+          }
+        },
+        "caption": "The Long Walk - Todesmarsch - 2025\n\nWebrip\nLD"
+      }
+    },
+    {
+      "id": 1071644672,
+      "chatId": -1001545742878,
+      "date": 1761200079,
+      "dateIso": "2025-10-23T06:14:39Z",
+      "text": "󠄿Titel: The Long Walk - Todesmarsch\nOriginaltitel: The Long Walk\nErscheinungsjahr: 2025\nLänge: 108 Minuten\nProduktionsland: Vereinigte Staaten\nFSK: 16\nRegie: Francis Lawrence\nTMDbRating: 7\nGenres: Thriller, Science Fiction, Horror",
+      "year": 2025,
+      "lengthMinutes": 108,
+      "fsk": 16,
+      "originalTitle": "The Long Walk",
+      "productionCountry": "Vereinigte Staaten",
+      "director": "Francis Lawrence",
+      "tmdbRating": 7.0,
+      "genres": [
+        "Thriller",
+        "Science Fiction",
+        "Horror"
+      ],
+      "tmdbUrl": "https://www.themoviedb.org/movie/604079-The-Long-Walk?language\u003dde-DE"
+    },
+    {
+      "id": 1070596096,
+      "chatId": -1001545742878,
+      "date": 1761200079,
+      "dateIso": "2025-10-23T06:14:39Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 1707,
+            "height": 2560,
+            "file": {
+              "id": 12648,
+              "size": 928214,
+              "remoteId": "AgACAgQAAx0CXCIqHgACA_1pKbJXsNMsxlro6VyOnU5WIDRbQAACIAtrG-mE1FOGJofaxwVMlwEAAwIAA3cAAzgE",
+              "uniqueId": "AQADIAtrG-mE1FN8"
+            }
+          },
+          {
+            "width": 853,
+            "height": 1280,
+            "file": {
+              "id": 12647,
+              "size": 255428,
+              "remoteId": "AgACAgQAAx0CXCIqHgACA_1pKbJXsNMsxlro6VyOnU5WIDRbQAACIAtrG-mE1FOGJofaxwVMlwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADIAtrG-mE1FN-"
+            }
+          },
+          {
+            "width": 533,
+            "height": 800,
+            "file": {
+              "id": 12646,
+              "size": 101486,
+              "remoteId": "AgACAgQAAx0CXCIqHgACA_1pKbJXsNMsxlro6VyOnU5WIDRbQAACIAtrG-mE1FOGJofaxwVMlwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADIAtrG-mE1FN9"
+            }
+          },
+          {
+            "width": 213,
+            "height": 320,
+            "file": {
+              "id": 12645,
+              "size": 20041,
+              "remoteId": "AgACAgQAAx0CXCIqHgACA_1pKbJXsNMsxlro6VyOnU5WIDRbQAACIAtrG-mE1FOGJofaxwVMlwEAAwIAA20AAzgE",
+              "uniqueId": "AQADIAtrG-mE1FNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 74448896,
+      "senderId": {
+        "chatId": -1001545742878
+      },
+      "chatId": -1001545742878,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1652117732,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 73400320
+      }
+    },
+    {
+      "id": 73400320,
+      "chatId": -1001545742878,
+      "date": 1652117726,
+      "dateIso": "2022-05-09T17:35:26Z",
+      "text": "Info Post:\n\nBedeutung der einzelnen Abkürzungen.\n\n- TS: TeleSync (abgefilmt mit Kamera / Handy im Kino)\n- HDTS: Gleiche wie TS jedoch mit einem besseren Gerät (in 1080p / 720p) aufgenommen.\n- MD: MicDubbed (Ton aus dem Kino mit dem Mikrofon der Kamera aufgenommen)\n- LD: LineDubbed (Ton vom Projektor im Kino aufgenommen, meist in Stereo, da per Audio Kabel am Projektor genommen. Oder Ton von einer Pre-Release DVD genommen)\n-WebRip: Quelle aus dem Internet, meist von Streaming Seiten.\n\n_\n\nFilme die es in einer besseren Qualität (mindestens WebRip + LineDubbed) gibt, werden aus dem Kanal gelöscht. \nEs kann auch vorkommen, das Filme öfters hier hochgeladen werden, wenn sich die Qualität verbessert in den Quellen.",
+      "genres": []
+    },
+    {
+      "id": 1048576,
+      "senderId": {
+        "chatId": -1001545742878
+      },
+      "chatId": -1001545742878,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1642262261,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "title": "Der Frühe Vogel"
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "chatId": -1002338809094,
+  "title": "ℕ𝕒𝕚𝕛𝕒 ℕ𝕖𝕥𝕗𝕝𝕚𝕩",
+  "exportedAt": "2025-11-28T14:45:16.669917841Z",
+  "count": 1,
+  "messages": [
+    {
+      "id": 1030750208,
+      "chatId": -1002338809094,
+      "date": 1764335293,
+      "dateIso": "2025-11-28T13:08:13Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 555,
+            "height": 1007,
+            "file": {
+              "id": 4823,
+              "size": 98223,
+              "remoteId": "AgACAgQAAyEFAASLZ2UGAAID12kpsk6Vhm8c6DrcxDQmCc_ZU5qkAALRC2sb4exJUZIGYf5n8vDTAQADAgADeQADOAQ",
+              "uniqueId": "AQAD0QtrG-HsSVF-"
+            }
+          },
+          {
+            "width": 441,
+            "height": 800,
+            "file": {
+              "id": 4822,
+              "size": 66682,
+              "remoteId": "AgACAgQAAyEFAASLZ2UGAAID12kpsk6Vhm8c6DrcxDQmCc_ZU5qkAALRC2sb4exJUZIGYf5n8vDTAQADAgADeAADOAQ",
+              "uniqueId": "AQAD0QtrG-HsSVF9"
+            }
+          },
+          {
+            "width": 176,
+            "height": 320,
+            "file": {
+              "id": 4821,
+              "size": 15500,
+              "remoteId": "AgACAgQAAyEFAASLZ2UGAAID12kpsk6Vhm8c6DrcxDQmCc_ZU5qkAALRC2sb4exJUZIGYf5n8vDTAQADAgADbQADOAQ",
+              "uniqueId": "AQAD0QtrG-HsSVFy"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

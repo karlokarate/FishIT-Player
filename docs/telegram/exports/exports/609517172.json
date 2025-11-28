@@ -1,0 +1,37 @@
+{
+  "chatId": 609517172,
+  "title": "Rose",
+  "exportedAt": "2025-11-28T14:46:24.449289837Z",
+  "count": 2,
+  "messages": [
+    {
+      "id": 45497712640,
+      "chatId": 609517172,
+      "date": 1735734978,
+      "dateIso": "2025-01-01T12:36:18Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 250,
+            "height": 120,
+            "file": {
+              "id": 5130,
+              "size": 9909,
+              "remoteId": "AgACAgQAAxkBAAKpfmkpskDexQhpGyg9r76k2-LhDUxSAAIRxDEbLK-xU3sRBCiW-oG6AQADAgADbQADOAQ",
+              "uniqueId": "AQADEcQxGyyvsVNy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 45496664064,
+      "chatId": 609517172,
+      "date": 1735734978,
+      "dateIso": "2025-01-01T12:36:18Z",
+      "text": "/start",
+      "genres": []
+    }
+  ]
+}

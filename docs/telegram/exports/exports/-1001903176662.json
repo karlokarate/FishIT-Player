@@ -1,0 +1,760 @@
+{
+  "chatId": -1001903176662,
+  "title": "Ted Lasso FULL HD",
+  "exportedAt": "2025-11-28T14:47:21.764965175Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 71303168,
+      "chatId": -1001903176662,
+      "date": 1685964083,
+      "dateIso": "2023-06-05T11:21:23Z",
+      "text": "Original Hochgeladen von Join The Links 😎\nAlle anderen haben nur hierher Verlinkt",
+      "genres": []
+    },
+    {
+      "id": 68157440,
+      "chatId": -1001903176662,
+      "date": 1685964073,
+      "dateIso": "2023-06-05T11:21:13Z",
+      "content": {
+        "duration": 4525,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E12 - Bis dann, macht s gut!.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21996,
+          "size": 2087954196,
+          "remoteId": "BAACAgIAAx0CcXAr1gADQWkpssNlXidHEDQnHJ92VPfL7ZgSAAKeMAACF0rhS5Z1ixj_Xpr1OAQ",
+          "uniqueId": "AgADnjAAAhdK4Us"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 21995,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAANBaSmyw2VeJ0cQNCccn3ZU98vtmBIAAp4wAAIXSuFLlnWLGP9emvUBAAdtAAM4BA",
+            "uniqueId": "AQADnjAAAhdK4Uty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E12 - Bis dann, macht\u0027s gut!"
+      }
+    },
+    {
+      "id": 67108864,
+      "chatId": -1001903176662,
+      "date": 1685964070,
+      "dateIso": "2023-06-05T11:21:10Z",
+      "content": {
+        "duration": 4172,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E11 - Mom City.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 21998,
+          "size": 2087658298,
+          "remoteId": "BAACAgIAAx0CcXAr1gADQGkpssNFz_mnwR8dt1n2kItWxhTeAAJ8MAACF0rhS9Hoc0PkqHUnOAQ",
+          "uniqueId": "AgADfDAAAhdK4Us"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 21997,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAANAaSmyw0XP-afBHx23WfaQi1bGFN4AAnwwAAIXSuFL0ehzQ-SodScBAAdtAAM4BA",
+            "uniqueId": "AQADfDAAAhdK4Uty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E11 - Mom City"
+      }
+    },
+    {
+      "id": 61865984,
+      "chatId": -1001903176662,
+      "date": 1684761102,
+      "dateIso": "2023-05-22T13:11:42Z",
+      "content": {
+        "duration": 3819,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E10 - Spielpause.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22000,
+          "size": 2092784903,
+          "remoteId": "BAACAgIAAx0CcXAr1gADO2kpssOWR50xdMUw3WBLpZ87i0V1AAI0LAACm0pYS1AzOzEn8tq8OAQ",
+          "uniqueId": "AgADNCwAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 21999,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM7aSmyw5ZHnTF0xTDdYEulnzuLRXUAAjQsAAKbSlhLUDM7MSfy2rwBAAdtAAM4BA",
+            "uniqueId": "AQADNCwAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E10 - Spielpause"
+      }
+    },
+    {
+      "id": 60817408,
+      "chatId": -1001903176662,
+      "date": 1684761099,
+      "dateIso": "2023-05-22T13:11:39Z",
+      "content": {
+        "duration": 2646,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E09 - Eine Umkleide voller Narren.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22002,
+          "size": 2070566593,
+          "remoteId": "BAACAgIAAx0CcXAr1gADOmkpssNXQyiE3fGXHhyX8NPu19BFAALkKwACm0pYSxN8G805SE6qOAQ",
+          "uniqueId": "AgAD5CsAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22001,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM6aSmyw1dDKITd8ZceHJfw0-7X0EUAAuQrAAKbSlhLE3wbzTlITqoBAAdtAAM4BA",
+            "uniqueId": "AQAD5CsAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E09 - Eine Umkleide voller Narren"
+      }
+    },
+    {
+      "id": 59768832,
+      "chatId": -1001903176662,
+      "date": 1684761095,
+      "dateIso": "2023-05-22T13:11:35Z",
+      "content": {
+        "duration": 3298,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E08 - Vergiss Paris.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22004,
+          "size": 2085718857,
+          "remoteId": "BAACAgIAAx0CcXAr1gADOWkpssOCqs7jsYeZfTk8QI9OR148AAICLAACm0pYS930aa8nQajkOAQ",
+          "uniqueId": "AgADAiwAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22003,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM5aSmyw4KqzuOxh5l9OTxAj05HXjwAAgIsAAKbSlhL3fRprydBqOQBAAdtAAM4BA",
+            "uniqueId": "AQADAiwAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E08 - Vergiss Paris"
+      }
+    },
+    {
+      "id": 58720256,
+      "chatId": -1001903176662,
+      "date": 1684761092,
+      "dateIso": "2023-05-22T13:11:32Z",
+      "content": {
+        "duration": 3451,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E07 - Schubladen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22006,
+          "size": 2084854394,
+          "remoteId": "BAACAgIAAx0CcXAr1gADOGkpssNXGvnx_wznek_vZHJNhD1NAALxKwACm0pYS_rI5PEg3i-_OAQ",
+          "uniqueId": "AgAD8SsAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22005,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM4aSmyw1ca-fH_DOd6T-9kck2EPU0AAvErAAKbSlhL-sjk8SDeL78BAAdtAAM4BA",
+            "uniqueId": "AQAD8SsAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E07 - Schubladen"
+      }
+    },
+    {
+      "id": 57671680,
+      "chatId": -1001903176662,
+      "date": 1684761088,
+      "dateIso": "2023-05-22T13:11:28Z",
+      "content": {
+        "duration": 3793,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E06 - Sonnenblumen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22008,
+          "size": 2096486673,
+          "remoteId": "BAACAgIAAx0CcXAr1gADN2kpssODcply83aWgyQClByeZQjNAAKcLAACm0pYS7MbKcbg07UvOAQ",
+          "uniqueId": "AgADnCwAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22007,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM3aSmyw4NymXLzdpaDJAKUHJ5lCM0AApwsAAKbSlhLsxspxuDTtS8BAAdtAAM4BA",
+            "uniqueId": "AQADnCwAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E06 - Sonnenblumen"
+      }
+    },
+    {
+      "id": 56623104,
+      "chatId": -1001903176662,
+      "date": 1684761085,
+      "dateIso": "2023-05-22T13:11:25Z",
+      "content": {
+        "duration": 2988,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E05 - Zeichen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22010,
+          "size": 2090686242,
+          "remoteId": "BAACAgIAAx0CcXAr1gADNmkpssNDkMloF0-BFCgCZYv51q-FAAIZLAACm0pYS4y_XXadKMs_OAQ",
+          "uniqueId": "AgADGSwAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22009,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM2aSmyw0OQyWgXT4EUKAJli_nWr4UAAhksAAKbSlhLjL9ddp0oyz8BAAdtAAM4BA",
+            "uniqueId": "AQADGSwAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E05 - Zeichen"
+      }
+    },
+    {
+      "id": 55574528,
+      "chatId": -1001903176662,
+      "date": 1684761082,
+      "dateIso": "2023-05-22T13:11:22Z",
+      "content": {
+        "duration": 2987,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E04 - Das große Spiel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22012,
+          "size": 2085446023,
+          "remoteId": "BAACAgIAAx0CcXAr1gADNWkpssN32UdpVFw2-Mov0AbZj9J3AAL5KwACm0pYS4CnZhSy0TdnOAQ",
+          "uniqueId": "AgAD-SsAAptKWEs"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22011,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAM1aSmyw3fZR2lUXDb4yi_QBtmP0ncAAvkrAAKbSlhLgKdmFLLRN2cBAAdtAAM4BA",
+            "uniqueId": "AQAD-SsAAptKWEty"
+          }
+        },
+        "caption": "Ted Lasso - S03 E04 - Das große Spiel"
+      }
+    },
+    {
+      "id": 50331648,
+      "chatId": -1001903176662,
+      "date": 1680251175,
+      "dateIso": "2023-03-31T08:26:15Z",
+      "content": {
+        "duration": 2820,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E03 - 4-5-1.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22014,
+          "size": 2085271271,
+          "remoteId": "BAACAgIAAx0CcXAr1gADMGkpssPsclNnWDrmom0Vojfph-pjAAKdJwACNtY5SdD-gXdVmnvZOAQ",
+          "uniqueId": "AgADnScAAjbWOUk"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22013,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAMwaSmyw-xyU2dYOuaibRWiN-mH6mMAAp0nAAI21jlJ0P6Bd1Wae9kBAAdtAAM4BA",
+            "uniqueId": "AQADnScAAjbWOUly"
+          }
+        },
+        "caption": "Ted Lasso - S03 E03 - 4-5-1"
+      }
+    },
+    {
+      "id": 46137344,
+      "chatId": -1001903176662,
+      "date": 1679655482,
+      "dateIso": "2023-03-24T10:58:02Z",
+      "content": {
+        "duration": 2831,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E02 - Ich will nicht zu Chelsea.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22016,
+          "size": 2082613303,
+          "remoteId": "BAACAgIAAx0CcXAr1gADLGkpssPUYERrWuyIwUYk0tuo_bLLAALjKgACMqbhSO5t_yNGuhYCOAQ",
+          "uniqueId": "AgAD4yoAAjKm4Ug"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22015,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAMsaSmyw9RgRGta7IjBRiTS26j9sssAAuMqAAIypuFI7m3_I0a6FgIBAAdtAAM4BA",
+            "uniqueId": "AQAD4yoAAjKm4Uhy"
+          }
+        },
+        "caption": "Ted Lasso - S03 E02 - Ich will nicht zu Chelsea"
+      }
+    },
+    {
+      "id": 42991616,
+      "chatId": -1001903176662,
+      "date": 1679030601,
+      "dateIso": "2023-03-17T05:23:21Z",
+      "content": {
+        "duration": 2618,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S03 E01 - Smells Like Mean Spirit.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22018,
+          "size": 2082688619,
+          "remoteId": "BAACAgIAAx0CcXAr1gADKWkpssOXrXqei2gxhyRvEi8-zg10AALFMAACzFaZSLwxGl20X5x5OAQ",
+          "uniqueId": "AgADxTAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22017,
+            "size": 8707,
+            "remoteId": "AAMCAgADHQJxcCvWAAMpaSmyw5etep6LaDGHJG8SLz7ODXQAAsUwAALMVplIvDEaXbRfnHkBAAdtAAM4BA",
+            "uniqueId": "AQADxTAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S03 E01 - Smells Like Mean Spirit"
+      }
+    },
+    {
+      "id": 41943040,
+      "chatId": -1001903176662,
+      "date": 1679030598,
+      "dateIso": "2023-03-17T05:23:18Z",
+      "content": {
+        "duration": 2994,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E12 - Die umgedrehte Erfolgspyramide.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22020,
+          "size": 2093896247,
+          "remoteId": "BAACAgIAAx0CcXAr1gADKGkpssM__ajElq5yKgr4eMM0_2j5AALfMAACzFaZSJZwgbCy0N7DOAQ",
+          "uniqueId": "AgAD3zAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22019,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMoaSmywz_9qMSWrnIqCvh4wzT_aPkAAt8wAALMVplIlnCBsLLQ3sMBAAdtAAM4BA",
+            "uniqueId": "AQAD3zAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E12 - Die umgedrehte Erfolgspyramide"
+      }
+    },
+    {
+      "id": 40894464,
+      "chatId": -1001903176662,
+      "date": 1679030595,
+      "dateIso": "2023-03-17T05:23:15Z",
+      "content": {
+        "duration": 2544,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E11 - Nachtzug nach Royston.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22022,
+          "size": 2079187443,
+          "remoteId": "BAACAgIAAx0CcXAr1gADJ2kpssMwa0Xrj5NBKVvcsCZ41MWoAAK8MAACzFaZSFuORY1DR4yhOAQ",
+          "uniqueId": "AgADvDAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22021,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMnaSmywzBrReuPk0EpW9ywJnjUxagAArwwAALMVplIW45FjUNHjKEBAAdtAAM4BA",
+            "uniqueId": "AQADvDAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E11 - Nachtzug nach Royston"
+      }
+    },
+    {
+      "id": 38797312,
+      "chatId": -1001903176662,
+      "date": 1679030408,
+      "dateIso": "2023-03-17T05:20:08Z",
+      "content": {
+        "duration": 2767,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E10 - Keine Hochzeit und ein Todesfall.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22024,
+          "size": 2080132054,
+          "remoteId": "BAACAgIAAx0CcXAr1gADJWkpssOeAXO1BM5v8f3zVx2CofmzAAKuMAACzFaZSHA20FXjf2paOAQ",
+          "uniqueId": "AgADrjAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22023,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMlaSmyw54Bc7UEzm_x_fNXHYKh-bMAAq4wAALMVplIcDbQVeN_aloBAAdtAAM4BA",
+            "uniqueId": "AQADrjAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E10 - Keine Hochzeit und ein Todesfall"
+      }
+    },
+    {
+      "id": 37748736,
+      "chatId": -1001903176662,
+      "date": 1679030405,
+      "dateIso": "2023-03-17T05:20:05Z",
+      "content": {
+        "duration": 2583,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E09 - Beards Feierabend.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22026,
+          "size": 2091818118,
+          "remoteId": "BAACAgIAAx0CcXAr1gADJGkpssPdJYIlSekYyA-acso8rXH6AALcMAACzFaZSKdng1R1VwVqOAQ",
+          "uniqueId": "AgAD3DAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22025,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMkaSmyw90lgiVJ6RjID5pyyjytcfoAAtwwAALMVplIp2eDVHVXBWoBAAdtAAM4BA",
+            "uniqueId": "AQAD3DAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E09 - Beards Feierabend"
+      }
+    },
+    {
+      "id": 36700160,
+      "chatId": -1001903176662,
+      "date": 1679030402,
+      "dateIso": "2023-03-17T05:20:02Z",
+      "content": {
+        "duration": 2728,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E08 - Man City.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22028,
+          "size": 2084960989,
+          "remoteId": "BAACAgIAAx0CcXAr1gADI2kpssM_XVL-QpeqHkCBSiILp1HiAALHMAACzFaZSIGbmEF-dsJ_OAQ",
+          "uniqueId": "AgADxzAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22027,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMjaSmywz9dUv5Cl6oeQIFKIgunUeIAAscwAALMVplIgZuYQX52wn8BAAdtAAM4BA",
+            "uniqueId": "AQADxzAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E08 - Man City"
+      }
+    },
+    {
+      "id": 35651584,
+      "chatId": -1001903176662,
+      "date": 1679030398,
+      "dateIso": "2023-03-17T05:19:58Z",
+      "content": {
+        "duration": 2143,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E07 - Kopfsache.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22030,
+          "size": 2088687140,
+          "remoteId": "BAACAgIAAx0CcXAr1gADImkpssNw0pg4wK3pQ2Fo9KM1TiyQAALYMAACzFaZSBldsmAaQ4YUOAQ",
+          "uniqueId": "AgAD2DAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22029,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMiaSmyw3DSmDjArelDYWj0ozVOLJAAAtgwAALMVplIGV2yYBpDhhQBAAdtAAM4BA",
+            "uniqueId": "AQAD2DAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E07 - Kopfsache"
+      }
+    },
+    {
+      "id": 34603008,
+      "chatId": -1001903176662,
+      "date": 1679030395,
+      "dateIso": "2023-03-17T05:19:55Z",
+      "content": {
+        "duration": 2108,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E06 - Das Zeichen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22032,
+          "size": 2084791324,
+          "remoteId": "BAACAgIAAx0CcXAr1gADIWkpssOAXPPWRonBbhkL0emCoRPxAALMMAACzFaZSOA3AcBsqKfMOAQ",
+          "uniqueId": "AgADzDAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22031,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMhaSmyw4Bc89ZGicFuGQvR6YKhE_EAAswwAALMVplI4DcBwGyop8wBAAdtAAM4BA",
+            "uniqueId": "AQADzDAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E06 - Das Zeichen"
+      }
+    },
+    {
+      "id": 33554432,
+      "chatId": -1001903176662,
+      "date": 1679030392,
+      "dateIso": "2023-03-17T05:19:52Z",
+      "content": {
+        "duration": 2316,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E05 - Regenbogen.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22034,
+          "size": 2087399460,
+          "remoteId": "BAACAgIAAx0CcXAr1gADIGkpssN8XQ5hbl33-pBKYRcRfwz4AALPMAACzFaZSIWGOGHBjIIzOAQ",
+          "uniqueId": "AgADzzAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22033,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMgaSmyw3xdDmFuXff6kEphFxF_DPgAAs8wAALMVplIhYY4YcGMgjMBAAdtAAM4BA",
+            "uniqueId": "AQADzzAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E05 - Regenbogen"
+      }
+    },
+    {
+      "id": 32505856,
+      "chatId": -1001903176662,
+      "date": 1679030388,
+      "dateIso": "2023-03-17T05:19:48Z",
+      "content": {
+        "duration": 1828,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E04 - Glockengesang.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22036,
+          "size": 2096876858,
+          "remoteId": "BAACAgIAAx0CcXAr1gADH2kpssN1-87HFg14hnXzeIchYyR6AALqMAACzFaZSAWP56uYZAXfOAQ",
+          "uniqueId": "AgAD6jAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22035,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMfaSmyw3X7zscWDXiGdfN4hyFjJHoAAuowAALMVplIBY_nq5hkBd8BAAdtAAM4BA",
+            "uniqueId": "AQAD6jAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E04 - Glockengesang"
+      }
+    },
+    {
+      "id": 31457280,
+      "chatId": -1001903176662,
+      "date": 1679030385,
+      "dateIso": "2023-03-17T05:19:45Z",
+      "content": {
+        "duration": 2209,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E03 - Das Richtige tun.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22038,
+          "size": 2097115726,
+          "remoteId": "BAACAgIAAx0CcXAr1gADHmkpssNv6Q6v6Zk_IrNqdEVqudprAALlMAACzFaZSPbxDqnPaedTOAQ",
+          "uniqueId": "AgAD5TAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22037,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMeaSmyw2_pDq_pmT8is2p0RWq52msAAuUwAALMVplI9vEOqc9p51MBAAdtAAM4BA",
+            "uniqueId": "AQAD5TAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E03 - Das Richtige tun"
+      }
+    },
+    {
+      "id": 30408704,
+      "chatId": -1001903176662,
+      "date": 1679030382,
+      "dateIso": "2023-03-17T05:19:42Z",
+      "content": {
+        "duration": 2028,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E02 - Lavendel.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22040,
+          "size": 2085003073,
+          "remoteId": "BAACAgIAAx0CcXAr1gADHWkpssMZzfWMyzgf4Mc1NaiUh-zfAAKqMAACzFaZSMsfAAEreXGEvDgE",
+          "uniqueId": "AgADqjAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22039,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMdaSmywxnN9YzLOB_gxzU1qJSH7N8AAqowAALMVplIyx8AASt5cYS8AQAHbQADOAQ",
+            "uniqueId": "AQADqjAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E02 - Lavendel"
+      }
+    },
+    {
+      "id": 29360128,
+      "chatId": -1001903176662,
+      "date": 1679030378,
+      "dateIso": "2023-03-17T05:19:38Z",
+      "content": {
+        "duration": 2082,
+        "width": 1920,
+        "height": 960,
+        "fileName": "Ted Lasso - S02 E01 - Mach s gut, Earl.mp4",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 22042,
+          "size": 2086995061,
+          "remoteId": "BAACAgIAAx0CcXAr1gADHGkpssOpIVxEdtP4pNQqfJ2Z50fBAAKRMAACzFaZSHipgIjobUjaOAQ",
+          "uniqueId": "AgADkTAAAsxWmUg"
+        },
+        "thumbnail": {
+          "width": 320,
+          "height": 160,
+          "file": {
+            "id": 22041,
+            "size": 6332,
+            "remoteId": "AAMCAgADHQJxcCvWAAMcaSmyw6khXER20_ik1Cp8nZnnR8EAApEwAALMVplIeKmAiOhtSNoBAAdtAAM4BA",
+            "uniqueId": "AQADkTAAAsxWmUhy"
+          }
+        },
+        "caption": "Ted Lasso - S02 E01 - Mach\u0027s gut, Earl"
+      }
+    }
+  ]
+}

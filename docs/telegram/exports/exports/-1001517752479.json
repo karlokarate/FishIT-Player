@@ -1,0 +1,1430 @@
+{
+  "chatId": -1001517752479,
+  "title": "Deutsch 🇩🇪 Buch 📚",
+  "exportedAt": "2025-11-28T14:45:26.736604375Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 6349127680,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146757,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1502,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Eine spezielle Band A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 4852,
+            "size": 139658717,
+            "expectedSize": 139658717,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF6dpKbJWxDcmfR1gfvHYTb6Kq1OZ4AACwn0AAgu1GEuUeuGt0ZtiSTgE",
+              "uniqueId": "AgADwn0AAgu1GEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 139658717
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6348079104,
+      "chatId": -1001517752479,
+      "date": 1764146757,
+      "dateIso": "2025-11-26T08:45:57Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 900,
+            "height": 1280,
+            "file": {
+              "id": 12222,
+              "size": 179457,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6ZpKbJWlYln3FsUFiUo5c2PDjRskAACvfsxG7MCKUt8DtbBm9rCPQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADvfsxG7MCKUt-"
+            }
+          },
+          {
+            "width": 562,
+            "height": 800,
+            "file": {
+              "id": 12221,
+              "size": 87781,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6ZpKbJWlYln3FsUFiUo5c2PDjRskAACvfsxG7MCKUt8DtbBm9rCPQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADvfsxG7MCKUt9"
+            }
+          },
+          {
+            "width": 225,
+            "height": 320,
+            "file": {
+              "id": 12220,
+              "size": 20240,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6ZpKbJWlYln3FsUFiUo5c2PDjRskAACvfsxG7MCKUt8DtbBm9rCPQEAAwIAA20AAzgE",
+              "uniqueId": "AQADvfsxG7MCKUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6347030528,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146757,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1380,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Auf der Suche nach Toby A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 12223,
+            "size": 125257357,
+            "expectedSize": 125257357,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF6VpKbJWC9_bHLnAgEtJS0DcccFl8QACcIIAAgu1EEslZqQ8t_EGzjgE",
+              "uniqueId": "AgADcIIAAgu1EEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 125257357
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6345981952,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 919,
+            "height": 1280,
+            "file": {
+              "id": 12226,
+              "size": 158985,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6RpKbJWzkeYcfSdN1dRnuGbaJLheQACyP4xGwu1EEsortDN46JvqwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADyP4xGwu1EEt-"
+            }
+          },
+          {
+            "width": 574,
+            "height": 800,
+            "file": {
+              "id": 12225,
+              "size": 77701,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6RpKbJWzkeYcfSdN1dRnuGbaJLheQACyP4xGwu1EEsortDN46JvqwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADyP4xGwu1EEt9"
+            }
+          },
+          {
+            "width": 230,
+            "height": 320,
+            "file": {
+              "id": 12224,
+              "size": 18430,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6RpKbJWzkeYcfSdN1dRnuGbaJLheQACyP4xGwu1EEsortDN46JvqwEAAwIAA20AAzgE",
+              "uniqueId": "AQADyP4xGwu1EEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6344933376,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1178,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Frankenstein A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 12227,
+            "size": 78640880,
+            "expectedSize": 78640880,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF6NpKbJWWtjpQ61q2hEY9Xg--AOi4AACZoIAAgu1EEsw4ce9lhg27TgE",
+              "uniqueId": "AgADZoIAAgu1EEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 78640880
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6343884800,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 847,
+            "height": 1280,
+            "file": {
+              "id": 12230,
+              "size": 197108,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6JpKbJW5IWNBUGEZoSnLAaQmZxVXwACxP4xGwu1EEsileudYtZ__wEAAwIAA3kAAzgE",
+              "uniqueId": "AQADxP4xGwu1EEt-"
+            }
+          },
+          {
+            "width": 529,
+            "height": 800,
+            "file": {
+              "id": 12229,
+              "size": 98323,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6JpKbJW5IWNBUGEZoSnLAaQmZxVXwACxP4xGwu1EEsileudYtZ__wEAAwIAA3gAAzgE",
+              "uniqueId": "AQADxP4xGwu1EEt9"
+            }
+          },
+          {
+            "width": 212,
+            "height": 320,
+            "file": {
+              "id": 12228,
+              "size": 20313,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6JpKbJW5IWNBUGEZoSnLAaQmZxVXwACxP4xGwu1EEsileudYtZ__wEAAwIAA20AAzgE",
+              "uniqueId": "AQADxP4xGwu1EEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6342836224,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 1085,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Der Fluch der Mumie A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 12231,
+            "size": 67072020,
+            "expectedSize": 67072020,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF6FpKbJWqWO8cFNzHMwHpQzQXYWAbQACXoIAAgu1EEt7cNs7-YgaQDgE",
+              "uniqueId": "AgADXoIAAgu1EEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 67072020
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6341787648,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 921,
+            "height": 1280,
+            "file": {
+              "id": 12234,
+              "size": 152254,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6BpKbJW2trCuD8prK8oAajH6qlnxQACuP4xGwu1EEukb567ta0VJwEAAwIAA3kAAzgE",
+              "uniqueId": "AQADuP4xGwu1EEt-"
+            }
+          },
+          {
+            "width": 576,
+            "height": 800,
+            "file": {
+              "id": 12233,
+              "size": 74237,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6BpKbJW2trCuD8prK8oAajH6qlnxQACuP4xGwu1EEukb567ta0VJwEAAwIAA3gAAzgE",
+              "uniqueId": "AQADuP4xGwu1EEt9"
+            }
+          },
+          {
+            "width": 230,
+            "height": 320,
+            "file": {
+              "id": 12232,
+              "size": 16976,
+              "remoteId": "AgACAgIAAx0CWncQnwACF6BpKbJW2trCuD8prK8oAajH6qlnxQACuP4xGwu1EEukb567ta0VJwEAAwIAA20AAzgE",
+              "uniqueId": "AQADuP4xGwu1EEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6340739072,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 912,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Diebstahl in Hamburg A1.zip",
+          "mimeType": "multipart/x-zip",
+          "document": {
+            "id": 12235,
+            "size": 84727540,
+            "expectedSize": 84727540,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF59pKbJWEdzgPh1aw2QEZ-kKG6f6GAAC5BQAAjcmeEmPVwJSfVCoPDgE",
+              "uniqueId": "AgAD5BQAAjcmeEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 84727540
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6339690496,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 895,
+            "height": 1280,
+            "file": {
+              "id": 12238,
+              "size": 130573,
+              "remoteId": "AgACAgIAAx0CWncQnwACF55pKbJW4DyrENbI8oxuy3Wad0QAAZoAAi7DMRs3JnhJtZ-GTm7BkI4BAAMCAAN5AAM4BA",
+              "uniqueId": "AQADLsMxGzcmeEl-"
+            }
+          },
+          {
+            "width": 559,
+            "height": 800,
+            "file": {
+              "id": 12237,
+              "size": 79504,
+              "remoteId": "AgACAgIAAx0CWncQnwACF55pKbJW4DyrENbI8oxuy3Wad0QAAZoAAi7DMRs3JnhJtZ-GTm7BkI4BAAMCAAN4AAM4BA",
+              "uniqueId": "AQADLsMxGzcmeEl9"
+            }
+          },
+          {
+            "width": 224,
+            "height": 320,
+            "file": {
+              "id": 12236,
+              "size": 17903,
+              "remoteId": "AgACAgIAAx0CWncQnwACF55pKbJW4DyrENbI8oxuy3Wad0QAAZoAAi7DMRs3JnhJtZ-GTm7BkI4BAAMCAANtAAM4BA",
+              "uniqueId": "AQADLsMxGzcmeEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6338641920,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 831,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Der Nussknacker A1.zip",
+          "mimeType": "multipart/x-zip",
+          "document": {
+            "id": 12239,
+            "size": 69760535,
+            "expectedSize": 69760535,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF51pKbJW2SDORl97814PFn7uPOATAQACYhQAAjcmeElNiEucPW375zgE",
+              "uniqueId": "AgADYhQAAjcmeEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 69760535
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6337593344,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 851,
+            "height": 1221,
+            "file": {
+              "id": 12242,
+              "size": 177592,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5xpKbJWYQ8OO3kw11fLk5MXVOFb1wACB_8xG-hSEUtRRk69yrum1gEAAwIAA3kAAzgE",
+              "uniqueId": "AQADB_8xG-hSEUt-"
+            }
+          },
+          {
+            "width": 558,
+            "height": 800,
+            "file": {
+              "id": 12241,
+              "size": 95583,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5xpKbJWYQ8OO3kw11fLk5MXVOFb1wACB_8xG-hSEUtRRk69yrum1gEAAwIAA3gAAzgE",
+              "uniqueId": "AQADB_8xG-hSEUt9"
+            }
+          },
+          {
+            "width": 223,
+            "height": 320,
+            "file": {
+              "id": 12240,
+              "size": 21073,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5xpKbJWYQ8OO3kw11fLk5MXVOFb1wACB_8xG-hSEUtRRk69yrum1gEAAwIAA20AAzgE",
+              "uniqueId": "AQADB_8xG-hSEUty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6336544768,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 805,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Die Nachbarn A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 12243,
+            "size": 48597133,
+            "expectedSize": 48597133,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF5tpKbJWDNbdSFZok28hPCMlRDeU4AAC3X0AAgu1GEut9WdNsisOujgE",
+              "uniqueId": "AgAD3X0AAgu1GEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 48597133
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6335496192,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 705,
+            "height": 1000,
+            "file": {
+              "id": 12246,
+              "size": 84688,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5ppKbJWlNoQoLW4ZshOCZ_8xGu3DgACFhFrGx_FMEn9_9mrZR9RFQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADFhFrGx_FMEl-"
+            }
+          },
+          {
+            "width": 564,
+            "height": 800,
+            "file": {
+              "id": 12245,
+              "size": 84536,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5ppKbJWlNoQoLW4ZshOCZ_8xGu3DgACFhFrGx_FMEn9_9mrZR9RFQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADFhFrGx_FMEl9"
+            }
+          },
+          {
+            "width": 226,
+            "height": 320,
+            "file": {
+              "id": 12244,
+              "size": 20712,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5ppKbJWlNoQoLW4ZshOCZ_8xGu3DgACFhFrGx_FMEn9_9mrZR9RFQEAAwIAA20AAzgE",
+              "uniqueId": "AQADFhFrGx_FMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6334447616,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 823,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Das geheime Rezept A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 12247,
+            "size": 84141333,
+            "expectedSize": 84141333,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF5lpKbJWKaAfpNAVNf3RpYZ-M7z6PwAC0n0AAgu1GEtLDCcDnKT51zgE",
+              "uniqueId": "AgAD0n0AAgu1GEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 84141333
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6333399040,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 349,
+            "height": 500,
+            "file": {
+              "id": 12249,
+              "size": 33172,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5hpKbJWgASbZD-wtDGcj8GUrtP-WAACFRFrGx_FMEmRcQ3Ims-u2gEAAwIAA3gAAzgE",
+              "uniqueId": "AQADFRFrGx_FMEl9"
+            }
+          },
+          {
+            "width": 223,
+            "height": 320,
+            "file": {
+              "id": 12248,
+              "size": 20699,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5hpKbJWgASbZD-wtDGcj8GUrtP-WAACFRFrGx_FMEmRcQ3Ims-u2gEAAwIAA20AAzgE",
+              "uniqueId": "AQADFRFrGx_FMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6332350464,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146756,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 813,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Erich ist verschwunden A1.zip",
+          "mimeType": "application/zip",
+          "document": {
+            "id": 12250,
+            "size": 75376893,
+            "expectedSize": 75376893,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF5dpKbJWppByk0yZMCpFgumDlmLaAQACxX0AAgu1GEv2CByWPqsXSDgE",
+              "uniqueId": "AgADxX0AAgu1GEs",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 75376893
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6331301888,
+      "chatId": -1001517752479,
+      "date": 1764146756,
+      "dateIso": "2025-11-26T08:45:56Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 892,
+            "height": 1280,
+            "file": {
+              "id": 12253,
+              "size": 217129,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5ZpKbJW0NQJT2Xb8n5PrpdKUH-NHgACbh1rG32z0EjU8r3OzirQiQEAAwIAA3kAAzgE",
+              "uniqueId": "AQADbh1rG32z0Eh-"
+            }
+          },
+          {
+            "width": 557,
+            "height": 800,
+            "file": {
+              "id": 12252,
+              "size": 109954,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5ZpKbJW0NQJT2Xb8n5PrpdKUH-NHgACbh1rG32z0EjU8r3OzirQiQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADbh1rG32z0Eh9"
+            }
+          },
+          {
+            "width": 223,
+            "height": 320,
+            "file": {
+              "id": 12251,
+              "size": 25906,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5ZpKbJW0NQJT2Xb8n5PrpdKUH-NHgACbh1rG32z0EjU8r3OzirQiQEAAwIAA20AAzgE",
+              "uniqueId": "AQADbh1rG32z0Ehy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6330253312,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146712,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 859,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "sticker": {
+          "id": 3868942020961632527,
+          "setId": 3868942020961632263,
+          "width": 512,
+          "height": 198,
+          "emoji": "💠",
+          "format": {},
+          "fullType": {},
+          "thumbnail": {
+            "format": {},
+            "width": 320,
+            "height": 124,
+            "file": {
+              "id": 12254,
+              "size": 11716,
+              "expectedSize": 11716,
+              "local": {
+                "path": "",
+                "canBeDownloaded": true,
+                "canBeDeleted": false,
+                "isDownloadingActive": false,
+                "isDownloadingCompleted": false,
+                "downloadOffset": 0,
+                "downloadedPrefixSize": 0,
+                "downloadedSize": 0
+              },
+              "remote": {
+                "id": "AAMCAgADHQJadxCfAAIXlWkpsla3xwPSej9aGwyQbyd7aDq0AAIPAQACRT6xNXew-rwwGdqSAQAHbQADOAQ",
+                "uniqueId": "AQADDwEAAkU-sTVy",
+                "isUploadingActive": false,
+                "isUploadingCompleted": true,
+                "uploadedSize": 11716
+              }
+            }
+          },
+          "sticker": {
+            "id": 12255,
+            "size": 23166,
+            "expectedSize": 23166,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "CAACAgIAAx0CWncQnwACF5VpKbJWt8cD0no_WhsMkG8ne2g6tAACDwEAAkU-sTV3sPq8MBnakjgE",
+              "uniqueId": "AgADDwEAAkU-sTU",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 23166
+            }
+          }
+        },
+        "isPremium": false
+      }
+    },
+    {
+      "id": 6329204736,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1764146709,
+      "editDate": 0,
+      "forwardInfo": {
+        "origin": {
+          "chatId": -1001529058825,
+          "messageId": 4783603712,
+          "authorSignature": ""
+        },
+        "date": 1746091108,
+        "publicServiceAnnouncementType": ""
+      },
+      "interactionInfo": {
+        "viewCount": 876,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "voiceNote": {
+          "duration": 90,
+          "waveform": [
+            73,
+            -41,
+            39,
+            68,
+            -44,
+            -52,
+            -29,
+            61,
+            84,
+            -6,
+            -52,
+            -47,
+            109,
+            -56,
+            -46,
+            -61,
+            -33,
+            83,
+            -53,
+            19,
+            -44,
+            45,
+            52,
+            73,
+            119,
+            -68,
+            -43,
+            76,
+            -60,
+            83,
+            22,
+            33,
+            76,
+            69,
+            20,
+            100,
+            46,
+            -15,
+            -39,
+            85,
+            20,
+            -77,
+            37,
+            -60,
+            -46,
+            45,
+            -99,
+            34,
+            -46,
+            119,
+            -52,
+            -37,
+            89,
+            -75,
+            52,
+            -75,
+            -31,
+            56,
+            -60,
+            120,
+            109,
+            102
+          ],
+          "mimeType": "audio/ogg",
+          "voice": {
+            "id": 12256,
+            "size": 719365,
+            "expectedSize": 719365,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "AwACAgQAAx0CWncQnwACF5RpKbJW_5LODeGcInOMKdkch8tbXwACyBoAAmhRoFCCWKxUQQpofzgE",
+              "uniqueId": "AgADyBoAAmhRoFA",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 719365
+            }
+          }
+        },
+        "caption": {
+          "text": "🎶 #Musik\n|\n⭐️ #Maria_Mucke",
+          "entities": [
+            {
+              "offset": 0,
+              "length": 2,
+              "type": {
+                "customEmojiId": 5465287090352693530
+              }
+            },
+            {
+              "offset": 3,
+              "length": 6,
+              "type": {}
+            },
+            {
+              "offset": 12,
+              "length": 2,
+              "type": {
+                "customEmojiId": 5413351005779672594
+              }
+            },
+            {
+              "offset": 15,
+              "length": 12,
+              "type": {}
+            }
+          ]
+        },
+        "isListened": false
+      }
+    },
+    {
+      "id": 6328156160,
+      "chatId": -1001517752479,
+      "date": 1764146709,
+      "dateIso": "2025-11-26T08:45:09Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 640,
+            "height": 640,
+            "file": {
+              "id": 12258,
+              "size": 76748,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5NpKbJW8ZDojwToHFcLugvg7Ow86wACr_gxG8XymUgeMTSbwoZfgQEAAwIAA3gAAzgE",
+              "uniqueId": "AQADr_gxG8XymUh9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 12257,
+              "size": 29259,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5NpKbJW8ZDojwToHFcLugvg7Ow86wACr_gxG8XymUgeMTSbwoZfgQEAAwIAA20AAzgE",
+              "uniqueId": "AQADr_gxG8XymUhy"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6327107584,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1763933733,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 2364,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "Erkundungen C1 .pdf",
+          "mimeType": "application/pdf",
+          "document": {
+            "id": 12259,
+            "size": 46332774,
+            "expectedSize": 46332774,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF5JpKbJW9E1F2jE6QRGNKLsOMXvZVAACv44AAn6FEUnVxECjMcoqLzgE",
+              "uniqueId": "AgADv44AAn6FEUk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 46332774
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 6326059008,
+      "chatId": -1001517752479,
+      "date": 1763933733,
+      "dateIso": "2025-11-23T21:35:33Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 928,
+            "height": 1272,
+            "file": {
+              "id": 12262,
+              "size": 172350,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5FpKbJWwio9r3R188Ahq4CnSCAPNAACeAcyG3EgOEswOy4Pf9xLrgEAAwIAA3kAAzgE",
+              "uniqueId": "AQADeAcyG3EgOEt-"
+            }
+          },
+          {
+            "width": 584,
+            "height": 800,
+            "file": {
+              "id": 12261,
+              "size": 97617,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5FpKbJWwio9r3R188Ahq4CnSCAPNAACeAcyG3EgOEswOy4Pf9xLrgEAAwIAA3gAAzgE",
+              "uniqueId": "AQADeAcyG3EgOEt9"
+            }
+          },
+          {
+            "width": 234,
+            "height": 320,
+            "file": {
+              "id": 12260,
+              "size": 25463,
+              "remoteId": "AgACAgIAAx0CWncQnwACF5FpKbJWwio9r3R188Ahq4CnSCAPNAACeAcyG3EgOEswOy4Pf9xLrgEAAwIAA20AAzgE",
+              "uniqueId": "AQADeAcyG3EgOEty"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6325010432,
+      "chatId": -1001517752479,
+      "date": 1763820019,
+      "dateIso": "2025-11-22T14:00:19Z",
+      "content": {
+        "duration": 45,
+        "width": 720,
+        "height": 1280,
+        "fileName": "",
+        "mimeType": "video/mp4",
+        "supportsStreaming": true,
+        "file": {
+          "id": 12278,
+          "size": 12602079,
+          "remoteId": "BAACAgIAAx0CWncQnwACF5BpKbJWL4YVHjnO3olTjKvLlCbPGgACKoEAArjDEEnEqoXPRPk5xjgE",
+          "uniqueId": "AgADKoEAArjDEEk"
+        },
+        "thumbnail": {
+          "width": 180,
+          "height": 320,
+          "file": {
+            "id": 12277,
+            "size": 13928,
+            "remoteId": "AAMCAgADHQJadxCfAAIXkGkpslYvhhUeOc7eiVOMq8uUJs8aAAIqgQACuMMQScSqhc9E-TnGAQAHbQADOAQ",
+            "uniqueId": "AQADKoEAArjDEEly"
+          }
+        },
+        "caption": "📹 #video\n🔜#Magazin #Musik\n\n             🌟🌟🌟🌟\n👋\n❄️  𝄞 𝑱𝒐𝒋𝒏 𝑻𝒐  ⤵️\n\n🎶 Deutsche Musik\n📖 @Buch_Deutsch\n🎤 @Buch_Deutsch1"
+      }
+    },
+    {
+      "id": 6323961856,
+      "senderId": {
+        "chatId": -1001517752479
+      },
+      "chatId": -1001517752479,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": false,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1763627172,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 3461,
+        "forwardCount": 0
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 14109017381267842,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "audio.rar",
+          "mimeType": "application/vnd.rar",
+          "document": {
+            "id": 12279,
+            "size": 109577718,
+            "expectedSize": 109577718,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWncQnwACF49pKbJWtlOlutnytryqtFDxYfU0XQAC604AAltJqUob898cMHgoDjgE",
+              "uniqueId": "AgAD604AAltJqUo",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 109577718
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}

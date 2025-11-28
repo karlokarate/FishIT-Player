@@ -1,0 +1,1123 @@
+{
+  "chatId": -1001481939439,
+  "title": "Lego Ninjago",
+  "exportedAt": "2025-11-28T14:46:12.243795430Z",
+  "count": 25,
+  "messages": [
+    {
+      "id": 92274688,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1740232254,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 18 months. If they remain inactive for the next 8 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 91226112,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1739193050,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "text": "The owner of this channel has been inactive for the last 17 months. If they remain inactive for the next 20 days, they may lose their account and admin rights in this channel. The contents of the channel will remain accessible for all users."
+      }
+    },
+    {
+      "id": 90177536,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1601306219,
+      "editDate": 0,
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "messageId": 4194304
+      }
+    },
+    {
+      "id": 89128960,
+      "chatId": -1001481939439,
+      "date": 1601306182,
+      "dateIso": "2020-09-28T15:16:22Z",
+      "text": "Fehlt was? Fehler gefunden?\nHast Du Fragen zu diesem Kanal? Oder möchtest die Qualität bewerten?... \n\nIm @Hoerspiel_bot kannst Du Dich gerne dazu melden.",
+      "genres": []
+    },
+    {
+      "id": 88080384,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596268739,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 819,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO Ninjago_ Special 002_ Tag der Erinnerungen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17372,
+            "size": 129598896,
+            "expectedSize": 129598896,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADVGkpsobRmchys19u_yoRzjbwmSBzAALxBwACm3IwSWtblXlolpVtOAQ",
+              "uniqueId": "AgAD8QcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 129598896
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 87031808,
+      "chatId": -1001481939439,
+      "date": 1596268630,
+      "dateIso": "2020-08-01T07:57:10Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17374,
+              "size": 127482,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADU2kpsobPQvvSdTaJp4TJ_Ot6erJ9AAL9rDEbm3IwSR0arWX1VZPOAQADAgADeAADOAQ",
+              "uniqueId": "AQAD_awxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17373,
+              "size": 38135,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADU2kpsobPQvvSdTaJp4TJ_Ot6erJ9AAL9rDEbm3IwSR0arWX1VZPOAQADAgADbQADOAQ",
+              "uniqueId": "AQAD_awxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 85983232,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596268452,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 610,
+        "forwardCount": 2
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO Ninjago_ Special 001_ Das Hörspiel zum TV-Special.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17375,
+            "size": 125681407,
+            "expectedSize": 125681407,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADUmkpsoYHWw-WJ8Vu0aVR02NWeD-EAALsBwACm3IwSQPjkTbej9yNOAQ",
+              "uniqueId": "AgAD7AcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 125681407
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 84934656,
+      "chatId": -1001481939439,
+      "date": 1596268346,
+      "dateIso": "2020-08-01T07:52:26Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17377,
+              "size": 79137,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADUWkpsoYmFewYGT2vTXwQZpI1dlGoAAL8rDEbm3IwSRYVJF_-2cdkAQADAgADeAADOAQ",
+              "uniqueId": "AQAD_KwxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17376,
+              "size": 25467,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADUWkpsoYmFewYGT2vTXwQZpI1dlGoAAL8rDEbm3IwSRYVJF_-2cdkAQADAgADbQADOAQ",
+              "uniqueId": "AQAD_KwxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 83886080,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596268235,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 533,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_097_098_Der_Sturz_Der_Tornado_der_Schöpfung.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17378,
+            "size": 117366454,
+            "expectedSize": 117366454,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADUGkpsoZSY4ytELe0PqlW1QLLmHFkAALrBwACm3IwSdQ4ThXn39KfOAQ",
+              "uniqueId": "AgAD6wcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 117366454
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 82837504,
+      "chatId": -1001481939439,
+      "date": 1596268129,
+      "dateIso": "2020-08-01T07:48:49Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17380,
+              "size": 132449,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADT2kpsoa7zRX1xtTVvBwECQ79leNoAAL6rDEbm3IwSTqi7fsMNXe8AQADAgADeAADOAQ",
+              "uniqueId": "AQAD-qwxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17379,
+              "size": 39522,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADT2kpsoa7zRX1xtTVvBwECQ79leNoAAL6rDEbm3IwSTqi7fsMNXe8AQADAgADbQADOAQ",
+              "uniqueId": "AQAD-qwxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 81788928,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596268029,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 473,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_095_096_Eine_dunkle_Gefahr_Zusammenarbeit.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17381,
+            "size": 116587814,
+            "expectedSize": 116587814,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADTmkpsob76Ij-5fkggnMBtj0xa4HKAALoBwACm3IwSULc9iuoKcZFOAQ",
+              "uniqueId": "AgAD6AcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 116587814
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 80740352,
+      "chatId": -1001481939439,
+      "date": 1596267918,
+      "dateIso": "2020-08-01T07:45:18Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17383,
+              "size": 136700,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADTWkpsoaajgZkvae2P8lqee8eyvCeAAL4rDEbm3IwSf48Njr0gyOwAQADAgADeAADOAQ",
+              "uniqueId": "AQAD-KwxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17382,
+              "size": 40547,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADTWkpsoaajgZkvae2P8lqee8eyvCeAAL4rDEbm3IwSf48Njr0gyOwAQADAgADbQADOAQ",
+              "uniqueId": "AQAD-KwxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 79691776,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596267832,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 426,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_092_094_Die_Lügen_Des_Eisen_Barons_Das_Drachennest.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17384,
+            "size": 162334829,
+            "expectedSize": 162334829,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADTGkpsoaxzMv9PI441QOy9tLHOPdVAALmBwACm3IwSXZf6lIC_YmHOAQ",
+              "uniqueId": "AgAD5gcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 162334829
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 78643200,
+      "chatId": -1001481939439,
+      "date": 1596267696,
+      "dateIso": "2020-08-01T07:41:36Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17386,
+              "size": 125872,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADS2kpsoasKviveMfPJdz1tBC_41XQAAL3rDEbm3IwSbBY256s4kYOAQADAgADeAADOAQ",
+              "uniqueId": "AQAD96wxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17385,
+              "size": 37530,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADS2kpsoasKviveMfPJdz1tBC_41XQAAL3rDEbm3IwSbBY256s4kYOAQADAgADbQADOAQ",
+              "uniqueId": "AQAD96wxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 77594624,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596267438,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 379,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_090_091_Das_Oni_Land_Die_doppelte_Harumi.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17387,
+            "size": 120928033,
+            "expectedSize": 120928033,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADSmkpsoasb6Cgb9Vi4CpHNnlvEYDPAALiBwACm3IwSRazoU3GFVMeOAQ",
+              "uniqueId": "AgAD4gcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 120928033
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 76546048,
+      "chatId": -1001481939439,
+      "date": 1596267321,
+      "dateIso": "2020-08-01T07:35:21Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17389,
+              "size": 139906,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADSWkpsoamvGiexg5Ga0dRTqgjFcl0AALzrDEbm3IwSaxOZCukGeXkAQADAgADeAADOAQ",
+              "uniqueId": "AQAD86wxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17388,
+              "size": 41592,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADSWkpsoamvGiexg5Ga0dRTqgjFcl0AALzrDEbm3IwSaxOZCukGeXkAQADAgADbQADOAQ",
+              "uniqueId": "AQAD86wxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 75497472,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596267196,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 365,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_087_089_Drachen_Anlocken_Wie_man_einen_Drachen.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17390,
+            "size": 174243925,
+            "expectedSize": 174243925,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADSGkpsobP5y9ka1oJtRr9nycpk8ZiAALeBwACm3IwSZRpevfMaChQOAQ",
+              "uniqueId": "AgAD3gcAAptyMEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 174243925
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 74448896,
+      "chatId": -1001481939439,
+      "date": 1596267040,
+      "dateIso": "2020-08-01T07:30:40Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17392,
+              "size": 139481,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADR2kpsobBKDiEuWZBjfEF2xoAAUj4_QAC8KwxG5tyMEmUnBjg9s0_kAEAAwIAA3gAAzgE",
+              "uniqueId": "AQAD8KwxG5tyMEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17391,
+              "size": 40805,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADR2kpsobBKDiEuWZBjfEF2xoAAUj4_QAC8KwxG5tyMEmUnBjg9s0_kAEAAwIAA20AAzgE",
+              "uniqueId": "AQAD8KwxG5tyMEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 73400320,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596259397,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 356,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_085_086_Gib_niemals_auf_Bei_den_Drachenjägern.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17393,
+            "size": 127465758,
+            "expectedSize": 127465758,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADRmkpsoZkVvPZ-pnrNMaoGKMIeZmJAAJLCAACm3IoSWZe97WohmuQOAQ",
+              "uniqueId": "AgADSwgAAptyKEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 127465758
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 72351744,
+      "chatId": -1001481939439,
+      "date": 1596259275,
+      "dateIso": "2020-08-01T05:21:15Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17395,
+              "size": 140799,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADRWkpsoYSVSALZyI-YYF7BefNY6FaAAIPrjEbm3IoSaHETJib48FEAQADAgADeAADOAQ",
+              "uniqueId": "AQADD64xG5tyKEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17394,
+              "size": 41714,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADRWkpsoYSVSALZyI-YYF7BefNY6FaAAIPrjEbm3IoSaHETJib48FEAQADAgADbQADOAQ",
+              "uniqueId": "AQADD64xG5tyKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 71303168,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596259018,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 337,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_082_084_Die_Zeremonie_Die_wahre_Macht_Kleines.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17396,
+            "size": 163985771,
+            "expectedSize": 163985771,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADRGkpsoa4XklB2oL8kkKuyHliB77SAAJGCAACm3IoSffESLss4IiPOAQ",
+              "uniqueId": "AgADRggAAptyKEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 163985771
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 70254592,
+      "chatId": -1001481939439,
+      "date": 1596258874,
+      "dateIso": "2020-08-01T05:14:34Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17398,
+              "size": 123822,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADQ2kpsoanDjTimf_sQg1nYpwDFEL1AAINrjEbm3IoSW6K70O2OXwMAQADAgADeAADOAQ",
+              "uniqueId": "AQADDa4xG5tyKEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17397,
+              "size": 37926,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADQ2kpsoanDjTimf_sQg1nYpwDFEL1AAINrjEbm3IoSW6K70O2OXwMAQADAgADbQADOAQ",
+              "uniqueId": "AQADDa4xG5tyKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 69206016,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596258573,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 327,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_080_081_Im_Auge_Des_Urwalds_Die_dritte_Maske.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17399,
+            "size": 114805135,
+            "expectedSize": 114805135,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADQmkpsoYgi8kKvKSZx8HPyxSMTaXHAAI8CAACm3IoSa6M6Bqqbsb5OAQ",
+              "uniqueId": "AgADPAgAAptyKEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 114805135
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    },
+    {
+      "id": 68157440,
+      "chatId": -1001481939439,
+      "date": 1596258434,
+      "dateIso": "2020-08-01T05:07:14Z",
+      "content": {
+        "type": "photo",
+        "sizes": [
+          {
+            "width": 800,
+            "height": 800,
+            "file": {
+              "id": 17401,
+              "size": 116539,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADQWkpsob3VDYtV0kvUQzz2_lzwTevAAIIrjEbm3IoSXy-SD72IR8cAQADAgADeAADOAQ",
+              "uniqueId": "AQADCK4xG5tyKEl9"
+            }
+          },
+          {
+            "width": 320,
+            "height": 320,
+            "file": {
+              "id": 17400,
+              "size": 35790,
+              "remoteId": "AgACAgIAAx0CWFSZ7wADQWkpsob3VDYtV0kvUQzz2_lzwTevAAIIrjEbm3IoSXy-SD72IR8cAQADAgADbQADOAQ",
+              "uniqueId": "AQADCK4xG5tyKEly"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 67108864,
+      "senderId": {
+        "chatId": -1001481939439
+      },
+      "chatId": -1001481939439,
+      "isOutgoing": false,
+      "isPinned": false,
+      "isFromOffline": false,
+      "canBeSaved": true,
+      "hasTimestampedMedia": true,
+      "isChannelPost": true,
+      "isPaidStarSuggestedPost": false,
+      "isPaidTonSuggestedPost": false,
+      "containsUnreadMention": false,
+      "date": 1596258375,
+      "editDate": 0,
+      "interactionInfo": {
+        "viewCount": 325,
+        "forwardCount": 1
+      },
+      "unreadReactions": [],
+      "selfDestructIn": 0.0,
+      "autoDeleteIn": 0.0,
+      "viaBotUserId": 0,
+      "senderBusinessBotUserId": 0,
+      "senderBoostCount": 0,
+      "paidMessageStarCount": 0,
+      "authorSignature": "",
+      "mediaAlbumId": 0,
+      "effectId": 0,
+      "content": {
+        "document": {
+          "fileName": "LEGO_Ninjago_Folgen_077_079_Die_Oni_Und_Die_Drachen_Jake_Schlangenschleim.7z",
+          "mimeType": "application/x-7z-compressed",
+          "document": {
+            "id": 17402,
+            "size": 152491609,
+            "expectedSize": 152491609,
+            "local": {
+              "path": "",
+              "canBeDownloaded": true,
+              "canBeDeleted": false,
+              "isDownloadingActive": false,
+              "isDownloadingCompleted": false,
+              "downloadOffset": 0,
+              "downloadedPrefixSize": 0,
+              "downloadedSize": 0
+            },
+            "remote": {
+              "id": "BQACAgIAAx0CWFSZ7wADQGkpsoZ-ZDuTy6cdGwEIZA-7GEYaAAI1CAACm3IoSS_rARnKfa9FOAQ",
+              "uniqueId": "AgADNQgAAptyKEk",
+              "isUploadingActive": false,
+              "isUploadingCompleted": true,
+              "uploadedSize": 152491609
+            }
+          }
+        },
+        "caption": {
+          "text": "",
+          "entities": []
+        }
+      }
+    }
+  ]
+}
