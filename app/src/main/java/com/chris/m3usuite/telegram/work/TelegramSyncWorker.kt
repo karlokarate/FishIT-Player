@@ -9,7 +9,6 @@ import androidx.work.workDataOf
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.telegram.core.TelegramAuthState
 import com.chris.m3usuite.telegram.core.TgSyncState
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.Dispatchers

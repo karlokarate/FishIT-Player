@@ -284,7 +284,7 @@ class T_TelegramSession(
     /**
      * Start collecting authorization state updates from TDLib.
      * This runs in the ServiceClient's scope.
-     * 
+     *
      * Per design decision 6.11: All auth transitions MUST be logged via TelegramLogRepository.
      */
     private fun startAuthCollectorIfNeeded() {
@@ -298,7 +298,7 @@ class T_TelegramSession(
                     val state = update.authorizationState
                     val previousStateName = previousState?.let { it::class.simpleName } ?: "None"
                     val currentStateName = state::class.simpleName
-                    
+
                     // Log all state transitions at INFO level for visibility
                     TelegramLogRepository.info(
                         "T_TelegramSession",

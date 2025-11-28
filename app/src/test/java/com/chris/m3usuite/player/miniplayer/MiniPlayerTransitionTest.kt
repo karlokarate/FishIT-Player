@@ -2,7 +2,6 @@ package com.chris.m3usuite.player.miniplayer
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
