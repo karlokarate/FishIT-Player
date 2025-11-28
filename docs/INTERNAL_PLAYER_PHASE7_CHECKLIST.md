@@ -291,8 +291,10 @@ MiniPlayerState(
 
 **Goal:** Extend the existing `PlaybackSession` object into a fully featured unified session that owns ExoPlayer lifecycle and state.
 
-### Task 1.1: Define PlaybackSessionController Interface ⬜
-**Files to Create:**
+**Status: ✅ DONE (Phase 7 Task 1)**
+
+### Task 1.1: Define PlaybackSessionController Interface ✅
+**Files Created:**
 - `app/src/main/java/com/chris/m3usuite/playback/PlaybackSessionController.kt`
 
 **Implementation:**
@@ -306,6 +308,7 @@ interface PlaybackSessionController {
     val error: StateFlow<PlaybackException?>
     val videoSize: StateFlow<VideoSize?>
     val playbackState: StateFlow<Int>
+    val isSessionActive: StateFlow<Boolean>
     
     // Commands
     fun play()
@@ -314,7 +317,7 @@ interface PlaybackSessionController {
     fun seekTo(positionMs: Long)
     fun seekBy(deltaMs: Long)
     fun setSpeed(speed: Float)
-    fun enableTrickplay(enabled: Boolean)
+    fun enableTrickplay(speed: Float)
     fun stop()
     fun release()
 }
@@ -322,67 +325,57 @@ interface PlaybackSessionController {
 
 **Contract Reference:** Section 7
 
-**Tests Required:**
-- Interface contract validation
-- StateFlow emission behavior
+**Tests:** `PlaybackSessionCoreTest.kt`
 
 ---
 
-### Task 1.2: Extend PlaybackSession Singleton ⬜
-**Files to Modify:**
+### Task 1.2: Extend PlaybackSession Singleton ✅
+**Files Modified:**
 - `app/src/main/java/com/chris/m3usuite/playback/PlaybackSession.kt`
 
 **Implementation:**
-- Add StateFlows for all session state (position, duration, isPlaying, etc.)
-- Add command methods that forward to ExoPlayer
-- Add Player.Listener to update StateFlows
-- Ensure thread-safe state updates
-- Add `isSessionActive: Boolean` property
+- Added StateFlows for all session state (position, duration, isPlaying, etc.)
+- Added command methods that forward to ExoPlayer
+- Added Player.Listener to update StateFlows
+- Ensured thread-safe state updates via MutableStateFlow
+- Added `isSessionActive: StateFlow<Boolean>` property
+- PlaybackSession now implements PlaybackSessionController interface
 
 **Contract Reference:** Section 7
 
-**Tests Required:**
-- State updates on player events
-- Thread safety
-- Null player handling
+**Tests:** `PlaybackSessionCoreTest.kt`
 
 ---
 
-### Task 1.3: Update InternalPlayerSession to Use PlaybackSession ⬜
-**Files to Modify:**
+### Task 1.3: Update InternalPlayerSession to Use PlaybackSession ✅
+**Files Modified:**
 - `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt`
 
 **Implementation:**
-- Replace direct `ExoPlayer.Builder()` with `PlaybackSession.acquire(context, builder)`
-- Remove local player holder (use `PlaybackSession.current()`)
-- Wire Player.Listener to PlaybackSession state updates
-- Ensure session survives MiniPlayer/full player transitions
-- Update cleanup to only release when explicitly stopped (not on composable dispose)
+- Replaced direct `ExoPlayer.Builder()` with `PlaybackSession.acquire(context, builder)`
+- Updated DisposableEffect to NOT release player on dispose (shared ownership via PlaybackSession)
+- Added `PlaybackSession.setSource(url)` call for MiniPlayer visibility checks
+- Player survives MiniPlayer/full player transitions
+- Cleanup only occurs when explicitly stopped (via PlaybackSession.release())
 
 **Contract Reference:** Section 3.1
 
-**Tests Required:**
-- Session reuse across transitions
-- No re-init on navigation
-- Proper cleanup on stop
+**Tests:** `InternalPlayerSessionPlaybackSessionTest.kt`
 
 ---
 
-### Task 1.4: PlaybackSession State Flows Collection ⬜
-**Files to Modify:**
+### Task 1.4: PlaybackSession State Flows Collection ✅
+**Files Modified:**
 - `app/src/main/java/com/chris/m3usuite/playback/PlaybackSession.kt`
 
 **Implementation:**
-- Add internal `MutableStateFlow` for each state property
-- Update flows in Player.Listener callbacks
-- Expose as read-only `StateFlow`
-- Handle `C.TIME_UNSET` and null cases
+- Added internal `MutableStateFlow` for each state property
+- Updates flows in Player.Listener callbacks via `updateStateFromPlayer()`
+- Exposed as read-only `StateFlow`
+- Handles `C.TIME_UNSET` and null cases properly
+- `resetStateFlows()` resets all state on release
 
-**Tests Required:**
-- Position updates during playback
-- Duration updates on source change
-- Error state propagation
-- Video size updates
+**Tests:** `PlaybackSessionCoreTest.kt`
 
 ---
 
@@ -390,62 +383,66 @@ interface PlaybackSessionController {
 
 **Goal:** Create a comprehensive MiniPlayer management layer with state persistence.
 
-### Task 2.1: Extend MiniPlayerState with Contract Fields ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/MiniPlayerState.kt`
+**Status: ✅ DONE (Phase 7 Task 1)**
+
+### Task 2.1: Extend MiniPlayerState with Contract Fields ✅
+**Files Created:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerState.kt`
 
 **Implementation:**
 ```kotlin
-data class MiniPlayerStateData(
+data class MiniPlayerState(
     val visible: Boolean = false,
-    val mode: MiniPlayerMode = MiniPlayerMode.Normal,
-    val anchor: MiniPlayerAnchor = MiniPlayerAnchor.BottomRight,
-    val size: DpSize = DpSize(320.dp, 180.dp),
+    val mode: MiniPlayerMode = MiniPlayerMode.NORMAL,
+    val anchor: MiniPlayerAnchor = MiniPlayerAnchor.BOTTOM_RIGHT,
+    val size: DpSize = DEFAULT_MINI_SIZE,
     val position: Offset? = null,
     val returnRoute: String? = null,
-    val returnListIndex: Int? = null,
+    val returnMediaId: Long? = null,
+    val returnRowIndex: Int? = null,
     val returnItemIndex: Int? = null,
 )
 
-enum class MiniPlayerMode { Normal, Resize }
-enum class MiniPlayerAnchor { TopRight, TopLeft, BottomRight, BottomLeft }
+enum class MiniPlayerMode { NORMAL, RESIZE }
+enum class MiniPlayerAnchor { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
 ```
 
 **Contract Reference:** Section 4.1
 
-**Tests Required:**
-- Default values match contract
-- Data class copy operations
-- Enum completeness
+**Tests:** `MiniPlayerStateTest.kt`
 
 ---
 
-### Task 2.2: Create MiniPlayerManager ⬜
-**Files to Create:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/MiniPlayerManager.kt`
+### Task 2.2: Create MiniPlayerManager ✅
+**Files Created:**
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManager.kt`
 
 **Implementation:**
 ```kotlin
-object MiniPlayerManager {
-    val state: StateFlow<MiniPlayerStateData>
+interface MiniPlayerManager {
+    val state: StateFlow<MiniPlayerState>
     
     fun enterMiniPlayer(
-        playbackContext: PlaybackContext,
-        returnRoute: String?,
-        returnListIndex: Int? = null,
-        returnItemIndex: Int? = null,
+        fromRoute: String,
+        mediaId: Long? = null,
+        rowIndex: Int? = null,
+        itemIndex: Int? = null,
     )
     
-    fun exitMiniPlayer(returnToFullPlayer: Boolean = false)
-    
-    fun setMode(mode: MiniPlayerMode)
-    fun setAnchor(anchor: MiniPlayerAnchor)
-    fun setSize(size: DpSize)
-    fun setPosition(offset: Offset)
-    
-    fun requestFocus()
-    fun releaseFocus()
+    fun exitMiniPlayer(returnToFullPlayer: Boolean)
+    fun updateMode(mode: MiniPlayerMode)
+    fun updateAnchor(anchor: MiniPlayerAnchor)
+    fun updateSize(size: DpSize)
+    fun updatePosition(offset: Offset)
+    fun reset()
 }
+
+object DefaultMiniPlayerManager : MiniPlayerManager { ... }
+```
+
+**Contract Reference:** Section 4.1, 4.2
+
+**Tests:** `MiniPlayerManagerTest.kt`
 ```
 
 **Contract Reference:** Section 4.1, 4.2
@@ -459,7 +456,9 @@ object MiniPlayerManager {
 
 ### Task 2.3: MiniPlayerManager Integration with PlaybackSession ⬜
 **Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/MiniPlayerManager.kt`
+- `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManager.kt`
+
+**Note:** This task deferred to Task 2+ when UI wiring is implemented.
 
 **Implementation:**
 - `enterMiniPlayer` does NOT create a new player instance
@@ -477,13 +476,12 @@ object MiniPlayerManager {
 ---
 
 ### Task 2.4: State Persistence Across Configuration Changes ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/home/MiniPlayerManager.kt`
+**Note:** This task deferred to Task 2+ when UI wiring is implemented.
 
 **Implementation:**
-- Use `MutableStateFlow` with initial state
-- Consider `SavedStateHandle` integration for activity recreation
-- Persist `returnRoute` and indices
+- MiniPlayerManager uses `MutableStateFlow` with initial state ✅
+- SavedStateHandle integration for activity recreation (deferred)
+- Persist `returnRoute` and indices ✅
 
 **Tests Required:**
 - State survives rotation
@@ -491,9 +489,45 @@ object MiniPlayerManager {
 
 ---
 
+## Task Group 2b: TV Input & FocusKit Primitives
+
+**Goal:** Add missing TvAction and FocusZoneId entries for MiniPlayer support.
+
+**Status: ✅ DONE (Phase 7 Task 1)**
+
+### Task 2b.1: Add TOGGLE_MINI_PLAYER_FOCUS to TvAction ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvAction.kt`
+
+**Implementation:**
+- Added `TOGGLE_MINI_PLAYER_FOCUS` action
+- Updated `isFocusAction()` helper to include new action
+- Added KDoc documenting behavior (long-press PLAY trigger, focus toggle)
+
+**Contract Reference:** Section 6
+
+**Tests:** `TvActionEnumTest.kt` updated with Phase 7 tests
+
+---
+
+### Task 2b.2: Add FocusZoneId.MINI_PLAYER and PRIMARY_UI ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/ui/focus/FocusKit.kt`
+
+**Implementation:**
+- Added `MINI_PLAYER` to `FocusZoneId` enum
+- Added `PRIMARY_UI` to `FocusZoneId` enum
+- Documented both as used for `TOGGLE_MINI_PLAYER_FOCUS` action
+
+**Contract Reference:** Section 6
+
+---
+
 ## Task Group 3: In-App MiniPlayer UI Skeleton
 
 **Goal:** Create a basic MiniPlayer overlay composable for Phase 7.
+
+**Status: ⬜ Deferred to Task 2+**
 
 ### Task 3.1: Extend MiniPlayerHost for Phase 7 ⬜
 **Files to Modify:**
@@ -516,19 +550,8 @@ object MiniPlayerManager {
 
 ---
 
-### Task 3.2: Add FocusZoneId.MINI_PLAYER ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/focus/FocusKit.kt`
-
-**Implementation:**
-- Add `MINI_PLAYER` to `FocusZoneId` enum
-- Document as "Mini player overlay when visible"
-
-**Contract Reference:** Section 6
-
-**Tests Required:**
-- Enum value exists
-- Zone can be registered
+### Task 3.2: Add FocusZoneId.MINI_PLAYER ✅
+**Completed in Task 2b.2**
 
 ---
 

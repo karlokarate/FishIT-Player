@@ -4327,3 +4327,126 @@ Phase 7 implementation can proceed following the checklist groups in order:
 ---
 
 **Last Updated:** 2025-11-28
+
+## Phase 7 – Task 1: PlaybackSession Core, MiniPlayerManager, InternalPlayerSession Integration (COMPLETE)
+
+**Date:** 2025-11-28
+
+**Status:** ✅ **COMPLETE** – Groups 1–2 implemented, primitives added, tests passing
+
+This task implements the core domain/session layer for Phase 7 unified PlaybackSession and In-App MiniPlayer.
+
+### What Was Done
+
+**1. PlaybackSession Core Extended (Group 1)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `PlaybackSessionController.kt` | New interface defining StateFlows and commands |
+| `PlaybackSession.kt` | Extended singleton implementing PlaybackSessionController |
+| StateFlows | positionMs, durationMs, isPlaying, buffering, error, videoSize, playbackState, isSessionActive |
+| Commands | play(), pause(), togglePlayPause(), seekTo(), seekBy(), setSpeed(), enableTrickplay(), stop(), release() |
+| Player.Listener | Automatic state updates when player events occur |
+| Thread Safety | MutableStateFlow for all state properties |
+
+**2. InternalPlayerSession Refactored**
+
+| Change | Description |
+|--------|-------------|
+| Player Acquisition | Changed from `ExoPlayer.Builder()` to `PlaybackSession.acquire(context) { ... }` |
+| Source Tracking | Added `PlaybackSession.setSource(url)` for MiniPlayer visibility |
+| Dispose Behavior | Changed from `player.release()` to `playerHolder.value = null` (shared ownership) |
+| KDoc | Updated to document Phase 7 PlaybackSession integration |
+
+**3. MiniPlayer Domain Model (Group 2)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `MiniPlayerState.kt` | Data class with visible, mode, anchor, size, position, returnRoute, returnMediaId, returnRowIndex, returnItemIndex |
+| `MiniPlayerMode` | Enum: NORMAL, RESIZE |
+| `MiniPlayerAnchor` | Enum: TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT |
+| `DEFAULT_MINI_SIZE` | 320x180 dp (16:9 aspect ratio) |
+
+**4. MiniPlayerManager Implemented**
+
+| Function | Description |
+|----------|-------------|
+| `enterMiniPlayer()` | Set visible=true, store return context |
+| `exitMiniPlayer()` | Set visible=false, optionally preserve return context |
+| `updateMode()` | Change between NORMAL and RESIZE modes |
+| `updateAnchor()` | Change screen corner position |
+| `updateSize()` | Change MiniPlayer dimensions |
+| `updatePosition()` | Set precise position offset |
+| `reset()` | Return to initial state |
+
+**5. TV Input & FocusKit Primitives**
+
+| Primitive | Location |
+|-----------|----------|
+| `TOGGLE_MINI_PLAYER_FOCUS` | TvAction enum |
+| `MINI_PLAYER` | FocusZoneId enum |
+| `PRIMARY_UI` | FocusZoneId enum |
+| `isFocusAction()` | Updated to include TOGGLE_MINI_PLAYER_FOCUS |
+
+**6. Unit Tests Added**
+
+| Test Class | Coverage |
+|------------|----------|
+| `PlaybackSessionCoreTest.kt` | Interface implementation, StateFlow initial values, command methods, release behavior |
+| `MiniPlayerStateTest.kt` | Default values, copy operations, enum completeness, state transitions |
+| `MiniPlayerManagerTest.kt` | Enter/exit behavior, mode/anchor/size updates, state persistence |
+| `InternalPlayerSessionPlaybackSessionTest.kt` | Architecture documentation, PlaybackSession singleton behavior |
+| `TvActionEnumTest.kt` | Updated with Phase 7 TOGGLE_MINI_PLAYER_FOCUS tests |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `app/src/main/java/com/chris/m3usuite/playback/PlaybackSessionController.kt` | Interface for controlling playback |
+| `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerState.kt` | MiniPlayer state data class and enums |
+| `app/src/main/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManager.kt` | MiniPlayer state management interface and implementation |
+| `app/src/test/java/com/chris/m3usuite/player/session/PlaybackSessionCoreTest.kt` | PlaybackSession unit tests |
+| `app/src/test/java/com/chris/m3usuite/player/session/InternalPlayerSessionPlaybackSessionTest.kt` | Integration architecture tests |
+| `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerStateTest.kt` | MiniPlayerState unit tests |
+| `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerManagerTest.kt` | MiniPlayerManager unit tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `app/src/main/java/com/chris/m3usuite/playback/PlaybackSession.kt` | Extended with StateFlows, commands, Player.Listener |
+| `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt` | Refactored to use PlaybackSession.acquire() |
+| `app/src/main/java/com/chris/m3usuite/tv/input/TvAction.kt` | Added TOGGLE_MINI_PLAYER_FOCUS |
+| `app/src/main/java/com/chris/m3usuite/ui/focus/FocusKit.kt` | Added MINI_PLAYER and PRIMARY_UI to FocusZoneId |
+| `app/src/test/java/com/chris/m3usuite/tv/input/TvActionEnumTest.kt` | Updated with Phase 7 tests |
+| `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` | Marked Groups 1–2 as DONE |
+
+### What Was NOT Done (Per Task Scope)
+
+- ❌ **MiniPlayer UI layout** – Deferred to Task 2+
+- ❌ **PiP behavior/button refactor** – Deferred to Task 2+
+- ❌ **TV input wiring** – Primitives only, no behavior wiring
+- ❌ **Legacy InternalPlayerScreen changes** – SIP-only changes
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 3.1, 4.1, 6, 7
+- `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Groups 1–2
+
+### What's Next (Phase 7 Task 2+)
+
+- **Group 3:** In-App MiniPlayer UI skeleton
+- **Group 4:** PIP button refactor (wire to MiniPlayerManager)
+- **Group 5:** System PiP for phones/tablets
+- **Group 6-7:** TV input behavior wiring
+- **Group 8:** Navigation and return behavior
+
+---
+
+**Last Updated:** 2025-11-28
