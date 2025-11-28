@@ -136,13 +136,41 @@
 
 # 🪟 GLOBAL PIP / MINIPLAYER MODE
 
-- [ ] FF/RW → Seek in mini-player  
-- [ ] PLAY/PAUSE → Toggle playback  
-- [ ] DPAD → Navigate background app  
-- [ ] MENU (long press) → Enter Resize Mode  
-- [ ] FF/RW → Resize  
-- [ ] DPAD → Move  
-- [ ] CENTER → Confirm  
+## Normal Mode (default)
+- [x] FF/RW → Seek ±10s in mini-player  
+- [x] PLAY/PAUSE → Toggle playback  
+- [x] DPAD → Navigate background app (unless MiniPlayer is focused)  
+- [x] Long-press PLAY → Toggle focus between MiniPlayer and background UI  
+- [x] MENU (long press) → Enter Resize Mode  
+
+## Resize Mode
+- [x] FF/RW → Resize (coarse: ±40dp width, ±22.5dp height)  
+- [x] DPAD → Move position (fine: ±20px per press)  
+- [x] CENTER/OK → Confirm size/position and exit resize mode  
+- [x] BACK → Cancel and revert to previous size/position  
+
+## Visual Feedback (Phase 7 Polish)
+- [x] Drop shadow (12dp) and rounded corners (16dp)  
+- [x] Translucent control background (40% black overlay)  
+- [x] Scale-up (1.03x) in resize mode with primary-colored border  
+- [x] Animated size transitions (200ms tween)  
+- [x] Slide-in/fade-in when showing, slide-out/fade-out when hiding  
+
+## Snapping Behavior
+- [x] 6 snap anchors: TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, CENTER_TOP, CENTER_BOTTOM  
+- [x] Snap to nearest anchor on resize confirm or drag end  
+- [x] Center snap threshold: 80dp from horizontal center  
+- [x] Safe margins: 16dp from screen edges  
+
+## Touch Gestures (Phones/Tablets only)
+- [x] Drag to move (auto-enters resize mode)  
+- [x] Snap to nearest anchor on drag end  
+- [x] Gestures disabled on TV devices  
+
+## Hints & Discoverability
+- [x] First-time hint: "Press Menu to resize and move the mini player" (TV only, auto-dismiss 4s)  
+- [x] Resize mode hint: "FF/RW: Size • DPAD: Move • OK: Confirm • Back: Cancel"  
+- [x] All hints use string resources (internationalizable)  
 
 ---
 

@@ -105,13 +105,14 @@ object AppLog {
         }
 
         // Record to history and emit event for LogViewer
-        val entry = Entry(
-            timestamp = System.currentTimeMillis(),
-            category = category,
-            level = level,
-            message = message,
-            extras = extras,
-        )
+        val entry =
+            Entry(
+                timestamp = System.currentTimeMillis(),
+                category = category,
+                level = level,
+                message = message,
+                extras = extras,
+            )
 
         // Update history (thread-safe via StateFlow)
         val current = _history.value.toMutableList()

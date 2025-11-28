@@ -1,13 +1,13 @@
 package com.chris.m3usuite.player.miniplayer
 
 import androidx.compose.ui.geometry.Offset
+import com.chris.m3usuite.tv.input.TvAction
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import com.chris.m3usuite.tv.input.TvAction
 
 /**
  * Unit tests for MiniPlayer Resize Mode input handling.
@@ -37,9 +37,10 @@ class MiniPlayerResizeInputTest {
     @Before
     fun setUp() {
         DefaultMiniPlayerManager.resetForTesting()
-        handler = MiniPlayerResizeActionHandler(
-            miniPlayerManager = DefaultMiniPlayerManager,
-        )
+        handler =
+            MiniPlayerResizeActionHandler(
+                miniPlayerManager = DefaultMiniPlayerManager,
+            )
     }
 
     @After

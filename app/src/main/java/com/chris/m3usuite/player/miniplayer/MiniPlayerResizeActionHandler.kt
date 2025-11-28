@@ -157,8 +157,9 @@ class MiniPlayerResizeActionHandler(
     /**
      * Create a negative size delta for shrinking the MiniPlayer.
      */
-    private fun negativeSizeDelta(): DpSize =
-        DpSize(-RESIZE_SIZE_DELTA.width, -RESIZE_SIZE_DELTA.height)
+    private fun negativeSizeDelta(): DpSize {
+        return DpSize(-RESIZE_SIZE_DELTA.width, -RESIZE_SIZE_DELTA.height)
+    }
 
     companion object {
         /** Seek delta in milliseconds for PIP seek operations */

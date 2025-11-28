@@ -1,11 +1,13 @@
 package com.chris.m3usuite.player.miniplayer
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.math.abs
 
 /**
  * Interface for managing MiniPlayer state and transitions.
@@ -157,6 +159,7 @@ interface MiniPlayerManager {
      * - Sets mode = NORMAL
      * - Clears previousSize and previousPosition
      * - Keeps current size and position as the new baseline
+     * - Snaps to nearest anchor if enabled
      */
     fun confirmResize()
 
@@ -169,6 +172,46 @@ interface MiniPlayerManager {
      * - Clears previousSize and previousPosition
      */
     fun cancelResize()
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 7 – SNAPPING & BOUNDS METHODS
+    // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * Snap the MiniPlayer to the nearest anchor.
+     *
+     * Called automatically when confirming resize or on drag end.
+     * Uses the current position to determine the nearest anchor point.
+     *
+     * @param screenWidthPx Screen width in pixels
+     * @param screenHeightPx Screen height in pixels
+     * @param density Density for dp to px conversion
+     */
+    fun snapToNearestAnchor(
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
+    )
+
+    /**
+     * Clamp the MiniPlayer position to safe margins within screen bounds.
+     *
+     * Ensures the MiniPlayer is fully visible and doesn't overlap screen edges.
+     *
+     * @param screenWidthPx Screen width in pixels
+     * @param screenHeightPx Screen height in pixels
+     * @param density Density for dp to px conversion
+     */
+    fun clampToSafeArea(
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
+    )
+
+    /**
+     * Mark the first-time hint as shown.
+     */
+    fun markFirstTimeHintShown()
 }
 
 /**
@@ -271,8 +314,16 @@ object DefaultMiniPlayerManager : MiniPlayerManager {
             if (current.mode != MiniPlayerMode.RESIZE) return@update current
 
             // Calculate new size with clamping
-            val newWidth = (current.size.width + deltaSize.width).coerceIn(MIN_MINI_SIZE.width, MAX_MINI_SIZE.width)
-            val newHeight = (current.size.height + deltaSize.height).coerceIn(MIN_MINI_SIZE.height, MAX_MINI_SIZE.height)
+            val newWidth =
+                (current.size.width + deltaSize.width).coerceIn(
+                    MIN_MINI_SIZE.width,
+                    MAX_MINI_SIZE.width,
+                )
+            val newHeight =
+                (current.size.height + deltaSize.height).coerceIn(
+                    MIN_MINI_SIZE.height,
+                    MAX_MINI_SIZE.height,
+                )
 
             current.copy(size = DpSize(newWidth, newHeight))
         }
@@ -285,10 +336,11 @@ object DefaultMiniPlayerManager : MiniPlayerManager {
 
             // Calculate new position (or start from Offset.Zero if null)
             val currentPos = current.position ?: Offset.Zero
-            val newPosition = Offset(
-                x = currentPos.x + delta.x,
-                y = currentPos.y + delta.y,
-            )
+            val newPosition =
+                Offset(
+                    x = currentPos.x + delta.x,
+                    y = currentPos.y + delta.y,
+                )
 
             current.copy(position = newPosition)
         }
@@ -323,6 +375,133 @@ object DefaultMiniPlayerManager : MiniPlayerManager {
                 previousPosition = null,
             )
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 7 – SNAPPING & BOUNDS IMPLEMENTATION
+    // ══════════════════════════════════════════════════════════════════
+
+    override fun snapToNearestAnchor(
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
+    ) {
+        _state.update { current ->
+            if (!current.visible) return@update current
+
+            val nearestAnchor =
+                calculateNearestAnchor(
+                    currentPosition = current.position ?: Offset.Zero,
+                    currentSize = current.size,
+                    screenWidthPx = screenWidthPx,
+                    screenHeightPx = screenHeightPx,
+                    density = density,
+                )
+
+            // Update anchor and reset position offset (anchor defines the base position)
+            current.copy(
+                anchor = nearestAnchor,
+                position = null, // Reset offset since anchor defines position
+            )
+        }
+    }
+
+    override fun clampToSafeArea(
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
+    ) {
+        _state.update { current ->
+            if (!current.visible || current.position == null) return@update current
+
+            val safeMarginPx = with(density) { SAFE_MARGIN_DP.toPx() }
+            val miniWidthPx = with(density) { current.size.width.toPx() }
+            val miniHeightPx = with(density) { current.size.height.toPx() }
+
+            // Calculate clamped position based on anchor
+            val clampedPosition =
+                calculateClampedPosition(
+                    position = current.position!!,
+                    anchor = current.anchor,
+                    miniWidthPx = miniWidthPx,
+                    miniHeightPx = miniHeightPx,
+                    screenWidthPx = screenWidthPx,
+                    screenHeightPx = screenHeightPx,
+                    safeMarginPx = safeMarginPx,
+                )
+
+            current.copy(position = clampedPosition)
+        }
+    }
+
+    override fun markFirstTimeHintShown() {
+        _state.update { current ->
+            current.copy(hasShownFirstTimeHint = true)
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ══════════════════════════════════════════════════════════════════
+
+    private fun calculateNearestAnchor(
+        currentPosition: Offset,
+        currentSize: DpSize,
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
+    ): MiniPlayerAnchor {
+        val miniWidthPx = with(density) { currentSize.width.toPx() }
+        val miniHeightPx = with(density) { currentSize.height.toPx() }
+        val centerSnapThresholdPx = with(density) { CENTER_SNAP_THRESHOLD_DP.toPx() }
+
+        // Calculate mini player center based on position offset
+        // Position offset is relative to the anchor position
+        val screenCenterX = screenWidthPx / 2
+        val screenCenterY = screenHeightPx / 2
+
+        // Get effective center of the MiniPlayer based on current position
+        val effectiveCenterX = currentPosition.x + miniWidthPx / 2
+        val effectiveCenterY = currentPosition.y + miniHeightPx / 2
+
+        // Check if near horizontal center (for CENTER_TOP or CENTER_BOTTOM)
+        val isNearHorizontalCenter = abs(effectiveCenterX - screenCenterX) < centerSnapThresholdPx
+
+        // Determine vertical position (top or bottom half)
+        val isInTopHalf = effectiveCenterY < screenCenterY
+
+        // Determine horizontal position (left or right half)
+        val isInLeftHalf = effectiveCenterX < screenCenterX
+
+        return when {
+            isNearHorizontalCenter && isInTopHalf -> MiniPlayerAnchor.CENTER_TOP
+            isNearHorizontalCenter && !isInTopHalf -> MiniPlayerAnchor.CENTER_BOTTOM
+            isInTopHalf && isInLeftHalf -> MiniPlayerAnchor.TOP_LEFT
+            isInTopHalf && !isInLeftHalf -> MiniPlayerAnchor.TOP_RIGHT
+            !isInTopHalf && isInLeftHalf -> MiniPlayerAnchor.BOTTOM_LEFT
+            else -> MiniPlayerAnchor.BOTTOM_RIGHT
+        }
+    }
+
+    private fun calculateClampedPosition(
+        position: Offset,
+        anchor: MiniPlayerAnchor,
+        miniWidthPx: Float,
+        miniHeightPx: Float,
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        safeMarginPx: Float,
+    ): Offset {
+        // Calculate valid range based on anchor
+        // The offset is relative to the anchor position
+        val maxOffsetX = screenWidthPx - miniWidthPx - safeMarginPx * 2
+        val maxOffsetY = screenHeightPx - miniHeightPx - safeMarginPx * 2
+
+        // Clamp offset to valid range
+        val clampedX = position.x.coerceIn(-maxOffsetX / 2, maxOffsetX / 2)
+        val clampedY = position.y.coerceIn(-maxOffsetY / 2, maxOffsetY / 2)
+
+        return Offset(clampedX, clampedY)
     }
 
     // ══════════════════════════════════════════════════════════════════

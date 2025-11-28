@@ -40,10 +40,10 @@ import com.chris.m3usuite.data.repo.ProfileObxRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.ui.auth.CreateProfileSheet
 import com.chris.m3usuite.ui.debug.safePainter
+import com.chris.m3usuite.ui.focus.FocusZoneId
 import com.chris.m3usuite.ui.focus.TvRow
 import com.chris.m3usuite.ui.focus.focusGroup
 import com.chris.m3usuite.ui.focus.focusZone
-import com.chris.m3usuite.ui.focus.FocusZoneId
 import com.chris.m3usuite.ui.theme.DesignTokens
 import com.chris.m3usuite.ui.util.rememberAvatarModel
 import kotlinx.coroutines.Dispatchers

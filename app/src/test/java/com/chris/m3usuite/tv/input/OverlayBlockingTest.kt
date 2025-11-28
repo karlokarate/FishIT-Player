@@ -183,7 +183,7 @@ class OverlayBlockingTest {
         val action = DefaultTvScreenConfigs.resolve(TvScreenId.PLAYER, TvKeyRole.DPAD_LEFT, ctx)
         assertNull(action) // Blocked because it's a seek action, not navigation
     }
-    
+
     @Test
     fun `resolve allows navigation in screen with navigation mapping and overlay`() {
         // Use LIBRARY where DPAD_LEFT maps to NAVIGATE_LEFT

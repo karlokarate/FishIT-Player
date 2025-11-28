@@ -1,6 +1,5 @@
 package com.chris.m3usuite.player.internal.ui
 
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -44,21 +43,22 @@ class PIPButtonRefactorTest {
     @Test
     fun `onEnterMiniPlayer callback exists in InternalPlayerController`() {
         // Verify that InternalPlayerController has the onEnterMiniPlayer callback
-        val controller = com.chris.m3usuite.player.internal.state.InternalPlayerController(
-            onPlayPause = {},
-            onSeekTo = {},
-            onSeekBy = {},
-            onChangeSpeed = {},
-            onToggleLoop = {},
-            onEnterPip = {},
-            onToggleSettingsDialog = {},
-            onToggleTracksDialog = {},
-            onToggleSpeedDialog = {},
-            onToggleSleepTimerDialog = {},
-            onToggleDebugInfo = {},
-            onCycleAspectRatio = {},
-            onEnterMiniPlayer = { /* This is the Phase 7 callback */ },
-        )
+        val controller =
+            com.chris.m3usuite.player.internal.state.InternalPlayerController(
+                onPlayPause = {},
+                onSeekTo = {},
+                onSeekBy = {},
+                onChangeSpeed = {},
+                onToggleLoop = {},
+                onEnterPip = {},
+                onToggleSettingsDialog = {},
+                onToggleTracksDialog = {},
+                onToggleSpeedDialog = {},
+                onToggleSleepTimerDialog = {},
+                onToggleDebugInfo = {},
+                onCycleAspectRatio = {},
+                onEnterMiniPlayer = { /* This is the Phase 7 callback */ },
+            )
 
         // If this compiles, the callback exists
         assertTrue("onEnterMiniPlayer callback should exist", true)
@@ -68,21 +68,22 @@ class PIPButtonRefactorTest {
     fun `onEnterMiniPlayer callback is invocable`() {
         var callbackInvoked = false
 
-        val controller = com.chris.m3usuite.player.internal.state.InternalPlayerController(
-            onPlayPause = {},
-            onSeekTo = {},
-            onSeekBy = {},
-            onChangeSpeed = {},
-            onToggleLoop = {},
-            onEnterPip = {},
-            onToggleSettingsDialog = {},
-            onToggleTracksDialog = {},
-            onToggleSpeedDialog = {},
-            onToggleSleepTimerDialog = {},
-            onToggleDebugInfo = {},
-            onCycleAspectRatio = {},
-            onEnterMiniPlayer = { callbackInvoked = true },
-        )
+        val controller =
+            com.chris.m3usuite.player.internal.state.InternalPlayerController(
+                onPlayPause = {},
+                onSeekTo = {},
+                onSeekBy = {},
+                onChangeSpeed = {},
+                onToggleLoop = {},
+                onEnterPip = {},
+                onToggleSettingsDialog = {},
+                onToggleTracksDialog = {},
+                onToggleSpeedDialog = {},
+                onToggleSleepTimerDialog = {},
+                onToggleDebugInfo = {},
+                onCycleAspectRatio = {},
+                onEnterMiniPlayer = { callbackInvoked = true },
+            )
 
         // Simulate PIP button click
         controller.onEnterMiniPlayer()
@@ -93,21 +94,22 @@ class PIPButtonRefactorTest {
     @Test
     fun `onEnterMiniPlayer has default no-op implementation`() {
         // Verify that onEnterMiniPlayer has a default value and doesn't crash
-        val controller = com.chris.m3usuite.player.internal.state.InternalPlayerController(
-            onPlayPause = {},
-            onSeekTo = {},
-            onSeekBy = {},
-            onChangeSpeed = {},
-            onToggleLoop = {},
-            onEnterPip = {},
-            onToggleSettingsDialog = {},
-            onToggleTracksDialog = {},
-            onToggleSpeedDialog = {},
-            onToggleSleepTimerDialog = {},
-            onToggleDebugInfo = {},
-            onCycleAspectRatio = {},
-            // Note: onEnterMiniPlayer is NOT provided, using default
-        )
+        val controller =
+            com.chris.m3usuite.player.internal.state.InternalPlayerController(
+                onPlayPause = {},
+                onSeekTo = {},
+                onSeekBy = {},
+                onChangeSpeed = {},
+                onToggleLoop = {},
+                onEnterPip = {},
+                onToggleSettingsDialog = {},
+                onToggleTracksDialog = {},
+                onToggleSpeedDialog = {},
+                onToggleSleepTimerDialog = {},
+                onToggleDebugInfo = {},
+                onCycleAspectRatio = {},
+                // Note: onEnterMiniPlayer is NOT provided, using default
+            )
 
         // Should not throw
         controller.onEnterMiniPlayer()
@@ -121,20 +123,21 @@ class PIPButtonRefactorTest {
     @Test
     fun `onEnterPip callback still exists for legacy compatibility`() {
         // The old onEnterPip callback should still exist for any legacy code paths
-        val controller = com.chris.m3usuite.player.internal.state.InternalPlayerController(
-            onPlayPause = {},
-            onSeekTo = {},
-            onSeekBy = {},
-            onChangeSpeed = {},
-            onToggleLoop = {},
-            onEnterPip = { /* Legacy PiP callback */ },
-            onToggleSettingsDialog = {},
-            onToggleTracksDialog = {},
-            onToggleSpeedDialog = {},
-            onToggleSleepTimerDialog = {},
-            onToggleDebugInfo = {},
-            onCycleAspectRatio = {},
-        )
+        val controller =
+            com.chris.m3usuite.player.internal.state.InternalPlayerController(
+                onPlayPause = {},
+                onSeekTo = {},
+                onSeekBy = {},
+                onChangeSpeed = {},
+                onToggleLoop = {},
+                onEnterPip = { /* Legacy PiP callback */ },
+                onToggleSettingsDialog = {},
+                onToggleTracksDialog = {},
+                onToggleSpeedDialog = {},
+                onToggleSleepTimerDialog = {},
+                onToggleDebugInfo = {},
+                onCycleAspectRatio = {},
+            )
 
         // If this compiles, onEnterPip still exists
         assertTrue("onEnterPip callback should still exist", true)

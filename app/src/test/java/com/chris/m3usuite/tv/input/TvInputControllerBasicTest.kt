@@ -115,17 +115,19 @@ class TvInputControllerBasicTest {
     fun `OPEN_QUICK_ACTIONS sets quickActionsVisible to true`() {
         // Create a config that explicitly maps a key to OPEN_QUICK_ACTIONS
         // Note: In the default PLAYER config, DPAD_UP maps to FOCUS_QUICK_ACTIONS (focus zone)
-        // and MENU maps to OPEN_PLAYER_MENU. 
+        // and MENU maps to OPEN_PLAYER_MENU.
         // This test verifies the controller behavior when OPEN_QUICK_ACTIONS is resolved.
-        val customConfigs = tvInputConfig {
-            screen(TvScreenId.PLAYER) {
-                on(TvKeyRole.MENU) mapsTo TvAction.OPEN_QUICK_ACTIONS
+        val customConfigs =
+            tvInputConfig {
+                screen(TvScreenId.PLAYER) {
+                    on(TvKeyRole.MENU) mapsTo TvAction.OPEN_QUICK_ACTIONS
+                }
             }
-        }
-        val customController = DefaultTvInputController(
-            configs = customConfigs,
-            navigationDelegate = mockNavigationDelegate,
-        )
+        val customController =
+            DefaultTvInputController(
+                configs = customConfigs,
+                navigationDelegate = mockNavigationDelegate,
+            )
         val ctx = TvScreenContext.player()
 
         // MENU -> OPEN_QUICK_ACTIONS with custom config
@@ -351,7 +353,7 @@ class TvInputControllerBasicTest {
 
         controller.onKeyEvent(TvKeyRole.FAST_FORWARD, ctx)
         assertEquals(TvAction.SWITCH_SETTINGS_TAB_NEXT, mockActionListener.lastAction)
-        
+
         controller.onKeyEvent(TvKeyRole.REWIND, ctx)
         assertEquals(TvAction.SWITCH_SETTINGS_TAB_PREVIOUS, mockActionListener.lastAction)
     }

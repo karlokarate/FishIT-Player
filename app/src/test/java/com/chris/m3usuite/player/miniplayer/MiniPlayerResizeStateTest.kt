@@ -8,7 +8,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -270,10 +269,11 @@ class MiniPlayerResizeStateTest {
 
         DefaultMiniPlayerManager.applyResize(DpSize(40.dp, 22.5.dp))
 
-        val expectedSize = DpSize(
-            originalSize.width + 40.dp,
-            originalSize.height + 22.5.dp,
-        )
+        val expectedSize =
+            DpSize(
+                originalSize.width + 40.dp,
+                originalSize.height + 22.5.dp,
+            )
         assertEquals(expectedSize, DefaultMiniPlayerManager.state.value.size)
     }
 
@@ -285,10 +285,11 @@ class MiniPlayerResizeStateTest {
 
         DefaultMiniPlayerManager.applyResize(DpSize((-40).dp, (-22.5).dp))
 
-        val expectedSize = DpSize(
-            originalSize.width - 40.dp,
-            originalSize.height - 22.5.dp,
-        )
+        val expectedSize =
+            DpSize(
+                originalSize.width - 40.dp,
+                originalSize.height - 22.5.dp,
+            )
         assertEquals(expectedSize, DefaultMiniPlayerManager.state.value.size)
     }
 

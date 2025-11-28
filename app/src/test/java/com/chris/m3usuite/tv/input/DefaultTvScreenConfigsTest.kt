@@ -257,10 +257,11 @@ class DefaultTvScreenConfigsTest {
     @Test
     fun `PROFILE_GATE - DPAD_CENTER maps to SELECT_PROFILE per behavior map`() {
         // Note: ProfileGate has hasBlockingOverlay=true, so we need special handling
-        val ctx = TvScreenContext(
-            screenId = TvScreenId.PROFILE_GATE,
-            hasBlockingOverlay = false, // Test raw config without overlay filtering
-        )
+        val ctx =
+            TvScreenContext(
+                screenId = TvScreenId.PROFILE_GATE,
+                hasBlockingOverlay = false, // Test raw config without overlay filtering
+            )
         val config = DefaultTvScreenConfigs.forScreen(TvScreenId.PROFILE_GATE)
         val action = config.getRawAction(TvKeyRole.DPAD_CENTER)
         assertEquals(TvAction.SELECT_PROFILE, action)
@@ -268,10 +269,11 @@ class DefaultTvScreenConfigsTest {
 
     @Test
     fun `PROFILE_GATE - MENU maps to OPEN_PROFILE_OPTIONS per behavior map`() {
-        val ctx = TvScreenContext(
-            screenId = TvScreenId.PROFILE_GATE,
-            hasBlockingOverlay = false,
-        )
+        val ctx =
+            TvScreenContext(
+                screenId = TvScreenId.PROFILE_GATE,
+                hasBlockingOverlay = false,
+            )
         val config = DefaultTvScreenConfigs.forScreen(TvScreenId.PROFILE_GATE)
         val action = config.getRawAction(TvKeyRole.MENU)
         assertEquals(TvAction.OPEN_PROFILE_OPTIONS, action)
@@ -343,15 +345,16 @@ class DefaultTvScreenConfigsTest {
 
     @Test
     fun `all major screens have configurations`() {
-        val requiredScreens = listOf(
-            TvScreenId.PLAYER,
-            TvScreenId.LIBRARY,
-            TvScreenId.START,
-            TvScreenId.DETAIL,
-            TvScreenId.SETTINGS,
-            TvScreenId.PROFILE_GATE,
-            TvScreenId.MINI_PLAYER,
-        )
+        val requiredScreens =
+            listOf(
+                TvScreenId.PLAYER,
+                TvScreenId.LIBRARY,
+                TvScreenId.START,
+                TvScreenId.DETAIL,
+                TvScreenId.SETTINGS,
+                TvScreenId.PROFILE_GATE,
+                TvScreenId.MINI_PLAYER,
+            )
 
         for (screenId in requiredScreens) {
             val config = DefaultTvScreenConfigs.forScreen(screenId)
@@ -366,15 +369,16 @@ class DefaultTvScreenConfigsTest {
 
     @Test
     fun `BACK action is mapped on all major screens`() {
-        val screensWithBack = listOf(
-            TvScreenId.PLAYER,
-            TvScreenId.LIBRARY,
-            TvScreenId.START,
-            TvScreenId.DETAIL,
-            TvScreenId.SETTINGS,
-            TvScreenId.PROFILE_GATE,
-            TvScreenId.MINI_PLAYER,
-        )
+        val screensWithBack =
+            listOf(
+                TvScreenId.PLAYER,
+                TvScreenId.LIBRARY,
+                TvScreenId.START,
+                TvScreenId.DETAIL,
+                TvScreenId.SETTINGS,
+                TvScreenId.PROFILE_GATE,
+                TvScreenId.MINI_PLAYER,
+            )
 
         for (screenId in screensWithBack) {
             val config = DefaultTvScreenConfigs.forScreen(screenId)

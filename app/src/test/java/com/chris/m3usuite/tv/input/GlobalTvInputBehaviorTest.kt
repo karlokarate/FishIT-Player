@@ -1,7 +1,6 @@
 package com.chris.m3usuite.tv.input
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -195,18 +194,19 @@ class GlobalTvInputBehaviorTest {
         val startCtx = TvScreenContext.start()
 
         // Verify key mappings match between LIBRARY and START
-        val keysToTest = listOf(
-            TvKeyRole.DPAD_CENTER,
-            TvKeyRole.DPAD_UP,
-            TvKeyRole.DPAD_DOWN,
-            TvKeyRole.DPAD_LEFT,
-            TvKeyRole.DPAD_RIGHT,
-            TvKeyRole.FAST_FORWARD,
-            TvKeyRole.REWIND,
-            TvKeyRole.PLAY_PAUSE,
-            TvKeyRole.MENU,
-            TvKeyRole.BACK,
-        )
+        val keysToTest =
+            listOf(
+                TvKeyRole.DPAD_CENTER,
+                TvKeyRole.DPAD_UP,
+                TvKeyRole.DPAD_DOWN,
+                TvKeyRole.DPAD_LEFT,
+                TvKeyRole.DPAD_RIGHT,
+                TvKeyRole.FAST_FORWARD,
+                TvKeyRole.REWIND,
+                TvKeyRole.PLAY_PAUSE,
+                TvKeyRole.MENU,
+                TvKeyRole.BACK,
+            )
 
         for (key in keysToTest) {
             val libAction = DefaultTvScreenConfigs.resolve(TvScreenId.LIBRARY, key, libCtx)
@@ -640,14 +640,15 @@ class GlobalTvInputBehaviorTest {
 
     @Test
     fun `All major screens have BACK mapped`() {
-        val screens = listOf(
-            TvScreenId.PLAYER to TvScreenContext.player(),
-            TvScreenId.LIBRARY to TvScreenContext.library(),
-            TvScreenId.START to TvScreenContext.start(),
-            TvScreenId.DETAIL to TvScreenContext.detail(),
-            TvScreenId.SETTINGS to TvScreenContext.settings(),
-            TvScreenId.MINI_PLAYER to TvScreenContext.miniPlayer(),
-        )
+        val screens =
+            listOf(
+                TvScreenId.PLAYER to TvScreenContext.player(),
+                TvScreenId.LIBRARY to TvScreenContext.library(),
+                TvScreenId.START to TvScreenContext.start(),
+                TvScreenId.DETAIL to TvScreenContext.detail(),
+                TvScreenId.SETTINGS to TvScreenContext.settings(),
+                TvScreenId.MINI_PLAYER to TvScreenContext.miniPlayer(),
+            )
 
         for ((screenId, ctx) in screens) {
             val action = DefaultTvScreenConfigs.resolve(screenId, TvKeyRole.BACK, ctx)
@@ -676,5 +677,6 @@ class GlobalTvInputBehaviorTest {
 
     // Import extension functions
     private fun TvAction.isFocusAction() = TvAction.Companion.run { this@isFocusAction.isFocusAction() }
+
     private fun TvAction.getSeekDeltaMs() = TvAction.Companion.run { this@getSeekDeltaMs.getSeekDeltaMs() }
 }
