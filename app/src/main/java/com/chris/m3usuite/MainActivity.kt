@@ -825,7 +825,26 @@ class MainActivity : ComponentActivity() {
     /**
      * Update PiP params when playback state changes.
      *
-     * Called from compose layer to update auto-enter state.
+     * ════════════════════════════════════════════════════════════════════════════════
+     * When to Call This Method
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * This method should be called when playback state changes that affect PiP behavior:
+     * - When playback starts/stops (`PlaybackSession.isPlaying` changes)
+     * - When MiniPlayer visibility changes (`MiniPlayerState.visible`)
+     * - Before entering/leaving activities that may trigger PiP
+     *
+     * **Why it's needed:**
+     * On API 31+, `setAutoEnterEnabled(true)` only takes effect when the params are
+     * actively set via `setPictureInPictureParams()`. Calling this method ensures
+     * the system has the latest state for auto-enter decisions.
+     *
+     * **Callers:**
+     * - Compose layer via `LaunchedEffect` observing playback state
+     * - Activity lifecycle hooks if needed
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.3
      */
     @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
     fun updatePipParams() {

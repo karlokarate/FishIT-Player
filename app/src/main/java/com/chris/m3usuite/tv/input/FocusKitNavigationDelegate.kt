@@ -118,6 +118,18 @@ class FocusKitNavigationDelegate(
             }
             else -> {
                 // Neither zone currently focused → default to MINI_PLAYER
+                // This happens when:
+                // - Focus is on a screen element not marked with focusZone()
+                // - Focus is in a dialog or overlay
+                // - No focusable element has focus yet
+                //
+                // We default to MINI_PLAYER because the user explicitly triggered
+                // TOGGLE_MINI_PLAYER_FOCUS (long-press PLAY), indicating intent
+                // to interact with the MiniPlayer.
+                com.chris.m3usuite.core.debug.GlobalDebug.logDpad(
+                    "TOGGLE_MINI_PLAYER_FOCUS fallback",
+                    mapOf("currentZone" to currentZone?.name),
+                )
                 FocusKit.requestZoneFocus(FocusZoneId.MINI_PLAYER)
             }
         }

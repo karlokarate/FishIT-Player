@@ -646,63 +646,54 @@ object DefaultMiniPlayerManager : MiniPlayerManager { ... }
 
 **Goal:** Implement system PiP only when the Activity is backgrounded on phones/tablets.
 
-### Task 5.1: Implement Activity Lifecycle PiP Entry ⬜
-**Files to Modify:**
+**Status: ✅ DONE (Phase 7 Task 2)**
+
+### Task 5.1: Implement Activity Lifecycle PiP Entry ✅
+**Files Modified:**
 - `app/src/main/java/com/chris/m3usuite/MainActivity.kt`
 
 **Implementation:**
-```kotlin
-override fun onUserLeaveHint() {
-    super.onUserLeaveHint()
-    if (!FocusKit.isTvDevice(this) &&
-        PlaybackSession.current()?.isPlaying == true &&
-        !MiniPlayerManager.state.value.visible
-    ) {
-        enterPictureInPictureIfSupported()
-    }
-}
-```
-
-**Alternative:** Use `setAutoEnterEnabled(true)` on API 31+ for automatic PiP entry.
+- Added `onUserLeaveHint()` for API < 31 with conditions:
+  - NOT a TV device (`isTvDevice(this) == false`)
+  - `PlaybackSession.isPlaying.value == true`
+  - `MiniPlayerState.visible == false`
+- Added `buildPictureInPictureParams()` with 16:9 aspect ratio
+- Added `setAutoEnterEnabled(true)` for API 31+ in `buildPictureInPictureParams()`
+- Added `tryEnterSystemPip()` helper method
+- Added `updatePipParams()` for dynamic state updates
 
 **Contract Reference:** Section 5.1
 
-**Tests Required:**
-- PiP enters on Home button (phone)
-- PiP enters on Recents (phone)
-- PiP does NOT enter when MiniPlayer is visible
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/SystemPiPBehaviorTest.kt`
 
 ---
 
-### Task 5.2: Block System PiP from UI Button ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/player/internal/system/InternalPlayerSystemUi.kt`
+### Task 5.2: Block System PiP from UI Button ✅
+**Completed in Phase 7 Task 2:**
+- PIP button now calls `controller.onEnterMiniPlayer` instead of `requestPictureInPicture()`
+- System PiP only triggered via Activity lifecycle (Home/Recents)
 
-**Implementation:**
-- Remove or guard `requestPictureInPicture()` to never be called from UI buttons
-- UI PIP button always goes to in-app MiniPlayer
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt` (Phase 7 Task 2)
 
 **Contract Reference:** Section 5.1
 
-**Tests Required:**
-- UI button never triggers native PiP
-
 ---
 
-### Task 5.3: Fire TV PiP Behavior ⬜
-**Files to Modify:**
+### Task 5.3: Fire TV PiP Behavior ✅
+**Files Modified:**
 - `app/src/main/java/com/chris/m3usuite/MainActivity.kt`
 
 **Implementation:**
-- On TV devices (`FocusKit.isTvDevice() == true`):
-  - Do NOT call `enterPictureInPictureMode()` from app code
-  - Allow OS-driven PiP behavior if FireOS chooses to do so
+- Added `isTvDevice(this)` check in `tryEnterSystemPip()` and `shouldAutoEnterPip()`
+- On TV devices: Never call `enterPictureInPictureMode()` from app code
+- FireOS can still trigger PiP if it chooses (not blocked at OS level)
 
 **Contract Reference:** Section 5.2
 
-**Tests Required:**
-- No native PiP call on Fire TV from app code
-- App doesn't crash if FireOS triggers PiP
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/player/miniplayer/SystemPiPBehaviorTest.kt`
 
 ---
 
@@ -710,14 +701,61 @@ override fun onUserLeaveHint() {
 
 **Goal:** Extend TV input handling for MiniPlayer-specific actions and blocking rules.
 
-### Task 6.1: Add TvAction.TOGGLE_MINI_PLAYER_FOCUS ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/tv/input/TvAction.kt`
+**Status: ✅ PARTIALLY DONE (Phase 7 Task 2)**
+
+### Task 6.1: Add TvAction.TOGGLE_MINI_PLAYER_FOCUS ✅
+**Completed in Phase 7 Task 1:**
+- Added `TOGGLE_MINI_PLAYER_FOCUS` action to `TvAction.kt`
+- Updated `isFocusAction()` helper
+
+**Contract Reference:** Section 6
+
+---
+
+### Task 6.2: Map Long-Press PLAY to TOGGLE_MINI_PLAYER_FOCUS ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvKeyRole.kt`
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvKeyMapper.kt`
+- `app/src/main/java/com/chris/m3usuite/tv/input/DefaultTvScreenConfigs.kt`
+- `app/src/main/java/com/chris/m3usuite/tv/input/FocusKitNavigationDelegate.kt`
 
 **Implementation:**
-```kotlin
-/**
- * Toggle focus between MiniPlayer and primary UI.
+- Added `PLAY_PAUSE_LONG` TvKeyRole for long-press detection
+- Added long-press detection in `TvKeyMapper.mapDebounced()`:
+  - Uses `event.isLongPress` or `repeatCount >= 3` threshold
+- Added `PLAY_PAUSE_LONG → TOGGLE_MINI_PLAYER_FOCUS` mappings for PLAYER, LIBRARY, START screens
+- Updated `FocusKitNavigationDelegate.focusZone()` to handle TOGGLE_MINI_PLAYER_FOCUS:
+  - If MiniPlayer not visible → no-op (return false)
+  - If MiniPlayer visible → toggle between MINI_PLAYER and PRIMARY_UI zones
+
+**Contract Reference:** Section 6
+
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/ToggleMiniPlayerFocusTest.kt`
+
+---
+
+### Task 6.3: Block ROW_FAST_SCROLL When MiniPlayer Visible ✅
+**Completed in Phase 7 Task 2:**
+- Added `filterForMiniPlayer()` function to `TvScreenInputConfig.kt`
+- Added `isMiniPlayerVisible` field to `TvScreenContext`
+
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenInputConfig.kt`
+- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenContext.kt`
+
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/TvInputMiniPlayerFilterTest.kt`
+
+**Contract Reference:** Section 6
+
+---
+
+### Task 6.4: Route PIP_* Actions to MiniPlayerManager ⬜
+**Files to Modify:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/DefaultTvInputController.kt`
+
+**Implementation:**
  * Triggered by long-press PLAY.
  * Contract: Section 6
  */
@@ -729,42 +767,6 @@ TOGGLE_MINI_PLAYER_FOCUS,
 **Tests Required:**
 - Enum value exists
 - Category helper methods updated
-
----
-
-### Task 6.2: Map Long-Press PLAY to TOGGLE_MINI_PLAYER_FOCUS ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/tv/input/GlobalTvInputHost.kt`
-- `app/src/main/java/com/chris/m3usuite/tv/input/DefaultTvScreenConfigs.kt`
-
-**Implementation:**
-- Detect long-press PLAY (hold > 500ms)
-- Dispatch `TvAction.TOGGLE_MINI_PLAYER_FOCUS` instead of `PLAY_PAUSE`
-- In handler: Toggle focus between `MINI_PLAYER` and `PRIMARY_UI` FocusZones
-
-**Contract Reference:** Section 6
-
-**Tests Required:**
-- Long-press detected correctly
-- Focus toggles between zones
-
----
-
-### Task 6.3: Block ROW_FAST_SCROLL When MiniPlayer Visible ✅
-**Completed:** Added `filterForMiniPlayer()` function to `TvScreenInputConfig.kt`:
-- Blocks `ROW_FAST_SCROLL_FORWARD` when MiniPlayer visible
-- Blocks `ROW_FAST_SCROLL_BACKWARD` when MiniPlayer visible
-- Added `isMiniPlayerVisible` field to `TvScreenContext`
-- Updated `library()` and `start()` factory methods with `isMiniPlayerVisible` parameter
-
-**Files Modified:**
-- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenInputConfig.kt`
-- `app/src/main/java/com/chris/m3usuite/tv/input/TvScreenContext.kt`
-
-**Tests Created:**
-- `app/src/test/java/com/chris/m3usuite/tv/input/TvInputMiniPlayerFilterTest.kt`
-
-**Contract Reference:** Section 6
 
 ---
 
@@ -806,35 +808,32 @@ TOGGLE_MINI_PLAYER_FOCUS,
 
 **Goal:** Integrate MiniPlayer with FocusKit's zone system.
 
-### Task 7.1: Add FocusZoneId.PRIMARY_UI ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/focus/FocusKit.kt`
+**Status: ✅ DONE (Phase 7 Task 2)**
 
-**Implementation:**
-- Add `PRIMARY_UI` to `FocusZoneId` enum
-- Document as "Main app UI area (non-MiniPlayer)"
+### Task 7.1: Add FocusZoneId.PRIMARY_UI ✅
+**Completed in Phase 7 Task 1:**
+- Added `PRIMARY_UI` to `FocusZoneId` enum in `FocusKit.kt`
 
 **Contract Reference:** Section 6
-
-**Tests Required:**
-- Enum value exists
 
 ---
 
-### Task 7.2: Implement Zone-Based Focus Toggle ⬜
-**Files to Modify:**
-- `app/src/main/java/com/chris/m3usuite/ui/focus/FocusKit.kt`
+### Task 7.2: Implement Zone-Based Focus Toggle ✅
+**Files Modified:**
+- `app/src/main/java/com/chris/m3usuite/tv/input/FocusKitNavigationDelegate.kt`
 
 **Implementation:**
-- Add `toggleMiniPlayerFocus()` function:
-  - If current zone is `MINI_PLAYER` → request focus on `PRIMARY_UI`
-  - If current zone is NOT `MINI_PLAYER` → request focus on `MINI_PLAYER`
+- Added `handleToggleMiniPlayerFocus()` private method:
+  - Checks if MiniPlayer is visible via `miniPlayerManager.state.value.visible`
+  - If not visible → returns false (no-op)
+  - If visible → toggles focus between `MINI_PLAYER` and `PRIMARY_UI` zones
+  - Uses `FocusKit.getCurrentZone()` to determine current zone
+  - Calls `FocusKit.requestZoneFocus()` to move focus
 
 **Contract Reference:** Section 6
 
-**Tests Required:**
-- Focus toggles correctly
-- Works with long-press PLAY
+**Tests Created:**
+- `app/src/test/java/com/chris/m3usuite/tv/input/ToggleMiniPlayerFocusTest.kt`
 
 ---
 

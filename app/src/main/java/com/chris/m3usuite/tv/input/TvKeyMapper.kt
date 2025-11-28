@@ -31,8 +31,26 @@ object TvKeyMapper {
      * On Android TV/Fire TV, holding a key generates repeated ACTION_DOWN events
      * with increasing repeatCount. A repeatCount >= this threshold indicates a long press.
      *
-     * Threshold of 3 provides approximately 450-600ms hold time on most devices
-     * (typical key repeat rate is ~150-200ms).
+     * ════════════════════════════════════════════════════════════════════════════════
+     * Timing Expectations (approximate):
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * - Typical key repeat rate: ~150-200ms per repeat on most devices
+     * - Threshold of 3 → approximately 450-600ms hold time
+     *
+     * **Device Variations:**
+     * - Fire TV remotes: ~150ms repeat rate
+     * - Android TV (Google): ~170ms repeat rate
+     * - Custom OEM remotes: May vary significantly
+     *
+     * **Future Adjustments:**
+     * If the long-press detection feels too sensitive or sluggish on specific devices,
+     * this threshold can be adjusted. Higher values = longer hold required.
+     * Consider making this configurable via SettingsStore if device-specific tuning
+     * is needed.
+     *
+     * **Contract Reference:**
+     * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 6
      */
     private const val LONG_PRESS_REPEAT_THRESHOLD = 3
 

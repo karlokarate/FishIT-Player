@@ -4551,4 +4551,107 @@ All implementations align with:
 
 ---
 
+## Phase 7 – Task 3: System PiP, Full↔Mini Navigation, and TOGGLE_MINI_PLAYER_FOCUS (COMPLETE)
+
+**Date:** 2025-11-28
+
+**Status:** ✅ **COMPLETE** – Groups 5, 6 (partial), 7 implemented
+
+This task implements System PiP for phones/tablets, long-press PLAY focus toggle, and completes the navigation flow for Full↔Mini transitions.
+
+### What Was Done
+
+**1. System PiP for Phones/Tablets (Group 5)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `MainActivity.kt` | Added `onUserLeaveHint()` for API < 31 |
+| `buildPictureInPictureParams()` | 16:9 aspect ratio, `setAutoEnterEnabled(true)` for API >= 31 |
+| `tryEnterSystemPip()` | Conditions: NOT TV, isPlaying, MiniPlayer not visible |
+| `shouldAutoEnterPip()` | Same conditions for auto-enter |
+| `updatePipParams()` | Dynamic state updates for PiP params |
+
+**Conditions for System PiP Entry:**
+- Device is NOT a TV (`isTvDevice(context) == false`)
+- `PlaybackSession.isPlaying.value == true`
+- `MiniPlayerState.visible == false` (in-app MiniPlayer takes precedence)
+
+**2. Long-Press PLAY → TOGGLE_MINI_PLAYER_FOCUS (Group 6)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `TvKeyRole.kt` | Added `PLAY_PAUSE_LONG` role |
+| `TvKeyMapper.kt` | Long-press detection via `isLongPress` or `repeatCount >= 3` |
+| `DefaultTvScreenConfigs.kt` | Added `PLAY_PAUSE_LONG → TOGGLE_MINI_PLAYER_FOCUS` for PLAYER, LIBRARY, START |
+
+**3. Focus Toggle Between MINI_PLAYER and PRIMARY_UI (Group 7)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `FocusKitNavigationDelegate.kt` | Added `handleToggleMiniPlayerFocus()` method |
+| Focus Toggle Logic | If MiniPlayer not visible → no-op; else toggle between zones |
+| `miniPlayerManager` | Injected via constructor for state checks |
+
+**Behavior:**
+- If `MiniPlayerState.visible == false` → action ignored (return false)
+- If current zone is `PRIMARY_UI` → focus `MINI_PLAYER`
+- If current zone is `MINI_PLAYER` → focus `PRIMARY_UI`
+- If neither zone → default to `MINI_PLAYER`
+
+**4. Unit Tests Created**
+
+| Test Class | Coverage |
+|------------|----------|
+| `ToggleMiniPlayerFocusTest.kt` | TOGGLE_MINI_PLAYER_FOCUS handling, zone toggle, isFocusAction() |
+| `MiniPlayerNavigationTest.kt` | Enter/exit transitions, returnRoute storage, Full↔Mini↔Full cycles |
+| `SystemPiPBehaviorTest.kt` | PiP entry conditions, TV blocking, phone/tablet scenarios |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `app/src/test/java/com/chris/m3usuite/tv/input/ToggleMiniPlayerFocusTest.kt` | Focus toggle tests |
+| `app/src/test/java/com/chris/m3usuite/player/miniplayer/MiniPlayerNavigationTest.kt` | Navigation tests |
+| `app/src/test/java/com/chris/m3usuite/player/miniplayer/SystemPiPBehaviorTest.kt` | System PiP tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `app/src/main/java/com/chris/m3usuite/MainActivity.kt` | Added System PiP lifecycle methods |
+| `app/src/main/java/com/chris/m3usuite/tv/input/TvKeyRole.kt` | Added `PLAY_PAUSE_LONG` role |
+| `app/src/main/java/com/chris/m3usuite/tv/input/TvKeyMapper.kt` | Added long-press detection |
+| `app/src/main/java/com/chris/m3usuite/tv/input/DefaultTvScreenConfigs.kt` | Added `PLAY_PAUSE_LONG` mappings |
+| `app/src/main/java/com/chris/m3usuite/tv/input/FocusKitNavigationDelegate.kt` | Added focus toggle handling |
+| `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` | Marked Groups 5, 6, 7 tasks as DONE |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 4.3, 5, 6
+- `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Groups 5, 6.2, 7.1, 7.2
+
+### What Was NOT Done (Per Task Scope)
+
+- ❌ **Task 6.4** – PIP_* action routing to PlaybackSession
+- ❌ **Task 6.5** – DOUBLE_BACK behavior with MiniPlayer
+- ❌ **Task 7.3** – Prevent implicit focus stealing
+- ❌ **Group 8** – Full navigation wiring with returnRoute
+- ❌ **Group 9** – Comprehensive testing and quality
+
+### What's Next (Phase 7 Remaining)
+
+- **Task 6.4:** Route PIP_SEEK_*, PIP_TOGGLE_PLAY_PAUSE to PlaybackSession
+- **Task 6.5:** Ensure DOUBLE_BACK works with MiniPlayer visible
+- **Task 7.3:** Focus stealing prevention
+- **Group 8:** Complete navigation and returnRoute behavior
+- **Group 9:** Testing and quality gates
+
+---
+
 **Last Updated:** 2025-11-28
