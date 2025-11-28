@@ -2,6 +2,7 @@ package com.chris.m3usuite.tv.input
 
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.player.miniplayer.MiniPlayerMode
+import com.chris.m3usuite.player.miniplayer.RESIZE_SIZE_DELTA
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -274,9 +275,7 @@ class MiniPlayerInputIsolationTest {
         DefaultMiniPlayerManager.enterResizeMode()
 
         // Make changes
-        DefaultMiniPlayerManager.applyResize(
-            com.chris.m3usuite.player.miniplayer.RESIZE_SIZE_DELTA,
-        )
+        DefaultMiniPlayerManager.applyResize(RESIZE_SIZE_DELTA)
 
         // Cancel
         DefaultMiniPlayerManager.cancelResize()
