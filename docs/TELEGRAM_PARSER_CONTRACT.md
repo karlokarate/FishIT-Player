@@ -98,6 +98,46 @@ These structures must be mirrored by internal DTOs used for parsing, both for CL
 
 ---
 
+## 2.1 Finalized Design Decisions
+
+The following decisions are **FINAL** and MUST be followed by all implementation work. See `TELEGRAM_PARSER_COPILOT_TASK.md` for detailed rationale.
+
+### File ID Strategy
+- `remoteId` and `uniqueId` are the **primary identifiers** for all media files
+- `fileId` is volatile and **MUST NEVER be the primary key**
+- Playback: Use `getRemoteFile(remoteId)` to resolve `fileId` at playback time
+
+### ObjectBox Migration
+- **Do NOT migrate** legacy `ObxTelegramMessage` data
+- Create new `ObxTelegramItem` entity aligned with new domain model
+- Full resync is acceptable; old pipeline is non-functional
+
+### Parser Architecture
+- Legacy `MediaInfo`/`ParsedItem` types MUST NOT be used in new pipeline
+- New pipeline: `ExportMessage` → `TelegramBlockGrouper` → `TelegramMetadataExtractor` → `TelegramItemBuilder`
+
+### Grouping Strategy
+- **120-second time-window** is the canonical grouping mechanism
+- Structured triplet detection (Video+Text+Photo) is optional refinement within blocks
+
+### Adult Content Detection (Conservative)
+- **Primary**: Chat title only (`AdultHeuristics.isAdultChatTitle()`)
+- **Secondary**: Caption ONLY for extreme terms: `bareback`, `gangbang`, `bukkake`, `fisting`, `bdsm`, `deepthroat`, `cumshot`
+- **NOT USED**: FSK values, genres, broad NSFW heuristics
+
+### Aspect Ratios
+- Poster: `width/height <= 0.85`
+- Backdrop: `width/height >= 1.6`
+
+### JSON Library
+- ALL new parser code MUST use `kotlinx.serialization`
+
+### Auth & Ingestion Constraints
+- Ingestion MUST NOT run unless auth state is `READY`
+- All auth transitions logged via `TelegramLogRepository`
+
+---
+
 ## 3. Terminology
 
 - **ExportMessage** – internal DTO representing one Telegram message (video, photo, text, or “other”), independent of TDLib DTOs or JSON.
@@ -203,9 +243,16 @@ enum class TelegramItemType {
     POSTER_ONLY
 }
 
+/**
+ * Reference to a video file in TDLib.
+ * 
+ * IMPORTANT: remoteId and uniqueId are REQUIRED and stable across sessions.
+ * fileId is OPTIONAL and may become stale - use getRemoteFile(remoteId) to refresh.
+ */
 data class TelegramMediaRef(
-    val remoteId: String,
-    val uniqueId: String,
+    val remoteId: String,      // REQUIRED - stable across sessions
+    val uniqueId: String,      // REQUIRED - stable across sessions
+    val fileId: Int? = null,   // OPTIONAL - volatile, may become stale
     val sizeBytes: Long,
     val mimeType: String?,
     val durationSeconds: Int?,
@@ -213,9 +260,32 @@ data class TelegramMediaRef(
     val height: Int?
 )
 
+/**
+ * Reference to a document/archive file in TDLib.
+ * Used for AUDIOBOOK and RAR_ITEM types.
+ * 
+ * IMPORTANT: remoteId and uniqueId are REQUIRED and stable across sessions.
+ * fileId is OPTIONAL and may become stale.
+ */
+data class TelegramDocumentRef(
+    val remoteId: String,      // REQUIRED - stable across sessions
+    val uniqueId: String,      // REQUIRED - stable across sessions
+    val fileId: Int? = null,   // OPTIONAL - volatile, may become stale
+    val sizeBytes: Long,
+    val mimeType: String?,
+    val fileName: String?
+)
+
+/**
+ * Reference to an image file in TDLib.
+ * 
+ * IMPORTANT: remoteId and uniqueId are REQUIRED and stable across sessions.
+ * fileId is OPTIONAL and may become stale.
+ */
 data class TelegramImageRef(
-    val remoteId: String,
-    val uniqueId: String,
+    val remoteId: String,      // REQUIRED - stable across sessions
+    val uniqueId: String,      // REQUIRED - stable across sessions
+    val fileId: Int? = null,   // OPTIONAL - volatile, may become stale
     val width: Int,
     val height: Int,
     val sizeBytes: Long
@@ -226,21 +296,31 @@ data class TelegramMetadata(
     val originalTitle: String?,
     val year: Int?,
     val lengthMinutes: Int?,
-    val fsk: Int?,
+    val fsk: Int?,             // For display only, NOT used for isAdult classification
     val productionCountry: String?,
     val collection: String?,
     val director: String?,
     val tmdbRating: Double?,
-    val genres: List<String>,
+    val genres: List<String>,  // For display only, NOT used for isAdult classification
     val tmdbUrl: String?,
-    val isAdult: Boolean
+    val isAdult: Boolean       // See "Adult Content Detection" design decision
 )
 
+/**
+ * Normalized domain item representing a Telegram media item.
+ * 
+ * Key invariants:
+ * - For MOVIE/SERIES_EPISODE/CLIP: videoRef is non-null, documentRef is null
+ * - For AUDIOBOOK/RAR_ITEM: documentRef is non-null, videoRef is null
+ * - For POSTER_ONLY: both videoRef and documentRef are null
+ * - Grouping is based on 120-second time windows (canonical)
+ */
 data class TelegramItem(
     val chatId: Long,
     val anchorMessageId: Long,
     val type: TelegramItemType,
-    val videoRef: TelegramMediaRef?,
+    val videoRef: TelegramMediaRef?,      // For MOVIE/SERIES_EPISODE/CLIP
+    val documentRef: TelegramDocumentRef?, // For AUDIOBOOK/RAR_ITEM
     val posterRef: TelegramImageRef?,
     val backdropRef: TelegramImageRef?,
     val textMessageId: Long?,
@@ -252,25 +332,44 @@ data class TelegramItem(
 
 ### 5.4 ObjectBox mapping
 
-There MUST be an ObjectBox entity mirroring the important fields:
+There MUST be an ObjectBox entity `ObxTelegramItem` mirroring the important fields:
 
 - Identity:
-  - `chatId`
-  - `anchorMessageId` (primary logical key; typically the video’s message ID)
-- Video reference:
-  - `videoRemoteId`, `videoUniqueId`, `videoSize`, `videoMimeType`,
-  - `videoDurationSeconds`, `videoWidth`, `videoHeight`
+  - `chatId` (indexed)
+  - `anchorMessageId` (indexed; primary logical key; typically the video's message ID)
+- Item type:
+  - `itemType: String` (enum name: MOVIE, SERIES_EPISODE, CLIP, AUDIOBOOK, RAR_ITEM, POSTER_ONLY)
+- Video reference (for MOVIE/SERIES_EPISODE/CLIP):
+  - `videoRemoteId: String?` (REQUIRED when videoRef present)
+  - `videoUniqueId: String?` (REQUIRED when videoRef present)
+  - `videoFileId: Int?` (OPTIONAL - volatile, may become stale)
+  - `videoSizeBytes: Long?`, `videoMimeType: String?`
+  - `videoDurationSeconds: Int?`, `videoWidth: Int?`, `videoHeight: Int?`
+- Document reference (for AUDIOBOOK/RAR_ITEM):
+  - `documentRemoteId: String?` (REQUIRED when documentRef present)
+  - `documentUniqueId: String?` (REQUIRED when documentRef present)
+  - `documentFileId: Int?` (OPTIONAL - volatile, may become stale)
+  - `documentSizeBytes: Long?`, `documentMimeType: String?`, `documentFileName: String?`
 - Images:
-  - Poster: `posterRemoteId`, `posterUniqueId`, `posterWidth`, `posterHeight`
-  - Backdrop: `backdropRemoteId`, `backdropUniqueId`, `backdropWidth`, `backdropHeight`
+  - Poster: `posterRemoteId`, `posterUniqueId`, `posterFileId?`, `posterWidth`, `posterHeight`, `posterSizeBytes`
+  - Backdrop: `backdropRemoteId`, `backdropUniqueId`, `backdropFileId?`, `backdropWidth`, `backdropHeight`, `backdropSizeBytes`
 - Metadata:
-  - `title`, `originalTitle`, `year`, `lengthMinutes`, `fsk`,
-    `productionCountry`, `collection`, `director`,
-    `tmdbRating`, `tmdbUrl`, `isAdult`
+  - `title`, `originalTitle`, `year`, `lengthMinutes`, `fsk`
+  - `productionCountry`, `collection`, `director`
+  - `tmdbRating`, `tmdbUrl`, `isAdult`
+  - `genresJson` (serialized list as JSON string)
+- Related message IDs:
+  - `textMessageId: Long?`, `photoMessageId: Long?`
 - Timestamps:
-  - `createdAtUtc` based on `createdAtIso`
+  - `createdAtUtc: Long` (epoch millis, based on `createdAtIso`)
 
-ObjectBox-generated `id` is purely technical. The **logical identity** of an item is `(chatId, anchorMessageId)`.
+**IMPORTANT**: 
+- ObjectBox-generated `id` is purely technical
+- The **logical identity** of an item is `(chatId, anchorMessageId)`
+- `remoteId`/`uniqueId` are REQUIRED for all file references
+- `fileId` is OPTIONAL and may become stale after TDLib cache changes
+
+**Migration note**: Do NOT migrate data from legacy `ObxTelegramMessage`. Create fresh `ObxTelegramItem` entities via full resync.
 
 ---
 
@@ -334,9 +433,17 @@ Given an anchored `ExportVideo`:
 - Secondary source: `ExportVideo`:
   - Derive `title` and `year` from `fileName` pattern `<title> - <year>.mp4` if text metadata is missing.
   - Derive fallback `title` from caption when present.
-- `isAdult`:
-  - `fsk >= 18`, or
-  - `genres` containing “adult”, “erotik”, etc.
+- **`isAdult` (CONSERVATIVE RULES)**:
+  - **Primary signal**: Chat title only.
+    - Use helper: `AdultHeuristics.isAdultChatTitle(title: String): Boolean`
+    - Matches patterns like "porn", "xxx", "adult", "18+" in chat titles
+  - **Secondary signal**: Caption text ONLY for **extremely explicit sexual terms**:
+    - Whitelist: `bareback`, `gangbang`, `bukkake`, `fisting`, `bdsm`, `deepthroat`, `cumshot`
+    - Use helper: `AdultHeuristics.hasExtremeExplicitTerms(caption: String): Boolean`
+  - **NOT used for adult classification**:
+    - FSK value (FSK 18 does NOT imply adult content)
+    - Genre-based classification
+    - Broad NSFW heuristics
 - If metadata is inconsistent across multiple texts:
   - Favor the text closest in time to the video anchor.
   - TMDb URL, when present, is the strongest identifier and MUST be attached.
