@@ -44,10 +44,12 @@ class TelegramSyncWorker(
 ) : CoroutineWorker(context, params) {
     private val settingsStore = SettingsStore(context)
 
-    // NOTE: TelegramContentRepository is no longer initialized here.
-    // The new ingestion pipeline uses TelegramIngestionCoordinator which creates
-    // its own repository instance. Legacy repository field removed to avoid
-    // unnecessary object creation.
+    /**
+     * NOTE: TelegramContentRepository is no longer initialized here.
+     * The new ingestion pipeline uses TelegramIngestionCoordinator which creates
+     * its own repository instance. Legacy repository field removed to avoid
+     * unnecessary object creation.
+     */
 
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {

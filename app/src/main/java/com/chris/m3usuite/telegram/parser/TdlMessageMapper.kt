@@ -244,7 +244,6 @@ object TdlMessageMapper {
         )
     }
 
-
     /**
      * Map MessageText to ExportText with metadata extraction.
      */

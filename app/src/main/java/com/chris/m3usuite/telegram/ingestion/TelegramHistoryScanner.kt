@@ -72,13 +72,13 @@ class TelegramHistoryScanner(
      *
      * @param chatId Chat ID to scan
      * @param config Scan configuration
-     * @param onBatchReceived Optional callback invoked after each page is received
+     * @param onBatchReceived Optional callback invoked after each page is received with (messages, pageIndex)
      * @return ScanResult containing converted messages and scan metadata
      */
     suspend fun scan(
         chatId: Long,
         config: ScanConfig = ScanConfig(),
-        onBatchReceived: (suspend (List<ExportMessage>, Int) -> Unit)? = null,
+        onBatchReceived: (suspend (batch: List<ExportMessage>, pageIndex: Int) -> Unit)? = null,
     ): ScanResult {
         TelegramLogRepository.info(
             TAG,
