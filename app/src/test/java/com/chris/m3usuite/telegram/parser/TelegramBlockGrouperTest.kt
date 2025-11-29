@@ -163,13 +163,12 @@ class TelegramBlockGrouperTest {
         date: Long,
         chatId: Long = -1001234567L,
         text: String = "Test",
-    ): ExportText {
-        return ExportText(
+    ): ExportText =
+        ExportText(
             id = id,
             chatId = chatId,
             dateEpochSeconds = date,
             dateIso = "2023-01-01T00:00:00Z",
             text = text,
         )
-    }
 }

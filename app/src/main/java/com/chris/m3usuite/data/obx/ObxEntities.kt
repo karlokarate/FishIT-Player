@@ -273,3 +273,94 @@ data class ObxIndexQuality(
     @Index var key: String = "",
     var count: Long = 0,
 )
+
+// =============================================================================
+// Telegram Parser Domain Entities (Phase B)
+// =============================================================================
+
+/**
+ * ObjectBox entity for persisting TelegramItem domain objects.
+ *
+ * Per TELEGRAM_PARSER_CONTRACT.md Section 5.4:
+ * - Identity: (chatId, anchorMessageId) is the logical key
+ * - remoteId/uniqueId are REQUIRED for all file references
+ * - fileId is OPTIONAL and may become stale
+ *
+ * This entity is aligned with the new parser domain model and replaces
+ * the legacy ObxTelegramMessage for new parser pipeline items.
+ */
+@Entity
+data class ObxTelegramItem(
+    @Id var id: Long = 0,
+    // Identity fields
+    @Index var chatId: Long = 0,
+    @Index var anchorMessageId: Long = 0,
+    var itemType: String = "", // TelegramItemType enum name
+    // Video reference fields (for MOVIE/SERIES_EPISODE/CLIP)
+    var videoRemoteId: String? = null,
+    var videoUniqueId: String? = null,
+    var videoFileId: Int? = null,
+    var videoSizeBytes: Long? = null,
+    var videoMimeType: String? = null,
+    var videoDurationSeconds: Int? = null,
+    var videoWidth: Int? = null,
+    var videoHeight: Int? = null,
+    // Document reference fields (for AUDIOBOOK/RAR_ITEM)
+    var documentRemoteId: String? = null,
+    var documentUniqueId: String? = null,
+    var documentFileId: Int? = null,
+    var documentSizeBytes: Long? = null,
+    var documentMimeType: String? = null,
+    var documentFileName: String? = null,
+    // Poster image fields
+    var posterRemoteId: String? = null,
+    var posterUniqueId: String? = null,
+    var posterFileId: Int? = null,
+    var posterWidth: Int? = null,
+    var posterHeight: Int? = null,
+    var posterSizeBytes: Long? = null,
+    // Backdrop image fields
+    var backdropRemoteId: String? = null,
+    var backdropUniqueId: String? = null,
+    var backdropFileId: Int? = null,
+    var backdropWidth: Int? = null,
+    var backdropHeight: Int? = null,
+    var backdropSizeBytes: Long? = null,
+    // Metadata fields
+    var title: String? = null,
+    var originalTitle: String? = null,
+    var year: Int? = null,
+    var lengthMinutes: Int? = null,
+    var fsk: Int? = null,
+    var productionCountry: String? = null,
+    var collection: String? = null,
+    var director: String? = null,
+    var tmdbRating: Double? = null,
+    var tmdbUrl: String? = null,
+    @Index var isAdult: Boolean = false,
+    var genresJson: String? = null, // JSON-serialized list of genres
+    // Message references
+    var textMessageId: Long? = null,
+    var photoMessageId: Long? = null,
+    // Timestamps
+    var createdAtIso: String? = null,
+    @Index var createdAtUtc: Long? = null,
+)
+
+/**
+ * ObjectBox entity for persisting per-chat scan state.
+ *
+ * Per TELEGRAM_PARSER_CONTRACT.md Section 7.1:
+ * - Tracks ingestion progress per chat
+ * - Used by TelegramIngestionCoordinator to resume scans across app restarts
+ */
+@Entity
+data class ObxChatScanState(
+    @Id var id: Long = 0,
+    @Index var chatId: Long = 0,
+    var lastScannedMessageId: Long = 0,
+    var hasMoreHistory: Boolean = true,
+    var status: String = "IDLE", // ScanStatus enum: IDLE, SCANNING, ERROR
+    var lastError: String? = null,
+    @Index var updatedAt: Long = 0,
+)
