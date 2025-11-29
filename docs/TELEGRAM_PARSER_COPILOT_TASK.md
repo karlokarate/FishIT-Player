@@ -242,7 +242,7 @@ The following plan is concrete, repository-aware, and sequences work from offlin
 
 ### Phase A – Offline Parser Based on CLI JSON (NEW modules)
 
-- [ ] **A.1 Create `ExportMessage` DTOs** matching CLI JSON schema:
+- [x] **A.1 Create `ExportMessage` DTOs** matching CLI JSON schema:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/parser/ExportMessageModels.kt`
   - Sealed interface `ExportMessage` with `id`, `chatId`, `dateEpochSeconds`, `dateIso`.
   - `ExportVideo` with nested `ExportRemoteFile` (id, size, remoteId, uniqueId), `ExportThumbnail`, `duration`, `width`, `height`, `fileName`, `mimeType`, `supportsStreaming`, `caption`.
@@ -250,25 +250,25 @@ The following plan is concrete, repository-aware, and sequences work from offlin
   - `ExportText` with raw text and parsed fields (`title`, `originalTitle`, `year`, `lengthMinutes`, `fsk`, `productionCountry`, `collection`, `director`, `tmdbRating`, `genres[]`, `tmdbUrl`).
   - `ExportOtherRaw` for unsupported message types.
 
-- [ ] **A.2 Create JSON loader for offline fixtures**:
-  - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/parser/ExportMessageLoader.kt`
-  - Use `kotlinx.serialization` (preferred) or Moshi.
+- [x] **A.2 Create JSON loader for offline fixtures**:
+  - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/parser/ExportFixtures.kt` (test-only)
+  - Use `kotlinx.serialization` with `Json { ignoreUnknownKeys = true }`.
   - `fun loadChatExport(jsonFile: File): ChatExport` returning `chatId`, `title`, `messages: List<ExportMessage>`.
-  - Parse `docs/telegram/exports/exports/*.json` files.
+  - Parse `docs/telegram/exports/exports` files.
 
-- [ ] **A.3 Implement `TelegramBlockGrouper`**:
+- [x] **A.3 Implement `TelegramBlockGrouper`**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/parser/TelegramBlockGrouper.kt`
   - Sort messages by `dateEpochSeconds` descending.
   - Group into `MessageBlock(chatId, messages)` using 120-second window rule.
   - Configurable window constant.
 
-- [ ] **A.4 Extend `TelegramMetadataExtractor`**:
-  - **EXISTING/REFACTOR**: `app/src/main/java/com/chris/m3usuite/telegram/parser/MediaParser.kt` – Extract `parseMetaFromText()` into dedicated class.
+- [x] **A.4 Extend `TelegramMetadataExtractor`**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/parser/TelegramMetadataExtractor.kt`
   - Parse `title`, `originalTitle`, `year`, `lengthMinutes`, `fsk`, `productionCountry`, `collection`, `director`, `tmdbRating`, `genres[]`, `tmdbUrl` from `ExportText`.
   - Fallback extraction from `ExportVideo.fileName` and `caption`.
+  - Adult detection delegated to AdultHeuristics (chat title + extreme terms only).
 
-- [ ] **A.5 Implement `TelegramItemBuilder`**:
+- [x] **A.5 Implement `TelegramItemBuilder`**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/parser/TelegramItemBuilder.kt`
   - Given a `MessageBlock`:
     - Choose anchor `ExportVideo` (best resolution/longest duration).
@@ -278,7 +278,7 @@ The following plan is concrete, repository-aware, and sequences work from offlin
   - Handle `POSTER_ONLY` (no video), `RAR_ITEM`, `AUDIOBOOK` cases.
   - Output: contract's `TelegramItem`, `TelegramMediaRef`, `TelegramImageRef`, `TelegramDocumentRef`, `TelegramMetadata`.
 
-- [ ] **A.6 Create domain DTOs per contract**:
+- [x] **A.6 Create domain DTOs per contract**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/domain/TelegramDomainModels.kt`
   - `TelegramItemType` enum: MOVIE, SERIES_EPISODE, CLIP, AUDIOBOOK, RAR_ITEM, POSTER_ONLY.
   - `TelegramMediaRef(remoteId, uniqueId, sizeBytes, mimeType, durationSeconds, width, height)` – for video files.
@@ -288,10 +288,11 @@ The following plan is concrete, repository-aware, and sequences work from offlin
   - `TelegramItem(chatId, anchorMessageId, type, videoRef?, documentRef?, posterRef, backdropRef, textMessageId, photoMessageId, createdAtIso, metadata)`.
   - **NOTE**: `videoRef` is used for MOVIE/SERIES_EPISODE/CLIP; `documentRef` is used for RAR_ITEM/AUDIOBOOK.
 
-- [ ] **A.7 Add unit tests for offline parser**:
+- [x] **A.7 Add unit tests for offline parser**:
   - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/parser/ExportMessageLoaderTest.kt`
   - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/parser/TelegramBlockGrouperTest.kt`
   - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/parser/TelegramItemBuilderTest.kt`
+  - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/parser/TelegramMetadataExtractorTest.kt`
   - Load `docs/telegram/exports/exports/` fixtures, assert expected `TelegramItem` counts and field mappings.
 
 ### Phase B – ObjectBox Integration (NEW entities, EXISTING repo refactor)
