@@ -185,4 +185,24 @@
 - [ ] 7. Library Zoom Mode (row fullscreen w/ metadata)  
 - [ ] 8. Adaptive Trickplay Speeds  
 - [ ] 9. DPAD_DOWN hold = continuous scrub  
-- [ ] 10. Global double BACK = Exit to Home  
+- [x] 10. Global double BACK = Exit to Home  
+
+---
+
+# 🚀 EXIT_TO_HOME BEHAVIOR (Phase 8)
+
+## Double BACK → Exit to Home
+- [x] Single BACK: Normal behavior (close overlay, navigate up)
+- [x] Double BACK within 500ms: Triggers `EXIT_TO_HOME` action
+- [x] Navigation: Navigates to Start/Home route (library)
+- [x] Backstack: Clears with `popUpTo` + `launchSingleTop`
+
+## MiniPlayer Behavior on EXIT_TO_HOME
+- [x] MiniPlayer **REMAINS VISIBLE** if playback is active
+- [x] Playback continues uninterrupted in MiniPlayer
+- [x] User can keep watching while at home screen
+- [x] No "ghost" player routes on backstack after navigation
+
+## Contract Reference
+- INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 5.1
+- INTERNAL_PLAYER_PHASE8_CHECKLIST.md Group 3.2

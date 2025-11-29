@@ -302,26 +302,30 @@ Workers must throttle when `isPlaybackActive == true`:
   - Full rotation scenario test (combined state preservation)
   - TV lifecycle state enum completeness verified
 
-### Group 3 – Navigation & Backstack Stability
+### Group 3 – Navigation & Backstack Stability ✅ DONE
 
-- [ ] **3.1** Validate Full → Mini → Full flows
+- [x] **3.1** Validate Full → Mini → Full flows
   - Full player → PIP button → Mini visible → Expand → Full player restored
   - PlaybackSession unchanged throughout
   - returnRoute correctly stored and used
+  - Created `PlayerNavigationHelper` with single-top navigation pattern
 
-- [ ] **3.2** Validate EXIT_TO_HOME (double BACK) with MiniPlayer
+- [x] **3.2** Validate EXIT_TO_HOME (double BACK) with MiniPlayer
   - MiniPlayer visible + double BACK → navigate to home
-  - MiniPlayer remains visible if playback active
+  - MiniPlayer remains visible if playback active (contract decision)
   - PlaybackSession unchanged
+  - Updated `DoubleBackNavigator` with MiniPlayer awareness
 
-- [ ] **3.3** Ensure no "ghost" SIP players remain on backstack
-  - After Mini → Full → back, old entries cleared
-  - Memory profiling shows single player instance
+- [x] **3.3** Ensure no "ghost" SIP players remain on backstack
+  - After Mini → Full → back, old entries cleared via `launchSingleTop = true`
+  - `PlayerNavigationHelper.navigateToPlayer()` prevents duplicate player routes
+  - Route identification via `PLAYER_ROUTE_PREFIX` constant
 
-- [ ] **3.4** Add tests: `NavigationBackstackTest`
+- [x] **3.4** Add tests: `NavigationBackstackTest`
   - Full/Mini/Home combinations
   - Backstack integrity after multiple transitions
-  - EXIT_TO_HOME behavior
+  - EXIT_TO_HOME behavior in `GlobalDoubleBackExitTest`
+  - Extended `MiniPlayerNavigationTest` with session continuity tests
 
 ### Group 4 – System PiP vs In-App MiniPlayer
 
