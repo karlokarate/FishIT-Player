@@ -12,12 +12,21 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.XtreamObxRepository
+import com.chris.m3usuite.playback.PlaybackPriority
 import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
 /**
  * Runs the heavier detail import after heads-only indexing was completed.
+ *
+ * ════════════════════════════════════════════════════════════════════════════════
+ * PHASE 8 – Task 3: Playback-Aware Worker Scheduling
+ * ════════════════════════════════════════════════════════════════════════════════
+ *
+ * This worker is playback-aware: when [PlaybackPriority.isPlaybackActive] is true,
+ * heavy operations are throttled to avoid impacting playback quality.
  */
 class XtreamDetailsWorker(
     appContext: Context,
@@ -30,6 +39,9 @@ class XtreamDetailsWorker(
         // Global gate: if disabled, do not perform any API calls
         if (!store.m3uWorkersEnabled.first()) return Result.success()
         return try {
+            // Phase 8: Playback-aware throttling before heavy operations
+            throttleIfPlaybackActive()
+
             val repo = XtreamObxRepository(ctx, store)
             val vodLimit = inputData.getInt("vodLimit", 40)
             val seriesLimit = inputData.getInt("seriesLimit", 20)
@@ -37,6 +49,9 @@ class XtreamDetailsWorker(
             val (vodUpdated, seriesUpdated) = detailResult.getOrElse { return Result.retry() }
             runCatching { ObxStore.get(ctx).closeThreadResources() }
             if (vodUpdated > 0 || seriesUpdated > 0) {
+                // Phase 8: Throttle before EPG prefetch
+                throttleIfPlaybackActive()
+
                 kotlin.runCatching {
                     val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
                     SchedulingGateway.refreshFavoritesEpgNow(ctx, aggressive = aggressive)
@@ -45,6 +60,16 @@ class XtreamDetailsWorker(
             Result.success()
         } catch (_: Throwable) {
             Result.retry()
+        }
+    }
+
+    /**
+     * Phase 8: Delays execution when playback is active to avoid stuttering.
+     * Uses [PlaybackPriority.PLAYBACK_THROTTLE_MS] delay when playback is active.
+     */
+    private suspend fun throttleIfPlaybackActive() {
+        if (PlaybackPriority.isPlaybackActive.value) {
+            delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
         }
     }
 

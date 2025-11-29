@@ -17,10 +17,22 @@ import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
 import com.chris.m3usuite.core.xtream.XtreamSeeder
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.XtreamObxRepository
+import com.chris.m3usuite.playback.PlaybackPriority
 import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
+/**
+ * Worker for Xtream delta import operations.
+ *
+ * ════════════════════════════════════════════════════════════════════════════════
+ * PHASE 8 – Task 3: Playback-Aware Worker Scheduling
+ * ════════════════════════════════════════════════════════════════════════════════
+ *
+ * This worker is playback-aware: when [PlaybackPriority.isPlaybackActive] is true,
+ * heavy operations are throttled to avoid impacting playback quality.
+ */
 class XtreamDeltaImportWorker(
     appContext: Context,
     params: WorkerParameters,
@@ -39,6 +51,10 @@ class XtreamDeltaImportWorker(
             val includeLive: Boolean = inputData.getBoolean("include_live", false)
             val vodLimit: Int = inputData.getInt("vod_limit", 0)
             val seriesLimit: Int = inputData.getInt("series_limit", 0)
+
+            // Phase 8: Playback-aware throttling before heavy network operations
+            throttleIfPlaybackActive()
+
             // Ensure heads are present once (no-op if already there)
             val seedResult =
                 XtreamSeeder.ensureSeeded(
@@ -48,8 +64,16 @@ class XtreamDeltaImportWorker(
                     force = false,
                     forceDiscovery = false,
                 )
+
+            // Phase 8: Throttle between heavy operations
+            throttleIfPlaybackActive()
+
             // Delta across full lists to update provider/genre keys and indexes even without details
             val delta = repo.importDelta(deleteOrphans = false, includeLive = includeLive)
+
+            // Phase 8: Throttle before detail refresh
+            throttleIfPlaybackActive()
+
             // Then refresh a chunk of details to enrich posters/plots etc.
             val detail = repo.refreshDetailsChunk(vodLimit = vodLimit, seriesLimit = seriesLimit)
             detail.getOrNull()?.let { (vodUpd, seriesUpd) ->
@@ -66,6 +90,9 @@ class XtreamDeltaImportWorker(
             val deltaOk = delta.isSuccess
             val detailOk = detail.isSuccess
             if (seedOk && deltaOk && detailOk) {
+                // Phase 8: Throttle before EPG prefetch
+                throttleIfPlaybackActive()
+
                 // After successful updates, proactively prefetch EPG for favorites (keeps home row snappy)
                 kotlin.runCatching {
                     val aggressive = store.epgFavSkipXmltvIfXtreamOk.first()
@@ -77,6 +104,16 @@ class XtreamDeltaImportWorker(
             }
         } catch (_: Throwable) {
             Result.retry()
+        }
+    }
+
+    /**
+     * Phase 8: Delays execution when playback is active to avoid stuttering.
+     * Uses [PlaybackPriority.PLAYBACK_THROTTLE_MS] delay when playback is active.
+     */
+    private suspend fun throttleIfPlaybackActive() {
+        if (PlaybackPriority.isPlaybackActive.value) {
+            delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
         }
     }
 
