@@ -196,14 +196,16 @@ data class TelegramItem(
             TelegramItemType.MOVIE,
             TelegramItemType.SERIES_EPISODE,
             TelegramItemType.CLIP,
-            -> require(documentRef == null) {
-                "Video types must not have documentRef"
-            }
+            ->
+                require(documentRef == null) {
+                    "Video types must not have documentRef"
+                }
             TelegramItemType.AUDIOBOOK,
             TelegramItemType.RAR_ITEM,
-            -> require(videoRef == null) {
-                "Document types must not have videoRef"
-            }
+            ->
+                require(videoRef == null) {
+                    "Document types must not have videoRef"
+                }
             TelegramItemType.POSTER_ONLY -> {
                 require(videoRef == null && documentRef == null) {
                     "POSTER_ONLY must not have videoRef or documentRef"
@@ -228,4 +230,45 @@ data class TelegramItem(
 data class MessageBlock(
     val chatId: Long,
     val messages: List<ExportMessage>,
+)
+
+// =============================================================================
+// Chat Scan State (Ingestion Progress)
+// =============================================================================
+
+/**
+ * Status of a chat scan operation.
+ */
+enum class ScanStatus {
+    /** Scan is not running */
+    IDLE,
+
+    /** Scan is in progress */
+    SCANNING,
+
+    /** Scan failed with an error */
+    ERROR,
+}
+
+/**
+ * Persistent state for per-chat scan progress.
+ *
+ * Per contract Section 7.1:
+ * - Tracks ingestion progress per chat
+ * - Used by TelegramIngestionCoordinator to resume scans across app restarts
+ *
+ * @property chatId ID of the chat being scanned
+ * @property lastScannedMessageId Last message ID that was successfully scanned
+ * @property hasMoreHistory True if there is more history to fetch
+ * @property status Current scan status
+ * @property lastError Error message if status is ERROR
+ * @property updatedAt Timestamp of last update (epoch millis)
+ */
+data class ChatScanState(
+    val chatId: Long,
+    val lastScannedMessageId: Long = 0,
+    val hasMoreHistory: Boolean = true,
+    val status: ScanStatus = ScanStatus.IDLE,
+    val lastError: String? = null,
+    val updatedAt: Long = 0,
 )

@@ -1419,10 +1419,305 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "21:5925083896945901367",
+      "lastPropertyId": "7:832219799099484339",
+      "name": "ObxChatScanState",
+      "properties": [
+        {
+          "id": "1:1685303708282153024",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:684209533228524606",
+          "name": "chatId",
+          "indexId": "82:4653361580875940451",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:2569522596895605809",
+          "name": "lastScannedMessageId",
+          "type": 6
+        },
+        {
+          "id": "4:4955806025659213918",
+          "name": "hasMoreHistory",
+          "type": 1
+        },
+        {
+          "id": "5:5924589442366578308",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "6:7742819030291740913",
+          "name": "lastError",
+          "type": 9
+        },
+        {
+          "id": "7:832219799099484339",
+          "name": "updatedAt",
+          "indexId": "83:2636576857354441347",
+          "type": 6,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "22:1292256483820167365",
+      "lastPropertyId": "46:4308956303418118742",
+      "name": "ObxTelegramItem",
+      "properties": [
+        {
+          "id": "1:903979947557685493",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8670389753184252702",
+          "name": "chatId",
+          "indexId": "84:7565409113281718334",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:8451133377425300043",
+          "name": "anchorMessageId",
+          "indexId": "85:7132681311940269588",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "4:2682757703051612017",
+          "name": "itemType",
+          "type": 9
+        },
+        {
+          "id": "5:968021444324865304",
+          "name": "videoRemoteId",
+          "type": 9
+        },
+        {
+          "id": "6:625141241480998990",
+          "name": "videoUniqueId",
+          "type": 9
+        },
+        {
+          "id": "7:106733462594054398",
+          "name": "videoFileId",
+          "type": 5
+        },
+        {
+          "id": "8:5257493503804454540",
+          "name": "videoSizeBytes",
+          "type": 6
+        },
+        {
+          "id": "9:8101385622776138348",
+          "name": "videoMimeType",
+          "type": 9
+        },
+        {
+          "id": "10:96876499016017350",
+          "name": "videoDurationSeconds",
+          "type": 5
+        },
+        {
+          "id": "11:9076960031799377382",
+          "name": "videoWidth",
+          "type": 5
+        },
+        {
+          "id": "12:7876538377583422411",
+          "name": "videoHeight",
+          "type": 5
+        },
+        {
+          "id": "13:7187597795471734334",
+          "name": "documentRemoteId",
+          "type": 9
+        },
+        {
+          "id": "14:426208971013838456",
+          "name": "documentUniqueId",
+          "type": 9
+        },
+        {
+          "id": "15:231582492713242957",
+          "name": "documentFileId",
+          "type": 5
+        },
+        {
+          "id": "16:2998651775887337492",
+          "name": "documentSizeBytes",
+          "type": 6
+        },
+        {
+          "id": "17:977786419239083390",
+          "name": "documentMimeType",
+          "type": 9
+        },
+        {
+          "id": "18:8761937827551341970",
+          "name": "documentFileName",
+          "type": 9
+        },
+        {
+          "id": "19:1607458715730049856",
+          "name": "posterRemoteId",
+          "type": 9
+        },
+        {
+          "id": "20:2517908040490199038",
+          "name": "posterUniqueId",
+          "type": 9
+        },
+        {
+          "id": "21:1639061347106379980",
+          "name": "posterFileId",
+          "type": 5
+        },
+        {
+          "id": "22:1800667639169251726",
+          "name": "posterWidth",
+          "type": 5
+        },
+        {
+          "id": "23:4502087904452946611",
+          "name": "posterHeight",
+          "type": 5
+        },
+        {
+          "id": "24:471038039193018603",
+          "name": "posterSizeBytes",
+          "type": 6
+        },
+        {
+          "id": "25:8722687570981555084",
+          "name": "backdropRemoteId",
+          "type": 9
+        },
+        {
+          "id": "26:5958298062673687223",
+          "name": "backdropUniqueId",
+          "type": 9
+        },
+        {
+          "id": "27:4965380925083184480",
+          "name": "backdropFileId",
+          "type": 5
+        },
+        {
+          "id": "28:8356310631607646895",
+          "name": "backdropWidth",
+          "type": 5
+        },
+        {
+          "id": "29:307789854224404917",
+          "name": "backdropHeight",
+          "type": 5
+        },
+        {
+          "id": "30:8966887680772014771",
+          "name": "backdropSizeBytes",
+          "type": 6
+        },
+        {
+          "id": "31:2797043543034136320",
+          "name": "title",
+          "type": 9
+        },
+        {
+          "id": "32:6558554567872128598",
+          "name": "originalTitle",
+          "type": 9
+        },
+        {
+          "id": "33:140569726676399458",
+          "name": "year",
+          "type": 5
+        },
+        {
+          "id": "34:6033788158166142164",
+          "name": "lengthMinutes",
+          "type": 5
+        },
+        {
+          "id": "35:2293603348162622734",
+          "name": "fsk",
+          "type": 5
+        },
+        {
+          "id": "36:5556198883278780961",
+          "name": "productionCountry",
+          "type": 9
+        },
+        {
+          "id": "37:38866174337418828",
+          "name": "collection",
+          "type": 9
+        },
+        {
+          "id": "38:1087271366657882055",
+          "name": "director",
+          "type": 9
+        },
+        {
+          "id": "39:3625278662507033227",
+          "name": "tmdbRating",
+          "type": 8
+        },
+        {
+          "id": "40:7422892689158424139",
+          "name": "tmdbUrl",
+          "type": 9
+        },
+        {
+          "id": "41:7997419391594389994",
+          "name": "isAdult",
+          "indexId": "86:4355958740449383446",
+          "type": 1,
+          "flags": 8
+        },
+        {
+          "id": "42:5615754354642732628",
+          "name": "genresJson",
+          "type": 9
+        },
+        {
+          "id": "43:5708469667875457671",
+          "name": "textMessageId",
+          "type": 6
+        },
+        {
+          "id": "44:7474765710422054980",
+          "name": "photoMessageId",
+          "type": 6
+        },
+        {
+          "id": "45:2836157082308840472",
+          "name": "createdAtIso",
+          "type": 9
+        },
+        {
+          "id": "46:4308956303418118742",
+          "name": "createdAtUtc",
+          "indexId": "87:5002968944176158411",
+          "type": 6,
+          "flags": 8
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "20:2105640230933897644",
-  "lastIndexId": "81:2570900342989619037",
+  "lastEntityId": "22:1292256483820167365",
+  "lastIndexId": "87:5002968944176158411",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

@@ -364,7 +364,12 @@ data class RawExportMessage(
  * Convert raw message to typed ExportMessage.
  */
 fun RawExportMessage.toExportMessage(): ExportMessage {
-    val dateIsoValue = dateIso.ifEmpty { java.time.Instant.ofEpochSecond(date).toString() }
+    val dateIsoValue =
+        dateIso.ifEmpty {
+            java.time.Instant
+                .ofEpochSecond(date)
+                .toString()
+        }
 
     // Check for video content
     content?.video?.let { video ->

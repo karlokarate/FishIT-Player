@@ -84,22 +84,24 @@ class TelegramMetadataExtractorTest {
 
     @Test
     fun `extractFromFilename extracts year from filename`() {
-        val metadata = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "Movie.Name.2023.1080p.mp4",
-            caption = null,
-            chatTitle = "Movies",
-        )
+        val metadata =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "Movie.Name.2023.1080p.mp4",
+                caption = null,
+                chatTitle = "Movies",
+            )
 
         assertEquals("Should extract year", 2023, metadata.year)
     }
 
     @Test
     fun `extractFromFilename extracts title from filename`() {
-        val metadata = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "The.Great.Movie.2023.1080p.BluRay.mp4",
-            caption = null,
-            chatTitle = "Movies",
-        )
+        val metadata =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "The.Great.Movie.2023.1080p.BluRay.mp4",
+                caption = null,
+                chatTitle = "Movies",
+            )
 
         // Title should be extracted (contains "The Great Movie" after cleaning dots)
         assertNotNull("Should extract title", metadata.title)
@@ -108,33 +110,36 @@ class TelegramMetadataExtractorTest {
 
     @Test
     fun `extractFromFilename handles year in parentheses`() {
-        val metadata = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "Movie Name (2023).mp4",
-            caption = null,
-            chatTitle = "Movies",
-        )
+        val metadata =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "Movie Name (2023).mp4",
+                caption = null,
+                chatTitle = "Movies",
+            )
 
         assertEquals("Should extract year from parentheses", 2023, metadata.year)
     }
 
     @Test
     fun `extractFromFilename uses caption as fallback title`() {
-        val metadata = TelegramMetadataExtractor.extractFromFilename(
-            fileName = null,
-            caption = "Amazing Film Description",
-            chatTitle = "Movies",
-        )
+        val metadata =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = null,
+                caption = "Amazing Film Description",
+                chatTitle = "Movies",
+            )
 
         assertEquals("Should use caption as title", "Amazing Film Description", metadata.title)
     }
 
     @Test
     fun `extractFromFilename extracts TMDb URL from caption`() {
-        val metadata = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "video.mp4",
-            caption = "Movie - https://themoviedb.org/movie/12345",
-            chatTitle = "Movies",
-        )
+        val metadata =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "video.mp4",
+                caption = "Movie - https://themoviedb.org/movie/12345",
+                chatTitle = "Movies",
+            )
 
         assertTrue("Should extract TMDb URL from caption", metadata.tmdbUrl?.contains("12345") == true)
     }
@@ -205,23 +210,26 @@ class TelegramMetadataExtractorTest {
 
     @Test
     fun `extractFromFilename validates year range`() {
-        val futureYear = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "Movie.2050.mp4",
-            caption = null,
-            chatTitle = "Movies",
-        )
+        val futureYear =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "Movie.2050.mp4",
+                caption = null,
+                chatTitle = "Movies",
+            )
 
-        val oldYear = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "Movie.1850.mp4",
-            caption = null,
-            chatTitle = "Movies",
-        )
+        val oldYear =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "Movie.1850.mp4",
+                caption = null,
+                chatTitle = "Movies",
+            )
 
-        val validYear = TelegramMetadataExtractor.extractFromFilename(
-            fileName = "Movie.2023.mp4",
-            caption = null,
-            chatTitle = "Movies",
-        )
+        val validYear =
+            TelegramMetadataExtractor.extractFromFilename(
+                fileName = "Movie.2023.mp4",
+                caption = null,
+                chatTitle = "Movies",
+            )
 
         assertNull("Future year should be rejected", futureYear.year)
         assertNull("Too old year should be rejected", oldYear.year)

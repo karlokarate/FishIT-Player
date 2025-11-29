@@ -267,8 +267,8 @@ class TelegramItemBuilderTest {
         id: Long,
         width: Int = 800,
         height: Int = 600,
-    ): ExportPhoto {
-        return ExportPhoto(
+    ): ExportPhoto =
+        ExportPhoto(
             id = id,
             chatId = -1001L,
             dateEpochSeconds = 1000L,
@@ -293,13 +293,12 @@ class TelegramItemBuilderTest {
                 ),
             caption = null,
         )
-    }
 
     private fun createDocumentMessage(
         id: Long,
         fileName: String = "document.pdf",
-    ): ExportDocument {
-        return ExportDocument(
+    ): ExportDocument =
+        ExportDocument(
             id = id,
             chatId = -1001L,
             dateEpochSeconds = 1000L,
@@ -321,14 +320,13 @@ class TelegramItemBuilderTest {
                 ),
             caption = null,
         )
-    }
 
     private fun createAudioMessage(
         id: Long,
         title: String = "Audio Track",
         performer: String = "Artist",
-    ): ExportAudio {
-        return ExportAudio(
+    ): ExportAudio =
+        ExportAudio(
             id = id,
             chatId = -1001L,
             dateEpochSeconds = 1000L,
@@ -353,5 +351,4 @@ class TelegramItemBuilderTest {
                 ),
             caption = null,
         )
-    }
 }

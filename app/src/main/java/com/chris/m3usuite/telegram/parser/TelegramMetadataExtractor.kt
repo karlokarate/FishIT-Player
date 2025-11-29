@@ -29,7 +29,10 @@ object TelegramMetadataExtractor {
      * Regex to extract title from filename before year or extension.
      */
     private val TITLE_FROM_FILENAME_REGEX =
-        Regex("""^(.+?)[\.\s_-]*(?:\(?\d{4}\)?)?[\.\s_-]*(?:720p|1080p|2160p|4k|hdr|bluray|webrip|web-dl|hdtv)?.*\.(?:mp4|mkv|avi|mov|wmv)$""", RegexOption.IGNORE_CASE)
+        Regex(
+            """^(.+?)[\.\s_-]*(?:\(?\d{4}\)?)?[\.\s_-]*(?:720p|1080p|2160p|4k|hdr|bluray|webrip|web-dl|hdtv)?.*\.(?:mp4|mkv|avi|mov|wmv)$""",
+            RegexOption.IGNORE_CASE,
+        )
 
     /**
      * Extract metadata from an ExportText message.
@@ -114,8 +117,8 @@ object TelegramMetadataExtractor {
     fun merge(
         primary: TelegramMetadata,
         secondary: TelegramMetadata,
-    ): TelegramMetadata {
-        return TelegramMetadata(
+    ): TelegramMetadata =
+        TelegramMetadata(
             title = primary.title ?: secondary.title,
             originalTitle = primary.originalTitle ?: secondary.originalTitle,
             year = primary.year ?: secondary.year,
@@ -129,7 +132,6 @@ object TelegramMetadataExtractor {
             tmdbUrl = primary.tmdbUrl ?: secondary.tmdbUrl,
             isAdult = primary.isAdult || secondary.isAdult,
         )
-    }
 
     /**
      * Create empty metadata with only adult status based on chat title.
@@ -137,8 +139,8 @@ object TelegramMetadataExtractor {
      * @param chatTitle Chat title for adult detection
      * @return Minimal metadata
      */
-    fun emptyMetadata(chatTitle: String?): TelegramMetadata {
-        return TelegramMetadata(
+    fun emptyMetadata(chatTitle: String?): TelegramMetadata =
+        TelegramMetadata(
             title = null,
             originalTitle = null,
             year = null,
@@ -152,7 +154,6 @@ object TelegramMetadataExtractor {
             tmdbUrl = null,
             isAdult = AdultHeuristics.isAdultChatTitle(chatTitle),
         )
-    }
 
     /**
      * Extract TMDb URL from ExportText, checking entities first then text.
@@ -178,16 +179,12 @@ object TelegramMetadataExtractor {
     /**
      * Extract TMDb URL from raw text using regex.
      */
-    private fun extractTmdbUrlFromText(text: String): String? {
-        return TMDB_URL_REGEX.find(text)?.value
-    }
+    private fun extractTmdbUrlFromText(text: String): String? = TMDB_URL_REGEX.find(text)?.value
 
     /**
      * Check if a URL is a TMDb URL.
      */
-    private fun isTmdbUrl(url: String): Boolean {
-        return url.contains("themoviedb.org/movie/") || url.contains("themoviedb.org/tv/")
-    }
+    private fun isTmdbUrl(url: String): Boolean = url.contains("themoviedb.org/movie/") || url.contains("themoviedb.org/tv/")
 
     /**
      * Extract year from filename.
@@ -231,8 +228,8 @@ object TelegramMetadataExtractor {
     /**
      * Clean up extracted title by replacing separators and trimming.
      */
-    private fun cleanTitle(title: String): String {
-        return title
+    private fun cleanTitle(title: String): String =
+        title
             .replace(".", " ")
             .replace("_", " ")
             .replace("-", " ")
@@ -240,5 +237,4 @@ object TelegramMetadataExtractor {
             .trim()
             .takeIf { it.isNotBlank() }
             ?: title.trim()
-    }
 }

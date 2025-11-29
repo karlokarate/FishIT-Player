@@ -169,28 +169,33 @@ object TelegramItemBuilder {
         val audio = audios.first()
 
         // Create document ref from audio
-        val documentRef = TelegramDocumentRef(
-            remoteId = audio.audio.audio.remote.id ?: return null,
-            uniqueId = audio.audio.audio.remote.uniqueId ?: return null,
-            fileId = audio.audio.audio.id.takeIf { it > 0 },
-            sizeBytes = audio.audio.audio.size,
-            mimeType = audio.audio.mimeType,
-            fileName = audio.audio.fileName,
-        )
+        val documentRef =
+            TelegramDocumentRef(
+                remoteId = audio.audio.audio.remote.id ?: return null,
+                uniqueId = audio.audio.audio.remote.uniqueId ?: return null,
+                fileId =
+                    audio.audio.audio.id
+                        .takeIf { it > 0 },
+                sizeBytes = audio.audio.audio.size,
+                mimeType = audio.audio.mimeType,
+                fileName = audio.audio.fileName,
+            )
 
         // Find nearest text for metadata
         val nearestText = findNearestText(audio, texts)
 
         // Extract metadata, preferring audio title
         val baseMetadata = extractMetadata(nearestText, audio.caption, audio.audio.fileName, chatTitle)
-        val audioTitle = listOf(audio.audio.performer, audio.audio.title)
-            .filter { it.isNotBlank() }
-            .joinToString(" - ")
-        val metadata = if (baseMetadata.title == null && audioTitle.isNotBlank()) {
-            baseMetadata.copy(title = audioTitle)
-        } else {
-            baseMetadata
-        }
+        val audioTitle =
+            listOf(audio.audio.performer, audio.audio.title)
+                .filter { it.isNotBlank() }
+                .joinToString(" - ")
+        val metadata =
+            if (baseMetadata.title == null && audioTitle.isNotBlank()) {
+                baseMetadata.copy(title = audioTitle)
+            } else {
+                baseMetadata
+            }
 
         // Select poster (no backdrop for audio)
         val posterRef = selectBestPhoto(photos)
@@ -245,14 +250,13 @@ object TelegramItemBuilder {
     /**
      * Select the best video from a list based on resolution and duration.
      */
-    private fun selectBestVideo(videos: List<ExportVideo>): ExportVideo? {
-        return videos.maxByOrNull { video ->
+    private fun selectBestVideo(videos: List<ExportVideo>): ExportVideo? =
+        videos.maxByOrNull { video ->
             // Score = resolution (width * height) + duration bonus
             val resolution = (video.video.width.toLong() * video.video.height)
             val durationBonus = video.video.duration.toLong() * 100 // Small bonus for longer videos
             resolution + durationBonus
         }
-    }
 
     /**
      * Create a TelegramMediaRef from an ExportVideo.
@@ -264,7 +268,9 @@ object TelegramItemBuilder {
         return TelegramMediaRef(
             remoteId = remoteId,
             uniqueId = uniqueId,
-            fileId = video.video.video.id.takeIf { it > 0 },
+            fileId =
+                video.video.video.id
+                    .takeIf { it > 0 },
             sizeBytes = video.video.video.size,
             mimeType = video.video.mimeType.takeIf { it.isNotBlank() },
             durationSeconds = video.video.duration.takeIf { it > 0 },
@@ -283,7 +289,9 @@ object TelegramItemBuilder {
         return TelegramDocumentRef(
             remoteId = remoteId,
             uniqueId = uniqueId,
-            fileId = doc.document.document.id.takeIf { it > 0 },
+            fileId =
+                doc.document.document.id
+                    .takeIf { it > 0 },
             sizeBytes = doc.document.document.size,
             mimeType = doc.document.mimeType.takeIf { it.isNotBlank() },
             fileName = doc.document.fileName.takeIf { it.isNotBlank() },
@@ -296,9 +304,7 @@ object TelegramItemBuilder {
     private fun findNearestText(
         anchor: ExportMessage,
         texts: List<ExportText>,
-    ): ExportText? {
-        return texts.minByOrNull { kotlin.math.abs(it.dateEpochSeconds - anchor.dateEpochSeconds) }
-    }
+    ): ExportText? = texts.minByOrNull { kotlin.math.abs(it.dateEpochSeconds - anchor.dateEpochSeconds) }
 
     /**
      * Extract metadata from available sources.
@@ -361,9 +367,10 @@ object TelegramItemBuilder {
         video: ExportVideo?,
     ): Pair<TelegramImageRef?, TelegramImageRef?> {
         // Collect all photo sizes
-        val allSizes = photos.flatMap { photo ->
-            photo.sizes.map { size -> size to photo }
-        }
+        val allSizes =
+            photos.flatMap { photo ->
+                photo.sizes.map { size -> size to photo }
+            }
 
         if (allSizes.isEmpty()) {
             // Fallback to video thumbnail
@@ -372,27 +379,28 @@ object TelegramItemBuilder {
         }
 
         // Find best poster (aspect ratio ≤ 0.85)
-        val posterCandidate = allSizes
-            .filter { (size, _) ->
-                val aspectRatio = size.width.toDouble() / size.height
-                aspectRatio <= POSTER_ASPECT_RATIO_MAX
-            }
-            .maxByOrNull { (size, _) -> size.width.toLong() * size.height }
-            ?.let { (size, _) -> createImageRefFromSize(size) }
+        val posterCandidate =
+            allSizes
+                .filter { (size, _) ->
+                    val aspectRatio = size.width.toDouble() / size.height
+                    aspectRatio <= POSTER_ASPECT_RATIO_MAX
+                }.maxByOrNull { (size, _) -> size.width.toLong() * size.height }
+                ?.let { (size, _) -> createImageRefFromSize(size) }
 
         // Find best backdrop (aspect ratio ≥ 1.6)
-        val backdropCandidate = allSizes
-            .filter { (size, _) ->
-                val aspectRatio = size.width.toDouble() / size.height
-                aspectRatio >= BACKDROP_ASPECT_RATIO_MIN
-            }
-            .maxByOrNull { (size, _) -> size.width.toLong() * size.height }
-            ?.let { (size, _) -> createImageRefFromSize(size) }
+        val backdropCandidate =
+            allSizes
+                .filter { (size, _) ->
+                    val aspectRatio = size.width.toDouble() / size.height
+                    aspectRatio >= BACKDROP_ASPECT_RATIO_MIN
+                }.maxByOrNull { (size, _) -> size.width.toLong() * size.height }
+                ?.let { (size, _) -> createImageRefFromSize(size) }
 
         // Fallback: highest resolution photo
-        val fallbackRef = allSizes
-            .maxByOrNull { (size, _) -> size.width.toLong() * size.height }
-            ?.let { (size, _) -> createImageRefFromSize(size) }
+        val fallbackRef =
+            allSizes
+                .maxByOrNull { (size, _) -> size.width.toLong() * size.height }
+                ?.let { (size, _) -> createImageRefFromSize(size) }
 
         val posterRef = posterCandidate ?: fallbackRef
         val backdropRef = backdropCandidate
@@ -452,7 +460,10 @@ object TelegramItemBuilder {
         chatTitle: String?,
     ): Boolean {
         // Check file extension
-        val extension = doc.document.fileName.substringAfterLast('.').lowercase()
+        val extension =
+            doc.document.fileName
+                .substringAfterLast('.')
+                .lowercase()
         if (extension in AUDIOBOOK_EXTENSIONS) return true
 
         // Check chat title
