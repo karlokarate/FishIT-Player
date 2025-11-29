@@ -2,10 +2,15 @@ package com.chris.m3usuite.data.repo
 
 import android.content.Context
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.ObxTelegramItem
+import com.chris.m3usuite.data.obx.ObxTelegramItem_
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.domain.TelegramItem
+import com.chris.m3usuite.telegram.domain.toDomain
+import com.chris.m3usuite.telegram.domain.toObx
 import com.chris.m3usuite.telegram.models.MediaInfo
 import com.chris.m3usuite.telegram.models.MediaKind
 import com.chris.m3usuite.telegram.parser.MediaParser
@@ -37,6 +42,11 @@ import java.net.URLEncoder
  * - Windowing applies to direct media files: MOVIE, EPISODE, CLIP, AUDIO
  * - RAR_ARCHIVE and other archives are NOT streamed via TelegramDataSource
  *   (they require full download and extraction, separate handling)
+ *
+ * **Phase B Domain Integration:**
+ * - New upsertItems/observeItems* methods operate on TelegramItem domain objects
+ * - Uses ObxTelegramItem for new parser pipeline persistence
+ * - Legacy methods using ObxTelegramMessage are marked @Deprecated
  */
 class TelegramContentRepository(
     private val context: Context,
@@ -44,6 +54,150 @@ class TelegramContentRepository(
 ) {
     private val obxStore = ObxStore.get(context)
     private val messageBox: Box<ObxTelegramMessage> = obxStore.boxFor()
+    private val itemBox: Box<ObxTelegramItem> = obxStore.boxFor()
+
+    // =========================================================================
+    // New Domain-Oriented APIs (Phase B)
+    // =========================================================================
+
+    /**
+     * Upsert TelegramItem domain objects to ObjectBox.
+     *
+     * Upsert logic: items are identified by (chatId, anchorMessageId).
+     * Existing items with the same logical key are updated; new items are inserted.
+     *
+     * @param items List of TelegramItem domain objects to upsert
+     */
+    suspend fun upsertItems(items: List<TelegramItem>) =
+        withContext(Dispatchers.IO) {
+            if (items.isEmpty()) return@withContext
+
+            // Batch query: Get all existing items for the given (chatId, anchorMessageId) pairs
+            // Group items by chatId for efficient querying
+            val itemsByChat = items.groupBy { it.chatId }
+            val existingByKey = mutableMapOf<Pair<Long, Long>, Long>() // (chatId, anchorMessageId) -> id
+
+            for ((chatId, chatItems) in itemsByChat) {
+                val anchorIds = chatItems.map { it.anchorMessageId }.toLongArray()
+                val existingItems =
+                    itemBox
+                        .query {
+                            equal(ObxTelegramItem_.chatId, chatId)
+                            `in`(ObxTelegramItem_.anchorMessageId, anchorIds)
+                        }.find()
+
+                for (existing in existingItems) {
+                    existingByKey[Pair(existing.chatId, existing.anchorMessageId)] = existing.id
+                }
+            }
+
+            // Convert to ObxTelegramItem and set id if existing
+            val obxItems =
+                items.map { item ->
+                    val obx = item.toObx()
+                    val key = Pair(item.chatId, item.anchorMessageId)
+                    existingByKey[key]?.let { existingId ->
+                        obx.id = existingId
+                    }
+                    obx
+                }
+
+            // Bulk put
+            itemBox.put(obxItems)
+        }
+
+    /**
+     * Observe TelegramItem domain objects for a specific chat.
+     *
+     * @param chatId Chat ID to filter by
+     * @return Flow emitting list of TelegramItem objects for the chat
+     */
+    fun observeItemsByChat(chatId: Long): Flow<List<TelegramItem>> =
+        flow {
+            val items =
+                itemBox
+                    .query {
+                        equal(ObxTelegramItem_.chatId, chatId)
+                        orderDesc(ObxTelegramItem_.createdAtUtc)
+                    }.find()
+                    .map { it.toDomain() }
+            emit(items)
+        }.flowOn(Dispatchers.IO)
+
+    /**
+     * Observe all TelegramItem domain objects.
+     *
+     * @return Flow emitting list of all TelegramItem objects
+     */
+    fun observeAllItems(): Flow<List<TelegramItem>> =
+        flow {
+            val items =
+                itemBox
+                    .query {
+                        orderDesc(ObxTelegramItem_.createdAtUtc)
+                    }.find()
+                    .map { it.toDomain() }
+            emit(items)
+        }.flowOn(Dispatchers.IO)
+
+    /**
+     * Get TelegramItem by logical key.
+     *
+     * @param chatId Chat ID
+     * @param anchorMessageId Anchor message ID
+     * @return TelegramItem or null if not found
+     */
+    suspend fun getItem(
+        chatId: Long,
+        anchorMessageId: Long,
+    ): TelegramItem? =
+        withContext(Dispatchers.IO) {
+            itemBox
+                .query {
+                    equal(ObxTelegramItem_.chatId, chatId)
+                    equal(ObxTelegramItem_.anchorMessageId, anchorMessageId)
+                }.findFirst()
+                ?.toDomain()
+        }
+
+    /**
+     * Delete TelegramItem by logical key.
+     *
+     * @param chatId Chat ID
+     * @param anchorMessageId Anchor message ID
+     */
+    suspend fun deleteItem(
+        chatId: Long,
+        anchorMessageId: Long,
+    ) = withContext(Dispatchers.IO) {
+        val existing =
+            itemBox
+                .query {
+                    equal(ObxTelegramItem_.chatId, chatId)
+                    equal(ObxTelegramItem_.anchorMessageId, anchorMessageId)
+                }.findFirst()
+        existing?.let { itemBox.remove(it) }
+    }
+
+    /**
+     * Clear all TelegramItem objects from ObjectBox.
+     */
+    suspend fun clearAllItems() =
+        withContext(Dispatchers.IO) {
+            itemBox.removeAll()
+        }
+
+    /**
+     * Get count of TelegramItem objects.
+     */
+    suspend fun getTelegramItemCount(): Long =
+        withContext(Dispatchers.IO) {
+            itemBox.count()
+        }
+
+    // =========================================================================
+    // Legacy APIs (Pre-Phase B, using ObxTelegramMessage)
+    // =========================================================================
 
     /**
      * Index messages from a specific chat with enhanced metadata extraction.
@@ -55,7 +209,14 @@ class TelegramContentRepository(
      * @param messages List of messages to index
      * @param chatType Type of chat for filtering: "vod", "series", or "feed"
      * @return Number of messages indexed
+     *
+     * @deprecated Use upsertItems with the new parser pipeline instead.
+     * This method uses the legacy ObxTelegramMessage entity.
      */
+    @Deprecated(
+        message = "Use upsertItems with new parser pipeline",
+        replaceWith = ReplaceWith("upsertItems(items)"),
+    )
     suspend fun indexChatMessages(
         chatId: Long,
         chatTitle: String,

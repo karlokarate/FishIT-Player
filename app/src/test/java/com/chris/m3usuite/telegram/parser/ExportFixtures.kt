@@ -44,15 +44,14 @@ object ExportFixtures {
      * @param file The JSON file to load
      * @return ChatExport with parsed messages
      */
-    fun loadChatExportFromFile(file: File): ChatExport? {
-        return try {
+    fun loadChatExportFromFile(file: File): ChatExport? =
+        try {
             val content = file.readText()
             json.decodeFromString<ChatExport>(content)
         } catch (e: Exception) {
             System.err.println("Failed to load ${file.name}: ${e.message}")
             null
         }
-    }
 
     /**
      * Load a chat export and convert raw messages to typed ExportMessages.
@@ -91,11 +90,10 @@ object ExportFixtures {
      *
      * @return Map of chatId to ChatExport
      */
-    fun loadAllExports(): Map<Long, ChatExport> {
-        return listExportFiles()
+    fun loadAllExports(): Map<Long, ChatExport> =
+        listExportFiles()
             .mapNotNull { file -> loadChatExportFromFile(file) }
             .associateBy { it.chatId }
-    }
 
     /**
      * Find export file by name, searching from different working directories.

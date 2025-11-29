@@ -297,33 +297,67 @@ The following plan is concrete, repository-aware, and sequences work from offlin
 
 ### Phase B – ObjectBox Integration (NEW entities, EXISTING repo refactor)
 
-- [ ] **B.1 Design new ObjectBox entity `ObxTelegramItem`**:
-  - **NEW**: Add to `app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt` or separate file.
+- [x] **B.1 Design new ObjectBox entity `ObxTelegramItem`**:
+  - **NEW**: Added to `app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt`
   - Fields per contract §5.4:
     - Identity: `@Id id: Long`, `@Index chatId: Long`, `@Index anchorMessageId: Long` (logical key).
-    - Video: `videoRemoteId: String?`, `videoUniqueId: String?`, `videoSizeBytes: Long?`, `videoMimeType: String?`, `videoDurationSeconds: Int?`, `videoWidth: Int?`, `videoHeight: Int?`.
-    - Poster: `posterRemoteId: String?`, `posterUniqueId: String?`, `posterWidth: Int?`, `posterHeight: Int?`.
-    - Backdrop: `backdropRemoteId: String?`, `backdropUniqueId: String?`, `backdropWidth: Int?`, `backdropHeight: Int?`.
+    - Video: `videoRemoteId: String?`, `videoUniqueId: String?`, `videoFileId: Int?`, `videoSizeBytes: Long?`, `videoMimeType: String?`, `videoDurationSeconds: Int?`, `videoWidth: Int?`, `videoHeight: Int?`.
+    - Document: `documentRemoteId: String?`, `documentUniqueId: String?`, `documentFileId: Int?`, `documentSizeBytes: Long?`, `documentMimeType: String?`, `documentFileName: String?`.
+    - Poster: `posterRemoteId: String?`, `posterUniqueId: String?`, `posterFileId: Int?`, `posterWidth: Int?`, `posterHeight: Int?`, `posterSizeBytes: Long?`.
+    - Backdrop: `backdropRemoteId: String?`, `backdropUniqueId: String?`, `backdropFileId: Int?`, `backdropWidth: Int?`, `backdropHeight: Int?`, `backdropSizeBytes: Long?`.
     - Metadata: `title`, `originalTitle`, `year`, `lengthMinutes`, `fsk`, `productionCountry`, `collection`, `director`, `tmdbRating`, `tmdbUrl`, `isAdult`, `genresJson` (serialized list).
     - Type: `itemType: String` (enum name).
-    - Timestamps: `createdAtUtc: Long`, `textMessageId: Long?`, `photoMessageId: Long?`.
+    - Timestamps: `createdAtIso: String?`, `createdAtUtc: Long?`, `textMessageId: Long?`, `photoMessageId: Long?`.
 
-- [ ] **B.2 Create mappers domain ↔ ObjectBox**:
+- [x] **B.1b Add `ObxChatScanState` entity**:
+  - **NEW**: Added to `app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt`
+  - Fields: `@Id id: Long`, `@Index chatId: Long`, `lastScannedMessageId: Long`, `hasMoreHistory: Boolean`, `status: String`, `lastError: String?`, `@Index updatedAt: Long`.
+
+- [x] **B.2 Create mappers domain ↔ ObjectBox**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/domain/TelegramItemMapper.kt`
   - `fun TelegramItem.toObx(): ObxTelegramItem`
   - `fun ObxTelegramItem.toDomain(): TelegramItem`
+  - `fun ChatScanState.toObx(): ObxChatScanState`
+  - `fun ObxChatScanState.toDomain(): ChatScanState`
 
-- [ ] **B.3 Refactor `TelegramContentRepository`**:
+- [x] **B.2b Add `ChatScanState` and `ScanStatus` domain models**:
+  - **NEW**: Added to `app/src/main/java/com/chris/m3usuite/telegram/domain/TelegramDomainModels.kt`
+  - `ScanStatus` enum: IDLE, SCANNING, ERROR
+  - `ChatScanState` data class with persistence-ready fields
+
+- [x] **B.3 Refactor `TelegramContentRepository`**:
   - **EXISTING/REFACTOR**: `app/src/main/java/com/chris/m3usuite/data/repo/TelegramContentRepository.kt`
-  - Add methods:
-    - `suspend fun importItems(items: List<TelegramItem>)` – bulk upsert by `(chatId, anchorMessageId)`.
+  - Added methods:
+    - `suspend fun upsertItems(items: List<TelegramItem>)` – bulk upsert by `(chatId, anchorMessageId)`.
     - `fun observeItemsByChat(chatId: Long): Flow<List<TelegramItem>>`
     - `fun observeAllItems(): Flow<List<TelegramItem>>`
-  - **DEPRECATE** old `indexChatMessages()` once new pipeline is wired.
+    - `suspend fun getItem(chatId: Long, anchorMessageId: Long): TelegramItem?`
+    - `suspend fun deleteItem(chatId: Long, anchorMessageId: Long)`
+    - `suspend fun clearAllItems()`
+    - `suspend fun getTelegramItemCount(): Long`
+  - **DEPRECATED** old `indexChatMessages()` with @Deprecated annotation.
 
-- [ ] **B.4 Add tests for ObjectBox round-trip**:
-  - **NEW/EXTEND**: `app/src/test/java/com/chris/m3usuite/telegram/repo/TelegramItemObxTest.kt`
-  - Verify save → load equals, Flow emissions on insert.
+- [x] **B.3b Create `TelegramSyncStateRepository`**:
+  - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/repository/TelegramSyncStateRepository.kt`
+  - Methods:
+    - `fun observeScanStates(): Flow<List<ChatScanState>>`
+    - `suspend fun updateScanState(state: ChatScanState)`
+    - `suspend fun getScanState(chatId: Long): ChatScanState?`
+    - `suspend fun clearScanState(chatId: Long)`
+    - `suspend fun clearAllScanStates()`
+
+- [x] **B.4 Add tests for ObjectBox round-trip**:
+  - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/repo/ObxTelegramItemRoundTripTest.kt`
+    - Verifies TelegramItem ↔ ObxTelegramItem round-trip for all item types
+    - Tests metadata, video refs, document refs, poster/backdrop refs
+    - Tests genres JSON serialization/deserialization
+    - Tests all TelegramItemType enum values
+  - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/repo/TelegramSyncStateRepositoryTest.kt`
+    - Verifies ChatScanState ↔ ObxChatScanState round-trip
+    - Tests all ScanStatus enum values
+    - Verifies repository API structure
+  - **EXTENDED**: `app/src/test/java/com/chris/m3usuite/telegram/repo/TelegramContentRepositoryTest.kt`
+    - Added tests for new Phase B domain-oriented APIs
 
 ### Phase C – Live TDLib Ingestion (NEW ingestion modules, EXISTING adapters)
 

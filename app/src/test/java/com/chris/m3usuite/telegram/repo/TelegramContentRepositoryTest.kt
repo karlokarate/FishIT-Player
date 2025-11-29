@@ -160,4 +160,100 @@ class TelegramContentRepositoryTest {
             "TelegramContentRepository should have buildTelegramUrl method for tg:// URL generation"
         }
     }
+
+    // =========================================================================
+    // Phase B - New Domain-Oriented API Tests
+    // =========================================================================
+
+    @Test
+    fun `TelegramContentRepository has upsertItems method for TelegramItem domain objects`() {
+        val clazz = TelegramContentRepository::class
+        val methods = clazz.java.methods.map { it.name }
+
+        assert(methods.contains("upsertItems")) {
+            "TelegramContentRepository should have upsertItems method for Phase B"
+        }
+    }
+
+    @Test
+    fun `TelegramContentRepository has observeItemsByChat method`() {
+        val clazz = TelegramContentRepository::class
+        val method = clazz.java.methods.find { it.name == "observeItemsByChat" }
+
+        assert(method != null) {
+            "TelegramContentRepository should have observeItemsByChat method for Phase B"
+        }
+        assert(method!!.returnType.name.contains("Flow")) {
+            "observeItemsByChat should return Flow type"
+        }
+    }
+
+    @Test
+    fun `TelegramContentRepository has observeAllItems method`() {
+        val clazz = TelegramContentRepository::class
+        val method = clazz.java.methods.find { it.name == "observeAllItems" }
+
+        assert(method != null) {
+            "TelegramContentRepository should have observeAllItems method for Phase B"
+        }
+        assert(method!!.returnType.name.contains("Flow")) {
+            "observeAllItems should return Flow type"
+        }
+    }
+
+    @Test
+    fun `TelegramContentRepository has getItem method`() {
+        val clazz = TelegramContentRepository::class
+        val methods = clazz.java.methods.map { it.name }
+
+        assert(methods.contains("getItem")) {
+            "TelegramContentRepository should have getItem method for Phase B"
+        }
+    }
+
+    @Test
+    fun `TelegramContentRepository has deleteItem method`() {
+        val clazz = TelegramContentRepository::class
+        val methods = clazz.java.methods.map { it.name }
+
+        assert(methods.contains("deleteItem")) {
+            "TelegramContentRepository should have deleteItem method for Phase B"
+        }
+    }
+
+    @Test
+    fun `TelegramContentRepository has clearAllItems method`() {
+        val clazz = TelegramContentRepository::class
+        val methods = clazz.java.methods.map { it.name }
+
+        assert(methods.contains("clearAllItems")) {
+            "TelegramContentRepository should have clearAllItems method for Phase B"
+        }
+    }
+
+    @Test
+    fun `TelegramContentRepository has getTelegramItemCount method`() {
+        val clazz = TelegramContentRepository::class
+        val methods = clazz.java.methods.map { it.name }
+
+        assert(methods.contains("getTelegramItemCount")) {
+            "TelegramContentRepository should have getTelegramItemCount method for Phase B"
+        }
+    }
+
+    @Test
+    fun `indexChatMessages is deprecated`() {
+        val clazz = TelegramContentRepository::class
+        val method = clazz.java.methods.find { it.name == "indexChatMessages" }
+
+        assert(method != null) {
+            "indexChatMessages method should exist"
+        }
+
+        // Check that it has Deprecated annotation
+        val hasDeprecated = method!!.annotations.any { it.annotationClass.simpleName == "Deprecated" }
+        assert(hasDeprecated) {
+            "indexChatMessages should be marked as @Deprecated"
+        }
+    }
 }
