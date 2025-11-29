@@ -299,19 +299,6 @@ object PlaybackSession : PlaybackSessionController {
         }
     }
 
-    /**
-     * Notify PlaybackSession that media has been loaded (prepared).
-     * Called when player.prepare() is invoked with a media item.
-     */
-    internal fun onMediaPrepared() {
-        val currentState = _lifecycleState.value
-        if (currentState == SessionLifecycleState.IDLE ||
-            currentState == SessionLifecycleState.STOPPED
-        ) {
-            _lifecycleState.value = SessionLifecycleState.PREPARED
-        }
-    }
-
     // ══════════════════════════════════════════════════════════════════
     // INTERNAL STATE MANAGEMENT
     // ══════════════════════════════════════════════════════════════════
@@ -468,7 +455,8 @@ object PlaybackSession : PlaybackSessionController {
         _videoSize.value = null
         _playbackState.value = Player.STATE_IDLE
         _isSessionActive.value = false
-        // Note: _lifecycleState is set to IDLE by release(), not here
+        // Note: _lifecycleState is set to RELEASED by release(), not here.
+        // resetForTesting() sets it back to IDLE after release() for clean test state.
     }
 
     // ══════════════════════════════════════════════════════════════════
