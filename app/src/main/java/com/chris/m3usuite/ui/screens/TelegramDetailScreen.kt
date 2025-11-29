@@ -40,10 +40,14 @@ private fun fmt(totalSecs: Int): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }
 
+// Constants for Telegram ID encoding/decoding
+private const val TELEGRAM_MEDIA_ID_OFFSET = 4_000_000_000_000L
+private const val TELEGRAM_MEDIA_ID_MAX = 5_000_000_000_000L
+
 // Decode Telegram message ID from MediaItem ID (4e12 offset)
 private fun decodeTelegramId(itemId: Long): Long? =
-    if (itemId in 4_000_000_000_000L until 5_000_000_000_000L) {
-        itemId - 4_000_000_000_000L
+    if (itemId in TELEGRAM_MEDIA_ID_OFFSET until TELEGRAM_MEDIA_ID_MAX) {
+        itemId - TELEGRAM_MEDIA_ID_OFFSET
     } else {
         null
     }
@@ -240,7 +244,7 @@ fun TelegramDetailScreen(
                 startPositionMs = startMs,
                 mimeType = null,
             ) { s, resolvedMime ->
-                if (openInternal != null) openInternal(item.playUrl, s, resolvedMime)
+                openInternal?.invoke(item.playUrl, s, resolvedMime)
             }
         }
     }
@@ -397,8 +401,8 @@ fun TelegramItemDetailScreen(
     val resumeRepo = remember { ResumeRepository(ctx) }
 
     var data by remember { mutableStateOf<LoadedTelegramItem?>(null) }
-    // Encode mediaId for resume tracking (4e12 offset)
-    val mediaId = 4_000_000_000_000L + anchorMessageId
+    // Encode mediaId for resume tracking using TELEGRAM_MEDIA_ID_OFFSET
+    val mediaId = TELEGRAM_MEDIA_ID_OFFSET + anchorMessageId
     var resumeSecs by rememberSaveable { mutableStateOf<Int?>(null) }
 
     // Load TelegramItem by key (Phase D.3)
@@ -462,7 +466,7 @@ fun TelegramItemDetailScreen(
                 startPositionMs = startMs,
                 mimeType = null,
             ) { s, resolvedMime ->
-                if (openInternal != null) openInternal(item.playUrl, s, resolvedMime)
+                openInternal?.invoke(item.playUrl, s, resolvedMime)
             }
         }
     }

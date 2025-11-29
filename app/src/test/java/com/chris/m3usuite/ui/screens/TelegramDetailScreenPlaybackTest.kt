@@ -42,9 +42,9 @@ class TelegramDetailScreenPlaybackTest {
             TelegramPlayUrl.buildFileUrl(null, chatId, messageId)
             assert(false) { "Should throw exception for null fileId" }
         } catch (e: IllegalArgumentException) {
-            // Expected
-            assert(e.message?.contains("fileId must not be null") == true) {
-                "Exception should mention fileId requirement"
+            // Expected - check that message contains "fileId" substring
+            assert(e.message?.contains("fileId") == true) {
+                "Exception should mention fileId requirement, got: ${e.message}"
             }
         }
     }

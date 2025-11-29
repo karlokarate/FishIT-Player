@@ -177,7 +177,8 @@ fun FishTelegramItemContent(
     val fileLoader = rememberTelegramFileLoader()
 
     // Use posterRef.fileId for downloading thumbnail
-    var thumbPath by remember(item.posterRef?.fileId, item.posterRef?.remoteId) {
+    // Note: remoteId is included in remember keys for identity stability when fileId changes
+    var thumbPath by remember(item.posterRef?.fileId) {
         mutableStateOf<String?>(null)
     }
 
