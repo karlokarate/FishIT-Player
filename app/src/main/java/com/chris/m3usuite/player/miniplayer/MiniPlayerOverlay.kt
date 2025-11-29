@@ -81,6 +81,7 @@ private val RESIZE_BORDER_WIDTH = 3.dp
  *
  * ════════════════════════════════════════════════════════════════════════════════
  * PHASE 7 – In-App MiniPlayer UI with Polish & UX Improvements
+ * PHASE 8 – UI Rebinding & Rotation Resilience
  * ════════════════════════════════════════════════════════════════════════════════
  *
  * This composable renders a small video surface in a corner of the screen using the
@@ -99,8 +100,15 @@ private val RESIZE_BORDER_WIDTH = 3.dp
  * - Sized according to [MiniPlayerState.size]
  * - Marked with [FocusZoneId.MINI_PLAYER] for TV focus management
  *
+ * **Phase 8 Rotation Resilience (Contract Section 4.4):**
+ * - MiniPlayerState is preserved across config changes via singleton DefaultMiniPlayerManager
+ * - visible, mode, anchor, size, and position are maintained during rotation
+ * - Video surface rebinds to existing PlaybackSession without recreating the player
+ * - No flicker or reset of playback state beyond normal surface rebind
+ *
  * **Contract Reference:**
  * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Sections 3.2, 4.1, 4.2
+ * - INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 4.4
  */
 @OptIn(UnstableApi::class)
 @Composable
@@ -262,6 +270,15 @@ fun MiniPlayerOverlay(
                 }
 
                 // Video surface with animated size
+                // ═══════════════════════════════════════════════════════════════
+                // Phase 8 Group 2: MiniPlayer surface rebinding on config changes
+                // ═══════════════════════════════════════════════════════════════
+                // On config changes (rotation):
+                // - MiniPlayerState.visible/mode/anchor/size/position are preserved
+                //   via the singleton DefaultMiniPlayerManager which survives recomposition
+                // - The video surface rebinds to the existing player via update block
+                // - Playback continues without interruption (no re-setting source)
+                // - MiniPlayer dimensions/position are preserved via animated state
                 AndroidView(
                     modifier =
                         Modifier.size(
@@ -272,9 +289,14 @@ fun MiniPlayerOverlay(
                         PlayerView(ctx).apply {
                             useController = false
                             resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            // Phase 8: Set black background for consistent appearance during surface swap
+                            setBackgroundColor(android.graphics.Color.BLACK)
+                            setShutterBackgroundColor(android.graphics.Color.BLACK)
                         }
                     },
                     update = { view ->
+                        // Phase 8: Re-attach player to surface on recomposition (e.g., after rotation)
+                        // This does NOT re-set the media source - playback continues seamlessly
                         view.player = player
                     },
                 )

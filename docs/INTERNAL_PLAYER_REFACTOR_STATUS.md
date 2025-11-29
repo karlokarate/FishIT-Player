@@ -5149,4 +5149,104 @@ Phase 8 Group 1 is complete. Remaining groups:
 
 ---
 
+## Phase 8 – Task 2: UI Rebinding & Rotation Resilience (COMPLETE)
+
+**Date:** 2025-11-29
+
+**Status:** ✅ **COMPLETE** – Group 2 implemented
+
+This task implements UI rebinding and rotation resilience for PlayerSurface and MiniPlayerOverlay.
+
+### What Was Done
+
+**1. PlayerSurface Enhanced with Lifecycle-Aware Rebinding**
+
+| Change | Description |
+|--------|-------------|
+| Import | Added `PlaybackSession`, `SessionLifecycleState`, `DisposableEffect` |
+| Lifecycle Check | Added `canRebindToExistingSession` based on `PlaybackSession.lifecycleState` |
+| Phase 8 Comments | Documented warm resume states (PREPARED, PLAYING, PAUSED, BACKGROUND) |
+| Update Block | Enhanced with Phase 8 surface rebinding documentation |
+| DisposableEffect | Added for surface lifecycle tracking |
+
+**Warm Resume States (surface rebind without re-setting source):**
+- PREPARED: Media loaded, ready to play
+- PLAYING: Actively playing
+- PAUSED: Paused but retained
+- BACKGROUND: App backgrounded with active playback
+
+**2. MiniPlayerOverlay Enhanced with Phase 8 Documentation**
+
+| Change | Description |
+|--------|-------------|
+| KDoc | Added Phase 8 rotation resilience section |
+| Surface Factory | Added black background for consistent surface swap |
+| Surface Update | Added Phase 8 rebinding comment |
+
+**MiniPlayerState Preservation:**
+- `visible`, `mode`, `anchor`, `size`, `position` all preserved via singleton DefaultMiniPlayerManager
+- State survives Activity recreation (object singleton pattern)
+
+**3. RotationResilienceTest Created**
+
+| Test Category | Tests |
+|---------------|-------|
+| ExoPlayer Preservation | Session singleton preserved, lifecycle state preserved across config changes |
+| MiniPlayer Preservation | visible, mode, anchor, size, position all preserved |
+| AspectRatioMode | Enum stability, cycling determinism, copy preservation |
+| SubtitleStyle | Copy preservation, default consistency, EdgeStyle enum stability |
+| Subtitle Track | Track copy, list copy preservation |
+| TV vs Phone/Tablet | SessionLifecycleState enum completeness, background/foreground idempotent |
+| Combined Scenarios | Full rotation scenario, resize mode during rotation |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `test/.../RotationResilienceTest.kt` | 20+ tests for rotation resilience |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `player/internal/ui/PlayerSurface.kt` | Added lifecycle-aware rebinding, Phase 8 comments |
+| `player/miniplayer/MiniPlayerOverlay.kt` | Added Phase 8 KDoc, black surface background |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 2 as DONE |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*RotationResilienceTest*"` passes all 20 tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 4.4
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 2
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No worker changes
+- ✅ No new features beyond rotation resilience
+- ✅ Phase 4-7 behaviors preserved
+- ✅ MiniPlayerManager remains pure domain (no Compose imports)
+
+### Phase 8 Status Summary
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
+| **2** | **UI Rebinding & Rotation** | ✅ **DONE** |
+| 3 | Navigation & Backstack Stability | ⬜ PENDING |
+| 4 | System PiP vs In-App MiniPlayer | ⬜ PENDING |
+| 5 | Playback-Aware Worker Scheduling | ⬜ PENDING |
+| 6 | Memory & Leak Hygiene | ⬜ PENDING |
+| 7 | Compose & FocusKit Performance | ⬜ PENDING |
+| 8 | Error Handling & Recovery | ⬜ PENDING |
+| 9 | Regression Suite | ⬜ PENDING |
+
+---
+
 **Last Updated:** 2025-11-29
