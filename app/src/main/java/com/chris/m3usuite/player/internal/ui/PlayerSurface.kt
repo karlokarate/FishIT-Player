@@ -19,8 +19,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
-import com.chris.m3usuite.playback.PlaybackSession
-import com.chris.m3usuite.playback.SessionLifecycleState
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.state.AspectRatioMode
 import com.chris.m3usuite.player.internal.subtitles.EdgeStyle
@@ -57,8 +55,7 @@ private object PlayerSurfaceConstants {
  * **Phase 5 Group 2**: AspectRatioMode (FIT/FILL/ZOOM) is applied correctly via toResizeMode().
  * **Phase 5 Group 3**: Trickplay gesture callbacks for VOD/SERIES content.
  * **Phase 8 Group 2**: UI Rebinding & Rotation Resilience
- *   - PlayerSurface rebinds to existing PlaybackSession on config changes
- *   - Checks PlaybackSession.lifecycleState to determine rebinding behavior
+ *   - PlayerSurface rebinds to shared player session on config changes via AndroidView update block
  *   - Surface reattachment does NOT reset playback, aspect ratio, or subtitle state
  *
  * For LIVE playback:
@@ -84,9 +81,9 @@ private object PlayerSurfaceConstants {
  * - Gestures trigger callbacks; actual speed control is managed by session
  *
  * **Rotation/Config Change Behavior (Phase 8 Section 4.4):**
- * - On config change, PlayerSurface rebinds to existing PlaybackSession
- * - If lifecycleState in {PREPARED, PLAYING, PAUSED, BACKGROUND}: Re-attach surface without re-setting source
- * - If lifecycleState in {IDLE, STOPPED, RELEASED}: Maintain existing startup behavior
+ * - On config change, PlayerSurface rebinds to shared player via AndroidView update block
+ * - If session is active (PREPARED/PLAYING/PAUSED/BACKGROUND): Re-attach surface without re-setting source
+ * - If session is inactive (IDLE/STOPPED/RELEASED): Maintain existing startup behavior
  * - aspectRatioMode, subtitleStyle, and track selections are preserved
  *
  * @param player The ExoPlayer instance to render
@@ -117,29 +114,19 @@ fun PlayerSurface(
     var dragDeltaY by remember { mutableStateOf(0f) }
 
     // ═══════════════════════════════════════════════════════════════
-    // Phase 8 Group 2: Check PlaybackSession lifecycle state for rebinding
+    // Phase 8 Group 2: Surface Rebinding on Config Changes
     // ═══════════════════════════════════════════════════════════════
-    // On config changes (rotation), the composable is recomposed.
-    // We check if PlaybackSession is in an active state to determine
-    // if we should rebind to the existing player without re-setting source.
+    // On config changes (rotation), this composable is recomposed.
+    // The AndroidView `update` block handles surface rebinding automatically:
+    // - Re-attaches player to PlayerView surface
+    // - Does NOT re-set media source
+    // - aspectRatioMode and subtitleStyle are applied from preserved state
     //
-    // States where we rebind to existing session (warm resume):
-    // - PREPARED: Media loaded, ready to play
-    // - PLAYING: Actively playing
-    // - PAUSED: Paused but retained
-    // - BACKGROUND: App backgrounded with active playback
+    // Warm Resume States (rebind without recreating player):
+    // - PREPARED, PLAYING, PAUSED, BACKGROUND
     //
-    // States where we use existing startup behavior:
-    // - IDLE: No media loaded
-    // - STOPPED: Playback stopped
-    // - RELEASED: ExoPlayer released
-    val lifecycleState = remember { PlaybackSession.lifecycleState.value }
-    val canRebindToExistingSession = lifecycleState in setOf(
-        SessionLifecycleState.PREPARED,
-        SessionLifecycleState.PLAYING,
-        SessionLifecycleState.PAUSED,
-        SessionLifecycleState.BACKGROUND,
-    )
+    // Cold Start States (normal startup behavior):
+    // - IDLE, STOPPED, RELEASED
 
     Box(
         modifier =
@@ -314,7 +301,7 @@ fun PlayerSurface(
                 onDispose {
                     // Surface is automatically detached by PlayerView
                     // No explicit cleanup needed for the surface itself
-                    // The player continues to exist via PlaybackSession
+                    // The player instance continues to exist via shared session
                 }
             }
         }
