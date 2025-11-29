@@ -4,12 +4,26 @@ import android.content.Context
 import androidx.work.*
 import com.chris.m3usuite.data.obx.*
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.playback.PlaybackPriority
 import io.objectbox.Box
 import io.objectbox.query.Query
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.min
 
+/**
+ * Worker for ObjectBox key backfill operations.
+ *
+ * ════════════════════════════════════════════════════════════════════════════════
+ * PHASE 8 – Task 3: Playback-Aware Worker Scheduling
+ * ════════════════════════════════════════════════════════════════════════════════
+ *
+ * This worker is playback-aware: when [PlaybackPriority.isPlaybackActive] is true,
+ * heavy operations are throttled to avoid impacting playback quality.
+ *
+ * All database operations run on [Dispatchers.IO] to ensure main thread hygiene.
+ */
 class ObxKeyBackfillWorker(
     appContext: Context,
     params: WorkerParameters,
@@ -17,6 +31,9 @@ class ObxKeyBackfillWorker(
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             try {
+                // Phase 8: Playback-aware throttling at start
+                throttleIfPlaybackActive()
+
                 val boxStore = ObxStore.get(applicationContext)
                 val liveBox = boxStore.boxFor(ObxLive::class.java)
                 val vodBox = boxStore.boxFor(ObxVod::class.java)
@@ -195,6 +212,9 @@ class ObxKeyBackfillWorker(
                     },
                 )
 
+                // Phase 8: Throttle between entity types
+                throttleIfPlaybackActive()
+
                 // VOD
                 val vodQuery = vodBox.query().build()
                 backfillPaged(
@@ -253,6 +273,9 @@ class ObxKeyBackfillWorker(
                         changed
                     },
                 )
+
+                // Phase 8: Throttle between entity types
+                throttleIfPlaybackActive()
 
                 // Series
                 val seriesQuery = seriesBox.query().build()
@@ -320,6 +343,16 @@ class ObxKeyBackfillWorker(
                 Result.retry()
             }
         }
+
+    /**
+     * Phase 8: Delays execution when playback is active to avoid stuttering.
+     * Uses [PlaybackPriority.PLAYBACK_THROTTLE_MS] delay when playback is active.
+     */
+    private suspend fun throttleIfPlaybackActive() {
+        if (PlaybackPriority.isPlaybackActive.value) {
+            delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+        }
+    }
 
     companion object {
         private const val UNIQUE = "obx_key_backfill_once"

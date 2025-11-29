@@ -5241,11 +5241,127 @@ All implementations align with:
 | **2** | **UI Rebinding & Rotation** | ✅ **DONE** |
 | 3 | Navigation & Backstack Stability | ⬜ PENDING |
 | 4 | System PiP vs In-App MiniPlayer | ⬜ PENDING |
-| 5 | Playback-Aware Worker Scheduling | ⬜ PENDING |
-| 6 | Memory & Leak Hygiene | ⬜ PENDING |
+| **5** | **Playback-Aware Worker Scheduling** | ✅ **DONE** |
+| **6** | **Memory & Leak Hygiene** | ✅ **PARTIAL DONE** |
 | 7 | Compose & FocusKit Performance | ⬜ PENDING |
 | 8 | Error Handling & Recovery | ⬜ PENDING |
 | 9 | Regression Suite | ⬜ PENDING |
+
+---
+
+## Phase 8 – Task 3: Playback-Aware Worker Scheduling & Leak Hygiene (COMPLETE)
+
+**Date:** 2025-11-29
+
+**Status:** ✅ **COMPLETE** – Groups 5 and 6 (partial) implemented
+
+This task implements playback-aware worker scheduling and basic leak hygiene for the SIP player.
+
+### What Was Done
+
+**1. PlaybackPriority Object Created (`playback/PlaybackPriority.kt`)**
+
+| Component | Implementation |
+|-----------|----------------|
+| `isPlaybackActive: StateFlow<Boolean>` | Derived from `PlaybackSession.isPlaying` AND `lifecycleState` in {PLAYING, PAUSED, BACKGROUND} |
+| `PLAYBACK_THROTTLE_MS` | 500L constant for worker throttle delay |
+| `shouldThrottle()` | Convenience method equivalent to `isPlaybackActive.value` |
+| Thread Safety | Uses StateFlow with eager sharing |
+
+**Definition of "Active":**
+- `PlaybackSession.isPlaying.value == true` AND
+- `PlaybackSession.lifecycleState.value` in {PLAYING, PAUSED, BACKGROUND}
+
+**2. XtreamDeltaImportWorker Updated with Playback Awareness**
+
+| Throttle Point | When |
+|----------------|------|
+| Before seeding | Heavy network operation |
+| Before delta import | Heavy network + DB operation |
+| Before detail refresh | Heavy network + DB operation |
+| Before EPG prefetch | Network operation |
+
+**3. XtreamDetailsWorker Updated with Playback Awareness**
+
+| Throttle Point | When |
+|----------------|------|
+| Before detail refresh | Heavy network + DB operation |
+| Before EPG prefetch | Network operation |
+
+**4. ObxKeyBackfillWorker Updated with Playback Awareness**
+
+| Throttle Point | When |
+|----------------|------|
+| At start | Before heavy DB operations |
+| Between Live and VOD backfill | Between entity type processing |
+| Between VOD and Series backfill | Between entity type processing |
+
+**5. LeakCanary Verified**
+
+LeakCanary is already integrated in debug builds:
+```kotlin
+debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+```
+
+**6. Main-Thread Hygiene Verified**
+
+| Worker | Dispatcher |
+|--------|------------|
+| XtreamDeltaImportWorker | CoroutineWorker (Dispatchers.Default by default) |
+| XtreamDetailsWorker | CoroutineWorker (Dispatchers.Default by default) |
+| ObxKeyBackfillWorker | Explicit `withContext(Dispatchers.IO)` |
+
+### Unit Tests Created
+
+| Test Class | Coverage |
+|------------|----------|
+| `PlaybackPriorityStateTest.kt` | isPlaybackActive behavior, lifecycle state mapping, THROTTLE_MS constant, shouldThrottle() method |
+| `WorkerThrottleTest.kt` | Throttle patterns, delay constant, worker integration patterns, state transitions |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `playback/PlaybackPriority.kt` | Playback-aware scheduling helper |
+| `test/.../PlaybackPriorityStateTest.kt` | PlaybackPriority unit tests |
+| `test/.../WorkerThrottleTest.kt` | Worker throttling unit tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `work/XtreamDeltaImportWorker.kt` | Added playback-aware throttling |
+| `work/XtreamDetailsWorker.kt` | Added playback-aware throttling |
+| `work/ObxKeyBackfillWorker.kt` | Added playback-aware throttling |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Groups 5–6 as DONE/PARTIAL |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Files NOT Modified (Per Task Constraints)
+
+- ❌ `telegram/work/TelegramSyncWorker.kt` – Telegram modules untouched
+- ❌ Any `telegram/**/*.kt` files – All Telegram modules untouched
+- ❌ Any parser/ObjectBox modules – Handled by parallel refactor
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*PlaybackPriorityStateTest"` passes all tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*WorkerThrottleTest"` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 7
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Groups 5–6
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ No MiniPlayer UI changes
+- ✅ No PiP behavior changes
+- ✅ Phase 4-7 behaviors preserved
 
 ---
 
