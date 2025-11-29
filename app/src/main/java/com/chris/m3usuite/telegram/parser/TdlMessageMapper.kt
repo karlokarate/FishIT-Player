@@ -62,6 +62,90 @@ object TdlMessageMapper {
      */
     fun toExportMessages(messages: List<Message>): List<ExportMessage> = messages.mapNotNull { toExportMessage(it) }
 
+    // =========================================================================
+    // Helper Functions for File Reference Construction
+    // =========================================================================
+
+    /**
+     * Validate that a TDLib file has required remote identifiers.
+     *
+     * @param remoteId The remote file ID
+     * @param uniqueId The unique file ID
+     * @param messageId Message ID for logging
+     * @param fileType Description of file type for logging
+     * @return true if valid, false otherwise
+     */
+    private fun validateFileIdentifiers(
+        remoteId: String?,
+        uniqueId: String?,
+        messageId: Long,
+        fileType: String,
+    ): Boolean {
+        if (remoteId.isNullOrBlank() || uniqueId.isNullOrBlank()) {
+            TelegramLogRepository.debug(
+                TAG,
+                "Skipping $fileType message $messageId: missing remoteId or uniqueId",
+            )
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Build an ExportFile from TDLib file components.
+     */
+    private fun buildExportFile(file: dev.g000sha256.tdl.dto.File?): ExportFile =
+        ExportFile(
+            id = file?.id ?: 0,
+            size = file?.size ?: 0,
+            expectedSize = file?.expectedSize ?: 0,
+            local = buildExportLocalFile(file?.local),
+            remote = buildExportRemoteFile(file?.remote),
+        )
+
+    /**
+     * Build an ExportLocalFile from TDLib local file info.
+     */
+    private fun buildExportLocalFile(local: dev.g000sha256.tdl.dto.LocalFile?): ExportLocalFile =
+        ExportLocalFile(
+            path = local?.path ?: "",
+            canBeDownloaded = local?.canBeDownloaded ?: false,
+            canBeDeleted = local?.canBeDeleted ?: false,
+            isDownloadingActive = local?.isDownloadingActive ?: false,
+            isDownloadingCompleted = local?.isDownloadingCompleted ?: false,
+            downloadOffset = local?.downloadOffset ?: 0,
+            downloadedPrefixSize = local?.downloadedPrefixSize ?: 0,
+            downloadedSize = local?.downloadedSize ?: 0,
+        )
+
+    /**
+     * Build an ExportRemoteFile from TDLib remote file info.
+     */
+    private fun buildExportRemoteFile(remote: dev.g000sha256.tdl.dto.RemoteFile?): ExportRemoteFile =
+        ExportRemoteFile(
+            id = remote?.id,
+            uniqueId = remote?.uniqueId,
+            isUploadingActive = remote?.isUploadingActive ?: false,
+            isUploadingCompleted = remote?.isUploadingCompleted ?: false,
+            uploadedSize = remote?.uploadedSize ?: 0,
+        )
+
+    /**
+     * Build an ExportThumbnail from TDLib thumbnail info.
+     */
+    private fun buildExportThumbnail(thumbnail: dev.g000sha256.tdl.dto.Thumbnail?): ExportThumbnail? {
+        if (thumbnail == null) return null
+        return ExportThumbnail(
+            width = thumbnail.width,
+            height = thumbnail.height,
+            file = buildExportFile(thumbnail.file),
+        )
+    }
+
+    // =========================================================================
+    // Message Type Mapping Functions
+    // =========================================================================
+
     /**
      * Map MessageVideo to ExportVideo.
      */
@@ -78,49 +162,11 @@ object TdlMessageMapper {
         val remoteId = videoFile?.remote?.id
         val uniqueId = videoFile?.remote?.uniqueId
 
-        if (remoteId.isNullOrBlank() || uniqueId.isNullOrBlank()) {
-            TelegramLogRepository.debug(
-                TAG,
-                "Skipping video message ${message.id}: missing remoteId or uniqueId",
-            )
+        if (!validateFileIdentifiers(remoteId, uniqueId, message.id, "video")) {
             return null
         }
 
-        // Build thumbnail if present
-        val thumbnail =
-            video.thumbnail?.let { thumb ->
-                ExportThumbnail(
-                    width = thumb.width,
-                    height = thumb.height,
-                    file =
-                        ExportFile(
-                            id = thumb.file?.id ?: 0,
-                            size = thumb.file?.size ?: 0,
-                            expectedSize = thumb.file?.expectedSize ?: 0,
-                            local =
-                                ExportLocalFile(
-                                    path = thumb.file?.local?.path ?: "",
-                                    canBeDownloaded = thumb.file?.local?.canBeDownloaded ?: false,
-                                    canBeDeleted = thumb.file?.local?.canBeDeleted ?: false,
-                                    isDownloadingActive = thumb.file?.local?.isDownloadingActive ?: false,
-                                    isDownloadingCompleted = thumb.file?.local?.isDownloadingCompleted ?: false,
-                                    downloadOffset = thumb.file?.local?.downloadOffset ?: 0,
-                                    downloadedPrefixSize = thumb.file?.local?.downloadedPrefixSize ?: 0,
-                                    downloadedSize = thumb.file?.local?.downloadedSize ?: 0,
-                                ),
-                            remote =
-                                ExportRemoteFile(
-                                    id = thumb.file?.remote?.id,
-                                    uniqueId = thumb.file?.remote?.uniqueId,
-                                    isUploadingActive = thumb.file?.remote?.isUploadingActive ?: false,
-                                    isUploadingCompleted = thumb.file?.remote?.isUploadingCompleted ?: false,
-                                    uploadedSize = thumb.file?.remote?.uploadedSize ?: 0,
-                                ),
-                        ),
-                )
-            }
-
-        // Build video content
+        // Build video content using helper functions
         val videoContent =
             ExportVideoContent(
                 duration = video.duration,
@@ -129,32 +175,8 @@ object TdlMessageMapper {
                 fileName = video.fileName ?: "",
                 mimeType = video.mimeType ?: "",
                 supportsStreaming = video.supportsStreaming,
-                thumbnail = thumbnail,
-                video =
-                    ExportFile(
-                        id = videoFile?.id ?: 0,
-                        size = videoFile?.size ?: 0,
-                        expectedSize = videoFile?.expectedSize ?: 0,
-                        local =
-                            ExportLocalFile(
-                                path = videoFile?.local?.path ?: "",
-                                canBeDownloaded = videoFile?.local?.canBeDownloaded ?: false,
-                                canBeDeleted = videoFile?.local?.canBeDeleted ?: false,
-                                isDownloadingActive = videoFile?.local?.isDownloadingActive ?: false,
-                                isDownloadingCompleted = videoFile?.local?.isDownloadingCompleted ?: false,
-                                downloadOffset = videoFile?.local?.downloadOffset ?: 0,
-                                downloadedPrefixSize = videoFile?.local?.downloadedPrefixSize ?: 0,
-                                downloadedSize = videoFile?.local?.downloadedSize ?: 0,
-                            ),
-                        remote =
-                            ExportRemoteFile(
-                                id = remoteId,
-                                uniqueId = uniqueId,
-                                isUploadingActive = videoFile?.remote?.isUploadingActive ?: false,
-                                isUploadingCompleted = videoFile?.remote?.isUploadingCompleted ?: false,
-                                uploadedSize = videoFile?.remote?.uploadedSize ?: 0,
-                            ),
-                    ),
+                thumbnail = buildExportThumbnail(video.thumbnail),
+                video = buildExportFile(videoFile),
             )
 
         // Extract caption and entities
@@ -197,31 +219,7 @@ object TdlMessageMapper {
                     type = photoSize.type ?: "",
                     width = photoSize.width,
                     height = photoSize.height,
-                    photo =
-                        ExportFile(
-                            id = photoFile?.id ?: 0,
-                            size = photoFile?.size ?: 0,
-                            expectedSize = photoFile?.expectedSize ?: 0,
-                            local =
-                                ExportLocalFile(
-                                    path = photoFile?.local?.path ?: "",
-                                    canBeDownloaded = photoFile?.local?.canBeDownloaded ?: false,
-                                    canBeDeleted = photoFile?.local?.canBeDeleted ?: false,
-                                    isDownloadingActive = photoFile?.local?.isDownloadingActive ?: false,
-                                    isDownloadingCompleted = photoFile?.local?.isDownloadingCompleted ?: false,
-                                    downloadOffset = photoFile?.local?.downloadOffset ?: 0,
-                                    downloadedPrefixSize = photoFile?.local?.downloadedPrefixSize ?: 0,
-                                    downloadedSize = photoFile?.local?.downloadedSize ?: 0,
-                                ),
-                            remote =
-                                ExportRemoteFile(
-                                    id = remoteId,
-                                    uniqueId = uniqueId,
-                                    isUploadingActive = photoFile?.remote?.isUploadingActive ?: false,
-                                    isUploadingCompleted = photoFile?.remote?.isUploadingCompleted ?: false,
-                                    uploadedSize = photoFile?.remote?.uploadedSize ?: 0,
-                                ),
-                        ),
+                    photo = buildExportFile(photoFile),
                 )
             } ?: emptyList()
 
@@ -245,6 +243,7 @@ object TdlMessageMapper {
             caption = caption,
         )
     }
+
 
     /**
      * Map MessageText to ExportText with metadata extraction.
@@ -298,78 +297,16 @@ object TdlMessageMapper {
         val remoteId = docFile?.remote?.id
         val uniqueId = docFile?.remote?.uniqueId
 
-        if (remoteId.isNullOrBlank() || uniqueId.isNullOrBlank()) {
-            TelegramLogRepository.debug(
-                TAG,
-                "Skipping document message ${message.id}: missing remoteId or uniqueId",
-            )
+        if (!validateFileIdentifiers(remoteId, uniqueId, message.id, "document")) {
             return null
         }
-
-        // Build thumbnail if present
-        val thumbnail =
-            doc.thumbnail?.let { thumb ->
-                ExportThumbnail(
-                    width = thumb.width,
-                    height = thumb.height,
-                    file =
-                        ExportFile(
-                            id = thumb.file?.id ?: 0,
-                            size = thumb.file?.size ?: 0,
-                            expectedSize = thumb.file?.expectedSize ?: 0,
-                            local =
-                                ExportLocalFile(
-                                    path = thumb.file?.local?.path ?: "",
-                                    canBeDownloaded = thumb.file?.local?.canBeDownloaded ?: false,
-                                    canBeDeleted = thumb.file?.local?.canBeDeleted ?: false,
-                                    isDownloadingActive = thumb.file?.local?.isDownloadingActive ?: false,
-                                    isDownloadingCompleted = thumb.file?.local?.isDownloadingCompleted ?: false,
-                                    downloadOffset = thumb.file?.local?.downloadOffset ?: 0,
-                                    downloadedPrefixSize = thumb.file?.local?.downloadedPrefixSize ?: 0,
-                                    downloadedSize = thumb.file?.local?.downloadedSize ?: 0,
-                                ),
-                            remote =
-                                ExportRemoteFile(
-                                    id = thumb.file?.remote?.id,
-                                    uniqueId = thumb.file?.remote?.uniqueId,
-                                    isUploadingActive = thumb.file?.remote?.isUploadingActive ?: false,
-                                    isUploadingCompleted = thumb.file?.remote?.isUploadingCompleted ?: false,
-                                    uploadedSize = thumb.file?.remote?.uploadedSize ?: 0,
-                                ),
-                        ),
-                )
-            }
 
         val docContent =
             ExportDocumentContent(
                 fileName = doc.fileName ?: "",
                 mimeType = doc.mimeType ?: "",
-                thumbnail = thumbnail,
-                document =
-                    ExportFile(
-                        id = docFile?.id ?: 0,
-                        size = docFile?.size ?: 0,
-                        expectedSize = docFile?.expectedSize ?: 0,
-                        local =
-                            ExportLocalFile(
-                                path = docFile?.local?.path ?: "",
-                                canBeDownloaded = docFile?.local?.canBeDownloaded ?: false,
-                                canBeDeleted = docFile?.local?.canBeDeleted ?: false,
-                                isDownloadingActive = docFile?.local?.isDownloadingActive ?: false,
-                                isDownloadingCompleted = docFile?.local?.isDownloadingCompleted ?: false,
-                                downloadOffset = docFile?.local?.downloadOffset ?: 0,
-                                downloadedPrefixSize = docFile?.local?.downloadedPrefixSize ?: 0,
-                                downloadedSize = docFile?.local?.downloadedSize ?: 0,
-                            ),
-                        remote =
-                            ExportRemoteFile(
-                                id = remoteId,
-                                uniqueId = uniqueId,
-                                isUploadingActive = docFile?.remote?.isUploadingActive ?: false,
-                                isUploadingCompleted = docFile?.remote?.isUploadingCompleted ?: false,
-                                uploadedSize = docFile?.remote?.uploadedSize ?: 0,
-                            ),
-                    ),
+                thumbnail = buildExportThumbnail(doc.thumbnail),
+                document = buildExportFile(docFile),
             )
 
         val caption = content.caption?.text
@@ -400,47 +337,9 @@ object TdlMessageMapper {
         val remoteId = audioFile?.remote?.id
         val uniqueId = audioFile?.remote?.uniqueId
 
-        if (remoteId.isNullOrBlank() || uniqueId.isNullOrBlank()) {
-            TelegramLogRepository.debug(
-                TAG,
-                "Skipping audio message ${message.id}: missing remoteId or uniqueId",
-            )
+        if (!validateFileIdentifiers(remoteId, uniqueId, message.id, "audio")) {
             return null
         }
-
-        // Build album cover thumbnail if present
-        val albumCover =
-            audio.albumCoverThumbnail?.let { thumb ->
-                ExportThumbnail(
-                    width = thumb.width,
-                    height = thumb.height,
-                    file =
-                        ExportFile(
-                            id = thumb.file?.id ?: 0,
-                            size = thumb.file?.size ?: 0,
-                            expectedSize = thumb.file?.expectedSize ?: 0,
-                            local =
-                                ExportLocalFile(
-                                    path = thumb.file?.local?.path ?: "",
-                                    canBeDownloaded = thumb.file?.local?.canBeDownloaded ?: false,
-                                    canBeDeleted = thumb.file?.local?.canBeDeleted ?: false,
-                                    isDownloadingActive = thumb.file?.local?.isDownloadingActive ?: false,
-                                    isDownloadingCompleted = thumb.file?.local?.isDownloadingCompleted ?: false,
-                                    downloadOffset = thumb.file?.local?.downloadOffset ?: 0,
-                                    downloadedPrefixSize = thumb.file?.local?.downloadedPrefixSize ?: 0,
-                                    downloadedSize = thumb.file?.local?.downloadedSize ?: 0,
-                                ),
-                            remote =
-                                ExportRemoteFile(
-                                    id = thumb.file?.remote?.id,
-                                    uniqueId = thumb.file?.remote?.uniqueId,
-                                    isUploadingActive = thumb.file?.remote?.isUploadingActive ?: false,
-                                    isUploadingCompleted = thumb.file?.remote?.isUploadingCompleted ?: false,
-                                    uploadedSize = thumb.file?.remote?.uploadedSize ?: 0,
-                                ),
-                        ),
-                )
-            }
 
         val audioContent =
             ExportAudioContent(
@@ -449,32 +348,8 @@ object TdlMessageMapper {
                 performer = audio.performer ?: "",
                 fileName = audio.fileName ?: "",
                 mimeType = audio.mimeType ?: "",
-                albumCoverThumbnail = albumCover,
-                audio =
-                    ExportFile(
-                        id = audioFile?.id ?: 0,
-                        size = audioFile?.size ?: 0,
-                        expectedSize = audioFile?.expectedSize ?: 0,
-                        local =
-                            ExportLocalFile(
-                                path = audioFile?.local?.path ?: "",
-                                canBeDownloaded = audioFile?.local?.canBeDownloaded ?: false,
-                                canBeDeleted = audioFile?.local?.canBeDeleted ?: false,
-                                isDownloadingActive = audioFile?.local?.isDownloadingActive ?: false,
-                                isDownloadingCompleted = audioFile?.local?.isDownloadingCompleted ?: false,
-                                downloadOffset = audioFile?.local?.downloadOffset ?: 0,
-                                downloadedPrefixSize = audioFile?.local?.downloadedPrefixSize ?: 0,
-                                downloadedSize = audioFile?.local?.downloadedSize ?: 0,
-                            ),
-                        remote =
-                            ExportRemoteFile(
-                                id = remoteId,
-                                uniqueId = uniqueId,
-                                isUploadingActive = audioFile?.remote?.isUploadingActive ?: false,
-                                isUploadingCompleted = audioFile?.remote?.isUploadingCompleted ?: false,
-                                uploadedSize = audioFile?.remote?.uploadedSize ?: 0,
-                            ),
-                    ),
+                albumCoverThumbnail = buildExportThumbnail(audio.albumCoverThumbnail),
+                audio = buildExportFile(audioFile),
             )
 
         val caption = content.caption?.text

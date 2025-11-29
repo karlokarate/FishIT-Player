@@ -6,7 +6,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgSyncState
@@ -45,9 +44,10 @@ class TelegramSyncWorker(
 ) : CoroutineWorker(context, params) {
     private val settingsStore = SettingsStore(context)
 
-    @Deprecated("Use TelegramIngestionCoordinator instead")
-    @Suppress("unused")
-    private val repository = TelegramContentRepository(context, settingsStore)
+    // NOTE: TelegramContentRepository is no longer initialized here.
+    // The new ingestion pipeline uses TelegramIngestionCoordinator which creates
+    // its own repository instance. Legacy repository field removed to avoid
+    // unnecessary object creation.
 
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {

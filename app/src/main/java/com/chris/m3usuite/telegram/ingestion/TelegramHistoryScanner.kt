@@ -32,6 +32,7 @@ class TelegramHistoryScanner(
         private const val DEFAULT_PAGE_SIZE = 100
         private const val DEFAULT_MAX_RETRIES = 5
         private const val INITIAL_RETRY_DELAY_MS = 200L
+        private const val PAGE_DELAY_MS = 100L
     }
 
     /**
@@ -153,7 +154,7 @@ class TelegramHistoryScanner(
             fromMessageId = oldestMessageId
 
             // Short delay for TDLib-friendly pacing
-            delay(100)
+            delay(PAGE_DELAY_MS)
 
             // If batch is smaller than page size, likely at end of history
             if (uniqueMessages.size < config.pageSize) {
