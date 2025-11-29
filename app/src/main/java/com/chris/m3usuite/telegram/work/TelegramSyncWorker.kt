@@ -10,6 +10,8 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgSyncState
+import com.chris.m3usuite.telegram.ingestion.TelegramHistoryScanner
+import com.chris.m3usuite.telegram.ingestion.TelegramIngestionCoordinator
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -26,9 +28,14 @@ import kotlinx.coroutines.withContext
  * - Uses T_TelegramServiceClient for unified Telegram access
  * - Parallel processing with adaptive parallelism
  * - Multiple sync modes: MODE_ALL, MODE_SELECTION_CHANGED, MODE_BACKFILL_SERIES
- * - Integrates MediaParser + TgContentHeuristics
+ * - Delegates to TelegramIngestionCoordinator for pipeline processing
  * - Updates sync state in T_TelegramServiceClient
  * - Comprehensive error handling and retry logic
+ *
+ * **Phase C Update:**
+ * - Now uses TelegramIngestionCoordinator for the ingestion pipeline
+ * - The coordinator handles: TelegramHistoryScanner → TdlMessageMapper → parser pipeline → ObjectBox
+ * - Legacy indexChatMessages() is deprecated and no longer called
  *
  * Implementation follows Cluster B specification from tdlibAgent.md.
  */
@@ -37,6 +44,9 @@ class TelegramSyncWorker(
     params: WorkerParameters,
 ) : CoroutineWorker(context, params) {
     private val settingsStore = SettingsStore(context)
+
+    @Deprecated("Use TelegramIngestionCoordinator instead")
+    @Suppress("unused")
     private val repository = TelegramContentRepository(context, settingsStore)
 
     override suspend fun doWork(): Result =
@@ -168,7 +178,16 @@ class TelegramSyncWorker(
      * @param pageSize Number of messages per page
      * @param maxPages Maximum number of pages to load
      * @return List of all loaded messages
+     *
+     * @deprecated Use TelegramHistoryScanner via TelegramIngestionCoordinator instead.
+     * This method was used by the legacy indexChatMessages() flow. The new pipeline
+     * uses TelegramHistoryScanner for paging with better retry logic and ExportMessage conversion.
      */
+    @Deprecated(
+        message = "Use TelegramHistoryScanner via TelegramIngestionCoordinator",
+        replaceWith = ReplaceWith("TelegramHistoryScanner(serviceClient).scan(chatId, config)"),
+    )
+    @Suppress("unused")
     private suspend fun loadMessagesForSync(
         serviceClient: T_TelegramServiceClient,
         chatId: Long,
@@ -250,7 +269,14 @@ class TelegramSyncWorker(
     }
 
     /**
-     * Sync a single chat with error handling and retry logic.
+     * Sync a single chat using the new ingestion pipeline (Phase C).
+     *
+     * Uses TelegramIngestionCoordinator which orchestrates:
+     * - TelegramHistoryScanner for message fetching
+     * - TdlMessageMapper for TDLib → ExportMessage conversion
+     * - TelegramBlockGrouper for 120-second window grouping
+     * - TelegramItemBuilder for TelegramItem creation
+     * - TelegramContentRepository for persistence
      */
     private suspend fun syncChat(
         serviceClient: T_TelegramServiceClient,
@@ -267,65 +293,50 @@ class TelegramSyncWorker(
                 // Resolve chat title for context
                 val chatTitle = serviceClient.resolveChatTitle(chatId)
 
-                // Load messages from chat using T_ChatBrowser
-                val messages =
+                // Create ingestion coordinator
+                val coordinator = TelegramIngestionCoordinator(applicationContext, serviceClient)
+
+                // Configure scan based on mode
+                val scanConfig =
                     when (mode) {
                         MODE_ALL -> {
-                            // Load messages with pagination (10 pages, 100 per page)
-                            loadMessagesForSync(
-                                serviceClient = serviceClient,
-                                chatId = chatId,
+                            TelegramHistoryScanner.ScanConfig(
                                 pageSize = 100,
                                 maxPages = 10,
                             )
                         }
                         MODE_SELECTION_CHANGED -> {
-                            // Load recent messages (10 pages, 50 per page)
-                            loadMessagesForSync(
-                                serviceClient = serviceClient,
-                                chatId = chatId,
+                            TelegramHistoryScanner.ScanConfig(
                                 pageSize = 50,
                                 maxPages = 10,
                             )
                         }
                         MODE_BACKFILL_SERIES -> {
-                            // For series, load more messages to capture all episodes (10 pages, 200 per page)
-                            loadMessagesForSync(
-                                serviceClient = serviceClient,
-                                chatId = chatId,
-                                pageSize = 200,
-                                maxPages = 10,
+                            // For series, load more messages to capture all episodes
+                            TelegramHistoryScanner.ScanConfig(
+                                pageSize = 100,
+                                maxPages = 20,
                             )
                         }
-                        else -> emptyList()
+                        else ->
+                            TelegramHistoryScanner.ScanConfig(
+                                pageSize = 50,
+                                maxPages = 5,
+                            )
                     }
 
-                if (messages.isEmpty()) {
-                    TelegramLogRepository.info("TelegramSyncWorker", "No messages found in chat $chatId")
-                    return@withContext 0
-                }
-
-                TelegramLogRepository.info(
-                    source = "TelegramSyncWorker",
-                    message = "Processing messages from chat",
-                    details =
-                        mapOf(
-                            "chatId" to chatId.toString(),
-                            "mode" to mode,
-                            "messageCount" to messages.size.toString(),
-                        ),
-                )
-
-                // Index messages using repository
+                // Execute the new ingestion pipeline
                 itemsProcessed =
-                    repository.indexChatMessages(
+                    coordinator.startBackfill(
                         chatId = chatId,
                         chatTitle = chatTitle,
-                        messages = messages,
-                        chatType = chatType,
+                        config = scanConfig,
                     )
 
-                TelegramLogRepository.info("TelegramSyncWorker", "Chat $chatId: indexed $itemsProcessed items")
+                TelegramLogRepository.info(
+                    "TelegramSyncWorker",
+                    "Chat $chatId: processed $itemsProcessed items via new pipeline",
+                )
             } catch (e: Exception) {
                 TelegramLogRepository.info("TelegramSyncWorker", "Error syncing chat $chatId: ${e.message}")
                 e.printStackTrace()
