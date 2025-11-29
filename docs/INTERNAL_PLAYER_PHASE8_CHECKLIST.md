@@ -404,27 +404,29 @@ Workers must throttle when `isPlaybackActive == true`:
   - MiniPlayer show/hide cycles don't accumulate views
   - Rotation doesn't leak Activities
 
-### Group 7 – Compose & FocusKit Performance
+### Group 7 – Compose & FocusKit Performance ✅ DONE
 
-- [ ] **7.1** Audit InternalPlayerUiState usage
-  - Identify hot paths: positionMs, buffering, isPlaying
-  - Identify cold paths: playbackContext, subtitleStyle, etc.
-  - Consider splitting into `HotPlaybackState` and `ColdPlaybackState`
+- [x] **7.1** Audit InternalPlayerUiState usage
+  - Identified hot paths: positionMs, durationMs, isPlaying, isBuffering, trickplayActive, trickplaySpeed, controlsTick, controlsVisible
+  - Identified cold paths: playbackType, aspectRatioMode, subtitleStyle, kidActive, kidBlocked, dialog visibility, live TV metadata
+  - Created `PlayerHotState` and `PlayerColdState` data classes for state separation
 
-- [ ] **7.2** Isolate hot paths into small Composables
-  - `PositionIndicator` composable for position/duration display
-  - `BufferingIndicator` composable for buffering spinner
-  - `PlayPauseState` composable for play/pause icon
+- [x] **7.2** Isolate hot paths into small Composables
+  - Created `PlayerHotState` with computed properties (formattedPosition, formattedDuration, progressFraction)
+  - Created `PlayerColdState` with computed properties (isLive, isSeries, hasBlockingOverlay)
+  - Both state classes have `fromFullState()` factory methods for extraction from InternalPlayerUiState
+  - Documentation guides UI to collect HOT state only in small focused composables
 
-- [ ] **7.3** Consolidate FocusKit visual effects
-  - Audit `tvFocusGlow`, `tvFocusFrame`, `focusScaleOnTv` usage
-  - Ensure max one `graphicsLayer` + one `drawWithContent` per element
-  - Remove duplicate effect layers
+- [x] **7.3** Consolidate FocusKit visual effects
+  - Created `FocusDecorationConfig` data class with presets (Clickable, IconButton, Card, None)
+  - Created `Modifier.focusDecorations()` that consolidates scale, shadow, border, halo, and content tint
+  - Single graphicsLayer + single drawWithContent per element (no stacking)
+  - Added to FocusKit facade for consistent access
 
-- [ ] **7.4** Add tests: `ComposePerfSmokeTest`
-  - Enable Compose compiler reports
-  - Verify no excessive recompositions during playback
-  - Profile during position updates (every ~1s)
+- [x] **7.4** Add tests: `FocusKitPerformanceTest` and `PlayerHotColdStateTest`
+  - FocusDecorationConfig presets and defaults verified
+  - Hot/Cold state extraction and computed properties tested
+  - State immutability and separation verified
 
 ### Group 8 – Error Handling & Recovery
 

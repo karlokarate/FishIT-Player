@@ -508,6 +508,33 @@ object FocusKit {
         ringWidth: Dp = 2.dp,
     ): Modifier = this.fxTvFocusGlow(focused = focused, shape = shape, ringWidth = ringWidth)
 
+    // ════════════════════════════════════════════════════════════════════════════
+    // Phase 8 Task 5: Consolidated Focus Decorations (facade re-export)
+    // ════════════════════════════════════════════════════════════════════════════
+    /**
+     * Consolidated focus decorations modifier.
+     *
+     * Applies all focus visual effects in a single, optimized pass:
+     * - Scale transformation (focused/pressed states)
+     * - Shadow elevation
+     * - Border and halo outline
+     * - Content brightening tint
+     *
+     * @param focused Whether the item is currently focused
+     * @param pressed Whether the item is currently pressed
+     * @param config Focus decoration configuration
+     */
+    @Composable
+    fun Modifier.focusDecorations(
+        focused: Boolean,
+        pressed: Boolean = false,
+        config: FocusDecorationConfig = FocusDecorationConfig.Clickable,
+    ): Modifier = this@focusDecorations.focusDecorationsInternal(
+        focused = focused,
+        pressed = pressed,
+        config = config,
+    )
+
     // Bring-into-view helper
     @Composable
     @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -947,6 +974,158 @@ object FocusDefaults {
                 contentTint = Color.White.copy(alpha = 0.12f),
             )
         }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Phase 8 Task 5: Consolidated Focus Decorations
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// This modifier consolidates all focus visual effects into a single composition point.
+// Instead of stacking multiple modifiers (graphicsLayer + drawWithContent + border),
+// this applies all effects in one pass, reducing GPU/CPU overhead.
+//
+// Contract Reference:
+// - INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 9.2
+// - INTERNAL_PLAYER_PHASE8_CHECKLIST.md Group 7.3
+//
+// Benefits:
+// 1. Single graphicsLayer call for scale and shadow
+// 2. Single drawWithContent call for border, halo, and content tint
+// 3. No redundant recomposition or draw passes per focus change
+// 4. Consistent visual appearance across all focusable components
+
+/**
+ * Focus decoration configuration for consolidated focus effects.
+ *
+ * @property scale Scale factor when focused (1f = no scale)
+ * @property pressedScale Scale factor when pressed (1f = no scale)
+ * @property shadowElevationDp Shadow elevation in dp when focused
+ * @property borderWidth Border width in dp
+ * @property colors Focus colors for halo, border, and content tint
+ * @property shape Shape for border and halo
+ * @property brightenContent Whether to apply content brightening tint
+ */
+@Immutable
+data class FocusDecorationConfig(
+    val scale: Float = 1.08f,
+    val pressedScale: Float = 1.12f,
+    val shadowElevationDp: Float = 12f,
+    val borderWidth: Dp = 1.5.dp,
+    val colors: FocusColors? = null, // null = use FocusDefaults.Colors
+    val shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    val brightenContent: Boolean = true,
+) {
+    companion object {
+        /** Default configuration for clickable items. */
+        val Clickable = FocusDecorationConfig()
+
+        /** Configuration for icon buttons (more subtle). */
+        val IconButton = FocusDecorationConfig(
+            scale = 1.05f,
+            pressedScale = 1.08f,
+            shadowElevationDp = 8f,
+            brightenContent = false,
+        )
+
+        /** Configuration for cards (larger scale). */
+        val Card = FocusDecorationConfig(
+            scale = 1.40f,
+            pressedScale = 1.40f,
+            borderWidth = 2.5.dp,
+            brightenContent = false,
+        )
+
+        /** No visual decorations (for manual handling). */
+        val None = FocusDecorationConfig(
+            scale = 1f,
+            pressedScale = 1f,
+            shadowElevationDp = 0f,
+            borderWidth = 0.dp,
+            brightenContent = false,
+        )
+    }
+}
+
+/**
+ * Consolidated focus decorations modifier.
+ *
+ * ════════════════════════════════════════════════════════════════════════════════
+ * Phase 8 Task 5: FocusKit Performance Hardening
+ * ════════════════════════════════════════════════════════════════════════════════
+ *
+ * This modifier applies all focus visual effects in a single, optimized pass:
+ * - Scale transformation (focused/pressed states)
+ * - Shadow elevation
+ * - Border and halo outline
+ * - Content brightening tint
+ *
+ * **Performance Characteristics:**
+ * - Single graphicsLayer for scale and shadow (no stacking)
+ * - Single drawWithContent for decorations (no multiple draw passes)
+ * - Animated values computed once and reused
+ * - No redundant recomposition triggers
+ *
+ * **Usage:**
+ * ```kotlin
+ * Box(
+ *     modifier = Modifier
+ *         .focusDecorations(
+ *             focused = isFocused,
+ *             pressed = isPressed,
+ *             config = FocusDecorationConfig.Clickable,
+ *         )
+ * )
+ * ```
+ *
+ * @param focused Whether the item is currently focused
+ * @param pressed Whether the item is currently pressed
+ * @param config Focus decoration configuration
+ */
+@Composable
+private fun Modifier.focusDecorationsInternal(
+    focused: Boolean,
+    pressed: Boolean = false,
+    config: FocusDecorationConfig = FocusDecorationConfig.Clickable,
+): Modifier = composed {
+    val density = LocalDensity.current
+    val focusColors = config.colors ?: FocusDefaults.Colors
+
+    // Animate scale based on focus and pressed state
+    val targetScale = when {
+        pressed -> config.pressedScale
+        focused -> config.scale
+        else -> 1f
+    }
+    val scale by animateFloatAsState(
+        targetValue = targetScale,
+        label = "focusDecorationScale",
+    )
+
+    // Animate focus fraction for decorations
+    val focusFraction by animateFloatAsState(
+        targetValue = if (focused) 1f else 0f,
+        label = "focusDecorationFraction",
+    )
+
+    // Pre-compute shadow elevation in pixels
+    val shadowElevationPx = with(density) { config.shadowElevationDp.dp.toPx() }
+
+    // Apply all effects in optimized order:
+    // 1. graphicsLayer for scale and shadow (single layer)
+    // 2. drawWithContent for border/halo/tint (single draw pass)
+    this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            shadowElevation = if (focused) shadowElevationPx else 0f
+        }
+        .applyFocusDecoration(
+            focusFraction = focusFraction,
+            shape = config.shape,
+            focusColors = focusColors,
+            focusBorderWidth = config.borderWidth,
+            brightenContent = config.brightenContent,
+        )
 }
 
 @Composable

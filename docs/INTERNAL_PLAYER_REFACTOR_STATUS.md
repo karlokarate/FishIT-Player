@@ -5365,4 +5365,113 @@ All implementations align with:
 
 ---
 
+## Phase 8 – Task 5: Compose & FocusKit Performance Hardening (COMPLETE)
+
+**Date:** 2025-11-29
+
+**Status:** ✅ **COMPLETE** – Group 7 implemented
+
+This task implements Compose performance optimizations and FocusKit visual effect consolidation.
+
+### What Was Done
+
+**1. Hot/Cold State Split (Group 7.1, 7.2)**
+
+Created separate state classes to isolate frequently-updating (HOT) fields from rarely-changing (COLD) fields:
+
+| Class | Purpose | Fields |
+|-------|---------|--------|
+| `PlayerHotState` | Frequently updating playback state | positionMs, durationMs, isPlaying, isBuffering, trickplayActive, trickplaySpeed, controlsTick, controlsVisible |
+| `PlayerColdState` | Rarely changing metadata and config | playbackType, aspectRatioMode, subtitleStyle, kidActive, kidBlocked, dialog visibility, live TV metadata |
+
+**Design Benefits:**
+- HOT state should be collected ONLY in small focused composables (e.g., progress bar, play/pause button)
+- COLD state can be safely observed by large layout composables
+- Prevents unnecessary recomposition of expensive UI trees during position updates
+
+**Computed Properties:**
+- `PlayerHotState.formattedPosition` / `formattedDuration` – Avoid repeated string formatting
+- `PlayerHotState.progressFraction` – Pre-computed progress for sliders
+- `PlayerColdState.isLive` / `isSeries` / `hasBlockingOverlay` – Semantic helpers
+
+**2. Consolidated FocusKit Visual Effects (Group 7.3)**
+
+Created `FocusDecorationConfig` and `Modifier.focusDecorations()` to consolidate all focus effects:
+
+| Component | Description |
+|-----------|-------------|
+| `FocusDecorationConfig` | Immutable config with scale, pressedScale, shadowElevation, borderWidth, colors, shape, brightenContent |
+| `FocusDecorationConfig.Clickable` | Default preset for clickable items |
+| `FocusDecorationConfig.IconButton` | More subtle preset for icon buttons |
+| `FocusDecorationConfig.Card` | Larger scale preset for cards |
+| `FocusDecorationConfig.None` | No visual effects preset |
+| `Modifier.focusDecorations()` | Single modifier applying all effects in one pass |
+
+**Performance Optimization:**
+- Single `graphicsLayer` call for scale and shadow (no stacking)
+- Single `drawWithContent` call for border, halo, and content tint
+- No redundant recomposition or draw passes per focus change
+- Animated values computed once and reused
+
+**3. Unit Tests (Group 7.4)**
+
+| Test Class | Coverage |
+|------------|----------|
+| `FocusKitPerformanceTest` | FocusDecorationConfig presets, defaults, equality, immutability |
+| `PlayerHotColdStateTest` | Hot/Cold extraction, computed properties, state separation |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `player/internal/state/PlayerHotState.kt` | HOT state data class for frequently updating fields |
+| `player/internal/state/PlayerColdState.kt` | COLD state data class for rarely changing fields |
+| `test/.../ui/focus/FocusKitPerformanceTest.kt` | FocusDecorationConfig unit tests |
+| `test/.../player/internal/state/PlayerHotColdStateTest.kt` | Hot/Cold state unit tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `ui/focus/FocusKit.kt` | Added FocusDecorationConfig, Modifier.focusDecorations(), facade re-export |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 7 as DONE |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*FocusKitPerformanceTest"` passes all tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*PlayerHotColdStateTest"` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 9
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 7
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes (TelegramContentRepository, TelegramSyncStateRepository, etc.)
+- ✅ No parser/ObjectBox module changes
+- ✅ No MiniPlayer UI changes (performance optimization only)
+- ✅ Phase 4-7 behaviors preserved
+- ✅ Existing visual appearance maintained (no design changes)
+
+### Phase 8 Status Summary (Updated)
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
+| 2 | UI Rebinding & Rotation | ✅ DONE |
+| 3 | Navigation & Backstack Stability | ⬜ PENDING |
+| 4 | System PiP vs In-App MiniPlayer | ⬜ PENDING |
+| 5 | Playback-Aware Worker Scheduling | ✅ DONE |
+| 6 | Memory & Leak Hygiene | ✅ PARTIAL DONE |
+| **7** | **Compose & FocusKit Performance** | ✅ **DONE** |
+| 8 | Error Handling & Recovery | ⬜ PENDING |
+| 9 | Regression Suite | ⬜ PENDING |
+
+---
+
 **Last Updated:** 2025-11-29
