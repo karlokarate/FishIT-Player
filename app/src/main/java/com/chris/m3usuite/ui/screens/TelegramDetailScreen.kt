@@ -12,9 +12,13 @@ import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.data.repo.ResumeRepository
+import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.domain.TelegramItem
+import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.telegram.util.TelegramPlayUrl
 import com.chris.m3usuite.ui.actions.MediaAction
 import com.chris.m3usuite.ui.actions.MediaActionId
 import com.chris.m3usuite.ui.detail.DetailMeta
@@ -47,6 +51,7 @@ private fun decodeTelegramId(itemId: Long): Long? =
 private data class LoadedTelegramItem(
     val title: String,
     val poster: String?,
+    val backdrop: String?,
     val plot: String?,
     val year: Int?,
     val genres: String?,
@@ -55,10 +60,14 @@ private data class LoadedTelegramItem(
     val chatId: Long,
     val messageId: Long,
     val fileId: Int?,
+    val tmdbUrl: String?,
+    val tmdbRating: Double?,
+    val director: String?,
+    val isAdultContent: Boolean,
 )
 
-// Load Telegram item details from OBX
-private suspend fun loadTelegramDetail(
+// Load Telegram item details from legacy OBX (ObxTelegramMessage)
+private suspend fun loadTelegramDetailLegacy(
     ctx: Context,
     itemId: Long,
 ): LoadedTelegramItem? =
@@ -80,16 +89,81 @@ private suspend fun loadTelegramDetail(
         LoadedTelegramItem(
             title = row.title ?: row.caption ?: row.fileName ?: "Untitled",
             poster = poster,
+            backdrop = poster, // Legacy doesn't have separate backdrop
             plot = row.description,
             year = row.year,
             genres = row.genres,
             durationSecs = row.durationSecs,
             playUrl =
-                com.chris.m3usuite.telegram.util.TelegramPlayUrl
+                TelegramPlayUrl
                     .buildFileUrl(row.fileId, row.chatId, row.messageId),
             chatId = row.chatId,
             messageId = row.messageId,
             fileId = row.fileId,
+            tmdbUrl = null, // Legacy doesn't have TMDb URL
+            tmdbRating = null,
+            director = null,
+            isAdultContent = false,
+        )
+    }
+
+/**
+ * Load TelegramItem by (chatId, anchorMessageId) from new Phase B repository.
+ *
+ * Phase D.3: Preferred loading path for TelegramItem-based content.
+ */
+private suspend fun loadTelegramItemByKey(
+    ctx: Context,
+    chatId: Long,
+    anchorMessageId: Long,
+): LoadedTelegramItem? =
+    withContext(Dispatchers.IO) {
+        val store = SettingsStore(ctx)
+        val repo = TelegramContentRepository(ctx, store)
+        val item = repo.getItem(chatId, anchorMessageId) ?: return@withContext null
+
+        // Build play URL from TelegramMediaRef
+        val playUrl =
+            when (item.type) {
+                TelegramItemType.MOVIE,
+                TelegramItemType.SERIES_EPISODE,
+                TelegramItemType.CLIP,
+                -> {
+                    item.videoRef?.let { ref ->
+                        TelegramPlayUrl.buildFileUrl(
+                            ref.fileId,
+                            item.chatId,
+                            item.anchorMessageId,
+                        )
+                    }
+                }
+                else -> null
+            }
+
+        // Cannot play without a valid URL
+        if (playUrl == null) return@withContext null
+
+        // Convert duration from seconds to display
+        val durationSecs =
+            item.videoRef?.durationSeconds
+                ?: (item.metadata.lengthMinutes?.times(60))
+
+        LoadedTelegramItem(
+            title = item.metadata.title ?: "Untitled",
+            poster = null, // Will be loaded via TelegramFileLoader
+            backdrop = null, // Will be loaded via TelegramFileLoader
+            plot = null, // TelegramMetadata doesn't have plot
+            year = item.metadata.year,
+            genres = item.metadata.genres.joinToString(", "),
+            durationSecs = durationSecs,
+            playUrl = playUrl,
+            chatId = item.chatId,
+            messageId = item.anchorMessageId,
+            fileId = item.videoRef?.fileId,
+            tmdbUrl = item.metadata.tmdbUrl,
+            tmdbRating = item.metadata.tmdbRating,
+            director = item.metadata.director,
+            isAdultContent = item.metadata.isAdult,
         )
     }
 
@@ -113,7 +187,7 @@ fun TelegramDetailScreen(
 
     // Load detail and resume
     LaunchedEffect(id) {
-        data = loadTelegramDetail(ctx, id)
+        data = loadTelegramDetailLegacy(ctx, id)
         resumeSecs =
             withContext(Dispatchers.IO) {
                 resumeRepo
@@ -212,7 +286,7 @@ fun TelegramDetailScreen(
         listState = listState,
         onLogo = onLogo,
     ) { pads ->
-        val hero = data?.poster
+        val hero = data?.backdrop ?: data?.poster
         val lblPlay = stringResource(com.chris.m3usuite.R.string.action_play)
         val lblResume = stringResource(com.chris.m3usuite.R.string.action_resume)
 
@@ -278,14 +352,236 @@ fun TelegramDetailScreen(
             year = data?.year,
             durationSecs = data?.durationSecs,
             containerExt = null,
-            rating = null,
+            rating = data?.tmdbRating,
             mpaaRating = null,
             age = null,
             provider = "Telegram",
             category = "Telegram",
             genres = genreList,
             countries = emptyList(),
-            director = null,
+            director = data?.director,
+            cast = null,
+            releaseDate = null,
+        )
+    }
+}
+
+/**
+ * Phase D.3: TelegramItem-based detail screen.
+ *
+ * Loads TelegramItem by (chatId, anchorMessageId) and displays full metadata.
+ * Wires playback via PlayerChooser → InternalPlayerEntry.
+ *
+ * Enforces Telegram ↔ PlayerLifecycle Contract:
+ * - MUST build PlaybackContext(type=VOD) from TelegramItem
+ * - MUST convert TelegramMediaRef → MediaItem via PlayerChooser
+ * - MUST navigate into InternalPlayerEntry for playback
+ * - MUST NOT create/release ExoPlayer
+ * - MUST NOT modify PlayerView
+ * - MUST NOT override activity lifecycle or orientation
+ */
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun TelegramItemDetailScreen(
+    chatId: Long,
+    anchorMessageId: Long,
+    openInternal: ((url: String, startMs: Long?, mimeType: String?) -> Unit)? = null,
+    onLogo: (() -> Unit)? = null,
+    onGlobalSearch: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null,
+) {
+    val ctx = LocalContext.current
+    rememberImageHeaders()
+    val store = remember { SettingsStore(ctx) }
+    val scope = rememberCoroutineScope()
+    val resumeRepo = remember { ResumeRepository(ctx) }
+
+    var data by remember { mutableStateOf<LoadedTelegramItem?>(null) }
+    // Encode mediaId for resume tracking (4e12 offset)
+    val mediaId = 4_000_000_000_000L + anchorMessageId
+    var resumeSecs by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    // Load TelegramItem by key (Phase D.3)
+    LaunchedEffect(chatId, anchorMessageId) {
+        data = loadTelegramItemByKey(ctx, chatId, anchorMessageId)
+        resumeSecs =
+            withContext(Dispatchers.IO) {
+                resumeRepo
+                    .recentVod(1)
+                    .firstOrNull { it.mediaId == mediaId }
+                    ?.positionSecs
+            }
+
+        // Log detail screen opened
+        data?.let { item ->
+            TelegramLogRepository.info(
+                source = "TelegramItemDetailScreen",
+                message = "User opened TelegramItem detail (Phase D)",
+                details =
+                    mapOf(
+                        "chatId" to chatId.toString(),
+                        "anchorMessageId" to anchorMessageId.toString(),
+                        "title" to item.title,
+                        "playUrl" to item.playUrl,
+                        "tmdbUrl" to (item.tmdbUrl ?: "none"),
+                    ),
+            )
+        }
+    }
+
+    fun play(fromStart: Boolean = false) {
+        val item = data ?: return
+        val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
+
+        // Log playback started (Phase D.4: Playback wiring)
+        TelegramLogRepository.info(
+            source = "TelegramItemDetailScreen",
+            message = "User started Telegram playback (Phase D)",
+            details =
+                mapOf(
+                    "chatId" to chatId.toString(),
+                    "anchorMessageId" to anchorMessageId.toString(),
+                    "title" to item.title,
+                    "playUrl" to item.playUrl,
+                    "fromStart" to fromStart.toString(),
+                    "startMs" to (startMs?.toString() ?: "0"),
+                ),
+        )
+
+        // Phase D.4: Wire playback via PlayerChooser → InternalPlayerEntry
+        // This respects the Telegram ↔ PlayerLifecycle Contract:
+        // - PlayerChooser.start() handles player resolution
+        // - openInternal callback triggers navigation to InternalPlayerEntry
+        // - We do NOT create/release ExoPlayer here
+        scope.launch {
+            PlayerChooser.start(
+                context = ctx,
+                store = store,
+                url = item.playUrl,
+                headers = emptyMap(),
+                startPositionMs = startMs,
+                mimeType = null,
+            ) { s, resolvedMime ->
+                if (openInternal != null) openInternal(item.playUrl, s, resolvedMime)
+            }
+        }
+    }
+
+    fun setResume(newSecs: Int) =
+        scope.launch(Dispatchers.IO) {
+            val pos = max(0, newSecs)
+            resumeSecs = pos
+            resumeRepo.setVodResume(mediaId, pos)
+        }
+
+    fun clearResume() =
+        scope.launch(Dispatchers.IO) {
+            resumeSecs = null
+            resumeRepo.clearVod(mediaId)
+        }
+
+    val listState = rememberLazyListState()
+
+    // Profile (adult/kid) — check for adult content filtering
+    val profileId by store.currentProfileId.collectAsState(initial = -1L)
+    var isAdult by remember { mutableStateOf(true) }
+    LaunchedEffect(profileId) {
+        isAdult =
+            if (profileId <= 0L) {
+                true
+            } else {
+                withContext(Dispatchers.IO) {
+                    ObxStore
+                        .get(ctx)
+                        .boxFor(com.chris.m3usuite.data.obx.ObxProfile::class.java)
+                        .get(profileId)
+                        ?.type != "kid"
+                }
+            }
+    }
+
+    HomeChromeScaffold(
+        title = "Telegram Details",
+        onSettings = onOpenSettings,
+        onSearch = onGlobalSearch,
+        onProfiles = null,
+        listState = listState,
+        onLogo = onLogo,
+    ) { pads ->
+        val hero = data?.backdrop ?: data?.poster
+        val lblPlay = stringResource(com.chris.m3usuite.R.string.action_play)
+        val lblResume = stringResource(com.chris.m3usuite.R.string.action_resume)
+
+        val actions =
+            remember(data, resumeSecs, lblPlay, lblResume) {
+                buildList {
+                    val canPlay = data != null
+                    val resumeLabel = resumeSecs?.let { fmt(it) }
+
+                    if (resumeLabel != null && canPlay) {
+                        add(
+                            MediaAction(
+                                id = MediaActionId.Resume,
+                                label = lblResume,
+                                badge = resumeLabel,
+                                onClick = { play(false) },
+                            ),
+                        )
+                    }
+
+                    add(
+                        MediaAction(
+                            id = MediaActionId.Play,
+                            label = lblPlay,
+                            primary = true,
+                            enabled = canPlay,
+                            onClick = { play(true) },
+                        ),
+                    )
+                }
+            }
+
+        val genreList =
+            data
+                ?.genres
+                ?.split(',', ';', '|', '/')
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() } ?: emptyList()
+
+        val meta =
+            DetailMeta(
+                year = data?.year,
+                durationSecs = data?.durationSecs,
+                videoQuality = null,
+                genres = genreList,
+                provider = "Telegram",
+                category = "Telegram",
+            )
+
+        DetailPage(
+            isAdult = isAdult,
+            pads = pads,
+            listState = listState,
+            title = data?.title ?: "",
+            heroUrl = hero,
+            posterUrl = data?.poster ?: hero,
+            actions = actions,
+            meta = meta,
+            headerExtras = {},
+            showHeaderMetaChips = true,
+            resumeText = null,
+            plot = data?.plot,
+            year = data?.year,
+            durationSecs = data?.durationSecs,
+            containerExt = null,
+            rating = data?.tmdbRating,
+            mpaaRating = null,
+            age = null,
+            provider = "Telegram",
+            category = "Telegram",
+            genres = genreList,
+            countries = emptyList(),
+            director = data?.director,
             cast = null,
             releaseDate = null,
         )
