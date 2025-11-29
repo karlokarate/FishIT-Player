@@ -408,25 +408,53 @@ The following plan is concrete, repository-aware, and sequences work from offlin
 
 ### Phase D – UI Integration (EXISTING composables, playback updates)
 
-- [ ] **D.1 Update `FishTelegramContent` to use new domain model**:
+- [x] **D.1 Create TelegramLibraryViewModel exposing TelegramItem flows**:
+  - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/ui/TelegramLibraryViewModel.kt`
+  - Injects `TelegramContentRepository` and `TelegramSyncStateRepository`
+  - Exposes:
+    - `val allItems: StateFlow<List<TelegramItem>>` – all items from repository
+    - `fun itemsByChat(chatId: Long): StateFlow<List<TelegramItem>>` – filtered by chat
+    - `val scanStates: StateFlow<List<ChatScanState>>` – scan progress for diagnostics
+    - `fun loadItem(chatId, anchorMessageId)` – single item loading for detail screens
+  - Uses `observeAllItems()` / `observeItemsByChat()` under the hood
+  - Standard viewModelScope with no lifecycle trickery
+
+- [x] **D.2 Update `FishTelegramContent` to use new domain model**:
   - **EXISTING/REFACTOR**: `app/src/main/java/com/chris/m3usuite/ui/layout/FishTelegramContent.kt`
-  - Use `posterRef.remoteId` / `uniqueId` to load images via `TelegramFileLoader`.
-  - Display metadata (title, year, genres, rating).
+  - Added `FishTelegramItemContent` composable accepting TelegramItem directly
+  - Uses `TelegramItem.posterRef.fileId` for thumbnails via `TelegramFileLoader`
+  - Uses `TelegramItem.metadata` for title display
+  - Added `FishTelegramItemRow` using FishRowLight for TelegramItem lists
+  - Original MediaItem-based composables preserved for backward compatibility
 
-- [ ] **D.2 Update `TelegramDetailScreen`**:
+- [x] **D.3 Update `TelegramDetailScreen`**:
   - **EXISTING/REFACTOR**: `app/src/main/java/com/chris/m3usuite/ui/screens/TelegramDetailScreen.kt`
-  - Load `TelegramItem` (or `ObxTelegramItem`) instead of `ObxTelegramMessage`.
-  - Use `backdropRef` for hero image.
-  - Display `tmdbUrl` for deep linking.
+  - Added `TelegramItemDetailScreen` composable loading TelegramItem by (chatId, anchorMessageId)
+  - Shows `backdropRef` (fallback to posterRef) for hero image
+  - Displays `tmdbUrl`, `tmdbRating`, `director` from `TelegramMetadata`
+  - Uses `TelegramContentRepository.getItem()` for Phase B domain loading
+  - Original `TelegramDetailScreen` preserved for legacy ID-based navigation
 
-- [ ] **D.3 Update playback URL construction**:
-  - **EXISTING/REFACTOR**: `app/src/main/java/com/chris/m3usuite/telegram/util/TelegramPlayUrl.kt`
-  - Decide: keep `fileId`-based URL or switch to `remoteId`-based.
-  - **If switching**: Update `TelegramFileDataSource` to resolve `remoteId` → `fileId` via TDLib `getRemoteFile()`.
-  - **If keeping `fileId`**: Store integer `fileId` alongside `remoteId`/`uniqueId` in `TelegramMediaRef`.
+- [x] **D.4 Wire playback via PlayerChooser → InternalPlayerEntry**:
+  - **Kept**: `fileId`-based URL using `TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)`
+  - Builds PlaybackContext(type=VOD) from TelegramItem.videoRef
+  - Navigates into InternalPlayerEntry via `PlayerChooser.start()` → `openInternal` callback
+  - Enforces "Telegram ↔ PlayerLifecycle Contract":
+    - MUST NOT create/release ExoPlayer
+    - MUST NOT modify PlayerView
+    - MUST NOT override activity lifecycle or orientation
+  - **Tests**: `TelegramDetailScreenPlaybackTest` verifies URL format and playback eligibility
 
-- [ ] **D.4 Create or update ViewModels**:
-  - **EXISTING/REFACTOR**: Consider adding `TelegramRowsViewModel` or extending `StartViewModel` to expose `Flow<List<TelegramItem>>` for home rows.
+- [x] **D.5 Create TelegramLibraryViewModel**:
+  - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/ui/TelegramLibraryViewModel.kt`
+  - (Completed as part of D.1)
+
+- [x] **D.6 Add tests for ViewModel and playback wiring**:
+  - **NEW**: `app/src/test/java/com/chris/m3usuite/telegram/ui/TelegramLibraryViewModelTest.kt`
+    - Tests ViewModel API surface: allItems, itemsByChat, scanStates, loadItem, etc.
+  - **NEW**: `app/src/test/java/com/chris/m3usuite/ui/screens/TelegramDetailScreenPlaybackTest.kt`
+    - Tests playback URL construction and TelegramMediaRef → playback wiring
+    - Verifies Phase 8 contract compliance (playable vs non-playable types)
 
 ### Phase E – Quality, Cleanup & Diagnostics
 
