@@ -3,7 +3,7 @@
 **Date:** 2025-11-29  
 **Phase:** 8 (InternalPlayerLifecycle refactor)  
 **Task:** 3 (validation + conflict detection + lifecycle hardening)  
-**Status:** Detection & Alignment Complete (NO CODE CHANGES)
+**Status:** ✅ COMPLETE – All violations resolved
 
 ---
 
@@ -57,7 +57,7 @@ This document presents the results of a comprehensive scan of all Telegram-relat
 | `telegram/core/T_TelegramFileDownloader.kt` | No player ownership, only file I/O | **F) OK** |
 | `telegram/player/TelegramFileDataSource.kt` | DataSource only - no player ownership | **F) OK** |
 | `telegram/player/TelegramDataSource_Legacy.kt` | DataSource only - no player ownership | **F) OK** |
-| `telegram/work/TelegramSyncWorker.kt:55` | `withContext(Dispatchers.IO)` - no playback awareness | **D) WORKER VIOLATION** |
+| `telegram/work/TelegramSyncWorker.kt` | ✅ Now uses `PlaybackPriority.isPlaybackActive` for throttling | **F) OK (RESOLVED)** |
 | `telegram/ui/TelegramSettingsViewModel.kt` | No lifecycle manipulation | **F) OK** |
 | `telegram/ui/feed/TelegramActivityFeedViewModel.kt` | No lifecycle manipulation | **F) OK** |
 | `telegram/ui/feed/TelegramActivityFeedScreen.kt` | `collectAsStateWithLifecycle` (Compose best practice) | **F) OK** |
@@ -74,29 +74,58 @@ This document presents the results of a comprehensive scan of all Telegram-relat
 
 ## 3. Detailed Violation Analysis
 
-### 3.1 Violation D) WORKER VIOLATION – TelegramSyncWorker
+### 3.1 ✅ RESOLVED: TelegramSyncWorker Playback-Aware Throttling
 
 **File:** `app/src/main/java/com/chris/m3usuite/telegram/work/TelegramSyncWorker.kt`
 
-**Location:** Lines 54-173 (`doWork()` method)
+**Resolution Date:** 2025-11-29
 
-**Code Snippet:**
+**Previous Issue:**
+- The worker executed heavy I/O operations without checking `PlaybackPriority.isPlaybackActive`
+- When playback was active, sync operations could cause stuttering
+
+**Resolution:**
+1. Added `PlaybackPriority` import and integration
+2. Added `throttleIfPlaybackActive(mode: String)` helper method that:
+   - Checks `PlaybackPriority.isPlaybackActive.value`
+   - Delays by `PlaybackPriority.PLAYBACK_THROTTLE_MS` (500ms) when active
+   - Logs throttling via `TelegramLogRepository`
+3. Updated `calculateParallelism()` to return 1 when playback is active
+4. Added throttle call before heavy sync operations in `doWork()`
+
+**Code After Fix:**
 ```kotlin
-override suspend fun doWork(): Result =
-    withContext(Dispatchers.IO) {
-        // ... sync logic
-        val parallelism = calculateParallelism()
-        val dispatcher = Dispatchers.IO.limitedParallelism(parallelism)
-        // ... parallel sync with no playback awareness
+// Phase 8: Playback-aware throttling before heavy sync operations
+throttleIfPlaybackActive(mode)
+
+// ...
+
+private fun calculateParallelism(): Int {
+    // Phase 8: Minimal parallelism during active playback
+    if (PlaybackPriority.isPlaybackActive.value) {
+        return 1
     }
+    // ... normal parallelism calculation
+}
+
+private suspend fun throttleIfPlaybackActive(mode: String) {
+    if (PlaybackPriority.isPlaybackActive.value) {
+        TelegramLogRepository.info(
+            "TelegramSyncWorker",
+            "Playback active, using throttled mode",
+            mapOf("mode" to mode),
+        )
+        delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+    }
+}
 ```
 
-**Issue:**
-- The worker executes heavy I/O operations (TDLib network calls, ObjectBox writes) without checking `PlaybackPriority.isPlaybackActive`
-- When playback is active, the worker should throttle its operations to prevent stuttering
-- This conflicts with Phase 8 Contract Section 7.2 which requires workers to throttle during active playback
+**Tests Added:**
+- `TelegramSyncWorkerTest.kt` extended with Phase 8 playback-aware throttling tests
+- Tests verify worker respects `PlaybackPriority` state
+- Tests verify consistency with other workers (XtreamDetailsWorker, XtreamDeltaImportWorker, ObxKeyBackfillWorker)
 
-**Severity:** MODERATE - Does not break playback but could cause stuttering during sync
+**Severity:** ✅ RESOLVED - No longer a concern
 
 ---
 
@@ -116,59 +145,65 @@ override suspend fun doWork(): Result =
 | PlaybackSession ownership | ✅ No violations | Telegram never accesses `PlaybackSession` directly |
 | Navigation to player | ✅ Compliant | Uses `PlayerChooser.start()` → callback → navigation |
 
-### 4.2 Single Violation Found
+### 4.2 ✅ All Violations Resolved
 
-| Violation Type | Count | Files |
-|----------------|-------|-------|
-| A) LIFECYCLE VIOLATION | 0 | - |
-| B) PLAYER SESSION VIOLATION | 0 | - |
-| C) ORIENTATION VIOLATION | 0 | - |
-| D) WORKER VIOLATION | 1 | TelegramSyncWorker.kt |
-| E) UI VIOLATION | 0 | - |
-| F) OK | 17+ | All other files |
+| Violation Type | Count | Files | Status |
+|----------------|-------|-------|--------|
+| A) LIFECYCLE VIOLATION | 0 | - | N/A |
+| B) PLAYER SESSION VIOLATION | 0 | - | N/A |
+| C) ORIENTATION VIOLATION | 0 | - | N/A |
+| D) WORKER VIOLATION | 0 | ~~TelegramSyncWorker.kt~~ | ✅ RESOLVED |
+| E) UI VIOLATION | 0 | - | N/A |
+| F) OK | 18+ | All files | ✅ Compliant |
 
 ---
 
-## 5. Proposed Refactors
+## 5. ✅ Completed Refactors
 
-### 5.1 TelegramSyncWorker – Add Playback-Aware Throttling
+### 5.1 TelegramSyncWorker – Playback-Aware Throttling (IMPLEMENTED)
 
-**Current State:**
+**Implementation Date:** 2025-11-29
+
+**Changes Made:**
+1. Added `PlaybackPriority` import
+2. Added `throttleIfPlaybackActive(mode: String)` helper method
+3. Updated `calculateParallelism()` to return 1 when playback is active
+4. Added throttle call before heavy sync operations
+5. Added comprehensive logging via `TelegramLogRepository`
+
+**Current Implementation:**
 ```kotlin
-override suspend fun doWork(): Result =
-    withContext(Dispatchers.IO) {
-        // Heavy sync with no throttling
+// Phase 8: Playback-aware throttling before heavy sync operations
+throttleIfPlaybackActive(mode)
+
+// ...
+
+private fun calculateParallelism(): Int {
+    // Phase 8: Minimal parallelism during active playback
+    if (PlaybackPriority.isPlaybackActive.value) {
+        return 1
     }
+    // ... normal parallelism calculation
+}
+
+private suspend fun throttleIfPlaybackActive(mode: String) {
+    if (PlaybackPriority.isPlaybackActive.value) {
+        TelegramLogRepository.info(
+            "TelegramSyncWorker",
+            "Playback active, using throttled mode",
+            mapOf("mode" to mode),
+        )
+        delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+    }
+}
 ```
 
-**Proposed Refactor (Phase 8 Compliant):**
-```kotlin
-override suspend fun doWork(): Result =
-    withContext(Dispatchers.IO) {
-        // At start of doWork
-        if (PlaybackPriority.isPlaybackActive.value) {
-            TelegramLogRepository.info("TelegramSyncWorker", "Playback active, using throttled mode")
-        }
-        
-        // In syncChat function, between heavy operations:
-        if (PlaybackPriority.isPlaybackActive.value) {
-            delay(BACKGROUND_THROTTLE_MS) // e.g., 500ms
-        }
-        
-        // When calculating parallelism:
-        val parallelism = if (PlaybackPriority.isPlaybackActive.value) {
-            1 // Minimal parallelism during playback
-        } else {
-            calculateParallelism()
-        }
-    }
-```
+**Dependencies Used:**
+- `PlaybackPriority` object from `playback/` package (Phase 8 Group 5)
+- `TelegramLogRepository` for diagnostics logging
 
-**Required Dependencies:**
-- `PlaybackPriority` object must be created in `playback/` package (per Phase 8 Checklist Group 5)
-- This refactor should be done as part of Phase 8 Task 5.3 (Update TelegramSyncWorker with playback awareness)
-
-**Note:** The `PlaybackPriority` object does not yet exist in the codebase. It is planned for Phase 8 Group 5 implementation.
+**Tests Added:**
+- `TelegramSyncWorkerTest.kt` extended with Phase 8 playback-aware throttling tests
 
 ---
 
@@ -212,7 +247,7 @@ override suspend fun doWork(): Result =
 | Playback ALWAYS starts via InternalPlayerEntry | Via navigation composable in MainActivity | ✅ Done |
 | SIP Session controls player lifetime | PlaybackSession.acquire() | ✅ Not Telegram's responsibility |
 | No duplicate logic for lifecycle/orientation/workers | Single source of truth in Phase 8 | ✅ Compliant |
-| Workers must check PlaybackPriority when it exists | Throttle during active playback | ⏳ Pending Phase 8 Group 5 |
+| Workers must check PlaybackPriority | Throttle during active playback | ✅ Done (TelegramSyncWorker) |
 
 ---
 
@@ -264,25 +299,25 @@ TelegramDetailScreen
 
 ### 8.1 Summary
 
-The Telegram integration is **largely compliant** with Phase 8 lifecycle rules:
+The Telegram integration is **fully compliant** with Phase 8 lifecycle rules:
 
-- **17+ files** classified as **OK** (no violations)
-- **1 file** has a **minor worker violation** (TelegramSyncWorker.kt)
+- **18+ files** classified as **OK** (no violations)
 - **Zero** lifecycle, player session, orientation, or UI violations
+- ✅ `TelegramSyncWorker.kt` now uses `PlaybackPriority` for playback-aware throttling
 
 ### 8.2 Action Items
 
-| Priority | Action | Owner | Phase |
-|----------|--------|-------|-------|
-| LOW | Add PlaybackPriority throttling to TelegramSyncWorker | Phase 8 | Group 5, Task 5.3 |
+| Priority | Action | Owner | Phase | Status |
+|----------|--------|-------|-------|--------|
+| ~~LOW~~ | ~~Add PlaybackPriority throttling to TelegramSyncWorker~~ | ~~Phase 8~~ | ~~Group 5, Task 5.3~~ | ✅ DONE |
 
 ### 8.3 Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Sync causes playback stutter | Low | Low | Implement throttling in Phase 8 Group 5 |
-| Telegram bypasses lifecycle | None | N/A | Already compliant |
-| Telegram owns player | None | N/A | Uses DataSource pattern |
+| Risk | Likelihood | Impact | Mitigation | Status |
+|------|------------|--------|------------|--------|
+| Sync causes playback stutter | ~~Low~~ None | ~~Low~~ N/A | ✅ Throttling implemented | RESOLVED |
+| Telegram bypasses lifecycle | None | N/A | Already compliant | N/A |
+| Telegram owns player | None | N/A | Uses DataSource pattern | N/A |
 
 ---
 
@@ -296,6 +331,6 @@ This cross-check aligns with:
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Author:** GitHub Copilot Agent  
-**Review Status:** Detection Complete, NO CODE CHANGES
+**Review Status:** ✅ COMPLETE – All violations resolved, code changes implemented
