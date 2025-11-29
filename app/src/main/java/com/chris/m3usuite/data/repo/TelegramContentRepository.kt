@@ -70,21 +70,40 @@ class TelegramContentRepository(
      */
     suspend fun upsertItems(items: List<TelegramItem>) =
         withContext(Dispatchers.IO) {
-            for (item in items) {
-                // Find existing by logical key
-                val existing =
+            if (items.isEmpty()) return@withContext
+
+            // Batch query: Get all existing items for the given (chatId, anchorMessageId) pairs
+            // Group items by chatId for efficient querying
+            val itemsByChat = items.groupBy { it.chatId }
+            val existingByKey = mutableMapOf<Pair<Long, Long>, Long>() // (chatId, anchorMessageId) -> id
+
+            for ((chatId, chatItems) in itemsByChat) {
+                val anchorIds = chatItems.map { it.anchorMessageId }.toLongArray()
+                val existingItems =
                     itemBox
                         .query {
-                            equal(ObxTelegramItem_.chatId, item.chatId)
-                            equal(ObxTelegramItem_.anchorMessageId, item.anchorMessageId)
-                        }.findFirst()
+                            equal(ObxTelegramItem_.chatId, chatId)
+                            `in`(ObxTelegramItem_.anchorMessageId, anchorIds)
+                        }.find()
 
-                val obx = item.toObx()
-                if (existing != null) {
-                    obx.id = existing.id
+                for (existing in existingItems) {
+                    existingByKey[Pair(existing.chatId, existing.anchorMessageId)] = existing.id
                 }
-                itemBox.put(obx)
             }
+
+            // Convert to ObxTelegramItem and set id if existing
+            val obxItems =
+                items.map { item ->
+                    val obx = item.toObx()
+                    val key = Pair(item.chatId, item.anchorMessageId)
+                    existingByKey[key]?.let { existingId ->
+                        obx.id = existingId
+                    }
+                    obx
+                }
+
+            // Bulk put
+            itemBox.put(obxItems)
         }
 
     /**
