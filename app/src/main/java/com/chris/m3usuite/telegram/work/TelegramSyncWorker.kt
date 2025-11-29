@@ -6,6 +6,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.chris.m3usuite.playback.PlaybackPriority
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgSyncState
@@ -15,6 +16,7 @@ import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
@@ -35,6 +37,13 @@ import kotlinx.coroutines.withContext
  * - Now uses TelegramIngestionCoordinator for the ingestion pipeline
  * - The coordinator handles: TelegramHistoryScanner → TdlMessageMapper → parser pipeline → ObjectBox
  * - Legacy indexChatMessages() is deprecated and no longer called
+ *
+ * ════════════════════════════════════════════════════════════════════════════════
+ * PHASE 8 – Task 3: Playback-Aware Worker Scheduling
+ * ════════════════════════════════════════════════════════════════════════════════
+ *
+ * This worker is playback-aware: when [PlaybackPriority.isPlaybackActive] is true,
+ * heavy operations are throttled to avoid impacting playback quality.
  *
  * Implementation follows Cluster B specification from tdlibAgent.md.
  */
@@ -95,6 +104,9 @@ class TelegramSyncWorker(
 
                 TelegramLogRepository.info("TelegramSyncWorker", "Auth ready, proceeding with sync")
 
+                // Phase 8: Playback-aware throttling before heavy sync operations
+                throttleIfPlaybackActive(mode)
+
                 // Update sync state to Running
                 serviceClient.updateSyncState(TgSyncState.Running(0, 0))
 
@@ -109,7 +121,8 @@ class TelegramSyncWorker(
 
                 TelegramLogRepository.info("TelegramSyncWorker", "Syncing ${chatsToSync.size} chats")
 
-                // Calculate adaptive parallelism based on device profile
+                // Phase 8: Calculate adaptive parallelism based on device profile
+                // and playback state (reduced parallelism during active playback)
                 val parallelism = calculateParallelism()
                 TelegramLogRepository.info("TelegramSyncWorker", "Using parallelism: $parallelism")
 
@@ -386,8 +399,16 @@ class TelegramSyncWorker(
     /**
      * Calculate adaptive parallelism based on device profile.
      * Takes into account CPU cores, device class (Phone/TV), and Android version.
+     *
+     * Phase 8: When playback is active, parallelism is reduced to 1 to avoid
+     * impacting playback quality.
      */
     private fun calculateParallelism(): Int {
+        // Phase 8: Minimal parallelism during active playback
+        if (PlaybackPriority.isPlaybackActive.value) {
+            return 1
+        }
+
         // Get CPU core count
         val cores = Runtime.getRuntime().availableProcessors()
 
@@ -415,6 +436,24 @@ class TelegramSyncWorker(
 
         // Cap at reasonable maximum
         return adjusted.coerceIn(1, 6)
+    }
+
+    /**
+     * Phase 8: Delays execution when playback is active to avoid stuttering.
+     * Uses [PlaybackPriority.PLAYBACK_THROTTLE_MS] delay when playback is active.
+     * Logs the throttling event via TelegramLogRepository.
+     *
+     * @param mode Current sync mode for logging context
+     */
+    private suspend fun throttleIfPlaybackActive(mode: String) {
+        if (PlaybackPriority.isPlaybackActive.value) {
+            TelegramLogRepository.info(
+                "TelegramSyncWorker",
+                "Playback active, using throttled mode",
+                mapOf("mode" to mode),
+            )
+            delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+        }
     }
 
     /**
