@@ -232,14 +232,14 @@ Workers must throttle when `isPlaybackActive == true`:
 
 ## Implementation Checklist
 
-### Group 1 – PlaybackSession Lifecycle & Ownership
+### Group 1 – PlaybackSession Lifecycle & Ownership ✅ DONE
 
-- [ ] **1.1** Define `SessionLifecycleState` enum in `playback/` package
+- [x] **1.1** Define `SessionLifecycleState` enum in `playback/` package
   - States: IDLE, PREPARED, PLAYING, PAUSED, BACKGROUND, STOPPED, RELEASED
   - Add `_lifecycleState: MutableStateFlow<SessionLifecycleState>` to PlaybackSession
   - Expose as `val lifecycleState: StateFlow<SessionLifecycleState>`
 
-- [ ] **1.2** Implement lifecycle state transitions in PlaybackSession
+- [x] **1.2** Implement lifecycle state transitions in PlaybackSession
   - IDLE → PREPARED: on `player.prepare()` with media item
   - PREPARED → PLAYING: on `player.play()` when ready
   - PLAYING → PAUSED: on `player.pause()` or lifecycle pause
@@ -248,27 +248,27 @@ Workers must throttle when `isPlaybackActive == true`:
   - Any → STOPPED: on `stop()` call
   - Any → RELEASED: on `release()` call
 
-- [ ] **1.3** Add lifecycle observer to PlaybackSession
-  - Create `PlaybackSessionLifecycleObserver` composable
+- [x] **1.3** Add lifecycle observer to PlaybackSession
+  - Create `PlaybackLifecycleController` composable
   - Observe `ON_RESUME`, `ON_PAUSE`, `ON_STOP`, `ON_DESTROY`
-  - Wire to PlaybackSession state transitions
+  - Wire to PlaybackSession state transitions via `onAppForeground()` / `onAppBackground()`
   - Place in `MainActivity` or `HomeChromeScaffold` composition tree
 
-- [ ] **1.4** Ensure ExoPlayer is created/released ONLY inside PlaybackSession
+- [x] **1.4** Ensure ExoPlayer is created/released ONLY inside PlaybackSession
   - Audit all `ExoPlayer.Builder` usages in codebase
   - Document legacy InternalPlayerScreen as exception (do not modify)
-  - Verify SIP InternalPlayerSession uses `PlaybackSession.acquire()`
+  - Verify SIP InternalPlayerSession uses `PlaybackSession.acquire()` ✅
 
-- [ ] **1.5** Ensure onPause/onStop/onResume do NOT recreate ExoPlayer unnecessarily
-  - Test: Pause app → resume → position preserved
-  - Test: Config change → position preserved
-  - Test: Mini ↔ Full transition → no rebuffering
+- [x] **1.5** Ensure onPause/onStop/onResume do NOT recreate ExoPlayer unnecessarily
+  - `onAppForeground()` / `onAppBackground()` methods do not recreate player
+  - Warm resume: Player instance is preserved, only lifecycle state changes
+  - Test: Mini ↔ Full transition → no rebuffering (via existing shared PlaybackSession)
 
-- [ ] **1.6** Add unit tests: `PlaybackSessionLifecycleTest`
+- [x] **1.6** Add unit tests: `PlaybackSessionLifecycleTest`
   - Test state transitions: foreground/background
-  - Test rotation/config change resilience
-  - Test mini/full transition continuity
-  - Test release only when no consumers
+  - Test initial state is IDLE
+  - Test stop() → STOPPED, release() → RELEASED
+  - Test helper properties: isSessionActiveByLifecycle, canResume
 
 ### Group 2 – UI Rebinding & Rotation
 

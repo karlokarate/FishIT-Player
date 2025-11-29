@@ -5029,4 +5029,124 @@ Phase 8 implementation can proceed following the checklist groups in order:
 
 ---
 
-**Last Updated:** 2025-11-28
+## Phase 8 – Task 1: PlaybackSession Lifecycle & Ownership (COMPLETE)
+
+**Date:** 2025-11-29
+
+**Status:** ✅ **COMPLETE** – Group 1 implemented
+
+This task implements the SessionLifecycleState state machine and lifecycle management for PlaybackSession.
+
+### What Was Done
+
+**1. SessionLifecycleState Enum Created (`playback/SessionLifecycleState.kt`)**
+
+| State | Description |
+|-------|-------------|
+| `IDLE` | Initial state, no media loaded |
+| `PREPARED` | Media loaded, ready to play |
+| `PLAYING` | Actively playing media |
+| `PAUSED` | Paused by user or system |
+| `BACKGROUND` | App backgrounded, playback may continue |
+| `STOPPED` | Playback stopped, ExoPlayer retained |
+| `RELEASED` | ExoPlayer released, session not reusable |
+
+**2. PlaybackSessionController Interface Extended**
+
+| Addition | Description |
+|----------|-------------|
+| `lifecycleState: StateFlow<SessionLifecycleState>` | Exposes current lifecycle state |
+
+**3. PlaybackSession Implementation Extended**
+
+| Method/Property | Description |
+|-----------------|-------------|
+| `_lifecycleState: MutableStateFlow` | Internal mutable state |
+| `lifecycleState: StateFlow` | Public read-only state flow |
+| `isSessionActiveByLifecycle: Boolean` | Helper: true if not IDLE or RELEASED |
+| `canResume: Boolean` | Helper: true if in PREPARED/PLAYING/PAUSED/BACKGROUND |
+| `onAppBackground()` | Called on Activity.onPause() |
+| `onAppForeground()` | Called on Activity.onResume() |
+| `onMediaPrepared()` | Called when player.prepare() completes |
+
+**State Transitions Implemented:**
+- Player.STATE_READY → PREPARED (from IDLE)
+- Player.STATE_ENDED → STOPPED
+- Player.STATE_IDLE → IDLE
+- isPlaying=true → PLAYING
+- isPlaying=false (from PLAYING) → PAUSED
+- onAppBackground() (from PLAYING/PAUSED) → BACKGROUND
+- onAppForeground() (from BACKGROUND) → PLAYING/PAUSED
+- stop() → STOPPED
+- release() → RELEASED
+
+**4. PlaybackLifecycleController Created (`playback/PlaybackLifecycleController.kt`)**
+
+| Component | Description |
+|-----------|-------------|
+| `PlaybackLifecycleController` composable | Observes Activity lifecycle and wires to PlaybackSession |
+| `PlaybackLifecycleHelper` object | Non-composable helper for lifecycle events |
+
+**5. Unit Tests Created (`PlaybackSessionLifecycleTest.kt`)**
+
+| Test Category | Coverage |
+|---------------|----------|
+| Initial State | lifecycle_initial_state_is_IDLE |
+| Transitions | stop→STOPPED, release→RELEASED |
+| Background/Foreground | onAppBackground/onAppForeground behavior |
+| Helper Properties | isSessionActiveByLifecycle, canResume |
+| Warm Resume | Verifies no player recreation |
+| Enum | All 7 states present, correct order |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `playback/SessionLifecycleState.kt` | Lifecycle state enum |
+| `playback/PlaybackLifecycleController.kt` | Lifecycle observer composable |
+| `test/.../PlaybackSessionLifecycleTest.kt` | Unit tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `playback/PlaybackSessionController.kt` | Added `lifecycleState` property |
+| `playback/PlaybackSession.kt` | Added lifecycle state management |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 1 as DONE |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*PlaybackSessionLifecycleTest"` passes all tests
+- ✅ Existing PlaybackSessionCoreTest tests pass
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 4
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 1
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No MiniPlayer UI changes
+- ✅ No worker changes
+- ✅ No system PiP changes
+- ✅ Backwards compatible with Phase 4-7 behaviors
+
+### What's Next
+
+Phase 8 Group 1 is complete. Remaining groups:
+- **Group 2:** UI Rebinding & Rotation
+- **Group 3:** Navigation & Backstack Stability
+- **Group 4:** System PiP vs In-App MiniPlayer
+- **Group 5:** Playback-Aware Worker Scheduling
+- **Group 6:** Memory & Leak Hygiene
+- **Group 7:** Compose & FocusKit Performance
+- **Group 8:** Error Handling & Recovery
+- **Group 9:** Regression Suite
+
+---
+
+**Last Updated:** 2025-11-29

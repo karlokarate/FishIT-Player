@@ -9,22 +9,27 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * ════════════════════════════════════════════════════════════════════════════════
  * PHASE 7 – Unified PlaybackSession
+ * PHASE 8 – SessionLifecycleState added
  * ════════════════════════════════════════════════════════════════════════════════
  *
  * This interface defines the contract for the unified playback session that:
  * - Owns the shared ExoPlayer instance across the entire app
  * - Provides reactive state flows for UI observation
  * - Offers command methods for playback control
+ * - Exposes lifecycle state for Activity/Fragment coordination (Phase 8)
  *
  * **Key Principles:**
  * - Single global session: One shared ExoPlayer per process
  * - No re-init on transitions: Player survives Full↔MiniPlayer navigation
  * - Thread-safe state updates via StateFlows
+ * - Lifecycle state machine for warm resume support (Phase 8)
  *
  * **Contract Reference:**
  * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 7
+ * - INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 4
  *
  * @see PlaybackSession for the singleton implementation
+ * @see SessionLifecycleState for lifecycle state enum
  */
 interface PlaybackSessionController {
     // ══════════════════════════════════════════════════════════════════
@@ -77,6 +82,20 @@ interface PlaybackSessionController {
      * True when a player is acquired and content is loaded.
      */
     val isSessionActive: StateFlow<Boolean>
+
+    /**
+     * Current lifecycle state of the playback session.
+     * Tracks the session through IDLE → PREPARED → PLAYING → PAUSED → STOPPED → RELEASED states.
+     *
+     * **Phase 8 Addition:**
+     * This state flow enables:
+     * - Warm resume: Rebind UI without recreating ExoPlayer
+     * - Lifecycle coordination: Proper handling of Activity lifecycle events
+     * - Background playback: Track when playback continues in background
+     *
+     * @see SessionLifecycleState for state definitions
+     */
+    val lifecycleState: StateFlow<SessionLifecycleState>
 
     // ══════════════════════════════════════════════════════════════════
     // PLAYBACK COMMANDS
