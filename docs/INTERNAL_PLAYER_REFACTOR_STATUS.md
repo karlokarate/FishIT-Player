@@ -4934,4 +4934,99 @@ Phase 7 introduces a unified PlaybackSession that owns the ExoPlayer instance gl
 
 ---
 
+## Phase 8 – Performance, Lifecycle & Stability (Kickoff Complete)
+
+**Date:** 2025-11-28
+
+**Status:** 🔄 **KICKOFF COMPLETE** – Contract analyzed and implementation checklist created
+
+This phase ensures that the unified PlaybackSession + In-App MiniPlayer behave robustly and efficiently under real-world conditions.
+
+### What Was Done
+
+**1. Current State Analysis**
+
+Analyzed the repository for all Phase 8–related lifecycle/performance code:
+
+| Component | Finding |
+|-----------|---------|
+| **ExoPlayer Creation** | SIP uses `PlaybackSession.acquire()` (Phase 7), Legacy still creates own player |
+| **PlaybackSession Lifecycle** | No `SessionLifecycleState` enum, no lifecycle observer |
+| **Activity Lifecycle Response** | No automatic pause/resume/destroy handling in PlaybackSession |
+| **Worker Playback Awareness** | Workers use `Dispatchers.IO` ✅, but no playback-active throttling |
+| **Memory/Leaks** | No LeakCanary, no obvious static Activity refs |
+| **Compose Performance** | FocusKit has multiple graphicsLayer chains, potential optimization target |
+
+**2. Phase 8 Goals & Constraints Summary (from Contract)**
+
+- **SessionLifecycleState**: IDLE → PREPARED → PLAYING → PAUSED → BACKGROUND → STOPPED → RELEASED
+- **Lifecycle Rules**: onResume rebinds without recreation; onDestroy releases only when no consumers
+- **No ExoPlayer.Builder outside PlaybackSession**: SIP compliant, legacy documented exception
+- **PlaybackPriority**: Workers must check `isPlaybackActive` and throttle
+- **Memory Hygiene**: LeakCanary for debug, no static Context/Activity refs
+- **Compose Performance**: Split hot (position/buffering) vs cold (context/style) state
+
+**3. Phase 8 Checklist Created**
+
+Created comprehensive implementation checklist at `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` with 9 task groups:
+
+| Group | Description |
+|-------|-------------|
+| **1** | PlaybackSession Lifecycle & Ownership |
+| **2** | UI Rebinding & Rotation |
+| **3** | Navigation & Backstack Stability |
+| **4** | System PiP vs In-App MiniPlayer |
+| **5** | Playback-Aware Worker Scheduling |
+| **6** | Memory & Leak Hygiene |
+| **7** | Compose & FocusKit Performance |
+| **8** | Error Handling & Recovery |
+| **9** | Regression Suite |
+
+**4. Documentation Updated**
+
+- ✅ Created `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` (comprehensive implementation guide)
+- ✅ Updated `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md` (Phase 8 section rewritten)
+- ✅ Updated `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` (this entry)
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Full implementation checklist with 9 task groups |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md` | Rewrote Phase 8 section with goals and checklist group summary |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Phase 8 kickoff entry |
+
+### What Was NOT Done (Documentation Only)
+
+- ❌ **No Kotlin code changes** – This was a kickoff/analysis task only
+- ❌ **No XML changes**
+- ❌ **No test changes**
+- ❌ **Phase 8 implementation tasks NOT started**
+
+### Contract Reference
+
+All analysis and checklist items align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
+
+### What's Next (Phase 8 Implementation)
+
+Phase 8 implementation can proceed following the checklist groups in order:
+
+1. **Group 1:** PlaybackSession Lifecycle & Ownership
+2. **Group 2:** UI Rebinding & Rotation
+3. **Group 3:** Navigation & Backstack Stability
+4. **Group 4:** System PiP vs In-App MiniPlayer
+5. **Group 5:** Playback-Aware Worker Scheduling
+6. **Group 6:** Memory & Leak Hygiene
+7. **Group 7:** Compose & FocusKit Performance
+8. **Group 8:** Error Handling & Recovery
+9. **Group 9:** Regression Suite
+
+---
+
 **Last Updated:** 2025-11-28
