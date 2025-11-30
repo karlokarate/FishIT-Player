@@ -5962,4 +5962,130 @@ Phase 8 ensures that the unified PlaybackSession + In-App MiniPlayer behave robu
 
 ---
 
+## Phase 9 – SIP Runtime Activation
+
+### Task 1: Switch Runtime to SIP (COMPLETE)
+
+**Date:** 2025-11-30
+
+**Status:** ✅ **COMPLETE** – SIP is now the runtime player for all builds
+
+This task switches the runtime player path from Legacy InternalPlayerScreen to SIP (Simplified Internal Player) for both DEBUG and RELEASE builds.
+
+### What Was Done
+
+**1. InternalPlayerEntry Updated to Use SIP Unconditionally**
+
+| Change | Description |
+|--------|-------------|
+| Session | Uses `rememberInternalPlayerSession` instead of `InternalPlayerScreen` |
+| UI | Uses `InternalPlayerContent` for player rendering |
+| System UI | Uses `InternalPlayerSystemUi` for back handler, screen-on, fullscreen |
+| Controller | Creates `InternalPlayerController` with all SIP callbacks |
+| Black Background | Wraps content in Box with black background |
+
+**2. Legacy InternalPlayerScreen Removed from Routing**
+
+- InternalPlayerEntry no longer calls `InternalPlayerScreen`
+- Legacy `type` string mapping ("vod"/"series"/"live") is no longer needed
+- PlaybackType enum is used directly throughout
+
+**3. PLAYER_ROUTE Debug Log Added**
+
+```kotlin
+AppLog.log(
+    category = "PLAYER_ROUTE",
+    level = AppLog.Level.DEBUG,
+    message = "Using SIP player path (legacy disabled)",
+    extras = mapOf("source" to "InternalPlayerEntry"),
+)
+```
+
+**4. Tests Created**
+
+| Test File | Coverage |
+|-----------|----------|
+| `InternalPlayerEntryRoutingTest.kt` | SIP routing verification, PlaybackContext validation |
+| `PlayerRouteLoggingTest.kt` | PLAYER_ROUTE log validation, AppLog API verification |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `player/InternalPlayerEntry.kt` | Complete rewrite to use SIP components |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `test/.../InternalPlayerEntryRoutingTest.kt` | SIP routing tests |
+| `test/.../PlayerRouteLoggingTest.kt` | Logging tests |
+
+### Files NOT Modified (Legacy Preserved)
+
+- ❌ `player/InternalPlayerScreen.kt` – Legacy remains in codebase, unused
+- ❌ `telegram/**/*.kt` – All Telegram modules untouched
+- ❌ Parser/ObjectBox modules – Untouched per task constraints
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*InternalPlayerEntryRoutingTest"` passes all tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*PlayerRouteLoggingTest"` passes all tests
+
+### Architecture After Phase 9 Task 1
+
+```
+Call Sites (VOD/SERIES/LIVE/Telegram Detail Screens)
+    ↓
+InternalPlayerEntry (Phase 9 SIP Entry Point)
+    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ SIP Architecture (Active)                                    │
+├─────────────────────────────────────────────────────────────┤
+│ rememberInternalPlayerSession                                │
+│   ├── PlaybackSession.acquire() (Phase 7)                   │
+│   ├── DefaultResumeManager (Phase 2)                         │
+│   ├── DefaultKidsPlaybackGate (Phase 2)                      │
+│   ├── SubtitleStyleManager (Phase 4)                         │
+│   ├── SubtitleSelectionPolicy (Phase 4)                      │
+│   └── LivePlaybackController (Phase 3) for LIVE type         │
+│                                                              │
+│ InternalPlayerContent                                        │
+│   ├── PlayerSurface (Phase 5)                               │
+│   ├── Controls with auto-hide (Phase 5)                      │
+│   ├── Trickplay indicator (Phase 5)                          │
+│   ├── Live EPG overlay (Phase 3)                             │
+│   ├── CC Menu (Phase 4)                                      │
+│   ├── PlaybackErrorOverlay (Phase 8)                         │
+│   └── Kids block overlay (Phase 2)                           │
+│                                                              │
+│ InternalPlayerSystemUi                                       │
+│   ├── BackHandler                                            │
+│   ├── Screen-on (keepScreenOn)                               │
+│   └── Fullscreen (system bars hidden)                        │
+└─────────────────────────────────────────────────────────────┘
+
+Legacy InternalPlayerScreen (Preserved, Unused)
+    └── Still exists in codebase for historical reference
+```
+
+### What's Next
+
+Phase 9 Task 1 is complete. Remaining tasks:
+
+- **Task 2:** Remove legacy InternalPlayerScreen (future cleanup)
+- **Task 3:** Telegram playback integration verification
+
+### Constraints Honored
+
+- ✅ SIP-only routing (legacy no longer called)
+- ✅ Legacy InternalPlayerScreen preserved in codebase (not deleted)
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ Single debug log entry (no spam)
+- ✅ Phase 4-8 behaviors preserved
+
+---
+
 **Last Updated:** 2025-11-30
