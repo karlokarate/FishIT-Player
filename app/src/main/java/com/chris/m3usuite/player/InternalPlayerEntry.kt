@@ -16,7 +16,6 @@ import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.playback.rememberPlayerController
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.session.rememberInternalPlayerSession
-import com.chris.m3usuite.player.internal.state.AspectRatioMode
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.player.internal.system.InternalPlayerSystemUi
@@ -236,7 +235,8 @@ private fun createSipController(
                 val speeds = listOf(2f, 3f, 5f)
                 val absSpeed = kotlin.math.abs(currentState.trickplaySpeed)
                 val currentIndex = speeds.indexOfFirst { it == absSpeed }
-                val nextIndex = (currentIndex + 1) % speeds.size
+                // If current speed is not in the list, default to first speed
+                val nextIndex = if (currentIndex == -1) 0 else (currentIndex + 1) % speeds.size
                 val sign = if (currentState.trickplaySpeed > 0) 1f else -1f
                 onStateUpdate(currentState.copy(trickplaySpeed = speeds[nextIndex] * sign))
             }
