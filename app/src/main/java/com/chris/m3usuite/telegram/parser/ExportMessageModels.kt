@@ -224,8 +224,7 @@ data class ExportMessageContent(
     /**
      * Check if this content represents a flat-format video.
      */
-    fun isFlatVideo(): Boolean =
-        video == null && duration != null && file != null && mimeType?.startsWith("video") == true
+    fun isFlatVideo(): Boolean = video == null && duration != null && file != null && mimeType?.startsWith("video") == true
 
     /**
      * Check if this content represents a flat-format photo.
@@ -303,10 +302,11 @@ data class ExportFlatFile(
         ExportFile(
             id = id,
             size = size,
-            remote = ExportRemoteFile(
-                id = remoteId,
-                uniqueId = uniqueId,
-            ),
+            remote =
+                ExportRemoteFile(
+                    id = remoteId,
+                    uniqueId = uniqueId,
+                ),
         )
 }
 
