@@ -674,3 +674,29 @@ The following design decisions have been finalized and MUST be followed by all i
 - `TelegramIngestionCoordinator` MUST check `authState == READY` before starting any scan.
 - If TDLib DB is already authorized, skip re-login and emit `READY` directly.
 - All auth transitions MUST be logged via `TelegramLogRepository`.
+
+
+---
+
+### 6.12 Pipeline Equivalence — VERIFIED
+
+The TDLib-based runtime pipeline (TdlMessageMapper + TelegramHistoryScanner + TelegramIngestionCoordinator) has been verified to produce the **same TelegramItem results** as the JSON-based diagnostic pipeline for representative chats (MOVIE/SERIES/CLIP/ADULT/RAR_ITEM).
+
+**Centralized ExportMessage Creation:**
+- `ExportMessageFactory` provides shared helpers for building ExportMessage instances
+- Both JSON-based and TDLib-based paths use the same logic for:
+  - remoteId/uniqueId extraction via `ExportFile.getRemoteId()` / `getUniqueId()`
+  - fileId handling (optional, may become stale)
+  - thumbnail/poster/backdrop resolution
+
+**Verified Equivalence Points:**
+- `ExportFile` supports both flat format (JSON CLI exports) and nested format (TDLib DTOs)
+- `ExportFile.getRemoteId()` returns identical values regardless of format
+- `TelegramBlockGrouper` and `TelegramItemBuilder` produce identical results
+- `TelegramItem.videoRef.remoteId` and `.uniqueId` are correctly populated from both paths
+
+**Test Coverage:**
+- `TelegramRuntimeParserEquivalenceTest` - Verifies flat/nested format equivalence
+- `TelegramIngestionCoordinatorPipelineTest` - Verifies runtime pipeline uses same logic
+- `TelegramParserStatsTest` - Validates JSON-based parser output
+

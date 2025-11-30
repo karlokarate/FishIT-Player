@@ -91,10 +91,12 @@ fun PlaybackErrorOverlay(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                     ) {
-                        val retryModifier = FocusKit.run {
-                            Modifier.focusScaleOnTv(debugTag = "error:retry")
-                                .tvClickable(enabled = true, debugTag = "error:retry", onClick = onRetry)
-                        }
+                        val retryModifier =
+                            FocusKit.run {
+                                Modifier
+                                    .focusScaleOnTv(debugTag = "error:retry")
+                                    .tvClickable(enabled = true, debugTag = "error:retry", onClick = onRetry)
+                            }
                         Button(
                             onClick = onRetry,
                             modifier = retryModifier,
@@ -104,10 +106,12 @@ fun PlaybackErrorOverlay(
                             Spacer(Modifier.width(4.dp))
                             Text("Retry")
                         }
-                        val closeModifier = FocusKit.run {
-                            Modifier.focusScaleOnTv(debugTag = "error:close")
-                                .tvClickable(enabled = true, debugTag = "error:close", onClick = onClose)
-                        }
+                        val closeModifier =
+                            FocusKit.run {
+                                Modifier
+                                    .focusScaleOnTv(debugTag = "error:close")
+                                    .tvClickable(enabled = true, debugTag = "error:close", onClick = onClose)
+                            }
                         OutlinedButton(onClick = onClose, modifier = closeModifier) {
                             Icon(imageVector = Icons.Filled.Close, contentDescription = null)
                             Spacer(Modifier.width(4.dp))

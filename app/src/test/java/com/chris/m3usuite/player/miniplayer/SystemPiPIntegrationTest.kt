@@ -22,7 +22,6 @@ import org.junit.Test
  * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Section 4.3
  */
 class SystemPiPIntegrationTest {
-
     // ══════════════════════════════════════════════════════════════════
     // 4.1 VERIFY PIP UI BUTTON BEHAVIOR (compile-time verified)
     // ══════════════════════════════════════════════════════════════════
@@ -35,21 +34,22 @@ class SystemPiPIntegrationTest {
         // - No enterPictureInPictureMode() call from UI button
         //
         // The test verifies that InternalPlayerController has the callback
-        val controller = com.chris.m3usuite.player.internal.state.InternalPlayerController(
-            onPlayPause = {},
-            onSeekTo = {},
-            onSeekBy = {},
-            onChangeSpeed = {},
-            onToggleLoop = {},
-            onEnterPip = {},
-            onToggleSettingsDialog = {},
-            onToggleTracksDialog = {},
-            onToggleSpeedDialog = {},
-            onToggleSleepTimerDialog = {},
-            onToggleDebugInfo = {},
-            onCycleAspectRatio = {},
-            onEnterMiniPlayer = { /* In-app MiniPlayer callback */ },
-        )
+        val controller =
+            com.chris.m3usuite.player.internal.state.InternalPlayerController(
+                onPlayPause = {},
+                onSeekTo = {},
+                onSeekBy = {},
+                onChangeSpeed = {},
+                onToggleLoop = {},
+                onEnterPip = {},
+                onToggleSettingsDialog = {},
+                onToggleTracksDialog = {},
+                onToggleSpeedDialog = {},
+                onToggleSleepTimerDialog = {},
+                onToggleDebugInfo = {},
+                onCycleAspectRatio = {},
+                onEnterMiniPlayer = { /* In-app MiniPlayer callback */ },
+            )
 
         // If this compiles, the contract is satisfied
         assertTrue("onEnterMiniPlayer callback should exist", true)
@@ -59,21 +59,22 @@ class SystemPiPIntegrationTest {
     fun `PIP button callback should be invocable without Activity reference`() {
         var callbackInvoked = false
 
-        val controller = com.chris.m3usuite.player.internal.state.InternalPlayerController(
-            onPlayPause = {},
-            onSeekTo = {},
-            onSeekBy = {},
-            onChangeSpeed = {},
-            onToggleLoop = {},
-            onEnterPip = {},
-            onToggleSettingsDialog = {},
-            onToggleTracksDialog = {},
-            onToggleSpeedDialog = {},
-            onToggleSleepTimerDialog = {},
-            onToggleDebugInfo = {},
-            onCycleAspectRatio = {},
-            onEnterMiniPlayer = { callbackInvoked = true },
-        )
+        val controller =
+            com.chris.m3usuite.player.internal.state.InternalPlayerController(
+                onPlayPause = {},
+                onSeekTo = {},
+                onSeekBy = {},
+                onChangeSpeed = {},
+                onToggleLoop = {},
+                onEnterPip = {},
+                onToggleSettingsDialog = {},
+                onToggleTracksDialog = {},
+                onToggleSpeedDialog = {},
+                onToggleSleepTimerDialog = {},
+                onToggleDebugInfo = {},
+                onCycleAspectRatio = {},
+                onEnterMiniPlayer = { callbackInvoked = true },
+            )
 
         // Simulate PIP button click - no Activity context needed
         controller.onEnterMiniPlayer()
@@ -87,41 +88,45 @@ class SystemPiPIntegrationTest {
 
     @Test
     fun `system PiP allowed when playing and MiniPlayer not visible on phone`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = false,
-            isTvDevice = false,
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = false,
+                isTvDevice = false,
+            )
         assertTrue("Should allow system PiP on phone when conditions met", shouldEnterPip)
     }
 
     @Test
     fun `system PiP allowed when playing and MiniPlayer not visible on tablet`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = false,
-            isTvDevice = false, // Tablet is not a TV device
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = false,
+                isTvDevice = false, // Tablet is not a TV device
+            )
         assertTrue("Should allow system PiP on tablet when conditions met", shouldEnterPip)
     }
 
     @Test
     fun `system PiP NOT allowed when not playing`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = false,
-            miniPlayerVisible = false,
-            isTvDevice = false,
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = false,
+                miniPlayerVisible = false,
+                isTvDevice = false,
+            )
         assertFalse("Should NOT allow system PiP when not playing", shouldEnterPip)
     }
 
     @Test
     fun `system PiP NOT allowed when MiniPlayer is visible`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = true,
-            isTvDevice = false,
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = true,
+                isTvDevice = false,
+            )
         assertFalse("In-app MiniPlayer should take precedence over system PiP", shouldEnterPip)
     }
 
@@ -131,42 +136,46 @@ class SystemPiPIntegrationTest {
 
     @Test
     fun `system PiP NEVER triggered on Fire TV`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = false,
-            isTvDevice = true, // Fire TV
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = false,
+                isTvDevice = true, // Fire TV
+            )
         assertFalse("Fire TV should NEVER trigger system PiP from app code", shouldEnterPip)
     }
 
     @Test
     fun `system PiP NEVER triggered on Android TV`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = false,
-            isTvDevice = true, // Android TV
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = false,
+                isTvDevice = true, // Android TV
+            )
         assertFalse("Android TV should NEVER trigger system PiP from app code", shouldEnterPip)
     }
 
     @Test
     fun `system PiP NEVER triggered on Google TV`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = false,
-            isTvDevice = true, // Google TV
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = false,
+                isTvDevice = true, // Google TV
+            )
         assertFalse("Google TV should NEVER trigger system PiP from app code", shouldEnterPip)
     }
 
     @Test
     fun `TV device check blocks system PiP regardless of other conditions`() {
         // Even with all other conditions perfect, TV device should block
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = true,
-            miniPlayerVisible = false,
-            isTvDevice = true,
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = true,
+                miniPlayerVisible = false,
+                isTvDevice = true,
+            )
         assertFalse("TV device should block system PiP even with all conditions met", shouldEnterPip)
     }
 
@@ -215,32 +224,34 @@ class SystemPiPIntegrationTest {
     @Test
     fun `buffering state does not allow system PiP entry`() {
         // Buffering means isPlaying is false
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = false, // Buffering
-            miniPlayerVisible = false,
-            isTvDevice = false,
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = false, // Buffering
+                miniPlayerVisible = false,
+                isTvDevice = false,
+            )
         assertFalse("Should NOT enter system PiP while buffering", shouldEnterPip)
     }
 
     @Test
     fun `paused state does not allow system PiP entry`() {
-        val shouldEnterPip = evaluateSystemPipEntry(
-            isPlaying = false, // Paused
-            miniPlayerVisible = false,
-            isTvDevice = false,
-        )
+        val shouldEnterPip =
+            evaluateSystemPipEntry(
+                isPlaying = false, // Paused
+                miniPlayerVisible = false,
+                isTvDevice = false,
+            )
         assertFalse("Should NOT enter system PiP while paused", shouldEnterPip)
     }
 
     @Test
     fun `all conditions must be met for system PiP`() {
         // Truth table for system PiP entry
-        assertTrue(evaluateSystemPipEntry(true, false, false))  // ✓ All conditions met
+        assertTrue(evaluateSystemPipEntry(true, false, false)) // ✓ All conditions met
         assertFalse(evaluateSystemPipEntry(false, false, false)) // ✗ Not playing
-        assertFalse(evaluateSystemPipEntry(true, true, false))   // ✗ MiniPlayer visible
-        assertFalse(evaluateSystemPipEntry(true, false, true))   // ✗ TV device
-        assertFalse(evaluateSystemPipEntry(false, true, true))   // ✗ Multiple fails
+        assertFalse(evaluateSystemPipEntry(true, true, false)) // ✗ MiniPlayer visible
+        assertFalse(evaluateSystemPipEntry(true, false, true)) // ✗ TV device
+        assertFalse(evaluateSystemPipEntry(false, true, true)) // ✗ Multiple fails
     }
 
     // ══════════════════════════════════════════════════════════════════

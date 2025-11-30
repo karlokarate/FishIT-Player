@@ -161,8 +161,8 @@ sealed class PlaybackError {
             // Map by error code category
             return when (exception.errorCode) {
                 // Network errors
-                in PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED..
-                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+                in
+                PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED..PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
                 -> {
                     Network(
                         code = exception.errorCode,
@@ -179,8 +179,8 @@ sealed class PlaybackError {
                 }
 
                 // Source/format errors
-                in PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED..
-                    PlaybackException.ERROR_CODE_PARSING_MANIFEST_UNSUPPORTED,
+                in
+                PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED..PlaybackException.ERROR_CODE_PARSING_MANIFEST_UNSUPPORTED,
                 PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
                 PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
                 -> {
@@ -188,10 +188,10 @@ sealed class PlaybackError {
                 }
 
                 // Decoder errors
-                in PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..
-                    PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
-                in PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED..
-                    PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED,
+                in
+                PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
+                in
+                PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED..PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED,
                 -> {
                     Decoder(message = exception.message)
                 }

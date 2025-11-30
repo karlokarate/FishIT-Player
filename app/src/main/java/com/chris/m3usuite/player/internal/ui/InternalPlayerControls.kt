@@ -422,9 +422,11 @@ fun InternalPlayerContent(
                 PlaybackSession.clearError()
                 PlaybackSession.stop()
             },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp), // Above controls
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp),
+            // Above controls
         )
 
         // Phase 4 Group 4: CC Menu Dialog

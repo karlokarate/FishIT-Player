@@ -490,17 +490,22 @@ object PlaybackSession : PlaybackSessionController {
     }
 
     private fun logPlaybackErrorToAppLog(error: PlaybackError) {
-        val extras = buildMap {
-            put("type", error.typeName)
-            error.httpOrNetworkCodeAsString?.let { put("code", it) }
-            error.urlOrNull?.let { put("url", it) }
-            _currentMediaId.get()?.let { put("mediaId", it) }
-            put("positionMs", _positionMs.value.toString())
-            put("durationMs", _durationMs.value.toString())
-            runCatching {
-                put("miniPlayerVisible", DefaultMiniPlayerManager.state.value.visible.toString())
+        val extras =
+            buildMap {
+                put("type", error.typeName)
+                error.httpOrNetworkCodeAsString?.let { put("code", it) }
+                error.urlOrNull?.let { put("url", it) }
+                _currentMediaId.get()?.let { put("mediaId", it) }
+                put("positionMs", _positionMs.value.toString())
+                put("durationMs", _durationMs.value.toString())
+                runCatching {
+                    put(
+                        "miniPlayerVisible",
+                        DefaultMiniPlayerManager.state.value.visible
+                            .toString(),
+                    )
+                }
             }
-        }
         AppLog.log(
             category = LOG_CATEGORY_PLAYER_ERROR,
             level = AppLog.Level.ERROR,

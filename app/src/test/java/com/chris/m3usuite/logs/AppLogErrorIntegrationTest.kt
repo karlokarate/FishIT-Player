@@ -47,11 +47,12 @@ class AppLogErrorIntegrationTest {
             category = "PLAYER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Playback error: Network error (1001)",
-            extras = mapOf(
-                "type" to "Network",
-                "code" to "1001",
-                "positionMs" to "5000",
-            ),
+            extras =
+                mapOf(
+                    "type" to "Network",
+                    "code" to "1001",
+                    "positionMs" to "5000",
+                ),
             bypassMaster = true, // Always log errors
         )
 
@@ -67,14 +68,15 @@ class AppLogErrorIntegrationTest {
 
     @Test
     fun `PLAYER_ERROR entry contains expected extras`() {
-        val expectedExtras = mapOf(
-            "type" to "Http",
-            "code" to "404",
-            "url" to "https://example.com/video.mp4",
-            "mediaId" to "media-123",
-            "positionMs" to "12000",
-            "durationMs" to "120000",
-        )
+        val expectedExtras =
+            mapOf(
+                "type" to "Http",
+                "code" to "404",
+                "url" to "https://example.com/video.mp4",
+                "mediaId" to "media-123",
+                "positionMs" to "12000",
+                "durationMs" to "120000",
+            )
 
         AppLog.log(
             category = "PLAYER_ERROR",
@@ -132,11 +134,12 @@ class AppLogErrorIntegrationTest {
             category = "WORKER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Worker XtreamDeltaImportWorker failed: Network timeout",
-            extras = mapOf(
-                "worker" to "XtreamDeltaImportWorker",
-                "exception" to "SocketTimeoutException",
-                "cause" to "none",
-            ),
+            extras =
+                mapOf(
+                    "worker" to "XtreamDeltaImportWorker",
+                    "exception" to "SocketTimeoutException",
+                    "cause" to "none",
+                ),
             bypassMaster = true,
         )
 
@@ -152,11 +155,12 @@ class AppLogErrorIntegrationTest {
 
     @Test
     fun `WORKER_ERROR entry contains worker name and exception info`() {
-        val expectedExtras = mapOf(
-            "worker" to "ObxKeyBackfillWorker",
-            "exception" to "IllegalStateException",
-            "cause" to "NullPointerException",
-        )
+        val expectedExtras =
+            mapOf(
+                "worker" to "ObxKeyBackfillWorker",
+                "exception" to "IllegalStateException",
+                "cause" to "NullPointerException",
+            )
 
         AppLog.log(
             category = "WORKER_ERROR",
@@ -257,13 +261,14 @@ class AppLogErrorIntegrationTest {
 
     @Test
     fun `AppLog Entry preserves all Level values`() {
-        val levels = listOf(
-            AppLog.Level.VERBOSE,
-            AppLog.Level.DEBUG,
-            AppLog.Level.INFO,
-            AppLog.Level.WARN,
-            AppLog.Level.ERROR,
-        )
+        val levels =
+            listOf(
+                AppLog.Level.VERBOSE,
+                AppLog.Level.DEBUG,
+                AppLog.Level.INFO,
+                AppLog.Level.WARN,
+                AppLog.Level.ERROR,
+            )
 
         levels.forEach { level ->
             AppLog.log(
