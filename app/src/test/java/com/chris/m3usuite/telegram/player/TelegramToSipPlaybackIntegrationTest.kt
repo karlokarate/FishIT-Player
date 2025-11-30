@@ -1,5 +1,6 @@
 package com.chris.m3usuite.telegram.player
 
+import com.chris.m3usuite.telegram.domain.TelegramDocumentRef
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
@@ -354,7 +355,7 @@ class TelegramToSipPlaybackIntegrationTest {
                 type = TelegramItemType.AUDIOBOOK,
                 videoRef = null, // AUDIOBOOK uses documentRef
                 documentRef =
-                    com.chris.m3usuite.telegram.domain.TelegramDocumentRef(
+                    TelegramDocumentRef(
                         remoteId = "AgACAgIAAxkBAAIBNmF1YaB1ZGlv",
                         uniqueId = "AQADCAAH4444",
                         fileId = 44444,
@@ -404,7 +405,7 @@ class TelegramToSipPlaybackIntegrationTest {
                 type = TelegramItemType.RAR_ITEM,
                 videoRef = null, // RAR_ITEM uses documentRef
                 documentRef =
-                    com.chris.m3usuite.telegram.domain.TelegramDocumentRef(
+                    TelegramDocumentRef(
                         remoteId = "AgACAgIAAxkBAAIBNmF1YXJhcg==",
                         uniqueId = "AQADCAAH5555",
                         fileId = 55555,
