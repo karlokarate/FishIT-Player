@@ -169,14 +169,13 @@ object TelegramItemBuilder {
         val audio = audios.first()
 
         // Create document ref from audio
+        val audioFile = audio.audio.audio
         val documentRef =
             TelegramDocumentRef(
-                remoteId = audio.audio.audio.remote.id ?: return null,
-                uniqueId = audio.audio.audio.remote.uniqueId ?: return null,
-                fileId =
-                    audio.audio.audio.id
-                        .takeIf { it > 0 },
-                sizeBytes = audio.audio.audio.size,
+                remoteId = audioFile.getRemoteId() ?: return null,
+                uniqueId = audioFile.getUniqueId() ?: return null,
+                fileId = audioFile.id.takeIf { it > 0 },
+                sizeBytes = audioFile.size,
                 mimeType = audio.audio.mimeType,
                 fileName = audio.audio.fileName,
             )
@@ -262,16 +261,15 @@ object TelegramItemBuilder {
      * Create a TelegramMediaRef from an ExportVideo.
      */
     private fun createMediaRef(video: ExportVideo): TelegramMediaRef? {
-        val remoteId = video.video.video.remote.id ?: return null
-        val uniqueId = video.video.video.remote.uniqueId ?: return null
+        val videoFile = video.video.video
+        val remoteId = videoFile.getRemoteId() ?: return null
+        val uniqueId = videoFile.getUniqueId() ?: return null
 
         return TelegramMediaRef(
             remoteId = remoteId,
             uniqueId = uniqueId,
-            fileId =
-                video.video.video.id
-                    .takeIf { it > 0 },
-            sizeBytes = video.video.video.size,
+            fileId = videoFile.id.takeIf { it > 0 },
+            sizeBytes = videoFile.size,
             mimeType = video.video.mimeType.takeIf { it.isNotBlank() },
             durationSeconds = video.video.duration.takeIf { it > 0 },
             width = video.video.width.takeIf { it > 0 },
@@ -283,16 +281,15 @@ object TelegramItemBuilder {
      * Create a TelegramDocumentRef from an ExportDocument.
      */
     private fun createDocumentRef(doc: ExportDocument): TelegramDocumentRef? {
-        val remoteId = doc.document.document.remote.id ?: return null
-        val uniqueId = doc.document.document.remote.uniqueId ?: return null
+        val docFile = doc.document.document
+        val remoteId = docFile.getRemoteId() ?: return null
+        val uniqueId = docFile.getUniqueId() ?: return null
 
         return TelegramDocumentRef(
             remoteId = remoteId,
             uniqueId = uniqueId,
-            fileId =
-                doc.document.document.id
-                    .takeIf { it > 0 },
-            sizeBytes = doc.document.document.size,
+            fileId = docFile.id.takeIf { it > 0 },
+            sizeBytes = docFile.size,
             mimeType = doc.document.mimeType.takeIf { it.isNotBlank() },
             fileName = doc.document.fileName.takeIf { it.isNotBlank() },
         )
@@ -422,16 +419,17 @@ object TelegramItemBuilder {
      * Create an image ref from a photo size.
      */
     private fun createImageRefFromSize(size: ExportPhotoSize): TelegramImageRef? {
-        val remoteId = size.photo.remote.id ?: return null
-        val uniqueId = size.photo.remote.uniqueId ?: return null
+        val file = size.getFileRef()
+        val remoteId = file.getRemoteId() ?: return null
+        val uniqueId = file.getUniqueId() ?: return null
 
         return TelegramImageRef(
             remoteId = remoteId,
             uniqueId = uniqueId,
-            fileId = size.photo.id.takeIf { it > 0 },
+            fileId = file.id.takeIf { it > 0 },
             width = size.width,
             height = size.height,
-            sizeBytes = size.photo.size,
+            sizeBytes = file.size,
         )
     }
 
@@ -439,8 +437,8 @@ object TelegramItemBuilder {
      * Create an image ref from a video thumbnail.
      */
     private fun createImageRefFromThumbnail(thumbnail: ExportThumbnail): TelegramImageRef? {
-        val remoteId = thumbnail.file.remote.id ?: return null
-        val uniqueId = thumbnail.file.remote.uniqueId ?: return null
+        val remoteId = thumbnail.file.getRemoteId() ?: return null
+        val uniqueId = thumbnail.file.getUniqueId() ?: return null
 
         return TelegramImageRef(
             remoteId = remoteId,

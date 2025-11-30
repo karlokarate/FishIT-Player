@@ -48,6 +48,9 @@ data class ExportLocalFile(
 
 /**
  * Complete TDLib file reference with both local and remote data.
+ *
+ * Supports both nested format (remote.id, remote.uniqueId) and flat format (remoteId, uniqueId).
+ * The flat format is used in CLI-style exports where IDs are at the file level.
  */
 @Serializable
 data class ExportFile(
@@ -56,7 +59,24 @@ data class ExportFile(
     val expectedSize: Long = 0,
     val local: ExportLocalFile = ExportLocalFile(),
     val remote: ExportRemoteFile = ExportRemoteFile(),
-)
+    // Flat format properties (CLI-style exports have these at file level)
+    @SerialName("remoteId")
+    val flatRemoteId: String? = null,
+    @SerialName("uniqueId")
+    val flatUniqueId: String? = null,
+) {
+    /**
+     * Get the remote ID, preferring flat format over nested.
+     * Flat format takes precedence because CLI-style exports use this format.
+     */
+    fun getRemoteId(): String? = flatRemoteId ?: remote.id
+
+    /**
+     * Get the unique ID, preferring flat format over nested.
+     * Flat format takes precedence because CLI-style exports use this format.
+     */
+    fun getUniqueId(): String? = flatUniqueId ?: remote.uniqueId
+}
 
 // =============================================================================
 // Video Content DTOs
@@ -94,14 +114,28 @@ data class ExportVideoContent(
 
 /**
  * Single photo size with file reference.
+ *
+ * Supports both JSON formats:
+ * - Nested format: has `photo` field containing ExportFile
+ * - Flat format: has `file` field containing ExportFile (CLI-style exports)
  */
 @Serializable
 data class ExportPhotoSize(
     val type: String = "",
     val width: Int = 0,
     val height: Int = 0,
+    // Nested format uses `photo`
     val photo: ExportFile = ExportFile(),
-)
+    // Flat format uses `file` (CLI-style exports)
+    @SerialName("file")
+    val flatFile: ExportFile? = null,
+) {
+    /**
+     * Get the file reference, preferring flat format over nested.
+     * Flat format takes precedence as it's more commonly used in CLI exports.
+     */
+    fun getFileRef(): ExportFile = flatFile ?: photo
+}
 
 /**
  * Photo content from TDLib MessagePhoto.
