@@ -355,11 +355,12 @@ class ObxKeyBackfillWorker(
             category = "WORKER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Worker ObxKeyBackfillWorker failed: ${e.message}",
-            extras = mapOf(
-                "worker" to "ObxKeyBackfillWorker",
-                "exception" to e.javaClass.simpleName,
-                "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
-            ),
+            extras =
+                mapOf(
+                    "worker" to "ObxKeyBackfillWorker",
+                    "exception" to e.javaClass.simpleName,
+                    "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
+                ),
             bypassMaster = true,
         )
     }

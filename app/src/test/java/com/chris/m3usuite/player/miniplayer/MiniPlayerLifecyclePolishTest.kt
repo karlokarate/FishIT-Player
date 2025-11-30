@@ -3,7 +3,6 @@ package com.chris.m3usuite.player.miniplayer
 import com.chris.m3usuite.playback.SessionLifecycleState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -29,7 +28,6 @@ import org.junit.Test
  * - INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 4.3
  */
 class MiniPlayerLifecyclePolishTest {
-
     // ══════════════════════════════════════════════════════════════════
     // BACKGROUND/FOREGROUND WITH MINIPLAYER
     // ══════════════════════════════════════════════════════════════════
