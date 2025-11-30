@@ -5,24 +5,41 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgActivityEvent
+import com.chris.m3usuite.telegram.domain.MessageBlock
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.telegram.parser.ExportMessage
+import com.chris.m3usuite.telegram.parser.ExportMessageFactory
+import com.chris.m3usuite.telegram.parser.TelegramItemBuilder
+import dev.g000sha256.tdl.dto.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 /**
  * Handles hot-path updates for real-time Telegram message processing.
  *
- * Per TELEGRAM_PARSER_CONTRACT.md Phase C.5 (optional):
+ * Per TELEGRAM_PARSER_CONTRACT.md Section 7.3:
  * - Listen for new/edited/deleted messages (online path)
- * - Map to ExportMessage and pass through mini pipeline
- * - Update affected TelegramItem in ObjectBox
+ * - Map to ExportMessage using ExportMessageFactory (SAME logic as batch ingestion)
+ * - Run through TelegramItemBuilder pipeline
+ * - Update affected TelegramItem in ObjectBox via TelegramContentRepository
  *
- * This is a stub implementation for Phase C. Full implementation
- * can be expanded in Phase D when UI integration is complete.
+ * Phase T3: Full implementation for live UpdateHandler → Library refresh.
+ *
+ * Key Design:
+ * - Uses SAME parser logic as TelegramIngestionCoordinator (no forks)
+ * - ExportMessageFactory.fromTdlMessage() for consistent message conversion
+ * - TelegramItemBuilder.build() for item creation
+ * - TelegramContentRepository.upsertItems() for persistence
+ *
+ * Phase 8 Contract Compliance:
+ * - No lifecycle manipulation (no onPause/onResume hooks)
+ * - No player control
+ * - Only library/listing data is updated
  *
  * Note: This handler processes individual messages incrementally,
  * unlike the batch processing in TelegramIngestionCoordinator.
@@ -52,14 +69,31 @@ class TelegramUpdateHandler(
             return
         }
 
-        TelegramLogRepository.info(TAG, "Starting update handler")
+        TelegramLogRepository.info(TAG, "Starting update handler (Phase T3)")
         isStarted = true
 
-        // Subscribe to activity events from service client
+        // Subscribe to activity events from service client for logging
         serviceClient.activityEvents
             .onEach { event ->
                 handleActivityEvent(event)
             }.launchIn(scope)
+
+        // Phase T3: Subscribe to full message updates via T_ChatBrowser
+        // This provides the complete TDLib Message for pipeline processing
+        scope.launch {
+            try {
+                serviceClient.browser().observeAllNewMessages()
+                    .collect { message ->
+                        processNewTdlMessage(message)
+                    }
+            } catch (e: Exception) {
+                TelegramLogRepository.error(
+                    TAG,
+                    "Error in message updates flow",
+                    exception = e,
+                )
+            }
+        }
     }
 
     /**
@@ -75,23 +109,21 @@ class TelegramUpdateHandler(
 
     /**
      * Handle an activity event from the service client.
+     * This is used for logging and coordination, not for data processing.
      */
     private suspend fun handleActivityEvent(event: TgActivityEvent) {
         when (event) {
             is TgActivityEvent.NewMessage -> {
+                // Logging only - actual processing happens via observeAllNewMessages()
                 TelegramLogRepository.debug(
                     TAG,
-                    "Received new message event: chat=${event.chatId}, message=${event.messageId}",
+                    "Activity event: new message",
+                    details =
+                        mapOf(
+                            "chatId" to event.chatId.toString(),
+                            "messageId" to event.messageId.toString(),
+                        ),
                 )
-                // In a full implementation, we would:
-                // 1. Fetch the message from TDLib
-                // 2. Convert to ExportMessage
-                // 3. Find related messages in the same time window
-                // 4. Build TelegramItem
-                // 5. Upsert to repository
-                //
-                // For now, this is a stub that logs the event.
-                // Full implementation deferred to Phase D.
             }
             is TgActivityEvent.NewDownload,
             is TgActivityEvent.DownloadComplete,
@@ -109,6 +141,114 @@ class TelegramUpdateHandler(
     }
 
     /**
+     * Process a new TDLib message through the full parser pipeline.
+     *
+     * Phase T3: Uses SAME parser logic as batch ingestion:
+     * 1. ExportMessageFactory.fromTdlMessage() - Convert TDLib Message → ExportMessage
+     * 2. Create single-message MessageBlock
+     * 3. TelegramItemBuilder.build() - Build TelegramItem
+     * 4. TelegramContentRepository.upsertItems() - Persist to ObjectBox
+     *
+     * @param message TDLib Message from newMessageUpdates flow
+     */
+    private suspend fun processNewTdlMessage(message: Message) {
+        val chatId = message.chatId
+        val messageId = message.id
+
+        TelegramLogRepository.debug(
+            TAG,
+            "Processing new TDLib message",
+            details =
+                mapOf(
+                    "chatId" to chatId.toString(),
+                    "messageId" to messageId.toString(),
+                    "contentType" to message.content::class.simpleName.toString(),
+                ),
+        )
+
+        // Step 1: Convert TDLib Message → ExportMessage using SAME factory as batch ingestion
+        val exportMessage = ExportMessageFactory.fromTdlMessage(message)
+        if (exportMessage == null) {
+            TelegramLogRepository.debug(
+                TAG,
+                "Message skipped: ExportMessageFactory returned null",
+                details =
+                    mapOf(
+                        "chatId" to chatId.toString(),
+                        "messageId" to messageId.toString(),
+                        "contentType" to message.content::class.simpleName.toString(),
+                    ),
+            )
+            return
+        }
+
+        // Step 2: Resolve chat title for metadata extraction
+        val chatTitle = resolveChatTitle(chatId)
+
+        // Step 3: Create single-message MessageBlock
+        // Note: In full implementation, we might group with adjacent messages
+        // For real-time updates, we process single messages to avoid latency
+        val block =
+            MessageBlock(
+                chatId = chatId,
+                messages = listOf(exportMessage),
+            )
+
+        // Step 4: Build TelegramItem using SAME builder as batch ingestion
+        val item = TelegramItemBuilder.build(block, chatTitle)
+        if (item == null) {
+            TelegramLogRepository.debug(
+                TAG,
+                "Message skipped: TelegramItemBuilder returned null",
+                details =
+                    mapOf(
+                        "chatId" to chatId.toString(),
+                        "messageId" to messageId.toString(),
+                    ),
+            )
+            return
+        }
+
+        // Step 5: Persist to ObjectBox via TelegramContentRepository
+        contentRepository.upsertItems(listOf(item))
+
+        TelegramLogRepository.info(
+            TAG,
+            "Live update: TelegramItem created/updated",
+            details =
+                mapOf(
+                    "chatId" to chatId.toString(),
+                    "anchorMessageId" to item.anchorMessageId.toString(),
+                    "type" to item.type.name,
+                    "title" to (item.metadata.title ?: "untitled"),
+                ),
+        )
+
+        // Emit activity event for UI notification
+        serviceClient.emitActivityEvent(
+            TgActivityEvent.ParseComplete(
+                chatId = chatId,
+                itemsFound = 1,
+            ),
+        )
+    }
+
+    /**
+     * Resolve chat title from TDLib via browser.
+     */
+    private suspend fun resolveChatTitle(chatId: Long): String? =
+        try {
+            serviceClient.resolveChatTitle(chatId).takeIf { it.isNotBlank() }
+        } catch (e: Exception) {
+            TelegramLogRepository.debug(
+                TAG,
+                "Failed to resolve chat title",
+                details = mapOf("chatId" to chatId.toString(), "error" to (e.message ?: "unknown")),
+            )
+            null
+        }
+
+    /**
      * Process a single new message through the pipeline.
      * This is the entry point for real-time message processing.
      *
@@ -124,16 +264,41 @@ class TelegramUpdateHandler(
     ): TelegramItem? {
         TelegramLogRepository.debug(TAG, "Processing new message: chat=$chatId, message=$messageId")
 
-        // This is a stub implementation.
-        // Full implementation would:
-        // 1. Fetch message from TDLib via browser
-        // 2. Look for adjacent messages in time window
-        // 3. Build block and item
-        // 4. Persist
+        // Fetch the message from TDLib via browser
+        val messages = serviceClient.browser().loadMessagesPaged(chatId, messageId, offset = 0, limit = 1)
+        val message = messages.firstOrNull { it.id == messageId }
 
-        // For now, return null to indicate not implemented
-        TelegramLogRepository.debug(TAG, "Full message processing not yet implemented")
-        return null
+        if (message == null) {
+            TelegramLogRepository.warn(
+                TAG,
+                "Message not found",
+                details = mapOf("chatId" to chatId.toString(), "messageId" to messageId.toString()),
+            )
+            return null
+        }
+
+        // Convert to ExportMessage
+        val exportMessage = ExportMessageFactory.fromTdlMessage(message) ?: return null
+
+        // Build item
+        val block = MessageBlock(chatId = chatId, messages = listOf(exportMessage))
+        val item = TelegramItemBuilder.build(block, chatTitle) ?: return null
+
+        // Persist
+        contentRepository.upsertItems(listOf(item))
+
+        TelegramLogRepository.info(
+            TAG,
+            "Processed new message into TelegramItem",
+            details =
+                mapOf(
+                    "chatId" to chatId.toString(),
+                    "anchorMessageId" to item.anchorMessageId.toString(),
+                    "type" to item.type.name,
+                ),
+        )
+
+        return item
     }
 
     /**
