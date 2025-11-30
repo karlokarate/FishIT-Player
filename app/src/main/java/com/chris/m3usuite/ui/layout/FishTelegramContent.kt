@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.sp
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TelegramFileLoader
+import com.chris.m3usuite.telegram.domain.TelegramItem
+import com.chris.m3usuite.telegram.domain.TelegramItemType
 
 /**
  * Shared TelegramFileLoader instance to avoid repeated instantiation per composable.
@@ -142,6 +144,140 @@ private fun TelegramBadge() {
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+// =============================================================================
+// Phase D: TelegramItem-based composables
+// =============================================================================
+
+/**
+ * Renders a TelegramItem domain object with the blue "T" badge.
+ *
+ * Phase D.2: New composable that accepts TelegramItem directly.
+ * - Uses TelegramItem.metadata for title/year/genres
+ * - Uses TelegramItem.posterRef for thumbnails
+ * - Routes image loading through TelegramFileLoader
+ *
+ * @param item TelegramItem domain object
+ * @param modifier Modifier for styling
+ * @param showNew Show "NEU" badge
+ * @param resumeFraction Resume progress fraction (0..1)
+ * @param onClick Click handler
+ */
+@Composable
+fun FishTelegramItemContent(
+    item: TelegramItem,
+    modifier: Modifier = Modifier,
+    showNew: Boolean = false,
+    resumeFraction: Float? = null,
+    onClick: () -> Unit,
+) {
+    val fileLoader = rememberTelegramFileLoader()
+
+    // Use posterRef.fileId for downloading thumbnail
+    // Note: remoteId is included in remember keys for identity stability when fileId changes
+    var thumbPath by remember(item.posterRef?.fileId) {
+        mutableStateOf<String?>(null)
+    }
+
+    // Load thumbnail via TelegramFileLoader
+    LaunchedEffect(item.posterRef?.fileId) {
+        val fileId = item.posterRef?.fileId
+        if (thumbPath == null && fileId != null) {
+            thumbPath = fileLoader.ensureThumbDownloaded(fileId)
+        }
+    }
+
+    // Generate title from metadata
+    val title = item.metadata.title ?: "Untitled"
+
+    // Determine tile style based on item type
+    when (item.type) {
+        TelegramItemType.SERIES_EPISODE -> {
+            FishTile(
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
+            )
+        }
+        TelegramItemType.AUDIOBOOK,
+        TelegramItemType.RAR_ITEM,
+        -> {
+            // Archive/audiobook items get a different visual treatment
+            FishTile(
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = null, // No resume for archives
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
+            )
+        }
+        TelegramItemType.POSTER_ONLY -> {
+            // Poster-only items (no video)
+            FishTile(
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = null, // No resume for poster-only
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
+            )
+        }
+        else -> {
+            // MOVIE, CLIP - standard VOD treatment
+            FishTile(
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
+            )
+        }
+    }
+}
+
+/**
+ * Row for displaying TelegramItem objects using FishRowLight pattern.
+ *
+ * Phase D.2: New row composable that accepts TelegramItem list directly.
+ * Uses FishRowLight since FishRow is typed for MediaItem.
+ *
+ * @param items List of TelegramItem domain objects
+ * @param stateKey State key for row persistence
+ * @param title Row title
+ * @param modifier Modifier for styling
+ * @param onItemClick Click handler receiving TelegramItem
+ */
+@Composable
+fun FishTelegramItemRow(
+    items: List<TelegramItem>,
+    stateKey: String,
+    title: String,
+    modifier: Modifier = Modifier,
+    onItemClick: (TelegramItem) -> Unit,
+) {
+    FishRowLight(
+        stateKey = stateKey,
+        itemCount = items.size,
+        itemKey = { idx -> items[idx].anchorMessageId },
+        modifier = modifier,
+        title = title,
+    ) { index ->
+        val item = items[index]
+        FishTelegramItemContent(
+            item = item,
+            onClick = { onItemClick(item) },
         )
     }
 }

@@ -331,6 +331,72 @@ This cross-check aligns with:
 
 ---
 
-**Document Version:** 1.1  
+## 10. Phase D UI/Playback Integration Compliance Note
+
+**Date:** 2025-11-29  
+**Phase:** D (Telegram UI & Playback Integration)  
+**Status:** ✅ COMPLIANT
+
+### 10.1 Overview
+
+Phase D implements UI integration for TelegramItem domain objects while fully respecting the Phase 8 lifecycle rules and the "Telegram ↔ PlayerLifecycle Contract" defined in this document.
+
+### 10.2 New Components Added
+
+| Component | Location | Contract Compliance |
+|-----------|----------|---------------------|
+| `TelegramLibraryViewModel` | `telegram/ui/TelegramLibraryViewModel.kt` | ✅ Standard viewModelScope, no lifecycle manipulation |
+| `FishTelegramItemContent` | `ui/layout/FishTelegramContent.kt` | ✅ Stateless composable, no player interaction |
+| `FishTelegramItemRow` | `ui/layout/FishTelegramContent.kt` | ✅ Uses FishRowLight, no lifecycle interference |
+| `TelegramItemDetailScreen` | `ui/screens/TelegramDetailScreen.kt` | ✅ Uses PlayerChooser.start() for playback |
+
+### 10.3 Playback Flow Verification
+
+```
+TelegramItemDetailScreen
+    │
+    ├── User clicks "Play" or "Resume"
+    │
+    ├── play() function called
+    │       │
+    │       └── PlayerChooser.start(
+    │               url = tg://file/<fileId>?chatId=...&messageId=...,
+    │               buildInternal = { startMs, mimeType ->
+    │                   openInternal(item.playUrl, startMs, mimeType)
+    │               }
+    │           )
+    │
+    └── openInternal callback
+            │
+            └── Navigation to "player?url=...&type=vod&mediaId=..."
+                    │
+                    └── MainActivity navigation composable
+                            │
+                            └── Builds PlaybackContext(type=VOD)
+                                    │
+                                    └── InternalPlayerEntry(playbackContext)
+```
+
+### 10.4 Contract Compliance Summary
+
+| Requirement | Phase D Status |
+|-------------|----------------|
+| Telegram MUST build PlaybackContext(type=VOD) | ✅ Via navigation route parameters |
+| Telegram MUST convert TelegramMediaRef → MediaItem | ✅ Via PlayerChooser → openInternal |
+| Telegram MUST navigate into InternalPlayerEntry | ✅ Via navigation composable |
+| Telegram MUST NOT create/release ExoPlayer | ✅ Not done |
+| Telegram MUST NOT modify PlayerView | ✅ Not done |
+| Telegram MUST NOT override activity lifecycle | ✅ Not done |
+| Telegram MUST NOT toggle orientation | ✅ Not done |
+| Workers MUST check PlaybackPriority | ✅ TelegramSyncWorker already compliant |
+
+### 10.5 Tests Added
+
+- `TelegramLibraryViewModelTest.kt` - Verifies ViewModel API surface
+- `TelegramDetailScreenPlaybackTest.kt` - Verifies playback URL construction and contract compliance
+
+---
+
+**Document Version:** 1.2  
 **Author:** GitHub Copilot Agent  
-**Review Status:** ✅ COMPLETE – All violations resolved, code changes implemented
+**Review Status:** ✅ COMPLETE – All violations resolved, Phase D integration compliant

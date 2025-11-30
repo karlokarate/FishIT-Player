@@ -5365,6 +5365,108 @@ All implementations align with:
 
 ---
 
+## Phase 8 – Task 4: Navigation & Backstack Stability (COMPLETE)
+
+**Date:** 2025-11-29
+
+**Status:** ✅ **COMPLETE** – Group 3 implemented
+
+This task implements navigation and backstack stability for the SIP player, ensuring no ghost players and stable Full↔Mini↔Home flows.
+
+### What Was Done
+
+**1. PlayerNavigationHelper Created (`navigation/PlayerNavigationHelper.kt`)**
+
+| Function | Description |
+|----------|-------------|
+| `navigateToPlayer()` | Navigate with single-top pattern to prevent duplicate player routes |
+| `navigateToPlayerRoute()` | Navigate to pre-built player route with launchSingleTop |
+| `navigateToFullPlayerFromMini()` | Navigate to full player from MiniPlayer context |
+| `isOnPlayerRoute()` | Check if current destination is a player route |
+| `hasPlayerOnBackstack()` | Check if any player route exists on backstack |
+| `buildPlayerRoute()` | Build player route string with all parameters |
+| `PLAYER_ROUTE_PREFIX` | Constant for player route matching ("player") |
+
+**Key Design:**
+- Uses `launchSingleTop = true` to prevent duplicate player entries
+- Route identification via prefix matching
+- URL-encodes special characters in URLs
+
+**2. DoubleBackNavigator Extended with MiniPlayer Awareness**
+
+| Addition | Description |
+|----------|-------------|
+| `miniPlayerManager` parameter | Optional MiniPlayerManager for visibility awareness |
+| `DEFAULT_START_ROUTE` | Updated to "library?q=&qs=" (actual home route) |
+| `LEGACY_START_ROUTE` | Added for compatibility ("start") |
+| `isMiniPlayerVisible()` | Check if MiniPlayer is currently visible |
+| Enhanced `navigateToHome()` | Added Phase 8 documentation about MiniPlayer behavior |
+| Enhanced `isAtHome()` | Checks multiple home route patterns |
+
+**MiniPlayer Behavior on EXIT_TO_HOME (Contract Decision):**
+- MiniPlayer **REMAINS VISIBLE** if playback is active
+- Navigation to home does NOT modify MiniPlayerState
+- Users can continue watching while at home screen
+- Matches Netflix/YouTube behavior
+
+**3. Test Files Created**
+
+| Test File | Coverage |
+|-----------|----------|
+| `NavigationBackstackTest.kt` | PlayerNavigationHelper, route building, prefix matching, single-top contract |
+| `GlobalDoubleBackExitTest.kt` | EXIT_TO_HOME behavior, double BACK threshold, MiniPlayer contract verification |
+| `MiniPlayerNavigationTest.kt` (extended) | Session continuity, ghost player prevention, resize mode with return context |
+
+**4. Documentation Updated**
+
+| File | Changes |
+|------|---------|
+| `GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md` | Added EXIT_TO_HOME behavior section with MiniPlayer contract |
+| `INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 3 as DONE with implementation details |
+| `INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Task 4 entry (this section) |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `navigation/PlayerNavigationHelper.kt` | Single-top player navigation helper |
+| `test/.../NavigationBackstackTest.kt` | Backstack hygiene tests |
+| `test/.../GlobalDoubleBackExitTest.kt` | EXIT_TO_HOME behavior tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `tv/input/DoubleBackNavigator.kt` | Added MiniPlayer awareness, updated routes, enhanced docs |
+| `test/.../MiniPlayerNavigationTest.kt` | Added Phase 8 session continuity tests |
+| `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md` | Added EXIT_TO_HOME behavior section |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 3 as DONE |
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*NavigationBackstackTest"` passes all tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*GlobalDoubleBackExitTest"` passes all tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*MiniPlayerNavigationTest"` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 5
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Section 8
+- `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 3
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ No MiniPlayer UI changes (only visibility logic)
+- ✅ Phase 4-7 behaviors preserved
+
+---
+
 ## Phase 8 – Task 5: Compose & FocusKit Performance Hardening (COMPLETE)
 
 **Date:** 2025-11-29
@@ -5464,7 +5566,7 @@ All implementations align with:
 |-------|-------------|--------|
 | 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
 | 2 | UI Rebinding & Rotation | ✅ DONE |
-| 3 | Navigation & Backstack Stability | ⬜ PENDING |
+| **3** | **Navigation & Backstack Stability** | ✅ **DONE** |
 | 4 | System PiP vs In-App MiniPlayer | ⬜ PENDING |
 | 5 | Playback-Aware Worker Scheduling | ✅ DONE |
 | 6 | Memory & Leak Hygiene | ✅ PARTIAL DONE |
