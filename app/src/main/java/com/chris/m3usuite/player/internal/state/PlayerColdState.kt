@@ -44,96 +44,67 @@ import com.chris.m3usuite.player.internal.subtitles.SubtitleTrack
 data class PlayerColdState(
     /** Type of content being played (VOD, SERIES, LIVE). */
     val playbackType: PlaybackType = PlaybackType.VOD,
-
     /** Current playback speed (1.0 = normal). */
     val playbackSpeed: Float = 1f,
-
     /** Whether looping is enabled. */
     val isLooping: Boolean = false,
-
     /** Current playback error, if any. */
     val playbackError: PlaybackException? = null,
-
     /** Sleep timer remaining time in milliseconds. */
     val sleepTimerRemainingMs: Long? = null,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Kids / Screen-Time
     // ════════════════════════════════════════════════════════════════════════════
-
     /** Whether a kid profile is active. */
     val kidActive: Boolean = false,
-
     /** Whether playback is blocked due to screen time limit. */
     val kidBlocked: Boolean = false,
-
     /** Profile ID of the kid profile. */
     val kidProfileId: Long? = null,
-
     /** Remaining screen time in minutes for kid profile. */
     val remainingKidsMinutes: Int? = null,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Resume state
     // ════════════════════════════════════════════════════════════════════════════
-
     /** True when resuming from a saved position. */
     val isResumingFromLegacy: Boolean = false,
-
     /** The position that was loaded from resume storage. */
     val resumeStartMs: Long? = null,
-
     // ════════════════════════════════════════════════════════════════════════════
     // UI dialogs / overlays
     // ════════════════════════════════════════════════════════════════════════════
-
     /** Whether the settings dialog is visible. */
     val showSettingsDialog: Boolean = false,
-
     /** Whether the tracks dialog is visible. */
     val showTracksDialog: Boolean = false,
-
     /** Whether the speed dialog is visible. */
     val showSpeedDialog: Boolean = false,
-
     /** Whether the sleep timer dialog is visible. */
     val showSleepTimerDialog: Boolean = false,
-
     /** Whether the CC menu dialog is visible. */
     val showCcMenuDialog: Boolean = false,
-
     /** Whether debug info overlay is visible. */
     val showDebugInfo: Boolean = false,
-
     /** Current aspect ratio mode. */
     val aspectRatioMode: AspectRatioMode = AspectRatioMode.FIT,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Live-TV
     // ════════════════════════════════════════════════════════════════════════════
-
     /** Name of the current live channel. */
     val liveChannelName: String? = null,
-
     /** Current program title (now playing). */
     val liveNowTitle: String? = null,
-
     /** Next program title. */
     val liveNextTitle: String? = null,
-
     /** Whether the EPG overlay is visible. */
     val epgOverlayVisible: Boolean = false,
-
     // ════════════════════════════════════════════════════════════════════════════
     // Subtitles
     // ════════════════════════════════════════════════════════════════════════════
-
     /** Current subtitle style. */
     val subtitleStyle: SubtitleStyle = SubtitleStyle(),
-
     /** Currently selected subtitle track. */
     val selectedSubtitleTrack: SubtitleTrack? = null,
-
     /** Available subtitle tracks. */
     val availableSubtitleTracks: List<SubtitleTrack> = emptyList(),
 ) {
@@ -148,12 +119,13 @@ data class PlayerColdState(
      * Controls must NOT auto-hide when these are open.
      */
     val hasBlockingOverlay: Boolean
-        get() = showCcMenuDialog ||
-            showSettingsDialog ||
-            showTracksDialog ||
-            showSpeedDialog ||
-            showSleepTimerDialog ||
-            kidBlocked
+        get() =
+            showCcMenuDialog ||
+                showSettingsDialog ||
+                showTracksDialog ||
+                showSpeedDialog ||
+                showSleepTimerDialog ||
+                kidBlocked
 }
 
 /**
@@ -162,30 +134,31 @@ data class PlayerColdState(
  * This allows existing code to continue using InternalPlayerUiState while
  * gradually migrating performance-critical paths to use PlayerColdState.
  */
-fun InternalPlayerUiState.toColdState(): PlayerColdState = PlayerColdState(
-    playbackType = playbackType,
-    playbackSpeed = playbackSpeed,
-    isLooping = isLooping,
-    playbackError = playbackError,
-    sleepTimerRemainingMs = sleepTimerRemainingMs,
-    kidActive = kidActive,
-    kidBlocked = kidBlocked,
-    kidProfileId = kidProfileId,
-    remainingKidsMinutes = remainingKidsMinutes,
-    isResumingFromLegacy = isResumingFromLegacy,
-    resumeStartMs = resumeStartMs,
-    showSettingsDialog = showSettingsDialog,
-    showTracksDialog = showTracksDialog,
-    showSpeedDialog = showSpeedDialog,
-    showSleepTimerDialog = showSleepTimerDialog,
-    showCcMenuDialog = showCcMenuDialog,
-    showDebugInfo = showDebugInfo,
-    aspectRatioMode = aspectRatioMode,
-    liveChannelName = liveChannelName,
-    liveNowTitle = liveNowTitle,
-    liveNextTitle = liveNextTitle,
-    epgOverlayVisible = epgOverlayVisible,
-    subtitleStyle = subtitleStyle,
-    selectedSubtitleTrack = selectedSubtitleTrack,
-    availableSubtitleTracks = availableSubtitleTracks,
-)
+fun InternalPlayerUiState.toColdState(): PlayerColdState =
+    PlayerColdState(
+        playbackType = playbackType,
+        playbackSpeed = playbackSpeed,
+        isLooping = isLooping,
+        playbackError = playbackError,
+        sleepTimerRemainingMs = sleepTimerRemainingMs,
+        kidActive = kidActive,
+        kidBlocked = kidBlocked,
+        kidProfileId = kidProfileId,
+        remainingKidsMinutes = remainingKidsMinutes,
+        isResumingFromLegacy = isResumingFromLegacy,
+        resumeStartMs = resumeStartMs,
+        showSettingsDialog = showSettingsDialog,
+        showTracksDialog = showTracksDialog,
+        showSpeedDialog = showSpeedDialog,
+        showSleepTimerDialog = showSleepTimerDialog,
+        showCcMenuDialog = showCcMenuDialog,
+        showDebugInfo = showDebugInfo,
+        aspectRatioMode = aspectRatioMode,
+        liveChannelName = liveChannelName,
+        liveNowTitle = liveNowTitle,
+        liveNextTitle = liveNextTitle,
+        epgOverlayVisible = epgOverlayVisible,
+        subtitleStyle = subtitleStyle,
+        selectedSubtitleTrack = selectedSubtitleTrack,
+        availableSubtitleTracks = availableSubtitleTracks,
+    )
