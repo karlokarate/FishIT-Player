@@ -2,6 +2,7 @@ package com.chris.m3usuite.work
 
 import android.content.Context
 import androidx.work.*
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.data.obx.*
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.playback.PlaybackPriority
@@ -339,10 +340,29 @@ class ObxKeyBackfillWorker(
                 // Clean up thread-locals used by ObjectBox on this worker thread
                 boxStore.closeThreadResources()
                 Result.success()
-            } catch (_: Throwable) {
+            } catch (e: Throwable) {
+                // Phase 8 Task 6b: Log worker error via AppLog
+                logWorkerError(e)
                 Result.retry()
             }
         }
+
+    /**
+     * Phase 8 Task 6b: Log worker error to AppLog with category "WORKER_ERROR".
+     */
+    private fun logWorkerError(e: Throwable) {
+        AppLog.log(
+            category = "WORKER_ERROR",
+            level = AppLog.Level.ERROR,
+            message = "Worker ObxKeyBackfillWorker failed: ${e.message}",
+            extras = mapOf(
+                "worker" to "ObxKeyBackfillWorker",
+                "exception" to e.javaClass.simpleName,
+                "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
+            ),
+            bypassMaster = true,
+        )
+    }
 
     /**
      * Phase 8: Delays execution when playback is active to avoid stuttering.

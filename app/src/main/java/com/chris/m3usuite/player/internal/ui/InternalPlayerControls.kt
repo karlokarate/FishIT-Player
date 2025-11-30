@@ -23,6 +23,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +39,7 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
 import com.chris.m3usuite.core.debug.GlobalDebug
+import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.tv.input.GlobalTvInputHost
@@ -104,6 +107,11 @@ fun InternalPlayerContent(
     val ctx = LocalContext.current
     // Note: Activity was previously used for native PiP, but Phase 7 removed that call
     // from this UI button. Native PiP is now only used for lifecycle-based entry.
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // Phase 8 Task 6b: Collect playback error from PlaybackSession
+    // ════════════════════════════════════════════════════════════════════════════════
+    val playbackError by PlaybackSession.playbackError.collectAsState()
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 6 Task 3: Observe TV input controller state
@@ -399,6 +407,25 @@ fun InternalPlayerContent(
                 player = player,
             )
         }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // Phase 8 Task 6b: Playback Error Overlay
+        // ════════════════════════════════════════════════════════════════════════
+        // Soft error display with Retry/Close options.
+        // Non-blocking: Player UI remains visible in the background.
+        // Kids Mode uses generic messages (no technical details).
+        PlaybackErrorOverlay(
+            error = playbackError,
+            isKidMode = state.kidActive,
+            onRetry = { PlaybackSession.retry() },
+            onClose = {
+                PlaybackSession.clearError()
+                PlaybackSession.stop()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp), // Above controls
+        )
 
         // Phase 4 Group 4: CC Menu Dialog
         // Shows when state.showCcMenuDialog is true

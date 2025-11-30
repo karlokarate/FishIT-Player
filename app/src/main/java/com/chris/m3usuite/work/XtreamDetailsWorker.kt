@@ -10,6 +10,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.XtreamObxRepository
 import com.chris.m3usuite.playback.PlaybackPriority
@@ -58,9 +59,28 @@ class XtreamDetailsWorker(
                 }
             }
             Result.success()
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            // Phase 8 Task 6b: Log worker error via AppLog
+            logWorkerError(e)
             Result.retry()
         }
+    }
+
+    /**
+     * Phase 8 Task 6b: Log worker error to AppLog with category "WORKER_ERROR".
+     */
+    private fun logWorkerError(e: Throwable) {
+        AppLog.log(
+            category = "WORKER_ERROR",
+            level = AppLog.Level.ERROR,
+            message = "Worker XtreamDetailsWorker failed: ${e.message}",
+            extras = mapOf(
+                "worker" to "XtreamDetailsWorker",
+                "exception" to e.javaClass.simpleName,
+                "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
+            ),
+            bypassMaster = true,
+        )
     }
 
     /**
