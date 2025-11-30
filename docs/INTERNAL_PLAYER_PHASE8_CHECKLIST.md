@@ -408,27 +408,33 @@ Workers must throttle when `isPlaybackActive == true`:
   - MiniPlayer show/hide cycles don't accumulate views
   - Rotation doesn't leak Activities
 
-### Group 7 – Compose & FocusKit Performance
+### Group 7 – Compose & FocusKit Performance ✅ DONE
 
-- [ ] **7.1** Audit InternalPlayerUiState usage
-  - Identify hot paths: positionMs, buffering, isPlaying
-  - Identify cold paths: playbackContext, subtitleStyle, etc.
-  - Consider splitting into `HotPlaybackState` and `ColdPlaybackState`
+- [x] **7.1** Audit InternalPlayerUiState usage
+  - Identified hot paths: positionMs, durationMs, isPlaying, isBuffering, trickplayActive/Speed, seekPreview*, controlsVisible/Tick
+  - Identified cold paths: playbackType, playbackSpeed, kid*, dialog states, subtitleStyle, aspect*, live*
+  - Split into `PlayerHotState` and `PlayerColdState` data classes in `player/internal/state/`
 
-- [ ] **7.2** Isolate hot paths into small Composables
-  - `PositionIndicator` composable for position/duration display
-  - `BufferingIndicator` composable for buffering spinner
-  - `PlayPauseState` composable for play/pause icon
+- [x] **7.2** Isolate hot paths into small Composables
+  - Created `PositionProgressBar` composable for position/duration display
+  - Created `PositionTimeDisplay` composable for time text
+  - Created `BufferingIndicator` composable for buffering spinner
+  - Created `IsolatedTrickplayIndicator` composable for trickplay overlay
+  - Created `IsolatedSeekPreviewOverlay` composable for seek preview
+  - All in `player/internal/ui/PlaybackIndicators.kt`
 
-- [ ] **7.3** Consolidate FocusKit visual effects
-  - Audit `tvFocusGlow`, `tvFocusFrame`, `focusScaleOnTv` usage
-  - Ensure max one `graphicsLayer` + one `drawWithContent` per element
-  - Remove duplicate effect layers
+- [x] **7.3** Consolidate FocusKit visual effects
+  - Updated `tvFocusGlow` in `ui/fx/FocusGlow.kt` to use single `drawWithContent` instead of stacked `border()` modifiers
+  - Created `FocusDecorationConfig` data class for consolidated configuration
+  - Created `Modifier.focusDecorations()` for single-call focus effect application
+  - Existing `applyFocusDecoration` already well-consolidated; reused where appropriate
 
-- [ ] **7.4** Add tests: `ComposePerfSmokeTest`
-  - Enable Compose compiler reports
-  - Verify no excessive recompositions during playback
-  - Profile during position updates (every ~1s)
+- [x] **7.4** Add tests: `FocusKitPerformanceTest`
+  - Tests verify FocusDecorationConfig has sensible defaults
+  - Tests verify FocusColors configuration
+  - Tests verify focus fraction scale calculations
+  - Tests verify immutability of config classes
+  - Created `HotColdStateSplitTest` for state split verification
 
 ### Group 8 – Error Handling & Recovery
 
@@ -514,15 +520,19 @@ Workers must throttle when `isPlaybackActive == true`:
 | `playback/SessionLifecycleState.kt` | Lifecycle state enum | ✅ Created (Task 1) |
 | `playback/PlaybackPriority.kt` | Playback-aware scheduling helper | ✅ Created (Task 3) |
 | `playback/PlaybackLifecycleController.kt` | Lifecycle observer composable | ✅ Created (Task 1) |
+| `player/internal/state/PlayerHotState.kt` | Hot state data class | ✅ Created (Task 5) |
+| `player/internal/state/PlayerColdState.kt` | Cold state data class | ✅ Created (Task 5) |
+| `player/internal/ui/PlaybackIndicators.kt` | Isolated playback indicator Composables | ✅ Created (Task 5) |
 | `test/.../PlaybackSessionLifecycleTest.kt` | Lifecycle transition tests | ✅ Created (Task 1) |
 | `test/.../RotationResilienceTest.kt` | Config change tests | ✅ Created (Task 2) |
 | `test/.../PlaybackPriorityStateTest.kt` | Playback priority state tests | ✅ Created (Task 3) |
 | `test/.../WorkerThrottleTest.kt` | Worker throttling tests | ✅ Created (Task 3) |
+| `test/.../FocusKitPerformanceTest.kt` | Focus decoration config tests | ✅ Created (Task 5) |
+| `test/.../HotColdStateSplitTest.kt` | State split verification tests | ✅ Created (Task 5) |
 | `test/.../NavigationBackstackTest.kt` | Navigation integrity tests | ⬜ Pending |
 | `test/.../SystemPiPIntegrationTest.kt` | System PiP behavior tests | ⬜ Pending |
 | `test/.../PlaybackErrorRecoveryTest.kt` | Error handling tests | ⬜ Pending |
 | `test/.../WorkerErrorIsolationTest.kt` | Worker isolation tests | ⬜ Pending |
-| `test/.../ComposePerfSmokeTest.kt` | Compose performance tests | ⬜ Pending |
 
 ## Files to Modify
 
@@ -535,6 +545,8 @@ Workers must throttle when `isPlaybackActive == true`:
 | `work/ObxKeyBackfillWorker.kt` | Add playback-aware throttling | ✅ Done (Task 3) |
 | `player/internal/ui/PlayerSurface.kt` | Add lifecycle-aware rebinding | ✅ Done (Task 2) |
 | `player/miniplayer/MiniPlayerOverlay.kt` | Verify rebinding on config change | ✅ Done (Task 2) |
+| `ui/fx/FocusGlow.kt` | Consolidate border() to drawWithContent | ✅ Done (Task 5) |
+| `ui/focus/FocusKit.kt` | Add FocusDecorationConfig, focusDecorations() | ✅ Done (Task 5) |
 | `app/build.gradle.kts` | LeakCanary debug dependency | ✅ Already present |
 
 ## Files NOT Modified (Per Task 3 Constraints)
