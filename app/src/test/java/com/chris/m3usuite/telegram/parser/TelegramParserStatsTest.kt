@@ -704,7 +704,7 @@ class TelegramParserStatsTest {
         ref: TelegramMediaRef,
         fieldName: String,
         criticalFailures: MutableList<String>,
-        @Suppress("UNUSED_PARAMETER") warnings: MutableList<String>,
+        @Suppress("UNUSED_PARAMETER") _warnings: MutableList<String>,
     ) {
         if (ref.remoteId.isBlank()) {
             criticalFailures.add("$fieldName.remoteId is blank (REQUIRED per contract)")
@@ -722,7 +722,7 @@ class TelegramParserStatsTest {
         ref: TelegramImageRef,
         fieldName: String,
         criticalFailures: MutableList<String>,
-        @Suppress("UNUSED_PARAMETER") warnings: MutableList<String>,
+        @Suppress("UNUSED_PARAMETER") _warnings: MutableList<String>,
     ) {
         if (ref.remoteId.isBlank()) {
             criticalFailures.add("$fieldName.remoteId is blank (REQUIRED per contract)")
