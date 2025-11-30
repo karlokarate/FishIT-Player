@@ -56,6 +56,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.R
 import com.chris.m3usuite.playback.PlaybackSession
+import com.chris.m3usuite.player.internal.ui.MiniPlayerErrorBadge
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.focus.FocusZoneId
 import com.chris.m3usuite.ui.focus.focusZone
@@ -124,6 +125,11 @@ fun MiniPlayerOverlay(
     val isTv = remember { FocusKit.isTvDevice(context) }
     val player = PlaybackSession.current()
     val isPlaying by playbackSession.isPlaying.collectAsState()
+
+    // ════════════════════════════════════════════════════════════════════════════════
+    // Phase 8 Task 6b: Collect playback error for MiniPlayer error badge
+    // ════════════════════════════════════════════════════════════════════════════════
+    val playbackError by playbackSession.playbackError.collectAsState()
 
     // State for first-time hint visibility
     var showFirstTimeHint by remember { mutableStateOf(false) }
@@ -396,6 +402,17 @@ fun MiniPlayerOverlay(
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
+
+                // ════════════════════════════════════════════════════════════════════════
+                // Phase 8 Task 6b: MiniPlayer Error Badge
+                // ════════════════════════════════════════════════════════════════════════
+                // Shows a compact error badge when playback error occurs.
+                // Badge is positioned at the top-right, does not interfere with resize/drag.
+                // Kids Mode shows only icon (no technical details per toKidsFriendlyMessage).
+                MiniPlayerErrorBadge(
+                    error = playbackError,
+                    modifier = Modifier.align(Alignment.End),
+                )
             }
         }
 
