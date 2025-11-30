@@ -38,8 +38,8 @@ class MiniPlayerResizeIsolationTest {
             mode = MiniPlayerMode.RESIZE,
         )
         val ctx = TvScreenContext.library(
-            isKidMode = false,
-            hasOverlay = false,
+            isKidProfile = false,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
@@ -48,15 +48,16 @@ class MiniPlayerResizeIsolationTest {
 
         // Then: Should be blocked when MiniPlayer is visible
         // (resize mode is a sub-state of visible)
-        val config = TvScreenInputConfig.empty().filterForMiniPlayer(ctx)
+        val config = TvScreenInputConfig.empty(TvScreenId.LIBRARY)
+        val filteredAction = filterForMiniPlayer(action, ctx)
         assertTrue("ROW_FAST_SCROLL_FORWARD should be blocked when MiniPlayer visible", true)
     }
 
     @Test
     fun `RESIZE mode should block ROW_FAST_SCROLL_BACKWARD`() {
         val ctx = TvScreenContext.library(
-            isKidMode = false,
-            hasOverlay = false,
+            isKidProfile = false,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
@@ -234,8 +235,8 @@ class MiniPlayerResizeIsolationTest {
     @Test
     fun `MiniPlayer filter blocks specific actions when visible`() {
         val ctx = TvScreenContext.library(
-            isKidMode = false,
-            hasOverlay = false,
+            isKidProfile = false,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
@@ -249,12 +250,12 @@ class MiniPlayerResizeIsolationTest {
     fun `Kids mode filter still applies with MiniPlayer in RESIZE mode`() {
         // Kids mode filter should apply regardless of MiniPlayer mode
         val ctx = TvScreenContext.library(
-            isKidMode = true,
-            hasOverlay = false,
+            isKidProfile = true,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
-        assertTrue("Kids mode should still be active", ctx.isKidMode)
+        assertTrue("Kids mode should still be active", ctx.isKidProfile)
         assertTrue("MiniPlayer should still be visible", ctx.isMiniPlayerVisible)
     }
 }
