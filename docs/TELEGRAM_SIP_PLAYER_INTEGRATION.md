@@ -213,7 +213,7 @@ For playable content (MOVIE, SERIES_EPISODE, CLIP):
 
 ### 3.3 Image References (TelegramImageRef)
 
-For posters and backdrops:
+For poster and backdrop image references (using `TelegramImageRef` objects):
 
 | Field | Type | Required | Purpose |
 |-------|------|----------|---------|
@@ -328,11 +328,15 @@ val url = TelegramPlayUrl.buildFileUrl(
 
 The Telegram UI builds a `PlaybackContext` with type VOD:
 
+**TELEGRAM_MEDIA_ID_OFFSET:**
+> Telegram mediaIds are encoded using an offset (`TELEGRAM_MEDIA_ID_OFFSET = 4_000_000_000_000L`) to avoid collisions with Xtream media IDs. This ensures resume positions and other per-media state are stored uniquely for Telegram content.
+
 ```kotlin
 // Built in MainActivity navigation composable from route parameters
+// Note: TELEGRAM_MEDIA_ID_OFFSET = 4_000_000_000_000L (defined in TelegramDetailScreen.kt)
 val playbackContext = PlaybackContext(
     type = PlaybackType.VOD,
-    mediaId = TELEGRAM_MEDIA_ID_OFFSET + anchorMessageId,  // Encoded for resume
+    mediaId = TELEGRAM_MEDIA_ID_OFFSET + anchorMessageId,  // Encoded to avoid ID collisions
     // Series fields not applicable for Telegram VOD
     episodeId = null,
     seriesId = null,
@@ -391,24 +395,30 @@ when (uri.scheme) {
 The `TelegramFileDataSource` implements the remoteId-first resolution strategy:
 
 ```kotlin
-// Phase D+ Resolution in open()
+// Phase D+ Resolution in open() - simplified example
 override fun open(dataSpec: DataSpec): Long {
     val uri = dataSpec.uri
     
     // 1. Parse URL components
-    val fileIdFromPath = uri.pathSegments[0].toIntOrNull() ?: 0
+    var fileIdInt = uri.pathSegments[0].toIntOrNull() ?: 0
     val remoteIdParam = uri.getQueryParameter("remoteId")
     
-    // 2. If fileId invalid, resolve via remoteId
-    if (fileIdFromPath <= 0 && !remoteIdParam.isNullOrBlank()) {
+    // 2. If fileId invalid, resolve via remoteId (with null handling)
+    if (fileIdInt <= 0 && !remoteIdParam.isNullOrBlank()) {
         val resolvedFileId = serviceClient.downloader()
             .resolveRemoteFileId(remoteIdParam)
-        // Use resolved fileId
+        
+        // Handle nullable return - resolution may fail if remoteId is invalid
+        if (resolvedFileId != null && resolvedFileId > 0) {
+            fileIdInt = resolvedFileId
+        } else {
+            throw IOException("Cannot resolve remoteId to fileId: $remoteIdParam")
+        }
     }
     
     // 3. Ensure TDLib has file ready
     val localPath = serviceClient.downloader()
-        .ensureFileReady(fileId, dataSpec.position, MIN_PREFIX_BYTES)
+        .ensureFileReady(fileIdInt, dataSpec.position, MIN_PREFIX_BYTES)
     
     // 4. Delegate to FileDataSource
     delegate = FileDataSource()
@@ -490,14 +500,13 @@ DetailPage(
 )
 ```
 
-### 6.3 Critical Constraint
-
-> **No TDLib calls from Composables directly.**
+### 6.3 Image Loading Layer Constraint
 
 Image loading modules MUST remain in the data/infrastructure layer:
 - `TelegramFileLoader` – Thin wrapper around downloader
 - `TelegramThumbFetcher` – Coil integration for Telegram thumbs
-- Never call `T_TelegramServiceClient` from `@Composable` functions
+
+> **See Section 7.1 for the critical TDLib access constraint that applies to image loading.**
 
 ---
 
@@ -517,6 +526,10 @@ This section integrates the "Telegram ↔ PlayerLifecycle Contract" from `PHASE8
 | Calling `player.play()` or `player.pause()` | Playback control owned by session | Phase 8 §12 |
 | Overriding lifecycle callbacks | Lifecycle owned by `InternalPlayerLifecycle` | Phase 8 §4.3 |
 | Bypassing `InternalPlayerEntry` | Must use SIP bridge | Phase 1 contract |
+| **Calling TDLib from Composables** | TDLib access must be in data/infra layer | Architecture rule |
+
+> **Critical: No TDLib calls from `@Composable` functions.**  
+> Never call `T_TelegramServiceClient`, `T_TelegramFileDownloader`, or any TDLib API directly from Composable functions. All TDLib access MUST go through the data/infrastructure layer (repositories, loaders, data sources).
 
 ### 7.2 Telegram is ALLOWED To
 
