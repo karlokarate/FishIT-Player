@@ -1,5 +1,7 @@
 package com.chris.m3usuite.telegram.parser
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -75,7 +77,7 @@ class ExportMessageLoaderTest {
                 content =
                     ExportMessageContent(
                         video = videoContent,
-                        caption = ExportFormattedText(text = "Test caption"),
+                        caption = Json.encodeToJsonElement(ExportFormattedText(text = "Test caption")),
                     ),
             )
 
