@@ -11,7 +11,7 @@ import java.io.File
  * Diagnostic/integration test for the Telegram parser pipeline.
  *
  * This test:
- * 1. Loads ALL JSON exports from docs/telegram/exports/**
+ * 1. Loads ALL JSON exports from docs/telegram/exports/
  * 2. Runs the parser pipeline: JSON → ExportMessage → Blocks → Items
  * 3. Produces human-readable statistics about parsing results
  * 4. Validates JSON structural integrity (fails if any file cannot be parsed)
