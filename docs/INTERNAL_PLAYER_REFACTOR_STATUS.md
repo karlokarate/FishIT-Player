@@ -6072,7 +6072,7 @@ Legacy InternalPlayerScreen (Preserved, Unused)
 
 ### What's Next
 
-Phase 9 Tasks 1 and 3 are complete. Remaining task:
+Phase 9 Task 1 and Task 3 are complete. Remaining task:
 
 - **Task 2:** Remove legacy InternalPlayerScreen (future cleanup)
 

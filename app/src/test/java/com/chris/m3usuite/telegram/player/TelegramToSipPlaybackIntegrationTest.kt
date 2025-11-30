@@ -170,12 +170,11 @@ class TelegramToSipPlaybackIntegrationTest {
         val item = createTestMovie()
 
         // Step 1: Extract videoRef (per contract)
-        val videoRef = item.videoRef
-        assert(videoRef != null) { "MOVIE must have videoRef" }
+        val videoRef = requireNotNull(item.videoRef) { "MOVIE must have videoRef" }
 
         // Step 2: Build TelegramPlaybackRequest (per contract)
         val request =
-            videoRef!!.toPlaybackRequest(
+            videoRef.toPlaybackRequest(
                 chatId = item.chatId,
                 anchorMessageId = item.anchorMessageId,
             )
@@ -199,11 +198,10 @@ class TelegramToSipPlaybackIntegrationTest {
     fun `SERIES_EPISODE item produces valid playback URL with remoteId`() {
         val item = createTestSeriesEpisode()
 
-        val videoRef = item.videoRef
-        assert(videoRef != null) { "SERIES_EPISODE must have videoRef" }
+        val videoRef = requireNotNull(item.videoRef) { "SERIES_EPISODE must have videoRef" }
 
         val request =
-            videoRef!!.toPlaybackRequest(
+            videoRef.toPlaybackRequest(
                 chatId = item.chatId,
                 anchorMessageId = item.anchorMessageId,
             )
@@ -218,11 +216,10 @@ class TelegramToSipPlaybackIntegrationTest {
     fun `CLIP item produces valid playback URL with remoteId`() {
         val item = createTestClip()
 
-        val videoRef = item.videoRef
-        assert(videoRef != null) { "CLIP must have videoRef" }
+        val videoRef = requireNotNull(item.videoRef) { "CLIP must have videoRef" }
 
         val request =
-            videoRef!!.toPlaybackRequest(
+            videoRef.toPlaybackRequest(
                 chatId = item.chatId,
                 anchorMessageId = item.anchorMessageId,
             )
@@ -304,7 +301,7 @@ class TelegramToSipPlaybackIntegrationTest {
         }
 
         // But remoteId must be present for resolution
-        assert(url.contains("remoteId=AgACAgIAAxkBAAIBNmF1Y2xxxxx")) {
+        assert(url.contains("remoteId=${videoRef.remoteId}")) {
             "URL must contain remoteId for DataSource resolution"
         }
     }
@@ -521,13 +518,13 @@ class TelegramToSipPlaybackIntegrationTest {
             assert(item.type in playableTypes) {
                 "Item at index $index should be playable type"
             }
-            assert(item.videoRef != null) {
+            val videoRef = requireNotNull(item.videoRef) {
                 "${item.type} must have videoRef for playback"
             }
-            assert(item.videoRef!!.remoteId.isNotEmpty()) {
+            assert(videoRef.remoteId.isNotEmpty()) {
                 "${item.type} videoRef must have remoteId"
             }
-            assert(item.videoRef!!.uniqueId.isNotEmpty()) {
+            assert(videoRef.uniqueId.isNotEmpty()) {
                 "${item.type} videoRef must have uniqueId"
             }
         }
@@ -536,7 +533,7 @@ class TelegramToSipPlaybackIntegrationTest {
     @Test
     fun `remoteId is never empty for playable content`() {
         val item = createTestMovie()
-        val videoRef = item.videoRef!!
+        val videoRef = requireNotNull(item.videoRef) { "MOVIE must have videoRef" }
 
         assert(videoRef.remoteId.isNotBlank()) {
             "remoteId must never be empty - it's the PRIMARY identifier for resolution"
@@ -546,7 +543,7 @@ class TelegramToSipPlaybackIntegrationTest {
     @Test
     fun `uniqueId is never empty for playable content`() {
         val item = createTestMovie()
-        val videoRef = item.videoRef!!
+        val videoRef = requireNotNull(item.videoRef) { "MOVIE must have videoRef" }
 
         assert(videoRef.uniqueId.isNotBlank()) {
             "uniqueId must never be empty - it's the PRIMARY identifier for validation"
