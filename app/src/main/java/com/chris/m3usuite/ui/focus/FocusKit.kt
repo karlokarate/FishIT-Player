@@ -1215,6 +1215,129 @@ private fun logFocus(
     GlobalDebug.logFocusWidget(component = component, module = RouteTag.current, tag = tag)
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// Phase 8 Task 5: Consolidated Focus Decorations
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// Contract: INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 9.2
+//
+// This section provides consolidated focus decoration modifiers that combine:
+// - Scale transformation (graphicsLayer)
+// - Shadow/elevation
+// - Border/outline
+// - Optional glow
+//
+// Using these modifiers instead of stacking multiple graphicsLayer/drawWithContent
+// calls reduces GPU/CPU overhead during focus changes.
+
+/**
+ * Configuration for focus decorations.
+ *
+ * This data class encapsulates all visual parameters for focus effects,
+ * allowing a single modifier call to apply all decorations efficiently.
+ *
+ * **Phase 8 Performance Optimization:**
+ * By consolidating all focus visual effects into a single configuration,
+ * we can apply them in one graphicsLayer + one drawWithContent call,
+ * rather than stacking multiple modifiers.
+ *
+ * **Note:** focusColors must be passed explicitly when using this class, as the
+ * default FocusDefaults.Colors requires a Composable context.
+ */
+@Immutable
+data class FocusDecorationConfig(
+    /** Scale when focused (1.0 = no scale). */
+    val focusedScale: Float = 1.08f,
+    /** Scale when pressed (1.0 = no scale). */
+    val pressedScale: Float = 1.12f,
+    /** Shadow elevation in dp when focused. */
+    val focusedElevationDp: Float = 12f,
+    /** Shape for border/outline. */
+    val shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    /** Colors for focus effects. Null means use FocusDefaults.Colors at composition time. */
+    val focusColors: FocusColors? = null,
+    /** Border width for focus indicator. */
+    val focusBorderWidth: Dp = 1.5.dp,
+    /** Whether to apply brightness tint when focused. */
+    val brightenContent: Boolean = true,
+)
+
+/**
+ * Consolidated focus decorations modifier.
+ *
+ * ════════════════════════════════════════════════════════════════════════════════════════════════════
+ * PHASE 8 – Task 5: Compose & FocusKit Performance Hardening
+ * Contract: INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 9.2
+ * ════════════════════════════════════════════════════════════════════════════════════════════════════
+ *
+ * This modifier consolidates all focus visual effects into a single composable modifier:
+ * - Scale transformation
+ * - Shadow elevation
+ * - Border/outline
+ * - Content brightness tint
+ *
+ * **Performance Benefit:**
+ * Instead of stacking multiple modifiers (each potentially adding layout/draw passes):
+ * ```kotlin
+ * // Before (multiple passes):
+ * Modifier
+ *     .graphicsLayer { scaleX = scale; scaleY = scale }
+ *     .drawWithContent { ... border ... }
+ *     .border(...)
+ * ```
+ *
+ * We now have:
+ * ```kotlin
+ * // After (consolidated):
+ * Modifier.focusDecorations(focusFraction, config)
+ * ```
+ *
+ * **Usage:**
+ * ```kotlin
+ * val focusFraction by animateFloatAsState(if (hasFocus) 1f else 0f)
+ * Box(
+ *     modifier = Modifier.focusDecorations(
+ *         focusFraction = focusFraction,
+ *         config = FocusDecorationConfig(focusedScale = 1.1f),
+ *     )
+ * )
+ * ```
+ *
+ * @param focusFraction Animated fraction (0.0 = unfocused, 1.0 = fully focused).
+ * @param config Configuration for all focus visual effects.
+ * @param pressed Whether the element is currently pressed (affects scale).
+ */
+@Composable
+fun Modifier.focusDecorations(
+    focusFraction: Float,
+    config: FocusDecorationConfig = FocusDecorationConfig(),
+    pressed: Boolean = false,
+): Modifier {
+    val density = LocalDensity.current
+    // Resolve focusColors at composition time if not provided
+    val resolvedColors = config.focusColors ?: FocusDefaults.Colors
+    val scale = when {
+        pressed -> config.pressedScale
+        focusFraction > 0f -> 1f + (config.focusedScale - 1f) * focusFraction
+        else -> 1f
+    }
+    val elevationPx = with(density) { config.focusedElevationDp.dp.toPx() * focusFraction }
+
+    return this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            shadowElevation = elevationPx
+        }
+        .applyFocusDecoration(
+            focusFraction = focusFraction,
+            shape = config.shape,
+            focusColors = resolvedColors,
+            focusBorderWidth = config.focusBorderWidth,
+            brightenContent = config.brightenContent,
+        )
+}
+
 internal fun isTvDevice(context: Context): Boolean {
     val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
     val pm = context.packageManager

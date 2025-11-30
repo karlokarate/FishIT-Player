@@ -5482,3 +5482,148 @@ All implementations align with:
 ---
 
 **Last Updated:** 2025-11-29
+
+## Phase 8 – Task 5: Compose & FocusKit Performance Hardening (COMPLETE)
+
+**Date:** 2025-11-30
+
+**Status:** ✅ **COMPLETE** – Group 7 implemented
+
+This task implements Compose and FocusKit performance hardening to reduce unnecessary recompositions and GPU/CPU overhead during playback.
+
+### What Was Done
+
+**1. Hot/Cold State Split for Player UI State**
+
+| File | Purpose |
+|------|---------|
+| `player/internal/state/PlayerHotState.kt` | Frequently updating state (position, isPlaying, buffering, trickplay, controls) |
+| `player/internal/state/PlayerColdState.kt` | Rarely updating state (playbackType, subtitleStyle, kid settings, dialogs, live info) |
+
+**PlayerHotState Fields:**
+- `positionMs`, `durationMs` – Position updates every ~1s
+- `isPlaying`, `isBuffering` – Playback state changes
+- `trickplayActive`, `trickplaySpeed` – Trickplay state
+- `seekPreviewVisible`, `seekPreviewTargetMs` – Seek preview
+- `controlsVisible`, `controlsTick` – Controls visibility
+
+**PlayerColdState Fields:**
+- `playbackType`, `playbackSpeed`, `isLooping` – Media settings
+- `kid*` – Kid profile settings
+- `show*Dialog` – Dialog states
+- `live*`, `epgOverlay*` – Live TV state
+- `subtitleStyle`, `*SubtitleTrack` – Subtitle settings
+
+**Extension Functions:**
+- `InternalPlayerUiState.toHotState()` – Extract hot state
+- `InternalPlayerUiState.toColdState()` – Extract cold state
+
+**2. Isolated Playback Indicator Composables**
+
+| Composable | Purpose |
+|------------|---------|
+| `PositionProgressBar` | Progress bar that only recomposes when position/duration changes |
+| `PositionTimeDisplay` | Time display that only observes position/duration |
+| `BufferingIndicator` | Buffering spinner isolated from main layout |
+| `PlayPauseStateIndicator` | Play/pause icon that only observes isPlaying |
+| `IsolatedTrickplayIndicator` | Trickplay overlay isolated from main layout |
+| `IsolatedSeekPreviewOverlay` | Seek preview isolated from main layout |
+
+**3. Consolidated FocusKit Visual Effects**
+
+| Change | Description |
+|--------|-------------|
+| `tvFocusGlow` (FocusGlow.kt) | Changed from stacked `border()` modifiers to single `drawWithContent` call |
+| `FocusDecorationConfig` (FocusKit.kt) | New data class for consolidated focus configuration |
+| `Modifier.focusDecorations()` (FocusKit.kt) | New modifier that applies scale, elevation, and border in one pass |
+
+**FocusDecorationConfig Fields:**
+- `focusedScale`, `pressedScale` – Scale factors
+- `focusedElevationDp` – Shadow elevation
+- `shape` – Border shape
+- `focusColors` – Color configuration (null = use defaults at composition time)
+- `focusBorderWidth` – Border width
+- `brightenContent` – Whether to apply brightness tint
+
+**4. Unit Tests Created**
+
+| Test Class | Coverage |
+|------------|----------|
+| `FocusKitPerformanceTest.kt` | FocusDecorationConfig defaults, FocusColors, scale calculation, immutability |
+| `HotColdStateSplitTest.kt` | PlayerHotState, PlayerColdState, toHotState(), toColdState(), state separation |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `player/internal/state/PlayerHotState.kt` | Hot state data class |
+| `player/internal/state/PlayerColdState.kt` | Cold state data class |
+| `player/internal/ui/PlaybackIndicators.kt` | Isolated playback indicator Composables |
+| `test/.../FocusKitPerformanceTest.kt` | FocusKit performance tests |
+| `test/.../HotColdStateSplitTest.kt` | State split verification tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `ui/fx/FocusGlow.kt` | Consolidated border() to drawWithContent |
+| `ui/focus/FocusKit.kt` | Added FocusDecorationConfig, Modifier.focusDecorations() |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 7 as DONE |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Task 5 entry (this section) |
+
+### Files NOT Modified (Per Task Constraints)
+
+- ❌ `telegram/**/*.kt` – All Telegram modules untouched
+- ❌ `player/InternalPlayerScreen.kt` – Legacy screen untouched (SIP-only)
+- ❌ Parser/ObjectBox modules – Handled by parallel refactor
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*FocusKitPerformanceTest"` passes all tests
+- ✅ `./gradlew :app:testDebugUnitTest --tests "*HotColdStateSplitTest"` passes all tests
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 9
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 7
+
+### Performance Benefits
+
+**Before:**
+- Single `InternalPlayerUiState` data class caused large layout trees to recompose on every position tick (~1s)
+- `tvFocusGlow` used stacked `border()` modifiers requiring multiple layout/draw passes
+- FocusKit applied focus effects via multiple separate modifiers
+
+**After:**
+- Hot/Cold state split allows small Composables to observe only frequently-changing fields
+- `tvFocusGlow` uses single `drawWithContent` call for both glow rings
+- `Modifier.focusDecorations()` consolidates scale, elevation, and border into one modifier chain
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ Visual appearance preserved (no design changes)
+- ✅ Functional behavior unchanged (performance hardening only)
+- ✅ Phase 4-7 behaviors preserved
+
+### Phase 8 Status Summary (Updated)
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
+| 2 | UI Rebinding & Rotation | ✅ DONE |
+| 3 | Navigation & Backstack Stability | ✅ DONE |
+| 4 | System PiP vs In-App MiniPlayer | ⬜ PENDING |
+| 5 | Playback-Aware Worker Scheduling | ✅ DONE |
+| 6 | Memory & Leak Hygiene | ✅ PARTIAL DONE |
+| **7** | **Compose & FocusKit Performance** | ✅ **DONE** |
+| 8 | Error Handling & Recovery | ⬜ PENDING |
+| 9 | Regression Suite | ⬜ PENDING |
+
+---
+
+**Last Updated:** 2025-11-30
