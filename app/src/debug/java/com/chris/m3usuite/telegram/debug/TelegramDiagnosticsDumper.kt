@@ -5,6 +5,8 @@ import android.util.Log
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramItem
 import com.chris.m3usuite.data.obx.ObxTelegramItem_
+import com.chris.m3usuite.data.obx.ObxTelegramMessage
+import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.toDomain
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
@@ -14,8 +16,13 @@ import io.objectbox.kotlin.query
 /**
  * Debug-only helper for dumping TelegramItem data from ObjectBox.
  *
- * This tool queries the ObxTelegramItem table and logs detailed information
- * about what has been persisted for specific chats.
+ * This tool queries both the new ObxTelegramItem table (new parser pipeline)
+ * and the legacy ObxTelegramMessage table (old pipeline / UI reads from this).
+ *
+ * IMPORTANT FINDING:
+ * The UI (LibraryScreen) reads from ObxTelegramMessage (legacy), but
+ * TelegramIngestionCoordinator/TelegramItemBuilder write to ObxTelegramItem (new).
+ * This means items from the new pipeline won't show in the UI!
  *
  * Usage (in debug builds only):
  * ```kotlin
@@ -23,6 +30,7 @@ import io.objectbox.kotlin.query
  * dumper.dumpItemsForChat(chatId = -1001589507635L)
  * dumper.dumpAllProblematicChats()
  * dumper.dumpItemTypeSummary()
+ * dumper.dumpLegacyMessages(chatId) // Check what the UI actually sees
  * ```
  *
  * NOT FOR PRODUCTION USE - purely a diagnostic tool.
@@ -36,6 +44,7 @@ class TelegramDiagnosticsDumper(
 
     private val obxStore by lazy { ObxStore.get(context) }
     private val itemBox by lazy { obxStore.boxFor<ObxTelegramItem>() }
+    private val legacyMessageBox by lazy { obxStore.boxFor<ObxTelegramMessage>() }
 
     /**
      * Dump all TelegramItems for a specific chat.
@@ -246,6 +255,133 @@ class TelegramDiagnosticsDumper(
         log("    textMessageId: ${item.textMessageId}")
         log("    photoMessageId: ${item.photoMessageId}")
         log("")
+    }
+
+    // =========================================================================
+    // Legacy ObxTelegramMessage Diagnostics (what the UI actually reads!)
+    // =========================================================================
+
+    /**
+     * Dump legacy ObxTelegramMessage entries for a specific chat.
+     * This is what the UI (LibraryScreen) actually reads via getTelegramVodByChat().
+     *
+     * CRITICAL: If this is empty but dumpItemsForChat() shows items,
+     * it means the new parser pipeline is writing to ObxTelegramItem but
+     * the UI is reading from ObxTelegramMessage (legacy).
+     *
+     * @param chatId Chat ID to query
+     */
+    fun dumpLegacyMessages(chatId: Long) {
+        logHeader("DUMP LEGACY MESSAGES (UI source)", chatId)
+
+        val messages =
+            legacyMessageBox
+                .query {
+                    equal(ObxTelegramMessage_.chatId, chatId)
+                    orderDesc(ObxTelegramMessage_.date)
+                }.find()
+
+        log("Total LEGACY messages in ObxTelegramMessage for chat $chatId: ${messages.size}")
+        log("")
+
+        if (messages.isEmpty()) {
+            log("WARNING: No LEGACY messages found for this chat!")
+            log("This explains why UI shows nothing - UI reads from ObxTelegramMessage.")
+            log("")
+            log("The new parser pipeline writes to ObxTelegramItem (separate table).")
+            log("Run dumpItemsForChat($chatId) to check new pipeline data.")
+        } else {
+            log("Messages found (showing first 10):")
+            messages.take(10).forEachIndexed { index, msg ->
+                log("--- Legacy Message #$index ---")
+                log("  messageId: ${msg.messageId}")
+                log("  fileId: ${msg.fileId}")
+                log("  caption: ${msg.caption?.take(50)}")
+                log("  title: ${msg.title}")
+                log("  isSeries: ${msg.isSeries}")
+                log("  seriesName: ${msg.seriesName}")
+                log("  durationSecs: ${msg.durationSecs}")
+                log("")
+            }
+        }
+
+        logFooter()
+    }
+
+    /**
+     * Compare both tables for a chat to diagnose pipeline mismatches.
+     */
+    fun compareNewVsLegacy(chatId: Long) {
+        logHeader("COMPARE NEW vs LEGACY TABLES", chatId)
+
+        val newItems =
+            itemBox
+                .query {
+                    equal(ObxTelegramItem_.chatId, chatId)
+                }.find()
+
+        val legacyMessages =
+            legacyMessageBox
+                .query {
+                    equal(ObxTelegramMessage_.chatId, chatId)
+                }.find()
+
+        log("Chat $chatId:")
+        log("  NEW    (ObxTelegramItem):    ${newItems.size} items")
+        log("  LEGACY (ObxTelegramMessage): ${legacyMessages.size} messages")
+        log("")
+
+        if (newItems.isNotEmpty() && legacyMessages.isEmpty()) {
+            log("⚠️  DIAGNOSIS: Pipeline/UI Mismatch!")
+            log("   New parser wrote ${newItems.size} items to ObxTelegramItem,")
+            log("   but UI reads from ObxTelegramMessage (which is empty).")
+            log("")
+            log("   SOLUTION: Either:")
+            log("   1. Update UI to read from ObxTelegramItem (new pipeline)")
+            log("   2. Or use legacy indexChatMessages() for this chat")
+        } else if (newItems.isEmpty() && legacyMessages.isEmpty()) {
+            log("⚠️  DIAGNOSIS: Both tables empty!")
+            log("   No ingestion has run for this chat, or messages were filtered out.")
+        } else if (newItems.isEmpty() && legacyMessages.isNotEmpty()) {
+            log("✓ Using LEGACY pipeline only (no new parser items)")
+            log("  UI should show content from ObxTelegramMessage.")
+        } else {
+            log("✓ Both pipelines have data")
+            log("  Check if UI is connected to correct data source.")
+        }
+
+        logFooter()
+    }
+
+    /**
+     * Full diagnostic for all problematic chats comparing both tables.
+     */
+    fun diagnosePipelineMismatch() {
+        logHeader("FULL PIPELINE MISMATCH DIAGNOSIS", 0L)
+
+        val allNewItems = itemBox.all
+        val allLegacyMsgs = legacyMessageBox.all
+
+        log("GLOBAL COUNTS:")
+        log("  NEW    (ObxTelegramItem):    ${allNewItems.size} total items")
+        log("  LEGACY (ObxTelegramMessage): ${allLegacyMsgs.size} total messages")
+        log("")
+
+        log("PER-CHAT COMPARISON (problematic chats):")
+        TelegramIngestionDebugHelper.PROBLEMATIC_CHAT_IDS.forEach { chatId ->
+            val newCount = allNewItems.count { it.chatId == chatId }
+            val legacyCount = allLegacyMsgs.count { it.chatId == chatId }
+            val status =
+                when {
+                    newCount > 0 && legacyCount == 0 -> "⚠️ MISMATCH"
+                    newCount == 0 && legacyCount == 0 -> "❌ EMPTY"
+                    newCount == 0 && legacyCount > 0 -> "📱 LEGACY ONLY"
+                    else -> "✓ BOTH"
+                }
+            log("  Chat $chatId: NEW=$newCount, LEGACY=$legacyCount  $status")
+        }
+
+        logFooter()
     }
 
     private fun logHeader(
