@@ -27,7 +27,6 @@ import org.junit.Test
  * These unit tests verify the data structures and configuration correctness.
  */
 class FocusKitPerformanceTest {
-
     // ══════════════════════════════════════════════════════════════════
     // FocusDecorationConfig Tests
     // ══════════════════════════════════════════════════════════════════
@@ -62,13 +61,14 @@ class FocusKitPerformanceTest {
 
     @Test
     fun `FocusDecorationConfig copy preserves all fields`() {
-        val original = FocusDecorationConfig(
-            focusedScale = 1.15f,
-            pressedScale = 1.2f,
-            focusedElevationDp = 8f,
-            focusBorderWidth = 2.dp,
-            brightenContent = false,
-        )
+        val original =
+            FocusDecorationConfig(
+                focusedScale = 1.15f,
+                pressedScale = 1.2f,
+                focusedElevationDp = 8f,
+                focusBorderWidth = 2.dp,
+                brightenContent = false,
+            )
 
         val copy = original.copy(focusedScale = 1.1f)
 
@@ -99,31 +99,34 @@ class FocusKitPerformanceTest {
 
     @Test
     fun `FocusColors halo has alpha transparency`() {
-        val colors = FocusColors(
-            halo = Color.Blue.copy(alpha = 0.35f),
-            border = Color.Blue.copy(alpha = 0.9f),
-        )
+        val colors =
+            FocusColors(
+                halo = Color.Blue.copy(alpha = 0.35f),
+                border = Color.Blue.copy(alpha = 0.9f),
+            )
 
         assertTrue("Halo should have alpha < 1", colors.halo.alpha < 1f)
     }
 
     @Test
     fun `FocusColors border has high opacity`() {
-        val colors = FocusColors(
-            halo = Color.Blue.copy(alpha = 0.35f),
-            border = Color.Blue.copy(alpha = 0.9f),
-        )
+        val colors =
+            FocusColors(
+                halo = Color.Blue.copy(alpha = 0.35f),
+                border = Color.Blue.copy(alpha = 0.9f),
+            )
 
         assertTrue("Border should have alpha > 0.5", colors.border.alpha > 0.5f)
     }
 
     @Test
     fun `FocusColors contentTint default is low alpha`() {
-        val colors = FocusColors(
-            halo = Color.Blue,
-            border = Color.Blue,
-            // Using default contentTint
-        )
+        val colors =
+            FocusColors(
+                halo = Color.Blue,
+                border = Color.Blue,
+                // Using default contentTint
+            )
 
         assertTrue("ContentTint should have low alpha", colors.contentTint.alpha <= 0.15f)
     }
@@ -220,9 +223,10 @@ class FocusKitPerformanceTest {
     @Test
     fun `creating multiple FocusDecorationConfig instances is cheap`() {
         // This tests that creating configs doesn't have hidden costs
-        val configs = (1..100).map {
-            FocusDecorationConfig(focusedScale = 1f + it * 0.01f)
-        }
+        val configs =
+            (1..100).map {
+                FocusDecorationConfig(focusedScale = 1f + it * 0.01f)
+            }
 
         assertEquals(100, configs.size)
         assertEquals(1.01f, configs.first().focusedScale, 0.001f)
@@ -232,14 +236,16 @@ class FocusKitPerformanceTest {
     @Test
     fun `FocusColors instances with same values are equal`() {
         // Ensures we can use equals for comparisons (for skipping unnecessary work)
-        val colors1 = FocusColors(
-            halo = Color.Blue.copy(alpha = 0.35f),
-            border = Color.Blue.copy(alpha = 0.9f),
-        )
-        val colors2 = FocusColors(
-            halo = Color.Blue.copy(alpha = 0.35f),
-            border = Color.Blue.copy(alpha = 0.9f),
-        )
+        val colors1 =
+            FocusColors(
+                halo = Color.Blue.copy(alpha = 0.35f),
+                border = Color.Blue.copy(alpha = 0.9f),
+            )
+        val colors2 =
+            FocusColors(
+                halo = Color.Blue.copy(alpha = 0.35f),
+                border = Color.Blue.copy(alpha = 0.9f),
+            )
 
         assertEquals(colors1, colors2)
     }

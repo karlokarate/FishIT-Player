@@ -43,31 +43,22 @@ import androidx.compose.runtime.Immutable
 data class PlayerHotState(
     /** Current playback position in milliseconds. Updates every ~1s during playback. */
     val positionMs: Long = 0L,
-
     /** Total duration in milliseconds. Usually stable once media is prepared. */
     val durationMs: Long = 0L,
-
     /** Whether media is currently playing. */
     val isPlaying: Boolean = false,
-
     /** Whether the player is currently buffering. */
     val isBuffering: Boolean = false,
-
     /** Whether trickplay mode is active (fast-forward/rewind). */
     val trickplayActive: Boolean = false,
-
     /** Current trickplay speed multiplier (1.0 = normal, 2.0 = 2x, -2.0 = -2x rewind). */
     val trickplaySpeed: Float = 1f,
-
     /** Whether the seek preview overlay is visible. */
     val seekPreviewVisible: Boolean = false,
-
     /** Target position in milliseconds for seek preview. */
     val seekPreviewTargetMs: Long? = null,
-
     /** Whether player controls are currently visible. */
     val controlsVisible: Boolean = true,
-
     /** Counter incremented on user activity to reset auto-hide timer. */
     val controlsTick: Int = 0,
 ) {
@@ -84,15 +75,16 @@ data class PlayerHotState(
  * This allows existing code to continue using InternalPlayerUiState while
  * gradually migrating performance-critical paths to use PlayerHotState.
  */
-fun InternalPlayerUiState.toHotState(): PlayerHotState = PlayerHotState(
-    positionMs = positionMs,
-    durationMs = durationMs,
-    isPlaying = isPlaying,
-    isBuffering = isBuffering,
-    trickplayActive = trickplayActive,
-    trickplaySpeed = trickplaySpeed,
-    seekPreviewVisible = seekPreviewVisible,
-    seekPreviewTargetMs = seekPreviewTargetMs,
-    controlsVisible = controlsVisible,
-    controlsTick = controlsTick,
-)
+fun InternalPlayerUiState.toHotState(): PlayerHotState =
+    PlayerHotState(
+        positionMs = positionMs,
+        durationMs = durationMs,
+        isPlaying = isPlaying,
+        isBuffering = isBuffering,
+        trickplayActive = trickplayActive,
+        trickplaySpeed = trickplaySpeed,
+        seekPreviewVisible = seekPreviewVisible,
+        seekPreviewTargetMs = seekPreviewTargetMs,
+        controlsVisible = controlsVisible,
+        controlsTick = controlsTick,
+    )

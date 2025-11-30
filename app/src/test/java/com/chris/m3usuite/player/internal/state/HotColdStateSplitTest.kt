@@ -22,7 +22,6 @@ import org.junit.Test
  * - State classes are correctly structured as @Immutable data classes
  */
 class HotColdStateSplitTest {
-
     // ══════════════════════════════════════════════════════════════════
     // PlayerHotState Tests
     // ══════════════════════════════════════════════════════════════════
@@ -63,12 +62,13 @@ class HotColdStateSplitTest {
 
     @Test
     fun `PlayerHotState copy preserves unmodified fields`() {
-        val original = PlayerHotState(
-            positionMs = 1000L,
-            durationMs = 60000L,
-            isPlaying = true,
-            isBuffering = false,
-        )
+        val original =
+            PlayerHotState(
+                positionMs = 1000L,
+                durationMs = 60000L,
+                isPlaying = true,
+                isBuffering = false,
+            )
 
         val modified = original.copy(positionMs = 2000L)
 
@@ -110,18 +110,20 @@ class HotColdStateSplitTest {
 
     @Test
     fun `PlayerColdState isLive returns true for LIVE playbackType`() {
-        val coldState = PlayerColdState(
-            playbackType = PlaybackType.LIVE,
-        )
+        val coldState =
+            PlayerColdState(
+                playbackType = PlaybackType.LIVE,
+            )
         assertTrue(coldState.isLive)
         assertFalse(coldState.isSeries)
     }
 
     @Test
     fun `PlayerColdState isSeries returns true for SERIES playbackType`() {
-        val coldState = PlayerColdState(
-            playbackType = PlaybackType.SERIES,
-        )
+        val coldState =
+            PlayerColdState(
+                playbackType = PlaybackType.SERIES,
+            )
         assertTrue(coldState.isSeries)
         assertFalse(coldState.isLive)
     }
@@ -156,21 +158,22 @@ class HotColdStateSplitTest {
 
     @Test
     fun `toHotState extracts hot fields correctly`() {
-        val fullState = InternalPlayerUiState(
-            positionMs = 5000L,
-            durationMs = 60000L,
-            isPlaying = true,
-            isBuffering = false,
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-            seekPreviewVisible = true,
-            seekPreviewTargetMs = 10000L,
-            controlsVisible = false,
-            controlsTick = 5,
-            // Cold fields (should not affect hot state)
-            kidActive = true,
-            showSettingsDialog = true,
-        )
+        val fullState =
+            InternalPlayerUiState(
+                positionMs = 5000L,
+                durationMs = 60000L,
+                isPlaying = true,
+                isBuffering = false,
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+                seekPreviewVisible = true,
+                seekPreviewTargetMs = 10000L,
+                controlsVisible = false,
+                controlsTick = 5,
+                // Cold fields (should not affect hot state)
+                kidActive = true,
+                showSettingsDialog = true,
+            )
 
         val hotState = fullState.toHotState()
 
@@ -188,25 +191,26 @@ class HotColdStateSplitTest {
 
     @Test
     fun `toColdState extracts cold fields correctly`() {
-        val fullState = InternalPlayerUiState(
-            playbackType = PlaybackType.LIVE,
-            playbackSpeed = 1.5f,
-            isLooping = true,
-            kidActive = true,
-            kidBlocked = true,
-            kidProfileId = 123L,
-            remainingKidsMinutes = 15,
-            showSettingsDialog = true,
-            showCcMenuDialog = true,
-            aspectRatioMode = AspectRatioMode.FILL,
-            liveChannelName = "Test Channel",
-            liveNowTitle = "Now Playing",
-            liveNextTitle = "Up Next",
-            epgOverlayVisible = true,
-            // Hot fields (should not affect cold state)
-            positionMs = 5000L,
-            isPlaying = true,
-        )
+        val fullState =
+            InternalPlayerUiState(
+                playbackType = PlaybackType.LIVE,
+                playbackSpeed = 1.5f,
+                isLooping = true,
+                kidActive = true,
+                kidBlocked = true,
+                kidProfileId = 123L,
+                remainingKidsMinutes = 15,
+                showSettingsDialog = true,
+                showCcMenuDialog = true,
+                aspectRatioMode = AspectRatioMode.FILL,
+                liveChannelName = "Test Channel",
+                liveNowTitle = "Now Playing",
+                liveNextTitle = "Up Next",
+                epgOverlayVisible = true,
+                // Hot fields (should not affect cold state)
+                positionMs = 5000L,
+                isPlaying = true,
+            )
 
         val coldState = fullState.toColdState()
 
@@ -232,10 +236,11 @@ class HotColdStateSplitTest {
 
     @Test
     fun `hot state changes do not affect cold state extraction`() {
-        val state1 = InternalPlayerUiState(
-            positionMs = 1000L,
-            kidActive = true,
-        )
+        val state1 =
+            InternalPlayerUiState(
+                positionMs = 1000L,
+                kidActive = true,
+            )
         val state2 = state1.copy(positionMs = 2000L)
 
         val cold1 = state1.toColdState()
@@ -247,10 +252,11 @@ class HotColdStateSplitTest {
 
     @Test
     fun `cold state changes do not affect hot state extraction`() {
-        val state1 = InternalPlayerUiState(
-            positionMs = 1000L,
-            kidActive = false,
-        )
+        val state1 =
+            InternalPlayerUiState(
+                positionMs = 1000L,
+                kidActive = false,
+            )
         val state2 = state1.copy(kidActive = true)
 
         val hot1 = state1.toHotState()

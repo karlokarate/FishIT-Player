@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.chris.m3usuite.player.internal.state.PlayerHotState
 import kotlin.math.abs
 
 /**
@@ -174,16 +173,20 @@ fun IsolatedTrickplayIndicator(
 ) {
     AnimatedVisibility(
         visible = trickplayActive,
-        enter = fadeIn(
-            animationSpec = androidx.compose.animation.core.tween(
-                durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+        enter =
+            fadeIn(
+                animationSpec =
+                    androidx.compose.animation.core.tween(
+                        durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                    ),
             ),
-        ),
-        exit = fadeOut(
-            animationSpec = androidx.compose.animation.core.tween(
-                durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+        exit =
+            fadeOut(
+                animationSpec =
+                    androidx.compose.animation.core.tween(
+                        durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                    ),
             ),
-        ),
         modifier = modifier,
     ) {
         val isForward = trickplaySpeed > 0
@@ -196,12 +199,12 @@ fun IsolatedTrickplayIndicator(
             }
 
         Box(
-            modifier = Modifier
-                .background(
-                    color = Color.Black.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
-                    shape = RoundedCornerShape(8.dp),
-                )
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .background(
+                        color = Color.Black.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
+                        shape = RoundedCornerShape(8.dp),
+                    ).padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -257,26 +260,30 @@ fun IsolatedSeekPreviewOverlay(
 ) {
     AnimatedVisibility(
         visible = visible && targetPositionMs != null,
-        enter = fadeIn(
-            animationSpec = androidx.compose.animation.core.tween(
-                durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+        enter =
+            fadeIn(
+                animationSpec =
+                    androidx.compose.animation.core.tween(
+                        durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                    ),
             ),
-        ),
-        exit = fadeOut(
-            animationSpec = androidx.compose.animation.core.tween(
-                durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+        exit =
+            fadeOut(
+                animationSpec =
+                    androidx.compose.animation.core.tween(
+                        durationMillis = ControlsConstants.FADE_ANIMATION_DURATION_MS,
+                    ),
             ),
-        ),
         modifier = modifier,
     ) {
         targetPositionMs?.let { targetMs ->
             Box(
-                modifier = Modifier
-                    .background(
-                        color = Color.Black.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
-                        shape = RoundedCornerShape(8.dp),
-                    )
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier =
+                    Modifier
+                        .background(
+                            color = Color.Black.copy(alpha = ControlsConstants.OVERLAY_BACKGROUND_OPACITY),
+                            shape = RoundedCornerShape(8.dp),
+                        ).padding(horizontal = 24.dp, vertical = 16.dp),
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
