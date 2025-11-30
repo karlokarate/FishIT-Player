@@ -67,13 +67,13 @@ data class ExportFile(
 ) {
     /**
      * Get the remote ID, preferring flat format over nested.
-     * Flat format takes precedence as it's more direct.
+     * Flat format takes precedence because CLI-style exports use this format.
      */
     fun getRemoteId(): String? = flatRemoteId ?: remote.id
 
     /**
      * Get the unique ID, preferring flat format over nested.
-     * Flat format takes precedence as it's more direct.
+     * Flat format takes precedence because CLI-style exports use this format.
      */
     fun getUniqueId(): String? = flatUniqueId ?: remote.uniqueId
 }
