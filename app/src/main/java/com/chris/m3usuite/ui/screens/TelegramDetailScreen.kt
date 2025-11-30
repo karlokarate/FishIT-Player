@@ -15,6 +15,9 @@ import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.telegram.core.TelegramFileLoader
+import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.util.TelegramPlayUrl
@@ -67,6 +70,9 @@ private data class LoadedTelegramItem(
     val tmdbRating: Double?,
     val director: String?,
     val isAdultContent: Boolean,
+    // Phase T2: Image refs for TelegramFileLoader
+    val posterRef: TelegramImageRef? = null,
+    val backdropRef: TelegramImageRef? = null,
 )
 
 /**
@@ -128,6 +134,7 @@ private suspend fun loadTelegramDetailLegacy(
  *
  * Phase D.3: Preferred loading path for TelegramItem-based content.
  * Phase D+: Uses remoteId-first URL building for playback wiring.
+ * Phase T2: Includes posterRef and backdropRef for image loading.
  */
 private suspend fun loadTelegramItemByKey(
     ctx: Context,
@@ -170,8 +177,8 @@ private suspend fun loadTelegramItemByKey(
 
         LoadedTelegramItem(
             title = item.metadata.title ?: "Untitled",
-            poster = null, // Will be loaded via TelegramFileLoader
-            backdrop = null, // Will be loaded via TelegramFileLoader
+            poster = null, // Will be loaded via TelegramFileLoader using posterRef
+            backdrop = null, // Will be loaded via TelegramFileLoader using backdropRef
             plot = null, // TelegramMetadata doesn't have plot
             year = item.metadata.year,
             genres = item.metadata.genres.joinToString(", "),
@@ -184,6 +191,9 @@ private suspend fun loadTelegramItemByKey(
             tmdbRating = item.metadata.tmdbRating,
             director = item.metadata.director,
             isAdultContent = item.metadata.isAdult,
+            // Phase T2: Include image refs for TelegramFileLoader
+            posterRef = item.posterRef,
+            backdropRef = item.backdropRef,
         )
     }
 
@@ -416,10 +426,20 @@ fun TelegramItemDetailScreen(
     val scope = rememberCoroutineScope()
     val resumeRepo = remember { ResumeRepository(ctx) }
 
+    // Phase T2: TelegramFileLoader for image loading
+    val fileLoader = remember {
+        val serviceClient = T_TelegramServiceClient.getInstance(ctx)
+        TelegramFileLoader(serviceClient)
+    }
+
     var data by remember { mutableStateOf<LoadedTelegramItem?>(null) }
     // Encode mediaId for resume tracking using TELEGRAM_MEDIA_ID_OFFSET
     val mediaId = TELEGRAM_MEDIA_ID_OFFSET + anchorMessageId
     var resumeSecs by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    // Phase T2: Image paths loaded via TelegramFileLoader
+    var posterPath by remember { mutableStateOf<String?>(null) }
+    var backdropPath by remember { mutableStateOf<String?>(null) }
 
     // Load TelegramItem by key (Phase D.3)
     LaunchedEffect(chatId, anchorMessageId) {
@@ -444,9 +464,27 @@ fun TelegramItemDetailScreen(
                         "title" to item.title,
                         "playUrl" to item.playUrl,
                         "tmdbUrl" to (item.tmdbUrl ?: "none"),
+                        "hasPosterRef" to (item.posterRef != null).toString(),
+                        "hasBackdropRef" to (item.backdropRef != null).toString(),
                     ),
             )
+
+            // Phase T2: Prefetch images when detail screen opens
+            fileLoader.prefetchImages(item.posterRef, item.backdropRef)
         }
+    }
+
+    // Phase T2: Load poster image via TelegramFileLoader
+    LaunchedEffect(data?.posterRef) {
+        val ref = data?.posterRef ?: return@LaunchedEffect
+        posterPath = fileLoader.ensureImageDownloaded(ref)
+    }
+
+    // Phase T2: Load backdrop image via TelegramFileLoader
+    // Use backdropRef if available, else fall back to posterRef for backdrop
+    LaunchedEffect(data?.backdropRef, data?.posterRef) {
+        val ref = data?.backdropRef ?: data?.posterRef ?: return@LaunchedEffect
+        backdropPath = fileLoader.ensureImageDownloaded(ref)
     }
 
     fun play(fromStart: Boolean = false) {
@@ -528,7 +566,10 @@ fun TelegramItemDetailScreen(
         listState = listState,
         onLogo = onLogo,
     ) { pads ->
-        val hero = data?.backdrop ?: data?.poster
+        // Phase T2: Use loaded image paths from TelegramFileLoader
+        // Priority: backdropPath > posterPath > default placeholder
+        val hero = backdropPath ?: posterPath
+        val poster = posterPath ?: backdropPath
         val lblPlay = stringResource(com.chris.m3usuite.R.string.action_play)
         val lblResume = stringResource(com.chris.m3usuite.R.string.action_resume)
 
@@ -584,7 +625,7 @@ fun TelegramItemDetailScreen(
             listState = listState,
             title = data?.title ?: "",
             heroUrl = hero,
-            posterUrl = data?.poster ?: hero,
+            posterUrl = poster ?: hero,
             actions = actions,
             meta = meta,
             headerExtras = {},

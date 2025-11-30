@@ -9,10 +9,12 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.domain.ChatScanState
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.repository.TelegramSyncStateRepository
+import com.chris.m3usuite.telegram.util.TelegramImageStats
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -23,6 +25,9 @@ import kotlinx.coroutines.launch
  * - Injects TelegramContentRepository and TelegramSyncStateRepository
  * - Exposes TelegramItem flows for UI consumption
  * - No lifecycle manipulation (standard viewModelScope usage)
+ *
+ * Phase T2 Additions:
+ * - Logs image reference statistics once per session via TelegramImageStats
  *
  * UI components can use this ViewModel to:
  * - Display Telegram items in lists/rows (FishTelegramContent)
@@ -45,10 +50,18 @@ class TelegramLibraryViewModel(
      *
      * Uses stateIn to convert repository Flow to StateFlow.
      * SharingStarted.WhileSubscribed ensures efficient resource usage.
+     *
+     * Phase T2: Logs image stats once per session via onEach + TelegramImageStats.
      */
     val allItems: StateFlow<List<TelegramItem>> =
         contentRepository
             .observeAllItems()
+            .onEach { items ->
+                // Phase T2: Log image stats once per app session for diagnostics
+                if (items.isNotEmpty()) {
+                    TelegramImageStats.logStatsOnce(items, source = "TelegramLibraryViewModel")
+                }
+            }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
