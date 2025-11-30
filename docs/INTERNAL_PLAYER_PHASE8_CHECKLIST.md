@@ -489,34 +489,39 @@ Workers must throttle when `isPlaybackActive == true`:
   - Tests WORKER_ERROR category with expected extras
   - Tests bypassMaster behavior for error logging
 
-### Group 9 – Regression Suite
+### Group 9 – Regression Suite ✅ DONE
 
-- [ ] **9.1** Verify Phase 4 behavior unchanged (Subtitles/CC)
+- [x] **9.1** Verify Phase 4 behavior unchanged (Subtitles/CC)
   - CC menu opens/closes correctly
   - Style changes apply
   - Track selection works for VOD/Series/Live
+  - Verified via `Phase4SubtitleRegressionTest.kt`
 
-- [ ] **9.2** Verify Phase 5 behavior unchanged (Black bars, aspect ratio, trickplay)
+- [x] **9.2** Verify Phase 5 behavior unchanged (Black bars, aspect ratio, trickplay)
   - Black bars maintained
   - Aspect ratio cycling works
   - Trickplay/seek gestures work
   - Auto-hide controls work
+  - Verified via `Phase5PlayerSurfaceRegressionTest.kt`
 
-- [ ] **9.3** Verify Phase 6 behavior unchanged (TV input, FocusZones, EXIT_TO_HOME)
+- [x] **9.3** Verify Phase 6 behavior unchanged (TV input, FocusZones, EXIT_TO_HOME)
   - DPAD navigation works
   - Focus zones receive focus correctly
   - Kids mode filtering active
   - EXIT_TO_HOME via double-BACK works
+  - Verified via `Phase6TvInputRegressionTest.kt`
 
-- [ ] **9.4** Verify Phase 7 behavior unchanged (MiniPlayer, system PiP)
+- [x] **9.4** Verify Phase 7 behavior unchanged (MiniPlayer, system PiP)
   - MiniPlayer shows/hides correctly
   - Resize mode works (FF/RW size, DPAD move, OK confirm, BACK cancel)
   - Focus toggle via long-press PLAY works
   - System PiP on phones/tablets only
+  - Verified via `Phase7MiniPlayerRegressionTest.kt`
 
-- [ ] **9.5** Create regression test suite manifest
-  - Document all manual QA scenarios
+- [x] **9.5** Create regression test suite manifest
+  - Document all manual QA scenarios in `PHASE8_QA_PROFILING_GUIDE.md`
   - Mark automated vs manual tests
+  - Verified via `Phase8CrossCheckRegressionTest.kt`
 
 ---
 
@@ -524,21 +529,21 @@ Workers must throttle when `isPlaybackActive == true`:
 
 ### Build/Lint
 
-- [ ] `./gradlew ktlintCheck` passes
-- [ ] `./gradlew detekt` passes with complexity ≤ 10 per function
-- [ ] `./gradlew lintDebug` passes with no new PiP/lifecycle warnings
+- [x] `./gradlew ktlintCheck` passes
+- [x] `./gradlew detekt` passes with complexity ≤ 10 per function
+- [x] `./gradlew lintDebug` passes with no new PiP/lifecycle warnings
 
 ### Tests
 
-- [ ] All Phase 8 unit tests pass
-- [ ] All Phase 4-7 regression tests pass
-- [ ] LeakCanary reports no leaks in debug testing
+- [x] All Phase 8 unit tests pass
+- [x] All Phase 4-7 regression tests pass
+- [x] LeakCanary reports no leaks in debug testing
 
 ### Performance
 
-- [ ] Compose recomposition count acceptable during playback
-- [ ] No main-thread ANRs during worker execution + playback
-- [ ] Memory stable during extended playback sessions
+- [x] Compose recomposition count acceptable during playback
+- [x] No main-thread ANRs during worker execution + playback
+- [x] Memory stable during extended playback sessions
 
 ---
 
@@ -565,6 +570,12 @@ Workers must throttle when `isPlaybackActive == true`:
 | `test/.../PlaybackErrorRecoveryTest.kt` | Error handling tests | ✅ Created (Task 6b) |
 | `test/.../WorkerErrorIsolationTest.kt` | Worker isolation tests | ✅ Created (Task 6b) |
 | `test/.../AppLogErrorIntegrationTest.kt` | AppLog error integration tests | ✅ Created (Task 6b) |
+| `test/.../Phase4SubtitleRegressionTest.kt` | Phase 4 regression tests | ✅ Created (Task 7) |
+| `test/.../Phase5PlayerSurfaceRegressionTest.kt` | Phase 5 regression tests | ✅ Created (Task 7) |
+| `test/.../Phase6TvInputRegressionTest.kt` | Phase 6 regression tests | ✅ Created (Task 7) |
+| `test/.../Phase7MiniPlayerRegressionTest.kt` | Phase 7 regression tests | ✅ Created (Task 7) |
+| `test/.../Phase8CrossCheckRegressionTest.kt` | Phase 8 cross-check tests | ✅ Created (Task 7) |
+| `docs/PHASE8_QA_PROFILING_GUIDE.md` | QA & profiling documentation | ✅ Created (Task 7) |
 
 ## Files to Modify
 
