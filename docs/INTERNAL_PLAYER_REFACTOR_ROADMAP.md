@@ -1444,3 +1444,47 @@ All implementations are verified against:
 - `GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
 
 ---
+
+## Phase 9 – SIP Runtime Activation
+
+**Goal:** Switch the runtime player path from Legacy InternalPlayerScreen to SIP (Simplified Internal Player) for all builds, completing the migration from the monolithic architecture to the modular SIP system.
+
+### Task 1: Switch Runtime to SIP (✅ DONE)
+
+**Status:** ✅ **COMPLETE** (2025-11-30)
+
+Wire InternalPlayerEntry to SIP player unconditionally for all builds (DEBUG and RELEASE).
+
+- ✅ Update InternalPlayerEntry to use SIP components:
+  - ✅ `rememberInternalPlayerSession` for player management
+  - ✅ `InternalPlayerContent` for player UI
+  - ✅ `InternalPlayerSystemUi` for back handler, screen-on, fullscreen
+  - ✅ `InternalPlayerController` for UI callbacks
+- ✅ Remove legacy InternalPlayerScreen call from InternalPlayerEntry
+- ✅ Add PLAYER_ROUTE AppLog debug entry for SIP path
+- ✅ Create InternalPlayerEntryRoutingTest
+- ✅ Create PlayerRouteLoggingTest
+- ✅ Update documentation
+
+**Legacy Status:**
+- `InternalPlayerScreen.kt` remains in codebase (not deleted)
+- Legacy is NOT instantiated by InternalPlayerEntry anymore
+- Can be removed in future Task 2
+
+### Task 2: Remove Legacy InternalPlayerScreen (⬜ PENDING)
+
+Future task to remove the legacy monolithic implementation after SIP has been verified in production.
+
+- ⬜ Archive or delete `InternalPlayerScreen.kt`
+- ⬜ Remove any remaining legacy references
+- ⬜ Clean up legacy-specific code paths
+
+### Task 3: Telegram Playback Integration (⬜ PENDING)
+
+Ensure Telegram content playback works seamlessly with the SIP architecture.
+
+- ⬜ Verify TelegramDataSource integration with SIP session
+- ⬜ Test Telegram content playback via InternalPlayerEntry
+- ⬜ Update Telegram-specific playback paths if needed
+
+---
