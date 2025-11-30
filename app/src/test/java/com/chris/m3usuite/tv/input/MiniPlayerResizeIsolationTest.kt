@@ -38,8 +38,8 @@ class MiniPlayerResizeIsolationTest {
             mode = MiniPlayerMode.RESIZE,
         )
         val ctx = TvScreenContext.library(
-            isKidMode = false,
-            hasOverlay = false,
+            isKidProfile = false,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
@@ -48,20 +48,24 @@ class MiniPlayerResizeIsolationTest {
 
         // Then: Should be blocked when MiniPlayer is visible
         // (resize mode is a sub-state of visible)
-        val config = TvScreenInputConfig.empty().filterForMiniPlayer(ctx)
-        assertTrue("ROW_FAST_SCROLL_FORWARD should be blocked when MiniPlayer visible", true)
+        val filteredAction = filterForMiniPlayer(action, ctx)
+        assertNull("ROW_FAST_SCROLL_FORWARD should be blocked when MiniPlayer visible", filteredAction)
     }
 
     @Test
     fun `RESIZE mode should block ROW_FAST_SCROLL_BACKWARD`() {
         val ctx = TvScreenContext.library(
-            isKidMode = false,
-            hasOverlay = false,
+            isKidProfile = false,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
-        // ROW_FAST_SCROLL_BACKWARD should also be blocked
-        assertTrue("ROW_FAST_SCROLL_BACKWARD should be blocked when MiniPlayer visible", true)
+        // When: Checking if ROW_FAST_SCROLL_BACKWARD is blocked
+        val action = TvAction.ROW_FAST_SCROLL_BACKWARD
+
+        // Then: Should be blocked when MiniPlayer is visible
+        val filteredAction = filterForMiniPlayer(action, ctx)
+        assertNull("ROW_FAST_SCROLL_BACKWARD should be blocked when MiniPlayer visible", filteredAction)
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -234,8 +238,8 @@ class MiniPlayerResizeIsolationTest {
     @Test
     fun `MiniPlayer filter blocks specific actions when visible`() {
         val ctx = TvScreenContext.library(
-            isKidMode = false,
-            hasOverlay = false,
+            isKidProfile = false,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
@@ -249,12 +253,12 @@ class MiniPlayerResizeIsolationTest {
     fun `Kids mode filter still applies with MiniPlayer in RESIZE mode`() {
         // Kids mode filter should apply regardless of MiniPlayer mode
         val ctx = TvScreenContext.library(
-            isKidMode = true,
-            hasOverlay = false,
+            isKidProfile = true,
+            hasBlockingOverlay = false,
             isMiniPlayerVisible = true,
         )
 
-        assertTrue("Kids mode should still be active", ctx.isKidMode)
+        assertTrue("Kids mode should still be active", ctx.isKidProfile)
         assertTrue("MiniPlayer should still be visible", ctx.isMiniPlayerVisible)
     }
 }
