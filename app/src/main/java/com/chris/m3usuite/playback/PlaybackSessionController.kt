@@ -60,10 +60,26 @@ interface PlaybackSessionController {
     val buffering: StateFlow<Boolean>
 
     /**
-     * Current playback error, if any.
+     * Current playback error (raw ExoPlayer exception), if any.
      * Null when there is no error.
+     *
+     * **Prefer using [playbackError]** for structured error information.
      */
     val error: StateFlow<PlaybackException?>
+
+    /**
+     * Current playback error as a structured [PlaybackError], if any.
+     * Null when there is no error.
+     *
+     * **Phase 8 – Task 6 Addition:**
+     * This provides typed error information for:
+     * - UI differentiation (Network vs Http vs Source vs Decoder vs Unknown)
+     * - Kids-friendly generic messages
+     * - Rich logging metadata (via AppLog)
+     *
+     * @see PlaybackError for error types
+     */
+    val playbackError: StateFlow<PlaybackError?>
 
     /**
      * Current video size (width x height).
