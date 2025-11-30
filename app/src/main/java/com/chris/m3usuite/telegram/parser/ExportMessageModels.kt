@@ -195,17 +195,120 @@ data class ExportFormattedText(
 
 /**
  * Message content container that can hold various content types.
+ *
+ * Supports both nested format (content.video) and flat format (content.duration, etc.)
+ * The flat format is used in CLI-style exports where video properties are at the content level.
  */
 @Serializable
 data class ExportMessageContent(
+    // Nested format properties
     val video: ExportVideoContent? = null,
     val photo: ExportPhotoContent? = null,
     val document: ExportDocumentContent? = null,
     val audio: ExportAudioContent? = null,
-    val caption: ExportFormattedText? = null,
     val type: String? = null,
     val sizes: List<ExportPhotoSize>? = null,
-)
+    // Flat video format properties (CLI-style exports)
+    val duration: Int? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val fileName: String? = null,
+    val mimeType: String? = null,
+    val supportsStreaming: Boolean? = null,
+    val file: ExportFlatFile? = null,
+    val thumbnail: ExportThumbnail? = null,
+    // Caption can be either a string (flat format) or FormattedText (nested format)
+    // Using JsonElement to handle both cases
+    val caption: JsonElement? = null,
+) {
+    /**
+     * Check if this content represents a flat-format video.
+     */
+    fun isFlatVideo(): Boolean =
+        video == null && duration != null && file != null && mimeType?.startsWith("video") == true
+
+    /**
+     * Check if this content represents a flat-format photo.
+     */
+    fun isFlatPhoto(): Boolean = sizes != null && sizes.isNotEmpty()
+
+    /**
+     * Convert flat video format to ExportVideoContent.
+     */
+    fun toVideoContent(): ExportVideoContent? {
+        if (!isFlatVideo()) return null
+        val flatFile = file ?: return null
+
+        return ExportVideoContent(
+            duration = duration ?: 0,
+            width = width ?: 0,
+            height = height ?: 0,
+            fileName = fileName ?: "",
+            mimeType = mimeType ?: "",
+            supportsStreaming = supportsStreaming ?: false,
+            thumbnail = thumbnail,
+            video = flatFile.toExportFile(),
+        )
+    }
+
+    /**
+     * Get caption text from either nested or flat format.
+     * - Flat format: caption is a JSON string
+     * - Nested format: caption is an object with "text" field
+     */
+    fun getCaptionText(): String? {
+        val element = caption ?: return null
+        return when {
+            element is kotlinx.serialization.json.JsonPrimitive && element.isString ->
+                element.content
+            element is kotlinx.serialization.json.JsonObject ->
+                (element["text"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+            else -> null
+        }
+    }
+
+    /**
+     * Get caption entities if nested format is used.
+     */
+    fun getCaptionEntities(): List<ExportTextEntity> {
+        val element = caption ?: return emptyList()
+        if (element !is kotlinx.serialization.json.JsonObject) return emptyList()
+        val entitiesElement = element["entities"] ?: return emptyList()
+        return try {
+            kotlinx.serialization.json.Json.decodeFromJsonElement(
+                kotlinx.serialization.builtins.ListSerializer(ExportTextEntity.serializer()),
+                entitiesElement,
+            )
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+}
+
+/**
+ * Flat file reference used in CLI-style exports.
+ * Similar to ExportFile but with remoteId/uniqueId at top level.
+ */
+@Serializable
+data class ExportFlatFile(
+    val id: Int = 0,
+    val size: Long = 0,
+    val remoteId: String? = null,
+    val uniqueId: String? = null,
+) {
+    /**
+     * Convert to standard ExportFile format.
+     */
+    fun toExportFile(): ExportFile =
+        ExportFile(
+            id = id,
+            size = size,
+            remote = ExportRemoteFile(
+                id = remoteId,
+                uniqueId = uniqueId,
+            ),
+        )
+}
 
 // =============================================================================
 // Message Sender
@@ -371,7 +474,7 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
                 .toString()
         }
 
-    // Check for video content
+    // Check for nested video content
     content?.video?.let { video ->
         return ExportVideo(
             id = id,
@@ -379,8 +482,21 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
             dateEpochSeconds = date,
             dateIso = dateIsoValue,
             video = video,
-            caption = content.caption?.text,
-            captionEntities = content.caption?.entities ?: emptyList(),
+            caption = content.getCaptionText(),
+            captionEntities = content.getCaptionEntities(),
+        )
+    }
+
+    // Check for flat video content (CLI-style exports)
+    content?.toVideoContent()?.let { video ->
+        return ExportVideo(
+            id = id,
+            chatId = chatId,
+            dateEpochSeconds = date,
+            dateIso = dateIsoValue,
+            video = video,
+            caption = content.getCaptionText(),
+            captionEntities = content.getCaptionEntities(),
         )
     }
 
@@ -392,7 +508,7 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
             dateEpochSeconds = date,
             dateIso = dateIsoValue,
             sizes = photo.sizes,
-            caption = content.caption?.text,
+            caption = content.getCaptionText(),
         )
     }
 
@@ -405,7 +521,7 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
                 dateEpochSeconds = date,
                 dateIso = dateIsoValue,
                 sizes = sizes,
-                caption = content.caption?.text,
+                caption = content.getCaptionText(),
             )
         }
     }
@@ -418,7 +534,7 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
             dateEpochSeconds = date,
             dateIso = dateIsoValue,
             document = doc,
-            caption = content.caption?.text,
+            caption = content.getCaptionText(),
         )
     }
 
@@ -430,7 +546,7 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
             dateEpochSeconds = date,
             dateIso = dateIsoValue,
             audio = audio,
-            caption = content.caption?.text,
+            caption = content.getCaptionText(),
         )
     }
 
@@ -464,6 +580,6 @@ fun RawExportMessage.toExportMessage(): ExportMessage {
         dateEpochSeconds = date,
         dateIso = dateIsoValue,
         rawJson = "",
-        messageType = "unknown",
+        messageType = content?.type ?: "unknown",
     )
 }
