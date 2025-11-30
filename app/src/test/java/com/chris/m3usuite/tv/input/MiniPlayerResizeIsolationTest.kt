@@ -48,9 +48,8 @@ class MiniPlayerResizeIsolationTest {
 
         // Then: Should be blocked when MiniPlayer is visible
         // (resize mode is a sub-state of visible)
-        val config = TvScreenInputConfig.empty(TvScreenId.LIBRARY)
         val filteredAction = filterForMiniPlayer(action, ctx)
-        assertTrue("ROW_FAST_SCROLL_FORWARD should be blocked when MiniPlayer visible", true)
+        assertNull("ROW_FAST_SCROLL_FORWARD should be blocked when MiniPlayer visible", filteredAction)
     }
 
     @Test
@@ -61,8 +60,12 @@ class MiniPlayerResizeIsolationTest {
             isMiniPlayerVisible = true,
         )
 
-        // ROW_FAST_SCROLL_BACKWARD should also be blocked
-        assertTrue("ROW_FAST_SCROLL_BACKWARD should be blocked when MiniPlayer visible", true)
+        // When: Checking if ROW_FAST_SCROLL_BACKWARD is blocked
+        val action = TvAction.ROW_FAST_SCROLL_BACKWARD
+
+        // Then: Should be blocked when MiniPlayer is visible
+        val filteredAction = filterForMiniPlayer(action, ctx)
+        assertNull("ROW_FAST_SCROLL_BACKWARD should be blocked when MiniPlayer visible", filteredAction)
     }
 
     // ══════════════════════════════════════════════════════════════════
