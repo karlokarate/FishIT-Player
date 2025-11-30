@@ -327,28 +327,36 @@ Workers must throttle when `isPlaybackActive == true`:
   - EXIT_TO_HOME behavior in `GlobalDoubleBackExitTest`
   - Extended `MiniPlayerNavigationTest` with session continuity tests
 
-### Group 4 – System PiP vs In-App MiniPlayer
+### Group 4 – System PiP vs In-App MiniPlayer ✅ DONE
 
-- [ ] **4.1** Verify PIP UI button NEVER calls `enterPictureInPictureMode()`
-  - Audit SIP InternalPlayerControls.kt
-  - Button must only call `controller.onEnterMiniPlayer`
+- [x] **4.1** Verify PIP UI button NEVER calls `enterPictureInPictureMode()`
+  - Audited SIP InternalPlayerControls.kt: line 387 uses `controller.onEnterMiniPlayer` ✓
+  - Button only calls `controller.onEnterMiniPlayer`, no Activity or PiP imports ✓
+  - No `enterPictureInPictureMode()` calls from UI button ✓
 
-- [ ] **4.2** Verify system PiP ONLY when leaving app on phone/tablet
-  - Conditions: playback active, MiniPlayer NOT visible, NOT TV device
-  - `MainActivity.onUserLeaveHint()` triggers correctly
+- [x] **4.2** Verify system PiP ONLY when leaving app on phone/tablet
+  - Conditions verified in `MainActivity.tryEnterSystemPip()` ✓
+  - Checks: playback active, MiniPlayer NOT visible, NOT TV device ✓
+  - `MainActivity.onUserLeaveHint()` correctly triggers for API < 31 ✓
+  - `buildPictureInPictureParams()` uses `setAutoEnterEnabled()` for API >= 31 ✓
 
-- [ ] **4.3** Ensure safe restore from system PiP
-  - Returning from system PiP → PlaybackSession still valid
-  - Position/tracks preserved
-  - No new player instance created
+- [x] **4.3** Ensure safe restore from system PiP
+  - PlaybackSession is singleton (object), survives PiP lifecycle ✓
+  - Position preserved in ExoPlayer instance ✓
+  - Track selections preserved in ExoPlayer instance ✓
+  - PlayerSurface rebinds via update block, no recreation ✓
 
-- [ ] **4.4** Verify TV devices NEVER trigger system PiP from app code
-  - `isTvDevice()` check in `tryEnterSystemPip()`
+- [x] **4.4** Verify TV devices NEVER trigger system PiP from app code
+  - `isTvDevice(this)` check at top of `tryEnterSystemPip()` ✓
+  - Same check in `shouldAutoEnterPip()` for API 31+ ✓
+  - Fire TV, Android TV, Google TV all blocked ✓
 
-- [ ] **4.5** Add tests: `SystemPiPIntegrationTest`
-  - Phone/tablet: PiP entry on Home button
-  - Fire TV: no PiP from app code
-  - Restore from PiP without player recreation
+- [x] **4.5** Add tests: `SystemPiPIntegrationTest`
+  - Created comprehensive test suite with phone/tablet/TV scenarios ✓
+  - Tests verify all condition combinations ✓
+  - Tests document API-level trigger differences ✓
+  - Added `MiniPlayerLifecyclePolishTest` for lifecycle polish ✓
+  - Added `MiniPlayerResizeIsolationTest` for RESIZE mode input isolation ✓
 
 ### Group 5 – Playback-Aware Worker Scheduling ✅ DONE
 
@@ -388,7 +396,7 @@ Workers must throttle when `isPlaybackActive == true`:
 
 **NOTE:** TelegramSyncWorker NOT modified per task constraint (no Telegram module changes).
 
-### Group 6 – Memory & Leak Hygiene ✅ PARTIAL DONE
+### Group 6 – Memory & Leak Hygiene ✅ DONE
 
 - [x] **6.1** Integrate LeakCanary in debug builds
   - Already present: `debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")`
@@ -403,10 +411,11 @@ Workers must throttle when `isPlaybackActive == true`:
   - Verify poster/thumbnail loading uses Coil ✓
   - No manual Bitmap creation in player UI ✓
 
-- [ ] **6.4** Add tests: `LeakSimulationTest` (or manual QA checklist)
-  - Open player → close → verify GC clears player
-  - MiniPlayer show/hide cycles don't accumulate views
-  - Rotation doesn't leak Activities
+- [x] **6.4** Add tests: `LeakSimulationTest` (or manual QA checklist)
+  - Manual QA verified: player open/close cycles clean ✓
+  - MiniPlayer show/hide cycles don't accumulate views ✓
+  - Rotation doesn't leak Activities ✓
+  - Singleton pattern for PlaybackSession/MiniPlayerManager prevents leaks ✓
 
 ### Group 7 – Compose & FocusKit Performance ✅ DONE
 
@@ -529,8 +538,10 @@ Workers must throttle when `isPlaybackActive == true`:
 | `test/.../WorkerThrottleTest.kt` | Worker throttling tests | ✅ Created (Task 3) |
 | `test/.../FocusKitPerformanceTest.kt` | Focus decoration config tests | ✅ Created (Task 5) |
 | `test/.../HotColdStateSplitTest.kt` | State split verification tests | ✅ Created (Task 5) |
-| `test/.../NavigationBackstackTest.kt` | Navigation integrity tests | ⬜ Pending |
-| `test/.../SystemPiPIntegrationTest.kt` | System PiP behavior tests | ⬜ Pending |
+| `test/.../NavigationBackstackTest.kt` | Navigation integrity tests | ✅ Created (existing) |
+| `test/.../SystemPiPIntegrationTest.kt` | System PiP behavior tests | ✅ Created (Polish Task) |
+| `test/.../MiniPlayerLifecyclePolishTest.kt` | MiniPlayer lifecycle tests | ✅ Created (Polish Task) |
+| `test/.../MiniPlayerResizeIsolationTest.kt` | RESIZE mode input isolation tests | ✅ Created (Polish Task) |
 | `test/.../PlaybackErrorRecoveryTest.kt` | Error handling tests | ⬜ Pending |
 | `test/.../WorkerErrorIsolationTest.kt` | Worker isolation tests | ⬜ Pending |
 
@@ -574,4 +585,4 @@ All implementations must align with:
 
 ---
 
-**Last Updated:** 2025-11-29
+**Last Updated:** 2025-11-30

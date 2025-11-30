@@ -1253,7 +1253,9 @@ data class FocusDecorationConfig(
     /** Shadow elevation in dp when focused. */
     val focusedElevationDp: Float = 12f,
     /** Shape for border/outline. */
-    val shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+    val shape: Shape =
+        androidx.compose.foundation.shape
+            .RoundedCornerShape(18.dp),
     /** Colors for focus effects. Null means use FocusDefaults.Colors at composition time. */
     val focusColors: FocusColors? = null,
     /** Border width for focus indicator. */
@@ -1316,11 +1318,12 @@ fun Modifier.focusDecorations(
     val density = LocalDensity.current
     // Resolve focusColors at composition time if not provided
     val resolvedColors = config.focusColors ?: FocusDefaults.Colors
-    val scale = when {
-        pressed -> config.pressedScale
-        focusFraction > 0f -> 1f + (config.focusedScale - 1f) * focusFraction
-        else -> 1f
-    }
+    val scale =
+        when {
+            pressed -> config.pressedScale
+            focusFraction > 0f -> 1f + (config.focusedScale - 1f) * focusFraction
+            else -> 1f
+        }
     val elevationPx = with(density) { config.focusedElevationDp.dp.toPx() * focusFraction }
 
     return this
@@ -1328,8 +1331,7 @@ fun Modifier.focusDecorations(
             scaleX = scale
             scaleY = scale
             shadowElevation = elevationPx
-        }
-        .applyFocusDecoration(
+        }.applyFocusDecoration(
             focusFraction = focusFraction,
             shape = config.shape,
             focusColors = resolvedColors,
