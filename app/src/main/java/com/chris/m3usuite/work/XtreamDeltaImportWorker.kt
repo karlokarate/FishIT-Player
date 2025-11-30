@@ -118,11 +118,12 @@ class XtreamDeltaImportWorker(
             category = "WORKER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Worker XtreamDeltaImportWorker failed: ${e.message}",
-            extras = mapOf(
-                "worker" to "XtreamDeltaImportWorker",
-                "exception" to e.javaClass.simpleName,
-                "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
-            ),
+            extras =
+                mapOf(
+                    "worker" to "XtreamDeltaImportWorker",
+                    "exception" to e.javaClass.simpleName,
+                    "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
+                ),
             bypassMaster = true,
         )
     }

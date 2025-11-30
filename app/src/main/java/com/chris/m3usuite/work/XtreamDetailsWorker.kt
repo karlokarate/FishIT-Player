@@ -74,11 +74,12 @@ class XtreamDetailsWorker(
             category = "WORKER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Worker XtreamDetailsWorker failed: ${e.message}",
-            extras = mapOf(
-                "worker" to "XtreamDetailsWorker",
-                "exception" to e.javaClass.simpleName,
-                "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
-            ),
+            extras =
+                mapOf(
+                    "worker" to "XtreamDetailsWorker",
+                    "exception" to e.javaClass.simpleName,
+                    "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
+                ),
             bypassMaster = true,
         )
     }

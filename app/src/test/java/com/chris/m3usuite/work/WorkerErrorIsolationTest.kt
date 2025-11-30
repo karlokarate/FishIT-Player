@@ -207,11 +207,12 @@ class WorkerErrorIsolationTest {
             category = "WORKER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Worker TestWorker failed: Test error",
-            extras = mapOf(
-                "worker" to "TestWorker",
-                "exception" to "TestException",
-                "cause" to "none",
-            ),
+            extras =
+                mapOf(
+                    "worker" to "TestWorker",
+                    "exception" to "TestException",
+                    "cause" to "none",
+                ),
             bypassMaster = true,
         )
 
@@ -235,11 +236,12 @@ class WorkerErrorIsolationTest {
             category = "WORKER_ERROR",
             level = AppLog.Level.ERROR,
             message = "Worker $workerName failed: ${exception.message}",
-            extras = mapOf(
-                "worker" to workerName,
-                "exception" to exception.javaClass.simpleName,
-                "cause" to (exception.cause?.javaClass?.simpleName ?: "none"),
-            ),
+            extras =
+                mapOf(
+                    "worker" to workerName,
+                    "exception" to exception.javaClass.simpleName,
+                    "cause" to (exception.cause?.javaClass?.simpleName ?: "none"),
+                ),
             bypassMaster = true,
         )
     }

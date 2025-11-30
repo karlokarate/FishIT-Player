@@ -147,13 +147,14 @@ class PlaybackErrorRecoveryTest {
     @Test
     fun `toKidsFriendlyMessage is generic for all error types`() {
         // Kids mode should never see technical details
-        val errors = listOf(
-            PlaybackError.Network(code = 1001, message = "Technical error"),
-            PlaybackError.Http(code = 500, url = "https://secret.url/video.mp4"),
-            PlaybackError.Source(message = "Parsing failed"),
-            PlaybackError.Decoder(message = "Codec AAC not found"),
-            PlaybackError.Unknown(throwable = IllegalStateException("Stack trace")),
-        )
+        val errors =
+            listOf(
+                PlaybackError.Network(code = 1001, message = "Technical error"),
+                PlaybackError.Http(code = 500, url = "https://secret.url/video.mp4"),
+                PlaybackError.Source(message = "Parsing failed"),
+                PlaybackError.Decoder(message = "Codec AAC not found"),
+                PlaybackError.Unknown(throwable = IllegalStateException("Stack trace")),
+            )
 
         errors.forEach { error ->
             val kidsMessage = error.toKidsFriendlyMessage()

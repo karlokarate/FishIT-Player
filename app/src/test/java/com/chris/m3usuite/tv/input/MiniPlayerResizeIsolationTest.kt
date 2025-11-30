@@ -2,7 +2,6 @@ package com.chris.m3usuite.tv.input
 
 import com.chris.m3usuite.player.miniplayer.MiniPlayerMode
 import com.chris.m3usuite.player.miniplayer.MiniPlayerState
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,7 +24,6 @@ import org.junit.Test
  * - GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md
  */
 class MiniPlayerResizeIsolationTest {
-
     // ══════════════════════════════════════════════════════════════════
     // RESIZE MODE BLOCKS ROW NAVIGATION
     // ══════════════════════════════════════════════════════════════════
@@ -33,15 +31,17 @@ class MiniPlayerResizeIsolationTest {
     @Test
     fun `RESIZE mode should block ROW_FAST_SCROLL_FORWARD`() {
         // Given: MiniPlayer is in RESIZE mode
-        val state = MiniPlayerState.INITIAL.copy(
-            visible = true,
-            mode = MiniPlayerMode.RESIZE,
-        )
-        val ctx = TvScreenContext.library(
-            isKidProfile = false,
-            hasBlockingOverlay = false,
-            isMiniPlayerVisible = true,
-        )
+        val state =
+            MiniPlayerState.INITIAL.copy(
+                visible = true,
+                mode = MiniPlayerMode.RESIZE,
+            )
+        val ctx =
+            TvScreenContext.library(
+                isKidProfile = false,
+                hasBlockingOverlay = false,
+                isMiniPlayerVisible = true,
+            )
 
         // When: Checking if ROW_FAST_SCROLL is blocked
         val action = TvAction.ROW_FAST_SCROLL_FORWARD
@@ -54,11 +54,12 @@ class MiniPlayerResizeIsolationTest {
 
     @Test
     fun `RESIZE mode should block ROW_FAST_SCROLL_BACKWARD`() {
-        val ctx = TvScreenContext.library(
-            isKidProfile = false,
-            hasBlockingOverlay = false,
-            isMiniPlayerVisible = true,
-        )
+        val ctx =
+            TvScreenContext.library(
+                isKidProfile = false,
+                hasBlockingOverlay = false,
+                isMiniPlayerVisible = true,
+            )
 
         // When: Checking if ROW_FAST_SCROLL_BACKWARD is blocked
         val action = TvAction.ROW_FAST_SCROLL_BACKWARD
@@ -76,12 +77,13 @@ class MiniPlayerResizeIsolationTest {
     fun `PIP_MOVE actions only work in RESIZE mode`() {
         // DPAD in resize mode moves the MiniPlayer position
         // These actions should be consumed by MiniPlayerResizeActionHandler
-        val moveActions = listOf(
-            TvAction.PIP_MOVE_UP,
-            TvAction.PIP_MOVE_DOWN,
-            TvAction.PIP_MOVE_LEFT,
-            TvAction.PIP_MOVE_RIGHT,
-        )
+        val moveActions =
+            listOf(
+                TvAction.PIP_MOVE_UP,
+                TvAction.PIP_MOVE_DOWN,
+                TvAction.PIP_MOVE_LEFT,
+                TvAction.PIP_MOVE_RIGHT,
+            )
 
         for (action in moveActions) {
             assertTrue(
@@ -97,10 +99,11 @@ class MiniPlayerResizeIsolationTest {
         // - PIP_SEEK_FORWARD increases size
         // - PIP_SEEK_BACKWARD decreases size
         // These do NOT seek playback - the action handler reinterprets them
-        val seekActions = listOf(
-            TvAction.PIP_SEEK_FORWARD,
-            TvAction.PIP_SEEK_BACKWARD,
-        )
+        val seekActions =
+            listOf(
+                TvAction.PIP_SEEK_FORWARD,
+                TvAction.PIP_SEEK_BACKWARD,
+            )
 
         for (action in seekActions) {
             assertTrue(
@@ -146,10 +149,11 @@ class MiniPlayerResizeIsolationTest {
         // In NORMAL mode:
         // - PIP_SEEK_FORWARD seeks playback +10s
         // - PIP_SEEK_BACKWARD seeks playback -10s
-        val state = MiniPlayerState.INITIAL.copy(
-            visible = true,
-            mode = MiniPlayerMode.NORMAL,
-        )
+        val state =
+            MiniPlayerState.INITIAL.copy(
+                visible = true,
+                mode = MiniPlayerMode.NORMAL,
+            )
 
         assertTrue(
             "NORMAL mode should allow PIP_SEEK to control playback",
@@ -159,10 +163,11 @@ class MiniPlayerResizeIsolationTest {
 
     @Test
     fun `NORMAL mode allows PIP_TOGGLE_PLAY_PAUSE`() {
-        val state = MiniPlayerState.INITIAL.copy(
-            visible = true,
-            mode = MiniPlayerMode.NORMAL,
-        )
+        val state =
+            MiniPlayerState.INITIAL.copy(
+                visible = true,
+                mode = MiniPlayerMode.NORMAL,
+            )
 
         assertTrue(
             "NORMAL mode should allow PIP_TOGGLE_PLAY_PAUSE",
@@ -237,11 +242,12 @@ class MiniPlayerResizeIsolationTest {
 
     @Test
     fun `MiniPlayer filter blocks specific actions when visible`() {
-        val ctx = TvScreenContext.library(
-            isKidProfile = false,
-            hasBlockingOverlay = false,
-            isMiniPlayerVisible = true,
-        )
+        val ctx =
+            TvScreenContext.library(
+                isKidProfile = false,
+                hasBlockingOverlay = false,
+                isMiniPlayerVisible = true,
+            )
 
         assertTrue(
             "MiniPlayer visible context should have isMiniPlayerVisible = true",
@@ -252,11 +258,12 @@ class MiniPlayerResizeIsolationTest {
     @Test
     fun `Kids mode filter still applies with MiniPlayer in RESIZE mode`() {
         // Kids mode filter should apply regardless of MiniPlayer mode
-        val ctx = TvScreenContext.library(
-            isKidProfile = true,
-            hasBlockingOverlay = false,
-            isMiniPlayerVisible = true,
-        )
+        val ctx =
+            TvScreenContext.library(
+                isKidProfile = true,
+                hasBlockingOverlay = false,
+                isMiniPlayerVisible = true,
+            )
 
         assertTrue("Kids mode should still be active", ctx.isKidProfile)
         assertTrue("MiniPlayer should still be visible", ctx.isMiniPlayerVisible)
