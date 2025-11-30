@@ -5,8 +5,6 @@ import com.chris.m3usuite.player.internal.subtitles.SubtitlePreset
 import com.chris.m3usuite.player.internal.subtitles.SubtitleStyle
 import com.chris.m3usuite.player.internal.subtitles.SubtitleTrack
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -164,13 +162,14 @@ class Phase4SubtitleRegressionTest {
 
     @Test
     fun `SubtitleTrack model has all required fields`() {
-        val track = SubtitleTrack(
-            groupIndex = 0,
-            trackIndex = 1,
-            language = "en",
-            label = "English (CC)",
-            isDefault = true,
-        )
+        val track =
+            SubtitleTrack(
+                groupIndex = 0,
+                trackIndex = 1,
+                language = "en",
+                label = "English (CC)",
+                isDefault = true,
+            )
 
         assertEquals(0, track.groupIndex)
         assertEquals(1, track.trackIndex)

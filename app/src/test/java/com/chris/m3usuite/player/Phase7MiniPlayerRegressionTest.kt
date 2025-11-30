@@ -1,7 +1,7 @@
 package com.chris.m3usuite.player
 
 import androidx.compose.ui.unit.dp
-import com.chris.m3usuite.player.miniplayer.DEFAULT_MINI_SIZE
+import com.chris.m3usuite.playback.SessionLifecycleState
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.player.miniplayer.MAX_MINI_SIZE
 import com.chris.m3usuite.player.miniplayer.MIN_MINI_SIZE
@@ -9,7 +9,6 @@ import com.chris.m3usuite.player.miniplayer.MiniPlayerAnchor
 import com.chris.m3usuite.player.miniplayer.MiniPlayerMode
 import com.chris.m3usuite.player.miniplayer.MiniPlayerState
 import com.chris.m3usuite.player.miniplayer.SAFE_MARGIN_DP
-import com.chris.m3usuite.playback.SessionLifecycleState
 import com.chris.m3usuite.tv.input.DefaultTvScreenConfigs
 import com.chris.m3usuite.tv.input.TvAction
 import com.chris.m3usuite.tv.input.TvKeyRole
@@ -194,7 +193,10 @@ class Phase7MiniPlayerRegressionTest {
 
         manager.enterResizeMode()
         // Make some changes in resize mode
-        manager.applyResize(androidx.compose.ui.unit.DpSize(50.dp, 30.dp))
+        manager.applyResize(
+            androidx.compose.ui.unit
+                .DpSize(50.dp, 30.dp),
+        )
 
         manager.cancelResize()
 

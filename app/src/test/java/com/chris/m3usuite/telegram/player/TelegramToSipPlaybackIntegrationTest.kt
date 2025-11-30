@@ -518,9 +518,10 @@ class TelegramToSipPlaybackIntegrationTest {
             assert(item.type in playableTypes) {
                 "Item at index $index should be playable type"
             }
-            val videoRef = requireNotNull(item.videoRef) {
-                "${item.type} must have videoRef for playback"
-            }
+            val videoRef =
+                requireNotNull(item.videoRef) {
+                    "${item.type} must have videoRef for playback"
+                }
             assert(videoRef.remoteId.isNotEmpty()) {
                 "${item.type} videoRef must have remoteId"
             }

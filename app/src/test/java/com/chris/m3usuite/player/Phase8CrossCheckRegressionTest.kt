@@ -1,9 +1,9 @@
 package com.chris.m3usuite.player
 
-import com.chris.m3usuite.player.internal.state.PlayerColdState
-import com.chris.m3usuite.player.internal.state.PlayerHotState
 import com.chris.m3usuite.playback.PlaybackPriority
 import com.chris.m3usuite.playback.SessionLifecycleState
+import com.chris.m3usuite.player.internal.state.PlayerColdState
+import com.chris.m3usuite.player.internal.state.PlayerHotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -50,15 +50,16 @@ class Phase8CrossCheckRegressionTest {
         val states = SessionLifecycleState.entries
 
         // Verify state names match contract
-        val expectedNames = setOf(
-            "IDLE",
-            "PREPARED",
-            "PLAYING",
-            "PAUSED",
-            "BACKGROUND",
-            "STOPPED",
-            "RELEASED",
-        )
+        val expectedNames =
+            setOf(
+                "IDLE",
+                "PREPARED",
+                "PLAYING",
+                "PAUSED",
+                "BACKGROUND",
+                "STOPPED",
+                "RELEASED",
+            )
         val actualNames = states.map { it.name }.toSet()
         assertEquals(expectedNames, actualNames)
     }
@@ -68,10 +69,11 @@ class Phase8CrossCheckRegressionTest {
         // Contract Section 4.3: onResume rebinds without recreating ExoPlayer
         // BACKGROUND → PLAYING/PAUSED should not recreate player
 
-        val canResume = listOf(
-            SessionLifecycleState.BACKGROUND,
-            SessionLifecycleState.PAUSED,
-        )
+        val canResume =
+            listOf(
+                SessionLifecycleState.BACKGROUND,
+                SessionLifecycleState.PAUSED,
+            )
 
         canResume.forEach { state ->
             // These states should allow warm resume
@@ -156,74 +158,82 @@ class Phase8CrossCheckRegressionTest {
 
     @Test
     fun `PlaybackError sealed class exists`() {
-        val networkError = com.chris.m3usuite.playback.PlaybackError.Network(
-            message = "Network unreachable",
-            code = null,
-        )
+        val networkError =
+            com.chris.m3usuite.playback.PlaybackError.Network(
+                message = "Network unreachable",
+                code = null,
+            )
         assertNotNull(networkError)
         assertTrue(networkError is com.chris.m3usuite.playback.PlaybackError)
     }
 
     @Test
     fun `PlaybackError has Network type`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Network(
-            message = "Test",
-            code = 1001,
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Network(
+                message = "Test",
+                code = 1001,
+            )
         assertEquals("Test", error.message)
         assertEquals(1001, error.code)
     }
 
     @Test
     fun `PlaybackError has Http type`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Http(
-            code = 404,
-            url = "https://example.com/video.mp4",
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Http(
+                code = 404,
+                url = "https://example.com/video.mp4",
+            )
         assertEquals(404, error.code)
         assertEquals("https://example.com/video.mp4", error.url)
     }
 
     @Test
     fun `PlaybackError has Source type`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Source(
-            message = "Invalid source",
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Source(
+                message = "Invalid source",
+            )
         assertEquals("Invalid source", error.message)
     }
 
     @Test
     fun `PlaybackError has Decoder type`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Decoder(
-            message = "Codec not supported",
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Decoder(
+                message = "Codec not supported",
+            )
         assertEquals("Codec not supported", error.message)
     }
 
     @Test
     fun `PlaybackError has Unknown type`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Unknown(
-            throwable = null,
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Unknown(
+                throwable = null,
+            )
         assertNull(error.throwable)
     }
 
     @Test
     fun `PlaybackError provides user-friendly message`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Network(
-            message = "Network unreachable",
-            code = null,
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Network(
+                message = "Network unreachable",
+                code = null,
+            )
         assertNotNull(error.toUserFriendlyMessage())
         assertTrue(error.toUserFriendlyMessage().isNotBlank())
     }
 
     @Test
     fun `PlaybackError provides kids-friendly message`() {
-        val error = com.chris.m3usuite.playback.PlaybackError.Http(
-            code = 500,
-            url = "https://example.com/video.mp4",
-        )
+        val error =
+            com.chris.m3usuite.playback.PlaybackError.Http(
+                code = 500,
+                url = "https://example.com/video.mp4",
+            )
         assertNotNull(error.toKidsFriendlyMessage())
         // Kids messages should be simpler and not expose technical details
         assertTrue(error.toKidsFriendlyMessage().isNotBlank())
@@ -269,13 +279,17 @@ class Phase8CrossCheckRegressionTest {
 
     @Test
     fun `FocusDecorationConfig is immutable`() {
-        val config = com.chris.m3usuite.ui.focus.FocusDecorationConfig()
+        val config =
+            com.chris.m3usuite.ui.focus
+                .FocusDecorationConfig()
         assertNotNull(config)
     }
 
     @Test
     fun `FocusDecorationConfig has default values`() {
-        val config = com.chris.m3usuite.ui.focus.FocusDecorationConfig()
+        val config =
+            com.chris.m3usuite.ui.focus
+                .FocusDecorationConfig()
 
         // Verify defaults are set
         assertTrue(config.focusBorderWidth.value >= 0f)
