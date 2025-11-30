@@ -5825,4 +5825,141 @@ All implementations align with:
 
 ---
 
+## Phase 8 – Task 7: Final Regression, QA & Profiling (COMPLETE)
+
+**Date:** 2025-11-30
+
+**Status:** ✅ **COMPLETE** – Group 9 (Regression Suite) implemented
+
+This task completes Phase 8 by implementing the final regression test suite and creating QA/profiling documentation.
+
+### What Was Done
+
+**1. Regression Test Suite Created**
+
+| Test File | Coverage |
+|-----------|----------|
+| `Phase4SubtitleRegressionTest.kt` | SubtitleStyle, presets, EdgeStyle, kids mode blocking, track selection |
+| `Phase5PlayerSurfaceRegressionTest.kt` | Black bars, AspectRatioMode, trickplay, auto-hide, seek constants |
+| `Phase6TvInputRegressionTest.kt` | TvKeyRole, TvAction, screen configs, kids/overlay filtering, FocusZones |
+| `Phase7MiniPlayerRegressionTest.kt` | MiniPlayerState, mode transitions, resize, lifecycle, PIP actions |
+| `Phase8CrossCheckRegressionTest.kt` | SessionLifecycleState, PlaybackPriority, Hot/Cold state, PlaybackError |
+
+**2. QA & Profiling Documentation Created**
+
+| File | Content |
+|------|---------|
+| `docs/PHASE8_QA_PROFILING_GUIDE.md` | Manual QA scenarios, profiling guidance, device recommendations |
+
+**QA Scenarios Documented:**
+- PlaybackSession Lifecycle (foreground/background, rotation, Full↔Mini↔Full)
+- MiniPlayer UX (resize mode, touch drag, focus toggle)
+- System PiP (phone/tablet vs TV behavior)
+- TV Input & DPAD Navigation (per GLOBAL_TV_REMOTE_BEHAVIOR_MAP)
+- Kids Mode Filtering (seek blocked, CC blocked, navigation allowed)
+- Error Handling (overlays, retry, dismiss, badges)
+- Worker Throttling (PlaybackPriority during playback)
+
+**Profiling Guidance Documented:**
+- Tools: Android Studio Profiler, Log Viewer, TvInputInspector, LeakCanary
+- Scenarios: Frequent seeks, worker activity, MiniPlayer transitions, rotation stress
+- Key metrics: CPU baseline, seek overhead, memory, GC events, frame rate
+
+**3. Documentation Updated**
+
+| File | Changes |
+|------|---------|
+| `INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 9 as DONE with all regression test references |
+| `INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Phase 8 Task 7 entry (this section) |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `test/.../Phase4SubtitleRegressionTest.kt` | Phase 4 regression tests (20+ tests) |
+| `test/.../Phase5PlayerSurfaceRegressionTest.kt` | Phase 5 regression tests (25+ tests) |
+| `test/.../Phase6TvInputRegressionTest.kt` | Phase 6 regression tests (30+ tests) |
+| `test/.../Phase7MiniPlayerRegressionTest.kt` | Phase 7 regression tests (40+ tests) |
+| `test/.../Phase8CrossCheckRegressionTest.kt` | Phase 8 cross-check tests (30+ tests) |
+| `docs/PHASE8_QA_PROFILING_GUIDE.md` | QA & profiling documentation |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 9 as DONE, Quality Gates as DONE |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Task 7 entry |
+
+### Files NOT Modified (Per Task Constraints)
+
+- ❌ `telegram/**/*.kt` – All Telegram modules untouched
+- ❌ `telegram/work/TelegramSyncWorker.kt` – Telegram workers untouched
+- ❌ `player/InternalPlayerScreen.kt` – Legacy screen untouched (SIP-only)
+- ❌ Parser/ObjectBox modules – Handled by parallel refactor
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ All Phase 4-8 regression tests pass
+- ⚠️ Some pre-existing test failures unrelated to Phase 8 (Telegram, LiveController)
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 9
+- `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
+- `docs/INTERNAL_PLAYER_PHASE4_CHECKLIST.md`
+- `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
+- `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md`
+- `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md`
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ No feature additions (tests and documentation only)
+- ✅ Phase 4-7 behaviors verified as unchanged
+
+### Phase 8 Status Summary (COMPLETE)
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
+| 2 | UI Rebinding & Rotation | ✅ DONE |
+| 3 | Navigation & Backstack Stability | ✅ DONE |
+| 4 | System PiP vs In-App MiniPlayer | ✅ DONE |
+| 5 | Playback-Aware Worker Scheduling | ✅ DONE |
+| 6 | Memory & Leak Hygiene | ✅ DONE |
+| 7 | Compose & FocusKit Performance | ✅ DONE |
+| 8 | Error Handling & Recovery | ✅ DONE |
+| **9** | **Regression Suite** | ✅ **DONE** |
+
+---
+
+## ✅ PHASE 8 FULLY COMPLETE
+
+**Summary:**
+Phase 8 ensures that the unified PlaybackSession + In-App MiniPlayer behave robustly and efficiently under real-world conditions.
+
+**Key Achievements:**
+- **SessionLifecycleState**: IDLE → PREPARED → PLAYING ↔ PAUSED → BACKGROUND → STOPPED → RELEASED
+- **Warm Resume**: UI rebinds without ExoPlayer recreation on config changes
+- **Navigation Stability**: No ghost players, clean Full↔Mini↔Home flows
+- **System PiP Isolation**: Only on phones/tablets when exiting app, never from UI button
+- **Worker Throttling**: PlaybackPriority-aware scheduling during playback
+- **Memory Hygiene**: LeakCanary integration, no static Context/Activity refs
+- **Compose Performance**: Hot/Cold state split, consolidated FocusKit effects
+- **Error Handling**: PlaybackErrorOverlay, MiniPlayerErrorBadge, AppLog integration
+- **Regression Suite**: 150+ tests covering Phases 4-8 behavior
+
+**Constraints Honored:**
+- SIP-only changes (legacy InternalPlayerScreen untouched)
+- No Telegram/Parser/ObjectBox module changes
+- No feature additions beyond Phase 8 scope
+- Phase 4-7 behaviors preserved and verified
+
+---
+
 **Last Updated:** 2025-11-30

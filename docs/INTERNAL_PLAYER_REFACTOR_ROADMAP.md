@@ -1379,3 +1379,68 @@ app/
 - TDLib / Telegram:
   - Always respect the official `tdlib` / `tdlib-coroutines` documentation when interacting with Telegram.
   - Zero deviations from official semantics unless strictly necessary for best-effort integration (e.g. dealing with device-specific edge cases).
+
+---
+
+## Phases 4-8 Implementation Summary
+
+### ✅ All SIP Phases Complete
+
+As of 2025-11-30, Phases 4-8 of the Internal Player refactor are fully implemented and verified for the SIP (Simplified Internal Player) architecture.
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| **Phase 4** | Subtitles/CC Menu | ✅ COMPLETE |
+| **Phase 5** | PlayerSurface, Aspect Ratio, Trickplay, Auto-Hide | ✅ COMPLETE |
+| **Phase 6** | TV Input System & FocusKit | ✅ COMPLETE |
+| **Phase 7** | PlaybackSession & In-App MiniPlayer | ✅ COMPLETE |
+| **Phase 8** | Performance, Lifecycle & Stability | ✅ COMPLETE |
+
+### Key Achievements
+
+**Phase 4 (Subtitles/CC):**
+- SubtitleStyleManager with presets (DEFAULT, HIGH_CONTRAST, TV_LARGE, MINIMAL)
+- CC menu with track selection and style customization
+- Kids Mode: CC button hidden, no subtitles rendered
+
+**Phase 5 (PlayerSurface):**
+- Black bar enforcement on all aspect ratio combinations
+- AspectRatioMode cycling (FIT → FILL → ZOOM)
+- Trickplay with FF/RW and DPAD seek
+- Auto-hide controls (TV: 7s, phone: 4s)
+
+**Phase 6 (TV Input):**
+- TvKeyRole → TvAction mapping per screen context
+- Kids Mode action filtering (SEEK_*, CC_MENU, ASPECT_MENU blocked)
+- Overlay blocking (only NAVIGATE_* and BACK allowed)
+- EXIT_TO_HOME via double BACK
+
+**Phase 7 (PlaybackSession & MiniPlayer):**
+- Unified PlaybackSession with single ExoPlayer instance
+- In-App MiniPlayer with resize mode (FF/RW: size, DPAD: move)
+- System PiP only on phone/tablet when leaving app
+- Focus toggle via long-press PLAY
+
+**Phase 8 (Performance & Stability):**
+- SessionLifecycleState state machine
+- Warm resume (UI rebinds without ExoPlayer recreation)
+- PlaybackPriority-aware worker throttling
+- Hot/Cold state split for Compose performance
+- PlaybackError model with UI overlays
+- Comprehensive regression test suite (150+ tests)
+
+### Legacy Status
+
+The legacy `InternalPlayerScreen.kt` remains as the active runtime implementation. It has NOT been modified and serves as the historical reference. All new functionality is implemented in the SIP architecture under `player/internal/`.
+
+### Contract Documents
+
+All implementations are verified against:
+- `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md`
+- `INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md`
+- `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`
+- `INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`
+- `INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
+- `GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
+
+---
