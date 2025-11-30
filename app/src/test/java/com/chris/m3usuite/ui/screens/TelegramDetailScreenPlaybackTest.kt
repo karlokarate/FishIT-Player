@@ -3,13 +3,15 @@ package com.chris.m3usuite.ui.screens
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.TelegramMediaRef
+import com.chris.m3usuite.telegram.player.TelegramPlaybackRequest
+import com.chris.m3usuite.telegram.player.toPlaybackRequest
 import com.chris.m3usuite.telegram.util.TelegramPlayUrl
 import org.junit.Test
 
 /**
  * Unit tests for TelegramDetailScreen playback wiring.
  *
- * Phase D.6: Tests for playback wiring correctness.
+ * Phase D+: Tests for remoteId-first playback wiring correctness.
  *
  * Per Phase 8 Telegram ↔ PlayerLifecycle Contract:
  * - Telegram MUST build PlaybackContext(type=VOD) from TelegramItem
@@ -17,15 +19,140 @@ import org.junit.Test
  * - Telegram MUST navigate into InternalPlayerEntry for playback
  * - Telegram MUST NOT create/release ExoPlayer
  * - Telegram MUST NOT modify PlayerView
+ *
+ * Per Phase D+ RemoteId-First Contract:
+ * - remoteId and uniqueId are the PRIMARY identifiers (stable across sessions)
+ * - fileId is an OPTIONAL volatile cache that may become stale
+ * - DataSource resolves fileId via getRemoteFile(remoteId) if needed
  */
 class TelegramDetailScreenPlaybackTest {
+    // ==========================================================================
+    // Phase D+ RemoteId-First Tests
+    // ==========================================================================
+
     @Test
-    fun `TelegramPlayUrl builds correct URL format`() {
+    fun `TelegramMediaRef toPlaybackRequest preserves all identifiers`() {
+        val mediaRef = TelegramMediaRef(
+            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+            uniqueId = "AQADCAAH1234",
+            fileId = 12345,
+            sizeBytes = 1_000_000_000L,
+            mimeType = "video/mp4",
+            durationSeconds = 5400,
+            width = 1920,
+            height = 1080,
+        )
+
+        val request = mediaRef.toPlaybackRequest(
+            chatId = -1001234567890L,
+            anchorMessageId = 98765L,
+        )
+
+        assert(request.remoteId == "AgACAgIAAxkBAAIBNmF1Y2xxxxx") {
+            "remoteId should be preserved"
+        }
+        assert(request.uniqueId == "AQADCAAH1234") {
+            "uniqueId should be preserved"
+        }
+        assert(request.fileId == 12345) {
+            "fileId should be preserved"
+        }
+        assert(request.chatId == -1001234567890L) {
+            "chatId should be set"
+        }
+        assert(request.messageId == 98765L) {
+            "messageId should be set"
+        }
+    }
+
+    @Test
+    fun `TelegramPlaybackRequest with null fileId builds valid URL`() {
+        val request = TelegramPlaybackRequest(
+            chatId = -1001234567890L,
+            messageId = 98765L,
+            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+            uniqueId = "AQADCAAH1234",
+            fileId = null,
+        )
+
+        val url = TelegramPlayUrl.build(request)
+
+        // URL should use 0 as fileId path segment, but include remoteId for resolution
+        assert(url.startsWith("tg://file/0?")) {
+            "URL should use 0 for null fileId"
+        }
+        assert(url.contains("remoteId=AgACAgIAAxkBAAIBNmF1Y2xxxxx")) {
+            "URL should include remoteId for DataSource resolution"
+        }
+    }
+
+    @Test
+    fun `RemoteId-first URL includes all identifiers for DataSource`() {
+        val mediaRef = TelegramMediaRef(
+            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+            uniqueId = "AQADCAAH1234",
+            fileId = 12345,
+            sizeBytes = 1_000_000_000L,
+            mimeType = "video/mp4",
+            durationSeconds = 5400,
+            width = 1920,
+            height = 1080,
+        )
+
+        val request = mediaRef.toPlaybackRequest(
+            chatId = -1001234567890L,
+            anchorMessageId = 98765L,
+        )
+
+        val url = TelegramPlayUrl.build(request)
+
+        // Verify all identifiers are present for DataSource parsing
+        assert(url.contains("chatId=-1001234567890")) { "URL must include chatId" }
+        assert(url.contains("messageId=98765")) { "URL must include messageId" }
+        assert(url.contains("remoteId=")) { "URL must include remoteId" }
+        assert(url.contains("uniqueId=")) { "URL must include uniqueId" }
+    }
+
+    @Test
+    fun `Playback with stale fileId can still resolve via remoteId`() {
+        // This test verifies the contract: even if fileId is stale (0),
+        // the URL contains remoteId for DataSource to resolve a fresh fileId
+        val mediaRef = TelegramMediaRef(
+            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+            uniqueId = "AQADCAAH1234",
+            fileId = null, // Stale/missing fileId
+            sizeBytes = 1_000_000_000L,
+            mimeType = "video/mp4",
+            durationSeconds = 5400,
+            width = 1920,
+            height = 1080,
+        )
+
+        val request = mediaRef.toPlaybackRequest(
+            chatId = -1001234567890L,
+            anchorMessageId = 98765L,
+        )
+
+        val url = TelegramPlayUrl.build(request)
+
+        // The URL should allow DataSource to resolve via remoteId
+        assert(request.fileId == null) { "fileId should be null (stale)" }
+        assert(request.remoteId.isNotEmpty()) { "remoteId should be present for resolution" }
+        assert(url.contains("remoteId=")) { "URL must include remoteId for resolution" }
+    }
+
+    // ==========================================================================
+    // Legacy URL Format Tests
+    // ==========================================================================
+
+    @Test
+    fun `Legacy TelegramPlayUrl builds correct URL format`() {
         // Test URL format: tg://file/<fileId>?chatId=...&messageId=...
         val fileId = 12345
         val chatId = -1001234567890L
         val messageId = 9876L
 
+        @Suppress("DEPRECATION")
         val url = TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)
 
         assert(url == "tg://file/$fileId?chatId=$chatId&messageId=$messageId") {
@@ -34,11 +161,12 @@ class TelegramDetailScreenPlaybackTest {
     }
 
     @Test
-    fun `TelegramPlayUrl requires non-null fileId`() {
+    fun `Legacy TelegramPlayUrl requires non-null fileId`() {
         val chatId = -1001234567890L
         val messageId = 9876L
 
         try {
+            @Suppress("DEPRECATION")
             TelegramPlayUrl.buildFileUrl(null, chatId, messageId)
             assert(false) { "Should throw exception for null fileId" }
         } catch (e: IllegalArgumentException) {
@@ -49,8 +177,12 @@ class TelegramDetailScreenPlaybackTest {
         }
     }
 
+    // ==========================================================================
+    // TelegramMediaRef Validation Tests
+    // ==========================================================================
+
     @Test
-    fun `TelegramMediaRef can be converted to playback URL`() {
+    fun `TelegramMediaRef has required fields for playback`() {
         // Test that TelegramMediaRef has all fields needed for playback
         val mediaRef =
             TelegramMediaRef(
@@ -65,9 +197,9 @@ class TelegramDetailScreenPlaybackTest {
             )
 
         // Verify required fields for playback exist
-        assert(mediaRef.fileId != null) { "fileId should be present for playback" }
-        assert(mediaRef.remoteId.isNotEmpty()) { "remoteId should be present for stable reference" }
-        assert(mediaRef.uniqueId.isNotEmpty()) { "uniqueId should be present for stable reference" }
+        assert(mediaRef.remoteId.isNotEmpty()) { "remoteId should be present (PRIMARY identifier)" }
+        assert(mediaRef.uniqueId.isNotEmpty()) { "uniqueId should be present (PRIMARY identifier)" }
+        assert(mediaRef.fileId != null) { "fileId can be present for fast-path (OPTIONAL cache)" }
         assert(mediaRef.mimeType != null) { "mimeType should be present for player" }
     }
 
@@ -150,11 +282,15 @@ class TelegramDetailScreenPlaybackTest {
     @Test
     fun `Playback URL scheme is correct for TDLib integration`() {
         // Verify URL scheme matches TelegramFileDataSource expectations
-        val fileId = 12345
-        val chatId = -1001234567890L
-        val messageId = 9876L
+        val request = TelegramPlaybackRequest(
+            chatId = -1001234567890L,
+            messageId = 9876L,
+            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+            uniqueId = "AQADCAAH1234",
+            fileId = 12345,
+        )
 
-        val url = TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)
+        val url = TelegramPlayUrl.build(request)
 
         // Parse URL to verify components
         assert(url.startsWith("tg://file/")) {
@@ -167,6 +303,15 @@ class TelegramDetailScreenPlaybackTest {
 
         assert(url.contains("messageId=")) {
             "URL should contain messageId parameter"
+        }
+
+        // Phase D+: Also verify remoteId/uniqueId
+        assert(url.contains("remoteId=")) {
+            "URL should contain remoteId parameter (Phase D+)"
+        }
+
+        assert(url.contains("uniqueId=")) {
+            "URL should contain uniqueId parameter (Phase D+)"
         }
     }
 }

@@ -15,27 +15,22 @@ import java.io.IOException
 
 /**
  * DataSource for Telegram files using TDLib + FileDataSource for Zero-Copy Streaming.
- * Handles tg://file/<fileId>?chatId=...&messageId=... URLs.
+ *
+ * **Phase D+ RemoteId-First URL Format:**
+ * `tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...`
+ *
+ * **Resolution Strategy:**
+ * 1. Parse URL to extract fileId, remoteId, chatId, messageId
+ * 2. If fileId is valid (> 0), use it directly (fast path)
+ * 3. If fileId is 0 or invalid, resolve via getRemoteFile(remoteId)
+ * 4. Call ensureFileReady() to ensure TDLib has downloaded prefix
+ * 5. Delegate to FileDataSource for actual I/O
  *
  * **Zero-Copy Architecture:**
  * - TDLib downloads file to its cache directory on disk
  * - This DataSource delegates to Media3's FileDataSource for all I/O
  * - No ByteArray buffers, no custom position tracking
  * - ExoPlayer/FileDataSource handles seeking and scrubbing
- * - TDLib handles chunking/range downloads via ensureFileReady()
- *
- * **Flow:**
- * 1. Parse tg:// URI to extract fileId, chatId, messageId
- * 2. Call ensureFileReady() to ensure TDLib has downloaded prefix
- * 3. Get localPath from TDLib
- * 4. Create file:// URI and delegate to FileDataSource
- * 5. All read/seek operations handled by FileDataSource
- *
- * This eliminates:
- * - Custom ringbuffer ByteArray
- * - Window state management (windowStart, windowSize)
- * - Custom position arithmetic
- * - Duplicate file copies on disk
  *
  * @param serviceClient T_TelegramServiceClient for TDLib access
  */
@@ -51,6 +46,8 @@ class TelegramFileDataSource(
     private var fileId: Int? = null
     private var chatId: Long? = null
     private var messageId: Long? = null
+    private var remoteId: String? = null
+    private var uniqueId: String? = null
 
     companion object {
         /**
@@ -66,20 +63,19 @@ class TelegramFileDataSource(
 
     /**
      * Open the data source for the given DataSpec.
-     * Parses the tg:// URL, ensures TDLib has the file ready, and delegates to FileDataSource.
+     * Parses the tg:// URL, resolves fileId if needed, ensures TDLib has the file ready,
+     * and delegates to FileDataSource.
      *
-     * URL format: tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>
+     * **Phase D+ URL Format:**
+     * `tg://file/<fileIdOrZero>?chatId=<chatId>&messageId=<messageId>&remoteId=<remoteId>&uniqueId=<uniqueId>`
+     *
+     * **Legacy URL Format (still supported):**
+     * `tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>`
      *
      * **IMPORTANT - Blocking Behavior:**
      * This method uses runBlocking() to ensure the TDLib file is ready, which blocks
-     * the calling thread. This is necessary because the DataSource.open() interface
-     * is synchronous, but TDLib operations are asynchronous. If this DataSource is
-     * opened on the main thread, it may cause ANR (Application Not Responding) issues
-     * if the download takes too long. ExoPlayer typically calls open() from background
-     * threads, but callers should be aware of this blocking behavior.
-     *
-     * The maximum blocking time is configurable in ensureFileReady() (default: 30 seconds).
-     * For large files or slow connections, consider pre-downloading files before playback.
+     * the calling thread. ExoPlayer typically calls open() from background threads,
+     * but callers should be aware of this blocking behavior.
      *
      * @param dataSpec The DataSpec to open
      * @return The number of bytes remaining, or C.LENGTH_UNSET if unknown
@@ -101,15 +97,13 @@ class TelegramFileDataSource(
         }
 
         val fileIdStr = segments[0]
-        val fileIdInt = fileIdStr.toIntOrNull()
-        if (fileIdInt == null || fileIdInt <= 0) {
-            throw IOException("Invalid fileId in Telegram URI: $uri (fileId=$fileIdStr must be a positive integer)")
-        }
-        fileId = fileIdInt
+        var fileIdInt = fileIdStr.toIntOrNull() ?: 0
 
-        // Extract chatId and messageId from query parameters
+        // Extract query parameters
         val chatIdStr = uri.getQueryParameter("chatId")
         val messageIdStr = uri.getQueryParameter("messageId")
+        val remoteIdParam = uri.getQueryParameter("remoteId")
+        val uniqueIdParam = uri.getQueryParameter("uniqueId")
 
         if (chatIdStr.isNullOrBlank() || messageIdStr.isNullOrBlank()) {
             throw IOException("Missing chatId or messageId parameter in Telegram URI: $uri")
@@ -119,18 +113,70 @@ class TelegramFileDataSource(
             ?: throw IOException("Invalid chatId parameter in Telegram URI: $uri")
         messageId = messageIdStr.toLongOrNull()
             ?: throw IOException("Invalid messageId parameter in Telegram URI: $uri")
+        remoteId = remoteIdParam
+        uniqueId = uniqueIdParam
 
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
             message = "opening",
-            details =
-                mapOf(
-                    "fileId" to fileIdInt.toString(),
-                    "chatId" to chatId.toString(),
-                    "messageId" to messageId.toString(),
-                    "dataSpecPosition" to dataSpec.position.toString(),
-                ),
+            details = mapOf(
+                "fileIdFromPath" to fileIdStr,
+                "chatId" to chatId.toString(),
+                "messageId" to messageId.toString(),
+                "remoteId" to (remoteIdParam ?: "none"),
+                "uniqueId" to (uniqueIdParam ?: "none"),
+                "dataSpecPosition" to dataSpec.position.toString(),
+            ),
         )
+
+        // Phase D+: RemoteId-first resolution
+        // If fileId is invalid (0 or negative), try to resolve via remoteId
+        if (fileIdInt <= 0 && !remoteIdParam.isNullOrBlank()) {
+            TelegramLogRepository.debug(
+                source = "TelegramFileDataSource",
+                message = "fileId invalid, resolving via remoteId",
+                details = mapOf("remoteId" to remoteIdParam),
+            )
+
+            val resolvedFileId = try {
+                runBlocking {
+                    serviceClient.downloader().resolveRemoteFileId(remoteIdParam)
+                }
+            } catch (e: Exception) {
+                TelegramLogRepository.error(
+                    source = "TelegramFileDataSource",
+                    message = "Failed to resolve remoteId",
+                    exception = e,
+                    details = mapOf("remoteId" to remoteIdParam),
+                )
+                null
+            }
+
+            if (resolvedFileId != null && resolvedFileId > 0) {
+                fileIdInt = resolvedFileId
+                TelegramLogRepository.info(
+                    source = "TelegramFileDataSource",
+                    message = "Resolved remoteId to fileId",
+                    details = mapOf(
+                        "remoteId" to remoteIdParam,
+                        "resolvedFileId" to resolvedFileId.toString(),
+                    ),
+                )
+            } else {
+                throw IOException(
+                    "Cannot resolve fileId: path fileId=$fileIdStr is invalid and " +
+                        "remoteId resolution failed for remoteId=$remoteIdParam",
+                )
+            }
+        } else if (fileIdInt <= 0) {
+            // No remoteId available and fileId is invalid
+            throw IOException(
+                "Invalid fileId in Telegram URI: $uri (fileId=$fileIdStr must be positive, " +
+                    "or remoteId must be provided for resolution)",
+            )
+        }
+
+        fileId = fileIdInt
 
         // Notify TransferListener that TDLib preparation phase is starting
         transferListener?.onTransferStart(this, dataSpec, /* isNetwork = */ true)
@@ -154,18 +200,14 @@ class TelegramFileDataSource(
                     source = "TelegramFileDataSource",
                     message = "Failed to ensure file ready",
                     exception = e,
-                    details =
-                        mapOf(
-                            "fileId" to fileIdInt.toString(),
-                            "position" to dataSpec.position.toString(),
-                        ),
+                    details = mapOf(
+                        "fileId" to fileIdInt.toString(),
+                        "remoteId" to (remoteIdParam ?: "none"),
+                        "position" to dataSpec.position.toString(),
+                    ),
                 )
                 // Reset state variables to avoid partial initialization
-                delegate = null
-                resolvedUri = null
-                fileId = null
-                chatId = null
-                messageId = null
+                resetState()
                 throw IOException("Failed to prepare Telegram file: ${e.message}", e)
             }
 
@@ -190,13 +232,13 @@ class TelegramFileDataSource(
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
             message = "opened",
-            details =
-                mapOf(
-                    "fileId" to fileIdInt.toString(),
-                    "localPath" to localPath,
-                    "dataSpecPosition" to dataSpec.position.toString(),
-                    "fileSize" to file.length().toString(),
-                ),
+            details = mapOf(
+                "fileId" to fileIdInt.toString(),
+                "remoteId" to (remoteIdParam ?: "none"),
+                "localPath" to localPath,
+                "dataSpecPosition" to dataSpec.position.toString(),
+                "fileSize" to file.length().toString(),
+            ),
         )
 
         return fileDataSource.open(fileDataSpec)
@@ -231,17 +273,23 @@ class TelegramFileDataSource(
         try {
             delegate?.close()
         } finally {
-            delegate = null
-            resolvedUri = null
-            fileId = null
-            chatId = null
-            messageId = null
+            resetState()
         }
 
         TelegramLogRepository.debug(
             source = "TelegramFileDataSource",
             message = "closed",
         )
+    }
+
+    private fun resetState() {
+        delegate = null
+        resolvedUri = null
+        fileId = null
+        chatId = null
+        messageId = null
+        remoteId = null
+        uniqueId = null
     }
 }
 

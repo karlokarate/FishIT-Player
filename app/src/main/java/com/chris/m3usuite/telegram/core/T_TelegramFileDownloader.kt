@@ -847,6 +847,74 @@ class T_TelegramFileDownloader(
         }
 
     /**
+     * Resolve a remote file ID to a local file ID.
+     *
+     * Phase D+: This is the key method for remoteId-first playback wiring.
+     * Uses TDLib's getRemoteFile API to resolve a stable remoteId to a volatile fileId.
+     *
+     * The remoteId is stable across sessions and devices, while fileId is only valid
+     * for the current TDLib instance and may become stale.
+     *
+     * @param remoteId Stable remote file identifier (from TelegramMediaRef.remoteId)
+     * @return TDLib local file ID, or null if resolution fails
+     */
+    suspend fun resolveRemoteFileId(remoteId: String): Int? =
+        withContext(Dispatchers.IO) {
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Resolving remoteId to fileId",
+                details = mapOf("remoteId" to remoteId),
+            )
+
+            try {
+                val result = client.getRemoteFile(
+                    remoteFileId = remoteId,
+                    fileType = null, // Let TDLib determine the file type
+                )
+
+                when (result) {
+                    is dev.g000sha256.tdl.TdlResult.Success -> {
+                        val file = result.result
+                        val fileId = file.id
+
+                        // Cache the resolved file info
+                        fileInfoCache[fileId.toString()] = file
+
+                        TelegramLogRepository.debug(
+                            source = "T_TelegramFileDownloader",
+                            message = "Resolved remoteId to fileId",
+                            details = mapOf(
+                                "remoteId" to remoteId,
+                                "fileId" to fileId.toString(),
+                            ),
+                        )
+                        fileId
+                    }
+                    is dev.g000sha256.tdl.TdlResult.Failure -> {
+                        TelegramLogRepository.error(
+                            source = "T_TelegramFileDownloader",
+                            message = "Failed to resolve remoteId",
+                            details = mapOf(
+                                "remoteId" to remoteId,
+                                "error" to result.message,
+                                "code" to result.code.toString(),
+                            ),
+                        )
+                        null
+                    }
+                }
+            } catch (e: Exception) {
+                TelegramLogRepository.error(
+                    source = "T_TelegramFileDownloader",
+                    message = "Exception resolving remoteId",
+                    exception = e,
+                    details = mapOf("remoteId" to remoteId),
+                )
+                null
+            }
+        }
+
+    /**
      * Clear old cached files to prevent bloat.
      * Should be called periodically or when cache size limit is reached.
      *
