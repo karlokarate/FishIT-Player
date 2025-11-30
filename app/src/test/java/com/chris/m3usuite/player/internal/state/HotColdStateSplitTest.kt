@@ -1,5 +1,6 @@
 package com.chris.m3usuite.player.internal.state
 
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -85,7 +86,7 @@ class HotColdStateSplitTest {
     fun `PlayerColdState default values are correct`() {
         val coldState = PlayerColdState()
 
-        assertEquals(com.chris.m3usuite.player.internal.domain.PlaybackType.VOD, coldState.playbackType)
+        assertEquals(PlaybackType.VOD, coldState.playbackType)
         assertEquals(1f, coldState.playbackSpeed, 0.001f)
         assertFalse(coldState.isLooping)
         assertNull(coldState.playbackError)
@@ -110,7 +111,7 @@ class HotColdStateSplitTest {
     @Test
     fun `PlayerColdState isLive returns true for LIVE playbackType`() {
         val coldState = PlayerColdState(
-            playbackType = com.chris.m3usuite.player.internal.domain.PlaybackType.LIVE,
+            playbackType = PlaybackType.LIVE,
         )
         assertTrue(coldState.isLive)
         assertFalse(coldState.isSeries)
@@ -119,7 +120,7 @@ class HotColdStateSplitTest {
     @Test
     fun `PlayerColdState isSeries returns true for SERIES playbackType`() {
         val coldState = PlayerColdState(
-            playbackType = com.chris.m3usuite.player.internal.domain.PlaybackType.SERIES,
+            playbackType = PlaybackType.SERIES,
         )
         assertTrue(coldState.isSeries)
         assertFalse(coldState.isLive)
@@ -188,7 +189,7 @@ class HotColdStateSplitTest {
     @Test
     fun `toColdState extracts cold fields correctly`() {
         val fullState = InternalPlayerUiState(
-            playbackType = com.chris.m3usuite.player.internal.domain.PlaybackType.LIVE,
+            playbackType = PlaybackType.LIVE,
             playbackSpeed = 1.5f,
             isLooping = true,
             kidActive = true,

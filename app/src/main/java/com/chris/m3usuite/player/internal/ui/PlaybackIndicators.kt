@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -213,7 +214,7 @@ fun IsolatedTrickplayIndicator(
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.width(8.dp))
                 }
                 Text(
                     text = speedText,
@@ -222,7 +223,7 @@ fun IsolatedTrickplayIndicator(
                     fontWeight = FontWeight.Bold,
                 )
                 if (isForward) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = "►►",
                         color = Color.White,
