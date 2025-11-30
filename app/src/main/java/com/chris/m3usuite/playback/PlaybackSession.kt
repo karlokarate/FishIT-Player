@@ -7,6 +7,8 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
+import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
  * ════════════════════════════════════════════════════════════════════════════════
  * PHASE 7 – Unified PlaybackSession
  * PHASE 8 – SessionLifecycleState added
+ * PHASE 8 – Task 6: Structured PlaybackError + AppLog integration
  * ════════════════════════════════════════════════════════════════════════════════
  *
  * This singleton manages:
@@ -26,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference
  * - Command methods for playback control
  * - Player lifecycle management
  * - Session lifecycle state machine (Phase 8)
+ * - Structured error handling with AppLog integration (Phase 8 Task 6)
  *
  * **Key Principles:**
  * - Single global session: One shared ExoPlayer per process
@@ -36,10 +40,12 @@ import java.util.concurrent.atomic.AtomicReference
  *   - Opening the MiniPlayer
  *   - Navigating between screens
  * - Lifecycle state enables warm resume (Phase 8)
+ * - Errors logged via AppLog with category "PLAYER_ERROR" (Phase 8 Task 6)
  *
  * **Contract Reference:**
  * - INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md Sections 3.1, 7
  * - INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md Section 4
+ * - INTERNAL_PLAYER_PHASE8_CHECKLIST.md Group 8
  */
 object PlaybackSession : PlaybackSessionController {
     data class Holder(
@@ -64,8 +70,11 @@ object PlaybackSession : PlaybackSessionController {
     /** Maximum trickplay speed multiplier */
     private const val MAX_TRICKPLAY_SPEED = 8.0f
 
+    /** AppLog category for player errors (Phase 8 Task 6) */
+    private const val LOG_CATEGORY_PLAYER_ERROR = "PLAYER_ERROR"
+
     // ══════════════════════════════════════════════════════════════════
-    // STATE FLOWS (Phase 7 + Phase 8 lifecycle)
+    // STATE FLOWS (Phase 7 + Phase 8 lifecycle + Phase 8 Task 6 errors)
     // ══════════════════════════════════════════════════════════════════
 
     private val _positionMs = MutableStateFlow(0L)
@@ -73,16 +82,21 @@ object PlaybackSession : PlaybackSessionController {
     private val _isPlaying = MutableStateFlow(false)
     private val _buffering = MutableStateFlow(false)
     private val _error = MutableStateFlow<PlaybackException?>(null)
+    private val _playbackError = MutableStateFlow<PlaybackError?>(null)
     private val _videoSize = MutableStateFlow<VideoSize?>(null)
     private val _playbackState = MutableStateFlow(Player.STATE_IDLE)
     private val _isSessionActive = MutableStateFlow(false)
     private val _lifecycleState = MutableStateFlow(SessionLifecycleState.IDLE)
+
+    /** Current media ID for error logging (Phase 8 Task 6) */
+    private val _currentMediaId = AtomicReference<String?>(null)
 
     override val positionMs: StateFlow<Long> = _positionMs.asStateFlow()
     override val durationMs: StateFlow<Long> = _durationMs.asStateFlow()
     override val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
     override val buffering: StateFlow<Boolean> = _buffering.asStateFlow()
     override val error: StateFlow<PlaybackException?> = _error.asStateFlow()
+    override val playbackError: StateFlow<PlaybackError?> = _playbackError.asStateFlow()
     override val videoSize: StateFlow<VideoSize?> = _videoSize.asStateFlow()
     override val playbackState: StateFlow<Int> = _playbackState.asStateFlow()
     override val isSessionActive: StateFlow<Boolean> = _isSessionActive.asStateFlow()
@@ -341,13 +355,11 @@ object PlaybackSession : PlaybackSessionController {
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    _error.value = error
-                    _isPlaying.value = false
-                    _buffering.value = false
+                    handlePlayerError(error)
                 }
 
                 override fun onPlayerErrorChanged(error: PlaybackException?) {
-                    _error.value = error
+                    handlePlayerErrorChanged(error)
                 }
 
                 override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -445,6 +457,76 @@ object PlaybackSession : PlaybackSessionController {
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    // PHASE 8 – TASK 6: ERROR HANDLING & APPLOG INTEGRATION
+    // ══════════════════════════════════════════════════════════════════
+
+    private fun handlePlayerError(error: PlaybackException) {
+        _error.value = error
+        _isPlaying.value = false
+        _buffering.value = false
+        val structuredError = PlaybackError.fromPlaybackException(error)
+        updatePlaybackError(structuredError)
+    }
+
+    private fun handlePlayerErrorChanged(error: PlaybackException?) {
+        _error.value = error
+        if (error == null) {
+            if (_playbackError.value != null) {
+                _playbackError.value = null
+            }
+        } else {
+            val structuredError = PlaybackError.fromPlaybackException(error)
+            updatePlaybackError(structuredError)
+        }
+    }
+
+    private fun updatePlaybackError(error: PlaybackError?) {
+        val previousError = _playbackError.value
+        _playbackError.value = error
+        if (previousError == null && error != null) {
+            logPlaybackErrorToAppLog(error)
+        }
+    }
+
+    private fun logPlaybackErrorToAppLog(error: PlaybackError) {
+        val extras = buildMap {
+            put("type", error.typeName)
+            error.httpOrNetworkCodeAsString?.let { put("code", it) }
+            error.urlOrNull?.let { put("url", it) }
+            _currentMediaId.get()?.let { put("mediaId", it) }
+            put("positionMs", _positionMs.value.toString())
+            put("durationMs", _durationMs.value.toString())
+            runCatching {
+                put("miniPlayerVisible", DefaultMiniPlayerManager.state.value.visible.toString())
+            }
+        }
+        AppLog.log(
+            category = LOG_CATEGORY_PLAYER_ERROR,
+            level = AppLog.Level.ERROR,
+            message = "Playback error: ${error.toShortSummary()}",
+            extras = extras,
+            bypassMaster = true,
+        )
+    }
+
+    fun setCurrentMediaId(mediaId: String?) {
+        _currentMediaId.set(mediaId)
+    }
+
+    fun clearError() {
+        _error.value = null
+        _playbackError.value = null
+    }
+
+    fun retry(): Boolean {
+        val player = playerRef.get() ?: return false
+        clearError()
+        player.prepare()
+        player.play()
+        return true
+    }
+
     /**
      * Reset all state flows to initial values.
      * Note: Does NOT reset lifecycleState - that is handled by stop()/release() explicitly.
@@ -455,9 +537,11 @@ object PlaybackSession : PlaybackSessionController {
         _isPlaying.value = false
         _buffering.value = false
         _error.value = null
+        _playbackError.value = null
         _videoSize.value = null
         _playbackState.value = Player.STATE_IDLE
         _isSessionActive.value = false
+        _currentMediaId.set(null)
         // Note: _lifecycleState is set to RELEASED by release(), not here.
         // resetForTesting() sets it back to IDLE after release() for clean test state.
     }
