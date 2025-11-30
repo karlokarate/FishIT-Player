@@ -5693,4 +5693,136 @@ Final behavioral polish pass for Phase 8, focusing on:
 
 ---
 
+## Phase 8 – Task 6b: Playback Error UI Wiring & Worker Error Logging (COMPLETE)
+
+**Date:** 2025-11-30
+
+**Status:** ✅ **COMPLETE** – Group 8 (Error Handling & Recovery) implemented
+
+This task completes Phase 8 Group 8 by wiring the PlaybackErrorOverlay and MiniPlayerErrorBadge into the SIP player UI, and adding AppLog-based logging for worker errors.
+
+### What Was Done
+
+**1. Wired PlaybackErrorOverlay into InternalPlayerContent**
+
+| Change | Description |
+|--------|-------------|
+| Import | Added `PlaybackSession`, `collectAsState`, `getValue` |
+| Error Collection | `val playbackError by PlaybackSession.playbackError.collectAsState()` |
+| Overlay Rendering | `PlaybackErrorOverlay` rendered at BottomCenter with bottom padding |
+| Retry Handler | Calls `PlaybackSession.retry()` |
+| Close Handler | Calls `PlaybackSession.clearError()` and `PlaybackSession.stop()` |
+| Kids Mode | Passes `state.kidActive` to `isKidMode` for kids-friendly messages |
+
+**2. Wired MiniPlayerErrorBadge into MiniPlayerOverlay**
+
+| Change | Description |
+|--------|-------------|
+| Import | Added `MiniPlayerErrorBadge` |
+| Error Collection | `val playbackError by playbackSession.playbackError.collectAsState()` |
+| Badge Rendering | `MiniPlayerErrorBadge` rendered at End alignment within MiniPlayer Column |
+
+**3. Added Worker Error Logging via AppLog**
+
+| Worker | Changes |
+|--------|---------|
+| `XtreamDeltaImportWorker` | Added `logWorkerError()` function with "WORKER_ERROR" category, exception info in extras |
+| `XtreamDetailsWorker` | Added `logWorkerError()` function with "WORKER_ERROR" category |
+| `ObxKeyBackfillWorker` | Added `logWorkerError()` function with "WORKER_ERROR" category |
+
+**Error Log Format:**
+```kotlin
+AppLog.log(
+    category = "WORKER_ERROR",
+    level = AppLog.Level.ERROR,
+    message = "Worker <name> failed: ${e.message}",
+    extras = mapOf(
+        "worker" to "<name>",
+        "exception" to e.javaClass.simpleName,
+        "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
+    ),
+    bypassMaster = true,
+)
+```
+
+**4. Unit Tests Created**
+
+| Test File | Coverage |
+|-----------|----------|
+| `PlaybackErrorRecoveryTest.kt` | PlaybackError model types, messages, clearError(), retry(), kids-friendly messages |
+| `AppLogErrorIntegrationTest.kt` | PLAYER_ERROR and WORKER_ERROR category logging, extras, bypassMaster behavior |
+| `WorkerErrorIsolationTest.kt` | Worker errors don't affect PlaybackSession, WORKER_ERROR logging |
+
+**5. Documentation Updated**
+
+| File | Changes |
+|------|---------|
+| `INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 8 as DONE with 8 sub-tasks |
+| `INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `test/.../PlaybackErrorRecoveryTest.kt` | PlaybackError recovery tests |
+| `test/.../AppLogErrorIntegrationTest.kt` | AppLog error integration tests |
+| `test/.../WorkerErrorIsolationTest.kt` | Worker error isolation tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `player/internal/ui/InternalPlayerControls.kt` | Added PlaybackErrorOverlay wiring |
+| `player/miniplayer/MiniPlayerOverlay.kt` | Added MiniPlayerErrorBadge wiring |
+| `work/XtreamDeltaImportWorker.kt` | Added error logging |
+| `work/XtreamDetailsWorker.kt` | Added error logging |
+| `work/ObxKeyBackfillWorker.kt` | Added error logging |
+| `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` | Marked Group 8 as DONE |
+
+### Files NOT Modified (Per Task Constraints)
+
+- ❌ `telegram/**/*.kt` – All Telegram modules untouched
+- ❌ `telegram/work/TelegramSyncWorker.kt` – Telegram workers untouched
+- ❌ `player/InternalPlayerScreen.kt` – Legacy screen untouched (SIP-only)
+- ❌ Parser/ObjectBox modules – Handled by parallel refactor
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ⚠️ Test compilation has pre-existing failure in `MiniPlayerResizeIsolationTest.kt` (unrelated to this task)
+
+### Contract Reference
+
+All implementations align with:
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 10
+- `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`
+- `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 8
+- `docs/LOG_VIEWER.md` (PLAYER_ERROR and WORKER_ERROR categories documented)
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ No navigation changes
+- ✅ Phase 4-7 behaviors preserved
+- ✅ Kids Mode uses generic messages (no technical details)
+- ✅ Worker errors do NOT crash app or stop PlaybackSession
+
+### Phase 8 Status Summary (Final)
+
+| Group | Description | Status |
+|-------|-------------|--------|
+| 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
+| 2 | UI Rebinding & Rotation | ✅ DONE |
+| 3 | Navigation & Backstack Stability | ✅ DONE |
+| 4 | System PiP vs In-App MiniPlayer | ✅ DONE |
+| 5 | Playback-Aware Worker Scheduling | ✅ DONE |
+| 6 | Memory & Leak Hygiene | ✅ DONE |
+| 7 | Compose & FocusKit Performance | ✅ DONE |
+| **8** | **Error Handling & Recovery** | ✅ **DONE** |
+| 9 | Regression Suite | ⬜ PENDING |
+
+---
+
 **Last Updated:** 2025-11-30

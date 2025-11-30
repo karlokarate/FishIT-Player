@@ -21,7 +21,35 @@ Settings → Telegram Tools → "Log Viewer" (route: `log_viewer`)
 - `LogViewerScreen`: Compose scaffold with back + export actions and a scrollable, selectable list of entries
 - `LogExporter`: Best-effort writer that saves the current buffer to a cache file; export is enabled only when entries exist
 
+## Error Categories (Phase 8)
+
+The following error categories are logged via AppLog with `bypassMaster = true` (always logged regardless of master toggle):
+
+### PLAYER_ERROR
+Logged when playback errors occur in PlaybackSession.
+
+**Extras:**
+| Key | Description |
+|-----|-------------|
+| `type` | Error type: Network, Http, Source, Decoder, Unknown |
+| `code` | HTTP status code or network error code (if applicable) |
+| `url` | URL that caused the error (for Http errors) |
+| `mediaId` | Media ID being played |
+| `positionMs` | Playback position at time of error |
+| `durationMs` | Total duration of media |
+
+### WORKER_ERROR
+Logged when background workers (Xtream/EPG/DB) encounter failures.
+
+**Extras:**
+| Key | Description |
+|-----|-------------|
+| `worker` | Worker name: XtreamDeltaImportWorker, XtreamDetailsWorker, ObxKeyBackfillWorker |
+| `exception` | Exception class name (e.g., SocketTimeoutException) |
+| `cause` | Root cause class name, or "none" if no cause |
+
 ## Usage Notes
 - Enable runtime logging in Settings (master toggle + category chips) to see entries in the viewer
 - Exports capture only the in-memory buffer; clear/rebuild history by toggling logging or restarting the app
 - No file discovery or format parsing remains; AppLog is the single source of truth
+- Error categories (PLAYER_ERROR, WORKER_ERROR) bypass the master toggle and are always logged
