@@ -31,6 +31,9 @@ class TelegramIngestionDebugHelper(
     companion object {
         private const val TAG = "TgIngestionDebug"
 
+        /** Maximum characters to display for truncated remote IDs */
+        private const val REMOTE_ID_PREVIEW_LENGTH = 50
+
         /**
          * Chat IDs that are known to be problematic from logs.
          * These will get extra verbose logging.
@@ -166,7 +169,7 @@ class TelegramIngestionDebugHelper(
                 log("    supportsStreaming: ${video.supportsStreaming}")
                 log("    fileId: ${videoFile?.id}")
                 log("    fileSize: ${videoFile?.size}")
-                log("    remoteId: ${videoFile?.remote?.id?.take(50)}...")
+                log("    remoteId: ${videoFile?.remote?.id?.take(REMOTE_ID_PREVIEW_LENGTH)}...")
                 log("    uniqueId: ${videoFile?.remote?.uniqueId}")
                 log("    localPath: ${videoFile?.local?.path}")
                 log("    isDownloaded: ${videoFile?.local?.isDownloadingCompleted}")
@@ -184,7 +187,7 @@ class TelegramIngestionDebugHelper(
                 photo.sizes.forEachIndexed { sizeIdx, size ->
                     log("    size[$sizeIdx]: ${size.type} ${size.width}x${size.height}")
                     log("      fileId: ${size.photo?.id}")
-                    log("      remoteId: ${size.photo?.remote?.id?.take(50)}...")
+                    log("      remoteId: ${size.photo?.remote?.id?.take(REMOTE_ID_PREVIEW_LENGTH)}...")
                     log("      uniqueId: ${size.photo?.remote?.uniqueId}")
                 }
                 log("    caption: ${content.caption?.text?.take(100)}")
@@ -202,7 +205,7 @@ class TelegramIngestionDebugHelper(
                 log("    mimeType: ${doc.mimeType}")
                 log("    fileId: ${docFile?.id}")
                 log("    fileSize: ${docFile?.size}")
-                log("    remoteId: ${docFile?.remote?.id?.take(50)}...")
+                log("    remoteId: ${docFile?.remote?.id?.take(REMOTE_ID_PREVIEW_LENGTH)}...")
                 log("    uniqueId: ${docFile?.remote?.uniqueId}")
                 log("    caption: ${content.caption?.text?.take(100)}")
             }
@@ -217,7 +220,7 @@ class TelegramIngestionDebugHelper(
                 log("    mimeType: ${audio.mimeType}")
                 log("    fileId: ${audioFile?.id}")
                 log("    fileSize: ${audioFile?.size}")
-                log("    remoteId: ${audioFile?.remote?.id?.take(50)}...")
+                log("    remoteId: ${audioFile?.remote?.id?.take(REMOTE_ID_PREVIEW_LENGTH)}...")
                 log("    uniqueId: ${audioFile?.remote?.uniqueId}")
                 log("    caption: ${content.caption?.text?.take(100)}")
             }

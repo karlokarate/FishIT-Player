@@ -40,6 +40,9 @@ class TelegramDiagnosticsDumper(
 ) {
     companion object {
         private const val TAG = "TgDiagnosticsDump"
+
+        /** Maximum characters to display for truncated remote IDs */
+        private const val REMOTE_ID_PREVIEW_LENGTH = 30
     }
 
     private val obxStore by lazy { ObxStore.get(context) }
@@ -224,38 +227,24 @@ class TelegramDiagnosticsDumper(
         log("    genres: ${item.genresJson}")
         log("")
         log("  References:")
-        log("    videoRef: ${if (item.videoRemoteId.isNullOrBlank()) "null" else "present (remoteId=${item.videoRemoteId?.take(30)}...)"}")
-        log(
-            "    documentRef: ${if (item.documentRemoteId.isNullOrBlank()) {
-                "null"
-            } else {
-                "present (remoteId=${item.documentRemoteId?.take(
-                    30,
-                )}...)"
-            }}",
-        )
-        log(
-            "    posterRef: ${if (item.posterRemoteId.isNullOrBlank()) {
-                "null"
-            } else {
-                "present (remoteId=${item.posterRemoteId?.take(
-                    30,
-                )}...)"
-            }}",
-        )
-        log(
-            "    backdropRef: ${if (item.backdropRemoteId.isNullOrBlank()) {
-                "null"
-            } else {
-                "present (remoteId=${item.backdropRemoteId?.take(
-                    30,
-                )}...)"
-            }}",
-        )
+        log("    videoRef: ${formatRemoteIdRef(item.videoRemoteId)}")
+        log("    documentRef: ${formatRemoteIdRef(item.documentRemoteId)}")
+        log("    posterRef: ${formatRemoteIdRef(item.posterRemoteId)}")
+        log("    backdropRef: ${formatRemoteIdRef(item.backdropRemoteId)}")
         log("    textMessageId: ${item.textMessageId}")
         log("    photoMessageId: ${item.photoMessageId}")
         log("")
     }
+
+    /**
+     * Format a remote ID reference for logging.
+     */
+    private fun formatRemoteIdRef(remoteId: String?): String =
+        if (remoteId.isNullOrBlank()) {
+            "null"
+        } else {
+            "present (remoteId=${remoteId.take(REMOTE_ID_PREVIEW_LENGTH)}...)"
+        }
 
     // =========================================================================
     // Legacy ObxTelegramMessage Diagnostics (what the UI actually reads!)
