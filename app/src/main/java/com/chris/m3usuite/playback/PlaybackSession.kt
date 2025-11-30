@@ -103,12 +103,14 @@ object PlaybackSession : PlaybackSessionController {
      * Helper to check if playback can be resumed (session in a resumable state).
      */
     val canResume: Boolean
-        get() = _lifecycleState.value in setOf(
-            SessionLifecycleState.PREPARED,
-            SessionLifecycleState.PLAYING,
-            SessionLifecycleState.PAUSED,
-            SessionLifecycleState.BACKGROUND,
-        )
+        get() =
+            _lifecycleState.value in
+                setOf(
+                    SessionLifecycleState.PREPARED,
+                    SessionLifecycleState.PLAYING,
+                    SessionLifecycleState.PAUSED,
+                    SessionLifecycleState.BACKGROUND,
+                )
 
     // ══════════════════════════════════════════════════════════════════
     // PLAYER ACQUISITION (existing + Phase 7 extensions)
@@ -424,7 +426,8 @@ object PlaybackSession : PlaybackSessionController {
     private fun updateLifecycleFromIsPlaying(isPlaying: Boolean) {
         val currentLifecycle = _lifecycleState.value
         // Only transition if in an active playback state
-        if (currentLifecycle !in setOf(
+        if (currentLifecycle !in
+            setOf(
                 SessionLifecycleState.PREPARED,
                 SessionLifecycleState.PLAYING,
                 SessionLifecycleState.PAUSED,

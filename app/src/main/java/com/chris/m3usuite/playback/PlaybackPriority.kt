@@ -38,7 +38,6 @@ import kotlinx.coroutines.flow.stateIn
  * - INTERNAL_PLAYER_PHASE8_CHECKLIST.md Group 5
  */
 object PlaybackPriority {
-
     /**
      * Throttle delay in milliseconds for workers when playback is active.
      * Workers should add this delay between heavy operations.
@@ -49,11 +48,12 @@ object PlaybackPriority {
      * Lifecycle states considered "active" for playback priority.
      * Workers should throttle when playback is in any of these states.
      */
-    private val activeLifecycleStates = setOf(
-        SessionLifecycleState.PLAYING,
-        SessionLifecycleState.PAUSED,
-        SessionLifecycleState.BACKGROUND,
-    )
+    private val activeLifecycleStates =
+        setOf(
+            SessionLifecycleState.PLAYING,
+            SessionLifecycleState.PAUSED,
+            SessionLifecycleState.BACKGROUND,
+        )
 
     /**
      * Internal coroutine scope for the combined flow.
@@ -77,16 +77,17 @@ object PlaybackPriority {
      * - This is a StateFlow, safe to read from any thread
      * - Value updates are atomic
      */
-    val isPlaybackActive: StateFlow<Boolean> = combine(
-        PlaybackSession.isPlaying,
-        PlaybackSession.lifecycleState,
-    ) { isPlaying, lifecycleState ->
-        isPlaying && lifecycleState in activeLifecycleStates
-    }.stateIn(
-        scope = scope,
-        started = SharingStarted.Eagerly,
-        initialValue = false,
-    )
+    val isPlaybackActive: StateFlow<Boolean> =
+        combine(
+            PlaybackSession.isPlaying,
+            PlaybackSession.lifecycleState,
+        ) { isPlaying, lifecycleState ->
+            isPlaying && lifecycleState in activeLifecycleStates
+        }.stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
+        )
 
     /**
      * Convenience method to check if throttling should be applied.

@@ -397,6 +397,96 @@ TelegramItemDetailScreen
 
 ---
 
-**Document Version:** 1.2  
+## 11. Phase D+ RemoteId-First Playback Wiring Compliance Note
+
+**Date:** 2025-11-30  
+**Phase:** D+ (RemoteId-First Playback Wiring)  
+**Status:** ✅ COMPLIANT
+
+### 11.1 Overview
+
+Phase D+ aligns Telegram playback wiring with the **remoteId-first contract**. This ensures that `remoteId` and `uniqueId` are treated as the PRIMARY identifiers, while `fileId` is an optional volatile cache.
+
+### 11.2 Key Design Decision
+
+Per `TELEGRAM_PARSER_COPILOT_TASK.md` Section 6.1:
+- `remoteId` and `uniqueId` are the **primary identifiers** (stable across TDLib sessions)
+- `fileId` is volatile and **MUST NEVER be the primary key**
+- When `fileId` is stale or missing, resolve via `getRemoteFile(remoteId)`
+
+### 11.3 New Components Added
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `TelegramPlaybackRequest` | `telegram/player/TelegramPlaybackRequest.kt` | Data model with remoteId-first semantics |
+| `TelegramMediaRef.toPlaybackRequest()` | `telegram/player/TelegramPlaybackRequest.kt` | Extension for creating playback requests |
+| `T_TelegramFileDownloader.resolveRemoteFileId()` | `telegram/core/T_TelegramFileDownloader.kt` | Resolves remoteId → fileId via TDLib |
+
+### 11.4 Refactored Components
+
+| Component | Changes | Contract Compliance |
+|-----------|---------|---------------------|
+| `TelegramPlayUrl` | Added `build(TelegramPlaybackRequest)` for remoteId-first URLs | ✅ Builds `tg://file/<fileIdOrZero>?...&remoteId=...&uniqueId=...` |
+| `TelegramFileDataSource` | Parses remoteId/uniqueId from URL, resolves fileId when needed | ✅ DataSource only, no player ownership |
+| `TelegramDetailScreen` | `loadTelegramItemByKey()` uses remoteId-first URL building | ✅ Uses PlayerChooser.start() for playback |
+
+### 11.5 URL Format
+
+**New Format (Phase D+):**
+```
+tg://file/<fileIdOrZero>?chatId=<chatId>&messageId=<messageId>&remoteId=<remoteId>&uniqueId=<uniqueId>
+```
+
+**Resolution Strategy in TelegramFileDataSource:**
+1. Parse URL to extract `fileId`, `remoteId`, `chatId`, `messageId`
+2. If `fileId > 0`, use it directly (fast path)
+3. If `fileId == 0` and `remoteId` is present, resolve via `getRemoteFile(remoteId)`
+4. Call `ensureFileReady(resolvedFileId)` to prepare file for playback
+5. Delegate I/O to `FileDataSource`
+
+### 11.6 Playback Flow (Updated)
+
+```
+TelegramItemDetailScreen
+    │
+    ├── User clicks "Play" or "Resume"
+    │
+    ├── play() function called
+    │       │
+    │       └── PlayerChooser.start(
+    │               url = tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...,
+    │               buildInternal = { startMs, mimeType ->
+    │                   openInternal(item.playUrl, startMs, mimeType)
+    │               }
+    │           )
+    │
+    └── TelegramFileDataSource.open(uri)
+            │
+            ├── Parse remoteId/uniqueId from query params
+            │
+            ├── If fileId invalid → resolveRemoteFileId(remoteId)
+            │
+            └── ensureFileReady(resolvedFileId) → delegate to FileDataSource
+```
+
+### 11.7 Contract Compliance Summary
+
+| Requirement | Phase D+ Status |
+|-------------|-----------------|
+| remoteId/uniqueId are PRIMARY identifiers | ✅ Included in URL and used for resolution |
+| fileId is optional volatile cache | ✅ Resolved via getRemoteFile() when stale/missing |
+| Telegram MUST NOT create/release ExoPlayer | ✅ Not done |
+| Telegram MUST NOT modify PlayerView | ✅ Not done |
+| Telegram MUST NOT override activity lifecycle | ✅ Not done |
+| Playback uses DataSource pattern | ✅ TelegramFileDataSource delegates to FileDataSource |
+
+### 11.8 Tests Updated
+
+- `TelegramPlayUrlTest.kt` - Tests remoteId-first URL building
+- `TelegramDetailScreenPlaybackTest.kt` - Tests remoteId-first playback contract
+
+---
+
+**Document Version:** 1.3  
 **Author:** GitHub Copilot Agent  
-**Review Status:** ✅ COMPLETE – All violations resolved, Phase D integration compliant
+**Review Status:** ✅ COMPLETE – All violations resolved, Phase D and D+ integration compliant

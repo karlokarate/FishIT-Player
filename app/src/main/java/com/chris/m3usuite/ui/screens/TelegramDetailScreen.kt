@@ -15,7 +15,6 @@ import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.util.TelegramPlayUrl
@@ -115,6 +114,7 @@ private suspend fun loadTelegramDetailLegacy(
  * Load TelegramItem by (chatId, anchorMessageId) from new Phase B repository.
  *
  * Phase D.3: Preferred loading path for TelegramItem-based content.
+ * Phase D+: Uses remoteId-first URL building for playback wiring.
  */
 private suspend fun loadTelegramItemByKey(
     ctx: Context,
@@ -126,7 +126,7 @@ private suspend fun loadTelegramItemByKey(
         val repo = TelegramContentRepository(ctx, store)
         val item = repo.getItem(chatId, anchorMessageId) ?: return@withContext null
 
-        // Build play URL from TelegramMediaRef
+        // Build play URL from TelegramMediaRef using remoteId-first semantics (Phase D+)
         val playUrl =
             when (item.type) {
                 TelegramItemType.MOVIE,
@@ -134,10 +134,13 @@ private suspend fun loadTelegramItemByKey(
                 TelegramItemType.CLIP,
                 -> {
                     item.videoRef?.let { ref ->
+                        // Phase D+: Use remoteId-first URL building
                         TelegramPlayUrl.buildFileUrl(
-                            ref.fileId,
-                            item.chatId,
-                            item.anchorMessageId,
+                            fileId = ref.fileId,
+                            chatId = item.chatId,
+                            messageId = item.anchorMessageId,
+                            remoteId = ref.remoteId,
+                            uniqueId = ref.uniqueId,
                         )
                     }
                 }
