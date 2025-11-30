@@ -6072,10 +6072,9 @@ Legacy InternalPlayerScreen (Preserved, Unused)
 
 ### What's Next
 
-Phase 9 Task 1 is complete. Remaining tasks:
+Phase 9 Tasks 1 and 3 are complete. Remaining task:
 
 - **Task 2:** Remove legacy InternalPlayerScreen (future cleanup)
-- **Task 3:** Telegram playback integration verification
 
 ### Constraints Honored
 
@@ -6085,6 +6084,90 @@ Phase 9 Task 1 is complete. Remaining tasks:
 - ✅ No parser/ObjectBox module changes
 - ✅ Single debug log entry (no spam)
 - ✅ Phase 4-8 behaviors preserved
+
+---
+
+## Phase 9 – Task 3: Telegram VOD Playback Integration (COMPLETE)
+
+**Date:** 2025-11-30
+
+**Status:** ✅ **COMPLETE** – Telegram VOD playback fully routed through SIP Internal Player
+
+This task verifies and documents the complete integration of Telegram VOD playback (MOVIE, SERIES_EPISODE, CLIP) through the SIP Internal Player path.
+
+### What Was Done
+
+**1. Verified RemoteId-First Playback Wiring**
+
+| Component | Status |
+|-----------|--------|
+| `TelegramPlaybackRequest` | ✅ Uses remoteId/uniqueId as PRIMARY identifiers |
+| `TelegramMediaRef.toPlaybackRequest()` | ✅ Maps all fields correctly |
+| `TelegramPlayUrl.build()` | ✅ Produces canonical URL format |
+| `TelegramFileDataSource` | ✅ Resolves via remoteId when fileId invalid |
+| `DelegatingDataSourceFactory` | ✅ Routes `tg://` scheme correctly |
+
+**2. Verified UI Play-Action Routing**
+
+| Screen | Status |
+|--------|--------|
+| `TelegramDetailScreen` | ✅ Uses `PlayerChooser.start()` → `openInternal` |
+| `TelegramItemDetailScreen` | ✅ Uses `PlayerChooser.start()` → `openInternal` |
+| `FishTelegramContent` | ✅ Uses `TelegramFileLoader` for thumbnails |
+| `PlayerChooser` | ✅ Forces internal player for `tg://` URLs |
+
+**3. Added Tests**
+
+| Test File | Coverage |
+|-----------|----------|
+| `TelegramPlaybackRequestTest.kt` | Request construction, remoteId/uniqueId validation |
+| `TelegramToSipPlaybackIntegrationTest.kt` | Full flow (TelegramItem → URL → PlayerChooser) |
+
+**4. Updated Documentation**
+
+| Document | Changes |
+|----------|---------|
+| `TELEGRAM_SIP_PLAYER_INTEGRATION.md` | Marked as v1.1 IMPLEMENTED |
+| `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` | Phase 9 Task 3 marked COMPLETE |
+| `INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added this entry |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `telegram/player/TelegramPlaybackRequestTest.kt` | Request model unit tests |
+| `telegram/player/TelegramToSipPlaybackIntegrationTest.kt` | Integration flow tests |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `docs/TELEGRAM_SIP_PLAYER_INTEGRATION.md` | Version 1.1, marked implemented |
+| `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md` | Task 3 marked complete |
+| `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` | Added Phase 9 Task 3 entry |
+
+### Contract Reference
+
+All implementations verified against:
+- `docs/TELEGRAM_SIP_PLAYER_INTEGRATION.md`
+- `docs/TELEGRAM_PARSER_CONTRACT.md`
+- `docs/PHASE8_TASK3_TELEGRAM_LIFECYCLE_CROSSCHECK.md`
+
+### Constraints Honored
+
+- ✅ No Telegram parser/ingestion module changes
+- ✅ No ObxTelegramItem schema changes
+- ✅ No PlaybackSession lifecycle changes
+- ✅ Telegram remains content provider only (not lifecycle owner)
+- ✅ SIP Internal Player is sole owner of ExoPlayer lifecycle
+
+### Phase 9 Status Summary
+
+| Task | Description | Status |
+|------|-------------|--------|
+| 1 | Switch Runtime to SIP | ✅ DONE |
+| 2 | Remove Legacy InternalPlayerScreen | ⬜ PENDING |
+| **3** | **Telegram Playback Integration** | ✅ **DONE** |
 
 ---
 

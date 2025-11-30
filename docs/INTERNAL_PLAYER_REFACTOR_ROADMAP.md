@@ -1479,12 +1479,35 @@ Future task to remove the legacy monolithic implementation after SIP has been ve
 - ⬜ Remove any remaining legacy references
 - ⬜ Clean up legacy-specific code paths
 
-### Task 3: Telegram Playback Integration (⬜ PENDING)
+### Task 3: Telegram Playback Integration (✅ COMPLETE)
 
-Ensure Telegram content playback works seamlessly with the SIP architecture.
+**Status:** ✅ **COMPLETE** (2025-11-30)
 
-- ⬜ Verify TelegramDataSource integration with SIP session
-- ⬜ Test Telegram content playback via InternalPlayerEntry
-- ⬜ Update Telegram-specific playback paths if needed
+Telegram VOD playback (MOVIE, SERIES_EPISODE, CLIP) is now fully routed through the SIP Internal Player path.
+
+**Implementation Summary:**
+- ✅ TelegramFileDataSource integration with SIP session verified
+  - ✅ RemoteId-first URL format: `tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...`
+  - ✅ DelegatingDataSourceFactory routes `tg://` scheme to TelegramFileDataSource
+  - ✅ TelegramFileDataSource resolves fileId via remoteId when path fileId is 0 or invalid
+- ✅ Telegram content playback via InternalPlayerEntry confirmed
+  - ✅ TelegramDetailScreen uses PlayerChooser.start() → openInternal callback
+  - ✅ TelegramItemDetailScreen uses PlayerChooser.start() → openInternal callback
+  - ✅ FishTelegramContent tiles route through PlayerChooser
+  - ✅ PlayerChooser forces internal player for `tg://` URLs
+- ✅ Telegram-specific playback paths validated
+  - ✅ TelegramPlaybackRequest model with remoteId-first semantics
+  - ✅ TelegramMediaRef.toPlaybackRequest() extension function
+  - ✅ TelegramPlayUrl.build() produces canonical URL format
+  - ✅ TELEGRAM_MEDIA_ID_OFFSET encoding for resume tracking (4_000_000_000_000L offset)
+  - ✅ Legacy loadTelegramDetailLegacy() marked as deprecated (uses old URL format without remoteId)
+
+**Tests Added:**
+- TelegramPlaybackRequestTest (9 tests)
+- TelegramToSipPlaybackIntegrationTest (15 tests)
+- TelegramDetailScreenPlaybackTest (existing, 14 tests)
+
+**Contract Reference:**
+- `docs/TELEGRAM_SIP_PLAYER_INTEGRATION.md` - Authoritative integration specification
 
 ---

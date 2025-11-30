@@ -69,7 +69,20 @@ private data class LoadedTelegramItem(
     val isAdultContent: Boolean,
 )
 
-// Load Telegram item details from legacy OBX (ObxTelegramMessage)
+/**
+ * Load Telegram item details from legacy OBX (ObxTelegramMessage).
+ *
+ * @deprecated This legacy loading path uses fileId-only URL format without remoteId/uniqueId.
+ * It remains for backward compatibility with old ObxTelegramMessage entries that don't have
+ * remoteId/uniqueId populated. New code should use [loadTelegramItemByKey] which uses
+ * the remoteId-first URL format per the SIP integration contract.
+ *
+ * @see loadTelegramItemByKey for the preferred Phase D loading path
+ */
+@Deprecated(
+    message = "Use loadTelegramItemByKey for remoteId-first playback wiring (Phase D+)",
+    level = DeprecationLevel.WARNING,
+)
 private suspend fun loadTelegramDetailLegacy(
     ctx: Context,
     itemId: Long,
