@@ -5617,12 +5617,79 @@ All implementations align with:
 | 1 | PlaybackSession Lifecycle & Ownership | ✅ DONE |
 | 2 | UI Rebinding & Rotation | ✅ DONE |
 | 3 | Navigation & Backstack Stability | ✅ DONE |
-| 4 | System PiP vs In-App MiniPlayer | ⬜ PENDING |
+| 4 | System PiP vs In-App MiniPlayer | ✅ DONE (Polish Task) |
 | 5 | Playback-Aware Worker Scheduling | ✅ DONE |
-| 6 | Memory & Leak Hygiene | ✅ PARTIAL DONE |
+| 6 | Memory & Leak Hygiene | ✅ DONE |
 | **7** | **Compose & FocusKit Performance** | ✅ **DONE** |
 | 8 | Error Handling & Recovery | ⬜ PENDING |
 | 9 | Regression Suite | ⬜ PENDING |
+
+---
+
+## Phase 8 – Polish: System PiP & MiniPlayer Behavior Hardened
+
+**Date:** 2025-11-30
+
+### What Was Done
+
+Final behavioral polish pass for Phase 8, focusing on:
+- System PiP vs in-app MiniPlayer behavior verification on phone/tablet vs TV
+- Edge cases for TV input & focus around MiniPlayer (long-PLAY toggle, EXIT_TO_HOME)
+- Small lifecycle & UX cleanups to make transitions feel seamless
+
+### Verification Results
+
+**1. PIP Button UI Behavior (Section 4.1):**
+- ✅ `InternalPlayerControls.kt` line 387: `onPipClick = controller.onEnterMiniPlayer`
+- ✅ No `android.app.Activity` import in InternalPlayerControls
+- ✅ No `enterPictureInPictureMode()` calls from UI button
+- ✅ PIP button ONLY triggers in-app MiniPlayer via MiniPlayerManager
+
+**2. System PiP Entry Conditions (Section 4.2):**
+- ✅ `MainActivity.tryEnterSystemPip()` correctly checks all conditions:
+  - `isTvDevice(this)` → return early (no PiP on TV)
+  - `PlaybackSession.isPlaying.value` must be true
+  - `DefaultMiniPlayerManager.state.value.visible` must be false
+- ✅ `onUserLeaveHint()` triggers for API < 31
+- ✅ `setAutoEnterEnabled()` used for API >= 31
+
+**3. Return from System PiP (Section 4.3):**
+- ✅ PlaybackSession singleton survives PiP lifecycle
+- ✅ Position preserved in ExoPlayer instance
+- ✅ Track selections preserved
+- ✅ PlayerSurface rebinds via update block, no recreation
+
+**4. TV Device Blocking (Section 4.4):**
+- ✅ `isTvDevice()` check at top of `tryEnterSystemPip()`
+- ✅ Same check in `shouldAutoEnterPip()` for API 31+
+- ✅ Fire TV, Android TV, Google TV all blocked from system PiP
+
+**5. MiniPlayer Lifecycle Polish:**
+- ✅ MiniPlayerState preserved via singleton DefaultMiniPlayerManager
+- ✅ No duplicate enterMiniPlayer/exitMiniPlayer calls on recreation
+- ✅ No extra play/pause triggered by lifecycle changes
+- ✅ RESIZE mode input isolation verified (no leakage to underlying screens)
+
+### Tests Added
+
+| Test File | Description |
+|-----------|-------------|
+| `SystemPiPIntegrationTest.kt` | Comprehensive System PiP vs MiniPlayer behavior tests |
+| `MiniPlayerLifecyclePolishTest.kt` | MiniPlayer lifecycle polish tests |
+| `MiniPlayerResizeIsolationTest.kt` | RESIZE mode input isolation tests |
+
+### Documentation Updated
+
+- `INTERNAL_PLAYER_PHASE8_CHECKLIST.md` - Group 4 marked as DONE, Group 6 marked as DONE
+- `INTERNAL_PLAYER_REFACTOR_STATUS.md` - This entry
+
+### Constraints Honored
+
+- ✅ SIP-only: Legacy InternalPlayerScreen untouched
+- ✅ No Telegram module changes
+- ✅ No parser/ObjectBox module changes
+- ✅ Phase 4-7 behaviors preserved
+- ✅ No new features, only behavior polish & small correctness fixes
 
 ---
 
