@@ -1,6 +1,5 @@
 package com.chris.m3usuite.telegram.ingestion
 
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -24,7 +23,6 @@ import org.junit.Test
  * native library dependencies and focus on paging semantics verification.
  */
 class TelegramPagingEquivalenceTest {
-
     /**
      * Data class representing a recorded getChatHistory call.
      */
@@ -56,7 +54,11 @@ class TelegramPagingEquivalenceTest {
          * @param fromMessageId Starting message ID (0 for most recent)
          * @param messageIds List of message IDs to return (in descending order)
          */
-        fun addResponse(chatId: Long, fromMessageId: Long, messageIds: List<Long>) {
+        fun addResponse(
+            chatId: Long,
+            fromMessageId: Long,
+            messageIds: List<Long>,
+        ) {
             responses[chatId to fromMessageId] = messageIds
         }
 
@@ -144,13 +146,14 @@ class TelegramPagingEquivalenceTest {
 
         repeat(5) { attempt ->
             val offset = if (fromMessageId == 0L) 0 else -1
-            val messages = client.getChatHistory(
-                chatId = chatId,
-                fromMessageId = fromMessageId,
-                offset = offset,
-                limit = cappedLimit,
-                onlyLocal = false,
-            )
+            val messages =
+                client.getChatHistory(
+                    chatId = chatId,
+                    fromMessageId = fromMessageId,
+                    offset = offset,
+                    limit = cappedLimit,
+                    onlyLocal = false,
+                )
 
             if (messages.isNotEmpty()) {
                 return messages
@@ -190,15 +193,16 @@ class TelegramPagingEquivalenceTest {
             // Determine offset based on TDLib paging rules
             val offset = if (fromMessageId == 0L) 0 else -1
 
-            val batch = runtimeStyleLoadHistoryBatch(
-                client = client,
-                chatId = chatId,
-                fromMessageId = fromMessageId,
-                offset = offset,
-                limit = pageSize.coerceAtMost(100),
-                onlyLocal = onlyLocal,
-                maxRetries = maxRetries,
-            )
+            val batch =
+                runtimeStyleLoadHistoryBatch(
+                    client = client,
+                    chatId = chatId,
+                    fromMessageId = fromMessageId,
+                    offset = offset,
+                    limit = pageSize.coerceAtMost(100),
+                    onlyLocal = onlyLocal,
+                    maxRetries = maxRetries,
+                )
 
             // Filter duplicates
             val unique = batch.filter { seenMessageIds.add(it) }
@@ -244,13 +248,14 @@ class TelegramPagingEquivalenceTest {
         maxRetries: Int,
     ): List<Long> {
         repeat(maxRetries) { attempt ->
-            val messages = client.getChatHistory(
-                chatId = chatId,
-                fromMessageId = fromMessageId,
-                offset = offset,
-                limit = limit,
-                onlyLocal = onlyLocal,
-            )
+            val messages =
+                client.getChatHistory(
+                    chatId = chatId,
+                    fromMessageId = fromMessageId,
+                    offset = offset,
+                    limit = limit,
+                    onlyLocal = onlyLocal,
+                )
 
             if (messages.isNotEmpty()) {
                 return messages
@@ -432,18 +437,20 @@ class TelegramPagingEquivalenceTest {
         val runtimeCalls = client.calls.toList()
 
         // Should produce identical sequences (ignoring retry calls)
-        val cliSuccessfulCalls = cliCalls.filter { call ->
-            // Filter to only calls that would get data
-            call.fromMessageId == 0L ||
-                call.fromMessageId == 201L ||
-                call.fromMessageId == 101L
-        }
+        val cliSuccessfulCalls =
+            cliCalls.filter { call ->
+                // Filter to only calls that would get data
+                call.fromMessageId == 0L ||
+                    call.fromMessageId == 201L ||
+                    call.fromMessageId == 101L
+            }
 
-        val runtimeSuccessfulCalls = runtimeCalls.filter { call ->
-            call.fromMessageId == 0L ||
-                call.fromMessageId == 201L ||
-                call.fromMessageId == 101L
-        }
+        val runtimeSuccessfulCalls =
+            runtimeCalls.filter { call ->
+                call.fromMessageId == 0L ||
+                    call.fromMessageId == 201L ||
+                    call.fromMessageId == 101L
+            }
 
         // Both should have made calls with the same fromMessageId values
         val cliFromIds = cliSuccessfulCalls.map { it.fromMessageId }.distinct().sorted()
@@ -512,21 +519,23 @@ class TelegramPagingEquivalenceTest {
         // - onlyLocal = false always
         // - 5 retry attempts on empty
 
-        val firstPageCall = HistoryCall(
-            chatId = 123L,
-            fromMessageId = 0L,
-            offset = 0,
-            limit = 100,
-            onlyLocal = false,
-        )
+        val firstPageCall =
+            HistoryCall(
+                chatId = 123L,
+                fromMessageId = 0L,
+                offset = 0,
+                limit = 100,
+                onlyLocal = false,
+            )
 
-        val continuationCall = HistoryCall(
-            chatId = 123L,
-            fromMessageId = 500L,
-            offset = -1,
-            limit = 100,
-            onlyLocal = false,
-        )
+        val continuationCall =
+            HistoryCall(
+                chatId = 123L,
+                fromMessageId = 500L,
+                offset = -1,
+                limit = 100,
+                onlyLocal = false,
+            )
 
         assertEquals("First page offset must be 0", 0, firstPageCall.offset)
         assertEquals("Continuation offset must be -1", -1, continuationCall.offset)

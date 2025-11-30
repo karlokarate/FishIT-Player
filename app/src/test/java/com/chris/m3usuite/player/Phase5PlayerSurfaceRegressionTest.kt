@@ -154,10 +154,11 @@ class Phase5PlayerSurfaceRegressionTest {
     @Test
     fun `trickplay state can be updated`() {
         val initialState = InternalPlayerUiState()
-        val activeState = initialState.copy(
-            trickplayActive = true,
-            trickplaySpeed = 2f,
-        )
+        val activeState =
+            initialState.copy(
+                trickplayActive = true,
+                trickplaySpeed = 2f,
+            )
 
         assertTrue(activeState.trickplayActive)
         assertEquals(2f, activeState.trickplaySpeed, 0.001f)
@@ -165,10 +166,11 @@ class Phase5PlayerSurfaceRegressionTest {
 
     @Test
     fun `seek preview state can be set`() {
-        val state = InternalPlayerUiState().copy(
-            seekPreviewVisible = true,
-            seekPreviewTargetMs = 60_000L,
-        )
+        val state =
+            InternalPlayerUiState().copy(
+                seekPreviewVisible = true,
+                seekPreviewTargetMs = 60_000L,
+            )
 
         assertTrue(state.seekPreviewVisible)
         assertEquals(60_000L, state.seekPreviewTargetMs)
@@ -275,10 +277,11 @@ class Phase5PlayerSurfaceRegressionTest {
     /**
      * Simulates toResizeMode() for unit testing without Media3 dependency.
      */
-    private fun AspectRatioMode.toResizeMode(): Int = when (this) {
-        AspectRatioMode.FIT -> RESIZE_MODE_FIT
-        AspectRatioMode.FILL -> RESIZE_MODE_FILL
-        AspectRatioMode.ZOOM -> RESIZE_MODE_ZOOM
-        AspectRatioMode.STRETCH -> RESIZE_MODE_FIXED_WIDTH
-    }
+    private fun AspectRatioMode.toResizeMode(): Int =
+        when (this) {
+            AspectRatioMode.FIT -> RESIZE_MODE_FIT
+            AspectRatioMode.FILL -> RESIZE_MODE_FILL
+            AspectRatioMode.ZOOM -> RESIZE_MODE_ZOOM
+            AspectRatioMode.STRETCH -> RESIZE_MODE_FIXED_WIDTH
+        }
 }

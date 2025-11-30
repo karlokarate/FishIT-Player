@@ -8,7 +8,6 @@ import com.chris.m3usuite.telegram.core.TgActivityEvent
 import com.chris.m3usuite.telegram.domain.MessageBlock
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
-import com.chris.m3usuite.telegram.parser.ExportMessage
 import com.chris.m3usuite.telegram.parser.ExportMessageFactory
 import com.chris.m3usuite.telegram.parser.TelegramItemBuilder
 import dev.g000sha256.tdl.dto.Message
@@ -82,7 +81,9 @@ class TelegramUpdateHandler(
         // This provides the complete TDLib Message for pipeline processing
         scope.launch {
             try {
-                serviceClient.browser().observeAllNewMessages()
+                serviceClient
+                    .browser()
+                    .observeAllNewMessages()
                     .collect { message ->
                         processNewTdlMessage(message)
                     }

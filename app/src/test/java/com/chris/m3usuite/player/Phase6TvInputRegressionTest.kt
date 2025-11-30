@@ -5,7 +5,6 @@ import com.chris.m3usuite.tv.input.TvAction
 import com.chris.m3usuite.tv.input.TvKeyRole
 import com.chris.m3usuite.tv.input.TvScreenContext
 import com.chris.m3usuite.tv.input.TvScreenId
-import com.chris.m3usuite.tv.input.TvScreenInputConfig
 import com.chris.m3usuite.ui.focus.FocusZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

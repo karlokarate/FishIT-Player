@@ -3,7 +3,6 @@ package com.chris.m3usuite.player
 import com.chris.m3usuite.core.logging.AppLog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 /**
@@ -20,7 +19,6 @@ import org.junit.Test
  * class is not mocked in unit tests. The actual logging is tested via instrumented tests.
  */
 class PlayerRouteLoggingTest {
-
     // ════════════════════════════════════════════════════════════════════════════════
     // AppLog Configuration Verification
     // ════════════════════════════════════════════════════════════════════════════════
@@ -40,13 +38,14 @@ class PlayerRouteLoggingTest {
 
     @Test
     fun `AppLog Entry data class contains expected fields`() {
-        val entry = AppLog.Entry(
-            timestamp = System.currentTimeMillis(),
-            category = "PLAYER_ROUTE",
-            level = AppLog.Level.DEBUG,
-            message = "Using SIP player path (legacy disabled)",
-            extras = mapOf("source" to "InternalPlayerEntry"),
-        )
+        val entry =
+            AppLog.Entry(
+                timestamp = System.currentTimeMillis(),
+                category = "PLAYER_ROUTE",
+                level = AppLog.Level.DEBUG,
+                message = "Using SIP player path (legacy disabled)",
+                extras = mapOf("source" to "InternalPlayerEntry"),
+            )
 
         assertEquals("PLAYER_ROUTE", entry.category)
         assertEquals(AppLog.Level.DEBUG, entry.level)
@@ -147,13 +146,14 @@ class PlayerRouteLoggingTest {
     fun `AppLog Entry can be created with PLAYER_ROUTE category`() {
         // Verifies that AppLog.Entry can be constructed with the expected parameters
         // This tests the data model without calling the actual logging (which requires Android)
-        val entry = AppLog.Entry(
-            timestamp = System.currentTimeMillis(),
-            category = "PLAYER_ROUTE",
-            level = AppLog.Level.DEBUG,
-            message = "Using SIP player path (legacy disabled)",
-            extras = mapOf("source" to "InternalPlayerEntry"),
-        )
+        val entry =
+            AppLog.Entry(
+                timestamp = System.currentTimeMillis(),
+                category = "PLAYER_ROUTE",
+                level = AppLog.Level.DEBUG,
+                message = "Using SIP player path (legacy disabled)",
+                extras = mapOf("source" to "InternalPlayerEntry"),
+            )
 
         // Verify entry structure
         assertTrue("Timestamp should be positive", entry.timestamp > 0)

@@ -267,7 +267,8 @@ class TelegramFileDataSourceGoldenTest {
      */
     private fun parseQueryParams(query: String?): Map<String, String> {
         if (query.isNullOrBlank()) return emptyMap()
-        return query.split("&")
+        return query
+            .split("&")
             .map { it.split("=", limit = 2) }
             .filter { it.size == 2 }
             .associate { (key, value) ->

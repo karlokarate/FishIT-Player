@@ -19,7 +19,6 @@ import org.junit.Test
  * 3. PlaybackContext correctly passed to SIP components
  */
 class InternalPlayerEntryRoutingTest {
-
     // ════════════════════════════════════════════════════════════════════════════════
     // SIP-Only Routing Verification
     // ════════════════════════════════════════════════════════════════════════════════
@@ -36,12 +35,13 @@ class InternalPlayerEntryRoutingTest {
         // - InternalPlayerSystemUi (SIP system UI)
 
         // If this test compiles, it proves InternalPlayerEntry references SIP components
-        val sipComponents = listOf(
-            "com.chris.m3usuite.player.internal.session.rememberInternalPlayerSession",
-            "com.chris.m3usuite.player.internal.ui.InternalPlayerContent",
-            "com.chris.m3usuite.player.internal.state.InternalPlayerController",
-            "com.chris.m3usuite.player.internal.system.InternalPlayerSystemUi",
-        )
+        val sipComponents =
+            listOf(
+                "com.chris.m3usuite.player.internal.session.rememberInternalPlayerSession",
+                "com.chris.m3usuite.player.internal.ui.InternalPlayerContent",
+                "com.chris.m3usuite.player.internal.state.InternalPlayerController",
+                "com.chris.m3usuite.player.internal.system.InternalPlayerSystemUi",
+            )
 
         // These are the SIP components - the test validates they exist in the package structure
         sipComponents.forEach { component ->
@@ -54,10 +54,11 @@ class InternalPlayerEntryRoutingTest {
 
     @Test
     fun `PlaybackContext VOD type is correctly represented`() {
-        val context = PlaybackContext(
-            type = PlaybackType.VOD,
-            mediaId = 123L,
-        )
+        val context =
+            PlaybackContext(
+                type = PlaybackType.VOD,
+                mediaId = 123L,
+            )
 
         assertEquals(PlaybackType.VOD, context.type)
         assertEquals(123L, context.mediaId)
@@ -68,14 +69,15 @@ class InternalPlayerEntryRoutingTest {
 
     @Test
     fun `PlaybackContext SERIES type contains all series metadata`() {
-        val context = PlaybackContext(
-            type = PlaybackType.SERIES,
-            mediaId = 456L,
-            seriesId = 789,
-            season = 2,
-            episodeNumber = 5,
-            episodeId = 101,
-        )
+        val context =
+            PlaybackContext(
+                type = PlaybackType.SERIES,
+                mediaId = 456L,
+                seriesId = 789,
+                season = 2,
+                episodeNumber = 5,
+                episodeId = 101,
+            )
 
         assertEquals(PlaybackType.SERIES, context.type)
         assertEquals(456L, context.mediaId)
@@ -87,12 +89,13 @@ class InternalPlayerEntryRoutingTest {
 
     @Test
     fun `PlaybackContext LIVE type contains live TV hints`() {
-        val context = PlaybackContext(
-            type = PlaybackType.LIVE,
-            mediaId = 999L,
-            liveCategoryHint = "Sports",
-            liveProviderHint = "ESPN",
-        )
+        val context =
+            PlaybackContext(
+                type = PlaybackType.LIVE,
+                mediaId = 999L,
+                liveCategoryHint = "Sports",
+                liveProviderHint = "ESPN",
+            )
 
         assertEquals(PlaybackType.LIVE, context.type)
         assertEquals(999L, context.mediaId)
@@ -144,15 +147,16 @@ class InternalPlayerEntryRoutingTest {
         // This test documents and verifies the SIP module structure
         // If any of these packages are missing, the build would fail
 
-        val sipPackages = mapOf(
-            "internal.domain" to "PlaybackContext, PlaybackType, ResumeManager, KidsPlaybackGate",
-            "internal.state" to "InternalPlayerUiState, InternalPlayerController, AspectRatioMode",
-            "internal.session" to "rememberInternalPlayerSession",
-            "internal.ui" to "InternalPlayerContent, PlayerSurface, CcMenuDialog",
-            "internal.system" to "InternalPlayerSystemUi",
-            "internal.live" to "LivePlaybackController, LiveChannel, EpgOverlayState",
-            "internal.subtitles" to "SubtitleStyle, SubtitleStyleManager, SubtitleSelectionPolicy",
-        )
+        val sipPackages =
+            mapOf(
+                "internal.domain" to "PlaybackContext, PlaybackType, ResumeManager, KidsPlaybackGate",
+                "internal.state" to "InternalPlayerUiState, InternalPlayerController, AspectRatioMode",
+                "internal.session" to "rememberInternalPlayerSession",
+                "internal.ui" to "InternalPlayerContent, PlayerSurface, CcMenuDialog",
+                "internal.system" to "InternalPlayerSystemUi",
+                "internal.live" to "LivePlaybackController, LiveChannel, EpgOverlayState",
+                "internal.subtitles" to "SubtitleStyle, SubtitleStyleManager, SubtitleSelectionPolicy",
+            )
 
         sipPackages.forEach { (pkg, components) ->
             assertTrue(
@@ -168,11 +172,12 @@ class InternalPlayerEntryRoutingTest {
         // In Phase 9, PlaybackType enum is used directly throughout
 
         // This test verifies no string-based type routing is needed anymore
-        val playbackTypes = listOf(
-            PlaybackType.VOD,
-            PlaybackType.SERIES,
-            PlaybackType.LIVE,
-        )
+        val playbackTypes =
+            listOf(
+                PlaybackType.VOD,
+                PlaybackType.SERIES,
+                PlaybackType.LIVE,
+            )
 
         playbackTypes.forEach { type ->
             // Each type should have a meaningful name (not a string conversion)

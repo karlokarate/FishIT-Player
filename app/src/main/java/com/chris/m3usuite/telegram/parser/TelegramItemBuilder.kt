@@ -7,6 +7,7 @@ import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.TelegramMediaRef
 import com.chris.m3usuite.telegram.domain.TelegramMetadata
+import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 
 /**
  * Builds TelegramItem domain objects from MessageBlocks.
@@ -28,6 +29,8 @@ import com.chris.m3usuite.telegram.domain.TelegramMetadata
  * - Use nested remoteId/uniqueId/fileId from the ExportMessage structure
  */
 object TelegramItemBuilder {
+    private const val TAG = "TelegramItemBuilder"
+
     /** Aspect ratio threshold for poster (portrait) images */
     private const val POSTER_ASPECT_RATIO_MAX = 0.85
 
@@ -44,6 +47,38 @@ object TelegramItemBuilder {
     private val AUDIOBOOK_TITLE_INDICATORS = setOf("hörbuch", "audiobook")
 
     /**
+     * Debug chat IDs for verbose logging.
+     * When a block belongs to one of these chats, detailed build decisions are logged.
+     * Set via [enableDebugLogging] for runtime diagnostics.
+     */
+    @Volatile
+    private var debugChatIds: Set<Long> = emptySet()
+
+    /**
+     * Enable debug logging for specific chat IDs.
+     * Call this from debug builds to get verbose logging for problematic chats.
+     *
+     * @param chatIds Set of chat IDs to log debug info for
+     */
+    fun enableDebugLogging(chatIds: Set<Long>) {
+        debugChatIds = chatIds
+        TelegramLogRepository.info(TAG, "Debug logging enabled for chats: $chatIds")
+    }
+
+    /**
+     * Disable debug logging.
+     */
+    fun disableDebugLogging() {
+        debugChatIds = emptySet()
+        TelegramLogRepository.info(TAG, "Debug logging disabled")
+    }
+
+    /**
+     * Check if debug logging is enabled for a chat.
+     */
+    private fun shouldDebugLog(chatId: Long): Boolean = chatId in debugChatIds
+
+    /**
      * Build a TelegramItem from a MessageBlock.
      *
      * @param block The message block to process
@@ -56,6 +91,9 @@ object TelegramItemBuilder {
     ): TelegramItem? {
         if (block.messages.isEmpty()) return null
 
+        val chatId = block.chatId
+        val debug = shouldDebugLog(chatId)
+
         // Separate messages by type
         val videos = block.messages.filterIsInstance<ExportVideo>()
         val photos = block.messages.filterIsInstance<ExportPhoto>()
@@ -63,14 +101,65 @@ object TelegramItemBuilder {
         val documents = block.messages.filterIsInstance<ExportDocument>()
         val audios = block.messages.filterIsInstance<ExportAudio>()
 
-        // Determine item type and build accordingly
-        return when {
-            videos.isNotEmpty() -> buildFromVideo(videos, photos, texts, chatTitle)
-            documents.isNotEmpty() -> buildFromDocument(documents, photos, texts, chatTitle)
-            audios.isNotEmpty() -> buildFromAudio(audios, photos, texts, chatTitle)
-            photos.isNotEmpty() && texts.isNotEmpty() -> buildPosterOnly(photos, texts, chatTitle)
-            else -> null
+        // Debug logging for block content
+        if (debug) {
+            val messageIds = block.messages.map { it.id }
+            TelegramLogRepository.debug(
+                TAG,
+                "[DEBUG] Chat $chatId - Block content: " +
+                    "${block.messages.size} messages (IDs: $messageIds), " +
+                    "${videos.size} videos, ${photos.size} photos, ${texts.size} texts, " +
+                    "${documents.size} documents, ${audios.size} audios",
+            )
+            // Log message types
+            block.messages.forEach { msg ->
+                TelegramLogRepository.debug(
+                    TAG,
+                    "[DEBUG] Chat $chatId - Message ${msg.id}: ${msg::class.simpleName}",
+                )
+            }
         }
+
+        // Determine item type and build accordingly
+        val result =
+            when {
+                videos.isNotEmpty() -> buildFromVideo(videos, photos, texts, chatTitle)
+                documents.isNotEmpty() -> buildFromDocument(documents, photos, texts, chatTitle)
+                audios.isNotEmpty() -> buildFromAudio(audios, photos, texts, chatTitle)
+                photos.isNotEmpty() && texts.isNotEmpty() -> buildPosterOnly(photos, texts, chatTitle)
+                else -> null
+            }
+
+        // Debug logging for build decision
+        if (debug) {
+            if (result != null) {
+                TelegramLogRepository.debug(
+                    TAG,
+                    "[DEBUG] Chat $chatId - Built item: type=${result.type}, " +
+                        "anchorMessageId=${result.anchorMessageId}, " +
+                        "title=${result.metadata.title}, " +
+                        "hasPoster=${result.posterRef != null}, " +
+                        "hasBackdrop=${result.backdropRef != null}, " +
+                        "hasVideo=${result.videoRef != null}, " +
+                        "hasDocument=${result.documentRef != null}",
+                )
+            } else {
+                val reason =
+                    when {
+                        videos.isEmpty() &&
+                            documents.isEmpty() &&
+                            audios.isEmpty() &&
+                            (photos.isEmpty() || texts.isEmpty()) -> "no suitable content combination"
+                        else -> "builder returned null"
+                    }
+                TelegramLogRepository.debug(
+                    TAG,
+                    "[DEBUG] Chat $chatId - Block skipped, no item built: $reason",
+                )
+            }
+        }
+
+        return result
     }
 
     /**

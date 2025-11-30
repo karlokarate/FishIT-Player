@@ -92,12 +92,13 @@ fun InternalPlayerEntry(
     val settings = remember(ctx) { SettingsStore(ctx) }
 
     // Convert headers map to ImageHeaders
-    val networkHeaders = remember(headers) {
-        val ua = headers["User-Agent"] ?: headers["user-agent"] ?: ""
-        val ref = headers["Referer"] ?: headers["referer"] ?: ""
-        val extras = headers.filterKeys { it.lowercase() !in setOf("user-agent", "referer") }
-        ImageHeaders(ua = ua, referer = ref, extras = extras)
-    }
+    val networkHeaders =
+        remember(headers) {
+            val ua = headers["User-Agent"] ?: headers["user-agent"] ?: ""
+            val ref = headers["Referer"] ?: headers["referer"] ?: ""
+            val extras = headers.filterKeys { it.lowercase() !in setOf("user-agent", "referer") }
+            ImageHeaders(ua = ua, referer = ref, extras = extras)
+        }
 
     val controller = rememberPlayerController()
 
@@ -121,14 +122,15 @@ fun InternalPlayerEntry(
         )
 
     // Create the controller with all callbacks
-    val playerController = remember(player, uiState) {
-        createSipController(
-            player = player,
-            currentState = uiState,
-            onStateUpdate = { uiState = it },
-            onExit = onExit,
-        )
-    }
+    val playerController =
+        remember(player, uiState) {
+            createSipController(
+                player = player,
+                currentState = uiState,
+                onStateUpdate = { uiState = it },
+                onExit = onExit,
+            )
+        }
 
     // System UI (back handler, screen-on, fullscreen)
     InternalPlayerSystemUi(
@@ -138,9 +140,10 @@ fun InternalPlayerEntry(
 
     // Main player content with black background
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black),
     ) {
         InternalPlayerContent(
             player = player,
@@ -163,8 +166,8 @@ private fun createSipController(
     currentState: InternalPlayerUiState,
     onStateUpdate: (InternalPlayerUiState) -> Unit,
     onExit: () -> Unit,
-): InternalPlayerController {
-    return InternalPlayerController(
+): InternalPlayerController =
+    InternalPlayerController(
         onPlayPause = {
             player?.let {
                 if (it.isPlaying) it.pause() else it.play()
@@ -186,11 +189,12 @@ private fun createSipController(
         onToggleLoop = {
             player?.let {
                 val looping = it.repeatMode != androidx.media3.common.Player.REPEAT_MODE_ONE
-                it.repeatMode = if (looping) {
-                    androidx.media3.common.Player.REPEAT_MODE_ONE
-                } else {
-                    androidx.media3.common.Player.REPEAT_MODE_OFF
-                }
+                it.repeatMode =
+                    if (looping) {
+                        androidx.media3.common.Player.REPEAT_MODE_ONE
+                    } else {
+                        androidx.media3.common.Player.REPEAT_MODE_OFF
+                    }
                 onStateUpdate(currentState.copy(isLooping = looping))
             }
         },
@@ -248,16 +252,20 @@ private fun createSipController(
             }
         },
         onToggleControlsVisibility = {
-            onStateUpdate(currentState.copy(
-                controlsVisible = !currentState.controlsVisible,
-                controlsTick = currentState.controlsTick + 1,
-            ))
+            onStateUpdate(
+                currentState.copy(
+                    controlsVisible = !currentState.controlsVisible,
+                    controlsTick = currentState.controlsTick + 1,
+                ),
+            )
         },
         onUserInteraction = {
-            onStateUpdate(currentState.copy(
-                controlsVisible = true,
-                controlsTick = currentState.controlsTick + 1,
-            ))
+            onStateUpdate(
+                currentState.copy(
+                    controlsVisible = true,
+                    controlsTick = currentState.controlsTick + 1,
+                ),
+            )
         },
         onHideControls = {
             onStateUpdate(currentState.copy(controlsVisible = false))
@@ -269,4 +277,3 @@ private fun createSipController(
             onExit()
         },
     )
-}

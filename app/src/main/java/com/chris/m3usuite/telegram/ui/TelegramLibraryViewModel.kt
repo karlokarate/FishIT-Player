@@ -61,8 +61,7 @@ class TelegramLibraryViewModel(
                 if (items.isNotEmpty()) {
                     TelegramImageStats.logStatsOnce(items, source = "TelegramLibraryViewModel")
                 }
-            }
-            .stateIn(
+            }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),

@@ -427,10 +427,11 @@ fun TelegramItemDetailScreen(
     val resumeRepo = remember { ResumeRepository(ctx) }
 
     // Phase T2: TelegramFileLoader for image loading
-    val fileLoader = remember {
-        val serviceClient = T_TelegramServiceClient.getInstance(ctx)
-        TelegramFileLoader(serviceClient)
-    }
+    val fileLoader =
+        remember {
+            val serviceClient = T_TelegramServiceClient.getInstance(ctx)
+            TelegramFileLoader(serviceClient)
+        }
 
     var data by remember { mutableStateOf<LoadedTelegramItem?>(null) }
     // Encode mediaId for resume tracking using TELEGRAM_MEDIA_ID_OFFSET
