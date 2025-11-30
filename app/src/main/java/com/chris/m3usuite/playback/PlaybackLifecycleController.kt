@@ -36,21 +36,22 @@ fun PlaybackLifecycleController() {
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> {
-                    // App returned to foreground - warm resume
-                    PlaybackSession.onAppForeground()
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> {
+                        // App returned to foreground - warm resume
+                        PlaybackSession.onAppForeground()
+                    }
+                    Lifecycle.Event.ON_PAUSE -> {
+                        // App going to background
+                        PlaybackSession.onAppBackground()
+                    }
+                    // ON_STOP: Keep player alive for potential background audio
+                    // ON_DESTROY: Player release is handled by app-level logic, not lifecycle
+                    else -> { /* No action for other events */ }
                 }
-                Lifecycle.Event.ON_PAUSE -> {
-                    // App going to background
-                    PlaybackSession.onAppBackground()
-                }
-                // ON_STOP: Keep player alive for potential background audio
-                // ON_DESTROY: Player release is handled by app-level logic, not lifecycle
-                else -> { /* No action for other events */ }
             }
-        }
 
         lifecycleOwner.lifecycle.addObserver(observer)
 

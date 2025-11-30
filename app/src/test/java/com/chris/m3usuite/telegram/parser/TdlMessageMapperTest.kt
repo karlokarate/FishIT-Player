@@ -2,7 +2,6 @@ package com.chris.m3usuite.telegram.parser
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -151,7 +150,11 @@ class TdlMessageMapperTest {
         assertEquals(2, photo.sizes.size)
         assertEquals(1280, photo.sizes[1].width)
         assertEquals(960, photo.sizes[1].height)
-        assertEquals("photo-remote-x", photo.sizes[1].photo.remote.id)
+        assertEquals(
+            "photo-remote-x",
+            photo.sizes[1]
+                .photo.remote.id,
+        )
     }
 
     @Test

@@ -55,6 +55,13 @@ class TelegramFileDataSource(
          * Ensures header and initial data are available for container parsing.
          */
         const val MIN_PREFIX_BYTES = 256 * 1024L
+
+        /**
+         * Timeout for remoteId to fileId resolution (10 seconds).
+         * This is shorter than ensureFileReady() timeout since resolution is just an API call,
+         * not a file download operation.
+         */
+        const val REMOTE_ID_RESOLUTION_TIMEOUT_MS = 10_000L
     }
 
     override fun addTransferListener(transferListener: TransferListener) {
@@ -119,14 +126,15 @@ class TelegramFileDataSource(
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
             message = "opening",
-            details = mapOf(
-                "fileIdFromPath" to fileIdStr,
-                "chatId" to chatId.toString(),
-                "messageId" to messageId.toString(),
-                "remoteId" to (remoteIdParam ?: "none"),
-                "uniqueId" to (uniqueIdParam ?: "none"),
-                "dataSpecPosition" to dataSpec.position.toString(),
-            ),
+            details =
+                mapOf(
+                    "fileIdFromPath" to fileIdStr,
+                    "chatId" to chatId.toString(),
+                    "messageId" to messageId.toString(),
+                    "remoteId" to (remoteIdParam ?: "none"),
+                    "uniqueId" to (uniqueIdParam ?: "none"),
+                    "dataSpecPosition" to dataSpec.position.toString(),
+                ),
         )
 
         // Phase D+: RemoteId-first resolution
@@ -138,29 +146,35 @@ class TelegramFileDataSource(
                 details = mapOf("remoteId" to remoteIdParam),
             )
 
-            val resolvedFileId = try {
-                runBlocking {
-                    serviceClient.downloader().resolveRemoteFileId(remoteIdParam)
+            val resolvedFileId =
+                try {
+                    runBlocking {
+                        // Use withTimeoutOrNull to prevent ANR if resolution takes too long
+                        // Default timeout matches ensureFileReady() timeout for consistency
+                        kotlinx.coroutines.withTimeoutOrNull(REMOTE_ID_RESOLUTION_TIMEOUT_MS) {
+                            serviceClient.downloader().resolveRemoteFileId(remoteIdParam)
+                        }
+                    }
+                } catch (e: Exception) {
+                    TelegramLogRepository.error(
+                        source = "TelegramFileDataSource",
+                        message = "Failed to resolve remoteId",
+                        exception = e,
+                        details = mapOf("remoteId" to remoteIdParam),
+                    )
+                    null
                 }
-            } catch (e: Exception) {
-                TelegramLogRepository.error(
-                    source = "TelegramFileDataSource",
-                    message = "Failed to resolve remoteId",
-                    exception = e,
-                    details = mapOf("remoteId" to remoteIdParam),
-                )
-                null
-            }
 
             if (resolvedFileId != null && resolvedFileId > 0) {
                 fileIdInt = resolvedFileId
                 TelegramLogRepository.info(
                     source = "TelegramFileDataSource",
                     message = "Resolved remoteId to fileId",
-                    details = mapOf(
-                        "remoteId" to remoteIdParam,
-                        "resolvedFileId" to resolvedFileId.toString(),
-                    ),
+                    details =
+                        mapOf(
+                            "remoteId" to remoteIdParam,
+                            "resolvedFileId" to resolvedFileId.toString(),
+                        ),
                 )
             } else {
                 throw IOException(
@@ -200,11 +214,12 @@ class TelegramFileDataSource(
                     source = "TelegramFileDataSource",
                     message = "Failed to ensure file ready",
                     exception = e,
-                    details = mapOf(
-                        "fileId" to fileIdInt.toString(),
-                        "remoteId" to (remoteIdParam ?: "none"),
-                        "position" to dataSpec.position.toString(),
-                    ),
+                    details =
+                        mapOf(
+                            "fileId" to fileIdInt.toString(),
+                            "remoteId" to (remoteIdParam ?: "none"),
+                            "position" to dataSpec.position.toString(),
+                        ),
                 )
                 // Reset state variables to avoid partial initialization
                 resetState()
@@ -232,13 +247,14 @@ class TelegramFileDataSource(
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
             message = "opened",
-            details = mapOf(
-                "fileId" to fileIdInt.toString(),
-                "remoteId" to (remoteIdParam ?: "none"),
-                "localPath" to localPath,
-                "dataSpecPosition" to dataSpec.position.toString(),
-                "fileSize" to file.length().toString(),
-            ),
+            details =
+                mapOf(
+                    "fileId" to fileIdInt.toString(),
+                    "remoteId" to (remoteIdParam ?: "none"),
+                    "localPath" to localPath,
+                    "dataSpecPosition" to dataSpec.position.toString(),
+                    "fileSize" to file.length().toString(),
+                ),
         )
 
         return fileDataSource.open(fileDataSpec)

@@ -79,13 +79,14 @@ object TelegramPlayUrl {
         remoteId: String,
         uniqueId: String,
     ): String {
-        val request = TelegramPlaybackRequest(
-            chatId = chatId,
-            messageId = messageId,
-            remoteId = remoteId,
-            uniqueId = uniqueId,
-            fileId = fileId,
-        )
+        val request =
+            TelegramPlaybackRequest(
+                chatId = chatId,
+                messageId = messageId,
+                remoteId = remoteId,
+                uniqueId = uniqueId,
+                fileId = fileId,
+            )
         return build(request)
     }
 }

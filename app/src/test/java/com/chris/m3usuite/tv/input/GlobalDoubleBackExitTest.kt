@@ -215,6 +215,7 @@ private class FakeDoubleBackNavigator(
  */
 private interface FakeNavigatorInterface {
     fun navigateToHome(): Boolean
+
     fun isAtHome(): Boolean
 }
 

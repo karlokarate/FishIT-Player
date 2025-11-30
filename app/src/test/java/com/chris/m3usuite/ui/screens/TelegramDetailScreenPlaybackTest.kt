@@ -1,6 +1,5 @@
 package com.chris.m3usuite.ui.screens
 
-import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.TelegramMediaRef
 import com.chris.m3usuite.telegram.player.TelegramPlaybackRequest
@@ -32,21 +31,23 @@ class TelegramDetailScreenPlaybackTest {
 
     @Test
     fun `TelegramMediaRef toPlaybackRequest preserves all identifiers`() {
-        val mediaRef = TelegramMediaRef(
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-            fileId = 12345,
-            sizeBytes = 1_000_000_000L,
-            mimeType = "video/mp4",
-            durationSeconds = 5400,
-            width = 1920,
-            height = 1080,
-        )
+        val mediaRef =
+            TelegramMediaRef(
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+                fileId = 12345,
+                sizeBytes = 1_000_000_000L,
+                mimeType = "video/mp4",
+                durationSeconds = 5400,
+                width = 1920,
+                height = 1080,
+            )
 
-        val request = mediaRef.toPlaybackRequest(
-            chatId = -1001234567890L,
-            anchorMessageId = 98765L,
-        )
+        val request =
+            mediaRef.toPlaybackRequest(
+                chatId = -1001234567890L,
+                anchorMessageId = 98765L,
+            )
 
         assert(request.remoteId == "AgACAgIAAxkBAAIBNmF1Y2xxxxx") {
             "remoteId should be preserved"
@@ -67,13 +68,14 @@ class TelegramDetailScreenPlaybackTest {
 
     @Test
     fun `TelegramPlaybackRequest with null fileId builds valid URL`() {
-        val request = TelegramPlaybackRequest(
-            chatId = -1001234567890L,
-            messageId = 98765L,
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-            fileId = null,
-        )
+        val request =
+            TelegramPlaybackRequest(
+                chatId = -1001234567890L,
+                messageId = 98765L,
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+                fileId = null,
+            )
 
         val url = TelegramPlayUrl.build(request)
 
@@ -88,21 +90,23 @@ class TelegramDetailScreenPlaybackTest {
 
     @Test
     fun `RemoteId-first URL includes all identifiers for DataSource`() {
-        val mediaRef = TelegramMediaRef(
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-            fileId = 12345,
-            sizeBytes = 1_000_000_000L,
-            mimeType = "video/mp4",
-            durationSeconds = 5400,
-            width = 1920,
-            height = 1080,
-        )
+        val mediaRef =
+            TelegramMediaRef(
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+                fileId = 12345,
+                sizeBytes = 1_000_000_000L,
+                mimeType = "video/mp4",
+                durationSeconds = 5400,
+                width = 1920,
+                height = 1080,
+            )
 
-        val request = mediaRef.toPlaybackRequest(
-            chatId = -1001234567890L,
-            anchorMessageId = 98765L,
-        )
+        val request =
+            mediaRef.toPlaybackRequest(
+                chatId = -1001234567890L,
+                anchorMessageId = 98765L,
+            )
 
         val url = TelegramPlayUrl.build(request)
 
@@ -117,21 +121,23 @@ class TelegramDetailScreenPlaybackTest {
     fun `Playback with stale fileId can still resolve via remoteId`() {
         // This test verifies the contract: even if fileId is stale (0),
         // the URL contains remoteId for DataSource to resolve a fresh fileId
-        val mediaRef = TelegramMediaRef(
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-            fileId = null, // Stale/missing fileId
-            sizeBytes = 1_000_000_000L,
-            mimeType = "video/mp4",
-            durationSeconds = 5400,
-            width = 1920,
-            height = 1080,
-        )
+        val mediaRef =
+            TelegramMediaRef(
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+                fileId = null, // Stale/missing fileId
+                sizeBytes = 1_000_000_000L,
+                mimeType = "video/mp4",
+                durationSeconds = 5400,
+                width = 1920,
+                height = 1080,
+            )
 
-        val request = mediaRef.toPlaybackRequest(
-            chatId = -1001234567890L,
-            anchorMessageId = 98765L,
-        )
+        val request =
+            mediaRef.toPlaybackRequest(
+                chatId = -1001234567890L,
+                anchorMessageId = 98765L,
+            )
 
         val url = TelegramPlayUrl.build(request)
 
@@ -282,13 +288,14 @@ class TelegramDetailScreenPlaybackTest {
     @Test
     fun `Playback URL scheme is correct for TDLib integration`() {
         // Verify URL scheme matches TelegramFileDataSource expectations
-        val request = TelegramPlaybackRequest(
-            chatId = -1001234567890L,
-            messageId = 9876L,
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-            fileId = 12345,
-        )
+        val request =
+            TelegramPlaybackRequest(
+                chatId = -1001234567890L,
+                messageId = 9876L,
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+                fileId = 12345,
+            )
 
         val url = TelegramPlayUrl.build(request)
 

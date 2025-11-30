@@ -867,10 +867,11 @@ class T_TelegramFileDownloader(
             )
 
             try {
-                val result = client.getRemoteFile(
-                    remoteFileId = remoteId,
-                    fileType = null, // Let TDLib determine the file type
-                )
+                val result =
+                    client.getRemoteFile(
+                        remoteFileId = remoteId,
+                        fileType = null, // Let TDLib determine the file type
+                    )
 
                 when (result) {
                     is dev.g000sha256.tdl.TdlResult.Success -> {
@@ -883,10 +884,11 @@ class T_TelegramFileDownloader(
                         TelegramLogRepository.debug(
                             source = "T_TelegramFileDownloader",
                             message = "Resolved remoteId to fileId",
-                            details = mapOf(
-                                "remoteId" to remoteId,
-                                "fileId" to fileId.toString(),
-                            ),
+                            details =
+                                mapOf(
+                                    "remoteId" to remoteId,
+                                    "fileId" to fileId.toString(),
+                                ),
                         )
                         fileId
                     }
@@ -894,11 +896,12 @@ class T_TelegramFileDownloader(
                         TelegramLogRepository.error(
                             source = "T_TelegramFileDownloader",
                             message = "Failed to resolve remoteId",
-                            details = mapOf(
-                                "remoteId" to remoteId,
-                                "error" to result.message,
-                                "code" to result.code.toString(),
-                            ),
+                            details =
+                                mapOf(
+                                    "remoteId" to remoteId,
+                                    "error" to result.message,
+                                    "code" to result.code.toString(),
+                                ),
                         )
                         null
                     }

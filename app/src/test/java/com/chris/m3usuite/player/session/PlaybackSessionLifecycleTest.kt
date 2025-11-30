@@ -262,15 +262,16 @@ class PlaybackSessionLifecycleTest {
 
     @Test
     fun `SessionLifecycleState_has_all_expected_values`() {
-        val expectedStates = listOf(
-            SessionLifecycleState.IDLE,
-            SessionLifecycleState.PREPARED,
-            SessionLifecycleState.PLAYING,
-            SessionLifecycleState.PAUSED,
-            SessionLifecycleState.BACKGROUND,
-            SessionLifecycleState.STOPPED,
-            SessionLifecycleState.RELEASED,
-        )
+        val expectedStates =
+            listOf(
+                SessionLifecycleState.IDLE,
+                SessionLifecycleState.PREPARED,
+                SessionLifecycleState.PLAYING,
+                SessionLifecycleState.PAUSED,
+                SessionLifecycleState.BACKGROUND,
+                SessionLifecycleState.STOPPED,
+                SessionLifecycleState.RELEASED,
+            )
 
         val actualStates = SessionLifecycleState.entries.toList()
 

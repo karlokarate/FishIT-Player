@@ -15,7 +15,6 @@ import com.chris.m3usuite.data.repo.ResumeRepository
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.player.PlayerChooser
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.util.TelegramPlayUrl

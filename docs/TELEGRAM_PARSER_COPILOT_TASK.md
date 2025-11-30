@@ -436,7 +436,11 @@ The following plan is concrete, repository-aware, and sequences work from offlin
   - Original `TelegramDetailScreen` preserved for legacy ID-based navigation
 
 - [x] **D.4 Wire playback via PlayerChooser → InternalPlayerEntry**:
-  - **Kept**: `fileId`-based URL using `TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)`
+  - **Phase D+ Update**: Implemented remoteId-first playback wiring
+  - Uses `TelegramPlaybackRequest` model with remoteId as PRIMARY identifier
+  - URL format: `tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...`
+  - `TelegramFileDataSource` resolves fileId via `getRemoteFile(remoteId)` when fileId is stale/missing
+  - Added `T_TelegramFileDownloader.resolveRemoteFileId()` for remoteId → fileId resolution
   - Builds PlaybackContext(type=VOD) from TelegramItem.videoRef
   - Navigates into InternalPlayerEntry via `PlayerChooser.start()` → `openInternal` callback
   - Enforces "Telegram ↔ PlayerLifecycle Contract":
@@ -444,6 +448,7 @@ The following plan is concrete, repository-aware, and sequences work from offlin
     - MUST NOT modify PlayerView
     - MUST NOT override activity lifecycle or orientation
   - **Tests**: `TelegramDetailScreenPlaybackTest` verifies URL format and playback eligibility
+  - **Legacy**: `TelegramPlayUrl.buildFileUrl(fileId, chatId, messageId)` preserved but marked @Deprecated
 
 - [x] **D.5 Create TelegramLibraryViewModel**:
   - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/ui/TelegramLibraryViewModel.kt`
@@ -455,6 +460,27 @@ The following plan is concrete, repository-aware, and sequences work from offlin
   - **NEW**: `app/src/test/java/com/chris/m3usuite/ui/screens/TelegramDetailScreenPlaybackTest.kt`
     - Tests playback URL construction and TelegramMediaRef → playback wiring
     - Verifies Phase 8 contract compliance (playable vs non-playable types)
+    - **Phase D+ Update**: Tests remoteId-first URL format and resolution contract
+
+- [x] **D+ RemoteId-First Playback Wiring**:
+  - **NEW**: `app/src/main/java/com/chris/m3usuite/telegram/player/TelegramPlaybackRequest.kt`
+    - Data class with `chatId`, `messageId`, `remoteId`, `uniqueId`, `fileId?`
+    - `TelegramMediaRef.toPlaybackRequest()` extension function
+  - **REFACTOR**: `app/src/main/java/com/chris/m3usuite/telegram/util/TelegramPlayUrl.kt`
+    - Added `build(TelegramPlaybackRequest)` for remoteId-first URL building
+    - Added `buildFileUrl(fileId, chatId, messageId, remoteId, uniqueId)` overload
+    - Deprecated `buildFileUrl(fileId, chatId, messageId)` legacy method
+  - **REFACTOR**: `app/src/main/java/com/chris/m3usuite/telegram/player/TelegramFileDataSource.kt`
+    - Parses `remoteId` and `uniqueId` from URL query parameters
+    - Resolves fileId via `resolveRemoteFileId(remoteId)` when path fileId is 0/invalid
+  - **REFACTOR**: `app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt`
+    - Added `resolveRemoteFileId(remoteId: String): Int?` method
+    - Uses `client.getRemoteFile()` for remoteId → fileId resolution
+  - **REFACTOR**: `app/src/main/java/com/chris/m3usuite/ui/screens/TelegramDetailScreen.kt`
+    - `loadTelegramItemByKey()` now uses remoteId-first URL building
+  - **TESTS**:
+    - `TelegramPlayUrlTest` updated for new URL format
+    - `TelegramDetailScreenPlaybackTest` updated for remoteId-first contract
 
 ### Phase E – Quality, Cleanup & Diagnostics
 

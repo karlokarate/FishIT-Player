@@ -16,13 +16,14 @@ class TelegramPlayUrlTest {
 
     @Test
     fun `build with TelegramPlaybackRequest includes remoteId and uniqueId`() {
-        val request = TelegramPlaybackRequest(
-            chatId = -1001234567890L,
-            messageId = 98765L,
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-            fileId = 12345,
-        )
+        val request =
+            TelegramPlaybackRequest(
+                chatId = -1001234567890L,
+                messageId = 98765L,
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+                fileId = 12345,
+            )
 
         val url = TelegramPlayUrl.build(request)
 
@@ -37,13 +38,14 @@ class TelegramPlayUrlTest {
 
     @Test
     fun `build with null fileId uses 0 in path`() {
-        val request = TelegramPlaybackRequest(
-            chatId = 123L,
-            messageId = 456L,
-            remoteId = "test-remote-id",
-            uniqueId = "test-unique-id",
-            fileId = null,
-        )
+        val request =
+            TelegramPlaybackRequest(
+                chatId = 123L,
+                messageId = 456L,
+                remoteId = "test-remote-id",
+                uniqueId = "test-unique-id",
+                fileId = null,
+            )
 
         val url = TelegramPlayUrl.build(request)
 
@@ -54,13 +56,14 @@ class TelegramPlayUrlTest {
 
     @Test
     fun `buildFileUrl with remoteId includes all identifiers`() {
-        val url = TelegramPlayUrl.buildFileUrl(
-            fileId = 12345,
-            chatId = -1001234567890L,
-            messageId = 98765L,
-            remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
-            uniqueId = "AQADCAAH1234",
-        )
+        val url =
+            TelegramPlayUrl.buildFileUrl(
+                fileId = 12345,
+                chatId = -1001234567890L,
+                messageId = 98765L,
+                remoteId = "AgACAgIAAxkBAAIBNmF1Y2xxxxx",
+                uniqueId = "AQADCAAH1234",
+            )
 
         assertTrue("URL should contain all parameters", url.contains("remoteId="))
         assertTrue("URL should contain uniqueId", url.contains("uniqueId="))
@@ -69,13 +72,14 @@ class TelegramPlayUrlTest {
 
     @Test
     fun `buildFileUrl with null fileId and remoteId still builds valid URL`() {
-        val url = TelegramPlayUrl.buildFileUrl(
-            fileId = null,
-            chatId = 123L,
-            messageId = 456L,
-            remoteId = "test-remote-id",
-            uniqueId = "test-unique-id",
-        )
+        val url =
+            TelegramPlayUrl.buildFileUrl(
+                fileId = null,
+                chatId = 123L,
+                messageId = 456L,
+                remoteId = "test-remote-id",
+                uniqueId = "test-unique-id",
+            )
 
         // Should use 0 as fileId path segment
         assertTrue("URL should use 0 for null fileId", url.startsWith("tg://file/0?"))

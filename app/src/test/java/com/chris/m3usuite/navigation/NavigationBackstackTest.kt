@@ -29,11 +29,12 @@ class NavigationBackstackTest {
 
     @Test
     fun `buildPlayerRoute returns valid route for VOD`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/vod.mp4",
-            type = "vod",
-            mediaId = 123L,
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/vod.mp4",
+                type = "vod",
+                mediaId = 123L,
+            )
 
         assertTrue("Route should start with player", route.startsWith("player"))
         assertTrue("Route should contain type", route.contains("type=vod"))
@@ -42,14 +43,15 @@ class NavigationBackstackTest {
 
     @Test
     fun `buildPlayerRoute returns valid route for series`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/episode.mp4",
-            type = "series",
-            seriesId = 456,
-            season = 2,
-            episodeNum = 5,
-            episodeId = 789,
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/episode.mp4",
+                type = "series",
+                seriesId = 456,
+                season = 2,
+                episodeNum = 5,
+                episodeId = 789,
+            )
 
         assertTrue("Route should start with player", route.startsWith("player"))
         assertTrue("Route should contain type", route.contains("type=series"))
@@ -61,13 +63,14 @@ class NavigationBackstackTest {
 
     @Test
     fun `buildPlayerRoute returns valid route for live`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/live.m3u8",
-            type = "live",
-            mediaId = 100L,
-            cat = "sports",
-            prov = "xtream",
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/live.m3u8",
+                type = "live",
+                mediaId = 100L,
+                cat = "sports",
+                prov = "xtream",
+            )
 
         assertTrue("Route should start with player", route.startsWith("player"))
         assertTrue("Route should contain type", route.contains("type=live"))
@@ -78,10 +81,11 @@ class NavigationBackstackTest {
 
     @Test
     fun `buildPlayerRoute URL-encodes special characters`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/video?param=value&other=test",
-            type = "vod",
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/video?param=value&other=test",
+                type = "vod",
+            )
 
         assertTrue("Route should start with player", route.startsWith("player"))
         // URL should be encoded (& becomes %26)
@@ -90,9 +94,10 @@ class NavigationBackstackTest {
 
     @Test
     fun `buildPlayerRoute handles null optional parameters`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/video.mp4",
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/video.mp4",
+            )
 
         assertTrue("Route should start with player", route.startsWith("player"))
         // Default values should be used
@@ -102,22 +107,24 @@ class NavigationBackstackTest {
 
     @Test
     fun `buildPlayerRoute handles start position`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/video.mp4",
-            type = "vod",
-            startMs = 45000L,
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/video.mp4",
+                type = "vod",
+                startMs = 45000L,
+            )
 
         assertTrue("Route should contain startMs", route.contains("startMs=45000"))
     }
 
     @Test
     fun `buildPlayerRoute handles mime type`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/video.mp4",
-            type = "vod",
-            mime = "video/mp4",
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/video.mp4",
+                type = "vod",
+                mime = "video/mp4",
+            )
 
         assertTrue("Route should contain mime", route.contains("mime=video"))
     }
@@ -133,9 +140,10 @@ class NavigationBackstackTest {
 
     @Test
     fun `built routes match PLAYER_ROUTE_PREFIX`() {
-        val route = PlayerNavigationHelper.buildPlayerRoute(
-            url = "http://example.com/video.mp4",
-        )
+        val route =
+            PlayerNavigationHelper.buildPlayerRoute(
+                url = "http://example.com/video.mp4",
+            )
 
         assertTrue(
             "Built route should start with PLAYER_ROUTE_PREFIX",
@@ -207,11 +215,12 @@ class NavigationBackstackTest {
 
     @Test
     fun `player route can be identified by prefix`() {
-        val routes = listOf(
-            PlayerNavigationHelper.buildPlayerRoute("http://example.com/1.mp4"),
-            PlayerNavigationHelper.buildPlayerRoute("http://example.com/2.mp4", type = "live"),
-            PlayerNavigationHelper.buildPlayerRoute("http://example.com/3.mp4", type = "series"),
-        )
+        val routes =
+            listOf(
+                PlayerNavigationHelper.buildPlayerRoute("http://example.com/1.mp4"),
+                PlayerNavigationHelper.buildPlayerRoute("http://example.com/2.mp4", type = "live"),
+                PlayerNavigationHelper.buildPlayerRoute("http://example.com/3.mp4", type = "series"),
+            )
 
         routes.forEach { route ->
             assertTrue(
@@ -223,16 +232,17 @@ class NavigationBackstackTest {
 
     @Test
     fun `non-player routes are not matched`() {
-        val nonPlayerRoutes = listOf(
-            "library",
-            "library?q=&qs=",
-            "settings",
-            "vod/123",
-            "series/456",
-            "live/789",
-            "gate",
-            "profiles",
-        )
+        val nonPlayerRoutes =
+            listOf(
+                "library",
+                "library?q=&qs=",
+                "settings",
+                "vod/123",
+                "series/456",
+                "live/789",
+                "gate",
+                "profiles",
+            )
 
         nonPlayerRoutes.forEach { route ->
             assertFalse(

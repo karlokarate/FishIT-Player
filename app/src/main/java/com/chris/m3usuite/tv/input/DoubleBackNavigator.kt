@@ -132,9 +132,7 @@ class DoubleBackNavigator(
      *
      * @return True if MiniPlayer is visible, false otherwise or if manager is not set
      */
-    fun isMiniPlayerVisible(): Boolean {
-        return miniPlayerManager?.state?.value?.visible == true
-    }
+    fun isMiniPlayerVisible(): Boolean = miniPlayerManager?.state?.value?.visible == true
 }
 
 /**
