@@ -27,7 +27,6 @@ import org.junit.Test
  * NOTE: These tests do NOT import Telegram-related modules per task constraints.
  */
 class PlaybackPriorityStateTest {
-
     @Before
     fun setUp() {
         // Reset PlaybackSession state before each test
@@ -164,11 +163,12 @@ class PlaybackPriorityStateTest {
     fun `active lifecycle states are PLAYING PAUSED BACKGROUND`() {
         // Document the states that count as "active" for playback priority
         // Per contract: isPlaybackActive requires lifecycleState in {PLAYING, PAUSED, BACKGROUND}
-        val activeStates = setOf(
-            SessionLifecycleState.PLAYING,
-            SessionLifecycleState.PAUSED,
-            SessionLifecycleState.BACKGROUND,
-        )
+        val activeStates =
+            setOf(
+                SessionLifecycleState.PLAYING,
+                SessionLifecycleState.PAUSED,
+                SessionLifecycleState.BACKGROUND,
+            )
 
         // Verify these are the only states that could make isPlaybackActive true
         // (when combined with isPlaying=true)
@@ -178,12 +178,13 @@ class PlaybackPriorityStateTest {
     @Test
     fun `inactive lifecycle states are IDLE PREPARED STOPPED RELEASED`() {
         // Document the states that do NOT count as "active" for playback priority
-        val inactiveStates = setOf(
-            SessionLifecycleState.IDLE,
-            SessionLifecycleState.PREPARED,
-            SessionLifecycleState.STOPPED,
-            SessionLifecycleState.RELEASED,
-        )
+        val inactiveStates =
+            setOf(
+                SessionLifecycleState.IDLE,
+                SessionLifecycleState.PREPARED,
+                SessionLifecycleState.STOPPED,
+                SessionLifecycleState.RELEASED,
+            )
 
         // Verify there are 4 inactive states
         assertEquals(4, inactiveStates.size)

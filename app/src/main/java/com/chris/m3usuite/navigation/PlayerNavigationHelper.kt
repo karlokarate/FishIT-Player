@@ -69,20 +69,21 @@ object PlayerNavigationHelper {
         cat: String? = null,
         prov: String? = null,
     ) {
-        val route = buildPlayerRoute(
-            url = url,
-            type = type,
-            mediaId = mediaId,
-            episodeId = episodeId,
-            seriesId = seriesId,
-            season = season,
-            episodeNum = episodeNum,
-            startMs = startMs,
-            mime = mime,
-            origin = origin,
-            cat = cat,
-            prov = prov,
-        )
+        val route =
+            buildPlayerRoute(
+                url = url,
+                type = type,
+                mediaId = mediaId,
+                episodeId = episodeId,
+                seriesId = seriesId,
+                season = season,
+                episodeNum = episodeNum,
+                startMs = startMs,
+                mime = mime,
+                origin = origin,
+                cat = cat,
+                prov = prov,
+            )
 
         navigateToPlayerRoute(navController, route)
     }

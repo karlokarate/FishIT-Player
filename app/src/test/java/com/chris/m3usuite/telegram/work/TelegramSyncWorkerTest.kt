@@ -29,7 +29,6 @@ import org.junit.Test
  * These tests verify the worker's basic structure and exposed API.
  */
 class TelegramSyncWorkerTest {
-
     @Before
     fun setUp() {
         // Reset PlaybackSession state before each test
@@ -79,42 +78,44 @@ class TelegramSyncWorkerTest {
     }
 
     @Test
-    fun `TelegramSyncWorker respects PlaybackPriority state`() = runBlocking {
-        // Simulate the throttleIfPlaybackActive() pattern used in TelegramSyncWorker
-        var throttleApplied = false
+    fun `TelegramSyncWorker respects PlaybackPriority state`() =
+        runBlocking {
+            // Simulate the throttleIfPlaybackActive() pattern used in TelegramSyncWorker
+            var throttleApplied = false
 
-        suspend fun simulateThrottleIfPlaybackActive() {
-            if (PlaybackPriority.isPlaybackActive.value) {
-                throttleApplied = true
-                delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+            suspend fun simulateThrottleIfPlaybackActive() {
+                if (PlaybackPriority.isPlaybackActive.value) {
+                    throttleApplied = true
+                    delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+                }
             }
+
+            // Given: playback is not active
+            assertFalse(PlaybackPriority.isPlaybackActive.value)
+
+            // When: running worker pattern
+            simulateThrottleIfPlaybackActive()
+
+            // Then: throttle should not be applied
+            assertFalse("Throttle should not be applied when playback is not active", throttleApplied)
         }
-
-        // Given: playback is not active
-        assertFalse(PlaybackPriority.isPlaybackActive.value)
-
-        // When: running worker pattern
-        simulateThrottleIfPlaybackActive()
-
-        // Then: throttle should not be applied
-        assertFalse("Throttle should not be applied when playback is not active", throttleApplied)
-    }
 
     @Test
-    fun `throttleIfPlaybackActive pattern executes without delay when inactive`() = runBlocking {
-        // Given: playback is not active
-        assertFalse(PlaybackPriority.isPlaybackActive.value)
+    fun `throttleIfPlaybackActive pattern executes without delay when inactive`() =
+        runBlocking {
+            // Given: playback is not active
+            assertFalse(PlaybackPriority.isPlaybackActive.value)
 
-        // When: executing throttle pattern (same as TelegramSyncWorker)
-        val startTime = System.currentTimeMillis()
-        if (PlaybackPriority.isPlaybackActive.value) {
-            delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+            // When: executing throttle pattern (same as TelegramSyncWorker)
+            val startTime = System.currentTimeMillis()
+            if (PlaybackPriority.isPlaybackActive.value) {
+                delay(PlaybackPriority.PLAYBACK_THROTTLE_MS)
+            }
+            val elapsed = System.currentTimeMillis() - startTime
+
+            // Then: should complete almost immediately (< 100ms buffer for test execution)
+            assertTrue("Expected no delay, but elapsed $elapsed ms", elapsed < 100)
         }
-        val elapsed = System.currentTimeMillis() - startTime
-
-        // Then: should complete almost immediately (< 100ms buffer for test execution)
-        assertTrue("Expected no delay, but elapsed $elapsed ms", elapsed < 100)
-    }
 
     @Test
     fun `parallelism should be 1 when playback is active`() {
@@ -180,39 +181,42 @@ class TelegramSyncWorkerTest {
     // ══════════════════════════════════════════════════════════════════
 
     @Test
-    fun `after PlaybackSession stop, playback is not active`() = runBlocking {
-        // Given: initial state
-        assertFalse(PlaybackPriority.isPlaybackActive.value)
+    fun `after PlaybackSession stop, playback is not active`() =
+        runBlocking {
+            // Given: initial state
+            assertFalse(PlaybackPriority.isPlaybackActive.value)
 
-        // When: stopping playback
-        PlaybackSession.stop()
+            // When: stopping playback
+            PlaybackSession.stop()
 
-        // Then: still not active
-        assertFalse(PlaybackPriority.isPlaybackActive.value)
-    }
-
-    @Test
-    fun `after PlaybackSession release, playback is not active`() = runBlocking {
-        // Given: initial state
-        assertFalse(PlaybackPriority.isPlaybackActive.value)
-
-        // When: releasing session
-        PlaybackSession.release()
-
-        // Then: not active
-        assertFalse(PlaybackPriority.isPlaybackActive.value)
-    }
-
-    @Test
-    fun `repeated state checks are consistent`() = runBlocking {
-        val results = mutableListOf<Boolean>()
-        repeat(10) {
-            results.add(PlaybackPriority.isPlaybackActive.value)
+            // Then: still not active
+            assertFalse(PlaybackPriority.isPlaybackActive.value)
         }
 
-        // All should be false (playback not active)
-        assertTrue("All checks should be consistent", results.all { !it })
-    }
+    @Test
+    fun `after PlaybackSession release, playback is not active`() =
+        runBlocking {
+            // Given: initial state
+            assertFalse(PlaybackPriority.isPlaybackActive.value)
+
+            // When: releasing session
+            PlaybackSession.release()
+
+            // Then: not active
+            assertFalse(PlaybackPriority.isPlaybackActive.value)
+        }
+
+    @Test
+    fun `repeated state checks are consistent`() =
+        runBlocking {
+            val results = mutableListOf<Boolean>()
+            repeat(10) {
+                results.add(PlaybackPriority.isPlaybackActive.value)
+            }
+
+            // All should be false (playback not active)
+            assertTrue("All checks should be consistent", results.all { !it })
+        }
 
     @Test
     fun `shouldThrottle equals isPlaybackActive value`() {

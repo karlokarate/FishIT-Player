@@ -9,7 +9,6 @@ import com.chris.m3usuite.player.internal.state.AspectRatioMode
 import com.chris.m3usuite.player.internal.subtitles.EdgeStyle
 import com.chris.m3usuite.player.internal.subtitles.SubtitleStyle
 import com.chris.m3usuite.player.internal.subtitles.SubtitleTrack
-import com.chris.m3usuite.player.miniplayer.DEFAULT_MINI_SIZE
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.player.miniplayer.MiniPlayerAnchor
 import com.chris.m3usuite.player.miniplayer.MiniPlayerMode
@@ -93,12 +92,13 @@ class RotationResilienceTest {
     @Test
     fun `warm_resume_states_allow_surface_rebinding`() {
         // Given: List of states that allow warm resume (surface rebinding)
-        val warmResumeStates = setOf(
-            SessionLifecycleState.PREPARED,
-            SessionLifecycleState.PLAYING,
-            SessionLifecycleState.PAUSED,
-            SessionLifecycleState.BACKGROUND,
-        )
+        val warmResumeStates =
+            setOf(
+                SessionLifecycleState.PREPARED,
+                SessionLifecycleState.PLAYING,
+                SessionLifecycleState.PAUSED,
+                SessionLifecycleState.BACKGROUND,
+            )
 
         // Then: canResume returns true only for warm resume states
         // Note: Without an actual player, we can only test IDLE state directly
@@ -107,12 +107,13 @@ class RotationResilienceTest {
 
         // The canResume property should return true for warm resume states
         // This is verified through the implementation check
-        val canResumeStates = setOf(
-            SessionLifecycleState.PREPARED,
-            SessionLifecycleState.PLAYING,
-            SessionLifecycleState.PAUSED,
-            SessionLifecycleState.BACKGROUND,
-        )
+        val canResumeStates =
+            setOf(
+                SessionLifecycleState.PREPARED,
+                SessionLifecycleState.PLAYING,
+                SessionLifecycleState.PAUSED,
+                SessionLifecycleState.BACKGROUND,
+            )
         assertEquals(warmResumeStates, canResumeStates)
     }
 
@@ -255,7 +256,9 @@ class RotationResilienceTest {
     @Test
     fun `aspect_ratio_mode_preserved_in_data_class_copy`() {
         // Given: A state with specific aspect ratio mode
-        data class TestState(val aspectRatioMode: AspectRatioMode = AspectRatioMode.FIT)
+        data class TestState(
+            val aspectRatioMode: AspectRatioMode = AspectRatioMode.FIT,
+        )
 
         val original = TestState(aspectRatioMode = AspectRatioMode.ZOOM)
 
@@ -273,14 +276,15 @@ class RotationResilienceTest {
     @Test
     fun `subtitle_style_preserved_in_copy`() {
         // Given: A custom subtitle style
-        val customStyle = SubtitleStyle(
-            textScale = 1.5f,
-            foregroundColor = 0xFFFFFF00.toInt(), // Yellow
-            foregroundOpacity = 1f,
-            backgroundColor = 0xFF000000.toInt(), // Black
-            backgroundOpacity = 0.8f,
-            edgeStyle = EdgeStyle.OUTLINE,
-        )
+        val customStyle =
+            SubtitleStyle(
+                textScale = 1.5f,
+                foregroundColor = 0xFFFFFF00.toInt(), // Yellow
+                foregroundOpacity = 1f,
+                backgroundColor = 0xFF000000.toInt(), // Black
+                backgroundOpacity = 0.8f,
+                edgeStyle = EdgeStyle.OUTLINE,
+            )
 
         // When: Creating a copy
         val copy = customStyle.copy()
@@ -329,13 +333,14 @@ class RotationResilienceTest {
     @Test
     fun `subtitle_track_preserved_in_copy`() {
         // Given: A subtitle track
-        val track = SubtitleTrack(
-            groupIndex = 0,
-            trackIndex = 1,
-            language = "en",
-            label = "English",
-            isDefault = true,
-        )
+        val track =
+            SubtitleTrack(
+                groupIndex = 0,
+                trackIndex = 1,
+                language = "en",
+                label = "English",
+                isDefault = true,
+            )
 
         // When: Creating a copy
         val copy = track.copy()
@@ -351,11 +356,12 @@ class RotationResilienceTest {
     @Test
     fun `subtitle_track_list_preserved_in_copy`() {
         // Given: A list of subtitle tracks
-        val tracks = listOf(
-            SubtitleTrack(groupIndex = 0, trackIndex = 0, language = "en", label = "English", isDefault = true),
-            SubtitleTrack(groupIndex = 0, trackIndex = 1, language = "de", label = "German", isDefault = false),
-            SubtitleTrack(groupIndex = 0, trackIndex = 2, language = "es", label = "Spanish", isDefault = false),
-        )
+        val tracks =
+            listOf(
+                SubtitleTrack(groupIndex = 0, trackIndex = 0, language = "en", label = "English", isDefault = true),
+                SubtitleTrack(groupIndex = 0, trackIndex = 1, language = "de", label = "German", isDefault = false),
+                SubtitleTrack(groupIndex = 0, trackIndex = 2, language = "es", label = "Spanish", isDefault = false),
+            )
 
         // When: Creating a copy of the list
         val copy = tracks.toList()
