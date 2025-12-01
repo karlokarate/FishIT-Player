@@ -349,8 +349,11 @@ fun InternalPlayerContent(
 
         // ════════════════════════════════════════════════════════════════════════
         // Phase 5 Group 4: Controls with Auto-Hide
+        // Responsive Overlay: Centered for phone/tablet, bottom-aligned for TV
         // ════════════════════════════════════════════════════════════════════════
         // Contract Section 7.1: Controls auto-hide after period of inactivity
+        val playerUiMode = detectPlayerUiMode()
+
         AnimatedVisibility(
             visible = state.controlsVisible,
             enter =
@@ -377,21 +380,50 @@ fun InternalPlayerContent(
                         .padding(16.dp)
                         .focusZone(FocusZoneId.PLAYER_CONTROLS),
             ) {
-                MainControlsRow(
-                    state = state,
-                    onPlayPause = controller.onPlayPause,
-                    onSeekBack = { controller.onSeekBy(-10_000) },
-                    onSeekForward = { controller.onSeekBy(30_000) },
-                    onToggleLoop = controller.onToggleLoop,
-                    onChangeAspectRatio = controller.onCycleAspectRatio,
-                    onSpeedClick = controller.onToggleSpeedDialog,
-                    onTracksClick = controller.onToggleTracksDialog,
-                    onCcClick = controller.onToggleCcMenu,
-                    onSettingsClick = controller.onToggleSettingsDialog,
-                    // Phase 7: PIP button now uses MiniPlayerManager instead of native PiP
-                    // No more enterPictureInPictureMode() calls from UI button
-                    onPipClick = controller.onEnterMiniPlayer,
-                )
+                // Responsive layout: Centered controls for phone/tablet, full controls for TV
+                when (playerUiMode) {
+                    PlayerUiMode.PHONE, PlayerUiMode.TABLET -> {
+                        // Centered mobile controls with larger tap targets
+                        // Note: Mobile uses symmetric 10s seek intervals for better touch UX
+                        CenteredMobileControls(
+                            isPlaying = state.isPlaying,
+                            onPlayPause = controller.onPlayPause,
+                            onSeekBackward = { controller.onSeekBy(-10_000) },
+                            onSeekForward = { controller.onSeekBy(10_000) },
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        // Secondary controls row for mobile (same functionality as TV)
+                        MobileSecondaryControls(
+                            state = state,
+                            onToggleLoop = controller.onToggleLoop,
+                            onChangeAspectRatio = controller.onCycleAspectRatio,
+                            onSpeedClick = controller.onToggleSpeedDialog,
+                            onTracksClick = controller.onToggleTracksDialog,
+                            onCcClick = controller.onToggleCcMenu,
+                            onSettingsClick = controller.onToggleSettingsDialog,
+                            onPipClick = controller.onEnterMiniPlayer,
+                        )
+                    }
+                    PlayerUiMode.TV -> {
+                        // TV: Full controls row at bottom (existing behavior)
+                        // Note: TV uses asymmetric seek (10s back, 30s forward) for DPAD convenience
+                        MainControlsRow(
+                            state = state,
+                            onPlayPause = controller.onPlayPause,
+                            onSeekBack = { controller.onSeekBy(-10_000) },
+                            onSeekForward = { controller.onSeekBy(30_000) },
+                            onToggleLoop = controller.onToggleLoop,
+                            onChangeAspectRatio = controller.onCycleAspectRatio,
+                            onSpeedClick = controller.onToggleSpeedDialog,
+                            onTracksClick = controller.onToggleTracksDialog,
+                            onCcClick = controller.onToggleCcMenu,
+                            onSettingsClick = controller.onToggleSettingsDialog,
+                            // Phase 7: PIP button now uses MiniPlayerManager instead of native PiP
+                            // No more enterPictureInPictureMode() calls from UI button
+                            onPipClick = controller.onEnterMiniPlayer,
+                        )
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 // Phase 6 Task 5: The timeline/seekbar is part of PLAYER_CONTROLS zone
                 // A dedicated TIMELINE zone can be added if separate focus behavior is needed
@@ -652,6 +684,163 @@ private fun MainControlsRow(
             // Visibility rules (Contract Section 8.1):
             // - Visible only for non-kid profiles
             // - Visible only if at least one subtitle track exists
+            if (!state.kidActive && state.availableSubtitleTracks.isNotEmpty()) {
+                PlayerControlButton(
+                    imageVector = Icons.Filled.ClosedCaption,
+                    onClick = onCcClick,
+                    contentDescription = "Subtitles & CC",
+                )
+            }
+            PlayerControlButton(
+                imageVector = Icons.Filled.MoreVert,
+                onClick = onSettingsClick,
+                contentDescription = "Settings",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.PictureInPicture,
+                onClick = onPipClick,
+                contentDescription = "Picture-in-Picture",
+            )
+        }
+    }
+}
+
+/**
+ * Centered playback controls for phone/tablet touch devices.
+ *
+ * **SIP Responsive Overlay Contract:**
+ * - Play/Pause and seek controls are centered on screen
+ * - Larger tap targets for touch interaction
+ * - Uses Phase T2 styling (white icons with circular black background)
+ * - Symmetric 10-second seek intervals for intuitive touch navigation
+ *
+ * **Design Rationale:**
+ * Mobile uses symmetric 10s seek intervals (unlike TV's asymmetric 10s/30s)
+ * because touch users benefit from predictable, balanced navigation.
+ * Icons (Replay10/Forward10) match the actual seek durations.
+ *
+ * Layout:
+ * - [Seek Back -10s] [Play/Pause] [Seek Forward +10s]
+ * - Seek buttons: 68dp size, 34dp icons
+ * - Play/Pause button: 80dp size, 40dp icon
+ * - Spacing: 32dp between buttons
+ *
+ * @param isPlaying Whether playback is currently active
+ * @param onPlayPause Callback for play/pause toggle
+ * @param onSeekBackward Callback for seek backward (10 seconds)
+ * @param onSeekForward Callback for seek forward (10 seconds)
+ */
+@Composable
+private fun CenteredMobileControls(
+    isPlaying: Boolean,
+    onPlayPause: () -> Unit,
+    onSeekBackward: () -> Unit,
+    onSeekForward: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Seek backward button (-10s)
+            PlayerControlButton(
+                imageVector = Icons.Filled.Replay10,
+                onClick = onSeekBackward,
+                contentDescription = "Seek Backward 10s",
+                size = 68.dp,
+                iconSize = 34.dp,
+            )
+
+            // Play/Pause button (larger, primary action)
+            PlayerControlButton(
+                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                onClick = onPlayPause,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                size = 80.dp,
+                iconSize = 40.dp,
+            )
+
+            // Seek forward button (+10s)
+            PlayerControlButton(
+                imageVector = Icons.Filled.Forward10,
+                onClick = onSeekForward,
+                contentDescription = "Seek Forward 10s",
+                size = 68.dp,
+                iconSize = 34.dp,
+            )
+        }
+    }
+}
+
+/**
+ * Secondary controls row for phone/tablet touch devices.
+ *
+ * **SIP Responsive Overlay Contract:**
+ * Provides the same secondary functionality as TV but with touch-optimized layout.
+ * Controls are centered and use larger tap targets for better touch UX.
+ *
+ * Controls included:
+ * - Loop toggle
+ * - Aspect ratio cycle
+ * - Playback speed
+ * - Audio/Subtitle tracks
+ * - CC/Subtitles (if available and not kid mode)
+ * - Settings
+ * - Picture-in-Picture
+ *
+ * @param state The current player UI state
+ * @param onToggleLoop Callback to toggle loop mode
+ * @param onChangeAspectRatio Callback to cycle aspect ratio
+ * @param onSpeedClick Callback to open speed dialog
+ * @param onTracksClick Callback to open tracks dialog
+ * @param onCcClick Callback to open CC menu
+ * @param onSettingsClick Callback to open settings dialog
+ * @param onPipClick Callback to enter picture-in-picture
+ */
+@Composable
+private fun MobileSecondaryControls(
+    state: InternalPlayerUiState,
+    onToggleLoop: () -> Unit,
+    onChangeAspectRatio: () -> Unit,
+    onSpeedClick: () -> Unit,
+    onTracksClick: () -> Unit,
+    onCcClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onPipClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PlayerControlButton(
+                imageVector = if (state.isLooping) Icons.Filled.Repeat else Icons.Outlined.Repeat,
+                onClick = onToggleLoop,
+                contentDescription = "Loop",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.CropFree,
+                onClick = onChangeAspectRatio,
+                contentDescription = "Aspect Ratio",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.AvTimer,
+                onClick = onSpeedClick,
+                contentDescription = "Speed",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.Subtitles,
+                onClick = onTracksClick,
+                contentDescription = "Tracks",
+            )
+            // CC button: Visible only for non-kid profiles with available subtitle tracks
             if (!state.kidActive && state.availableSubtitleTracks.isNotEmpty()) {
                 PlayerControlButton(
                     imageVector = Icons.Filled.ClosedCaption,
