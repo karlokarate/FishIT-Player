@@ -57,6 +57,8 @@ class TelegramLibraryViewModel(
         contentRepository
             .observeAllItems()
             .onEach { items ->
+                // DEBUG: Log TelegramItem count for UI wiring diagnostics
+                android.util.Log.d("telegram-ui", "TelegramLibraryVM received ${items.size} TelegramItems from ObxTelegramItem")
                 // Phase T2: Log image stats once per app session for diagnostics
                 if (items.isNotEmpty()) {
                     TelegramImageStats.logStatsOnce(items, source = "TelegramLibraryViewModel")

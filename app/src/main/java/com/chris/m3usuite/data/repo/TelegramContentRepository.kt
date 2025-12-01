@@ -137,6 +137,8 @@ class TelegramContentRepository(
                         orderDesc(ObxTelegramItem_.createdAtUtc)
                     }.find()
                     .map { it.toDomain() }
+            // DEBUG: Log ObxTelegramItem count for UI wiring diagnostics
+            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.observeAllItems(): ${items.size} items in ObxTelegramItem (new table)")
             emit(items)
         }.flowOn(Dispatchers.IO)
 
@@ -936,6 +938,8 @@ class TelegramContentRepository(
         store.tgSelectedVodChatsCsv
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
+                // DEBUG: Log query for UI wiring diagnostics
+                android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.getTelegramVodByChat(): querying ${chatIds.size} chatIds from ObxTelegramMessage (legacy)")
                 if (chatIds.isEmpty()) {
                     emptyMap()
                 } else {
@@ -949,6 +953,10 @@ class TelegramContentRepository(
     private suspend fun buildChatMoviesMap(chatIds: List<Long>): Map<Long, Pair<String, List<MediaItem>>> =
         withContext(Dispatchers.IO) {
             val result = mutableMapOf<Long, Pair<String, List<MediaItem>>>()
+
+            // DEBUG: Log total ObxTelegramMessage count for diagnostics
+            val legacyMessageCount = messageBox.count()
+            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository: Total ObxTelegramMessage count = $legacyMessageCount (legacy table)")
 
             for (chatId in chatIds) {
                 // Get non-series messages for this chat
@@ -967,6 +975,9 @@ class TelegramContentRepository(
 
                 result[chatId] = Pair(chatTitle, items)
             }
+
+            // DEBUG: Log result
+            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.buildChatMoviesMap(): returning ${result.size} chats from ObxTelegramMessage (legacy)")
 
             result
         }
@@ -1054,6 +1065,9 @@ class TelegramContentRepository(
     private fun encodeTelegramId(messageId: Long): Long = 4_000_000_000_000L + messageId
 
     companion object {
+        /** Debug log tag for UI wiring diagnostics */
+        private const val LOG_TAG_UI_WIRING = "telegram-ui"
+
         /**
          * Check if a MediaItem ID represents a Telegram item.
          */
