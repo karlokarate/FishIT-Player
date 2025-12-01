@@ -442,13 +442,46 @@ Several issues prevent visible PiP window:
 
 ## Summary Table
 
-| Bug ID | Root Cause | Key Files | Complexity |
-|--------|------------|-----------|------------|
-| BUG 1 | Missing URL-based LIVE detection + missing diagnostic fields | InternalPlaybackSourceResolver, InternalPlayerState | Medium |
-| BUG 2 | Live channel controller not wired to gesture callbacks | InternalPlayerEntry, InternalPlayerSession | Medium |
-| BUG 3 | Debug buttons nested inside Telegram READY state | SettingsScreen | Low |
-| BUG 4 | Race condition + missing debounce on Xtream config save | XtreamSettingsViewModel, MainActivity | Medium |
-| BUG 5 | `updatePipParams()` never called + surface detachment | MainActivity, PlayerSurface | High |
+| Bug ID | Root Cause | Key Files | Complexity | Status |
+|--------|------------|-----------|------------|--------|
+| BUG 1 | Missing URL-based LIVE detection + missing diagnostic fields | InternalPlaybackSourceResolver, InternalPlayerState | Medium | ✅ FIXED |
+| BUG 2 | Live channel controller not wired to gesture callbacks | InternalPlayerEntry, InternalPlayerSession | Medium | ✅ FIXED |
+| BUG 3 | Debug buttons nested inside Telegram READY state | SettingsScreen | Low | ✅ FIXED |
+| BUG 4 | Race condition + missing debounce on Xtream config save | XtreamSettingsViewModel, MainActivity | Medium | ✅ FIXED |
+| BUG 5 | `updatePipParams()` never called + surface detachment | MainActivity, InternalPlayerEntry | High | ✅ FIXED |
+
+---
+
+## Fix Summary (Phase 9 Sammel-Patch)
+
+### BUG 1 – Live/VOD Detection & Debug Info ✅
+- Added `isLikelyLiveUrl()` heuristic in `PlaybackSourceResolver`
+- Added diagnostic fields to `ResolvedPlaybackSource`: `isLiveFromUrl`, `inferredExtension`
+- Added debug fields to `InternalPlayerUiState`: `debugPlaybackUrl`, `debugResolvedMimeType`, `debugInferredExtension`, `debugIsLiveFromUrl`
+- Session now populates debug fields after source resolution
+
+### BUG 2 – Live-TV Channel Zapping ✅
+- Created `InternalPlayerSessionResult` to expose both player and `liveController`
+- Modified `rememberInternalPlayerSession` to return result with `liveController`
+- Updated `createSipController` to accept `liveController` and `playbackType`
+- Implemented `onJumpLiveChannel` callback to call `liveController.jumpChannel(delta)`
+- Added automatic player source update when `currentChannel` changes
+
+### BUG 3 – Debug Log Viewer Accessibility ✅
+- Created "Debug & Diagnostics" settings section that is always visible
+- Moved Log Viewer button from Telegram READY state to global section
+- Telegram Logs button still requires Telegram to be enabled
+
+### BUG 4 – Xtream First-Time Config Crash ✅
+- Added 500ms debounce in `XtreamSettingsViewModel.onChange()`
+- Added 750ms debounce in MainActivity auto-import `LaunchedEffect`
+- Added port validation (`port > 0`)
+- Wrapped import in try/catch with proper `AppLog` error handling
+
+### BUG 5 – System PiP on Phone/Tablet ✅
+- Added `LaunchedEffect` in `InternalPlayerEntry` to call `updatePipParams()` when playback state changes
+- Added `onPictureInPictureModeChanged` callback in `MainActivity`
+- PiP params now update reactively for API 31+ auto-enter support
 
 ---
 
@@ -473,4 +506,4 @@ Several issues prevent visible PiP window:
 ---
 
 **Author:** GitHub Copilot Agent  
-**Analysis Status:** ✅ COMPLETE – Ready for Fix-It task
+**Analysis Status:** ✅ COMPLETE – All bugs fixed in Phase 9 Sammel-Patch

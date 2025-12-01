@@ -12,11 +12,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
+/**
+ * BUG 1 FIX: Enhanced ResolvedPlaybackSource with diagnostic fields.
+ *
+ * Now includes:
+ * - isLiveFromUrl: URL-based live detection heuristic
+ * - inferredExtension: File extension extracted from URL
+ *
+ * These fields enable better LIVE/VOD detection and debug visibility.
+ */
 data class ResolvedPlaybackSource(
     val uri: Uri,
     val mimeType: String,
     val appMediaItem: AppMediaItem?,
     val isTelegram: Boolean,
+    /** BUG 1 FIX: True if URL patterns suggest this is a live stream */
+    val isLiveFromUrl: Boolean = false,
+    /** BUG 1 FIX: File extension inferred from URL path */
+    val inferredExtension: String? = null,
 )
 
 /**
@@ -24,6 +37,7 @@ data class ResolvedPlaybackSource(
  * - Mime-Erkennung
  * - Telegram-OBX-Fallback (wenn kein MediaItem mitkommt)
  * - Xtream-Mime-Fallback via PlayUrlHelper
+ * - BUG 1 FIX: URL-based LIVE detection heuristics
  */
 class PlaybackSourceResolver(
     private val context: Context,
@@ -35,6 +49,12 @@ class PlaybackSourceResolver(
     ): ResolvedPlaybackSource {
         val parsed = runCatching { Uri.parse(url) }.getOrNull() ?: Uri.parse(url)
         val isTelegram = url.startsWith("tg://", ignoreCase = true)
+
+        // BUG 1 FIX: Extract extension from URL
+        val inferredExtension = inferExtensionFromUrl(url)
+
+        // BUG 1 FIX: Detect if URL patterns suggest live streaming
+        val isLiveFromUrl = isLikelyLiveUrl(url)
 
         val (mime, item) =
             when {
@@ -62,19 +82,68 @@ class PlaybackSourceResolver(
                 mimeType = mime,
                 appMediaItem = item,
                 isTelegram = isTelegram,
+                isLiveFromUrl = isLiveFromUrl,
+                inferredExtension = inferredExtension,
             )
         AppLog.log(
             category = "player",
             level = AppLog.Level.DEBUG,
-            message = "resolved mime=$mime telegram=$isTelegram",
+            message = "resolved mime=$mime telegram=$isTelegram live=$isLiveFromUrl ext=$inferredExtension",
             extras =
                 buildMap {
                     put("url", url)
                     explicitMimeType?.let { put("explicit", it) }
                     preparedMediaItem?.containerExt?.let { put("containerExt", it) }
+                    put("isLiveFromUrl", isLiveFromUrl.toString())
                 },
         )
         return resolved
+    }
+
+    /**
+     * BUG 1 FIX: Detects if a URL is likely a live stream based on URL patterns.
+     *
+     * Patterns checked:
+     * - `/live/` path segment (Xtream live streams)
+     * - `.ts` extension (MPEG-TS, commonly used for live)
+     * - `stream_type=live` query parameter
+     * - `/live.m3u8` or similar live HLS patterns
+     *
+     * Note: This is a heuristic and may not be 100% accurate. The explicit PlaybackType
+     * passed via navigation parameters always takes precedence.
+     */
+    private fun isLikelyLiveUrl(url: String): Boolean {
+        val lowerUrl = url.lowercase()
+        return lowerUrl.contains("/live/") ||
+            lowerUrl.contains("/live.m3u8") ||
+            lowerUrl.contains("stream_type=live") ||
+            lowerUrl.contains("/streaming/") ||
+            (lowerUrl.endsWith(".ts") && !lowerUrl.contains("/movie/") && !lowerUrl.contains("/series/"))
+    }
+
+    /**
+     * BUG 1 FIX: Extracts file extension from URL path.
+     *
+     * Examples:
+     * - "http://server/video.mp4" → "mp4"
+     * - "http://server/live/stream.m3u8" → "m3u8"
+     * - "http://server/live/123" → null
+     */
+    private fun inferExtensionFromUrl(url: String): String? {
+        return try {
+            val uri = Uri.parse(url)
+            val path = uri.path ?: return null
+            val lastDot = path.lastIndexOf('.')
+            if (lastDot >= 0 && lastDot < path.length - 1) {
+                val ext = path.substring(lastDot + 1).lowercase()
+                // Only return valid extensions
+                if (ext.matches(Regex("^[a-z0-9]{1,5}$"))) ext else null
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /**

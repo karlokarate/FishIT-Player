@@ -305,6 +305,20 @@ fun rememberInternalPlayerSession(
                 preparedMediaItem = preparedMediaItem,
             )
 
+        // ════════════════════════════════════════════════════════════════════════════
+        // BUG 1 FIX: Populate debug diagnostic fields after source resolution
+        // ════════════════════════════════════════════════════════════════════════════
+        val truncatedUrl = if (url.length > 100) url.take(100) + "..." else url
+        val debugUpdated =
+            playerState.value.copy(
+                debugPlaybackUrl = truncatedUrl,
+                debugResolvedMimeType = resolved.mimeType,
+                debugInferredExtension = resolved.inferredExtension,
+                debugIsLiveFromUrl = resolved.isLiveFromUrl,
+            )
+        playerState.value = debugUpdated
+        onStateChanged(debugUpdated)
+
         val mediaItem =
             buildMediaItemWithTelegramExtras(
                 resolved = resolved,

@@ -944,6 +944,37 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * BUG 5 FIX: Handle PiP mode changes.
+     *
+     * ════════════════════════════════════════════════════════════════════════════════
+     * This callback is invoked when the activity enters or exits PiP mode.
+     * ════════════════════════════════════════════════════════════════════════════════
+     *
+     * On entering PiP:
+     * - The video continues playing via PlaybackSession
+     * - UI controls are hidden automatically by the system
+     *
+     * On leaving PiP:
+     * - System bars are hidden again for immersive playback
+     * - Player surface remains bound to PlaybackSession
+     */
+    @Suppress("DEPRECATION")
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+
+        if (!isInPictureInPictureMode) {
+            // Exiting PiP: Restore immersive mode
+            hideSystemBars()
+        }
+
+        AppLog.log(
+            category = "pip",
+            level = AppLog.Level.DEBUG,
+            message = if (isInPictureInPictureMode) "Entered PiP mode" else "Exited PiP mode",
+        )
+    }
+
     private fun hideSystemBars() {
         val c = WindowInsetsControllerCompat(window, window.decorView)
         c.hide(WindowInsetsCompat.Type.systemBars()) // <- Tippfehler behoben

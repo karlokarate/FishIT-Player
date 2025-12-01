@@ -1,5 +1,6 @@
 package com.chris.m3usuite.player
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.chris.m3usuite.MainActivity
 import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.playback.rememberPlayerController
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
@@ -140,6 +142,25 @@ fun InternalPlayerEntry(
                 playbackType = playbackContext.type,
             )
         }
+
+    // ════════════════════════════════════════════════════════════════════════════════════
+    // BUG 5 FIX: Update PiP params when playback state changes
+    // ════════════════════════════════════════════════════════════════════════════════════
+    //
+    // This ensures that on API 31+, setAutoEnterEnabled is updated when:
+    // - Playback starts/stops
+    // - Player is ready
+    //
+    // Without this, the system doesn't have the correct auto-enter state for PiP.
+    LaunchedEffect(uiState.isPlaying, player) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isTv) {
+            try {
+                (ctx as? MainActivity)?.updatePipParams()
+            } catch (_: Exception) {
+                // Ignore if cast fails or PiP not supported
+            }
+        }
+    }
 
     // System UI (back handler, screen-on, fullscreen)
     InternalPlayerSystemUi(
