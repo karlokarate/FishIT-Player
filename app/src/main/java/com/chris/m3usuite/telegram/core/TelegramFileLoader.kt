@@ -34,12 +34,27 @@ class TelegramFileLoader(
     private val prefetchScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // Track remoteIds that returned 404 to avoid repeated logging
-    private val logged404RemoteIds = mutableSetOf<String>()
+    // Use a bounded set with LRU eviction to prevent unbounded growth
+    private val logged404RemoteIds = object : LinkedHashSet<String>() {
+        override fun add(element: String): Boolean {
+            if (size >= MAX_404_LOG_CACHE) {
+                // Remove oldest entry (first in insertion order)
+                iterator().apply {
+                    if (hasNext()) {
+                        next()
+                        remove()
+                    }
+                }
+            }
+            return super.add(element)
+        }
+    }
 
     companion object {
         private const val TAG = "TelegramFileLoader"
         private const val DEFAULT_TIMEOUT_MS = 30_000L
         private const val DEFAULT_PRIORITY = 16 // Lower priority for thumbnails
+        private const val MAX_404_LOG_CACHE = 1000 // Maximum remoteIds to track for 404 logging
     }
 
     /**
