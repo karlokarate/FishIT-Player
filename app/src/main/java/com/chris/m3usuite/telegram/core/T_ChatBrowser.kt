@@ -164,6 +164,13 @@ class T_ChatBrowser(
      * Load all messages from a chat by paging through the entire history.
      * Use with caution for large chats.
      *
+     * Per tdlibsetup.md: TDLib's getChatHistory requires special offset handling:
+     * - First page: fromMessageId=0, offset=0
+     * - Subsequent pages: fromMessageId=oldest message ID, offset=-1 (to avoid duplicates)
+     *
+     * Also handles TDLib's async loading behavior where the first call may return
+     * only 1 message while TDLib loads more from the server in the background.
+     *
      * @param chatId Chat ID to load all messages from
      * @param pageSize Number of messages per page (default 100)
      * @param maxMessages Maximum total messages to load as safety limit (default 10000)
@@ -178,9 +185,32 @@ class T_ChatBrowser(
 
         val allMessages = mutableListOf<Message>()
         var fromMessageId = 0L
+        var isFirstPage = true
 
         while (allMessages.size < maxMessages) {
-            val batch = loadMessagesPaged(chatId, fromMessageId, limit = pageSize)
+            // Per tdlibsetup.md:
+            // - First page: offset=0
+            // - Subsequent pages: offset=-1 to avoid duplicate of the anchor message
+            val offset = if (isFirstPage) 0 else -1
+
+            var batch = loadMessagesPaged(chatId, fromMessageId, offset = offset, limit = pageSize)
+
+            // Handle TDLib async loading: first call often returns only 1 message
+            // Wait and retry to get the full batch from server
+            if (isFirstPage && batch.size == 1) {
+                TelegramLogRepository.debug(
+                    "T_ChatBrowser",
+                    "First batch returned ${batch.size} message(s), waiting for TDLib async load...",
+                )
+                delay(500L)
+                batch = loadMessagesPaged(chatId, fromMessageId, offset = offset, limit = pageSize)
+                TelegramLogRepository.debug(
+                    "T_ChatBrowser",
+                    "After retry: ${batch.size} messages",
+                )
+            }
+
+            isFirstPage = false
 
             if (batch.isEmpty()) {
                 TelegramLogRepository.debug("T_ChatBrowser", "No more messages, stopping")
