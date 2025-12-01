@@ -260,7 +260,7 @@ private fun createSipController(
             if (playbackType == PlaybackType.LIVE && liveController != null) {
                 liveController.jumpChannel(delta)
                 // Note: Channel change triggers currentChannel StateFlow update in session,
-                // which in turn updates the player source (see InternalPlayerSession line 777+)
+                // which in turn updates the player source (see InternalPlayerSession line 805+)
             }
         },
         onToggleCcMenu = {
