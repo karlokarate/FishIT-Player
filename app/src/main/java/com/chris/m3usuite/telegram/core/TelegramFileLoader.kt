@@ -192,22 +192,48 @@ class TelegramFileLoader(
     ): String? {
         // First, try with the stored fileId if available
         val storedFileId = imageRef.fileId
+        var shouldTryRemoteId = false
         if (storedFileId != null && storedFileId > 0) {
-            val result = ensureThumbDownloaded(storedFileId, timeoutMs)
-            if (result != null) {
-                return result
+            try {
+                val result = ensureThumbDownloaded(storedFileId, timeoutMs)
+                if (result != null) {
+                    return result
+                } else {
+                    // If result is null, treat as generic failure (do not fallback unless 404)
+                    TelegramLogRepository.warn(
+                        source = TAG,
+                        message = "ensureImageDownloaded: ensureThumbDownloaded returned null (not 404), not falling back to remoteId",
+                        details = mapOf(
+                            "staleFileId" to storedFileId.toString(),
+                            "remoteId" to imageRef.remoteId,
+                        ),
+                    )
+                    return null
+                }
+            } catch (e: Exception) {
+                if (e.message?.contains("404") == true) {
+                    shouldTryRemoteId = true
+                    TelegramLogRepository.debug(
+                        source = TAG,
+                        message = "ensureImageDownloaded: fileId failed with 404, trying remoteId resolution",
+                        details = mapOf(
+                            "staleFileId" to storedFileId.toString(),
+                            "remoteId" to imageRef.remoteId,
+                        ),
+                    )
+                } else {
+                    TelegramLogRepository.warn(
+                        source = TAG,
+                        message = "ensureImageDownloaded: ensureThumbDownloaded failed (not 404), not falling back to remoteId",
+                        details = mapOf(
+                            "staleFileId" to storedFileId.toString(),
+                            "remoteId" to imageRef.remoteId,
+                            "error" to (e.message ?: "unknown"),
+                        ),
+                    )
+                    return null
+                }
             }
-
-            // If failed, check if it was a 404 and try remoteId resolution
-            TelegramLogRepository.debug(
-                source = TAG,
-                message = "ensureImageDownloaded: fileId failed, trying remoteId resolution",
-                details =
-                    mapOf(
-                        "staleFileId" to storedFileId.toString(),
-                        "remoteId" to imageRef.remoteId,
-                    ),
-            )
         }
 
         // Resolve via remoteId
