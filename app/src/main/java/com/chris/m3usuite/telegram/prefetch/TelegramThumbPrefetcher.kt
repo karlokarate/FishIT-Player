@@ -77,12 +77,14 @@ class TelegramThumbPrefetcher(
                         observeAndPrefetch()
                     }
                 } catch (e: CancellationException) {
-                    TelegramLogRepository.info(
+                    // Task 4: Treat cancellations as benign - downgrade to debug level
+                    TelegramLogRepository.debug(
                         source = TAG,
-                        message = "TelegramThumbPrefetcher cancelled",
+                        message = "TelegramThumbPrefetcher cancelled (benign)",
                     )
                     throw e
                 } catch (e: Exception) {
+                    // Only non-cancellation exceptions are real errors
                     TelegramLogRepository.error(
                         source = TAG,
                         message = "TelegramThumbPrefetcher error",
@@ -234,7 +236,15 @@ class TelegramThumbPrefetcher(
                 )
                 false
             }
+        } catch (e: CancellationException) {
+            // Task 4: Treat cancellations as benign - downgrade to debug level
+            TelegramLogRepository.debug(
+                source = TAG,
+                message = "Prefetch cancelled for remoteId=${imageRef.remoteId} (benign)",
+            )
+            false
         } catch (e: Exception) {
+            // Only non-cancellation exceptions are real errors
             TelegramLogRepository.error(
                 source = TAG,
                 message = "Error prefetching thumbnail remoteId=${imageRef.remoteId}",

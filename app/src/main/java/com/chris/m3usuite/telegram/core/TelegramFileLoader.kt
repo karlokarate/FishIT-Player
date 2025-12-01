@@ -2,6 +2,7 @@ package com.chris.m3usuite.telegram.core
 
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -422,7 +423,15 @@ class TelegramFileLoader(
                         message = "prefetchImages: Poster prefetched",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
+                } catch (e: CancellationException) {
+                    // Task 4: Treat cancellations as benign - downgrade to debug level
+                    TelegramLogRepository.debug(
+                        source = TAG,
+                        message = "prefetchImages: Poster prefetch cancelled (benign)",
+                        details = mapOf("remoteId" to ref.remoteId),
+                    )
                 } catch (e: Exception) {
+                    // Only non-cancellation exceptions are logged as warnings
                     TelegramLogRepository.debug(
                         source = TAG,
                         message = "prefetchImages: Poster prefetch failed (non-critical)",
@@ -440,7 +449,15 @@ class TelegramFileLoader(
                         message = "prefetchImages: Backdrop prefetched",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
+                } catch (e: CancellationException) {
+                    // Task 4: Treat cancellations as benign - downgrade to debug level
+                    TelegramLogRepository.debug(
+                        source = TAG,
+                        message = "prefetchImages: Backdrop prefetch cancelled (benign)",
+                        details = mapOf("remoteId" to ref.remoteId),
+                    )
                 } catch (e: Exception) {
+                    // Only non-cancellation exceptions are logged as warnings
                     TelegramLogRepository.debug(
                         source = TAG,
                         message = "prefetchImages: Backdrop prefetch failed (non-critical)",

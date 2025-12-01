@@ -333,9 +333,35 @@ fun rememberInternalPlayerSession(
             )
 
         // ════════════════════════════════════════════════════════════════════════
-        // TELEGRAM PLAYBACK LOGGING (Task 1) - Log setMediaItem and prepare calls
+        // TELEGRAM PLAYBACK LOGGING (Task 2) - Log setMediaItem and prepare calls
         // ════════════════════════════════════════════════════════════════════════
         if (resolved.isTelegram) {
+            // Task 2: Check canStream before initiating Telegram playback
+            val serviceClient = com.chris.m3usuite.telegram.core.T_TelegramServiceClient.getInstance(context)
+            val engineState = serviceClient.engineState.value
+            
+            if (!engineState.canStream) {
+                // Task 2: Log structured diagnostic event when canStream is false
+                TelegramLogRepository.error(
+                    source = "InternalPlayerSession",
+                    message = "Telegram playback blocked - canStream is false",
+                    details =
+                        mapOf(
+                            "url" to url,
+                            "playbackType" to playbackContext.type.name,
+                            "isEnabled" to engineState.isEnabled.toString(),
+                            "authState" to engineState.authState.toString(),
+                            "isEngineHealthy" to engineState.isEngineHealthy.toString(),
+                            "canStream" to engineState.canStream.toString(),
+                            "recentError" to (engineState.recentError ?: "none"),
+                        ),
+                )
+                // Throw exception to prevent playback with clear user-facing message
+                throw IllegalStateException(
+                    "Telegram streaming not available: ${engineState.getStatusText()}"
+                )
+            }
+            
             TelegramLogRepository.info(
                 source = "InternalPlayerSession",
                 message = "setMediaItem() called for Telegram VOD",
@@ -347,6 +373,7 @@ fun rememberInternalPlayerSession(
                         "chatId" to (android.net.Uri.parse(url).getQueryParameter("chatId") ?: "unknown"),
                         "messageId" to (android.net.Uri.parse(url).getQueryParameter("messageId") ?: "unknown"),
                         "fileId" to (android.net.Uri.parse(url).pathSegments.lastOrNull() ?: "unknown"),
+                        "canStream" to "true",
                     ),
             )
         }
