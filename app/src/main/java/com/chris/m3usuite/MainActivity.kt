@@ -958,6 +958,11 @@ class MainActivity : ComponentActivity() {
      * On leaving PiP:
      * - System bars are hidden again for immersive playback
      * - Player surface remains bound to PlaybackSession
+     *
+     * Note: We use the deprecated single-parameter overload for backwards compatibility
+     * with API levels < 26. The two-parameter overload (with Configuration) was added in
+     * API 26, but this app's minSdk may support lower versions. The Configuration parameter
+     * is not needed for our use case (restoring immersive mode on exit).
      */
     @Suppress("DEPRECATION")
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {

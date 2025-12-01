@@ -277,8 +277,6 @@ fun SettingsScreen(
                 onDisconnect = telegramVm::onDisconnect,
                 onOpenLog = onOpenTelegramLog,
                 onOpenFeed = onOpenTelegramFeed,
-                // Log Viewer moved to global Debug section (BUG 3 fix)
-                onOpenLogViewer = null,
             )
 
             // --- Debug & Diagnostics (BUG 3 fix: moved from Telegram READY state) ---
@@ -401,7 +399,7 @@ private fun TelegramSettingsSection(
     onDisconnect: () -> Unit,
     onOpenLog: (() -> Unit)? = null,
     onOpenFeed: (() -> Unit)? = null,
-    onOpenLogViewer: (() -> Unit)? = null,
+    // Note: onOpenLogViewer removed - Log Viewer is now in global Debug & Diagnostics section (BUG 3 fix)
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
     var phoneNumber by remember { mutableStateOf("") }

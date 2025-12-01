@@ -834,17 +834,20 @@ fun rememberInternalPlayerSession(
                                 newPlayer.setMediaItem(newMediaItem)
                                 newPlayer.prepare()
                                 newPlayer.playWhenReady = true
-                            } catch (e: Throwable) {
+                            } catch (e: Exception) {
                                 // Fail-open: Log error but don't crash
+                                // Catches IllegalStateException (player released), IllegalArgumentException (bad URL),
+                                // SecurityException (missing permissions), and other runtime exceptions.
                                 com.chris.m3usuite.core.logging.AppLog.log(
                                     category = "live",
                                     level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
-                                    message = "Failed to switch live channel: ${e.message}",
+                                    message = "Failed to switch live channel: ${e.message ?: e::class.simpleName}",
                                     extras =
                                         mapOf(
                                             "channelId" to channel.id.toString(),
                                             "channelName" to channel.name,
                                             "url" to channelUrl,
+                                            "exceptionType" to (e::class.simpleName ?: "Unknown"),
                                         ),
                                 )
                             }
