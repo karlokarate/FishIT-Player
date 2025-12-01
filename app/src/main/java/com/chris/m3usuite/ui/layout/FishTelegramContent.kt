@@ -181,7 +181,7 @@ fun FishTelegramItemContent(
     val fileLoader = rememberTelegramFileLoader()
 
     // Use posterRef.remoteId for identity stability (remoteId is stable across sessions)
-    // fileId is volatile and can become stale after app restarts
+    // fileId is volatile and can become stale after TDLib session changes (including app restarts)
     var thumbPath by remember(item.posterRef?.remoteId) {
         mutableStateOf<String?>(null)
     }
