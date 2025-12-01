@@ -673,14 +673,14 @@ fun rememberInternalPlayerSession(
                                     "url" to url,
                                     "playbackType" to playbackContext.type.name,
                                     "newState" to stateStr,
-                                    "playWhenReady" to player.playWhenReady.toString(),
-                                    "isPlaying" to player.isPlaying.toString(),
-                                    "positionMs" to player.currentPosition.toString(),
+                                    "playWhenReady" to newPlayer.playWhenReady.toString(),
+                                    "isPlaying" to newPlayer.isPlaying.toString(),
+                                    "positionMs" to newPlayer.currentPosition.toString(),
                                 ),
                         )
 
                         // Confirm we reach STATE_READY or STATE_PLAYING after ensureFileReady success
-                        if (playbackState == Player.STATE_READY || player.isPlaying) {
+                        if (playbackState == Player.STATE_READY || newPlayer.isPlaying) {
                             TelegramLogRepository.info(
                                 source = "InternalPlayerSession",
                                 message = "Telegram VOD reached playable state",
@@ -689,8 +689,8 @@ fun rememberInternalPlayerSession(
                                         "url" to url,
                                         "playbackType" to playbackContext.type.name,
                                         "state" to stateStr,
-                                        "playWhenReady" to player.playWhenReady.toString(),
-                                        "isPlaying" to player.isPlaying.toString(),
+                                        "playWhenReady" to newPlayer.playWhenReady.toString(),
+                                        "isPlaying" to newPlayer.isPlaying.toString(),
                                     ),
                             )
                         }
@@ -746,14 +746,14 @@ fun rememberInternalPlayerSession(
                                     "playWhenReady" to playWhenReady.toString(),
                                     "reason" to reasonStr,
                                     "playbackState" to
-                                        when (player.playbackState) {
+                                        when (newPlayer.playbackState) {
                                             Player.STATE_IDLE -> "IDLE"
                                             Player.STATE_BUFFERING -> "BUFFERING"
                                             Player.STATE_READY -> "READY"
                                             Player.STATE_ENDED -> "ENDED"
                                             else -> "UNKNOWN"
                                         },
-                                    "isPlaying" to player.isPlaying.toString(),
+                                    "isPlaying" to newPlayer.isPlaying.toString(),
                                 ),
                         )
                     }

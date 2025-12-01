@@ -232,9 +232,16 @@ class TelegramSettingsViewModel(
                 _state.update {
                     it.copy(
                         isConnecting = false,
+                        isEngineHealthy = false,
+                        recentError = "Connection failed: ${e.message}",
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Connection start failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -245,7 +252,7 @@ class TelegramSettingsViewModel(
     fun onConnectWithPhone(phoneNumber: String) {
         viewModelScope.launch {
             try {
-                _state.update { it.copy(isConnecting = true, errorMessage = null) }
+                _state.update { it.copy(isConnecting = true, errorMessage = null, recentError = null) }
 
                 // Save phone number persistently
                 store.setTelegramPhoneNumber(phoneNumber)
@@ -260,14 +267,21 @@ class TelegramSettingsViewModel(
                 // Submit phone number
                 serviceClient.login(phone = phoneNumber)
 
-                _state.update { it.copy(isConnecting = false) }
+                _state.update { it.copy(isConnecting = false, isEngineHealthy = true) }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isConnecting = false,
+                        isEngineHealthy = false,
+                        recentError = "Phone connection failed: ${e.message}",
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Connection with phone failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -278,10 +292,22 @@ class TelegramSettingsViewModel(
     fun onSendCode(code: String) {
         viewModelScope.launch {
             try {
-                _state.update { it.copy(errorMessage = null) }
+                _state.update { it.copy(errorMessage = null, recentError = null) }
                 serviceClient.login(code = code)
+                _state.update { it.copy(isEngineHealthy = true) }
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = "Ungültiger Code: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        isEngineHealthy = false,
+                        recentError = "Invalid code: ${e.message}",
+                        errorMessage = "Ungültiger Code: ${e.message}",
+                    )
+                }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Code verification failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -292,10 +318,22 @@ class TelegramSettingsViewModel(
     fun onSendPassword(password: String) {
         viewModelScope.launch {
             try {
-                _state.update { it.copy(errorMessage = null) }
+                _state.update { it.copy(errorMessage = null, recentError = null) }
                 serviceClient.login(password = password)
+                _state.update { it.copy(isEngineHealthy = true) }
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = "Ungültiges Passwort: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        isEngineHealthy = false,
+                        recentError = "Invalid password: ${e.message}",
+                        errorMessage = "Ungültiges Passwort: ${e.message}",
+                    )
+                }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Password verification failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -335,9 +373,16 @@ class TelegramSettingsViewModel(
                 _state.update {
                     it.copy(
                         isLoadingChats = false,
+                        isEngineHealthy = false,
+                        recentError = "Failed to load chats: ${e.message}",
                         errorMessage = "Chats laden fehlgeschlagen: ${e.message}",
                     )
                 }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Failed to load chats",
+                    exception = e,
+                )
             }
         }
     }
@@ -405,7 +450,18 @@ class TelegramSettingsViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = "Trennung fehlgeschlagen: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        isEngineHealthy = false,
+                        recentError = "Disconnect failed: ${e.message}",
+                        errorMessage = "Trennung fehlgeschlagen: ${e.message}",
+                    )
+                }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Disconnect failed",
+                    exception = e,
+                )
             }
         }
     }
