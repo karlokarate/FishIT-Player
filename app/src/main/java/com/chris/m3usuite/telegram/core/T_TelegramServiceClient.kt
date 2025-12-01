@@ -362,12 +362,12 @@ class T_TelegramServiceClient private constructor(
             e.printStackTrace()
             _connectionState.value = TgConnectionState.Error(e.message ?: "Unknown error")
             _authState.value = TelegramAuthState.Error(e.message ?: "Unknown error")
-            
+
             // Task 3: Mark engine as unhealthy on startup failure
             // But DO NOT change isEnabled - that's a user setting
             setEngineHealth(healthy = false, error = e.message ?: "Unknown error")
             updateEngineState()
-            
+
             throw e
         } finally {
             isInitializing.set(false)
@@ -411,11 +411,11 @@ class T_TelegramServiceClient private constructor(
         } catch (e: Exception) {
             TelegramLogRepository.debug("T_TelegramServiceClient", "Login error: ${e.message}")
             _authState.value = TelegramAuthState.Error(e.message ?: "Login failed")
-            
+
             // Task 3: Login errors affect auth state but not engine health
             // Engine health is only affected by startup/runtime errors
             updateEngineState()
-            
+
             throw e
         }
     }

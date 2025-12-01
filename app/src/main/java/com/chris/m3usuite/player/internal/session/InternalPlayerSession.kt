@@ -337,9 +337,11 @@ fun rememberInternalPlayerSession(
         // ════════════════════════════════════════════════════════════════════════
         if (resolved.isTelegram) {
             // Task 2: Check canStream before initiating Telegram playback
-            val serviceClient = com.chris.m3usuite.telegram.core.T_TelegramServiceClient.getInstance(context)
+            val serviceClient =
+                com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+                    .getInstance(context)
             val engineState = serviceClient.engineState.value
-            
+
             if (!engineState.canStream) {
                 // Task 2: Log structured diagnostic event when canStream is false
                 TelegramLogRepository.error(
@@ -358,10 +360,10 @@ fun rememberInternalPlayerSession(
                 )
                 // Throw exception to prevent playback with clear user-facing message
                 throw IllegalStateException(
-                    "Telegram streaming not available: ${engineState.getStatusText()}"
+                    "Telegram streaming not available: ${engineState.getStatusText()}",
                 )
             }
-            
+
             TelegramLogRepository.info(
                 source = "InternalPlayerSession",
                 message = "setMediaItem() called for Telegram VOD",
@@ -370,9 +372,22 @@ fun rememberInternalPlayerSession(
                         "url" to url,
                         "playbackType" to playbackContext.type.name,
                         "mimeType" to (resolved.mimeType ?: "unknown"),
-                        "chatId" to (android.net.Uri.parse(url).getQueryParameter("chatId") ?: "unknown"),
-                        "messageId" to (android.net.Uri.parse(url).getQueryParameter("messageId") ?: "unknown"),
-                        "fileId" to (android.net.Uri.parse(url).pathSegments.lastOrNull() ?: "unknown"),
+                        "chatId" to (
+                            android.net.Uri
+                                .parse(url)
+                                .getQueryParameter("chatId") ?: "unknown"
+                        ),
+                        "messageId" to (
+                            android.net.Uri
+                                .parse(url)
+                                .getQueryParameter("messageId") ?: "unknown"
+                        ),
+                        "fileId" to (
+                            android.net.Uri
+                                .parse(url)
+                                .pathSegments
+                                .lastOrNull() ?: "unknown"
+                        ),
                         "canStream" to "true",
                     ),
             )
@@ -599,7 +614,11 @@ fun rememberInternalPlayerSession(
                                         val fileIdStr = uri.pathSegments.lastOrNull() ?: "unknown"
                                         val fileId = fileIdStr.toIntOrNull() ?: 0
 
-                                        val downloader = com.chris.m3usuite.telegram.core.T_TelegramServiceClient.getInstance(context).downloader()
+                                        val downloader =
+                                            com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+                                                .getInstance(
+                                                    context,
+                                                ).downloader()
                                         val fileInfo = if (fileId > 0) downloader.getFileInfo(fileId) else null
 
                                         val downloadedPrefix = fileInfo?.local?.downloadedPrefixSize ?: 0

@@ -28,13 +28,11 @@ data class TelegramEngineState(
      * This value MUST NOT be changed by engine failures.
      */
     val isEnabled: Boolean = false,
-
     /**
      * TDLib authorization state.
      * Reflects whether the user is logged in and the session is ready.
      */
     val authState: TelegramAuthState = TelegramAuthState.Idle,
-
     /**
      * Internal engine health indicator.
      * Set to false when:
@@ -50,7 +48,6 @@ data class TelegramEngineState(
      * This flag is independent of isEnabled.
      */
     val isEngineHealthy: Boolean = true,
-
     /**
      * Recent error message for display in Settings.
      * Cleared when operations succeed.
