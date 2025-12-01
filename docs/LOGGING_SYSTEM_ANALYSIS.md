@@ -14,6 +14,7 @@
 4. [PART 4: Telegram Content → UI Rows Wiring](#part-4-telegram-content--ui-rows-wiring)
 5. [PART 5: JSON Export for Telegram Parsing](#part-5-json-export-for-telegram-parsing)
 6. [PART 6: Unified Logging Target Design](#part-6-unified-logging-target-design)
+7. [PART 7: Pre-Release Logging Boosters (New)](#part-7-pre-release-logging-boosters-new)
 
 ---
 
@@ -1159,6 +1160,27 @@ data class UnifiedLogEntry(
 | Crash visibility | Crash card at top of viewer on next startup |
 | Telegram parsing debug | JSON export of `ObxTelegramItem` per chat |
 | Row construction visibility | Logging hooks in repository/ViewModel/Screen |
+
+---
+
+## PART 7: Pre-Release Logging Boosters (New)
+
+> **Scope:** Prerelease builds only; remove or gate off for release. Per user request, secrets may be logged verbatim here to debug setup/auth issues.
+
+### 7.1 Correlated Tracing Across Telegram Pipeline
+- Introduce `traceId`/`spanId` for TDLib update → ingestion → ObjectBox write → ViewModel map → Compose render. Stamp IDs into every log and include per-stage `latencyMs` to reconstruct end-to-end timelines per chat/message.
+
+### 7.2 Structured JSON Logs
+- Emit JSON alongside text (fields: `traceId`, `tgChatId`, `tgMessageId`, `tgFileId`, `obxId`, `stage`, `latencyMs`, `result`, `errorCode`, `thread`). Enables machine parsing, regression diffing, and timeline reconstruction without manual scraping.
+
+### 7.3 Adaptive Sampling and Burst Protection
+- Add dynamic sampling/coalescing: aggregate bursts into counters (e.g., "ingestion batch: 120 msgs in 320ms", "UI recompositions skipped: 18") and throttle per-source when queues grow, so telemetry stays visible without causing UI jank/ANRs during floods.
+
+### 7.4 Explicit Secret Logging (Prerelease Only)
+- Provide an opt-in flag (e.g., `BuildConfig.PRERELEASE_LOG_SECRETS=true`) that disables redaction and logs exact secrets (API ID/HASH, proxy creds, UA, phone) for troubleshooting. Guard with build-type checks and ensure the flag is removed/false for release builds; surface a banner in the log viewer when raw secrets are emitted.
+
+### 7.5 Rolling Persistence + Diagnostics Bundle
+- Keep a rolling set of persisted log files (last N sessions) and add a "Collect diagnostics bundle" action that zips filtered logs, last crash report, and Telegram parsing snapshot. Attach the recent rolling window to crash reports so pre-crash context survives process death.
 
 ---
 

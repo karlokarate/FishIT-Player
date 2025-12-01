@@ -3,6 +3,7 @@
 
 Hinweis
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-12-02: Logging-Analyse erweitert (Prerelease-Booster: Trace/Span-IDs durch die Telegram-Pipeline, strukturierte JSON-Logs, adaptive Sampling/Coalescing, explizites Secret-Logging-Flag für Prerelease-Builds, Rolling-Persistenz + Diagnostics-Bundle).
 - Maintenance 2025-11-28: Internal Player SIP – Live-Kanäle behalten (ID/Provider-Filter), EPG-Refresh bei Kanalwechsel + Stale-Refresh im Tick, Kids-Restzeit im UiState, episodeId-Resume-Fallback und gehärteter Telegram/ContainerExt MIME-Resolver.
 - Maintenance 2025-11-28: Runtime logging konsolidiert auf `AppLog` (Master-Schalter + Kategorie-Chips in Settings, LogViewer liest Live/History aus AppLog). Restliche Logcat-Aufrufe entfernt; Step 5 (Tests/Telemetry-Flag) offen, siehe `docs/LOGGING_CONTRACT.md`.
 - Maintenance 2025-11-24: Standart-Workflow führt den hostseitigen

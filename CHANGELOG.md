@@ -1,3 +1,6 @@
+2025-12-02
+- docs(logging): Extend `docs/LOGGING_SYSTEM_ANALYSIS.md` with prerelease-only logging boosters (correlation IDs, structured JSON, adaptive sampling, explicit secret logging flag, rolling persistence/diagnostics bundle).
+
 2025-11-28
 - fix(player/live): Keep live channels with stable IDs (provider filter honored), avoid URL-based drop; refresh EPG on channel change and process stale refresh requests via session ticks; run live overlay auto-hide/stale checks on playback position updates.
 - fix(player/kids/resume/mime): Surface remaining kid minutes into UiState, add episodeId fallback for resume lookups, and harden MIME resolution (Telegram chatId/messageId/fileId lookup plus containerExt-aware guessing).
