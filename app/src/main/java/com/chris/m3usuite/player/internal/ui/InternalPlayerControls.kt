@@ -350,8 +350,11 @@ fun InternalPlayerContent(
 
         // ════════════════════════════════════════════════════════════════════════
         // Phase 5 Group 4: Controls with Auto-Hide
+        // Responsive Overlay: Centered for phone/tablet, bottom-aligned for TV
         // ════════════════════════════════════════════════════════════════════════
         // Contract Section 7.1: Controls auto-hide after period of inactivity
+        val playerUiMode = detectPlayerUiMode()
+
         AnimatedVisibility(
             visible = state.controlsVisible,
             enter =
@@ -378,21 +381,36 @@ fun InternalPlayerContent(
                         .padding(16.dp)
                         .focusZone(FocusZoneId.PLAYER_CONTROLS),
             ) {
-                MainControlsRow(
-                    state = state,
-                    onPlayPause = controller.onPlayPause,
-                    onSeekBack = { controller.onSeekBy(-10_000) },
-                    onSeekForward = { controller.onSeekBy(30_000) },
-                    onToggleLoop = controller.onToggleLoop,
-                    onChangeAspectRatio = controller.onCycleAspectRatio,
-                    onSpeedClick = controller.onToggleSpeedDialog,
-                    onTracksClick = controller.onToggleTracksDialog,
-                    onCcClick = controller.onToggleCcMenu,
-                    onSettingsClick = controller.onToggleSettingsDialog,
-                    // Phase 7: PIP button now uses MiniPlayerManager instead of native PiP
-                    // No more enterPictureInPictureMode() calls from UI button
-                    onPipClick = controller.onEnterMiniPlayer,
-                )
+                // Responsive layout: Centered controls for phone/tablet, full controls for TV
+                when (playerUiMode) {
+                    PlayerUiMode.PHONE, PlayerUiMode.TABLET -> {
+                        // Centered mobile controls with larger tap targets
+                        CenteredMobileControls(
+                            isPlaying = state.isPlaying,
+                            onPlayPause = controller.onPlayPause,
+                            onSeekBackward = { controller.onSeekBy(-10_000) },
+                            onSeekForward = { controller.onSeekBy(10_000) },
+                        )
+                    }
+                    PlayerUiMode.TV -> {
+                        // TV: Full controls row at bottom (existing behavior)
+                        MainControlsRow(
+                            state = state,
+                            onPlayPause = controller.onPlayPause,
+                            onSeekBack = { controller.onSeekBy(-10_000) },
+                            onSeekForward = { controller.onSeekBy(30_000) },
+                            onToggleLoop = controller.onToggleLoop,
+                            onChangeAspectRatio = controller.onCycleAspectRatio,
+                            onSpeedClick = controller.onToggleSpeedDialog,
+                            onTracksClick = controller.onToggleTracksDialog,
+                            onCcClick = controller.onToggleCcMenu,
+                            onSettingsClick = controller.onToggleSettingsDialog,
+                            // Phase 7: PIP button now uses MiniPlayerManager instead of native PiP
+                            // No more enterPictureInPictureMode() calls from UI button
+                            onPipClick = controller.onEnterMiniPlayer,
+                        )
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 // Phase 6 Task 5: The timeline/seekbar is part of PLAYER_CONTROLS zone
                 // A dedicated TIMELINE zone can be added if separate focus behavior is needed
@@ -669,6 +687,70 @@ private fun MainControlsRow(
                 imageVector = Icons.Filled.PictureInPicture,
                 onClick = onPipClick,
                 contentDescription = "Picture-in-Picture",
+            )
+        }
+    }
+}
+
+/**
+ * Centered playback controls for phone/tablet touch devices.
+ *
+ * **SIP Responsive Overlay Contract:**
+ * - Play/Pause and seek controls are centered on screen
+ * - Larger tap targets for touch interaction
+ * - Uses Phase T2 styling (white icons with circular black background)
+ *
+ * Layout:
+ * - [Seek Back -10s] [Play/Pause] [Seek Forward +10s]
+ * - Seek buttons: 68dp size, 34dp icons
+ * - Play/Pause button: 80dp size, 40dp icon
+ * - Spacing: 32dp between buttons
+ *
+ * @param isPlaying Whether playback is currently active
+ * @param onPlayPause Callback for play/pause toggle
+ * @param onSeekBackward Callback for seek backward
+ * @param onSeekForward Callback for seek forward
+ */
+@Composable
+private fun CenteredMobileControls(
+    isPlaying: Boolean,
+    onPlayPause: () -> Unit,
+    onSeekBackward: () -> Unit,
+    onSeekForward: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Seek backward button (-10s)
+            PlayerControlButton(
+                imageVector = Icons.Filled.Replay10,
+                onClick = onSeekBackward,
+                contentDescription = "Seek Backward 10s",
+                size = 68.dp,
+                iconSize = 34.dp,
+            )
+
+            // Play/Pause button (larger, primary action)
+            PlayerControlButton(
+                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                onClick = onPlayPause,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                size = 80.dp,
+                iconSize = 40.dp,
+            )
+
+            // Seek forward button (+10s)
+            PlayerControlButton(
+                imageVector = Icons.Filled.Forward10,
+                onClick = onSeekForward,
+                contentDescription = "Seek Forward 10s",
+                size = 68.dp,
+                iconSize = 34.dp,
             )
         }
     }
