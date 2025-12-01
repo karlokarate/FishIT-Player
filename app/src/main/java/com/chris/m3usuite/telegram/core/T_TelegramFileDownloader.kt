@@ -97,7 +97,7 @@ class T_TelegramFileDownloader(
         private const val TELEGRAM_MIN_PREFIX_BYTES: Long = 256L * 1024L // 256 KB minimum for playback start
         private const val STREAMING_MAX_TIMEOUT_MS: Long = 10_000L // 10 seconds for initial window
         private const val POLL_INTERVAL_MS: Long = 150L // 150ms polling for progress updates
-        
+
         // Legacy constants (kept for backward compatibility)
         private const val MIN_START_BYTES = 64 * 1024L // 64KB minimum for early success
         private const val STALL_TIMEOUT_MS = 5_000L // 5 seconds without progress = stalled
@@ -327,7 +327,7 @@ class T_TelegramFileDownloader(
             val windowStart = startPosition.coerceAtLeast(0L)
             val windowEnd = (windowStart + TELEGRAM_STREAM_WINDOW_BYTES).coerceAtMost(totalSize)
             val windowSize = windowEnd - windowStart
-            
+
             // Required prefix for playback: at least TELEGRAM_MIN_PREFIX_BYTES from windowStart
             val requiredPrefixFromStart = (windowStart + TELEGRAM_MIN_PREFIX_BYTES).coerceAtMost(totalSize)
 
@@ -450,7 +450,7 @@ class T_TelegramFileDownloader(
 
                     // Streaming-friendly fallback: if we have minimum data and download stalled, allow playback
                     val hasMinimumDataFromWindow = prefix >= (windowStart + TELEGRAM_MIN_PREFIX_BYTES).coerceAtMost(totalSize)
-                    
+
                     if (!pathNow.isNullOrBlank() &&
                         hasMinimumDataFromWindow &&
                         timeSinceProgress > STALL_TIMEOUT_MS

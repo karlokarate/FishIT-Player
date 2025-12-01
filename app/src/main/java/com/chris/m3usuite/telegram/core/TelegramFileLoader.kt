@@ -35,20 +35,21 @@ class TelegramFileLoader(
 
     // Track remoteIds that returned 404 to avoid repeated logging
     // Use a bounded set with LRU eviction to prevent unbounded growth
-    private val logged404RemoteIds = object : LinkedHashSet<String>() {
-        override fun add(element: String): Boolean {
-            if (size >= MAX_404_LOG_CACHE) {
-                // Remove oldest entry (first in insertion order)
-                iterator().apply {
-                    if (hasNext()) {
-                        next()
-                        remove()
+    private val logged404RemoteIds =
+        object : LinkedHashSet<String>() {
+            override fun add(element: String): Boolean {
+                if (size >= MAX_404_LOG_CACHE) {
+                    // Remove oldest entry (first in insertion order)
+                    iterator().apply {
+                        if (hasNext()) {
+                            next()
+                            remove()
+                        }
                     }
                 }
+                return super.add(element)
             }
-            return super.add(element)
         }
-    }
 
     companion object {
         private const val TAG = "TelegramFileLoader"

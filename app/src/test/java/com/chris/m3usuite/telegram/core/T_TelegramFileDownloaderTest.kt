@@ -144,7 +144,7 @@ class T_TelegramFileDownloaderTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
+
             // Check for TELEGRAM_STREAM_WINDOW_BYTES (50 MB)
             assert(content.contains("TELEGRAM_STREAM_WINDOW_BYTES")) {
                 "T_TelegramFileDownloader should define TELEGRAM_STREAM_WINDOW_BYTES constant"
@@ -152,7 +152,7 @@ class T_TelegramFileDownloaderTest {
             assert(content.contains("50L * 1024L * 1024L")) {
                 "TELEGRAM_STREAM_WINDOW_BYTES should be 50 MB (50L * 1024L * 1024L)"
             }
-            
+
             // Check for TELEGRAM_MIN_PREFIX_BYTES (256 KB)
             assert(content.contains("TELEGRAM_MIN_PREFIX_BYTES")) {
                 "T_TelegramFileDownloader should define TELEGRAM_MIN_PREFIX_BYTES constant"
@@ -160,7 +160,7 @@ class T_TelegramFileDownloaderTest {
             assert(content.contains("256L * 1024L")) {
                 "TELEGRAM_MIN_PREFIX_BYTES should be 256 KB (256L * 1024L)"
             }
-            
+
             // Check for POLL_INTERVAL_MS
             assert(content.contains("POLL_INTERVAL_MS")) {
                 "T_TelegramFileDownloader should define POLL_INTERVAL_MS constant"
@@ -174,13 +174,13 @@ class T_TelegramFileDownloaderTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
+
             // Find ensureFileReady function
             val ensureFileReadyStart = content.indexOf("suspend fun ensureFileReady")
             assert(ensureFileReadyStart >= 0) {
                 "ensureFileReady function should exist"
             }
-            
+
             // Extract function body (approximate)
             val nextFunctionStart = content.indexOf("suspend fun", ensureFileReadyStart + 1)
             val functionBody =
@@ -189,7 +189,7 @@ class T_TelegramFileDownloaderTest {
                 } else {
                     content.substring(ensureFileReadyStart)
                 }
-            
+
             // Verify window computation
             assert(functionBody.contains("windowStart") || functionBody.contains("val windowStart")) {
                 "ensureFileReady should compute windowStart for sliding window"
@@ -200,7 +200,7 @@ class T_TelegramFileDownloaderTest {
             assert(functionBody.contains("TELEGRAM_STREAM_WINDOW_BYTES")) {
                 "ensureFileReady should use TELEGRAM_STREAM_WINDOW_BYTES for window size"
             }
-            
+
             // Verify downloadFile call with offset and limit
             assert(functionBody.contains("client.downloadFile")) {
                 "ensureFileReady should call client.downloadFile"
@@ -211,7 +211,7 @@ class T_TelegramFileDownloaderTest {
             assert(functionBody.contains("limit =") || functionBody.contains("limit=")) {
                 "downloadFile should be called with limit parameter"
             }
-            
+
             // Verify it does NOT download full file (no limit = 0 for streaming)
             val downloadFileCallStart = functionBody.indexOf("client.downloadFile")
             if (downloadFileCallStart >= 0) {
@@ -233,7 +233,7 @@ class T_TelegramFileDownloaderTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
+
             // Find ensureFileReady function documentation
             val ensureFileReadyIndex = content.indexOf("suspend fun ensureFileReady")
             if (ensureFileReadyIndex >= 0) {
@@ -243,21 +243,21 @@ class T_TelegramFileDownloaderTest {
                     val docEnd = content.indexOf("*/", docStart)
                     if (docEnd >= 0 && docEnd < ensureFileReadyIndex) {
                         val documentation = content.substring(docStart, docEnd)
-                        
+
                         // Should mention sliding window and 50MB
                         assert(
-                            documentation.contains("50MB") || 
-                            documentation.contains("50 MB") ||
-                            documentation.contains("sliding window") ||
-                            documentation.contains("Sliding Window")
+                            documentation.contains("50MB") ||
+                                documentation.contains("50 MB") ||
+                                documentation.contains("sliding window") ||
+                                documentation.contains("Sliding Window"),
                         ) {
                             "ensureFileReady documentation should mention 50MB sliding window policy"
                         }
-                        
+
                         // Should mention streaming-first approach
                         assert(
-                            documentation.contains("streaming") || 
-                            documentation.contains("Streaming")
+                            documentation.contains("streaming") ||
+                                documentation.contains("Streaming"),
                         ) {
                             "ensureFileReady documentation should mention streaming approach"
                         }
@@ -283,7 +283,7 @@ class T_TelegramFileDownloaderTest {
         val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/core/T_TelegramFileDownloader.kt")
         if (sourceFile.exists()) {
             val content = sourceFile.readText()
-            
+
             // Find cleanupCache function
             val cleanupCacheStart = content.indexOf("suspend fun cleanupCache")
             if (cleanupCacheStart >= 0) {
@@ -294,12 +294,12 @@ class T_TelegramFileDownloaderTest {
                     } else {
                         content.substring(cleanupCacheStart)
                     }
-                
+
                 // Should use getStorageStatisticsFast instead of getStorageStatistics
                 assert(functionBody.contains("getStorageStatisticsFast")) {
                     "cleanupCache should use getStorageStatisticsFast() for better performance"
                 }
-                
+
                 // Should use optimizeStorage for cleanup
                 assert(functionBody.contains("optimizeStorage")) {
                     "cleanupCache should call optimizeStorage() when threshold exceeded"
