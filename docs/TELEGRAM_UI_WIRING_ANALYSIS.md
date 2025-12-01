@@ -1,9 +1,120 @@
 # Telegram UI Wiring Analysis
 
 > **Created:** 2025-12-01  
+> **Updated:** 2025-12-01  
 > **Purpose:** Document the end-to-end wiring from TelegramItem ingestion pipeline to UI screens, and identify gaps.
 
-## Executive Summary
+---
+
+## Status: FIXED ✅
+
+**Date:** 2025-12-01
+
+### Summary of Changes
+
+The UI has been successfully wired to the new `ObxTelegramItem`-based pipeline. The following changes were made:
+
+#### 1. Repository Layer (`TelegramContentRepository.kt`)
+- Added `TelegramChatSummary` data class for UI row display
+- Added `observeVodItemsByChat(): Flow<Map<Long, List<TelegramItem>>>` - queries `ObxTelegramItem`
+- Added `observeAllVodItems(): Flow<List<TelegramItem>>` - flat list of VOD items from new table
+- Added `observeVodChatSummaries(): Flow<List<TelegramChatSummary>>` - chat summaries for rows
+- Added `isVodType()` helper to filter playable content (MOVIE, SERIES_EPISODE, CLIP)
+- Deprecated legacy methods `getTelegramVodByChat()` and `getTelegramSeriesByChat()`
+
+#### 2. ViewModel Layer (`StartViewModel.kt`)
+- Added `telegramVodByChat: StateFlow<Map<Long, Pair<String, List<TelegramItem>>>>` using new API
+- Added `telegramChatSummaries: StateFlow<List<TelegramChatSummary>>` for row summaries
+- Updated `observeTelegramContent()` to use `observeVodItemsByChat()` and `observeVodChatSummaries()`
+- Deprecated legacy `telegramContentByChat` property
+
+#### 3. UI Layer (`StartScreen.kt`)
+- Added `openTelegramItem` callback with `(chatId: Long, anchorMessageId: Long)` signature
+- Replaced `FishTelegramRow` (MediaItem-based) with `FishTelegramItemRow` (TelegramItem-based)
+- Updated click handlers to navigate using `(chatId, anchorMessageId)` keys
+- Imported `TelegramItem` and `FishTelegramItemRow`
+
+#### 4. Navigation (`MainActivity.kt`)
+- Added new route: `telegram_item/{chatId}/{anchorMessageId}`
+- Route uses `TelegramItemDetailScreen` which loads from `ObxTelegramItem` via `getItem(chatId, anchorMessageId)`
+- Updated `StartScreen` and `LibraryScreen` calls to include `openTelegramItem` callback
+
+#### 5. LibraryScreen.kt
+- Added `openTelegramItem` callback parameter (same signature as StartScreen)
+
+### Data Flow After Fix
+
+```
+                    NEW PIPELINE (Working + UI Connected)
+                    =====================================
+                    
+TelegramSyncWorker
+        │
+        ▼
+TelegramIngestionCoordinator
+        │
+        ▼
+TelegramHistoryScanner → ExportMessage
+        │
+        ▼
+TelegramBlockGrouper → MessageBlock
+        │
+        ▼
+TelegramItemBuilder → TelegramItem
+        │
+        ▼
+TelegramContentRepository.upsertItems()
+        │
+        ▼
+    ┌─────────────────────┐
+    │  ObxTelegramItem    │
+    │  (NEW TABLE)        │
+    └─────────────────────┘
+            │
+            │ NOW CONNECTED ✅
+            │
+            ▼
+    ┌─────────────────────┐
+    │ StartViewModel      │
+    │ observeVodItemsByChat() │
+    │ observeVodChatSummaries() │
+    └─────────────────────┘
+            │
+            │
+            ▼
+    ┌─────────────────────┐
+    │ FishTelegramItemRow │
+    │ FishTelegramItemContent │
+    └─────────────────────┘
+            │
+            │
+            ▼
+    ┌─────────────────────┐
+    │ TelegramItemDetailScreen │
+    │ (via telegram_item/{chatId}/{anchorMessageId}) │
+    └─────────────────────┘
+```
+
+### Debug Logs
+
+With the fix applied, you should see logs like:
+
+```
+telegram-ui: UI summaries: 2 chats, totalVod=45
+telegram-ui: StartVM received 2 Telegram chat summaries
+telegram-ui: StartVM received 2 chats, 45 total items from ObxTelegramItem (new pipeline)
+telegram-ui: Rendering Telegram rows with 2 chats
+```
+
+### Legacy Code Status
+
+- Legacy `ObxTelegramMessage`-based code remains in place but is **NOT used** by main UI paths
+- Methods marked with `@Deprecated` annotation pointing to new replacements
+- `TelegramDetailScreen` (legacy route `telegram/{id}`) still works for backward compatibility
+
+---
+
+## Original Analysis (Historical Reference)
 
 **The refactored TDLib ingestion pipeline is running correctly but the UI is NOT connected to it.**
 

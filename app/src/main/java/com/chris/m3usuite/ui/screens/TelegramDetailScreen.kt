@@ -43,7 +43,9 @@ private fun fmt(totalSecs: Int): String {
 }
 
 // Constants for Telegram ID encoding/decoding
-private const val TELEGRAM_MEDIA_ID_OFFSET = 4_000_000_000_000L
+// Use shared constant from TelegramPlayUrl for consistency
+private val TELEGRAM_MEDIA_ID_OFFSET
+    get() = com.chris.m3usuite.telegram.util.TelegramPlayUrl.TELEGRAM_MEDIA_ID_OFFSET
 private const val TELEGRAM_MEDIA_ID_MAX = 5_000_000_000_000L
 
 // Decode Telegram message ID from MediaItem ID (4e12 offset)
