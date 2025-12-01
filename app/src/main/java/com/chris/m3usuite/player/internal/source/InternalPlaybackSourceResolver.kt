@@ -6,6 +6,8 @@ import androidx.media3.common.MimeTypes
 import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.data.obx.ObxTelegramItem
+import com.chris.m3usuite.data.obx.ObxTelegramItem_
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import kotlinx.coroutines.Dispatchers
@@ -155,14 +157,10 @@ class PlaybackSourceResolver(
 
     /**
      * Leichtgewichtiger OBX-Lookup für Telegram-MIME.
-     * Verwendet nur messageId + fileName, kein schweres Repo.
+     * Versucht zuerst ObxTelegramItem (neue Tabelle), dann ObxTelegramMessage (legacy).
      */
     private suspend fun resolveTelegramMimeFromObx(uri: Uri): String? =
         withContext(Dispatchers.IO) {
-            val fileId =
-                uri
-                    .getQueryParameter("fileId")
-                    ?.toIntOrNull()
             val messageId =
                 uri
                     .getQueryParameter("messageId")
@@ -171,6 +169,18 @@ class PlaybackSourceResolver(
                 uri
                     .getQueryParameter("chatId")
                     ?.toLongOrNull()
+
+            // Phase D: Try ObxTelegramItem first (new parser pipeline)
+            if (chatId != null && messageId != null) {
+                val mimeFromNewTable = resolveMimeFromTelegramItem(chatId, messageId)
+                if (mimeFromNewTable != null) return@withContext mimeFromNewTable
+            }
+
+            // Legacy fallback: Try ObxTelegramMessage
+            val fileId =
+                uri
+                    .getQueryParameter("fileId")
+                    ?.toIntOrNull()
             if (fileId == null && messageId == null) return@withContext null
 
             val store = ObxStore.get(context)
@@ -197,6 +207,27 @@ class PlaybackSourceResolver(
                 query.close()
             }
         }
+
+    /**
+     * Resolve MIME type from ObxTelegramItem (new Phase D table).
+     */
+    private fun resolveMimeFromTelegramItem(chatId: Long, anchorMessageId: Long): String? {
+        val store = ObxStore.get(context)
+        val box = store.boxFor(ObxTelegramItem::class.java)
+        val query = box.query()
+            .equal(ObxTelegramItem_.chatId, chatId)
+            .equal(ObxTelegramItem_.anchorMessageId, anchorMessageId)
+            .build()
+        try {
+            val item = query.findFirst() ?: return null
+            // Use video MIME type if available
+            return item.videoMimeType
+                ?: item.documentMimeType
+                ?: inferMimeTypeFromFileName(item.documentFileName)
+        } finally {
+            query.close()
+        }
+    }
 }
 
 /**
