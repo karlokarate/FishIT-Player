@@ -212,6 +212,12 @@ fun rememberInternalPlayerSession(
         }
     val playerHolder = remember { mutableStateOf<ExoPlayer?>(null) }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // BUFFERING WATCHDOG (Task 2) - Track buffering duration for Telegram VOD
+    // ════════════════════════════════════════════════════════════════════════
+    val bufferingStartTime = remember { mutableStateOf<Long?>(null) }
+    val bufferingWatchdogTimeoutMs = 15_000L // 15 seconds
+
     LaunchedEffect(url, startMs, mimeType, preparedMediaItem, networkHeaders, playbackContext.type) {
         // ════════════════════════════════════════════════════════════════════════════
         // PHASE 7: Use PlaybackSession.acquire() instead of creating ExoPlayer directly
@@ -324,7 +330,39 @@ fun rememberInternalPlayerSession(
                 resolved = resolved,
             )
 
+        // ════════════════════════════════════════════════════════════════════════
+        // TELEGRAM PLAYBACK LOGGING (Task 1) - Log setMediaItem and prepare calls
+        // ════════════════════════════════════════════════════════════════════════
+        if (resolved.isTelegram) {
+            TelegramLogRepository.info(
+                source = "InternalPlayerSession",
+                message = "setMediaItem() called for Telegram VOD",
+                details =
+                    mapOf(
+                        "url" to url,
+                        "playbackType" to playbackContext.type.name,
+                        "mimeType" to (resolved.mimeType ?: "unknown"),
+                        "chatId" to (android.net.Uri.parse(url).getQueryParameter("chatId") ?: "unknown"),
+                        "messageId" to (android.net.Uri.parse(url).getQueryParameter("messageId") ?: "unknown"),
+                        "fileId" to (android.net.Uri.parse(url).pathSegments.lastOrNull() ?: "unknown"),
+                    ),
+            )
+        }
+
         newPlayer.setMediaItem(mediaItem)
+
+        if (resolved.isTelegram) {
+            TelegramLogRepository.info(
+                source = "InternalPlayerSession",
+                message = "prepare() called for Telegram VOD",
+                details =
+                    mapOf(
+                        "url" to url,
+                        "playbackType" to playbackContext.type.name,
+                    ),
+            )
+        }
+
         newPlayer.prepare()
 
         // ════════════════════════════════════════════════════════════════════════
@@ -406,11 +444,44 @@ fun rememberInternalPlayerSession(
             onStateChanged(updated)
 
             // Guard: Only block playback if kid is active AND blocked
-            newPlayer.playWhenReady = !(gateState.kidActive && gateState.kidBlocked)
+            val shouldPlay = !(gateState.kidActive && gateState.kidBlocked)
+            newPlayer.playWhenReady = shouldPlay
+
+            // ════════════════════════════════════════════════════════════════════════
+            // TELEGRAM PLAYBACK LOGGING (Task 1) - Log play() call
+            // ════════════════════════════════════════════════════════════════════════
+            if (resolved.isTelegram) {
+                TelegramLogRepository.info(
+                    source = "InternalPlayerSession",
+                    message = "play() called (playWhenReady set) for Telegram VOD",
+                    details =
+                        mapOf(
+                            "url" to url,
+                            "playbackType" to playbackContext.type.name,
+                            "playWhenReady" to shouldPlay.toString(),
+                            "kidActive" to gateState.kidActive.toString(),
+                            "kidBlocked" to gateState.kidBlocked.toString(),
+                        ),
+                )
+            }
         } catch (_: Throwable) {
             // Fail-open: On any failure, fall back to autoplay
             // Matches legacy behavior at L567-569
             newPlayer.playWhenReady = true
+
+            if (resolved.isTelegram) {
+                TelegramLogRepository.info(
+                    source = "InternalPlayerSession",
+                    message = "play() called (playWhenReady set - fallback) for Telegram VOD",
+                    details =
+                        mapOf(
+                            "url" to url,
+                            "playbackType" to playbackContext.type.name,
+                            "playWhenReady" to "true",
+                            "reason" to "kids_gate_exception",
+                        ),
+                )
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -452,6 +523,91 @@ fun rememberInternalPlayerSession(
 
                     playerState.value = newState
                     onStateChanged(newState)
+
+                    // ════════════════════════════════════════════════════════════════
+                    // BUFFERING WATCHDOG (Task 2) - Track buffering duration
+                    // ════════════════════════════════════════════════════════════════
+                    if (resolved.isTelegram && playbackContext.type != PlaybackType.LIVE) {
+                        if (isBuffering && bufferingStartTime.value == null) {
+                            // Entering buffering state - start timer
+                            bufferingStartTime.value = System.currentTimeMillis()
+                            TelegramLogRepository.debug(
+                                source = "InternalPlayer",
+                                message = "Telegram VOD entered BUFFERING state",
+                                details =
+                                    mapOf(
+                                        "url" to url,
+                                        "positionMs" to pos.toString(),
+                                        "durationMs" to dur.toString(),
+                                    ),
+                            )
+                        } else if (!isBuffering && bufferingStartTime.value != null) {
+                            // Exiting buffering state - clear timer
+                            val bufferingDuration = System.currentTimeMillis() - bufferingStartTime.value!!
+                            bufferingStartTime.value = null
+                            TelegramLogRepository.debug(
+                                source = "InternalPlayer",
+                                message = "Telegram VOD exited BUFFERING state",
+                                details =
+                                    mapOf(
+                                        "url" to url,
+                                        "positionMs" to pos.toString(),
+                                        "bufferingDurationMs" to bufferingDuration.toString(),
+                                    ),
+                            )
+                        } else if (isBuffering && bufferingStartTime.value != null) {
+                            // Still buffering - check if timeout exceeded
+                            val bufferingDuration = System.currentTimeMillis() - bufferingStartTime.value!!
+                            if (bufferingDuration > bufferingWatchdogTimeoutMs) {
+                                // Log diagnostic event
+                                scope.launch(Dispatchers.IO) {
+                                    try {
+                                        val uri = android.net.Uri.parse(url)
+                                        val fileIdStr = uri.pathSegments.lastOrNull() ?: "unknown"
+                                        val fileId = fileIdStr.toIntOrNull() ?: 0
+
+                                        val downloader = com.chris.m3usuite.telegram.core.T_TelegramServiceClient.getInstance(context).downloader()
+                                        val fileInfo = if (fileId > 0) downloader.getFileInfo(fileId) else null
+
+                                        val downloadedPrefix = fileInfo?.local?.downloadedPrefixSize ?: 0
+                                        val expectedSize = fileInfo?.expectedSize ?: 0
+
+                                        TelegramLogRepository.warn(
+                                            source = "InternalPlayer",
+                                            message = "Telegram VOD buffering watchdog triggered",
+                                            details =
+                                                mapOf(
+                                                    "url" to url,
+                                                    "positionMs" to pos.toString(),
+                                                    "durationMs" to dur.toString(),
+                                                    "bufferingDurationMs" to bufferingDuration.toString(),
+                                                    "fileId" to fileIdStr,
+                                                    "downloadedPrefixSize" to downloadedPrefix.toString(),
+                                                    "expectedSize" to expectedSize.toString(),
+                                                    "playWhenReady" to player.playWhenReady.toString(),
+                                                    "playbackState" to
+                                                        when (player.playbackState) {
+                                                            Player.STATE_IDLE -> "IDLE"
+                                                            Player.STATE_BUFFERING -> "BUFFERING"
+                                                            Player.STATE_READY -> "READY"
+                                                            Player.STATE_ENDED -> "ENDED"
+                                                            else -> "UNKNOWN"
+                                                        },
+                                                ),
+                                        )
+                                    } catch (e: Exception) {
+                                        TelegramLogRepository.error(
+                                            source = "InternalPlayer",
+                                            message = "Failed to collect buffering watchdog diagnostics",
+                                            exception = e,
+                                        )
+                                    }
+                                }
+                                // Reset timer to avoid repeated logging
+                                bufferingStartTime.value = System.currentTimeMillis()
+                            }
+                        }
+                    }
 
                     if (resolved.isTelegram) {
                         TelegramLogRepository.debug(
@@ -497,6 +653,50 @@ fun rememberInternalPlayerSession(
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     // ════════════════════════════════════════════════════════════════
+                    // TELEGRAM PLAYBACK LOGGING (Task 1) - Log playback state changes
+                    // ════════════════════════════════════════════════════════════════
+                    if (resolved.isTelegram) {
+                        val stateStr =
+                            when (playbackState) {
+                                Player.STATE_IDLE -> "IDLE"
+                                Player.STATE_BUFFERING -> "BUFFERING"
+                                Player.STATE_READY -> "READY"
+                                Player.STATE_ENDED -> "ENDED"
+                                else -> "UNKNOWN($playbackState)"
+                            }
+
+                        TelegramLogRepository.info(
+                            source = "InternalPlayerSession",
+                            message = "onPlaybackStateChanged for Telegram VOD",
+                            details =
+                                mapOf(
+                                    "url" to url,
+                                    "playbackType" to playbackContext.type.name,
+                                    "newState" to stateStr,
+                                    "playWhenReady" to player.playWhenReady.toString(),
+                                    "isPlaying" to player.isPlaying.toString(),
+                                    "positionMs" to player.currentPosition.toString(),
+                                ),
+                        )
+
+                        // Confirm we reach STATE_READY or STATE_PLAYING after ensureFileReady success
+                        if (playbackState == Player.STATE_READY || player.isPlaying) {
+                            TelegramLogRepository.info(
+                                source = "InternalPlayerSession",
+                                message = "Telegram VOD reached playable state",
+                                details =
+                                    mapOf(
+                                        "url" to url,
+                                        "playbackType" to playbackContext.type.name,
+                                        "state" to stateStr,
+                                        "playWhenReady" to player.playWhenReady.toString(),
+                                        "isPlaying" to player.isPlaying.toString(),
+                                    ),
+                            )
+                        }
+                    }
+
+                    // ════════════════════════════════════════════════════════════════
                     // PLAYBACK ENDED - Mirrors legacy InternalPlayerScreen L798-806
                     // ════════════════════════════════════════════════════════════════
                     //
@@ -515,6 +715,47 @@ fun rememberInternalPlayerSession(
                                 // Matches legacy behavior
                             }
                         }
+                    }
+                }
+
+                override fun onPlayWhenReadyChanged(
+                    playWhenReady: Boolean,
+                    reason: Int,
+                ) {
+                    // ════════════════════════════════════════════════════════════════
+                    // TELEGRAM PLAYBACK LOGGING (Task 1) - Log playWhenReady changes
+                    // ════════════════════════════════════════════════════════════════
+                    if (resolved.isTelegram) {
+                        val reasonStr =
+                            when (reason) {
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST -> "USER_REQUEST"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS -> "AUDIO_FOCUS_LOSS"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY -> "AUDIO_BECOMING_NOISY"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "REMOTE"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM -> "END_OF_MEDIA_ITEM"
+                                else -> "UNKNOWN($reason)"
+                            }
+
+                        TelegramLogRepository.info(
+                            source = "InternalPlayerSession",
+                            message = "onPlayWhenReadyChanged for Telegram VOD",
+                            details =
+                                mapOf(
+                                    "url" to url,
+                                    "playbackType" to playbackContext.type.name,
+                                    "playWhenReady" to playWhenReady.toString(),
+                                    "reason" to reasonStr,
+                                    "playbackState" to
+                                        when (player.playbackState) {
+                                            Player.STATE_IDLE -> "IDLE"
+                                            Player.STATE_BUFFERING -> "BUFFERING"
+                                            Player.STATE_READY -> "READY"
+                                            Player.STATE_ENDED -> "ENDED"
+                                            else -> "UNKNOWN"
+                                        },
+                                    "isPlaying" to player.isPlaying.toString(),
+                                ),
+                        )
                     }
                 }
 
