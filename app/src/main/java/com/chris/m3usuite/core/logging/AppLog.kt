@@ -1,43 +1,30 @@
 package com.chris.m3usuite.core.logging
 
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
- * Central in-memory log repository for the entire application.
+ * Central logging utility for the application.
+ * Provides structured logging with categories and levels.
  *
- * Features:
- * - In-memory ring buffer (500 entries max)
- * - Thread-safe access
- * - Master enable toggle for production/debug modes
- * - Category-based filtering
- * - Dual flow architecture:
- *   - StateFlow<List<Entry>> for log history (UI viewing via LogViewerScreen)
- *   - SharedFlow<Entry> for live events (overlays, telemetry sinks)
- * - Forwards to Android Logcat with FishIT- prefixed tags
- *
- * Usage:
- * ```
- * AppLog.log(
- *     category = "player",
- *     level = AppLog.Level.INFO,
- *     message = "Playback started",
- *     extras = mapOf("mediaId" to "123")
- * )
- * ```
+ * Used by:
+ * - Player components
+ * - Work handlers
+ * - UI components
+ * - Network handlers
  */
 object AppLog {
-    private const val MAX_ENTRIES = 500
-    private const val TAG_PREFIX = "FishIT"
-
+    /** Log levels matching standard Android log levels */
     enum class Level {
         VERBOSE,
         DEBUG,
@@ -46,78 +33,87 @@ object AppLog {
         ERROR,
     }
 
+    /** Log entry data class */
     data class Entry(
-        val timestamp: Long,
-        val category: String,
+        val timestamp: Long = System.currentTimeMillis(),
         val level: Level,
+        val category: String,
         val message: String,
         val extras: Map<String, String> = emptyMap(),
     )
 
-    // Configuration
+    /** Whether logging is enabled globally */
     @Volatile
-    private var masterEnabled: Boolean = false
+    var enabled: Boolean = true
 
+    /** Categories that are enabled for logging */
     @Volatile
-    private var categoriesEnabled: Set<String> = emptySet()
+    private var enabledCategories: Set<String>? = null
 
-    // Thread-safe ring buffer
-    private val lock = ReentrantReadWriteLock()
-    private val ringBuffer = ArrayDeque<Entry>(MAX_ENTRIES)
+    /** Maximum number of entries to keep in history */
+    private const val MAX_HISTORY_SIZE = 500
 
-    // StateFlow for log history (consumed by LogViewerScreen)
+    /**
+     * Set the master enabled switch for logging.
+     */
+    fun setMasterEnabled(enabled: Boolean) {
+        this.enabled = enabled
+    }
+
+    /**
+     * Set which categories are enabled for logging.
+     * Pass null to enable all categories.
+     */
+    fun setCategoriesEnabled(categories: Set<String>?) {
+        this.enabledCategories = categories
+    }
+
+    /**
+     * Check if a category is enabled for logging.
+     */
+    private fun isCategoryEnabled(category: String): Boolean {
+        val cats = enabledCategories
+        return cats == null || cats.isEmpty() || cats.contains(category)
+    }
+
+    /** Scope for emitting log events */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** In-memory ring buffer of log entries */
     private val _history = MutableStateFlow<List<Entry>>(emptyList())
     val history: StateFlow<List<Entry>> = _history.asStateFlow()
 
-    // SharedFlow for live events (consumed by telemetry sinks, overlays)
-    private val _events =
-        MutableSharedFlow<Entry>(
-            replay = 0,
-            extraBufferCapacity = 10,
-        )
+    /** Live event stream for new log entries */
+    private val _events = MutableSharedFlow<Entry>(extraBufferCapacity = 64)
     val events: SharedFlow<Entry> = _events.asSharedFlow()
 
     /**
-     * Enable or disable the master log switch.
-     * When disabled, no logs are written to the ring buffer (but still go to Logcat).
-     */
-    fun setMasterEnabled(enabled: Boolean) {
-        masterEnabled = enabled
-    }
-
-    /**
-     * Set the categories that are enabled for logging.
-     * An empty set means all categories are enabled.
-     */
-    fun setCategoriesEnabled(categories: Set<String>) {
-        categoriesEnabled = categories
-    }
-
-    /**
-     * Log a message.
+     * Log a message with the specified category and level.
      *
-     * @param category Category identifier (e.g., "player", "telegram", "epg")
+     * @param category Log category (e.g., "player", "network", "ui")
      * @param level Log level
-     * @param message Human-readable message
-     * @param extras Optional key-value metadata
-     * @param bypassMaster If true, log even when master is disabled (for telemetry)
+     * @param message Log message
+     * @param extras Optional key-value pairs for additional context
+     * @param bypassMaster If true, logs even if global master switch is off (reserved for critical errors)
      */
     fun log(
         category: String,
         level: Level,
         message: String,
-        extras: Map<String, String> = emptyMap(),
+        extras: Map<String, String>? = null,
         bypassMaster: Boolean = false,
     ) {
-        // Forward to Android Logcat regardless of master switch
-        val tag = "$TAG_PREFIX-$category"
-        val extrasLine =
-            if (extras.isNotEmpty()) {
-                " | " + extras.entries.joinToString(", ") { "${it.key}=${it.value}" }
-            } else {
-                ""
+        if (!enabled && !bypassMaster) return
+        if (!bypassMaster && !isCategoryEnabled(category)) return
+
+        val tag = "FishIT/$category"
+        val fullMessage = buildString {
+            append(message)
+            if (!extras.isNullOrEmpty()) {
+                append(" | ")
+                append(extras.entries.joinToString(", ") { "${it.key}=${it.value}" })
             }
-        val fullMessage = "$message$extrasLine"
+        }
 
         when (level) {
             Level.VERBOSE -> Log.v(tag, fullMessage)
@@ -127,102 +123,97 @@ object AppLog {
             Level.ERROR -> Log.e(tag, fullMessage)
         }
 
-        // Check if we should write to ring buffer
-        if (!bypassMaster && !masterEnabled) return
-
-        // Check category filter (empty means all enabled)
-        if (categoriesEnabled.isNotEmpty() && category !in categoriesEnabled) return
-
-        val entry =
-            Entry(
-                timestamp = System.currentTimeMillis(),
-                category = category,
-                level = level,
-                message = message,
-                extras = extras,
-            )
-
-        // Add to ring buffer (thread-safe)
-        lock.write {
-            if (ringBuffer.size >= MAX_ENTRIES) {
-                ringBuffer.removeFirst()
-            }
-            ringBuffer.addLast(entry)
-
-            // Update StateFlow with immutable list
-            _history.value = ringBuffer.toList()
-        }
-
-        // Emit event for live consumers (non-blocking)
-        _events.tryEmit(entry)
+        // Add to history and emit event
+        val entry = Entry(
+            level = level,
+            category = category,
+            message = message,
+            extras = extras ?: emptyMap(),
+        )
+        addEntry(entry)
     }
 
     /**
-     * Convenience: Log with just category and message (defaults to DEBUG level).
+     * Add entry to history and emit event.
      */
-    fun log(
+    private fun addEntry(entry: Entry) {
+        _history.update { current ->
+            val newList = current + entry
+            if (newList.size > MAX_HISTORY_SIZE) {
+                newList.drop(newList.size - MAX_HISTORY_SIZE)
+            } else {
+                newList
+            }
+        }
+        scope.launch {
+            _events.emit(entry)
+        }
+    }
+
+    /**
+     * Log an error with exception.
+     *
+     * @param category Log category
+     * @param message Log message
+     * @param exception Exception to log
+     */
+    fun error(
         category: String,
         message: String,
+        exception: Throwable,
     ) {
-        log(category, Level.DEBUG, message)
+        if (!enabled) return
+
+        val tag = "FishIT/$category"
+        Log.e(tag, message, exception)
+
+        // Add to history with exception info
+        val entry = Entry(
+            level = Level.ERROR,
+            category = category,
+            message = "$message: ${exception.message}",
+            extras = mapOf("exception" to exception::class.simpleName.orEmpty()),
+        )
+        addEntry(entry)
     }
 
     /**
-     * Get filtered entries by category.
+     * Convenience method for debug logging.
      */
-    fun getEntriesByCategory(category: String): List<Entry> =
-        lock.read {
-            ringBuffer.filter { it.category == category }
-        }
+    fun debug(
+        category: String,
+        message: String,
+        extras: Map<String, String>? = null,
+    ) {
+        log(category, Level.DEBUG, message, extras)
+    }
 
     /**
-     * Get filtered entries by level.
+     * Convenience method for info logging.
      */
-    fun getEntriesByLevel(level: Level): List<Entry> =
-        lock.read {
-            ringBuffer.filter { it.level == level }
-        }
+    fun info(
+        category: String,
+        message: String,
+        extras: Map<String, String>? = null,
+    ) {
+        log(category, Level.INFO, message, extras)
+    }
 
     /**
-     * Clear all log entries.
+     * Convenience method for warning logging.
+     */
+    fun warn(
+        category: String,
+        message: String,
+        extras: Map<String, String>? = null,
+    ) {
+        log(category, Level.WARN, message, extras)
+    }
+
+    /**
+     * Clear all log history.
      */
     fun clear() {
-        lock.write {
-            ringBuffer.clear()
-            _history.value = emptyList()
-        }
-    }
-
-    /**
-     * Get all unique categories in the log.
-     */
-    fun getAllCategories(): List<String> =
-        lock.read {
-            ringBuffer.map { it.category }.distinct().sorted()
-        }
-
-    /**
-     * Export logs as text for sharing.
-     */
-    fun exportAsText(): String {
-        val entries =
-            lock.read {
-                ringBuffer.toList()
-            }
-        return buildString {
-            appendLine("=== App Log Export ===")
-            appendLine("Total Entries: ${entries.size}")
-            appendLine()
-
-            entries.forEach { entry ->
-                val extras =
-                    if (entry.extras.isNotEmpty()) {
-                        " | " + entry.extras.entries.joinToString(", ") { "${it.key}=${it.value}" }
-                    } else {
-                        ""
-                    }
-                appendLine("[${entry.level}] ${entry.category}: ${entry.message}$extras")
-            }
-        }
+        _history.value = emptyList()
     }
 }

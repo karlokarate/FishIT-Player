@@ -312,6 +312,9 @@ class TelegramSettingsViewModel(
     /**
      * Update selected chats for content parsing.
      * Triggers a sync with MODE_SELECTION_CHANGED after updating settings.
+     *
+     * Note: Writes to all three CSV settings (general, VOD, Series) so that
+     * StartViewModel and LibraryScreen properly display Telegram rows.
      */
     fun onUpdateSelectedChats(chatIds: List<String>) {
         viewModelScope.launch {
@@ -322,7 +325,12 @@ class TelegramSettingsViewModel(
             )
 
             val csv = chatIds.joinToString(",")
+            // Write to general CSV (unified selection)
             store.setTgSelectedChatsCsv(csv)
+            // Also write to VOD and Series CSVs so StartViewModel and LibraryScreen
+            // can display rows using their per-type observers
+            store.setTelegramSelectedVodChatsCsv(csv)
+            store.setTelegramSelectedSeriesChatsCsv(csv)
             _state.update { it.copy(selectedChats = chatIds) }
 
             // Clear prefetcher cache when chat selection changes
