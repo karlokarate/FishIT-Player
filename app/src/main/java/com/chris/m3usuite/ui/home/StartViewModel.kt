@@ -276,6 +276,10 @@ class StartViewModel(
             tgRepo
                 .getTelegramVodByChat()
                 .collectLatest { chatMap ->
+                    // DEBUG: Log item count from legacy ObxTelegramMessage table for UI wiring diagnostics
+                    val totalItems = chatMap.values.sumOf { it.second.size }
+                    android.util.Log.d("telegram-ui", "StartVM received ${chatMap.size} chats, $totalItems total items from ObxTelegramMessage (legacy)")
+
                     // Limit each row to e.g. 120 items
                     _telegramContentByChat.value =
                         chatMap.mapValues { (chatId, pair) ->
