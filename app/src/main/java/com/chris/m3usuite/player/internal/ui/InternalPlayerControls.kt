@@ -385,6 +385,7 @@ fun InternalPlayerContent(
                 when (playerUiMode) {
                     PlayerUiMode.PHONE, PlayerUiMode.TABLET -> {
                         // Centered mobile controls with larger tap targets
+                        // Note: Mobile uses symmetric 10s seek intervals for better touch UX
                         CenteredMobileControls(
                             isPlaying = state.isPlaying,
                             onPlayPause = controller.onPlayPause,
@@ -394,6 +395,7 @@ fun InternalPlayerContent(
                     }
                     PlayerUiMode.TV -> {
                         // TV: Full controls row at bottom (existing behavior)
+                        // Note: TV uses asymmetric seek (10s back, 30s forward) for DPAD convenience
                         MainControlsRow(
                             state = state,
                             onPlayPause = controller.onPlayPause,
@@ -699,6 +701,12 @@ private fun MainControlsRow(
  * - Play/Pause and seek controls are centered on screen
  * - Larger tap targets for touch interaction
  * - Uses Phase T2 styling (white icons with circular black background)
+ * - Symmetric 10-second seek intervals for intuitive touch navigation
+ *
+ * **Design Rationale:**
+ * Mobile uses symmetric 10s seek intervals (unlike TV's asymmetric 10s/30s)
+ * because touch users benefit from predictable, balanced navigation.
+ * Icons (Replay10/Forward10) match the actual seek durations.
  *
  * Layout:
  * - [Seek Back -10s] [Play/Pause] [Seek Forward +10s]
@@ -708,8 +716,8 @@ private fun MainControlsRow(
  *
  * @param isPlaying Whether playback is currently active
  * @param onPlayPause Callback for play/pause toggle
- * @param onSeekBackward Callback for seek backward
- * @param onSeekForward Callback for seek forward
+ * @param onSeekBackward Callback for seek backward (10 seconds)
+ * @param onSeekForward Callback for seek forward (10 seconds)
  */
 @Composable
 private fun CenteredMobileControls(
