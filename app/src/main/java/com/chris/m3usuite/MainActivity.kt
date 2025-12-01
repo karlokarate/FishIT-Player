@@ -417,7 +417,9 @@ class MainActivity : ComponentActivity() {
                                     val start = startMs ?: -1L
                                     val mimeArg = mime?.let { Uri.encode(it) } ?: ""
                                     // Use legacy mediaId encoding for resume position compatibility
-                                    val legacyId = 4_000_000_000_000L + anchorMessageId
+                                    val legacyId =
+                                        com.chris.m3usuite.telegram.util.TelegramPlayUrl
+                                            .TELEGRAM_MEDIA_ID_OFFSET + anchorMessageId
                                     nav.navigate("player?url=$encoded&type=vod&mediaId=$legacyId&startMs=$start&mime=$mimeArg")
                                 },
                                 onLogo = {

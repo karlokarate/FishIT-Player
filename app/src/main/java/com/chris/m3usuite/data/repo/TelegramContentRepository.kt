@@ -140,7 +140,10 @@ class TelegramContentRepository(
                     }.find()
                     .map { it.toDomain() }
             // DEBUG: Log ObxTelegramItem count for UI wiring diagnostics
-            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.observeAllItems(): ${items.size} items in ObxTelegramItem (new table)")
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "TelegramContentRepository.observeAllItems(): ${items.size} items in ObxTelegramItem (new table)",
+            )
             emit(items)
         }.flowOn(Dispatchers.IO)
 
@@ -1118,7 +1121,10 @@ class TelegramContentRepository(
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
                 // DEBUG: Log query for UI wiring diagnostics
-                android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.getTelegramVodByChat(): querying ${chatIds.size} chatIds from ObxTelegramMessage (legacy)")
+                android.util.Log.d(
+                    LOG_TAG_UI_WIRING,
+                    "TelegramContentRepository.getTelegramVodByChat(): querying ${chatIds.size} chatIds from ObxTelegramMessage (legacy)",
+                )
                 if (chatIds.isEmpty()) {
                     emptyMap()
                 } else {
@@ -1135,7 +1141,10 @@ class TelegramContentRepository(
 
             // DEBUG: Log total ObxTelegramMessage count for diagnostics
             val legacyMessageCount = messageBox.count()
-            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository: Total ObxTelegramMessage count = $legacyMessageCount (legacy table)")
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "TelegramContentRepository: Total ObxTelegramMessage count = $legacyMessageCount (legacy table)",
+            )
 
             for (chatId in chatIds) {
                 // Get non-series messages for this chat
@@ -1156,7 +1165,10 @@ class TelegramContentRepository(
             }
 
             // DEBUG: Log result
-            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.buildChatMoviesMap(): returning ${result.size} chats from ObxTelegramMessage (legacy)")
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "TelegramContentRepository.buildChatMoviesMap(): returning ${result.size} chats from ObxTelegramMessage (legacy)",
+            )
 
             result
         }

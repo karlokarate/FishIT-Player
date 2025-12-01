@@ -2575,26 +2575,33 @@ private fun OverlayIconButton(
 
     // Animate scale: 1.0 normal → 1.15 focused → 1.10 pressed
     val scale by animateFloatAsState(
-        targetValue = when {
-            isPressed -> 1.10f
-            isFocused -> 1.15f
-            else -> 1.0f
-        },
-        animationSpec = androidx.compose.animation.core.tween(OVERLAY_ANIMATION_DURATION_MS),
+        targetValue =
+            when {
+                isPressed -> 1.10f
+                isFocused -> 1.15f
+                else -> 1.0f
+            },
+        animationSpec =
+            androidx.compose.animation.core
+                .tween(OVERLAY_ANIMATION_DURATION_MS),
         label = "OverlayIconButtonScale",
     )
 
     // Animate background opacity: 40% normal → 65% focused
     val backgroundAlpha by animateFloatAsState(
         targetValue = if (isFocused || isPressed) 0.65f else 0.40f,
-        animationSpec = androidx.compose.animation.core.tween(OVERLAY_ANIMATION_DURATION_MS),
+        animationSpec =
+            androidx.compose.animation.core
+                .tween(OVERLAY_ANIMATION_DURATION_MS),
         label = "OverlayIconButtonBgAlpha",
     )
 
     // Animate focus border opacity: 0% normal → 40% focused
     val focusBorderAlpha by animateFloatAsState(
         targetValue = if (isFocused) 0.40f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(OVERLAY_ANIMATION_DURATION_MS),
+        animationSpec =
+            androidx.compose.animation.core
+                .tween(OVERLAY_ANIMATION_DURATION_MS),
         label = "OverlayIconButtonBorderAlpha",
     )
 
@@ -2615,29 +2622,28 @@ private fun OverlayIconButton(
         }
 
     Box(
-        modifier = clickableModifier
-            .size(48.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = backgroundAlpha))
-            .then(
-                if (focusBorderAlpha > 0f) {
-                    Modifier.border(
-                        width = 1.5.dp,
-                        color = Color.White.copy(alpha = focusBorderAlpha),
-                        shape = CircleShape,
-                    )
-                } else {
-                    Modifier
+        modifier =
+            clickableModifier
+                .size(48.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }.clip(CircleShape)
+                .background(Color.Black.copy(alpha = backgroundAlpha))
+                .then(
+                    if (focusBorderAlpha > 0f) {
+                        Modifier.border(
+                            width = 1.5.dp,
+                            color = Color.White.copy(alpha = focusBorderAlpha),
+                            shape = CircleShape,
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).focusable()
+                .onFocusEvent { focusState ->
+                    isFocused = focusState.isFocused || focusState.hasFocus
                 },
-            )
-            .focusable()
-            .onFocusEvent { focusState ->
-                isFocused = focusState.isFocused || focusState.hasFocus
-            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(

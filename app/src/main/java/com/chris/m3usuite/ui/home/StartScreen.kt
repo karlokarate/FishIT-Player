@@ -723,7 +723,9 @@ fun StartScreen(
                                     openTelegramItem(item.chatId, item.anchorMessageId)
                                 } else {
                                     // Fallback: use legacy openTelegram with encoded ID
-                                    val legacyId = 4_000_000_000_000L + item.anchorMessageId
+                                    val legacyId =
+                                        com.chris.m3usuite.telegram.util.TelegramPlayUrl
+                                            .TELEGRAM_MEDIA_ID_OFFSET + item.anchorMessageId
                                     openTelegram?.invoke(legacyId)
                                 }
 

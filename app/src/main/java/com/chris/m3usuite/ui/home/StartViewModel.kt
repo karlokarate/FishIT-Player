@@ -21,7 +21,22 @@ import com.chris.m3usuite.telegram.domain.TelegramItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -119,6 +134,7 @@ class StartViewModel(
     @Deprecated("Use telegramVodByChat for TelegramItem-based data")
     private val _telegramContentByChat =
         MutableStateFlow<Map<Long, Pair<String, List<MediaItem>>>>(emptyMap())
+
     @Deprecated("Use telegramVodByChat for TelegramItem-based data")
     val telegramContentByChat: StateFlow<Map<Long, Pair<String, List<MediaItem>>>> =
         _telegramContentByChat
