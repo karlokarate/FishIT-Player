@@ -245,7 +245,7 @@ class MainActivity : ComponentActivity() {
                     if (!apiEnabled) return@LaunchedEffect
 
                     // BUG 4 fix: Debounce to avoid triggering on every keystroke
-                    delay(750)
+                    delay(500)
 
                     // Start background import so index builds even if the UI recomposes or route changes.
                     // Immediately ensure full header lists (heads-only delta) for VOD/Series at app start; skip Live to stay light.
