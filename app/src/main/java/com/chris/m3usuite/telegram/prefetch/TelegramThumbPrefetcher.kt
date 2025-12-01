@@ -120,8 +120,9 @@ class TelegramThumbPrefetcher(
                     .mapNotNull { item ->
                         // Get posterRef from TelegramItem - contains remoteId for stable resolution
                         item.posterRef
-                    }.filter { it.remoteId !in prefetchedRemoteIds } // Skip already prefetched (by remoteId)
+                    }
                     .distinctBy { it.remoteId } // Distinct by remoteId, not fileId
+                    .filter { it.remoteId !in prefetchedRemoteIds } // Skip already prefetched (by remoteId)
                     .take(100) // Limit to 100 at a time to avoid overwhelming TDLib
 
             if (posterRefs.isEmpty()) {
