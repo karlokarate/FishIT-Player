@@ -61,6 +61,47 @@ The SIP Internal Player should treat Trickplay **uniformly** at the UI/Session l
 - Differences between Xtream and Telegram are handled at the **data provider layer**
 - No duplication of player logic for different sources
 
+### 1.5 Streaming-First Design Principles
+
+> **CRITICAL**: This section defines mandatory constraints for Trickplay implementation.
+
+**Core Principles:**
+
+1. **Trickplay MUST work during progressive streaming** - not only after full file download
+2. **No full-file download requirement** - Trickplay must never block on or require complete file download
+3. **Lightweight implementation** - No heavy thumbnail caches or expensive preprocessing
+4. **Graceful degradation** - Fall back to static preview when position-based preview is unavailable
+
+**Prohibited Patterns:**
+
+- ❌ Requiring `isDownloadingCompleted == true` as a precondition for Trickplay
+- ❌ Caching full video files solely for preview purposes
+- ❌ Blocking playback or seeking while waiting for full download
+- ❌ Downloading entire file just to extract a single frame
+
+**Allowed Patterns:**
+
+- ✅ Using static poster/backdrop as primary Trickplay preview
+- ✅ Opportunistic frame extraction from **already downloaded portions** of the file
+- ✅ Returning "no preview available" when requested position is beyond downloaded data
+- ✅ Using existing video thumbnails from TDLib metadata
+
+**Provider Behavior Contract:**
+
+```kotlin
+interface TrickplayProvider {
+    /**
+     * Get preview image for seek position.
+     * 
+     * MUST return quickly (non-blocking).
+     * MUST NOT trigger full file downloads.
+     * SHOULD return static preview if position-based preview is unavailable.
+     * MAY return null if no preview is available at all.
+     */
+    suspend fun getPreviewImage(positionMs: Long): ImageDescriptor?
+}
+```
+
 ---
 
 ## 2. Trickplay Data Requirements
@@ -247,53 +288,88 @@ class TelegramTrickplayProvider(
 - Static image - same for all positions
 - May not have poster for all items
 
-### 4.3 Advanced Trickplay for Telegram
+### 4.3 Advanced Trickplay for Telegram (Optional Future Enhancement)
 
-Use **frame extraction** from the downloaded Telegram video file:
+> **Note:** Advanced Trickplay is an **optional future optimization**, NOT the baseline path.
+> The baseline Trickplay implementation for Telegram is **Minimal Trickplay** (static preview).
 
-**How It Works:**
+**Streaming-First Approach:**
 
-1. Telegram videos are downloaded to TDLib cache (file-based)
-2. Use `MediaMetadataRetriever` to extract frames at intervals
-3. Cache extracted thumbnails locally
-4. Return appropriate thumbnail based on seek position
+Advanced Trickplay, if implemented, MUST follow these constraints:
+
+1. **No full-file download requirement** - Never block on complete file download
+2. **Partial-data awareness** - Only attempt extraction from already-downloaded portions
+3. **Graceful fallback** - Return static preview when position-based preview is unavailable
+4. **Opportunistic extraction** - Extract frames only when the target position is within downloaded range
+
+**How It Would Work (Streaming-Compatible):**
+
+1. Query TDLib for current file download state via `getFileInfo(fileId)`
+2. Check if the requested seek position is within the downloaded byte range
+3. If position is reachable, attempt frame extraction from local cache file
+4. If position is NOT reachable, fall back to static preview (poster/backdrop)
+5. NEVER trigger or wait for additional downloads solely for Trickplay
 
 **Implementation Considerations:**
 
 | Aspect | Consideration |
 |--------|---------------|
-| **File Access** | TDLib downloads to cache; path accessible via `TelegramFileDataSource` |
-| **Extraction API** | `MediaMetadataRetriever.getFrameAtTime(positionUs, OPTION_CLOSEST)` |
+| **File State Query** | Use `T_TelegramFileDownloader.getFileInfo(fileId)` to get `downloadedSize` and `path` |
+| **Position Estimation** | Estimate byte position from time using bitrate (approximate) |
+| **Extraction** | Only attempt if estimated byte position < `downloadedSize` |
+| **Fallback** | Always have static preview ready as fallback |
 | **Performance** | Extraction is CPU-intensive; must run on background thread |
-| **Caching** | Generate thumbnails on first play; cache for subsequent seeks |
-| **Interval** | Generate frames every 5-10 seconds for reasonable coverage |
 
-**Pseudo-code:**
+**Conceptual Design (Partial-Data Aware):**
 ```kotlin
+/**
+ * Advanced Trickplay provider with partial-data awareness.
+ * 
+ * IMPORTANT: This is conceptual pseudo-code for future implementation.
+ * The baseline implementation is TelegramMinimalTrickplayProvider.
+ */
 class TelegramAdvancedTrickplayProvider(
     private val item: TelegramItem,
     private val fileDownloader: T_TelegramFileDownloader,
-    private val thumbnailCache: ThumbnailCache,
+    private val minimalProvider: TelegramTrickplayProvider, // Fallback
 ) : TrickplayProvider {
     
     override suspend fun getPreviewImage(positionMs: Long): ImageDescriptor? {
-        // 1. Check if thumbnails are already cached
-        val cacheKey = "${item.chatId}_${item.anchorMessageId}"
-        val cached = thumbnailCache.getThumbnail(cacheKey, positionMs)
-        if (cached != null) return ImageDescriptor.LocalFile(cached)
+        val videoRef = item.videoRef ?: return minimalProvider.getPreviewImage(positionMs)
+        val fileId = videoRef.fileId ?: return minimalProvider.getPreviewImage(positionMs)
         
-        // 2. Get local file path via TDLib
-        val videoRef = item.videoRef ?: return null
-        val localPath = fileDownloader.getLocalFilePath(videoRef.fileId ?: 0)
-            ?: return null
+        // 1. Get current file state from TDLib (non-blocking query)
+        val fileInfo = fileDownloader.getFileInfo(fileId) 
+            ?: return minimalProvider.getPreviewImage(positionMs)
         
-        // 3. Extract frame (should be called from background)
-        val bitmap = extractFrame(localPath, positionMs * 1000) // positionUs
-            ?: return null
+        val localPath = fileInfo.local?.path
+        val downloadedBytes = fileInfo.local?.downloadedSize?.toLong() ?: 0L
+        val totalBytes = fileInfo.expectedSize?.toLong() ?: Long.MAX_VALUE
         
-        // 4. Cache and return
-        val thumbPath = thumbnailCache.store(cacheKey, positionMs, bitmap)
-        return ImageDescriptor.LocalFile(thumbPath)
+        // 2. Check if we have enough downloaded data for this position
+        // Estimate byte position (rough: assume uniform bitrate)
+        val durationMs = item.durationSeconds?.times(1000L) ?: return minimalProvider.getPreviewImage(positionMs)
+        val estimatedBytePosition = if (durationMs > 0) {
+            (positionMs.toDouble() / durationMs * totalBytes).toLong()
+        } else {
+            Long.MAX_VALUE
+        }
+        
+        // 3. If position is beyond downloaded range, fall back to static preview
+        if (localPath.isNullOrBlank() || estimatedBytePosition > downloadedBytes) {
+            // Position not yet downloaded - use static preview
+            return minimalProvider.getPreviewImage(positionMs)
+        }
+        
+        // 4. Attempt frame extraction from downloaded portion (opportunistic)
+        return try {
+            val bitmap = extractFrame(localPath, positionMs * 1000)
+            bitmap?.let { ImageDescriptor.InMemory(it) }
+                ?: minimalProvider.getPreviewImage(positionMs)
+        } catch (e: Exception) {
+            // Extraction failed - fall back to static preview
+            minimalProvider.getPreviewImage(positionMs)
+        }
     }
     
     private fun extractFrame(path: String, positionUs: Long): Bitmap? {
@@ -309,27 +385,39 @@ class TelegramAdvancedTrickplayProvider(
 }
 ```
 
+**Key Differences from Non-Streaming Approach:**
+
+| Aspect | ❌ Non-Streaming (Wrong) | ✅ Streaming-First (Correct) |
+|--------|--------------------------|------------------------------|
+| **Precondition** | `isDownloadingCompleted == true` | No precondition - query current state |
+| **Download trigger** | May trigger full download | Never triggers downloads |
+| **Failure mode** | Block until download completes | Immediate fallback to static preview |
+| **API usage** | `getLocalFilePath()` (non-existent) | `getFileInfo()` with `downloadedSize` check |
+
 **Pros:**
-- True position-based preview
-- Works for any video that TDLib can download
+- Position-based preview for already-downloaded content
+- No impact on streaming performance
+- Graceful degradation to static preview
 
 **Cons:**
 - Significant implementation complexity
-- CPU/memory cost for extraction
-- Storage cost for thumbnail cache
-- May not work if file not fully downloaded
+- CPU cost for extraction (must be background)
+- Only works for portions already downloaded
+- Byte-to-time estimation is approximate
 
 ### 4.4 Recommendation for Telegram
 
-**Phase 1 (MVP):** Implement **Minimal Trickplay** using `posterRef`/`backdropRef`
+**Phase 1 (MVP - REQUIRED):** Implement **Minimal Trickplay** using `posterRef`/`backdropRef`
 - Quick to implement
 - Provides visual improvement over no preview
 - No infrastructure changes needed
+- **This is the baseline and may be the only implementation needed**
 
-**Phase 2 (Future):** Consider **Advanced Trickplay** if:
+**Phase 2 (OPTIONAL Future Enhancement):** Consider **Advanced Trickplay** only if:
 - User feedback indicates strong desire for position-based preview
 - Performance testing shows extraction is feasible on target devices
-- Storage budget allows thumbnail caching
+- Implementation follows streaming-first principles (no full-download requirement)
+- Static fallback is always available
 
 ---
 
@@ -390,28 +478,31 @@ class XtreamTrickplayProvider(
 - Static image
 - Poster may not be available for all content
 
-### 5.3 Advanced Trickplay for Xtream
+### 5.3 Advanced Trickplay for Xtream (NOT PLANNED)
 
-Xtream API does **NOT** provide thumbnail sprite sheets or position-based previews. Options:
+> **Note:** Advanced Trickplay for Xtream is **NOT planned** for implementation.
+> Xtream VOD Trickplay will remain **poster-only** (Minimal Trickplay).
 
-**Option A: On-Device Frame Extraction (Same as Telegram)**
+**Why Advanced Trickplay is NOT Suitable for Xtream:**
 
-For Xtream VOD files (MP4, MKV over HTTP):
+Xtream API does **NOT** provide thumbnail sprite sheets or position-based previews. The theoretical options below are **rejected** due to violating streaming-first constraints:
 
-1. Use `MediaMetadataRetriever` with HTTP data source
-2. Extract frames at intervals
-3. Cache locally
+**❌ Option A: On-Device Frame Extraction (REJECTED)**
 
-**Note:** Modern Android versions (API 14+) support HTTP URLs in MediaMetadataRetriever via `setDataSource(String, Map<String, String>)`. However, performance depends on the server supporting HTTP range requests for random access. Some Xtream providers may not support efficient seeking for extraction.
+This approach would require:
+- Downloading substantial portions of the video file over HTTP
+- Using `MediaMetadataRetriever` with HTTP data source
+- Performance depends on provider's HTTP range request support (unreliable)
 
-**Option B: Server-Side Thumbnail Service (Out of Scope)**
+**Why it violates streaming-first principles:**
+- Would cause significant additional network traffic
+- Many Xtream providers don't support efficient HTTP range requests
+- Would degrade streaming performance
+- HLS streams (.m3u8) don't support random frame extraction at all
 
-Would require:
-- Backend service to generate thumbnails
-- Storage for generated thumbnails
-- API to retrieve thumbnails by content ID and position
+**❌ Option B: Server-Side Thumbnail Service (OUT OF SCOPE)**
 
-This is beyond the scope of FishIT Player application changes.
+Would require backend infrastructure changes - not applicable to FishIT Player.
 
 ### 5.4 Xtream Playback Path Analysis
 
@@ -420,25 +511,24 @@ Xtream VOD is delivered as:
 - Container: MP4, MKV, or other
 - Some providers use HLS (.m3u8) for VOD as well
 
-**For file-based streams (MP4/MKV):**
-- Frame extraction may be possible via `MediaMetadataRetriever` with network URI
-- Performance depends on provider's support for HTTP range requests
-
-**For HLS streams:**
-- Frame extraction is not straightforward
-- Would need to download segments to extract frames
+**Streaming-First Implications:**
+- Direct HTTP streaming doesn't provide local file access for extraction
+- HLS streams are segmented and don't support random seek for extraction
+- Downloading for extraction would violate "no full-file download" principle
 
 ### 5.5 Recommendation for Xtream
 
-**Phase 1 (MVP):** Implement **Minimal Trickplay** using poster URL
+**Baseline Implementation (FINAL):** **Minimal Trickplay** using poster URL
 - Quick to implement
 - Works for all Xtream content with images
-- Consistent with Telegram minimal implementation
+- Consistent with streaming-first design
+- **No advanced Trickplay planned or recommended for Xtream**
 
-**Phase 2 (Future):** Advanced extraction only if:
-- Demand is high
-- Testing shows it works for target providers
-- Performance is acceptable
+**Rationale:**
+- Xtream content is HTTP-streamed (no local file)
+- Frame extraction would require downloading data
+- This violates lightweight/streaming-first constraints
+- Poster-based preview is sufficient for the use case
 
 ---
 
@@ -732,6 +822,36 @@ For advanced frame extraction (if implemented):
 - Cache hit should return immediately
 - Cache miss may show static fallback while extracting
 
+### 7.6 Streaming-First Constraints (MANDATORY)
+
+> **CRITICAL**: These constraints are mandatory and apply to ALL Trickplay implementations.
+
+**Prohibited:**
+- ❌ Requiring full file download as a precondition for Trickplay
+- ❌ Using `isDownloadingCompleted == true` as a hard requirement
+- ❌ Caching full video files solely for preview purposes
+- ❌ Heavy thumbnail caches or preprocessing pipelines
+- ❌ Blocking playback/seeking while waiting for download
+- ❌ Calling non-existent APIs like `getLocalFilePath()`
+
+**Required:**
+- ✅ Trickplay MUST work during progressive streaming
+- ✅ Static preview (poster/backdrop) MUST always be available as fallback
+- ✅ Provider MUST be able to return "no preview available" for certain positions
+- ✅ Implementation MUST be lightweight and non-blocking
+- ✅ Use existing TDLib APIs like `getFileInfo()` to check partial download state
+
+**API Usage:**
+```kotlin
+// CORRECT: Query partial download state
+val fileInfo = fileDownloader.getFileInfo(fileId)
+val downloadedBytes = fileInfo?.local?.downloadedSize ?: 0L
+val localPath = fileInfo?.local?.path
+
+// WRONG: Require full download completion
+if (!fileInfo.local?.isDownloadingCompleted) return null  // ❌ PROHIBITED
+```
+
 ---
 
 ## 8. Implementation Roadmap
@@ -739,6 +859,8 @@ For advanced frame extraction (if implemented):
 ### Phase 1: Minimal Trickplay (MVP)
 
 **Scope:** Static preview images for Xtream and Telegram VOD
+
+**Streaming-First Compliance:** ✅ This phase fully complies with streaming-first constraints.
 
 **Tasks:**
 
@@ -749,15 +871,18 @@ For advanced frame extraction (if implemented):
 2. **Create `TrickplayProvider` interface**
    - Define interface in `player/internal/domain/`
    - Create `ImageDescriptor` sealed class
+   - Ensure interface contract allows "no preview available" return
 
 3. **Implement `XtreamTrickplayProvider`**
    - Simple implementation returning poster URL
    - No external dependencies
+   - **This is the FINAL implementation for Xtream** (no advanced version planned)
 
 4. **Implement `TelegramTrickplayProvider`**
    - Load `TelegramItem` from repository
    - Return `posterRef` or `backdropRef` image
    - Use `TelegramFileLoader` for file resolution
+   - **This is the baseline implementation for Telegram**
 
 5. **Update `InternalPlayerUiState`**
    - Add `seekPreviewImageUrl` and `seekPreviewImagePath`
@@ -773,40 +898,47 @@ For advanced frame extraction (if implemented):
 
 **Estimated Effort:** 2-3 days
 
-### Phase 2: Advanced Extraction (Future)
+### Phase 2: Advanced Extraction for Telegram (OPTIONAL - Deferred)
 
-**Scope:** Position-based thumbnails via frame extraction
+> **IMPORTANT:** This phase is **OPTIONAL** and **DEFERRED**.
+> It should only be considered if there is strong user demand AND the implementation
+> can follow streaming-first principles (partial-data awareness, no full-download requirement).
+
+**Scope:** Position-based thumbnails via opportunistic frame extraction for Telegram only
+
+**Streaming-First Compliance:** ⚠️ Must follow partial-data-aware design (see Section 4.3)
 
 **Prerequisites:**
-- Minimal Trickplay working
-- Performance testing on target devices
-- User feedback indicating need
+- Phase 1 (Minimal Trickplay) working and deployed
+- Strong user feedback indicating need for position-based preview
+- Performance testing confirms extraction is feasible on target devices
+- Design review confirms streaming-first compliance
 
-**Tasks:**
+**Constraints (MANDATORY):**
+- ❌ NO full-file download requirement
+- ❌ NO blocking on download completion
+- ❌ NO heavy thumbnail caching infrastructure
+- ❌ NO implementation for Xtream (poster-only is final)
+- ✅ MUST fall back to static preview when position not available
+- ✅ MUST use partial-data awareness (check `downloadedSize` before extraction)
+- ✅ MUST be non-blocking and opportunistic
 
-1. **Create `ThumbnailCache`**
-   - Local storage for extracted thumbnails
-   - Key by content ID and position
-   - Size management / eviction
+**Potential Tasks (if ever implemented):**
 
-2. **Create `FrameExtractor` utility**
-   - Wrapper around `MediaMetadataRetriever`
-   - Support for local files and HTTP URLs
-   - Error handling and fallback
+1. **Implement `TelegramAdvancedTrickplayProvider`**
+   - Query file state via `getFileInfo(fileId)`
+   - Check `downloadedSize` vs estimated byte position
+   - Extract from TDLib cache ONLY if position is within downloaded range
+   - Fall back to static preview otherwise
 
-3. **Implement `TelegramAdvancedTrickplayProvider`**
-   - Extract from TDLib cache file
-   - Background extraction with cache
+2. **Lightweight in-memory cache (optional)**
+   - Small LRU cache for recently extracted frames
+   - NOT a persistent thumbnail cache
+   - NOT pre-generation of thumbnails
 
-4. **Implement `XtreamAdvancedTrickplayProvider`**
-   - HTTP range support testing
-   - Download-then-extract fallback
+**Estimated Effort:** 3-5 days (if ever pursued)
 
-5. **Background thumbnail generation**
-   - WorkManager job for pre-generation
-   - Triggered on first play
-
-**Estimated Effort:** 1-2 weeks
+**Decision Point:** Re-evaluate after Phase 1 is deployed and user feedback is collected.
 
 ---
 
@@ -846,8 +978,10 @@ For advanced frame extraction (if implemented):
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-01 | Initial design document |
+| 1.1 | 2025-12-01 | Revised with streaming-first design principles. Added Section 1.5 (Streaming-First Design Principles). Updated Advanced Trickplay sections to use partial-data awareness. Removed non-existent `getLocalFilePath()` API usage. Clarified Xtream as poster-only. Updated Implementation Roadmap to reflect lightweight goals. |
 
 ---
 
 **Document Type:** Design Proposal  
-**Review Status:** Pending Review
+**Review Status:** Revised - Streaming-First Compliant  
+**Version:** 1.1
