@@ -234,8 +234,7 @@ class TelegramFileDataSource(
                     } catch (resolveEx: Exception) {
                         TelegramLogRepository.error(
                             source = "TelegramFileDataSource",
-                            message = "remoteId resolution failed during 404 fallback",
-                            exception = resolveEx,
+                            message = "remoteId resolution failed during 404 fallback: ${resolveEx.message}",
                             details = mapOf("remoteId" to remoteIdParam),
                         )
                         null
