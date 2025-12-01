@@ -253,20 +253,21 @@ class TelegramFileDataSource(
                             ),
                     )
 
-                    fileIdInt = resolvedFileId
-                    fileId = resolvedFileId
-
-                    // Retry with resolved fileId
+                    // Use local variable for candidate fileId; only update instance vars on success
+                    val candidateFileId = resolvedFileId
                     try {
                         localPath =
                             runBlocking {
                                 val downloader = serviceClient.downloader()
                                 downloader.ensureFileReady(
-                                    fileId = resolvedFileId,
+                                    fileId = candidateFileId,
                                     startPosition = dataSpec.position,
                                     minBytes = MIN_PREFIX_BYTES,
                                 )
                             }
+                        // Only update instance variables if ensureFileReady succeeds
+                        fileIdInt = candidateFileId
+                        fileId = candidateFileId
                     } catch (retryEx: Exception) {
                         lastException = retryEx
                     }
