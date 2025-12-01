@@ -141,6 +141,9 @@ class T_TelegramServiceClient private constructor(
     private var browser: T_ChatBrowser? = null
     private var downloader: T_TelegramFileDownloader? = null
 
+    // Live update handler for real-time message processing
+    private var updateHandler: com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler? = null
+
     // Configuration
     private var config: AppConfig? = null
 
@@ -505,6 +508,32 @@ class T_TelegramServiceClient private constructor(
     }
 
     /**
+     * Start the live update handler for real-time message processing.
+     * Called when auth state transitions to READY.
+     */
+    private fun startUpdateHandler() {
+        if (updateHandler != null) {
+            TelegramLogRepository.debug("T_TelegramServiceClient", "UpdateHandler already started")
+            return
+        }
+
+        try {
+            updateHandler = com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler(
+                context = applicationContext,
+                serviceClient = this,
+            )
+            updateHandler?.start()
+            TelegramLogRepository.info("T_TelegramServiceClient", "TelegramUpdateHandler started for live updates")
+        } catch (e: Exception) {
+            TelegramLogRepository.error(
+                source = "T_TelegramServiceClient",
+                message = "Failed to start TelegramUpdateHandler",
+                exception = e,
+            )
+        }
+    }
+
+    /**
      * Start collecting auth events from session and mapping to external auth state.
      */
     private fun startAuthEventCollection() {
@@ -522,6 +551,8 @@ class T_TelegramServiceClient private constructor(
                         is AuthEvent.Ready -> {
                             _authState.value = TelegramAuthState.Ready
                             TelegramLogRepository.debug("T_TelegramServiceClient", "Auth ready ✅")
+                            // Start live update handler for real-time message processing
+                            startUpdateHandler()
                         }
                         is AuthEvent.Error -> {
                             _authState.value = TelegramAuthState.Error(event.message)
@@ -569,6 +600,10 @@ class T_TelegramServiceClient private constructor(
      */
     fun shutdown() {
         TelegramLogRepository.debug("T_TelegramServiceClient", "Shutting down...")
+
+        // Stop update handler first
+        updateHandler?.stop()
+        updateHandler = null
 
         // Cancel scope and wait for coroutines to finish
         serviceScope.cancel()

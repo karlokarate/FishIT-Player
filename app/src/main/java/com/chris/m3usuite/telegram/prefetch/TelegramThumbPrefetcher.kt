@@ -102,25 +102,19 @@ class TelegramThumbPrefetcher(
 
     /**
      * Observe content changes and prefetch thumbnails for visible items.
+     * Uses the new ObxTelegramItem-based API (Phase D).
      */
     private suspend fun observeAndPrefetch() {
-        // Combine VOD and Series content flows
-        combine(
-            repository.getTelegramVodByChat(),
-            repository.getTelegramSeriesByChat(),
-        ) { vodMap, seriesMap ->
-            // Merge both maps
-            val allChats = mutableMapOf<Long, Pair<String, List<com.chris.m3usuite.model.MediaItem>>>()
-            allChats.putAll(vodMap)
-            allChats.putAll(seriesMap)
-            allChats
-        }.collectLatest { chatMap ->
-            // Extract all poster IDs that need prefetching
+        // Phase D: Use new TelegramItem-based flow instead of legacy MediaItem flows
+        repository.observeVodItemsByChat().collectLatest { chatMap ->
+            // Extract all poster file IDs that need prefetching
             val posterIds =
                 chatMap.values
-                    .flatMap { (_, items) -> items }
-                    .mapNotNull { it.posterId }
-                    .filter { it !in prefetchedIds } // Skip already prefetched
+                    .flatten()
+                    .mapNotNull { item ->
+                        // Get poster fileId from TelegramImageRef
+                        item.posterRef?.fileId
+                    }.filter { it !in prefetchedIds } // Skip already prefetched
                     .distinct()
                     .take(100) // Limit to 100 at a time to avoid overwhelming TDLib
 
