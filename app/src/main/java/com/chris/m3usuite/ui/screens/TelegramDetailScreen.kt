@@ -480,14 +480,14 @@ fun TelegramItemDetailScreen(
     // Phase T2: Load poster image via TelegramFileLoader
     LaunchedEffect(data?.posterRef) {
         val ref = data?.posterRef ?: return@LaunchedEffect
-        posterPath = fileLoader.ensureImageDownloaded(ref)
+        posterPath = fileLoader.ensureThumbDownloaded(ref)
     }
 
     // Phase T2: Load backdrop image via TelegramFileLoader
     // Use backdropRef if available, else fall back to posterRef for backdrop
     LaunchedEffect(data?.backdropRef, data?.posterRef) {
         val ref = data?.backdropRef ?: data?.posterRef ?: return@LaunchedEffect
-        backdropPath = fileLoader.ensureImageDownloaded(ref)
+        backdropPath = fileLoader.ensureThumbDownloaded(ref)
     }
 
     fun play(fromStart: Boolean = false) {

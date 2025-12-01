@@ -151,8 +151,15 @@ class T_TelegramServiceClient private constructor(
     private var serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // State tracking
-    private val isStarted = AtomicBoolean(false)
+    private val _isStarted = AtomicBoolean(false)
     private val isInitializing = AtomicBoolean(false)
+
+    /**
+     * Check if the service is started and ready for operations.
+     * Used by TelegramFileLoader and TelegramThumbPrefetcher to gate operations.
+     */
+    val isStarted: Boolean
+        get() = _isStarted.get()
 
     // State flows
     private val _authState = MutableStateFlow<TelegramAuthState>(TelegramAuthState.Idle)
@@ -178,7 +185,7 @@ class T_TelegramServiceClient private constructor(
         context: Context,
         settings: SettingsStore,
     ) {
-        if (isStarted.get()) {
+        if (_isStarted.get()) {
             TelegramLogRepository.log(
                 level = TgLogEntry.LogLevel.DEBUG,
                 source = "T_TelegramServiceClient",
@@ -257,7 +264,7 @@ class T_TelegramServiceClient private constructor(
             startAuthEventCollection()
 
             _connectionState.value = TgConnectionState.Connected
-            isStarted.set(true)
+            _isStarted.set(true)
 
             TelegramLogRepository.log(
                 level = TgLogEntry.LogLevel.INFO,
@@ -518,10 +525,11 @@ class T_TelegramServiceClient private constructor(
         }
 
         try {
-            updateHandler = com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler(
-                context = applicationContext,
-                serviceClient = this,
-            )
+            updateHandler =
+                com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler(
+                    context = applicationContext,
+                    serviceClient = this,
+                )
             updateHandler?.start()
             TelegramLogRepository.info("T_TelegramServiceClient", "TelegramUpdateHandler started for live updates")
         } catch (e: Exception) {
@@ -625,7 +633,7 @@ class T_TelegramServiceClient private constructor(
         client = null
         config = null
 
-        isStarted.set(false)
+        _isStarted.set(false)
         _authState.value = TelegramAuthState.Idle
         _connectionState.value = TgConnectionState.Disconnected
         _syncState.value = TgSyncState.Idle

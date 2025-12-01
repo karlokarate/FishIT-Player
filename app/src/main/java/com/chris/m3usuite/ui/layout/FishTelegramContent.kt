@@ -160,7 +160,7 @@ private fun TelegramBadge() {
  * - Uses TelegramItem.posterRef for thumbnails
  * - Routes image loading through TelegramFileLoader
  *
- * **IMPORTANT**: Uses ensureImageDownloaded(TelegramImageRef) instead of
+ * **IMPORTANT**: Uses ensureThumbDownloaded(TelegramImageRef) instead of
  * ensureThumbDownloaded(fileId) because fileIds are volatile and can become
  * stale after TDLib session changes. remoteIds are stable across sessions.
  *
@@ -190,9 +190,9 @@ fun FishTelegramItemContent(
     LaunchedEffect(item.posterRef?.remoteId) {
         val posterRef = item.posterRef
         if (thumbPath == null && posterRef != null) {
-            // Use ensureImageDownloaded which uses remoteId-first resolution
+            // Use ensureThumbDownloaded which uses remoteId-first resolution
             // This avoids 404 errors from stale fileIds
-            thumbPath = fileLoader.ensureImageDownloaded(posterRef)
+            thumbPath = fileLoader.ensureThumbDownloaded(posterRef)
         }
     }
 
