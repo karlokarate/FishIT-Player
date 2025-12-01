@@ -277,8 +277,34 @@ fun SettingsScreen(
                 onDisconnect = telegramVm::onDisconnect,
                 onOpenLog = onOpenTelegramLog,
                 onOpenFeed = onOpenTelegramFeed,
-                onOpenLogViewer = onOpenLogViewer,
+                // Log Viewer moved to global Debug section (BUG 3 fix)
+                onOpenLogViewer = null,
             )
+
+            // --- Debug & Diagnostics (BUG 3 fix: moved from Telegram READY state) ---
+            SettingsCard(title = "Debug & Diagnostics") {
+                // Log Viewer is always available, not gated by Telegram auth
+                onOpenLogViewer?.let { handler ->
+                    Button(
+                        onClick = handler,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("App Log Viewer")
+                    }
+                }
+                // Telegram Logs button only shown when Telegram is enabled
+                if (telegramState.enabled) {
+                    onOpenTelegramLog?.let { handler ->
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = handler,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Telegram Logs")
+                        }
+                    }
+                }
+            }
 
             // --- Allgemein ---
             SettingsCard(title = "Allgemein") {
@@ -568,39 +594,18 @@ private fun TelegramSettingsSection(
                         }
                     }
 
-                    // Navigation to Telegram screens
+                    // Navigation to Telegram screens (Activity Feed only - Log Viewer moved to global Debug section)
                     HorizontalDivider()
                     Text(
                         "Telegram Tools",
                         style = MaterialTheme.typography.titleSmall,
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        onOpenFeed?.let { handler ->
-                            Button(
-                                onClick = handler,
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text("Activity Feed")
-                            }
-                        }
-                        onOpenLog?.let { handler ->
-                            Button(
-                                onClick = handler,
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text("Logs")
-                            }
-                        }
-                    }
-                    onOpenLogViewer?.let { handler ->
+                    onOpenFeed?.let { handler ->
                         Button(
                             onClick = handler,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Log Viewer")
+                            Text("Activity Feed")
                         }
                     }
                 }

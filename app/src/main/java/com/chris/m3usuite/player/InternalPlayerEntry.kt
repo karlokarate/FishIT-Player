@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.chris.m3usuite.core.logging.AppLog
 import com.chris.m3usuite.core.playback.rememberPlayerController
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
+import com.chris.m3usuite.player.internal.domain.PlaybackType
+import com.chris.m3usuite.player.internal.live.LivePlaybackController
 import com.chris.m3usuite.player.internal.session.rememberInternalPlayerSession
 import com.chris.m3usuite.player.internal.state.InternalPlayerController
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
@@ -105,8 +107,9 @@ fun InternalPlayerEntry(
     // UI state managed by the SIP session
     var uiState by remember { mutableStateOf(InternalPlayerUiState(playbackType = playbackContext.type)) }
 
-    // Create the SIP session and get the ExoPlayer instance
-    val player =
+    // Create the SIP session and get the ExoPlayer instance + LivePlaybackController
+    // BUG 2 FIX: Now returns both player and liveController for proper channel zapping
+    val sessionResult =
         rememberInternalPlayerSession(
             context = ctx,
             url = url,
@@ -121,14 +124,20 @@ fun InternalPlayerEntry(
             onError = { /* Handled via PlaybackSession.playbackError in InternalPlayerContent */ },
         )
 
+    val player = sessionResult.player
+    val liveController = sessionResult.liveController
+
     // Create the controller with all callbacks
+    // BUG 2 FIX: Pass liveController for proper onJumpLiveChannel wiring
     val playerController =
-        remember(player, uiState) {
+        remember(player, uiState, liveController) {
             createSipController(
                 player = player,
                 currentState = uiState,
                 onStateUpdate = { uiState = it },
                 onExit = onExit,
+                liveController = liveController,
+                playbackType = playbackContext.type,
             )
         }
 
@@ -159,6 +168,8 @@ fun InternalPlayerEntry(
  *
  * This replaces the complex callback setup that was embedded in the legacy InternalPlayerScreen.
  * Each callback maps to the appropriate session/player operation.
+ *
+ * BUG 2 FIX: Added liveController and playbackType parameters for proper channel zapping.
  */
 @androidx.media3.common.util.UnstableApi
 private fun createSipController(
@@ -166,6 +177,8 @@ private fun createSipController(
     currentState: InternalPlayerUiState,
     onStateUpdate: (InternalPlayerUiState) -> Unit,
     onExit: () -> Unit,
+    liveController: LivePlaybackController? = null,
+    playbackType: PlaybackType = PlaybackType.VOD,
 ): InternalPlayerController =
     InternalPlayerController(
         onPlayPause = {
@@ -220,7 +233,15 @@ private fun createSipController(
             val nextMode = currentState.aspectRatioMode.next()
             onStateUpdate(currentState.copy(aspectRatioMode = nextMode))
         },
-        onJumpLiveChannel = { /* Handled by LivePlaybackController in session */ },
+        // BUG 2 FIX: Wire onJumpLiveChannel to LivePlaybackController
+        onJumpLiveChannel = { delta ->
+            // Only jump channels for LIVE playback type
+            if (playbackType == PlaybackType.LIVE && liveController != null) {
+                liveController.jumpChannel(delta)
+                // Note: Channel change triggers currentChannel StateFlow update in session,
+                // which in turn updates the player source (see InternalPlayerSession line 777+)
+            }
+        },
         onToggleCcMenu = {
             onStateUpdate(currentState.copy(showCcMenuDialog = !currentState.showCcMenuDialog))
         },
