@@ -347,7 +347,9 @@ class TelegramAdvancedTrickplayProvider(
         val totalBytes = fileInfo.expectedSize?.toLong() ?: Long.MAX_VALUE
         
         // 2. Check if we have enough downloaded data for this position
-        // Estimate byte position (rough: assume uniform bitrate)
+        // NOTE: This is an APPROXIMATION assuming uniform bitrate.
+        // For variable bitrate (VBR) videos, this may be inaccurate.
+        // Erring on the side of caution (falling back to static preview) is acceptable.
         val durationMs = item.durationSeconds?.times(1000L) ?: return minimalProvider.getPreviewImage(positionMs)
         val estimatedBytePosition = if (durationMs > 0) {
             (positionMs.toDouble() / durationMs * totalBytes).toLong()
@@ -843,13 +845,23 @@ For advanced frame extraction (if implemented):
 
 **API Usage:**
 ```kotlin
-// CORRECT: Query partial download state
+// ✅ CORRECT: Query partial download state and check if position is within downloaded range
 val fileInfo = fileDownloader.getFileInfo(fileId)
-val downloadedBytes = fileInfo?.local?.downloadedSize ?: 0L
+val downloadedBytes = fileInfo?.local?.downloadedSize?.toLong() ?: 0L
 val localPath = fileInfo?.local?.path
+val totalBytes = fileInfo?.expectedSize?.toLong() ?: Long.MAX_VALUE
 
-// WRONG: Require full download completion
-if (!fileInfo.local?.isDownloadingCompleted) return null  // ❌ PROHIBITED
+// Estimate if position is within downloaded range (approximate for VBR)
+val estimatedBytePosition = (positionMs.toDouble() / durationMs * totalBytes).toLong()
+if (estimatedBytePosition > downloadedBytes) {
+    // Position not yet downloaded - fall back to static preview
+    return staticPreviewProvider.getPreviewImage(positionMs)
+}
+// Proceed with frame extraction from localPath...
+
+// ❌ WRONG: Require full download completion as a hard precondition
+if (fileInfo?.local?.isDownloadingCompleted != true) return null  // PROHIBITED - blocks Trickplay until full download
+val localPath = fileInfo.local?.path ?: return null  // Only works after full download
 ```
 
 ---
