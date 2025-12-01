@@ -1,141 +1,151 @@
 package com.chris.m3usuite.core.logging
 
-import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Centralized logging utility for the application.
- *
- * Provides structured logging with categories and levels.
- * Supports master enable/disable, category filtering, and history for LogViewer.
+ * Unified logging facade for runtime logging.
+ * - Single master switch + per-category switches
+ * - Bounded in-memory ring buffer + live stream
+ * - Safe: never throws, drops oldest on backpressure
  */
 object AppLog {
-    enum class Level {
-        VERBOSE,
-        DEBUG,
-        INFO,
-        WARN,
-        ERROR,
-    }
+    enum class Level { VERBOSE, DEBUG, INFO, WARN, ERROR }
 
-    /**
-     * A log entry with all metadata.
-     */
+    private const val MAX_BUFFER = 1_000
+
     data class Entry(
-        val timestamp: Long,
+        val timestamp: Long = System.currentTimeMillis(),
         val category: String,
         val level: Level,
         val message: String,
         val extras: Map<String, String> = emptyMap(),
     )
 
-    private const val MAX_HISTORY_SIZE = 500
-
     private val masterEnabled = AtomicBoolean(false)
-    private var enabledCategories: Set<String> = emptySet()
-
+    private val categoryEnabled: AtomicReference<Map<String, Boolean>> = AtomicReference(emptyMap())
+    private val buffer = ArrayDeque<Entry>(MAX_BUFFER)
     private val _history = MutableStateFlow<List<Entry>>(emptyList())
-    private val _events = MutableSharedFlow<Entry>(extraBufferCapacity = 64)
+    private val _events =
+        MutableSharedFlow<Entry>(
+            replay = 0,
+            extraBufferCapacity = 32,
+        )
+    private val dispatcher = Dispatchers.Default.limitedParallelism(1)
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
-    /** Read-only history of log entries for LogViewer. */
     val history: StateFlow<List<Entry>> = _history.asStateFlow()
-
-    /** Live stream of log events for LogViewer. */
     val events: SharedFlow<Entry> = _events.asSharedFlow()
 
-    /**
-     * Enable or disable the master logging switch.
-     * When disabled, all logs (except bypassMaster) are suppressed.
-     */
+    internal fun resetForTest() {
+        masterEnabled.set(false)
+        categoryEnabled.set(emptyMap())
+        clearBuffer()
+    }
+
     fun setMasterEnabled(enabled: Boolean) {
         masterEnabled.set(enabled)
+        if (!enabled) {
+            clearBuffer()
+        }
     }
 
-    /**
-     * Set the enabled categories for filtering.
-     * An empty set means all categories are enabled.
-     */
+    fun setCategoryEnabled(category: String, enabled: Boolean) {
+        val current = categoryEnabled.get()
+        val updated = ConcurrentHashMap(current)
+        updated[category.lowercase()] = enabled
+        categoryEnabled.set(updated)
+    }
+
     fun setCategoriesEnabled(categories: Set<String>) {
-        enabledCategories = categories
+        val updated = categories.associate { it.lowercase() to true }
+        categoryEnabled.set(updated)
     }
 
-    /**
-     * Log a message with the specified category and level.
-     *
-     * @param category The log category (e.g., "player", "telegram", "xtream")
-     * @param level The log level
-     * @param message The log message
-     * @param extras Optional metadata to include in the log
-     * @param bypassMaster If true, logs even when master is disabled (for diagnostics)
-     */
     fun log(
         category: String,
-        level: Level = Level.DEBUG,
+        level: Level = Level.INFO,
         message: String,
         extras: Map<String, String> = emptyMap(),
         bypassMaster: Boolean = false,
     ) {
-        // Check master switch (unless bypassed)
+        val catKey = category.lowercase()
+        val categories = categoryEnabled.get()
         if (!bypassMaster && !masterEnabled.get()) return
+        if (categories.isNotEmpty() && categories[catKey] != true) return
 
-        // Check category filter (empty set = all enabled)
-        if (enabledCategories.isNotEmpty() && category !in enabledCategories) return
+        val safeExtras = redactExtras(extras)
+        val safeMessage = redactMessage(message)
 
-        val tag = "FishIT-$category"
-        val fullMessage =
-            if (extras.isEmpty()) {
-                message
-            } else {
-                "$message | ${extras.entries.joinToString(", ") { "${it.key}=${it.value}" }}"
-            }
-
-        // Log to Logcat
-        when (level) {
-            Level.VERBOSE -> Log.v(tag, fullMessage)
-            Level.DEBUG -> Log.d(tag, fullMessage)
-            Level.INFO -> Log.i(tag, fullMessage)
-            Level.WARN -> Log.w(tag, fullMessage)
-            Level.ERROR -> Log.e(tag, fullMessage)
-        }
-
-        // Record to history and emit event for LogViewer
         val entry =
             Entry(
-                timestamp = System.currentTimeMillis(),
-                category = category,
+                category = catKey,
                 level = level,
-                message = message,
-                extras = extras,
+                message = safeMessage,
+                extras = safeExtras,
             )
 
-        // Update history (thread-safe via StateFlow)
-        val current = _history.value.toMutableList()
-        current.add(entry)
-        if (current.size > MAX_HISTORY_SIZE) {
-            current.removeAt(0)
+        scope.launch {
+            try {
+                // bounded buffer: drop oldest
+                synchronized(buffer) {
+                    if (buffer.size >= MAX_BUFFER) buffer.removeFirstOrNull()
+                    buffer.addLast(entry)
+                    _history.value = buffer.toList()
+                }
+                _events.tryEmit(entry)
+            } catch (_: Throwable) {
+                // swallow
+            }
         }
-        _history.value = current.toList()
-
-        // Emit live event
-        _events.tryEmit(entry)
     }
 
-    /**
-     * Log a message with the specified category (shorthand for DEBUG level).
-     *
-     * @param category The log category
-     * @param message The log message
-     */
-    fun log(
-        category: String,
-        message: String,
-    ) {
-        log(category, Level.DEBUG, message)
+    private fun redactExtras(raw: Map<String, String>): Map<String, String> =
+        raw
+            .filterKeys {
+                !it.contains("token", true) &&
+                    !it.contains("password", true) &&
+                    !it.contains("secret", true) &&
+                    !it.contains("auth", true) &&
+                    !it.contains("cookie", true)
+            }.mapValues { (_, v) -> redactValue(v) }
+
+    private fun redactMessage(message: String): String = redactValue(message)
+
+    private fun redactValue(value: String): String {
+        val patterns =
+            listOf(
+                Regex("(?i)bearer\\s+[A-Za-z0-9._-]+"),
+                Regex("(?i)(api[_-]?key|token|auth)=([A-Za-z0-9._-]+)"),
+                Regex("(?i)(session|sid|cookie)=([A-Za-z0-9+/=_-]+)"),
+            )
+        var result = value
+        patterns.forEach { regex ->
+            result =
+                regex.replace(result) { matchResult ->
+                    val grp = matchResult.groups[1]?.value ?: ""
+                    val prefix = if (grp.isNotBlank()) "$grp=" else ""
+                    "$prefix<redacted>"
+                }
+        }
+        return result
+    }
+
+    private fun clearBuffer() {
+        synchronized(buffer) {
+            buffer.clear()
+            _history.value = emptyList()
+        }
     }
 }
