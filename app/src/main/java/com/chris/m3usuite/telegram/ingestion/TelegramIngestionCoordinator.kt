@@ -8,14 +8,26 @@ import com.chris.m3usuite.telegram.domain.ChatScanState
 import com.chris.m3usuite.telegram.domain.ScanStatus
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.telegram.parser.ExportAudio
+import com.chris.m3usuite.telegram.parser.ExportDocument
 import com.chris.m3usuite.telegram.parser.ExportMessage
+import com.chris.m3usuite.telegram.parser.ExportOtherRaw
+import com.chris.m3usuite.telegram.parser.ExportPhoto
+import com.chris.m3usuite.telegram.parser.ExportText
+import com.chris.m3usuite.telegram.parser.ExportVideo
 import com.chris.m3usuite.telegram.parser.TelegramBlockGrouper
 import com.chris.m3usuite.telegram.parser.TelegramItemBuilder
 import com.chris.m3usuite.telegram.repository.TelegramSyncStateRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Orchestrates TDLib history scanning and parser pipeline for Telegram ingestion.
@@ -58,6 +70,64 @@ class TelegramIngestionCoordinator(
      * Observable scan states for all chats being processed.
      */
     val scanStates: StateFlow<List<ChatScanState>> = _scanStates.asStateFlow()
+
+    // =========================================================================
+    // Diagnostics Capture for JSON Export (Part 5)
+    // =========================================================================
+
+    /**
+     * When true, captures raw messages and parsed items for diagnostics export.
+     * Only enable for debugging as it adds memory overhead.
+     */
+    var diagnosticsMode: Boolean = false
+
+    /**
+     * Captured diagnostics snapshots per chat.
+     * Only populated when diagnosticsMode is active.
+     */
+    private val _diagnosticsCapture = MutableStateFlow<Map<Long, DiagnosticsSnapshot>>(emptyMap())
+    val diagnosticsCapture: StateFlow<Map<Long, DiagnosticsSnapshot>> = _diagnosticsCapture.asStateFlow()
+
+    /**
+     * Snapshot of raw messages and parsed items for a specific chat.
+     */
+    @Serializable
+    data class DiagnosticsSnapshot(
+        val chatId: Long,
+        val capturedAt: Long,
+        val rawMessages: List<ExportMessageSummary>,
+        val parsedItems: List<TelegramItemSummary>,
+    )
+
+    /**
+     * Summary of an ExportMessage for diagnostics (avoids serializing full TDLib objects).
+     */
+    @Serializable
+    data class ExportMessageSummary(
+        val messageId: Long,
+        val type: String,
+        val caption: String?,
+        val fileName: String?,
+        val dateUnix: Int,
+    )
+
+    /**
+     * Summary of a TelegramItem for diagnostics.
+     */
+    @Serializable
+    data class TelegramItemSummary(
+        val anchorMessageId: Long,
+        val type: String,
+        val title: String?,
+        val year: Int?,
+        val videoRemoteId: String?,
+    )
+
+    private val json =
+        Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+        }
 
     /**
      * Observe scan states from persistent storage.
@@ -240,6 +310,34 @@ class TelegramIngestionCoordinator(
     ): Int {
         if (messages.isEmpty()) return 0
 
+        // Diagnostics capture: Capture raw message summaries if enabled
+        val rawSummaries =
+            if (diagnosticsMode) {
+                messages.map { msg ->
+                    // Extract caption/fileName based on message type
+                    val (caption, fileName) =
+                        when (msg) {
+                            is ExportVideo -> msg.caption to (msg.video.fileName)
+                            is ExportDocument -> msg.caption to (msg.document.fileName)
+                            is ExportPhoto -> msg.caption to null
+                            is ExportText -> msg.text to null
+                            is ExportAudio -> msg.caption to null
+                            is ExportOtherRaw -> null to null
+                            else -> null to null
+                        }
+
+                    ExportMessageSummary(
+                        messageId = msg.id,
+                        type = msg::class.simpleName ?: "Unknown",
+                        caption = caption,
+                        fileName = fileName,
+                        dateUnix = msg.dateEpochSeconds.toInt(),
+                    )
+                }
+            } else {
+                emptyList()
+            }
+
         // Step 1: Group messages into blocks
         val blocks = TelegramBlockGrouper.group(messages)
 
@@ -261,6 +359,32 @@ class TelegramIngestionCoordinator(
             TAG,
             "Built ${items.size} items from ${blocks.size} blocks",
         )
+
+        // Diagnostics capture: Capture parsed item summaries if enabled
+        if (diagnosticsMode && items.isNotEmpty()) {
+            val itemSummaries =
+                items.map { item ->
+                    TelegramItemSummary(
+                        anchorMessageId = item.anchorMessageId,
+                        type = item.type.name,
+                        title = item.metadata.title,
+                        year = item.metadata.year,
+                        videoRemoteId = item.videoRef?.remoteId,
+                    )
+                }
+
+            val snapshot =
+                DiagnosticsSnapshot(
+                    chatId = chatId,
+                    capturedAt = System.currentTimeMillis(),
+                    rawMessages = rawSummaries,
+                    parsedItems = itemSummaries,
+                )
+
+            val current = _diagnosticsCapture.value.toMutableMap()
+            current[chatId] = snapshot
+            _diagnosticsCapture.value = current
+        }
 
         // Step 3: Persist items
         if (items.isNotEmpty()) {
@@ -300,4 +424,69 @@ class TelegramIngestionCoordinator(
 
         _scanStates.value = currentStates
     }
+
+    // =========================================================================
+    // JSON Export Functions (Part 5)
+    // =========================================================================
+
+    /**
+     * Export captured diagnostics snapshots as JSON.
+     * Requires diagnosticsMode to be enabled during ingestion.
+     *
+     * @return JSON string of captured diagnostics snapshots
+     */
+    fun exportDiagnosticsJson(): String {
+        val snapshots = _diagnosticsCapture.value.values.toList()
+        return json.encodeToString(snapshots)
+    }
+
+    /**
+     * Clear captured diagnostics data.
+     */
+    fun clearDiagnosticsCapture() {
+        _diagnosticsCapture.value = emptyMap()
+    }
+
+    /**
+     * Export current state of all TelegramItems in ObjectBox as JSON.
+     * This provides a snapshot of parsed items for debugging without requiring
+     * diagnosticsMode during ingestion.
+     *
+     * @return JSON string of all Telegram items grouped by chat
+     */
+    suspend fun captureCurrentStateForExport(): String =
+        withContext(Dispatchers.IO) {
+            // Get all items from content repository
+            val allItems = contentRepository.observeAllItems().first()
+
+            // Group by chat
+            val itemsByChat = allItems.groupBy { it.chatId }
+
+            @Serializable
+            data class ChatExport(
+                val chatId: Long,
+                val itemCount: Int,
+                val items: List<TelegramItemSummary>,
+            )
+
+            val exports =
+                itemsByChat.map { (chatId, items) ->
+                    ChatExport(
+                        chatId = chatId,
+                        itemCount = items.size,
+                        items =
+                            items.map { item ->
+                                TelegramItemSummary(
+                                    anchorMessageId = item.anchorMessageId,
+                                    type = item.type.name,
+                                    title = item.metadata.title,
+                                    year = item.metadata.year,
+                                    videoRemoteId = item.videoRef?.remoteId,
+                                )
+                            },
+                    )
+                }
+
+            json.encodeToString(exports)
+        }
 }
