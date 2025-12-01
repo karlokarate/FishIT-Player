@@ -136,7 +136,9 @@ class PlaybackSourceResolver(
             val lastDot = path.lastIndexOf('.')
             if (lastDot >= 0 && lastDot < path.length - 1) {
                 val ext = path.substring(lastDot + 1).lowercase()
-                // Only return valid extensions
+                // Only return valid extensions.
+                // Limit to 1-5 characters to exclude query parameters or malformed extensions (e.g., ".mp4?token=abc").
+                // Most common media file extensions are 5 characters or fewer.
                 if (ext.matches(Regex("^[a-z0-9]{1,5}$"))) ext else null
             } else {
                 null
