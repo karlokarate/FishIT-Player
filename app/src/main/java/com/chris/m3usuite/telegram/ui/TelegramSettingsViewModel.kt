@@ -87,6 +87,39 @@ class TelegramSettingsViewModel(
                     }
                 }
             }
+
+            // Auto-start if enabled is persisted as true but auth state is still Idle
+            // This ensures the toggle OFF/ON workaround is no longer needed
+            ensureStartedIfEnabled()
+        }
+    }
+
+    /**
+     * Auto-start Telegram engine if enabled is persisted as true and API credentials exist.
+     * This fixes the issue where users had to toggle OFF/ON after app restart.
+     */
+    private fun ensureStartedIfEnabled() {
+        viewModelScope.launch {
+            val enabled = store.tgEnabled.first()
+            val apiId = store.tgApiId.first()
+            val apiHash = store.tgApiHash.first()
+            val hasApiCreds = apiId != 0 && apiHash.isNotBlank()
+
+            if (enabled && hasApiCreds && !_state.value.isConnecting) {
+                TelegramLogRepository.info(
+                    source = "TelegramSettingsViewModel",
+                    message = "Auto-starting engine on ViewModel init (enabled=true persisted)",
+                )
+                try {
+                    serviceClient.ensureStarted(app, store)
+                    serviceClient.login() // Let TDLib determine if session is valid
+                } catch (e: Exception) {
+                    TelegramLogRepository.warn(
+                        source = "TelegramSettingsViewModel",
+                        message = "Auto-start failed: ${e.message}",
+                    )
+                }
+            }
         }
     }
 
