@@ -33,6 +33,20 @@ class TelegramHistoryScanner(
         private const val DEFAULT_MAX_RETRIES = 5
         private const val INITIAL_RETRY_DELAY_MS = 200L
         private const val PAGE_DELAY_MS = 100L
+
+        /**
+         * Threshold for detecting TDLib's initial partial response.
+         * Per tdlibsetup.md: TDLib often returns only 1 message on the first getChatHistory
+         * call because it loads older messages asynchronously in the background.
+         * If we receive <= this many messages on the first call, we retry to get the full batch.
+         */
+        private const val FIRST_BATCH_MIN_THRESHOLD = 5
+
+        /**
+         * Delay before retrying when TDLib returns a partial first batch.
+         * This gives TDLib time to load messages from the server.
+         */
+        private const val TDLIB_ASYNC_LOAD_DELAY_MS = 500L
     }
 
     /**
@@ -212,6 +226,17 @@ class TelegramHistoryScanner(
 
     /**
      * Load a single history batch from TDLib with retry logic.
+     *
+     * Per tdlibsetup.md documentation: TDLib's getChatHistory often returns only 1 message
+     * on the first call (when fromMessageId=0) because it loads older messages asynchronously
+     * from the server in the background. The solution is to retry after a short delay to
+     * allow TDLib to complete loading, then the second call will return the full batch.
+     *
+     * This function implements the recommended retry strategy:
+     * - On first page (fromMessageId=0): If we receive <= FIRST_BATCH_MIN_THRESHOLD messages,
+     *   wait for TDLib to finish async loading and retry
+     * - On subsequent pages: Return immediately if we have any messages
+     * - On empty results: Retry with exponential backoff
      */
     private suspend fun loadHistoryBatch(
         chatId: Long,
@@ -221,6 +246,8 @@ class TelegramHistoryScanner(
         onlyLocal: Boolean,
         maxRetries: Int,
     ): List<Message> {
+        val isFirstPage = fromMessageId == 0L
+
         repeat(maxRetries) { attempt ->
             try {
                 val messages =
@@ -231,18 +258,32 @@ class TelegramHistoryScanner(
                         limit = limit,
                     )
 
-                if (messages.isNotEmpty()) {
-                    return messages
-                }
-
-                // Empty result - might need retry
-                if (attempt < maxRetries - 1) {
-                    val delayMs = INITIAL_RETRY_DELAY_MS * (attempt + 1)
+                if (messages.isEmpty()) {
+                    // Empty result - retry with backoff
+                    if (attempt < maxRetries - 1) {
+                        val delayMs = INITIAL_RETRY_DELAY_MS * (attempt + 1)
+                        TelegramLogRepository.debug(
+                            TAG,
+                            "Empty batch from chat $chatId, retrying in ${delayMs}ms (attempt ${attempt + 1}/$maxRetries)",
+                        )
+                        delay(delayMs)
+                    }
+                    // Continue to next attempt
+                } else if (isFirstPage && messages.size <= FIRST_BATCH_MIN_THRESHOLD && attempt == 0) {
+                    // First page returned very few messages (typical TDLib async loading behavior).
+                    // Per tdlibsetup.md: "Der erste Aufruf liefert oft nur 1 Nachricht, der zweite
+                    // Aufruf kurz darauf liefert dann den Rest (bis zum gesetzten Limit)"
+                    // Wait for TDLib to finish loading from server, then retry.
                     TelegramLogRepository.debug(
                         TAG,
-                        "Empty batch from chat $chatId, retrying in ${delayMs}ms (attempt ${attempt + 1}/$maxRetries)",
+                        "First batch from chat $chatId returned only ${messages.size} messages " +
+                            "(TDLib async loading), waiting ${TDLIB_ASYNC_LOAD_DELAY_MS}ms and retrying",
                     )
-                    delay(delayMs)
+                    delay(TDLIB_ASYNC_LOAD_DELAY_MS)
+                    // Continue to next attempt - do NOT return yet
+                } else {
+                    // We have a good batch of messages
+                    return messages
                 }
             } catch (e: Exception) {
                 TelegramLogRepository.warn(
