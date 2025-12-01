@@ -324,6 +324,42 @@ data class InternalPlayerUiState(
      * - Session's onTracksChanged listener extracts text tracks from Media3
      */
     val availableSubtitleTracks: List<SubtitleTrack> = emptyList(),
+    // ════════════════════════════════════════════════════════════════════════════
+    // Debug Diagnostics - BUG 1 FIX fields
+    // ════════════════════════════════════════════════════════════════════════════
+    //
+    // These fields provide enhanced debug visibility for playback diagnostics.
+    // They are populated by the session after source resolution.
+    /**
+     * BUG 1 FIX: Current playback URL (truncated for display).
+     *
+     * Debug UI consumption:
+     * - Display in debug overlay when showDebugInfo = true
+     * - Truncated or hashed for privacy in logs
+     */
+    val debugPlaybackUrl: String? = null,
+    /**
+     * BUG 1 FIX: Resolved MIME type for current playback.
+     *
+     * Debug UI consumption:
+     * - Display in debug overlay (e.g., "video/mp4", "application/x-mpegURL")
+     */
+    val debugResolvedMimeType: String? = null,
+    /**
+     * BUG 1 FIX: File extension inferred from URL.
+     *
+     * Debug UI consumption:
+     * - Display in debug overlay (e.g., "mp4", "m3u8", "ts")
+     */
+    val debugInferredExtension: String? = null,
+    /**
+     * BUG 1 FIX: True if URL patterns suggest this is a live stream.
+     *
+     * Debug UI consumption:
+     * - Display in debug overlay as "URL Live Detection: true/false"
+     * - Helps diagnose LIVE/VOD classification issues
+     */
+    val debugIsLiveFromUrl: Boolean = false,
 ) {
     val isLive: Boolean
         get() = playbackType == PlaybackType.LIVE

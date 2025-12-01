@@ -30,6 +30,7 @@ import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.internal.live.DefaultLiveChannelRepository
 import com.chris.m3usuite.player.internal.live.DefaultLiveEpgRepository
 import com.chris.m3usuite.player.internal.live.DefaultLivePlaybackController
+import com.chris.m3usuite.player.internal.live.LivePlaybackController
 import com.chris.m3usuite.player.internal.live.SystemTimeProvider
 import com.chris.m3usuite.player.internal.source.PlaybackSourceResolver
 import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
@@ -42,6 +43,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.chris.m3usuite.model.MediaItem as AppMediaItem
+
+/**
+ * BUG 2 FIX: Result holder for rememberInternalPlayerSession.
+ *
+ * This data class exposes both the ExoPlayer and the LivePlaybackController,
+ * allowing InternalPlayerEntry to wire the onJumpLiveChannel callback properly.
+ */
+data class InternalPlayerSessionResult(
+    val player: ExoPlayer?,
+    val liveController: LivePlaybackController?,
+)
 
 /**
  * SIP (Session Integration Point) - Manages the ExoPlayer instance for the internal player.
@@ -97,6 +109,8 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * This composable does NOT know about UI, DPAD, gestures or series/live logic.
  *
  * @see PlaybackSession for the shared player management singleton
+ *
+ * @return InternalPlayerSessionResult containing the ExoPlayer and LivePlaybackController (if LIVE type)
  */
 @Composable
 fun rememberInternalPlayerSession(
@@ -111,7 +125,7 @@ fun rememberInternalPlayerSession(
     controller: RememberPlayerController,
     onStateChanged: (InternalPlayerUiState) -> Unit,
     onError: (PlaybackException) -> Unit,
-): ExoPlayer? {
+): InternalPlayerSessionResult {
     val scope = rememberCoroutineScope()
 
     val resumeManager = remember(context) { DefaultResumeManager(context) }
@@ -290,6 +304,20 @@ fun rememberInternalPlayerSession(
                 explicitMimeType = mimeType,
                 preparedMediaItem = preparedMediaItem,
             )
+
+        // ════════════════════════════════════════════════════════════════════════════
+        // BUG 1 FIX: Populate debug diagnostic fields after source resolution
+        // ════════════════════════════════════════════════════════════════════════════
+        val truncatedUrl = if (url.length > 100) url.take(100) + "..." else url
+        val debugUpdated =
+            playerState.value.copy(
+                debugPlaybackUrl = truncatedUrl,
+                debugResolvedMimeType = resolved.mimeType,
+                debugInferredExtension = resolved.inferredExtension,
+                debugIsLiveFromUrl = resolved.isLiveFromUrl,
+            )
+        playerState.value = debugUpdated
+        onStateChanged(debugUpdated)
 
         val mediaItem =
             buildMediaItemWithTelegramExtras(
@@ -774,8 +802,57 @@ fun rememberInternalPlayerSession(
                     playerState.value = updated
                     onStateChanged(updated)
 
-                    if (changed) {
-                        lastChannelId = channel?.id
+                    if (changed && channel != null) {
+                        lastChannelId = channel.id
+
+                        // ════════════════════════════════════════════════════════════════
+                        // BUG 2 FIX: Update player source when channel changes
+                        // ════════════════════════════════════════════════════════════════
+                        //
+                        // When LivePlaybackController changes the current channel (via jumpChannel
+                        // or selectChannel), we need to actually switch the player's media source.
+                        // Without this, the player continues playing the old stream.
+                        val channelUrl = channel.url
+                        if (channelUrl.isNotBlank()) {
+                            try {
+                                // Update PlaybackSession source for MiniPlayer visibility
+                                PlaybackSession.setSource(channelUrl)
+
+                                // Build new MediaItem for the channel
+                                val newMediaItem =
+                                    MediaItem
+                                        .Builder()
+                                        .setUri(channelUrl)
+                                        .setMediaMetadata(
+                                            MediaMetadata
+                                                .Builder()
+                                                .setTitle(channel.name)
+                                                .build(),
+                                        ).build()
+
+                                // Set new media item and play
+                                newPlayer.setMediaItem(newMediaItem)
+                                newPlayer.prepare()
+                                newPlayer.playWhenReady = true
+                            } catch (e: Exception) {
+                                // Fail-open: Log error but don't crash
+                                // Catches IllegalStateException (player released), IllegalArgumentException (bad URL),
+                                // SecurityException (missing permissions), and other runtime exceptions.
+                                com.chris.m3usuite.core.logging.AppLog.log(
+                                    category = "live",
+                                    level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                                    message = "Failed to switch live channel: ${e.message ?: e::class.simpleName}",
+                                    extras =
+                                        mapOf(
+                                            "channelId" to channel.id.toString(),
+                                            "channelName" to channel.name,
+                                            "url" to channelUrl,
+                                            "exceptionType" to (e::class.simpleName ?: "Unknown"),
+                                        ),
+                                )
+                            }
+                        }
+
                         scope.launch(Dispatchers.IO) {
                             try {
                                 liveController.refreshEpgForCurrentChannel()
@@ -859,7 +936,11 @@ fun rememberInternalPlayerSession(
         }
     }
 
-    return playerHolder.value
+    // BUG 2 FIX: Return both player and liveController for proper channel zapping wiring
+    return InternalPlayerSessionResult(
+        player = playerHolder.value,
+        liveController = liveController,
+    )
 }
 
 private fun buildMediaItemWithTelegramExtras(resolved: ResolvedPlaybackSource): MediaItem {

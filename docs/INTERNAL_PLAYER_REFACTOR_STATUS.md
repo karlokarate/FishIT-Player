@@ -6172,3 +6172,84 @@ All implementations verified against:
 ---
 
 **Last Updated:** 2025-11-30
+
+
+---
+
+## Phase 9 – Sammel-Patch: Live/PIp/Debug/Xtream Issues Fixed
+
+**Date:** 2025-12-01
+
+**Status:** ✅ **COMPLETE** – All runtime bugs from BUG_ANALYSIS_REPORT_2025-12-01.md fixed
+
+This patch addresses several runtime issues identified in the bug analysis report without touching Telegram parser/ObjectBox pipeline.
+
+### What Was Done
+
+**BUG 1 – Live/VOD Detection & Debug Info ✅**
+- Added `isLikelyLiveUrl()` heuristic in `PlaybackSourceResolver`
+- Added diagnostic fields to `ResolvedPlaybackSource`: `isLiveFromUrl`, `inferredExtension`
+- Added debug fields to `InternalPlayerUiState`: `debugPlaybackUrl`, `debugResolvedMimeType`, `debugInferredExtension`, `debugIsLiveFromUrl`
+- Session populates debug fields after source resolution
+
+**BUG 2 – Live-TV Channel Zapping ✅**
+- Created `InternalPlayerSessionResult` to expose both player and `liveController`
+- Modified `rememberInternalPlayerSession` to return result with `liveController`
+- Updated `createSipController` to accept `liveController` and `playbackType`
+- Implemented `onJumpLiveChannel` callback to call `liveController.jumpChannel(delta)`
+- Added automatic player source update when `currentChannel` changes in session
+
+**BUG 3 – Debug Log Viewer Accessibility ✅**
+- Created "Debug & Diagnostics" settings section that is always visible
+- Moved Log Viewer button from Telegram READY state to global section
+- Telegram Logs button still requires Telegram to be enabled
+
+**BUG 4 – Xtream First-Time Config Crash ✅**
+- Added 500ms debounce in `XtreamSettingsViewModel.onChange()`
+- Added 750ms debounce in MainActivity auto-import `LaunchedEffect`
+- Added port validation (`port > 0`)
+- Wrapped import in try/catch with proper `AppLog` error handling
+
+**BUG 5 – System PiP on Phone/Tablet ✅**
+- Added `LaunchedEffect` in `InternalPlayerEntry` to call `updatePipParams()` when playback state changes
+- Added `onPictureInPictureModeChanged` callback in `MainActivity`
+- PiP params now update reactively for API 31+ auto-enter support
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `MainActivity.kt` | Debounced auto-import, PiP lifecycle callbacks, `delay` import |
+| `InternalPlayerEntry.kt` | BUG 5 PiP params update, BUG 2 liveController wiring |
+| `InternalPlayerSession.kt` | BUG 2 channel switch source update, BUG 1 debug fields |
+| `InternalPlaybackSourceResolver.kt` | BUG 1 LIVE heuristics, extension extraction |
+| `InternalPlayerState.kt` | BUG 1 debug diagnostic fields |
+| `SettingsScreen.kt` | BUG 3 moved Log Viewer to global Debug section |
+| `XtreamSettingsViewModel.kt` | BUG 4 debounced settings save |
+| `BUG_ANALYSIS_REPORT_2025-12-01.md` | Updated with fix status and details |
+
+### Files NOT Modified (Per Safety Rule)
+
+- ❌ `telegram/parser/*` – Telegram parser untouched
+- ❌ `TelegramContentRepository` – Telegram persistence untouched
+- ❌ `TelegramSyncStateRepository` – Telegram sync state untouched
+- ❌ `ObxTelegramItem` / `ObxChatScanState` – Telegram entities untouched
+- ❌ Legacy `InternalPlayerScreen` – SIP-only changes
+
+### Contract Reference
+
+All implementations align with:
+- `docs/BUG_ANALYSIS_REPORT_2025-12-01.md`
+- `docs/TELEGRAM_SIP_PLAYER_INTEGRATION.md`
+- `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
+- `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
+
+### Build & Test Status
+
+- ✅ `./gradlew :app:compileDebugKotlin` builds successfully
+- ✅ Existing tests pass
+
+---
+
+**Last Updated:** 2025-12-01
+

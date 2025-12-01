@@ -9,6 +9,8 @@ import com.chris.m3usuite.data.repo.SettingsRepository
 import com.chris.m3usuite.domain.usecases.SaveXtreamPrefs
 import com.chris.m3usuite.domain.usecases.TriggerXtreamDeltaImport
 import com.chris.m3usuite.prefs.SettingsStore
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -32,6 +34,17 @@ class XtreamSettingsViewModel(
 ) : AndroidViewModel(app) {
     private val _state = MutableStateFlow(XtreamSettingsState())
     val state: StateFlow<XtreamSettingsState> = _state
+
+    /**
+     * BUG 4 fix: Debounce job for saving settings.
+     * Prevents saving on every keystroke; waits 500ms after last change.
+     */
+    private var saveJob: Job? = null
+
+    /**
+     * BUG 4 fix: Debounce delay in milliseconds.
+     */
+    private val saveDebounceMs = 500L
 
     init {
         observe()
@@ -57,13 +70,23 @@ class XtreamSettingsViewModel(
         }
     }
 
+    /**
+     * BUG 4 fix: Debounced settings change handler.
+     *
+     * Instead of saving immediately on every keystroke, this method:
+     * 1. Updates local state immediately (for responsive UI)
+     * 2. Cancels any pending save job
+     * 3. Schedules a new save after [saveDebounceMs] delay
+     *
+     * This prevents race conditions where auto-import starts with partial config.
+     */
     fun onChange(
         host: String? = null,
         port: Int? = null,
         user: String? = null,
         pass: String? = null,
         output: String? = null,
-    ) = viewModelScope.launch {
+    ) {
         val cur = _state.value
         val s =
             cur.copy(
@@ -75,11 +98,17 @@ class XtreamSettingsViewModel(
                 isSaving = true,
             )
         _state.value = s
-        save(
-            com.chris.m3usuite.domain.usecases
-                .XtreamPrefs(s.host, s.port, s.user, s.pass, s.output),
-        )
-        _state.value = s.copy(isSaving = false)
+
+        // Cancel any pending save and schedule a new one
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch {
+            delay(saveDebounceMs)
+            save(
+                com.chris.m3usuite.domain.usecases
+                    .XtreamPrefs(s.host, s.port, s.user, s.pass, s.output),
+            )
+            _state.value = _state.value.copy(isSaving = false)
+        }
     }
 
     fun onTriggerDeltaImport(
