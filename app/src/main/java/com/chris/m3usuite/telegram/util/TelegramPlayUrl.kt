@@ -16,6 +16,17 @@ import java.net.URLEncoder
  */
 object TelegramPlayUrl {
     /**
+     * Offset used to encode Telegram message IDs as MediaItem IDs.
+     *
+     * Telegram content uses the range [4_000_000_000_000, 5_000_000_000_000) for MediaItem.id
+     * to avoid collisions with Xtream content IDs.
+     *
+     * Use: mediaId = TELEGRAM_MEDIA_ID_OFFSET + anchorMessageId
+     * Decode: anchorMessageId = mediaId - TELEGRAM_MEDIA_ID_OFFSET
+     */
+    const val TELEGRAM_MEDIA_ID_OFFSET = 4_000_000_000_000L
+
+    /**
      * Build Telegram file URL from a TelegramPlaybackRequest (remoteId-first).
      *
      * URL format: tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...

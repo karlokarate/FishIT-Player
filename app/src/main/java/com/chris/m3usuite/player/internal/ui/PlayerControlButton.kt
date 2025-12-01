@@ -73,11 +73,12 @@ fun PlayerControlButton(
 
     // Animate scale: 1.0 normal → 1.15 focused → 1.10 pressed
     val scale by animateFloatAsState(
-        targetValue = when {
-            isPressed -> 1.10f
-            isFocused -> 1.15f
-            else -> 1.0f
-        },
+        targetValue =
+            when {
+                isPressed -> 1.10f
+                isFocused -> 1.15f
+                else -> 1.0f
+            },
         label = "PlayerControlButtonScale",
     )
 
@@ -94,36 +95,33 @@ fun PlayerControlButton(
     )
 
     Box(
-        modifier = modifier
-            .size(size)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = backgroundAlpha))
-            .then(
-                if (focusBorderAlpha > 0f) {
-                    Modifier.border(
-                        width = 1.5.dp,
-                        color = Color.White.copy(alpha = focusBorderAlpha),
-                        shape = CircleShape,
-                    )
-                } else {
-                    Modifier
-                },
-            )
-            .focusable(enabled)
-            .onFocusEvent { focusState ->
-                isFocused = focusState.isFocused || focusState.hasFocus
-            }
-            .clickable(
-                enabled = enabled,
-                interactionSource = interactionSource,
-                indication = null, // We handle visual feedback via background/scale
-                onClick = onClick,
-            )
-            .padding(((size - iconSize) / 2).coerceAtLeast(0.dp)),
+        modifier =
+            modifier
+                .size(size)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }.clip(CircleShape)
+                .background(Color.Black.copy(alpha = backgroundAlpha))
+                .then(
+                    if (focusBorderAlpha > 0f) {
+                        Modifier.border(
+                            width = 1.5.dp,
+                            color = Color.White.copy(alpha = focusBorderAlpha),
+                            shape = CircleShape,
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).focusable(enabled)
+                .onFocusEvent { focusState ->
+                    isFocused = focusState.isFocused || focusState.hasFocus
+                }.clickable(
+                    enabled = enabled,
+                    interactionSource = interactionSource,
+                    indication = null, // We handle visual feedback via background/scale
+                    onClick = onClick,
+                ).padding(((size - iconSize) / 2).coerceAtLeast(0.dp)),
         contentAlignment = Alignment.Center,
     ) {
         Box(

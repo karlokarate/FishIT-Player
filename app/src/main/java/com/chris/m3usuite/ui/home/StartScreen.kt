@@ -78,6 +78,7 @@ import com.chris.m3usuite.data.repo.MediaQueryRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
@@ -90,6 +91,7 @@ import com.chris.m3usuite.ui.layout.FishHeaderData
 import com.chris.m3usuite.ui.layout.FishHeaderHost
 import com.chris.m3usuite.ui.layout.FishRow
 import com.chris.m3usuite.ui.layout.FishRowPaged
+import com.chris.m3usuite.ui.layout.FishTelegramItemRow
 import com.chris.m3usuite.ui.layout.LiveFishTile
 import com.chris.m3usuite.ui.layout.SeriesFishTile
 import com.chris.m3usuite.ui.layout.VodFishTile
@@ -109,6 +111,8 @@ fun StartScreen(
     openVod: (Long) -> Unit,
     openSeries: (Long) -> Unit,
     openTelegram: ((Long) -> Unit)? = null,
+    // Phase D: New callback for TelegramItem navigation using (chatId, anchorMessageId)
+    openTelegramItem: ((chatId: Long, anchorMessageId: Long) -> Unit)? = null,
     initialSearch: String? = null,
     openSearchOnStart: Boolean = false,
 ) {
@@ -148,7 +152,8 @@ fun StartScreen(
     val seriesNewIds by vm.seriesNewIds.collectAsStateWithLifecycle(emptySet())
     val vodNewIds by vm.vodNewIds.collectAsStateWithLifecycle(emptySet())
     val favLive by vm.favLive.collectAsStateWithLifecycle(emptyList())
-    val telegramContentByChat by vm.telegramContentByChat
+    // Phase D: Use new TelegramItem-based data from ObxTelegramItem
+    val telegramVodByChat by vm.telegramVodByChat
         .collectAsStateWithLifecycle(emptyMap())
     val tgEnabled by vm.tgEnabled.collectAsStateWithLifecycle(false)
 
@@ -702,51 +707,49 @@ fun StartScreen(
                 }
             }
 
-            // Telegram content rows (one per chat)
-            if (tgEnabled && telegramContentByChat.isNotEmpty()) {
-                telegramContentByChat.forEach { (chatId, chatData) ->
+            // Phase D: Telegram content rows using TelegramItem from ObxTelegramItem
+            if (tgEnabled && telegramVodByChat.isNotEmpty()) {
+                android.util.Log.d(
+                    "telegram-ui",
+                    "Rendering Telegram rows with ${telegramVodByChat.size} chats",
+                )
+                telegramVodByChat.forEach { (chatId, chatData) ->
                     val (chatTitle, items) = chatData
                     if (items.isNotEmpty()) {
                         item(key = "start_telegram_row:$chatId") {
-                            val onTelegramClick: (MediaItem) -> Unit = { media ->
-                                // Navigate to Telegram detail screen instead of playing directly
-                                if (openTelegram != null) {
-                                    openTelegram(media.id)
+                            val onTelegramItemClick: (TelegramItem) -> Unit = { item ->
+                                // Phase D: Navigate using (chatId, anchorMessageId) for new detail screen
+                                if (openTelegramItem != null) {
+                                    openTelegramItem(item.chatId, item.anchorMessageId)
                                 } else {
-                                    // Fallback: play directly if no detail screen handler is provided
-                                    scope.launch {
-                                        TelegramLogRepository.info(
-                                            source = "StartScreen",
-                                            message = "User started Telegram playback from StartScreen",
-                                            details =
-                                                mapOf(
-                                                    "mediaId" to media.id.toString(),
-                                                    "title" to media.name,
-                                                    "playUrl" to (media.url ?: "null"),
-                                                ),
-                                        )
+                                    // Fallback: use legacy openTelegram with encoded ID
+                                    val legacyId =
+                                        com.chris.m3usuite.telegram.util.TelegramPlayUrl
+                                            .TELEGRAM_MEDIA_ID_OFFSET + item.anchorMessageId
+                                    openTelegram?.invoke(legacyId)
+                                }
 
-                                        // For Telegram items, we need to handle playback via TDLib
-                                        // The URL is in format: tg://file/<fileId>
-                                        playbackLauncher.launch(
-                                            com.chris.m3usuite.playback.PlayRequest(
-                                                type = "vod",
-                                                mediaId = media.id,
-                                                url = media.url ?: "",
-                                                headers = emptyMap(),
-                                                mimeType = null, // Will be detected
-                                                title = media.name,
+                                // Log navigation
+                                scope.launch {
+                                    TelegramLogRepository.info(
+                                        source = "StartScreen",
+                                        message = "User selected Telegram item from StartScreen",
+                                        details =
+                                            mapOf(
+                                                "chatId" to item.chatId.toString(),
+                                                "anchorMessageId" to item.anchorMessageId.toString(),
+                                                "title" to (item.metadata.title ?: "Untitled"),
                                             ),
-                                        )
-                                    }
+                                    )
                                 }
                             }
-                            com.chris.m3usuite.ui.layout.FishTelegramRow(
+                            // Use FishTelegramItemRow for TelegramItem-based rendering
+                            FishTelegramItemRow(
                                 items = items,
                                 stateKey = "start_telegram:$chatId",
                                 title = chatTitle,
                                 modifier = Modifier,
-                                onItemClick = onTelegramClick,
+                                onItemClick = onTelegramItemClick,
                             )
                         }
                     }
