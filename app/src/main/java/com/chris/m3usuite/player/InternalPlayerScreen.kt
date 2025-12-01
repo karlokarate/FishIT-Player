@@ -2222,8 +2222,6 @@ fun InternalPlayerScreen(
                         OverlayIconButton(
                             modifier = Modifier.focusRequester(pipFocusRequester),
                             iconRes = android.R.drawable.ic_menu_slideshow,
-                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f),
-                            contentColor = Color.White,
                         ) {
                             controlsTick++
                             requestPictureInPicture()
@@ -2231,8 +2229,6 @@ fun InternalPlayerScreen(
                         OverlayIconButton(
                             modifier = Modifier.focusRequester(ccFocusRequester),
                             iconRes = android.R.drawable.ic_menu_sort_by_size,
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            contentColor = Color.White,
                         ) {
                             controlsTick++
                             if (!showCcMenu) {
@@ -2248,8 +2244,6 @@ fun InternalPlayerScreen(
                         OverlayIconButton(
                             modifier = Modifier.focusRequester(resizeFocusRequester),
                             iconRes = android.R.drawable.ic_menu_crop,
-                            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
-                            contentColor = Color.White,
                             onLongClick = { showAspectMenu = true },
                         ) {
                             controlsTick++
@@ -2281,16 +2275,12 @@ fun InternalPlayerScreen(
                 OverlayIconButton(
                     modifier = Modifier.focusRequester(quickPipFocus),
                     iconRes = android.R.drawable.ic_menu_slideshow,
-                    containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
-                    contentColor = Color.White,
                 ) {
                     requestPictureInPicture()
                 }
                 OverlayIconButton(
                     modifier = Modifier.focusRequester(quickCcFocus),
                     iconRes = android.R.drawable.ic_menu_sort_by_size,
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                    contentColor = Color.White,
                 ) {
                     if (!showCcMenu) {
                         localScale = effectiveScale()
@@ -2305,8 +2295,6 @@ fun InternalPlayerScreen(
                 OverlayIconButton(
                     modifier = Modifier.focusRequester(quickAspectFocus),
                     iconRes = android.R.drawable.ic_menu_crop,
-                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
-                    contentColor = Color.White,
                     onLongClick = { showAspectMenu = true },
                 ) {
                     customScaleEnabled = false
@@ -2576,8 +2564,6 @@ private fun OverlayActionTile(
 private fun OverlayIconButton(
     modifier: Modifier = Modifier,
     @DrawableRes iconRes: Int,
-    containerColor: Color = Color.Black.copy(alpha = 0.4f),
-    contentColor: Color = Color.White,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
