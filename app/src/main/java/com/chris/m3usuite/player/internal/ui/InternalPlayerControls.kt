@@ -391,6 +391,18 @@ fun InternalPlayerContent(
                             onSeekBackward = { controller.onSeekBy(-10_000) },
                             onSeekForward = { controller.onSeekBy(10_000) },
                         )
+                        Spacer(Modifier.height(12.dp))
+                        // Secondary controls row for mobile (same functionality as TV)
+                        MobileSecondaryControls(
+                            state = state,
+                            onToggleLoop = controller.onToggleLoop,
+                            onChangeAspectRatio = controller.onCycleAspectRatio,
+                            onSpeedClick = controller.onToggleSpeedDialog,
+                            onTracksClick = controller.onToggleTracksDialog,
+                            onCcClick = controller.onToggleCcMenu,
+                            onSettingsClick = controller.onToggleSettingsDialog,
+                            onPipClick = controller.onEnterMiniPlayer,
+                        )
                     }
                     PlayerUiMode.TV -> {
                         // TV: Full controls row at bottom (existing behavior)
@@ -758,6 +770,93 @@ private fun CenteredMobileControls(
                 contentDescription = "Seek Forward 10s",
                 size = 68.dp,
                 iconSize = 34.dp,
+            )
+        }
+    }
+}
+
+/**
+ * Secondary controls row for phone/tablet touch devices.
+ *
+ * **SIP Responsive Overlay Contract:**
+ * Provides the same secondary functionality as TV but with touch-optimized layout.
+ * Controls are centered and use larger tap targets for better touch UX.
+ *
+ * Controls included:
+ * - Loop toggle
+ * - Aspect ratio cycle
+ * - Playback speed
+ * - Audio/Subtitle tracks
+ * - CC/Subtitles (if available and not kid mode)
+ * - Settings
+ * - Picture-in-Picture
+ *
+ * @param state The current player UI state
+ * @param onToggleLoop Callback to toggle loop mode
+ * @param onChangeAspectRatio Callback to cycle aspect ratio
+ * @param onSpeedClick Callback to open speed dialog
+ * @param onTracksClick Callback to open tracks dialog
+ * @param onCcClick Callback to open CC menu
+ * @param onSettingsClick Callback to open settings dialog
+ * @param onPipClick Callback to enter picture-in-picture
+ */
+@Composable
+private fun MobileSecondaryControls(
+    state: InternalPlayerUiState,
+    onToggleLoop: () -> Unit,
+    onChangeAspectRatio: () -> Unit,
+    onSpeedClick: () -> Unit,
+    onTracksClick: () -> Unit,
+    onCcClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onPipClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PlayerControlButton(
+                imageVector = if (state.isLooping) Icons.Filled.Repeat else Icons.Outlined.Repeat,
+                onClick = onToggleLoop,
+                contentDescription = "Loop",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.CropFree,
+                onClick = onChangeAspectRatio,
+                contentDescription = "Aspect Ratio",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.AvTimer,
+                onClick = onSpeedClick,
+                contentDescription = "Speed",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.Subtitles,
+                onClick = onTracksClick,
+                contentDescription = "Tracks",
+            )
+            // CC button: Visible only for non-kid profiles with available subtitle tracks
+            if (!state.kidActive && state.availableSubtitleTracks.isNotEmpty()) {
+                PlayerControlButton(
+                    imageVector = Icons.Filled.ClosedCaption,
+                    onClick = onCcClick,
+                    contentDescription = "Subtitles & CC",
+                )
+            }
+            PlayerControlButton(
+                imageVector = Icons.Filled.MoreVert,
+                onClick = onSettingsClick,
+                contentDescription = "Settings",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.PictureInPicture,
+                onClick = onPipClick,
+                contentDescription = "Picture-in-Picture",
             )
         }
     }
