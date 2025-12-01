@@ -2559,6 +2559,8 @@ private fun OverlayActionTile(
  * - Scale animation: 1.0 → 1.15 when focused
  * - Optional white glow/border on focus (1.5dp white at 40% opacity)
  */
+private const val OVERLAY_ANIMATION_DURATION_MS = 150
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun OverlayIconButton(
@@ -2578,21 +2580,21 @@ private fun OverlayIconButton(
             isFocused -> 1.15f
             else -> 1.0f
         },
-        animationSpec = androidx.compose.animation.core.tween(150),
+        animationSpec = androidx.compose.animation.core.tween(OVERLAY_ANIMATION_DURATION_MS),
         label = "OverlayIconButtonScale",
     )
 
     // Animate background opacity: 40% normal → 65% focused
     val backgroundAlpha by animateFloatAsState(
         targetValue = if (isFocused || isPressed) 0.65f else 0.40f,
-        animationSpec = androidx.compose.animation.core.tween(150),
+        animationSpec = androidx.compose.animation.core.tween(OVERLAY_ANIMATION_DURATION_MS),
         label = "OverlayIconButtonBgAlpha",
     )
 
     // Animate focus border opacity: 0% normal → 40% focused
     val focusBorderAlpha by animateFloatAsState(
         targetValue = if (isFocused) 0.40f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(150),
+        animationSpec = androidx.compose.animation.core.tween(OVERLAY_ANIMATION_DURATION_MS),
         label = "OverlayIconButtonBorderAlpha",
     )
 
