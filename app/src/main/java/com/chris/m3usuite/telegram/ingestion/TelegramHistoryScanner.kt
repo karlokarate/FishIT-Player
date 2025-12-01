@@ -269,11 +269,12 @@ class TelegramHistoryScanner(
                         delay(delayMs)
                     }
                     // Continue to next attempt
-                } else if (isFirstPage && messages.size <= FIRST_BATCH_MIN_THRESHOLD && attempt == 0) {
+                } else if (isFirstPage && messages.size <= FIRST_BATCH_MIN_THRESHOLD && attempt < 2) {
                     // First page returned very few messages (typical TDLib async loading behavior).
-                    // Per tdlibsetup.md: "Der erste Aufruf liefert oft nur 1 Nachricht, der zweite
-                    // Aufruf kurz darauf liefert dann den Rest (bis zum gesetzten Limit)"
+                    // Per tdlibsetup.md: "The first call often returns only 1 message, the second
+                    // call shortly after delivers the rest (up to the set limit)"
                     // Wait for TDLib to finish loading from server, then retry.
+                    // We retry up to 2 times (attempt 0 and 1) to allow TDLib time to load.
                     TelegramLogRepository.debug(
                         TAG,
                         "First batch from chat $chatId returned only ${messages.size} messages " +

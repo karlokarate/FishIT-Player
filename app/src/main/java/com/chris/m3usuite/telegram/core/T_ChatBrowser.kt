@@ -197,7 +197,7 @@ class T_ChatBrowser(
 
             // Handle TDLib async loading: first call often returns only 1 message
             // Wait and retry to get the full batch from server
-            if (isFirstPage && batch.size <= 1 && batch.isNotEmpty()) {
+            if (isFirstPage && batch.size == 1) {
                 TelegramLogRepository.debug(
                     "T_ChatBrowser",
                     "First batch returned ${batch.size} message(s), waiting for TDLib async load...",
