@@ -175,6 +175,84 @@ class T_TelegramServiceClient private constructor(
     val activityEvents: SharedFlow<TgActivityEvent> = _activityEvents.asSharedFlow()
 
     /**
+     * Task 1: Unified Telegram Engine State
+     *
+     * This is the single source of truth for:
+     * - Settings screen (enabled toggle + status display)
+     * - Telegram playback path (canStream gate)
+     *
+     * The state is derived from:
+     * - isEnabled: From SettingsStore (must be set via setTelegramEnabled)
+     * - authState: From T_TelegramSession
+     * - isEngineHealthy: From startup/runtime errors
+     * - canStream: Derived property (isEnabled && authReady && isEngineHealthy)
+     */
+    private val _engineState = MutableStateFlow(TelegramEngineState())
+    val engineState: StateFlow<TelegramEngineState> = _engineState.asStateFlow()
+
+    /**
+     * Task 1: Update the unified engine state.
+     * Called internally when any state component changes.
+     *
+     * This method synchronizes _engineState with _authState and internal health tracking.
+     * It should be called after:
+     * - setTelegramEnabled()
+     * - Auth state changes
+     * - Engine health changes (startup success/failure, runtime errors)
+     */
+    private fun updateEngineState() {
+        _engineState.value =
+            _engineState.value.copy(
+                authState = _authState.value,
+            )
+    }
+
+    /**
+     * Task 1: Set Telegram enabled state.
+     * This is the single entry point for changing isEnabled.
+     *
+     * IMPORTANT: This does NOT persist the value - caller must handle persistence.
+     * This only updates the in-memory engine state.
+     *
+     * @param enabled New enabled state
+     */
+    fun setTelegramEnabled(enabled: Boolean) {
+        _engineState.value = _engineState.value.copy(isEnabled = enabled)
+        TelegramLogRepository.info(
+            source = "T_TelegramServiceClient",
+            message = "Telegram enabled state changed",
+            details = mapOf("enabled" to enabled.toString()),
+        )
+    }
+
+    /**
+     * Task 3: Set engine health.
+     * Called when engine operations succeed or fail.
+     *
+     * @param healthy New health status
+     * @param error Optional error message (cleared when healthy=true)
+     */
+    fun setEngineHealth(
+        healthy: Boolean,
+        error: String? = null,
+    ) {
+        _engineState.value =
+            _engineState.value.copy(
+                isEngineHealthy = healthy,
+                recentError = if (healthy) null else error,
+            )
+        TelegramLogRepository.info(
+            source = "T_TelegramServiceClient",
+            message = "Engine health changed",
+            details =
+                mapOf(
+                    "healthy" to healthy.toString(),
+                    "error" to (error ?: "none"),
+                ),
+        )
+    }
+
+    /**
      * Ensure the service is started and ready.
      * This is idempotent - safe to call multiple times.
      *
@@ -266,6 +344,9 @@ class T_TelegramServiceClient private constructor(
             _connectionState.value = TgConnectionState.Connected
             _isStarted.set(true)
 
+            // Task 3: Mark engine as healthy on successful startup
+            setEngineHealth(healthy = true, error = null)
+
             TelegramLogRepository.log(
                 level = TgLogEntry.LogLevel.INFO,
                 source = "T_TelegramServiceClient",
@@ -281,6 +362,12 @@ class T_TelegramServiceClient private constructor(
             e.printStackTrace()
             _connectionState.value = TgConnectionState.Error(e.message ?: "Unknown error")
             _authState.value = TelegramAuthState.Error(e.message ?: "Unknown error")
+            
+            // Task 3: Mark engine as unhealthy on startup failure
+            // But DO NOT change isEnabled - that's a user setting
+            setEngineHealth(healthy = false, error = e.message ?: "Unknown error")
+            updateEngineState()
+            
             throw e
         } finally {
             isInitializing.set(false)
@@ -324,6 +411,11 @@ class T_TelegramServiceClient private constructor(
         } catch (e: Exception) {
             TelegramLogRepository.debug("T_TelegramServiceClient", "Login error: ${e.message}")
             _authState.value = TelegramAuthState.Error(e.message ?: "Login failed")
+            
+            // Task 3: Login errors affect auth state but not engine health
+            // Engine health is only affected by startup/runtime errors
+            updateEngineState()
+            
             throw e
         }
     }
@@ -554,20 +646,28 @@ class T_TelegramServiceClient private constructor(
                         is AuthEvent.StateChanged -> {
                             val newState = mapAuthorizationStateToAuthState(event.state)
                             _authState.value = newState
+                            // Task 1: Update engine state when auth state changes
+                            updateEngineState()
                             TelegramLogRepository.debug("T_TelegramServiceClient", "Auth state changed: $newState")
                         }
                         is AuthEvent.Ready -> {
                             _authState.value = TelegramAuthState.Ready
+                            // Task 1: Update engine state when ready
+                            updateEngineState()
                             TelegramLogRepository.debug("T_TelegramServiceClient", "Auth ready ✅")
                             // Start live update handler for real-time message processing
                             startUpdateHandler()
                         }
                         is AuthEvent.Error -> {
                             _authState.value = TelegramAuthState.Error(event.message)
+                            // Task 1: Update engine state on auth error
+                            updateEngineState()
                             TelegramLogRepository.debug("T_TelegramServiceClient", "Auth error: ${event.message}")
                         }
                         is AuthEvent.ReauthRequired -> {
                             _authState.value = TelegramAuthState.WaitingForPhone
+                            // Task 1: Update engine state
+                            updateEngineState()
                             TelegramLogRepository.info("T_TelegramServiceClient", "Reauth required: ${event.reason}")
                             // Show global snackbar notification
                             try {
@@ -637,6 +737,10 @@ class T_TelegramServiceClient private constructor(
         _authState.value = TelegramAuthState.Idle
         _connectionState.value = TgConnectionState.Disconnected
         _syncState.value = TgSyncState.Idle
+
+        // Task 1: Update engine state on shutdown
+        // Note: isEnabled is NOT reset - it's a user preference
+        updateEngineState()
 
         TelegramLogRepository.info("T_TelegramServiceClient", "Shutdown complete")
     }

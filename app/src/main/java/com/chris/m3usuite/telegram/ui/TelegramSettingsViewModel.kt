@@ -49,6 +49,20 @@ class TelegramSettingsViewModel(
         // when the ViewModel is cleared, preventing memory leaks. The singleton
         // ServiceClient properly handles multiple collectors from different ViewModels.
         viewModelScope.launch {
+            // Task 1: Collect unified engine state
+            launch {
+                serviceClient.engineState.collect { engineState ->
+                    _state.update { current ->
+                        current.copy(
+                            // isEnabled is synced from SettingsStore (below)
+                            authState = mapCoreAuthStateToUI(engineState.authState),
+                            isEngineHealthy = engineState.isEngineHealthy,
+                            recentError = engineState.recentError,
+                        )
+                    }
+                }
+            }
+
             // Collect settings
             launch {
                 combine(
@@ -58,6 +72,9 @@ class TelegramSettingsViewModel(
                     store.tgSelectedChatsCsv,
                     store.tgCacheLimitGb,
                 ) { enabled, apiId, apiHash, chats, cacheLimit ->
+                    // Task 1: Also update ServiceClient when enabled changes from settings
+                    serviceClient.setTelegramEnabled(enabled)
+                    
                     _state.update { current ->
                         current.copy(
                             enabled = enabled,
@@ -68,15 +85,6 @@ class TelegramSettingsViewModel(
                         )
                     }
                 }.collect()
-            }
-
-            // Collect auth state
-            launch {
-                serviceClient.authState.collect { authState ->
-                    _state.update { current ->
-                        current.copy(authState = mapCoreAuthStateToUI(authState))
-                    }
-                }
             }
 
             // Collect connection state
@@ -154,7 +162,10 @@ class TelegramSettingsViewModel(
 
         viewModelScope.launch {
             val wasEnabled = _state.value.enabled
+            
+            // Task 1: Use ServiceClient's setTelegramEnabled method
             setTelegramEnabledInternal(enabled)
+            serviceClient.setTelegramEnabled(enabled)
 
             if (!enabled) {
                 TelegramLogRepository.info(
@@ -172,21 +183,16 @@ class TelegramSettingsViewModel(
                 try {
                     serviceClient.ensureStarted(app, store)
                     serviceClient.login() // Let TDLib determine if session is valid
-                    // Mark engine as healthy after successful startup
-                    _state.update { it.copy(isEngineHealthy = true, recentError = null) }
+                    // Task 3: Mark engine as healthy after successful startup
+                    // (already handled in T_TelegramServiceClient.ensureStarted)
                 } catch (e: Exception) {
                     TelegramLogRepository.info(
                         source = "TelegramSettingsViewModel",
                         message = "Warm-up failed: ${e.message}",
                     )
-                    // Mark engine as unhealthy but keep enabled=true (user's decision)
-                    _state.update {
-                        it.copy(
-                            isEngineHealthy = false,
-                            recentError = "Engine startup failed: ${e.message}",
-                            errorMessage = "Fehler beim Starten: ${e.message}",
-                        )
-                    }
+                    // Task 3: Engine errors affect engine health, NOT isEnabled
+                    // The error is already logged and tracked by ServiceClient
+                    // We do NOT flip isEnabled back to false
                 }
 
                 // Note: Initial sync is NOT triggered here because login() is asynchronous
@@ -250,8 +256,7 @@ class TelegramSettingsViewModel(
                 _state.update {
                     it.copy(
                         isConnecting = false,
-                        isEngineHealthy = false,
-                        recentError = "Connection failed: ${e.message}",
+                        // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
@@ -285,13 +290,12 @@ class TelegramSettingsViewModel(
                 // Submit phone number
                 serviceClient.login(phone = phoneNumber)
 
-                _state.update { it.copy(isConnecting = false, isEngineHealthy = true) }
+                _state.update { it.copy(isConnecting = false) }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isConnecting = false,
-                        isEngineHealthy = false,
-                        recentError = "Phone connection failed: ${e.message}",
+                        // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
@@ -312,12 +316,11 @@ class TelegramSettingsViewModel(
             try {
                 _state.update { it.copy(errorMessage = null, recentError = null) }
                 serviceClient.login(code = code)
-                _state.update { it.copy(isEngineHealthy = true) }
+                // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isEngineHealthy = false,
-                        recentError = "Invalid code: ${e.message}",
+                        // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
                         errorMessage = "Ungültiger Code: ${e.message}",
                     )
                 }
@@ -338,12 +341,11 @@ class TelegramSettingsViewModel(
             try {
                 _state.update { it.copy(errorMessage = null, recentError = null) }
                 serviceClient.login(password = password)
-                _state.update { it.copy(isEngineHealthy = true) }
+                // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        isEngineHealthy = false,
-                        recentError = "Invalid password: ${e.message}",
+                        // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
                         errorMessage = "Ungültiges Passwort: ${e.message}",
                     )
                 }
@@ -391,8 +393,7 @@ class TelegramSettingsViewModel(
                 _state.update {
                     it.copy(
                         isLoadingChats = false,
-                        isEngineHealthy = false,
-                        recentError = "Failed to load chats: ${e.message}",
+                        // Task 3: Don't manually set isEngineHealthy - it's managed by ServiceClient
                         errorMessage = "Chats laden fehlgeschlagen: ${e.message}",
                     )
                 }
