@@ -241,7 +241,7 @@ class TelegramFileDataSource(
                         null
                     }
 
-                if (resolvedFileId != null && resolvedFileId > 0 && resolvedFileId != fileIdInt) {
+                if (resolvedFileId != null && resolvedFileId > 0) {
                     TelegramLogRepository.info(
                         source = "TelegramFileDataSource",
                         message = "remoteId resolved to new fileId after 404",
