@@ -121,7 +121,7 @@ fun PlayerControlButton(
                 .background(Color.Black.copy(alpha = backgroundOpacity))
                 .focusable(enabled)
                 .onFocusChanged { focusState ->
-                    isFocused = focusState.isFocused || focusState.hasFocus
+                    isFocused = focusState.hasFocus
                 }.clickable(
                     enabled = enabled,
                     role = Role.Button,
@@ -144,6 +144,9 @@ fun PlayerControlButton(
  * This variant uses FocusKit.tvClickable for proper TV focus handling
  * including focus visuals and scale effects.
  *
+ * Note: Background opacity is animated to match PlayerControlButton behavior
+ * for visual consistency between TV and mobile modes.
+ *
  * @param icon The icon to display
  * @param contentDescription Accessibility description
  * @param onClick Called when the button is clicked
@@ -160,24 +163,38 @@ fun TvPlayerControlButton(
     iconSize: Dp = PlayerControlButtonDefaults.TV_ICON_SIZE,
     enabled: Boolean = true,
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    // Animate background opacity on focus for consistency with PlayerControlButton
+    val backgroundOpacity by animateFloatAsState(
+        targetValue = if (isFocused) {
+            PlayerControlButtonDefaults.BACKGROUND_OPACITY_FOCUSED
+        } else {
+            PlayerControlButtonDefaults.BACKGROUND_OPACITY_NORMAL
+        },
+        label = "TvPlayerControlButtonBgOpacity",
+    )
+
     Box(
-        modifier =
-            modifier
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = PlayerControlButtonDefaults.BACKGROUND_OPACITY_NORMAL))
-                .then(
-                    FocusKit.run {
-                        Modifier.tvClickable(
-                            enabled = enabled,
-                            role = Role.Button,
-                            scaleFocused = PlayerControlButtonDefaults.FOCUS_SCALE,
-                            scalePressed = PlayerControlButtonDefaults.FOCUS_SCALE,
-                            shape = CircleShape,
-                            brightenContent = false,
-                            onClick = onClick,
-                        )
-                    },
-                ),
+        modifier = modifier
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = backgroundOpacity))
+            .onFocusChanged { focusState ->
+                isFocused = focusState.hasFocus
+            }
+            .then(
+                FocusKit.run {
+                    Modifier.tvClickable(
+                        enabled = enabled,
+                        role = Role.Button,
+                        scaleFocused = PlayerControlButtonDefaults.FOCUS_SCALE,
+                        scalePressed = PlayerControlButtonDefaults.FOCUS_SCALE,
+                        shape = CircleShape,
+                        brightenContent = false,
+                        onClick = onClick,
+                    )
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

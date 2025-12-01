@@ -1,6 +1,5 @@
 package com.chris.m3usuite.player.internal.ui
 
-import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
@@ -43,18 +42,12 @@ fun detectPlayerUiMode(): PlayerUiMode {
     return remember(context, config.screenWidthDp) {
         val pm = context.packageManager
 
-        // Check for TV/Leanback features (includes Fire TV, Android TV, etc.)
-        val isTv =
-            isTvDevice(context) ||
-                pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
-                pm.hasSystemFeature("android.software.leanback") ||
-                pm.hasSystemFeature("amazon.hardware.fire_tv")
-
-        @Suppress("DEPRECATION")
-        val hasTelevision = pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
+        // Check for TV/Leanback features using existing isTvDevice() plus Fire TV detection
+        // Note: isTvDevice() already checks FEATURE_LEANBACK and FEATURE_TELEVISION
+        val isTv = isTvDevice(context) || pm.hasSystemFeature("amazon.hardware.fire_tv")
 
         when {
-            isTv || hasTelevision -> PlayerUiMode.TV
+            isTv -> PlayerUiMode.TV
             config.screenWidthDp >= 600 -> PlayerUiMode.TABLET
             else -> PlayerUiMode.PHONE
         }
