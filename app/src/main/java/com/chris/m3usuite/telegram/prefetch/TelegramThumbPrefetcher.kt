@@ -5,6 +5,7 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TelegramFileLoader
+import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -44,7 +45,7 @@ class TelegramThumbPrefetcher(
     }
 
     private var prefetchJob: Job? = null
-    private val prefetchedIds = mutableSetOf<Int>()
+    private val prefetchedRemoteIds = mutableSetOf<String>()
 
     /**
      * Start the prefetcher in the given coroutine scope.
@@ -97,28 +98,33 @@ class TelegramThumbPrefetcher(
     fun stop() {
         prefetchJob?.cancel()
         prefetchJob = null
-        prefetchedIds.clear()
+        prefetchedRemoteIds.clear()
     }
 
     /**
      * Observe content changes and prefetch thumbnails for visible items.
      * Uses the new ObxTelegramItem-based API (Phase D).
+     *
+     * **IMPORTANT**: Uses TelegramImageRef (remoteId-first) instead of fileId directly.
+     * fileIds are volatile and become stale after TDLib session changes.
+     * remoteIds are stable across sessions and should be used for resolution.
      */
     private suspend fun observeAndPrefetch() {
         // Phase D: Use new TelegramItem-based flow instead of legacy MediaItem flows
         repository.observeVodItemsByChat().collectLatest { chatMap ->
-            // Extract all poster file IDs that need prefetching
-            val posterIds =
+            // Extract all poster TelegramImageRefs that need prefetching
+            // Use remoteId as the unique key since fileId is volatile
+            val posterRefs =
                 chatMap.values
                     .flatten()
                     .mapNotNull { item ->
-                        // Get poster fileId from TelegramImageRef
-                        item.posterRef?.fileId
-                    }.filter { it !in prefetchedIds } // Skip already prefetched
-                    .distinct()
+                        // Get posterRef from TelegramItem - contains remoteId for stable resolution
+                        item.posterRef
+                    }.filter { it.remoteId !in prefetchedRemoteIds } // Skip already prefetched (by remoteId)
+                    .distinctBy { it.remoteId } // Distinct by remoteId, not fileId
                     .take(100) // Limit to 100 at a time to avoid overwhelming TDLib
 
-            if (posterIds.isEmpty()) {
+            if (posterRefs.isEmpty()) {
                 TelegramLogRepository.debug(
                     source = TAG,
                     message = "No new thumbnails to prefetch",
@@ -132,7 +138,7 @@ class TelegramThumbPrefetcher(
                 message = "Prefetch batch starting",
                 details =
                     mapOf(
-                        "batchSize" to posterIds.size.toString(),
+                        "batchSize" to posterRefs.size.toString(),
                         "totalChats" to chatMap.size.toString(),
                     ),
             )
@@ -143,13 +149,13 @@ class TelegramThumbPrefetcher(
             var skippedCount = 0
 
             // Prefetch thumbnails in batches with concurrency limit
-            posterIds.chunked(MAX_CONCURRENT_DOWNLOADS).forEach { batch ->
+            posterRefs.chunked(MAX_CONCURRENT_DOWNLOADS).forEach { batch ->
                 val results =
                     coroutineScope {
                         batch
-                            .map { posterId ->
+                            .map { posterRef ->
                                 async {
-                                    prefetchThumbnail(posterId)
+                                    prefetchThumbnail(posterRef)
                                 }
                             }.awaitAll()
                     }
@@ -169,7 +175,7 @@ class TelegramThumbPrefetcher(
                 message = "Prefetch batch complete",
                 details =
                     mapOf(
-                        "total" to posterIds.size.toString(),
+                        "total" to posterRefs.size.toString(),
                         "success" to successCount.toString(),
                         "failed" to failureCount.toString(),
                         "skipped" to skippedCount.toString(),
@@ -179,37 +185,45 @@ class TelegramThumbPrefetcher(
     }
 
     /**
-     * Prefetch a single thumbnail.
+     * Prefetch a single thumbnail using TelegramImageRef (remoteId-first).
      * Returns true if successful, false otherwise.
+     *
+     * **IMPORTANT**: Uses ensureImageDownloaded(TelegramImageRef) instead of
+     * ensureThumbDownloaded(fileId) because fileIds are volatile and can become
+     * stale after TDLib session changes. remoteIds are stable across sessions.
+     *
+     * @param imageRef TelegramImageRef containing stable remoteId
      */
-    private suspend fun prefetchThumbnail(fileId: Int): Boolean =
+    private suspend fun prefetchThumbnail(imageRef: TelegramImageRef): Boolean =
         try {
             val result =
                 withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
-                    fileLoader.ensureThumbDownloaded(
-                        fileId = fileId,
+                    // Use ensureImageDownloaded which uses remoteId-first resolution
+                    fileLoader.ensureImageDownloaded(
+                        imageRef = imageRef,
                         timeoutMs = THUMBNAIL_TIMEOUT_MS,
                     )
                 }
 
             if (result != null) {
-                prefetchedIds.add(fileId)
+                // Track by remoteId, not fileId (remoteId is stable)
+                prefetchedRemoteIds.add(imageRef.remoteId)
                 TelegramLogRepository.debug(
                     source = TAG,
-                    message = "Prefetched thumbnail fileId=$fileId, path=$result",
+                    message = "Prefetched thumbnail remoteId=${imageRef.remoteId}, path=$result",
                 )
                 true
             } else {
                 TelegramLogRepository.warn(
                     source = TAG,
-                    message = "Failed to prefetch thumbnail fileId=$fileId",
+                    message = "Failed to prefetch thumbnail remoteId=${imageRef.remoteId}",
                 )
                 false
             }
         } catch (e: Exception) {
             TelegramLogRepository.error(
                 source = TAG,
-                message = "Error prefetching thumbnail fileId=$fileId",
+                message = "Error prefetching thumbnail remoteId=${imageRef.remoteId}",
                 exception = e,
             )
             false
@@ -220,7 +234,7 @@ class TelegramThumbPrefetcher(
      * Use this when chat selections change to re-prefetch for new chats.
      */
     fun clearCache() {
-        prefetchedIds.clear()
+        prefetchedRemoteIds.clear()
         TelegramLogRepository.debug(
             source = TAG,
             message = "Prefetch cache cleared",

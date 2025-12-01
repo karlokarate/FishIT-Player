@@ -160,6 +160,10 @@ private fun TelegramBadge() {
  * - Uses TelegramItem.posterRef for thumbnails
  * - Routes image loading through TelegramFileLoader
  *
+ * **IMPORTANT**: Uses ensureImageDownloaded(TelegramImageRef) instead of
+ * ensureThumbDownloaded(fileId) because fileIds are volatile and can become
+ * stale after TDLib session changes. remoteIds are stable across sessions.
+ *
  * @param item TelegramItem domain object
  * @param modifier Modifier for styling
  * @param showNew Show "NEU" badge
@@ -176,17 +180,19 @@ fun FishTelegramItemContent(
 ) {
     val fileLoader = rememberTelegramFileLoader()
 
-    // Use posterRef.fileId for downloading thumbnail
-    // Note: remoteId is included in remember keys for identity stability when fileId changes
-    var thumbPath by remember(item.posterRef?.fileId) {
+    // Use posterRef.remoteId for identity stability (remoteId is stable across sessions)
+    // fileId is volatile and can become stale after app restarts
+    var thumbPath by remember(item.posterRef?.remoteId) {
         mutableStateOf<String?>(null)
     }
 
-    // Load thumbnail via TelegramFileLoader
-    LaunchedEffect(item.posterRef?.fileId) {
-        val fileId = item.posterRef?.fileId
-        if (thumbPath == null && fileId != null) {
-            thumbPath = fileLoader.ensureThumbDownloaded(fileId)
+    // Load thumbnail via TelegramFileLoader using remoteId-first resolution
+    LaunchedEffect(item.posterRef?.remoteId) {
+        val posterRef = item.posterRef
+        if (thumbPath == null && posterRef != null) {
+            // Use ensureImageDownloaded which uses remoteId-first resolution
+            // This avoids 404 errors from stale fileIds
+            thumbPath = fileLoader.ensureImageDownloaded(posterRef)
         }
     }
 
