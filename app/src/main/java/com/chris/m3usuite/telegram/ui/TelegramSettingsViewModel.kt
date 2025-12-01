@@ -126,12 +126,35 @@ class TelegramSettingsViewModel(
     /**
      * Toggle Telegram integration on/off.
      * Triggers an initial full sync when enabled for the first time.
+     *
+     * **Task 3: Entry point with stack trace logging**
+     *
+     * This is the ONLY entry point for changing the enabled state.
+     * Logs a stack trace (in debug builds only) to audit unexpected callers.
      */
     fun onToggleEnabled(enabled: Boolean) {
+        // Log stack trace for auditing (debug builds only to avoid performance impact)
+        if (com.chris.m3usuite.BuildConfig.DEBUG) {
+            TelegramLogRepository.info(
+                source = "TelegramSettingsViewModel",
+                message = "setTelegramEnabled called",
+                details =
+                    mapOf(
+                        "enabled" to enabled.toString(),
+                        "caller" to Thread.currentThread().stackTrace.drop(2).take(5).joinToString(" -> ") { "${it.className}.${it.methodName}:${it.lineNumber}" },
+                    ),
+            )
+        } else {
+            TelegramLogRepository.info(
+                source = "TelegramSettingsViewModel",
+                message = "setTelegramEnabled called",
+                details = mapOf("enabled" to enabled.toString()),
+            )
+        }
+
         viewModelScope.launch {
             val wasEnabled = _state.value.enabled
-            store.setTgEnabled(enabled)
-            _state.update { it.copy(enabled = enabled) }
+            setTelegramEnabledInternal(enabled)
 
             if (!enabled) {
                 TelegramLogRepository.info(
@@ -149,12 +172,21 @@ class TelegramSettingsViewModel(
                 try {
                     serviceClient.ensureStarted(app, store)
                     serviceClient.login() // Let TDLib determine if session is valid
+                    // Mark engine as healthy after successful startup
+                    _state.update { it.copy(isEngineHealthy = true, recentError = null) }
                 } catch (e: Exception) {
                     TelegramLogRepository.info(
                         source = "TelegramSettingsViewModel",
                         message = "Warm-up failed: ${e.message}",
                     )
-                    _state.update { it.copy(errorMessage = "Fehler beim Starten: ${e.message}") }
+                    // Mark engine as unhealthy but keep enabled=true (user's decision)
+                    _state.update {
+                        it.copy(
+                            isEngineHealthy = false,
+                            recentError = "Engine startup failed: ${e.message}",
+                            errorMessage = "Fehler beim Starten: ${e.message}",
+                        )
+                    }
                 }
 
                 // Note: Initial sync is NOT triggered here because login() is asynchronous
@@ -162,6 +194,25 @@ class TelegramSettingsViewModel(
                 // by a separate observer that monitors auth state transitions to READY,
                 // or manually by the user after authentication completes.
             }
+        }
+    }
+
+    /**
+     * Internal method to update enabled state.
+     * Only called by onToggleEnabled to ensure stack trace logging.
+     */
+    private suspend fun setTelegramEnabledInternal(enabled: Boolean) {
+        try {
+            store.setTgEnabled(enabled)
+            _state.update { it.copy(enabled = enabled) }
+        } catch (e: Exception) {
+            TelegramLogRepository.error(
+                source = "TelegramSettingsViewModel",
+                message = "Failed to persist enabled state",
+                exception = e,
+            )
+            // State update failed - throw to caller
+            throw e
         }
     }
 
@@ -199,9 +250,16 @@ class TelegramSettingsViewModel(
                 _state.update {
                     it.copy(
                         isConnecting = false,
+                        isEngineHealthy = false,
+                        recentError = "Connection failed: ${e.message}",
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Connection start failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -212,7 +270,7 @@ class TelegramSettingsViewModel(
     fun onConnectWithPhone(phoneNumber: String) {
         viewModelScope.launch {
             try {
-                _state.update { it.copy(isConnecting = true, errorMessage = null) }
+                _state.update { it.copy(isConnecting = true, errorMessage = null, recentError = null) }
 
                 // Save phone number persistently
                 store.setTelegramPhoneNumber(phoneNumber)
@@ -227,14 +285,21 @@ class TelegramSettingsViewModel(
                 // Submit phone number
                 serviceClient.login(phone = phoneNumber)
 
-                _state.update { it.copy(isConnecting = false) }
+                _state.update { it.copy(isConnecting = false, isEngineHealthy = true) }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isConnecting = false,
+                        isEngineHealthy = false,
+                        recentError = "Phone connection failed: ${e.message}",
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Connection with phone failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -245,10 +310,22 @@ class TelegramSettingsViewModel(
     fun onSendCode(code: String) {
         viewModelScope.launch {
             try {
-                _state.update { it.copy(errorMessage = null) }
+                _state.update { it.copy(errorMessage = null, recentError = null) }
                 serviceClient.login(code = code)
+                _state.update { it.copy(isEngineHealthy = true) }
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = "Ungültiger Code: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        isEngineHealthy = false,
+                        recentError = "Invalid code: ${e.message}",
+                        errorMessage = "Ungültiger Code: ${e.message}",
+                    )
+                }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Code verification failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -259,10 +336,22 @@ class TelegramSettingsViewModel(
     fun onSendPassword(password: String) {
         viewModelScope.launch {
             try {
-                _state.update { it.copy(errorMessage = null) }
+                _state.update { it.copy(errorMessage = null, recentError = null) }
                 serviceClient.login(password = password)
+                _state.update { it.copy(isEngineHealthy = true) }
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = "Ungültiges Passwort: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        isEngineHealthy = false,
+                        recentError = "Invalid password: ${e.message}",
+                        errorMessage = "Ungültiges Passwort: ${e.message}",
+                    )
+                }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Password verification failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -302,9 +391,16 @@ class TelegramSettingsViewModel(
                 _state.update {
                     it.copy(
                         isLoadingChats = false,
+                        isEngineHealthy = false,
+                        recentError = "Failed to load chats: ${e.message}",
                         errorMessage = "Chats laden fehlgeschlagen: ${e.message}",
                     )
                 }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Failed to load chats",
+                    exception = e,
+                )
             }
         }
     }
@@ -372,7 +468,18 @@ class TelegramSettingsViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = "Trennung fehlgeschlagen: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        isEngineHealthy = false,
+                        recentError = "Disconnect failed: ${e.message}",
+                        errorMessage = "Trennung fehlgeschlagen: ${e.message}",
+                    )
+                }
+                TelegramLogRepository.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Disconnect failed",
+                    exception = e,
+                )
             }
         }
     }
@@ -412,18 +519,51 @@ class TelegramSettingsViewModel(
 
 /**
  * State for Telegram settings UI.
+ *
+ * **Task 3: Separate User Decision from Engine Health**
+ *
+ * This model separates:
+ * - `enabled`: User's decision to enable/disable Telegram (only changed by explicit user actions)
+ * - `isEngineHealthy`: Runtime health of Telegram engine (changed by engine failures/recoveries)
+ * - `recentError`: Most recent error message for display (does not affect enabled toggle)
+ *
+ * The `enabled` toggle should ONLY be changed from:
+ * - Settings screen user action
+ * - Explicit user toggle
+ * - Initial app setup
+ *
+ * Engine failures and crashes should ONLY affect `isEngineHealthy`, NOT `enabled`.
  */
 data class TelegramSettingsState(
+    // User decision - only changed by explicit user actions
     val enabled: Boolean = false,
+
+    // Engine health - changed by engine failures/recoveries
+    val isEngineHealthy: Boolean = true,
+
+    // Recent error for display (does not affect enabled toggle)
+    val recentError: String? = null,
+
+    // API credentials
     val apiId: String = "",
     val apiHash: String = "",
+
+    // Auth and connection state
     val authState: TelegramAuthState = TelegramAuthState.DISCONNECTED,
     val connectionState: TgConnectionState = TgConnectionState.Disconnected,
+
+    // Loading states
     val isConnecting: Boolean = false,
     val isLoadingChats: Boolean = false,
+
+    // Legacy error message (will be replaced by recentError)
     val errorMessage: String? = null,
+
+    // Chat selection
     val selectedChats: List<String> = emptyList(),
     val availableChats: List<ChatInfo> = emptyList(),
+
+    // Cache settings
     val cacheLimitGb: Int = 5,
 )
 
