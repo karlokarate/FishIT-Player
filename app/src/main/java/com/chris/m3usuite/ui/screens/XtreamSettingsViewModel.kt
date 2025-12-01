@@ -101,14 +101,15 @@ class XtreamSettingsViewModel(
 
         // Cancel any pending save and schedule a new one
         saveJob?.cancel()
-        saveJob = viewModelScope.launch {
-            delay(saveDebounceMs)
-            save(
-                com.chris.m3usuite.domain.usecases
-                    .XtreamPrefs(s.host, s.port, s.user, s.pass, s.output),
-            )
-            _state.value = _state.value.copy(isSaving = false)
-        }
+        saveJob =
+            viewModelScope.launch {
+                delay(saveDebounceMs)
+                save(
+                    com.chris.m3usuite.domain.usecases
+                        .XtreamPrefs(s.host, s.port, s.user, s.pass, s.output),
+                )
+                _state.value = _state.value.copy(isSaving = false)
+            }
     }
 
     fun onTriggerDeltaImport(

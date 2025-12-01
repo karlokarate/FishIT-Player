@@ -71,10 +71,9 @@ fun detectPlayerUiMode(): PlayerUiMode {
 fun detectPlayerUiMode(
     isTvDevice: Boolean,
     screenWidthDp: Int,
-): PlayerUiMode {
-    return when {
+): PlayerUiMode =
+    when {
         isTvDevice -> PlayerUiMode.TV
         screenWidthDp >= TABLET_WIDTH_THRESHOLD_DP -> PlayerUiMode.TABLET
         else -> PlayerUiMode.PHONE
     }
-}

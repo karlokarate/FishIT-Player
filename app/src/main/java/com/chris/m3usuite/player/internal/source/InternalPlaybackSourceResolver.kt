@@ -118,12 +118,14 @@ class PlaybackSourceResolver(
             lowerUrl.contains("/live.m3u8") ||
             lowerUrl.contains("stream_type=live") ||
             lowerUrl.contains("/streaming/") ||
-            (lowerUrl.endsWith(".ts")
-                && !lowerUrl.contains("/movie/")
-                && !lowerUrl.contains("/series/")
-                && !lowerUrl.contains("/vod/")
-                && !lowerUrl.contains("/recordings/")
-                && !lowerUrl.contains("/archive/"))
+            (
+                lowerUrl.endsWith(".ts") &&
+                    !lowerUrl.contains("/movie/") &&
+                    !lowerUrl.contains("/series/") &&
+                    !lowerUrl.contains("/vod/") &&
+                    !lowerUrl.contains("/recordings/") &&
+                    !lowerUrl.contains("/archive/")
+            )
     }
 
     /**

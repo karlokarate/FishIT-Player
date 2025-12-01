@@ -262,11 +262,12 @@ class MainActivity : ComponentActivity() {
                                 category = "xtream",
                                 level = AppLog.Level.ERROR,
                                 message = "Delta import failed: ${e.message}",
-                                extras = mapOf(
-                                    "host" to xtHost,
-                                    "port" to xtPort.toString(),
-                                    "error" to (e.javaClass.simpleName),
-                                ),
+                                extras =
+                                    mapOf(
+                                        "host" to xtHost,
+                                        "port" to xtPort.toString(),
+                                        "error" to (e.javaClass.simpleName),
+                                    ),
                             )
                         }
                     }

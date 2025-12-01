@@ -237,7 +237,10 @@ class TelegramContentRepository(
         store.tgSelectedVodChatsCsv
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
+                android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodItemsByChat: selectedChatIds=$chatIds")
+
                 if (chatIds.isEmpty()) {
+                    android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodItemsByChat: No chats selected, returning empty")
                     emptyMap()
                 } else {
                     buildVodItemsByChatMap(chatIds)
@@ -252,19 +255,30 @@ class TelegramContentRepository(
             val result = mutableMapOf<Long, List<TelegramItem>>()
 
             for (chatId in chatIds) {
-                val items =
+                val allItems =
                     itemBox
                         .query {
                             equal(ObxTelegramItem_.chatId, chatId)
                             orderDesc(ObxTelegramItem_.createdAtUtc)
                         }.find()
-                        .map { it.toDomain() }
-                        .filter { it.isVodType() }
+
+                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId, totalItems=${allItems.size}")
+
+                val items = allItems.map { it.toDomain() }.filter { it.isVodType() }
+
+                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId, vodItems=${items.size}")
 
                 if (items.isNotEmpty()) {
                     result[chatId] = items
+                } else {
+                    android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId has no VOD items, skipping")
                 }
             }
+
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "buildVodItemsByChatMap: Final result=${result.size} chats, totalVod=${result.values.sumOf { it.size }}",
+            )
 
             result
         }
@@ -307,7 +321,10 @@ class TelegramContentRepository(
         store.tgSelectedVodChatsCsv
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
+                android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodChatSummaries: selectedChatIds=$chatIds")
+
                 if (chatIds.isEmpty()) {
+                    android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodChatSummaries: No chats selected, returning empty")
                     emptyList()
                 } else {
                     buildVodChatSummaries(chatIds)
@@ -322,19 +339,32 @@ class TelegramContentRepository(
             val summaries = mutableListOf<TelegramChatSummary>()
 
             for (chatId in chatIds) {
-                val items =
+                val allItems =
                     itemBox
                         .query {
                             equal(ObxTelegramItem_.chatId, chatId)
                             orderDesc(ObxTelegramItem_.createdAtUtc)
                         }.find()
-                        .map { it.toDomain() }
-                        .filter { it.isVodType() }
 
-                if (items.isEmpty()) continue
+                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId, totalItems=${allItems.size}")
+
+                val items = allItems.map { it.toDomain() }.filter { it.isVodType() }
+
+                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId, vodItems=${items.size}")
+
+                if (items.isEmpty()) {
+                    android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId has no VOD items, skipping")
+                    continue
+                }
 
                 // Resolve chat title via TDLib
-                val chatTitle = resolveChatTitle(chatId)
+                val chatTitle =
+                    try {
+                        resolveChatTitle(chatId)
+                    } catch (e: Exception) {
+                        android.util.Log.w(LOG_TAG_UI_WIRING, "buildVodChatSummaries: Failed to resolve title for chat=$chatId", e)
+                        "Chat $chatId"
+                    }
 
                 // Find a representative poster (from the first item with a poster)
                 val posterRef = items.firstOrNull { it.posterRef != null }?.posterRef
@@ -352,7 +382,7 @@ class TelegramContentRepository(
             // DEBUG: Log summary count for UI wiring diagnostics
             android.util.Log.d(
                 LOG_TAG_UI_WIRING,
-                "UI summaries: ${summaries.size} chats, totalVod=${summaries.sumOf { it.vodCount }}",
+                "buildVodChatSummaries: Final summaries=${summaries.size}, totalVod=${summaries.sumOf { it.vodCount }}",
             )
 
             summaries
