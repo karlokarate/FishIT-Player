@@ -115,7 +115,7 @@ class TelegramFileLoader(
                 // Unexpected exception, log and continue to remoteId
                 TelegramLogRepository.error(
                     source = TAG,
-                    message = "Unexpected exception during fileId download",
+                    message = "Unexpected exception during fileId download, will try remoteId resolution",
                     exception = e,
                     details =
                         mapOf(
