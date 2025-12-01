@@ -15,7 +15,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -570,6 +569,16 @@ private fun SeekPreviewOverlay(
     }
 }
 
+/**
+ * Main playback control row for SIP Internal Player.
+ *
+ * **SIP UI Contract:**
+ * All playback buttons use high-visibility design with white icons on
+ * semi-transparent black circular backgrounds for optimal visibility
+ * over any video content.
+ *
+ * Design: PlayerControlButton provides consistent styling across all controls.
+ */
 @Composable
 private fun MainControlsRow(
     state: InternalPlayerUiState,
@@ -591,93 +600,76 @@ private fun MainControlsRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onSeekBack) {
-                // TODO: Replace with Replay10 icon when available
-                Icon(
-                    imageVector = Icons.Filled.FastRewind,
-                    contentDescription = "Replay 10s",
-                )
-            }
-            IconButton(onClick = onPlayPause) {
-                val icon =
-                    if (state.isPlaying) {
-                        Icons.Filled.Pause
-                    } else {
-                        Icons.Filled.PlayArrow
-                    }
-                Icon(
-                    imageVector = icon,
-                    contentDescription = "Play/Pause",
-                )
-            }
-            IconButton(onClick = onSeekForward) {
-                // TODO: Replace with Forward30 icon when available
-                Icon(
-                    imageVector = Icons.Filled.FastForward,
-                    contentDescription = "Forward 30s",
-                )
-            }
+        // Primary playback controls (left side)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PlayerControlButton(
+                imageVector = Icons.Filled.FastRewind,
+                onClick = onSeekBack,
+                contentDescription = "Replay 10s",
+            )
+            PlayerControlButton(
+                imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                onClick = onPlayPause,
+                contentDescription = "Play/Pause",
+                size = 56.dp, // Larger for primary action
+                iconSize = 28.dp,
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.FastForward,
+                onClick = onSeekForward,
+                contentDescription = "Forward 30s",
+            )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onToggleLoop) {
-                val icon =
-                    if (state.isLooping) {
-                        Icons.Filled.Repeat
-                    } else {
-                        Icons.Outlined.Repeat
-                    }
-                Icon(
-                    imageVector = icon,
-                    contentDescription = "Loop",
-                )
-            }
-            IconButton(onClick = onChangeAspectRatio) {
-                // TODO: Replace with AspectRatio icon when available
-                Icon(
-                    imageVector = Icons.Filled.CropFree,
-                    contentDescription = "Aspect Ratio",
-                )
-            }
-            IconButton(onClick = onSpeedClick) {
-                // TODO: Replace with Speed icon when available
-                Icon(
-                    imageVector = Icons.Filled.AvTimer,
-                    contentDescription = "Speed",
-                )
-            }
-            IconButton(onClick = onTracksClick) {
-                Icon(
-                    imageVector = Icons.Filled.Subtitles,
-                    contentDescription = "Tracks",
-                )
-            }
+        // Secondary controls (right side)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            PlayerControlButton(
+                imageVector = if (state.isLooping) Icons.Filled.Repeat else Icons.Outlined.Repeat,
+                onClick = onToggleLoop,
+                contentDescription = "Loop",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.CropFree,
+                onClick = onChangeAspectRatio,
+                contentDescription = "Aspect Ratio",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.AvTimer,
+                onClick = onSpeedClick,
+                contentDescription = "Speed",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.Subtitles,
+                onClick = onTracksClick,
+                contentDescription = "Tracks",
+            )
             // Phase 4 Group 4: CC button
             // Visibility rules (Contract Section 8.1):
             // - Visible only for non-kid profiles
             // - Visible only if at least one subtitle track exists
             if (!state.kidActive && state.availableSubtitleTracks.isNotEmpty()) {
-                IconButton(onClick = onCcClick) {
-                    Icon(
-                        imageVector = Icons.Filled.ClosedCaption,
-                        contentDescription = "Subtitles & CC",
-                    )
-                }
-            }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "Settings",
+                PlayerControlButton(
+                    imageVector = Icons.Filled.ClosedCaption,
+                    onClick = onCcClick,
+                    contentDescription = "Subtitles & CC",
                 )
             }
-            IconButton(onClick = onPipClick) {
-                // TODO: Replace with PictureInPictureAlt icon when available
-                Icon(
-                    imageVector = Icons.Filled.PictureInPicture,
-                    contentDescription = "Picture-in-Picture",
-                )
-            }
+            PlayerControlButton(
+                imageVector = Icons.Filled.MoreVert,
+                onClick = onSettingsClick,
+                contentDescription = "Settings",
+            )
+            PlayerControlButton(
+                imageVector = Icons.Filled.PictureInPicture,
+                onClick = onPipClick,
+                contentDescription = "Picture-in-Picture",
+            )
         }
     }
 }

@@ -10,11 +10,17 @@ import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -51,8 +58,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -2548,35 +2557,107 @@ private fun OverlayActionTile(
     }
 }
 
+/**
+ * High-visibility overlay icon button for SIP Internal Player controls.
+ *
+ * **SIP UI Contract:**
+ * High-contrast white icons with semi-transparent black circular background
+ * improve visibility over any video content.
+ *
+ * Design Specifications:
+ * - Circular black background with 40% opacity (normal state)
+ * - Circular black background with 65% opacity (focused state)
+ * - White icon tint (#FFFFFF)
+ * - Scale animation: 1.0 → 1.15 when focused
+ * - Optional white glow/border on focus (1.5dp white at 40% opacity)
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun OverlayIconButton(
     modifier: Modifier = Modifier,
     @DrawableRes iconRes: Int,
-    containerColor: Color,
-    contentColor: Color,
+    containerColor: Color = Color.Black.copy(alpha = 0.4f),
+    contentColor: Color = Color.White,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    val shape = MaterialTheme.shapes.large
+    val interactionSource = remember { MutableInteractionSource() }
+    var isFocused by remember { mutableStateOf(false) }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    // Animate scale: 1.0 normal → 1.15 focused → 1.10 pressed
+    val scale by animateFloatAsState(
+        targetValue = when {
+            isPressed -> 1.10f
+            isFocused -> 1.15f
+            else -> 1.0f
+        },
+        animationSpec = androidx.compose.animation.core.tween(150),
+        label = "OverlayIconButtonScale",
+    )
+
+    // Animate background opacity: 40% normal → 65% focused
+    val backgroundAlpha by animateFloatAsState(
+        targetValue = if (isFocused || isPressed) 0.65f else 0.40f,
+        animationSpec = androidx.compose.animation.core.tween(150),
+        label = "OverlayIconButtonBgAlpha",
+    )
+
+    // Animate focus border opacity: 0% normal → 40% focused
+    val focusBorderAlpha by animateFloatAsState(
+        targetValue = if (isFocused) 0.40f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(150),
+        label = "OverlayIconButtonBorderAlpha",
+    )
+
     val clickableModifier =
         if (onLongClick != null) {
-            modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = null, // We handle visual feedback via background/scale
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
         } else {
-            modifier.then(FocusKit.run { Modifier.tvClickable(onClick = onClick) })
+            modifier.clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            )
         }
-    ElevatedCard(
-        shape = shape,
-        elevation = CardDefaults.elevatedCardElevation(),
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor, contentColor = contentColor),
-        modifier =
-            clickableModifier
-                .focusable()
-                .focusScaleOnTv(),
+
+    Box(
+        modifier = clickableModifier
+            .size(48.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = backgroundAlpha))
+            .then(
+                if (focusBorderAlpha > 0f) {
+                    Modifier.border(
+                        width = 1.5.dp,
+                        color = Color.White.copy(alpha = focusBorderAlpha),
+                        shape = CircleShape,
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .focusable()
+            .onFocusEvent { focusState ->
+                isFocused = focusState.isFocused || focusState.hasFocus
+            },
+        contentAlignment = Alignment.Center,
     ) {
-        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(painter = painterResource(iconRes), contentDescription = null, tint = contentColor)
-        }
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 
