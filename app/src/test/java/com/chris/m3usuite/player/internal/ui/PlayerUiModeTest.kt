@@ -7,6 +7,10 @@ import org.junit.Test
  * Unit tests for PlayerUiMode detection logic.
  *
  * Tests the device type detection used for responsive player overlay layout.
+ *
+ * **Note:** TV detection is delegated to FocusKit.isTvDevice(), which is the
+ * centralized method used app-wide. These tests verify the PlayerUiMode logic
+ * that wraps the TV detection result with screen width classification.
  */
 class PlayerUiModeTest {
     // ════════════════════════════════════════════════════════════════════════════
@@ -14,48 +18,34 @@ class PlayerUiModeTest {
     // ════════════════════════════════════════════════════════════════════════════
 
     @Test
-    fun `detectPlayerUiMode returns TV when device has leanback feature`() {
+    fun `detectPlayerUiMode returns TV when isTvDevice is true`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = true,
-            hasTelevisionFeature = false,
+            isTvDevice = true,
             screenWidthDp = 320,
         )
 
-        assertEquals("Device with leanback feature should be detected as TV", PlayerUiMode.TV, result)
+        assertEquals("TV device should be detected as TV", PlayerUiMode.TV, result)
     }
 
     @Test
-    fun `detectPlayerUiMode returns TV when device has television feature`() {
+    fun `detectPlayerUiMode returns TV regardless of screen width when isTvDevice is true`() {
+        // Even with a large screen width, TV should take precedence
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = true,
+            isTvDevice = true,
+            screenWidthDp = 1920,
+        )
+
+        assertEquals("TV should take precedence over screen width", PlayerUiMode.TV, result)
+    }
+
+    @Test
+    fun `detectPlayerUiMode returns TV with small screen when isTvDevice is true`() {
+        val result = detectPlayerUiMode(
+            isTvDevice = true,
             screenWidthDp = 320,
         )
 
-        assertEquals("Device with television feature should be detected as TV", PlayerUiMode.TV, result)
-    }
-
-    @Test
-    fun `detectPlayerUiMode returns TV when device has both leanback and television features`() {
-        val result = detectPlayerUiMode(
-            hasLeanbackFeature = true,
-            hasTelevisionFeature = true,
-            screenWidthDp = 1920,
-        )
-
-        assertEquals("Device with both features should be detected as TV", PlayerUiMode.TV, result)
-    }
-
-    @Test
-    fun `detectPlayerUiMode returns TV regardless of screen width when TV features present`() {
-        // Even with a small screen width, TV features should take precedence
-        val result = detectPlayerUiMode(
-            hasLeanbackFeature = true,
-            hasTelevisionFeature = false,
-            screenWidthDp = 1920,
-        )
-
-        assertEquals("TV features should take precedence over screen width", PlayerUiMode.TV, result)
+        assertEquals("TV detection should not depend on screen width", PlayerUiMode.TV, result)
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -65,8 +55,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns TABLET when screenWidthDp equals threshold`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = TABLET_WIDTH_THRESHOLD_DP,
         )
 
@@ -76,8 +65,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns TABLET when screenWidthDp exceeds threshold`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = 800,
         )
 
@@ -87,8 +75,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns TABLET for large tablets`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = 1024,
         )
 
@@ -102,8 +89,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns PHONE when screenWidthDp below threshold`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = 320,
         )
 
@@ -113,8 +99,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns PHONE for typical phone screen width`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = 360,
         )
 
@@ -124,8 +109,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns PHONE for large phone screen width`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = 480,
         )
 
@@ -135,8 +119,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode returns PHONE when just below threshold`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = TABLET_WIDTH_THRESHOLD_DP - 1,
         )
 
@@ -150,8 +133,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode handles zero screen width as PHONE`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = 0,
         )
 
@@ -161,8 +143,7 @@ class PlayerUiModeTest {
     @Test
     fun `detectPlayerUiMode handles negative screen width as PHONE`() {
         val result = detectPlayerUiMode(
-            hasLeanbackFeature = false,
-            hasTelevisionFeature = false,
+            isTvDevice = false,
             screenWidthDp = -1,
         )
 

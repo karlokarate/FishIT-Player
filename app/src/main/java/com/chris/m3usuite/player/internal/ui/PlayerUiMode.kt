@@ -1,9 +1,9 @@
 package com.chris.m3usuite.player.internal.ui
 
-import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import com.chris.m3usuite.ui.focus.FocusKit
 
 /**
  * Enum representing the UI mode for player overlay layout.
@@ -11,11 +11,14 @@ import androidx.compose.ui.platform.LocalContext
  * **SIP Responsive Overlay Contract:**
  * - PHONE: Touch devices with screenWidthDp < 600
  * - TABLET: Touch devices with screenWidthDp >= 600
- * - TV: Android TV / Fire TV devices with leanback or television system feature
+ * - TV: Android TV / Fire TV devices (detected via FocusKit.isTvDevice)
  *
  * Used to determine which overlay layout to render:
  * - PHONE/TABLET: Centered controls, larger tap targets
  * - TV: Bottom-aligned controls, DPAD-focusable
+ *
+ * **Important:** TV detection uses the centralized FocusKit.isTvDevice() method,
+ * which is the single source of truth for TV device detection at app startup.
  */
 enum class PlayerUiMode {
     PHONE,
@@ -30,18 +33,15 @@ enum class PlayerUiMode {
 const val TABLET_WIDTH_THRESHOLD_DP = 600
 
 /**
- * System feature string for TV devices.
- * Using constant string to avoid deprecated PackageManager.FEATURE_TELEVISION reference.
- */
-private const val FEATURE_TELEVISION = "android.hardware.type.television"
-
-/**
  * Detects the current player UI mode based on device characteristics.
  *
  * **Detection Logic:**
- * 1. If the device has leanback or television system feature → TV
+ * 1. If FocusKit.isTvDevice() returns true → TV
  * 2. If screenWidthDp >= 600 → TABLET
  * 3. Otherwise → PHONE
+ *
+ * **Note:** This function uses FocusKit.isTvDevice() as the single source of truth
+ * for TV detection, ensuring consistency across all modules.
  *
  * @return The detected [PlayerUiMode]
  */
@@ -50,8 +50,8 @@ fun detectPlayerUiMode(): PlayerUiMode {
     val ctx = LocalContext.current
     val config = LocalConfiguration.current
 
-    val isTv = ctx.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK) ||
-        ctx.packageManager.hasSystemFeature(FEATURE_TELEVISION)
+    // Use FocusKit.isTvDevice() as the centralized TV detection method
+    val isTv = FocusKit.isTvDevice(ctx)
 
     return when {
         isTv -> PlayerUiMode.TV
@@ -64,19 +64,16 @@ fun detectPlayerUiMode(): PlayerUiMode {
  * Non-composable version of PlayerUiMode detection for use in tests
  * or non-composable contexts.
  *
- * @param hasLeanbackFeature Whether the device has leanback system feature
- * @param hasTelevisionFeature Whether the device has television system feature
+ * @param isTvDevice Whether the device is a TV (from FocusKit.isTvDevice)
  * @param screenWidthDp Current screen width in dp
  * @return The detected [PlayerUiMode]
  */
 fun detectPlayerUiMode(
-    hasLeanbackFeature: Boolean,
-    hasTelevisionFeature: Boolean,
+    isTvDevice: Boolean,
     screenWidthDp: Int,
 ): PlayerUiMode {
-    val isTv = hasLeanbackFeature || hasTelevisionFeature
     return when {
-        isTv -> PlayerUiMode.TV
+        isTvDevice -> PlayerUiMode.TV
         screenWidthDp >= TABLET_WIDTH_THRESHOLD_DP -> PlayerUiMode.TABLET
         else -> PlayerUiMode.PHONE
     }
