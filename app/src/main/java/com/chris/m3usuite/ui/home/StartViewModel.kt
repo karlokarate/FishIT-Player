@@ -17,6 +17,7 @@ import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.data.repo.XtreamObxRepository
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.domain.TelegramItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -102,9 +103,23 @@ class StartViewModel(
     private val _favLive = MutableStateFlow<List<MediaItem>>(emptyList())
     val favLive: StateFlow<List<MediaItem>> = _favLive
 
-    // Telegram content by chat
+    // Telegram content by chat (Phase D: Now uses TelegramItem from ObxTelegramItem)
+    private val _telegramVodByChat =
+        MutableStateFlow<Map<Long, Pair<String, List<TelegramItem>>>>(emptyMap())
+    val telegramVodByChat: StateFlow<Map<Long, Pair<String, List<TelegramItem>>>> =
+        _telegramVodByChat
+
+    // Telegram chat summaries (Phase D: for UI rows showing per-chat VOD counts)
+    private val _telegramChatSummaries =
+        MutableStateFlow<List<TelegramContentRepository.TelegramChatSummary>>(emptyList())
+    val telegramChatSummaries: StateFlow<List<TelegramContentRepository.TelegramChatSummary>> =
+        _telegramChatSummaries
+
+    // Legacy: Keep old property for backward compatibility during migration
+    @Deprecated("Use telegramVodByChat for TelegramItem-based data")
     private val _telegramContentByChat =
         MutableStateFlow<Map<Long, Pair<String, List<MediaItem>>>>(emptyMap())
+    @Deprecated("Use telegramVodByChat for TelegramItem-based data")
     val telegramContentByChat: StateFlow<Map<Long, Pair<String, List<MediaItem>>>> =
         _telegramContentByChat
 
@@ -273,20 +288,49 @@ class StartViewModel(
 
     private fun observeTelegramContent() =
         viewModelScope.launch {
-            tgRepo
-                .getTelegramVodByChat()
-                .collectLatest { chatMap ->
-                    // DEBUG: Log item count from legacy ObxTelegramMessage table for UI wiring diagnostics
-                    val totalItems = chatMap.values.sumOf { it.second.size }
-                    android.util.Log.d("telegram-ui", "StartVM received ${chatMap.size} chats, $totalItems total items from ObxTelegramMessage (legacy)")
+            // Phase D: Use new ObxTelegramItem-based APIs
 
-                    // Limit each row to e.g. 120 items
-                    _telegramContentByChat.value =
-                        chatMap.mapValues { (chatId, pair) ->
-                            val (title, items) = pair
-                            title to items.take(120)
-                        }
+            // Observe chat summaries for quick overview
+            launch {
+                tgRepo.observeVodChatSummaries().collectLatest { summaries ->
+                    android.util.Log.d(
+                        "telegram-ui",
+                        "StartVM received ${summaries.size} Telegram chat summaries",
+                    )
+                    _telegramChatSummaries.value = summaries
                 }
+            }
+
+            // Observe full TelegramItem data by chat for row rendering
+            launch {
+                tgRepo.observeVodItemsByChat().collectLatest { chatMap ->
+                    // Resolve chat titles for each chat
+                    val chatMapWithTitles = mutableMapOf<Long, Pair<String, List<TelegramItem>>>()
+
+                    for ((chatId, items) in chatMap) {
+                        val chatTitle =
+                            withContext(Dispatchers.IO) {
+                                try {
+                                    com.chris.m3usuite.telegram.core
+                                        .T_TelegramServiceClient
+                                        .getInstance(appContext)
+                                        .resolveChatTitle(chatId)
+                                } catch (e: Exception) {
+                                    "Chat $chatId"
+                                }
+                            }
+                        chatMapWithTitles[chatId] = chatTitle to items.take(120)
+                    }
+
+                    val totalItems = chatMap.values.sumOf { it.size }
+                    android.util.Log.d(
+                        "telegram-ui",
+                        "StartVM received ${chatMap.size} chats, $totalItems total items from ObxTelegramItem (new pipeline)",
+                    )
+
+                    _telegramVodByChat.value = chatMapWithTitles
+                }
+            }
         }
 
     fun onReorderFavorites(newOrderIds: List<Long>) =

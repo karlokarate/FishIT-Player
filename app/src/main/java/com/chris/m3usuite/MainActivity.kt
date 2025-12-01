@@ -53,6 +53,7 @@ import com.chris.m3usuite.ui.screens.PlaylistSetupScreen
 import com.chris.m3usuite.ui.screens.SeriesDetailScreen
 import com.chris.m3usuite.ui.screens.SettingsScreen
 import com.chris.m3usuite.ui.screens.TelegramDetailScreen
+import com.chris.m3usuite.ui.screens.TelegramItemDetailScreen
 import com.chris.m3usuite.ui.screens.VodDetailScreen
 import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.theme.AppTheme
@@ -295,6 +296,10 @@ class MainActivity : ComponentActivity() {
                                 openVod = { id -> nav.navigate("vod/$id") },
                                 openSeries = { id -> nav.navigate("series/$id") },
                                 openTelegram = { id -> nav.navigate("telegram/$id") },
+                                // Phase D: New TelegramItem navigation with (chatId, anchorMessageId)
+                                openTelegramItem = { chatId, anchorMessageId ->
+                                    nav.navigate("telegram_item/$chatId/$anchorMessageId")
+                                },
                                 initialSearch = q.ifBlank { null },
                                 openSearchOnStart = openDlg,
                             )
@@ -308,6 +313,10 @@ class MainActivity : ComponentActivity() {
                                 openVod = { id -> nav.navigate("vod/$id") },
                                 openSeries = { id -> nav.navigate("series/$id") },
                                 openTelegram = { id -> nav.navigate("telegram/$id") },
+                                // Phase D: New TelegramItem navigation with (chatId, anchorMessageId)
+                                openTelegramItem = { chatId, anchorMessageId ->
+                                    nav.navigate("telegram_item/$chatId/$anchorMessageId")
+                                },
                             )
                         }
 
@@ -370,6 +379,46 @@ class MainActivity : ComponentActivity() {
                                     val start = startMs ?: -1L
                                     val mimeArg = mime?.let { Uri.encode(it) } ?: ""
                                     nav.navigate("player?url=$encoded&type=vod&mediaId=$id&startMs=$start&mime=$mimeArg")
+                                },
+                                onLogo = {
+                                    val current = nav.currentBackStackEntry?.destination?.route
+                                    if (current != "library") {
+                                        nav.navigateTopLevel("library?q=&qs=")
+                                    }
+                                },
+                                onGlobalSearch = {
+                                    nav.navigateTopLevel("library?qs=show")
+                                },
+                                onOpenSettings = {
+                                    val current = nav.currentBackStackEntry?.destination?.route
+                                    if (current != "settings") {
+                                        nav.navigate("settings") { launchSingleTop = true }
+                                    }
+                                },
+                            )
+                        }
+
+                        // Phase D: TelegramItem-Details using (chatId, anchorMessageId)
+                        composable(
+                            route = "telegram_item/{chatId}/{anchorMessageId}",
+                            arguments =
+                                listOf(
+                                    navArgument("chatId") { type = NavType.LongType },
+                                    navArgument("anchorMessageId") { type = NavType.LongType },
+                                ),
+                        ) { back ->
+                            val chatId = back.arguments?.getLong("chatId") ?: return@composable
+                            val anchorMessageId = back.arguments?.getLong("anchorMessageId") ?: return@composable
+                            TelegramItemDetailScreen(
+                                chatId = chatId,
+                                anchorMessageId = anchorMessageId,
+                                openInternal = { url, startMs, mime ->
+                                    val encoded = Uri.encode(url)
+                                    val start = startMs ?: -1L
+                                    val mimeArg = mime?.let { Uri.encode(it) } ?: ""
+                                    // Use legacy mediaId encoding for resume position compatibility
+                                    val legacyId = 4_000_000_000_000L + anchorMessageId
+                                    nav.navigate("player?url=$encoded&type=vod&mediaId=$legacyId&startMs=$start&mime=$mimeArg")
                                 },
                                 onLogo = {
                                     val current = nav.currentBackStackEntry?.destination?.route

@@ -81,6 +81,8 @@ fun LibraryScreen(
     openVod: (Long) -> Unit,
     openSeries: (Long) -> Unit,
     openTelegram: ((Long) -> Unit)? = null,
+    // Phase D: New callback for TelegramItem navigation using (chatId, anchorMessageId)
+    openTelegramItem: ((chatId: Long, anchorMessageId: Long) -> Unit)? = null,
 ) {
     LaunchedEffect(Unit) {
         com.chris.m3usuite.metrics.RouteTag
