@@ -8,7 +8,9 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.domain.TelegramItem
+import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.toDomain
 import com.chris.m3usuite.telegram.domain.toObx
 import com.chris.m3usuite.telegram.models.MediaInfo
@@ -138,7 +140,10 @@ class TelegramContentRepository(
                     }.find()
                     .map { it.toDomain() }
             // DEBUG: Log ObxTelegramItem count for UI wiring diagnostics
-            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.observeAllItems(): ${items.size} items in ObxTelegramItem (new table)")
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "TelegramContentRepository.observeAllItems(): ${items.size} items in ObxTelegramItem (new table)",
+            )
             emit(items)
         }.flowOn(Dispatchers.IO)
 
@@ -195,6 +200,177 @@ class TelegramContentRepository(
     suspend fun getTelegramItemCount(): Long =
         withContext(Dispatchers.IO) {
             itemBox.count()
+        }
+
+    // =========================================================================
+    // Phase D UI Wiring: ObxTelegramItem-based Query APIs
+    // =========================================================================
+
+    /**
+     * Summary of Telegram content for a single chat.
+     *
+     * Used by StartScreen/LibraryScreen to display Telegram rows.
+     *
+     * @property chatId Telegram chat ID
+     * @property chatTitle Human-readable chat title (resolved via TDLib)
+     * @property vodCount Number of VOD items in this chat
+     * @property posterRef Reference to a representative poster image (for row thumbnail)
+     */
+    data class TelegramChatSummary(
+        val chatId: Long,
+        val chatTitle: String,
+        val vodCount: Int,
+        val posterRef: TelegramImageRef?,
+    )
+
+    /**
+     * Observe all Telegram VOD items grouped by chat.
+     *
+     * Filters to VOD types only (MOVIE, SERIES_EPISODE, CLIP), excluding
+     * non-playable types (AUDIOBOOK, RAR_ITEM, POSTER_ONLY).
+     *
+     * Phase D: This replaces getTelegramVodByChat() for the new pipeline.
+     *
+     * @return Flow of Map<chatId, List<TelegramItem>>
+     */
+    fun observeVodItemsByChat(): Flow<Map<Long, List<TelegramItem>>> =
+        store.tgSelectedVodChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    buildVodItemsByChatMap(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build map of VOD items by chat from ObxTelegramItem.
+     */
+    private suspend fun buildVodItemsByChatMap(chatIds: List<Long>): Map<Long, List<TelegramItem>> =
+        withContext(Dispatchers.IO) {
+            val result = mutableMapOf<Long, List<TelegramItem>>()
+
+            for (chatId in chatIds) {
+                val items =
+                    itemBox
+                        .query {
+                            equal(ObxTelegramItem_.chatId, chatId)
+                            orderDesc(ObxTelegramItem_.createdAtUtc)
+                        }.find()
+                        .map { it.toDomain() }
+                        .filter { it.isVodType() }
+
+                if (items.isNotEmpty()) {
+                    result[chatId] = items
+                }
+            }
+
+            result
+        }
+
+    /**
+     * Observe a flat list of all Telegram VOD items.
+     *
+     * Filters to VOD types only (MOVIE, SERIES_EPISODE, CLIP).
+     *
+     * @return Flow emitting list of TelegramItem objects
+     */
+    fun observeAllVodItems(): Flow<List<TelegramItem>> =
+        store.tgSelectedVodChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyList()
+                } else {
+                    withContext(Dispatchers.IO) {
+                        itemBox
+                            .query {
+                                `in`(ObxTelegramItem_.chatId, chatIds.toLongArray())
+                                orderDesc(ObxTelegramItem_.createdAtUtc)
+                            }.find()
+                            .map { it.toDomain() }
+                            .filter { it.isVodType() }
+                    }
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Observe chat summaries for UI rows.
+     *
+     * Phase D: This provides summary data for StartScreen/LibraryScreen rows.
+     * Filters to VOD types and resolves chat titles via TDLib.
+     *
+     * @return Flow of list of TelegramChatSummary
+     */
+    fun observeVodChatSummaries(): Flow<List<TelegramChatSummary>> =
+        store.tgSelectedVodChatsCsv
+            .map { csv ->
+                val chatIds = parseChatIdsCsv(csv)
+                if (chatIds.isEmpty()) {
+                    emptyList()
+                } else {
+                    buildVodChatSummaries(chatIds)
+                }
+            }.flowOn(Dispatchers.IO)
+
+    /**
+     * Build chat summaries from ObxTelegramItem.
+     */
+    private suspend fun buildVodChatSummaries(chatIds: List<Long>): List<TelegramChatSummary> =
+        withContext(Dispatchers.IO) {
+            val summaries = mutableListOf<TelegramChatSummary>()
+
+            for (chatId in chatIds) {
+                val items =
+                    itemBox
+                        .query {
+                            equal(ObxTelegramItem_.chatId, chatId)
+                            orderDesc(ObxTelegramItem_.createdAtUtc)
+                        }.find()
+                        .map { it.toDomain() }
+                        .filter { it.isVodType() }
+
+                if (items.isEmpty()) continue
+
+                // Resolve chat title via TDLib
+                val chatTitle = resolveChatTitle(chatId)
+
+                // Find a representative poster (from the first item with a poster)
+                val posterRef = items.firstOrNull { it.posterRef != null }?.posterRef
+
+                summaries.add(
+                    TelegramChatSummary(
+                        chatId = chatId,
+                        chatTitle = chatTitle,
+                        vodCount = items.size,
+                        posterRef = posterRef,
+                    ),
+                )
+            }
+
+            // DEBUG: Log summary count for UI wiring diagnostics
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "UI summaries: ${summaries.size} chats, totalVod=${summaries.sumOf { it.vodCount }}",
+            )
+
+            summaries
+        }
+
+    /**
+     * Helper extension to check if a TelegramItem is a VOD type.
+     *
+     * VOD types are playable video content: MOVIE, SERIES_EPISODE, CLIP.
+     * Excludes: AUDIOBOOK, RAR_ITEM, POSTER_ONLY (not directly playable as video).
+     */
+    private fun TelegramItem.isVodType(): Boolean =
+        when (type) {
+            TelegramItemType.MOVIE,
+            TelegramItemType.SERIES_EPISODE,
+            TelegramItemType.CLIP,
+            -> true
+            else -> false
         }
 
     // =========================================================================
@@ -933,13 +1109,22 @@ class TelegramContentRepository(
 
     /**
      * Get VOD content grouped by chat (Requirement 1, 2).
+     *
+     * @deprecated Uses legacy ObxTelegramMessage. Use observeVodItemsByChat() instead.
      */
+    @Deprecated(
+        message = "Uses legacy ObxTelegramMessage. Use observeVodItemsByChat() instead.",
+        replaceWith = ReplaceWith("observeVodItemsByChat()"),
+    )
     fun getTelegramVodByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
         store.tgSelectedVodChatsCsv
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
                 // DEBUG: Log query for UI wiring diagnostics
-                android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.getTelegramVodByChat(): querying ${chatIds.size} chatIds from ObxTelegramMessage (legacy)")
+                android.util.Log.d(
+                    LOG_TAG_UI_WIRING,
+                    "TelegramContentRepository.getTelegramVodByChat(): querying ${chatIds.size} chatIds from ObxTelegramMessage (legacy)",
+                )
                 if (chatIds.isEmpty()) {
                     emptyMap()
                 } else {
@@ -956,7 +1141,10 @@ class TelegramContentRepository(
 
             // DEBUG: Log total ObxTelegramMessage count for diagnostics
             val legacyMessageCount = messageBox.count()
-            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository: Total ObxTelegramMessage count = $legacyMessageCount (legacy table)")
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "TelegramContentRepository: Total ObxTelegramMessage count = $legacyMessageCount (legacy table)",
+            )
 
             for (chatId in chatIds) {
                 // Get non-series messages for this chat
@@ -977,14 +1165,23 @@ class TelegramContentRepository(
             }
 
             // DEBUG: Log result
-            android.util.Log.d(LOG_TAG_UI_WIRING, "TelegramContentRepository.buildChatMoviesMap(): returning ${result.size} chats from ObxTelegramMessage (legacy)")
+            android.util.Log.d(
+                LOG_TAG_UI_WIRING,
+                "TelegramContentRepository.buildChatMoviesMap(): returning ${result.size} chats from ObxTelegramMessage (legacy)",
+            )
 
             result
         }
 
     /**
      * Get Series content grouped by chat (Requirement 1, 2).
+     *
+     * @deprecated Uses legacy ObxTelegramMessage. Use observeVodItemsByChat() instead.
      */
+    @Deprecated(
+        message = "Uses legacy ObxTelegramMessage. Use observeVodItemsByChat() instead.",
+        replaceWith = ReplaceWith("observeVodItemsByChat()"),
+    )
     fun getTelegramSeriesByChat(): Flow<Map<Long, Pair<String, List<MediaItem>>>> =
         store.tgSelectedSeriesChatsCsv
             .map { csv ->
