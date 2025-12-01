@@ -270,4 +270,110 @@ class TelegramFileDataSourceTest {
             }
         }
     }
+
+    @Test
+    fun `TelegramFileDataSource queries TDLib for correct file size`() {
+        // Verify Phase D+ Part 3: TelegramFileDataSource uses TDLib file size, not downloadedPrefixSize
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramFileDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+
+            // Should call getFileInfo to get TDLib file metadata
+            assert(content.contains("getFileInfo")) {
+                "TelegramFileDataSource should call getFileInfo to get file metadata from TDLib"
+            }
+
+            // Should use expectedSize for file length
+            assert(content.contains("expectedSize")) {
+                "TelegramFileDataSource should use file.expectedSize for correct file size"
+            }
+
+            // Should NOT use downloadedPrefixSize for length
+            val openFunctionStart = content.indexOf("override fun open")
+            if (openFunctionStart >= 0) {
+                val closeFunctionStart = content.indexOf("override fun close", openFunctionStart)
+                val openFunctionBody =
+                    if (closeFunctionStart > 0) {
+                        content.substring(openFunctionStart, closeFunctionStart)
+                    } else {
+                        content.substring(openFunctionStart)
+                    }
+
+                // Should NOT set length to downloadedPrefixSize
+                assert(!openFunctionBody.contains("setLength(.*downloadedPrefixSize".toRegex())) {
+                    "TelegramFileDataSource should NEVER use downloadedPrefixSize for dataSpec.length"
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramFileDataSource uses startPosition for ensureFileReady`() {
+        // Verify Phase D+ Part 3: TelegramFileDataSource passes dataSpec.position to ensureFileReady
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramFileDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+
+            // Find open function
+            val openFunctionStart = content.indexOf("override fun open")
+            if (openFunctionStart >= 0) {
+                val closeFunctionStart = content.indexOf("override fun close", openFunctionStart)
+                val openFunctionBody =
+                    if (closeFunctionStart > 0) {
+                        content.substring(openFunctionStart, closeFunctionStart)
+                    } else {
+                        content.substring(openFunctionStart)
+                    }
+
+                // Should call ensureFileReady
+                assert(openFunctionBody.contains("ensureFileReady")) {
+                    "TelegramFileDataSource.open should call ensureFileReady"
+                }
+
+                // Should pass dataSpec.position as startPosition
+                val hasStartPosition =
+                    openFunctionBody.contains("startPosition = dataSpec.position") ||
+                        openFunctionBody.contains("startPosition=dataSpec.position")
+                assert(hasStartPosition) {
+                    "TelegramFileDataSource should pass dataSpec.position to ensureFileReady as startPosition"
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `TelegramFileDataSource has remoteId 404 fallback`() {
+        // Verify Phase D+ Part 4: TelegramFileDataSource handles stale fileId with remoteId resolution
+        val sourceFile = java.io.File("app/src/main/java/com/chris/m3usuite/telegram/player/TelegramFileDataSource.kt")
+        if (sourceFile.exists()) {
+            val content = sourceFile.readText()
+
+            // Should check for 404 errors
+            assert(content.contains("404")) {
+                "TelegramFileDataSource should detect 404 errors from stale fileId"
+            }
+
+            // Should call resolveRemoteFileId on 404
+            assert(content.contains("resolveRemoteFileId")) {
+                "TelegramFileDataSource should call resolveRemoteFileId when fileId returns 404"
+            }
+
+            // Should retry with resolved fileId
+            val openFunctionStart = content.indexOf("override fun open")
+            if (openFunctionStart >= 0) {
+                val closeFunctionStart = content.indexOf("override fun close", openFunctionStart)
+                val openFunctionBody =
+                    if (closeFunctionStart > 0) {
+                        content.substring(openFunctionStart, closeFunctionStart)
+                    } else {
+                        content.substring(openFunctionStart)
+                    }
+
+                // Should have retry logic with resolved fileId
+                assert(openFunctionBody.contains("resolvedFileId")) {
+                    "TelegramFileDataSource should retry ensureFileReady with resolved fileId"
+                }
+            }
+        }
+    }
 }

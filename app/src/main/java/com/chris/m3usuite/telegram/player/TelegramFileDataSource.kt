@@ -234,8 +234,7 @@ class TelegramFileDataSource(
                     } catch (resolveEx: Exception) {
                         TelegramLogRepository.error(
                             source = "TelegramFileDataSource",
-                            message = "remoteId resolution failed during 404 fallback",
-                            exception = resolveEx,
+                            message = "remoteId resolution failed during 404 fallback: ${resolveEx.message}",
                             details = mapOf("remoteId" to remoteIdParam),
                         )
                         null
@@ -306,6 +305,36 @@ class TelegramFileDataSource(
         // Notify TransferListener that TDLib preparation phase completed successfully
         transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
 
+        // Phase D+: Get correct file size from TDLib (never use downloadedPrefixSize)
+        // This ensures ExoPlayer sees a stable file size for seeking and progress tracking
+        val tdlibFileInfo =
+            try {
+                runBlocking {
+                    val downloader = serviceClient.downloader()
+                    downloader.getFileInfo(fileIdInt)
+                }
+            } catch (e: Exception) {
+                TelegramLogRepository.warn(
+                    source = "TelegramFileDataSource",
+                    message = "Failed to get TDLib file info: ${e.message}, will use local file size",
+                    details = mapOf("fileId" to fileIdInt.toString()),
+                )
+                null
+            }
+
+        val correctFileSize =
+            tdlibFileInfo?.expectedSize?.toLong()
+                ?: run {
+                    // Fallback to local file size if TDLib query fails
+                    TelegramLogRepository.debug(
+                        source = "TelegramFileDataSource",
+                        message = "Using local file size as fallback",
+                        details = mapOf("fileId" to fileIdInt.toString()),
+                    )
+                    val file = File(localPath)
+                    if (file.exists()) file.length() else C.LENGTH_UNSET.toLong()
+                }
+
         // Build file:// URI
         val file = File(localPath)
         if (!file.exists()) {
@@ -314,12 +343,19 @@ class TelegramFileDataSource(
 
         resolvedUri = Uri.fromFile(file)
 
-        // Create FileDataSource and open with same position/length
+        // Create FileDataSource and open with correct file size
+        // IMPORTANT: Use correctFileSize from TDLib, NOT downloadedPrefixSize
         val fileDataSource = FileDataSource()
         transferListener?.let { fileDataSource.addTransferListener(it) }
         delegate = fileDataSource
 
-        val fileDataSpec = dataSpec.buildUpon().setUri(resolvedUri!!).build()
+        // Build DataSpec with correct file size for ExoPlayer
+        val fileDataSpec =
+            dataSpec
+                .buildUpon()
+                .setUri(resolvedUri!!)
+                .setLength(if (correctFileSize > 0) correctFileSize else C.LENGTH_UNSET.toLong())
+                .build()
 
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
@@ -330,7 +366,8 @@ class TelegramFileDataSource(
                     "remoteId" to (remoteIdParam ?: "none"),
                     "localPath" to localPath,
                     "dataSpecPosition" to dataSpec.position.toString(),
-                    "fileSize" to file.length().toString(),
+                    "correctFileSize" to correctFileSize.toString(),
+                    "localFileSize" to file.length().toString(),
                 ),
         )
 

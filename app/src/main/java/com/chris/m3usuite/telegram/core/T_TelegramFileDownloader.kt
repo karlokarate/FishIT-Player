@@ -92,7 +92,13 @@ class T_TelegramFileDownloader(
     private val client get() = session.client
 
     companion object {
-        // Streaming-friendly constants
+        // Streaming-friendly constants (Phase D+ ~50MB window policy)
+        private const val TELEGRAM_STREAM_WINDOW_BYTES: Long = 50L * 1024L * 1024L // 50 MB max per video
+        private const val TELEGRAM_MIN_PREFIX_BYTES: Long = 256L * 1024L // 256 KB minimum for playback start
+        private const val STREAMING_MAX_TIMEOUT_MS: Long = 10_000L // 10 seconds for initial window
+        private const val POLL_INTERVAL_MS: Long = 150L // 150ms polling for progress updates
+
+        // Legacy constants (kept for backward compatibility)
         private const val MIN_START_BYTES = 64 * 1024L // 64KB minimum for early success
         private const val STALL_TIMEOUT_MS = 5_000L // 5 seconds without progress = stalled
         private const val PROGRESS_RESET_TIMEOUT_MS = 60_000L // Max 60s timeout when actively progressing
@@ -274,27 +280,31 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Ensure TDLib has downloaded a file up to the specified position + minBytes.
+     * Ensure TDLib has downloaded a file with a sliding ~50MB window for streaming.
      * This is used by TelegramFileDataSource for zero-copy streaming.
      *
-     * **Flow:**
-     * 1. Get current file info from TDLib and check downloadedPrefixSize
-     * 2. If already sufficient, return immediately
-     * 3. If not, start download with offset/limit for the required range
-     * 4. Poll TDLib state with delay() until downloadedPrefixSize >= requiredPrefixSize
+     * **Phase D+ Sliding Window Strategy (~50MB max per video):**
+     * 1. Get current file info from TDLib to determine total size
+     * 2. Compute streaming window: [windowStart, windowEnd) where windowEnd - windowStart <= 50MB
+     * 3. Request only the window via downloadFile(offset=windowStart, limit=windowSize)
+     * 4. Poll TDLib state until enough prefix is available for playback
      * 5. Return local file path
      *
-     * **Phase D+ Streaming-friendly improvements:**
-     * - Flexible minBytes: never exceeds total file size
-     * - Progress-based timeout: resets timeout window when download is progressing
-     * - Early success: allows playback with MIN_START_BYTES if file is small
+     * **Key behaviors:**
+     * - Never downloads full file for streaming (uses limit parameter)
+     * - Window size capped at TELEGRAM_STREAM_WINDOW_BYTES (50 MB)
+     * - Minimum prefix required: TELEGRAM_MIN_PREFIX_BYTES (256 KB) for playback start
+     * - Progress-aware timeout: resets when download is actively progressing
+     * - Early success fallback: allows playback when minimum data available
      *
-     * This method polls TDLib state to check download progress, always reading the
-     * current downloadedPrefixSize from TDLib rather than tracking it locally.
+     * **Streaming-first design:**
+     * - For large files (e.g., 4GB movie), only ~50MB is ever downloaded at a time
+     * - ExoPlayer sees a stable file size (from file.size, not downloadedPrefixSize)
+     * - Seeking triggers a new window request, old data can be discarded
      *
      * @param fileId TDLib file ID (integer)
-     * @param startPosition Starting byte offset for the range
-     * @param minBytes Minimum number of bytes needed from startPosition
+     * @param startPosition Starting byte offset for the streaming window
+     * @param minBytes Hint for minimum bytes needed (actual window may be larger, capped at 50MB)
      * @param timeoutMs Maximum time to wait in milliseconds (default 30 seconds)
      * @return Local file path from TDLib cache
      * @throws Exception if download fails or times out
@@ -312,29 +322,35 @@ class T_TelegramFileDownloader(
             val totalSize = file.expectedSize?.toLong() ?: Long.MAX_VALUE
             val localPath = file.local?.path
 
-            // **Flexible minBytes**: never exceed total file size
-            val configuredMinPrefix = startPosition + minBytes
-            val requiredPrefixSize = kotlin.math.min(configuredMinPrefix, totalSize)
+            // 2. Compute streaming window: [windowStart, windowEnd)
+            // Window is capped at TELEGRAM_STREAM_WINDOW_BYTES (50 MB)
+            val windowStart = startPosition.coerceAtLeast(0L)
+            val windowEnd = (windowStart + TELEGRAM_STREAM_WINDOW_BYTES).coerceAtMost(totalSize)
+            val windowSize = windowEnd - windowStart
+
+            // Required prefix for playback: at least TELEGRAM_MIN_PREFIX_BYTES from windowStart
+            val requiredPrefixFromStart = (windowStart + TELEGRAM_MIN_PREFIX_BYTES).coerceAtMost(totalSize)
 
             val initialPrefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L
 
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
-                message = "ensureFileReady: starting",
+                message = "ensureFileReady: starting with ~50MB window policy",
                 details =
                     mapOf(
                         "fileId" to fileId.toString(),
                         "startPosition" to startPosition.toString(),
-                        "minBytes" to minBytes.toString(),
+                        "windowStart" to windowStart.toString(),
+                        "windowEnd" to windowEnd.toString(),
+                        "windowSize" to windowSize.toString(),
                         "totalSize" to totalSize.toString(),
-                        "configuredMinPrefix" to configuredMinPrefix.toString(),
-                        "requiredPrefixSize" to requiredPrefixSize.toString(),
+                        "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
                         "initialPrefix" to initialPrefix.toString(),
                     ),
             )
 
-            // 2. Check if already satisfied
-            if (!localPath.isNullOrBlank() && initialPrefix >= requiredPrefixSize) {
+            // 3. Check if already satisfied
+            if (!localPath.isNullOrBlank() && initialPrefix >= requiredPrefixFromStart) {
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReady: already satisfied",
@@ -342,24 +358,25 @@ class T_TelegramFileDownloader(
                         mapOf(
                             "fileId" to fileId.toString(),
                             "downloadedPrefixSize" to initialPrefix.toString(),
-                            "requiredPrefixSize" to requiredPrefixSize.toString(),
+                            "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
                             "path" to localPath,
                         ),
                 )
                 return@withContext localPath
             }
 
-            // 3. Need to download - start download from current prefix position
+            // 4. Need to download - start windowed download
+            // Download from windowStart with limit=windowSize (capped at 50MB)
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
-                message = "ensureFileReady: starting download",
+                message = "ensureFileReady: starting windowed download",
                 details =
                     mapOf(
                         "fileId" to fileId.toString(),
-                        "startPosition" to startPosition.toString(),
-                        "minBytes" to minBytes.toString(),
+                        "windowStart" to windowStart.toString(),
+                        "windowSize" to windowSize.toString(),
                         "currentPrefix" to initialPrefix.toString(),
-                        "requiredPrefix" to requiredPrefixSize.toString(),
+                        "requiredPrefix" to requiredPrefixFromStart.toString(),
                         "totalSize" to totalSize.toString(),
                     ),
             )
@@ -368,8 +385,8 @@ class T_TelegramFileDownloader(
                 client.downloadFile(
                     fileId = fileId,
                     priority = 32, // High priority for streaming
-                    offset = initialPrefix, // Start from where we left off
-                    limit = requiredPrefixSize - initialPrefix, // Download what we need
+                    offset = windowStart,
+                    limit = windowSize, // Download only the window (max 50MB)
                     synchronous = false, // Async download
                 )
 
@@ -381,6 +398,8 @@ class T_TelegramFileDownloader(
                     details =
                         mapOf(
                             "fileId" to fileId.toString(),
+                            "windowStart" to windowStart.toString(),
+                            "windowSize" to windowSize.toString(),
                             "totalSize" to totalSize.toString(),
                             "code" to downloadResult.code.toString(),
                         ),
@@ -388,31 +407,32 @@ class T_TelegramFileDownloader(
                 throw Exception(errorMsg)
             }
 
-            // 4. Wait loop - poll TDLib state with fresh requests
-            // **Streaming-friendly timeout**: track progress and reset timeout window
+            // 5. Progress-aware polling loop
+            // Poll TDLib state with POLL_INTERVAL_MS until enough prefix is available
             val startTime = SystemClock.elapsedRealtime()
             var lastProgressTime = startTime
             var lastDownloaded = initialPrefix
 
             var result: String? = null
             while (result == null) {
-                delay(100) // 100ms polling interval
+                delay(POLL_INTERVAL_MS) // 150ms polling interval
 
                 // Get fresh file state from TDLib (bypassing cache)
                 file = getFreshFileState(fileId)
                 val prefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L
                 val pathNow = file.local?.path
 
-                // Check if we have enough data
-                if (!pathNow.isNullOrBlank() && prefix >= requiredPrefixSize) {
+                // Check if we have enough data for playback
+                if (!pathNow.isNullOrBlank() && prefix >= requiredPrefixFromStart) {
                     TelegramLogRepository.debug(
                         source = "T_TelegramFileDownloader",
-                        message = "ensureFileReady: ready",
+                        message = "ensureFileReady: streaming window ready",
                         details =
                             mapOf(
                                 "fileId" to fileId.toString(),
                                 "downloadedPrefixSize" to prefix.toString(),
-                                "requiredPrefixSize" to requiredPrefixSize.toString(),
+                                "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
+                                "windowSize" to windowSize.toString(),
                                 "path" to pathNow,
                             ),
                     )
@@ -428,27 +448,23 @@ class T_TelegramFileDownloader(
                     val elapsed = SystemClock.elapsedRealtime() - startTime
                     val timeSinceProgress = SystemClock.elapsedRealtime() - lastProgressTime
 
-                    // Early success for small files: if we have reasonable data and download is stalled
-                    // IMPORTANT: Only allow early success if we've met minimum requirements:
-                    // - prefix >= MIN_START_BYTES AND
-                    // - (prefix >= requiredPrefixSize OR prefix >= startPosition + MIN_START_BYTES)
-                    // This ensures we have enough data from the required position
-                    val hasMinimumDataFromStart = prefix >= kotlin.math.max(MIN_START_BYTES, startPosition + MIN_START_BYTES)
-                    val meetsRequiredPrefix = prefix >= requiredPrefixSize
-                    
+                    // Streaming-friendly fallback: if we have minimum data and download stalled, allow playback
+                    val hasMinimumDataFromWindow = prefix >= (windowStart + TELEGRAM_MIN_PREFIX_BYTES).coerceAtMost(totalSize)
+
                     if (!pathNow.isNullOrBlank() &&
-                        hasMinimumDataFromStart &&
+                        hasMinimumDataFromWindow &&
                         timeSinceProgress > STALL_TIMEOUT_MS
                     ) {
                         TelegramLogRepository.info(
                             source = "T_TelegramFileDownloader",
-                            message = "ensureFileReady: early success (stalled download with sufficient data)",
+                            message = "ensureFileReady: streaming fallback (stalled with sufficient data)",
                             details =
                                 mapOf(
                                     "fileId" to fileId.toString(),
                                     "downloadedPrefixSize" to prefix.toString(),
-                                    "requiredPrefixSize" to requiredPrefixSize.toString(),
-                                    "startPosition" to startPosition.toString(),
+                                    "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
+                                    "windowStart" to windowStart.toString(),
+                                    "minPrefixBytes" to TELEGRAM_MIN_PREFIX_BYTES.toString(),
                                     "totalSize" to totalSize.toString(),
                                     "path" to pathNow,
                                 ),
@@ -457,8 +473,8 @@ class T_TelegramFileDownloader(
                     } else if (timeSinceProgress > timeoutMs) {
                         // Use timeSinceProgress for timeout when download has stalled
                         val errorMsg =
-                            "Timeout waiting for file ready (no progress): fileId=$fileId, downloaded=$prefix, " +
-                                "required=$requiredPrefixSize, totalSize=$totalSize, stallTime=${timeSinceProgress}ms"
+                            "Timeout waiting for streaming window (no progress): fileId=$fileId, downloaded=$prefix, " +
+                                "required=$requiredPrefixFromStart, totalSize=$totalSize, stallTime=${timeSinceProgress}ms"
                         TelegramLogRepository.error(
                             source = "T_TelegramFileDownloader",
                             message = errorMsg,
@@ -466,7 +482,9 @@ class T_TelegramFileDownloader(
                                 mapOf(
                                     "fileId" to fileId.toString(),
                                     "downloaded" to prefix.toString(),
-                                    "required" to requiredPrefixSize.toString(),
+                                    "required" to requiredPrefixFromStart.toString(),
+                                    "windowStart" to windowStart.toString(),
+                                    "windowSize" to windowSize.toString(),
                                     "totalSize" to totalSize.toString(),
                                     "stallTime" to timeSinceProgress.toString(),
                                 ),
@@ -475,8 +493,8 @@ class T_TelegramFileDownloader(
                     } else if (elapsed > PROGRESS_RESET_TIMEOUT_MS && lastDownloaded == initialPrefix) {
                         // Absolute timeout if no progress at all after extended period
                         val errorMsg =
-                            "Timeout waiting for file ready (no initial progress): fileId=$fileId, " +
-                                "downloaded=$prefix, required=$requiredPrefixSize, totalSize=$totalSize"
+                            "Timeout waiting for streaming window (no initial progress): fileId=$fileId, " +
+                                "downloaded=$prefix, required=$requiredPrefixFromStart, totalSize=$totalSize"
                         TelegramLogRepository.error(
                             source = "T_TelegramFileDownloader",
                             message = errorMsg,
@@ -484,7 +502,9 @@ class T_TelegramFileDownloader(
                                 mapOf(
                                     "fileId" to fileId.toString(),
                                     "downloaded" to prefix.toString(),
-                                    "required" to requiredPrefixSize.toString(),
+                                    "required" to requiredPrefixFromStart.toString(),
+                                    "windowStart" to windowStart.toString(),
+                                    "windowSize" to windowSize.toString(),
                                     "totalSize" to totalSize.toString(),
                                     "elapsed" to elapsed.toString(),
                                 ),
@@ -1037,29 +1057,54 @@ class T_TelegramFileDownloader(
      * Clear old cached files to prevent bloat.
      * Should be called periodically or when cache size limit is reached.
      *
+     * **Phase D+ Global Storage Management (500 MB cap):**
+     * - Uses getStorageStatisticsFast() for quick stats check
+     * - Calls optimizeStorage() when threshold exceeded to free space
+     * - Designed as background maintenance operation
+     *
      * @param maxCacheSizeMb Maximum cache size in megabytes (default 500 MB)
      */
     suspend fun cleanupCache(maxCacheSizeMb: Long = 500) =
         withContext(Dispatchers.IO) {
-            println("[T_TelegramFileDownloader] Checking cache size...")
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Checking cache size for cleanup...",
+            )
 
-            // Get cache statistics from TDLib
-            val statsResult = client.getStorageStatistics(chatLimit = 1)
+            // Get fast cache statistics from TDLib
+            val statsResult = client.getStorageStatisticsFast()
 
             when (statsResult) {
                 is dev.g000sha256.tdl.TdlResult.Success -> {
                     val stats = statsResult.result
-                    val currentSizeMb = stats.size / (1024 * 1024)
+                    val currentSizeMb = stats.filesSize / (1024 * 1024)
 
-                    println("[T_TelegramFileDownloader] Current cache size: $currentSizeMb MB")
+                    TelegramLogRepository.info(
+                        source = "T_TelegramFileDownloader",
+                        message = "Current TDLib cache size",
+                        details =
+                            mapOf(
+                                "sizeMB" to currentSizeMb.toString(),
+                                "maxMB" to maxCacheSizeMb.toString(),
+                            ),
+                    )
 
                     if (currentSizeMb > maxCacheSizeMb) {
-                        println("[T_TelegramFileDownloader] Cache size exceeds limit, optimizing...")
+                        TelegramLogRepository.info(
+                            source = "T_TelegramFileDownloader",
+                            message = "Cache size exceeds limit, optimizing storage...",
+                            details =
+                                mapOf(
+                                    "currentMB" to currentSizeMb.toString(),
+                                    "maxMB" to maxCacheSizeMb.toString(),
+                                ),
+                        )
 
                         // Optimize storage to remove old files
+                        val targetSize = ((currentSizeMb - maxCacheSizeMb) * 1024 * 1024).toLong()
                         val optimizeResult =
                             client.optimizeStorage(
-                                size = ((currentSizeMb - maxCacheSizeMb) * 1024 * 1024).toLong(),
+                                size = targetSize,
                                 ttl = 7 * 24 * 60 * 60, // Files older than 7 days
                                 count = Int.MAX_VALUE,
                                 immunityDelay = 24 * 60 * 60, // Keep files from last 24h
@@ -1074,19 +1119,68 @@ class T_TelegramFileDownloader(
                             is dev.g000sha256.tdl.TdlResult.Success -> {
                                 // Clear our cache as well
                                 fileInfoCache.clear()
-                                println("[T_TelegramFileDownloader] Cache optimized successfully")
+                                TelegramLogRepository.info(
+                                    source = "T_TelegramFileDownloader",
+                                    message = "Cache optimized successfully",
+                                )
                             }
                             is dev.g000sha256.tdl.TdlResult.Failure -> {
-                                println("[T_TelegramFileDownloader] Storage optimization failed: ${optimizeResult.message}")
+                                TelegramLogRepository.error(
+                                    source = "T_TelegramFileDownloader",
+                                    message = "Storage optimization failed",
+                                    details = mapOf("error" to optimizeResult.message),
+                                )
                             }
                         }
                     }
                 }
                 is dev.g000sha256.tdl.TdlResult.Failure -> {
-                    println("[T_TelegramFileDownloader] Storage stats query failed: ${statsResult.message}")
+                    TelegramLogRepository.error(
+                        source = "T_TelegramFileDownloader",
+                        message = "Storage stats query failed",
+                        details = mapOf("error" to statsResult.message),
+                    )
                 }
             }
         }
+
+    /**
+     * Cancel download for a file when playback ends (Phase D+ cache management).
+     * This helps keep cache size under control by stopping downloads for inactive files.
+     *
+     * @param fileId TDLib file ID
+     * @param onlyIfPending If true, only cancel if download hasn't started yet
+     */
+    suspend fun cancelDownloadOnPlaybackEnd(
+        fileId: Int,
+        onlyIfPending: Boolean = true,
+    ) = withContext(Dispatchers.IO) {
+        try {
+            client.cancelDownloadFile(
+                fileId = fileId,
+                onlyIfPending = onlyIfPending,
+            )
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Cancelled download on playback end",
+                details =
+                    mapOf(
+                        "fileId" to fileId.toString(),
+                        "onlyIfPending" to onlyIfPending.toString(),
+                    ),
+            )
+        } catch (e: Exception) {
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Failed to cancel download (non-critical)",
+                details =
+                    mapOf(
+                        "fileId" to fileId.toString(),
+                        "error" to (e.message ?: "unknown"),
+                    ),
+            )
+        }
+    }
 
     /**
      * Get count of active downloads.
