@@ -107,13 +107,14 @@ object AppLog {
         if (!bypassMaster && !isCategoryEnabled(category)) return
 
         val tag = "FishIT/$category"
-        val fullMessage = buildString {
-            append(message)
-            if (!extras.isNullOrEmpty()) {
-                append(" | ")
-                append(extras.entries.joinToString(", ") { "${it.key}=${it.value}" })
+        val fullMessage =
+            buildString {
+                append(message)
+                if (!extras.isNullOrEmpty()) {
+                    append(" | ")
+                    append(extras.entries.joinToString(", ") { "${it.key}=${it.value}" })
+                }
             }
-        }
 
         when (level) {
             Level.VERBOSE -> Log.v(tag, fullMessage)
@@ -124,12 +125,13 @@ object AppLog {
         }
 
         // Add to history and emit event
-        val entry = Entry(
-            level = level,
-            category = category,
-            message = message,
-            extras = extras ?: emptyMap(),
-        )
+        val entry =
+            Entry(
+                level = level,
+                category = category,
+                message = message,
+                extras = extras ?: emptyMap(),
+            )
         addEntry(entry)
     }
 
@@ -168,12 +170,13 @@ object AppLog {
         Log.e(tag, message, exception)
 
         // Add to history with exception info
-        val entry = Entry(
-            level = Level.ERROR,
-            category = category,
-            message = "$message: ${exception.message}",
-            extras = mapOf("exception" to exception::class.simpleName.orEmpty()),
-        )
+        val entry =
+            Entry(
+                level = Level.ERROR,
+                category = category,
+                message = "$message: ${exception.message}",
+                extras = mapOf("exception" to exception::class.simpleName.orEmpty()),
+            )
         addEntry(entry)
     }
 

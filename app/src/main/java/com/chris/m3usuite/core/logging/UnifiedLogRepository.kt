@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.text.SimpleDateFormat
@@ -590,7 +589,8 @@ object UnifiedLogRepository {
 
             // Rolling log: keep last 5 files
             val existingLogs =
-                logsDir.listFiles { file -> file.name.startsWith("unified_log_") }
+                logsDir
+                    .listFiles { file -> file.name.startsWith("unified_log_") }
                     ?.sortedByDescending { it.lastModified() }
                     ?: emptyList()
 

@@ -120,12 +120,14 @@ class PlaybackSourceResolver(
             lowerUrl.contains("/live.m3u8") ||
             lowerUrl.contains("stream_type=live") ||
             lowerUrl.contains("/streaming/") ||
-            (lowerUrl.endsWith(".ts")
-                && !lowerUrl.contains("/movie/")
-                && !lowerUrl.contains("/series/")
-                && !lowerUrl.contains("/vod/")
-                && !lowerUrl.contains("/recordings/")
-                && !lowerUrl.contains("/archive/"))
+            (
+                lowerUrl.endsWith(".ts") &&
+                    !lowerUrl.contains("/movie/") &&
+                    !lowerUrl.contains("/series/") &&
+                    !lowerUrl.contains("/vod/") &&
+                    !lowerUrl.contains("/recordings/") &&
+                    !lowerUrl.contains("/archive/")
+            )
     }
 
     /**
@@ -211,13 +213,18 @@ class PlaybackSourceResolver(
     /**
      * Resolve MIME type from ObxTelegramItem (new Phase D table).
      */
-    private fun resolveMimeFromTelegramItem(chatId: Long, anchorMessageId: Long): String? {
+    private fun resolveMimeFromTelegramItem(
+        chatId: Long,
+        anchorMessageId: Long,
+    ): String? {
         val store = ObxStore.get(context)
         val box = store.boxFor(ObxTelegramItem::class.java)
-        val query = box.query()
-            .equal(ObxTelegramItem_.chatId, chatId)
-            .equal(ObxTelegramItem_.anchorMessageId, anchorMessageId)
-            .build()
+        val query =
+            box
+                .query()
+                .equal(ObxTelegramItem_.chatId, chatId)
+                .equal(ObxTelegramItem_.anchorMessageId, anchorMessageId)
+                .build()
         try {
             val item = query.findFirst() ?: return null
             // Use video MIME type if available

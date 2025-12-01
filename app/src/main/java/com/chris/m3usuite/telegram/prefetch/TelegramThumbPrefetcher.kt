@@ -112,6 +112,20 @@ class TelegramThumbPrefetcher(
     private suspend fun observeAndPrefetch() {
         // Phase D: Use new TelegramItem-based flow instead of legacy MediaItem flows
         repository.observeVodItemsByChat().collectLatest { chatMap ->
+            // Check service state before prefetching
+            if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
+                TelegramLogRepository.info(
+                    source = TAG,
+                    message = "Prefetch skipped – Telegram not started or not READY",
+                    details =
+                        mapOf(
+                            "isStarted" to serviceClient.isStarted.toString(),
+                            "isAuthReady" to serviceClient.isAuthReady().toString(),
+                        ),
+                )
+                return@collectLatest
+            }
+
             // Extract all poster TelegramImageRefs that need prefetching
             // Use remoteId as the unique key since fileId is volatile
             val posterRefs =
@@ -120,8 +134,7 @@ class TelegramThumbPrefetcher(
                     .mapNotNull { item ->
                         // Get posterRef from TelegramItem - contains remoteId for stable resolution
                         item.posterRef
-                    }
-                    .distinctBy { it.remoteId } // Distinct by remoteId, not fileId
+                    }.distinctBy { it.remoteId } // Distinct by remoteId, not fileId
                     .filter { it.remoteId !in prefetchedRemoteIds } // Skip already prefetched (by remoteId)
                     .take(100) // Limit to 100 at a time to avoid overwhelming TDLib
 
@@ -189,7 +202,7 @@ class TelegramThumbPrefetcher(
      * Prefetch a single thumbnail using TelegramImageRef (remoteId-first).
      * Returns true if successful, false otherwise.
      *
-     * **IMPORTANT**: Uses ensureImageDownloaded(TelegramImageRef) instead of
+     * **IMPORTANT**: Uses ensureThumbDownloaded(TelegramImageRef) instead of
      * ensureThumbDownloaded(fileId) because fileIds are volatile and can become
      * stale after TDLib session changes. remoteIds are stable across sessions.
      *
@@ -199,9 +212,9 @@ class TelegramThumbPrefetcher(
         try {
             val result =
                 withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
-                    // Use ensureImageDownloaded which uses remoteId-first resolution
-                    fileLoader.ensureImageDownloaded(
-                        imageRef = imageRef,
+                    // Use ensureThumbDownloaded which uses remoteId-first resolution
+                    fileLoader.ensureThumbDownloaded(
+                        ref = imageRef,
                         timeoutMs = THUMBNAIL_TIMEOUT_MS,
                     )
                 }
