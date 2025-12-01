@@ -217,6 +217,8 @@ fun rememberInternalPlayerSession(
     // ════════════════════════════════════════════════════════════════════════
     val bufferingStartTime = remember { mutableStateOf<Long?>(null) }
     val bufferingWatchdogTimeoutMs = 15_000L // 15 seconds
+    val lastBufferingLogTime = remember { mutableStateOf<Long>(0L) }
+    val bufferingLogThrottleMs = 30_000L // Log at most once every 30 seconds
 
     LaunchedEffect(url, startMs, mimeType, preparedMediaItem, networkHeaders, playbackContext.type) {
         // ════════════════════════════════════════════════════════════════════════════
@@ -558,8 +560,12 @@ fun rememberInternalPlayerSession(
                         } else if (isBuffering && bufferingStartTime.value != null) {
                             // Still buffering - check if timeout exceeded
                             val bufferingDuration = System.currentTimeMillis() - bufferingStartTime.value!!
-                            if (bufferingDuration > bufferingWatchdogTimeoutMs) {
-                                // Log diagnostic event
+                            val now = System.currentTimeMillis()
+                            val timeSinceLastLog = now - lastBufferingLogTime.value
+
+                            if (bufferingDuration > bufferingWatchdogTimeoutMs && timeSinceLastLog > bufferingLogThrottleMs) {
+                                // Log diagnostic event (throttled to avoid spam)
+                                lastBufferingLogTime.value = now
                                 scope.launch(Dispatchers.IO) {
                                     try {
                                         val uri = android.net.Uri.parse(url)
@@ -603,8 +609,6 @@ fun rememberInternalPlayerSession(
                                         )
                                     }
                                 }
-                                // Reset timer to avoid repeated logging
-                                bufferingStartTime.value = System.currentTimeMillis()
                             }
                         }
                     }

@@ -130,19 +130,27 @@ class TelegramSettingsViewModel(
      * **Task 3: Entry point with stack trace logging**
      *
      * This is the ONLY entry point for changing the enabled state.
-     * Logs a stack trace whenever called to audit unexpected callers.
+     * Logs a stack trace (in debug builds only) to audit unexpected callers.
      */
     fun onToggleEnabled(enabled: Boolean) {
-        // Log stack trace for auditing
-        TelegramLogRepository.info(
-            source = "TelegramSettingsViewModel",
-            message = "setTelegramEnabled called",
-            details =
-                mapOf(
-                    "enabled" to enabled.toString(),
-                    "caller" to Thread.currentThread().stackTrace.drop(2).take(5).joinToString(" -> ") { "${it.className}.${it.methodName}:${it.lineNumber}" },
-                ),
-        )
+        // Log stack trace for auditing (debug builds only to avoid performance impact)
+        if (com.chris.m3usuite.BuildConfig.DEBUG) {
+            TelegramLogRepository.info(
+                source = "TelegramSettingsViewModel",
+                message = "setTelegramEnabled called",
+                details =
+                    mapOf(
+                        "enabled" to enabled.toString(),
+                        "caller" to Thread.currentThread().stackTrace.drop(2).take(5).joinToString(" -> ") { "${it.className}.${it.methodName}:${it.lineNumber}" },
+                    ),
+            )
+        } else {
+            TelegramLogRepository.info(
+                source = "TelegramSettingsViewModel",
+                message = "setTelegramEnabled called",
+                details = mapOf("enabled" to enabled.toString()),
+            )
+        }
 
         viewModelScope.launch {
             val wasEnabled = _state.value.enabled
@@ -194,8 +202,18 @@ class TelegramSettingsViewModel(
      * Only called by onToggleEnabled to ensure stack trace logging.
      */
     private suspend fun setTelegramEnabledInternal(enabled: Boolean) {
-        store.setTgEnabled(enabled)
-        _state.update { it.copy(enabled = enabled) }
+        try {
+            store.setTgEnabled(enabled)
+            _state.update { it.copy(enabled = enabled) }
+        } catch (e: Exception) {
+            TelegramLogRepository.error(
+                source = "TelegramSettingsViewModel",
+                message = "Failed to persist enabled state",
+                exception = e,
+            )
+            // State update failed - throw to caller
+            throw e
+        }
     }
 
     /**
