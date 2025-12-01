@@ -218,7 +218,7 @@ class TelegramFileLoader(
             ThumbResult.Success(path)
         } catch (e: Exception) {
             val message = e.message ?: ""
-            if (message.contains("404") || message.contains("Not Found") || message.contains("not found")) {
+            if (message.contains("404", ignoreCase = true) || message.contains("not found", ignoreCase = true)) {
                 ThumbResult.NotFound404
             } else {
                 TelegramLogRepository.debug(
