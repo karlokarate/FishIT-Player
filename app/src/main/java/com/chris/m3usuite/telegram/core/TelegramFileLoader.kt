@@ -201,7 +201,7 @@ class TelegramFileLoader(
     /**
      * Try to download thumbnail by fileId and return result.
      * Encapsulates download logic and error handling.
-     * 
+     *
      * **Phase D+ Fix:** Downloads entire file for thumbnails/backdrops by passing
      * minBytes = totalSizeBytes to ensureFileReady. This ensures full download
      * instead of partial 256KB prefix.
@@ -220,16 +220,17 @@ class TelegramFileLoader(
             // Get file info to determine total size
             val fileInfo = downloader.getFileInfo(fileId)
             val totalSizeBytes = fileInfo?.expectedSize?.toLong() ?: 0L
-            
+
             // Log if totalSize is unknown
             if (totalSizeBytes <= 0L) {
                 TelegramLogRepository.warn(
                     source = TAG,
                     message = "tryDownloadThumbByFileId: totalSize unknown, will attempt download anyway",
-                    details = mapOf(
-                        "fileId" to fileId.toString(),
-                        "expectedSize" to (fileInfo?.expectedSize?.toString() ?: "null"),
-                    ),
+                    details =
+                        mapOf(
+                            "fileId" to fileId.toString(),
+                            "expectedSize" to (fileInfo?.expectedSize?.toString() ?: "null"),
+                        ),
                 )
             }
 
@@ -249,7 +250,7 @@ class TelegramFileLoader(
             val finalFileInfo = downloader.getFileInfo(fileId)
             val downloadedPrefixSize = finalFileInfo?.local?.downloadedPrefixSize?.toLong() ?: 0L
             val isComplete = finalFileInfo?.local?.isDownloadingCompleted ?: false
-            
+
             TelegramLogRepository.debug(
                 source = TAG,
                 message = "tryDownloadThumbByFileId success",
@@ -263,20 +264,21 @@ class TelegramFileLoader(
                         "fullyDownloaded" to (downloadedPrefixSize >= totalSizeBytes || isComplete).toString(),
                     ),
             )
-            
+
             // Confirm full download for thumbnails/backdrops
             if (totalSizeBytes > 0L && downloadedPrefixSize < totalSizeBytes && !isComplete) {
                 TelegramLogRepository.warn(
                     source = TAG,
                     message = "tryDownloadThumbByFileId: partial download for thumbnail (expected full)",
-                    details = mapOf(
-                        "fileId" to fileId.toString(),
-                        "totalSizeBytes" to totalSizeBytes.toString(),
-                        "downloadedPrefixSize" to downloadedPrefixSize.toString(),
-                    ),
+                    details =
+                        mapOf(
+                            "fileId" to fileId.toString(),
+                            "totalSizeBytes" to totalSizeBytes.toString(),
+                            "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                        ),
                 )
             }
-            
+
             ThumbResult.Success(path)
         } catch (e: Exception) {
             val message = e.message ?: ""

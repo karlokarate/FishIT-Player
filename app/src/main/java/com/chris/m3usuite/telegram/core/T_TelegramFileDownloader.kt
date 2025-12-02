@@ -95,10 +95,10 @@ class T_TelegramFileDownloader(
         // Streaming-friendly constants (Phase D+ mode-based window policy)
         @Deprecated(
             message = "Unused after mode-based window refactor. Use TELEGRAM_MIN_PREFIX_BYTES or SEEK_MARGIN_BYTES instead.",
-            level = DeprecationLevel.WARNING
+            level = DeprecationLevel.WARNING,
         )
         private const val TELEGRAM_STREAM_WINDOW_BYTES: Long = 50L * 1024L * 1024L // 50 MB max per video (legacy)
-        
+
         private const val TELEGRAM_MIN_PREFIX_BYTES: Long = 256L * 1024L // 256 KB minimum for playback start
         private const val STREAMING_MAX_TIMEOUT_MS: Long = 10_000L // 10 seconds for initial window
         private const val POLL_INTERVAL_MS: Long = 150L // 150ms polling for progress updates
@@ -370,24 +370,26 @@ class T_TelegramFileDownloader(
             val requiredPrefixFromStart: Long
 
             // Compute the "by mode" requirement
-            val requiredByMode: Long = when (mode) {
-                EnsureFileReadyMode.INITIAL_START -> {
-                    // INITIAL_START: Small fixed prefix for quick startup
-                    TELEGRAM_MIN_PREFIX_BYTES
+            val requiredByMode: Long =
+                when (mode) {
+                    EnsureFileReadyMode.INITIAL_START -> {
+                        // INITIAL_START: Small fixed prefix for quick startup
+                        TELEGRAM_MIN_PREFIX_BYTES
+                    }
+                    EnsureFileReadyMode.SEEK -> {
+                        // SEEK: Request only startPosition + margin (1 MB)
+                        // This avoids "download almost the whole file" when seeking near the end
+                        windowStart + SEEK_MARGIN_BYTES
+                    }
                 }
-                EnsureFileReadyMode.SEEK -> {
-                    // SEEK: Request only startPosition + margin (1 MB)
-                    // This avoids "download almost the whole file" when seeking near the end
-                    windowStart + SEEK_MARGIN_BYTES
-                }
-            }
 
             // Apply minBytes override if provided (used for thumbnails/backdrops to force full download)
-            val rawRequired = if (minBytes > 0L) {
-                maxOf(requiredByMode, minBytes)
-            } else {
-                requiredByMode
-            }
+            val rawRequired =
+                if (minBytes > 0L) {
+                    maxOf(requiredByMode, minBytes)
+                } else {
+                    requiredByMode
+                }
 
             // Cap at totalSize to avoid requesting beyond file size (if totalSize is known)
             val effectiveTotalSize = if (totalSize > 0L) totalSize else Long.MAX_VALUE
@@ -519,10 +521,12 @@ class T_TelegramFileDownloader(
                     val timeSinceProgress = SystemClock.elapsedRealtime() - lastProgressTime
 
                     // Streaming-friendly fallback: if we have minimum data and download stalled, allow playback
-                    val hasMinimumDataFromWindow = prefix >= minOf(
-                        windowStart + TELEGRAM_MIN_PREFIX_BYTES,
-                        effectiveTotalSize
-                    )
+                    val hasMinimumDataFromWindow =
+                        prefix >=
+                            minOf(
+                                windowStart + TELEGRAM_MIN_PREFIX_BYTES,
+                                effectiveTotalSize,
+                            )
 
                     if (!pathNow.isNullOrBlank() &&
                         hasMinimumDataFromWindow &&

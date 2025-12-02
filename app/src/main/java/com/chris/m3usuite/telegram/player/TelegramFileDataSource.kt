@@ -133,10 +133,10 @@ class TelegramFileDataSource(
         // Phase D+ Fix: Add explicit logging at start of open() with Telegram engine state
         val isStarted = serviceClient.isStarted
         val isAuthReady = serviceClient.isAuthReady()
-        
+
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
-            message = "open url=${uri} chatId=$chatId messageId=$messageId started=$isStarted authReady=$isAuthReady",
+            message = "open url=$uri chatId=$chatId messageId=$messageId started=$isStarted authReady=$isAuthReady",
             details =
                 mapOf(
                     "url" to uri.toString(),
@@ -164,7 +164,7 @@ class TelegramFileDataSource(
             )
             throw TelegramUnavailableException(
                 "Telegram engine not ready (started=$isStarted, authReady=$isAuthReady). " +
-                    "Please wait a moment or re-open the Telegram settings."
+                    "Please wait a moment or re-open the Telegram settings.",
             )
         }
 
