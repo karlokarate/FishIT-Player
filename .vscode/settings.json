@@ -1,0 +1,116 @@
+{
+  // ===== Kotlin & Android =====
+  "kotlin.languageServer.enabled": true,
+  "kotlin.compiler.jvm.target": "17",
+  "kotlin.debugAdapter.enabled": true,
+  
+  // ===== Java =====
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+      "default": true
+    }
+  ],
+  "java.jdt.ls.java.home": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+  
+  // ===== Android =====
+  "android.sdk": "${workspaceFolder}/.wsl-android-sdk",
+  "android.gradle.path": "${workspaceFolder}/gradlew",
+  "android.emulator.path": "${workspaceFolder}/.wsl-android-sdk/emulator/emulator",
+  
+  // ===== Code Formatting =====
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "[kotlin]": {
+    "editor.defaultFormatter": "fwcd.kotlin",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true
+  },
+  "[java]": {
+    "editor.defaultFormatter": "redhat.java",
+    "editor.tabSize": 4
+  },
+  "[xml]": {
+    "editor.tabSize": 2
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.tabSize": 2
+  },
+  "[gradle]": {
+    "editor.tabSize": 4
+  },
+  
+  // ===== Linting & Quality =====
+  "ktlint.enable": true,
+  "ktlint.autoFormat": true,
+  "ktlint.lintAfterCreate": true,
+  "detekt.enable": true,
+  "detekt.configPath": "${workspaceFolder}/detekt-config.yml",
+  
+  // ===== Git =====
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.pruneOnFetch": true,
+  
+  // ===== Files =====
+  "files.exclude": {
+    "**/.gradle": true,
+    "**/.idea": true,
+    "**/build": true,
+    "**/*.iml": true,
+    "**/.DS_Store": true,
+    "**/local.properties": true
+  },
+  "files.watcherExclude": {
+    "**/.gradle/**": true,
+    "**/.idea/**": true,
+    "**/build/**": true,
+    "**/.wsl-*/**": true
+  },
+  "search.exclude": {
+    "**/.gradle": true,
+    "**/.idea": true,
+    "**/build": true,
+    "**/.wsl-*": true
+  },
+  
+  // ===== Terminal =====
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.env.linux": {
+    "ANDROID_SDK_ROOT": "${workspaceFolder}/.wsl-android-sdk",
+    "ANDROID_NDK_HOME": "${workspaceFolder}/.wsl-android-sdk/ndk/26.1.10909125",
+    "JAVA_HOME": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+    "GRADLE_USER_HOME": "${workspaceFolder}/.wsl-gradle",
+    "PATH": "${workspaceFolder}/.wsl-cmake/bin:${workspaceFolder}/.wsl-gperf:/usr/local/sdkman/candidates/java/21.0.9-ms/bin:${workspaceFolder}/.wsl-android-sdk/cmdline-tools/latest/bin:${workspaceFolder}/.wsl-android-sdk/platform-tools:${workspaceFolder}/.wsl-android-sdk/emulator:${env:PATH}"
+  },
+  
+  // ===== Editor =====
+  "editor.minimap.enabled": true,
+  "editor.rulers": [120],
+  "editor.wordWrap": "off",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.suggestSelection": "first",
+  "editor.inlineSuggest.enabled": true,
+  
+  // ===== Compose =====
+  "compose.preview.enabled": true,
+  
+  // ===== Performance =====
+  "files.maxMemoryForLargeFilesMB": 8192,
+  "search.maxResults": 20000,
+  
+  // ===== Tasks =====
+  "task.autoDetect": "on",
+  "task.problemMatchers": [],
+  
+  // ===== Extensions =====
+  "extensions.ignoreRecommendations": false
+}

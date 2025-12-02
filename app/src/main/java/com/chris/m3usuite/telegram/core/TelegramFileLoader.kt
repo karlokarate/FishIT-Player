@@ -1,11 +1,15 @@
 package com.chris.m3usuite.telegram.core
 
+import android.content.Context
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
+import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider
+import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 /**
  * Handles downloading and accessing Telegram files via TDLib.
@@ -25,7 +29,10 @@ import kotlinx.coroutines.launch
  * This is a thin wrapper around T_TelegramFileDownloader for convenience.
  */
 class TelegramFileLoader(
+    context: Context,
     private val serviceClient: T_TelegramServiceClient,
+    private val settingsProvider: TelegramStreamingSettingsProvider =
+        TelegramStreamingSettingsProviderHolder.get(context),
 ) {
     private val downloader: T_TelegramFileDownloader
         get() = serviceClient.downloader()
@@ -56,6 +63,7 @@ class TelegramFileLoader(
         private const val DEFAULT_TIMEOUT_MS = 30_000L
         private const val DEFAULT_PRIORITY = 16 // Lower priority for thumbnails
         private const val MAX_404_LOG_CACHE = 1000 // Maximum remoteIds to track for 404 logging
+        private const val MIN_THUMB_PREFIX_BYTES = 64 * 1024L
     }
 
     /**
@@ -234,13 +242,27 @@ class TelegramFileLoader(
                 )
             }
 
-            // Use downloader to ensure the file is ready (entire file for thumbnails)
-            // Pass minBytes = totalSizeBytes to force FULL download instead of 256KB prefix
+            val settings = settingsProvider.currentSettings
+            val shouldDownloadFull = settings.thumbFullDownload && totalSizeBytes > 0L
+            val prefixCandidate =
+                if (totalSizeBytes > 0L) {
+                    min(totalSizeBytes, settings.initialMinPrefixBytes)
+                } else {
+                    settings.initialMinPrefixBytes
+                }
+            val minBytes =
+                if (shouldDownloadFull && totalSizeBytes > 0L) {
+                    totalSizeBytes
+                } else {
+                    prefixCandidate.coerceAtLeast(MIN_THUMB_PREFIX_BYTES)
+                }
+
+            // Use downloader to ensure the file is ready (entire file when configured)
             val path =
                 downloader.ensureFileReady(
                     fileId = fileId,
                     startPosition = 0,
-                    minBytes = totalSizeBytes, // Force FULL download
+                    minBytes = minBytes,
                     mode = T_TelegramFileDownloader.EnsureFileReadyMode.INITIAL_START,
                     fileSizeBytes = totalSizeBytes,
                     timeoutMs = timeoutMs,
@@ -406,11 +428,18 @@ class TelegramFileLoader(
                 source = TAG,
                 message = "ensureFileForPlayback: Exception for fileId=$fileId",
                 exception = e,
+                        "downloadMode" to if (shouldDownloadFull) "FULL" else "PREFIX",
+                        "minBytes" to minBytes.toString(),
             )
             null
         }
 
-    // ==========================================================================
+            if (
+                shouldDownloadFull &&
+                    totalSizeBytes > 0L &&
+                    downloadedPrefixSize < totalSizeBytes &&
+                    !isComplete
+            ) {
     // Phase T2: TelegramImageRef-based Image Loading
     // ==========================================================================
 

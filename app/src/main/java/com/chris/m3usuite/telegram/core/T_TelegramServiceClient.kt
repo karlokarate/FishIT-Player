@@ -4,18 +4,17 @@ import android.content.Context
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.config.AppConfig
 import com.chris.m3usuite.telegram.config.ConfigLoader
+import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.logging.TgLogEntry
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.*
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Telegram authentication state for external UI consumption.
- */
+/** Telegram authentication state for external UI consumption. */
 sealed class TelegramAuthState {
     object Idle : TelegramAuthState()
 
@@ -30,13 +29,11 @@ sealed class TelegramAuthState {
     object Ready : TelegramAuthState()
 
     data class Error(
-        val message: String,
+            val message: String,
     ) : TelegramAuthState()
 }
 
-/**
- * Telegram connection state.
- */
+/** Telegram connection state. */
 sealed class TgConnectionState {
     object Disconnected : TgConnectionState()
 
@@ -45,58 +42,54 @@ sealed class TgConnectionState {
     object Connected : TgConnectionState()
 
     data class Error(
-        val message: String,
+            val message: String,
     ) : TgConnectionState()
 }
 
-/**
- * Telegram sync state.
- */
+/** Telegram sync state. */
 sealed class TgSyncState {
     object Idle : TgSyncState()
 
     data class Running(
-        val progress: Int,
-        val total: Int,
+            val progress: Int,
+            val total: Int,
     ) : TgSyncState()
 
     data class Completed(
-        val itemsProcessed: Int,
+            val itemsProcessed: Int,
     ) : TgSyncState()
 
     data class Failed(
-        val error: String,
+            val error: String,
     ) : TgSyncState()
 }
 
-/**
- * Telegram activity event for Activity Feed.
- */
+/** Telegram activity event for Activity Feed. */
 sealed class TgActivityEvent {
     data class NewMessage(
-        val chatId: Long,
-        val messageId: Long,
+            val chatId: Long,
+            val messageId: Long,
     ) : TgActivityEvent()
 
     data class NewDownload(
-        val fileId: Int,
-        val fileName: String,
+            val fileId: Int,
+            val fileName: String,
     ) : TgActivityEvent()
 
     data class DownloadComplete(
-        val fileId: Int,
-        val fileName: String,
+            val fileId: Int,
+            val fileName: String,
     ) : TgActivityEvent()
 
     data class ParseComplete(
-        val chatId: Long,
-        val itemsFound: Int,
+            val chatId: Long,
+            val itemsFound: Int,
     ) : TgActivityEvent()
 }
 
 /**
- * Unified Telegram Engine - Single entry point for all TDLib functionality.
- * Manages exactly ONE TdlClient instance per process.
+ * Unified Telegram Engine - Single entry point for all TDLib functionality. Manages exactly ONE
+ * TdlClient instance per process.
  *
  * Key responsibilities:
  * - Lifecycle management of TdlClient
@@ -107,31 +100,32 @@ sealed class TgActivityEvent {
  * - Reconnection handling on network changes
  * - Process lifecycle integration
  *
- * This is the ONLY class that creates and owns a TdlClient instance.
- * All other components must use this service to access Telegram functionality.
+ * This is the ONLY class that creates and owns a TdlClient instance. All other components must use
+ * this service to access Telegram functionality.
  */
-class T_TelegramServiceClient private constructor(
-    private val applicationContext: Context,
+class T_TelegramServiceClient
+private constructor(
+        private val applicationContext: Context,
 ) {
     companion object {
         private const val TAG = "TelegramServiceClient"
 
-        @Volatile
-        private var INSTANCE: T_TelegramServiceClient? = null
+        @Volatile private var INSTANCE: T_TelegramServiceClient? = null
 
         /**
-         * Get or create the singleton instance.
-         * Thread-safe singleton with double-checked locking.
+         * Get or create the singleton instance. Thread-safe singleton with double-checked locking.
          *
          * @param context Application context
          * @return Singleton instance
          */
         fun getInstance(context: Context): T_TelegramServiceClient =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: T_TelegramServiceClient(context.applicationContext).also {
-                    INSTANCE = it
-                }
-            }
+                INSTANCE
+                        ?: synchronized(this) {
+                            INSTANCE
+                                    ?: T_TelegramServiceClient(context.applicationContext).also {
+                                        INSTANCE = it
+                                    }
+                        }
     }
 
     // Single TdlClient instance for the entire process
@@ -141,9 +135,11 @@ class T_TelegramServiceClient private constructor(
     private var session: T_TelegramSession? = null
     private var browser: T_ChatBrowser? = null
     private var downloader: T_TelegramFileDownloader? = null
-    
+
     // Phase 2 & 3: Runtime settings provider for streaming configuration
-    private var settingsProvider: com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider? = null
+    private var settingsProvider:
+            com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider? =
+            null
 
     // Live update handler for real-time message processing
     private var updateHandler: com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler? = null
@@ -159,8 +155,8 @@ class T_TelegramServiceClient private constructor(
     private val isInitializing = AtomicBoolean(false)
 
     /**
-     * Check if the service is started and ready for operations.
-     * Used by TelegramFileLoader and TelegramThumbPrefetcher to gate operations.
+     * Check if the service is started and ready for operations. Used by TelegramFileLoader and
+     * TelegramThumbPrefetcher to gate operations.
      */
     val isStarted: Boolean
         get() = _isStarted.get()
@@ -169,7 +165,8 @@ class T_TelegramServiceClient private constructor(
     private val _authState = MutableStateFlow<TelegramAuthState>(TelegramAuthState.Idle)
     val authState: StateFlow<TelegramAuthState> = _authState.asStateFlow()
 
-    private val _connectionState = MutableStateFlow<TgConnectionState>(TgConnectionState.Disconnected)
+    private val _connectionState =
+            MutableStateFlow<TgConnectionState>(TgConnectionState.Disconnected)
     val connectionState: StateFlow<TgConnectionState> = _connectionState.asStateFlow()
 
     private val _syncState = MutableStateFlow<TgSyncState>(TgSyncState.Idle)
@@ -179,27 +176,29 @@ class T_TelegramServiceClient private constructor(
     val activityEvents: SharedFlow<TgActivityEvent> = _activityEvents.asSharedFlow()
 
     /**
-     * Ensure the service is started and ready.
-     * This is idempotent - safe to call multiple times.
+     * Ensure the service is started and ready. This is idempotent - safe to call multiple times.
      *
      * @param context Android context
      * @param settings Settings store for configuration
      */
     suspend fun ensureStarted(
-        context: Context,
-        settings: SettingsStore,
+            context: Context,
+            settings: SettingsStore,
     ) {
         if (_isStarted.get()) {
             TelegramLogRepository.log(
-                level = TgLogEntry.LogLevel.DEBUG,
-                source = "T_TelegramServiceClient",
-                message = "Already started",
+                    level = TgLogEntry.LogLevel.DEBUG,
+                    source = "T_TelegramServiceClient",
+                    message = "Already started",
             )
             return
         }
 
         if (!isInitializing.compareAndSet(false, true)) {
-            TelegramLogRepository.debug("T_TelegramServiceClient", "Already initializing, waiting...")
+            TelegramLogRepository.debug(
+                    "T_TelegramServiceClient",
+                    "Already initializing, waiting..."
+            )
             // Wait for initialization to complete
             while (isInitializing.get()) {
                 delay(100)
@@ -210,14 +209,17 @@ class T_TelegramServiceClient private constructor(
         try {
             // Recreate serviceScope if it was cancelled (e.g., after shutdown)
             if (!serviceScope.isActive) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Recreating cancelled serviceScope...")
+                TelegramLogRepository.debug(
+                        "T_TelegramServiceClient",
+                        "Recreating cancelled serviceScope..."
+                )
                 serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             }
 
             TelegramLogRepository.log(
-                level = TgLogEntry.LogLevel.INFO,
-                source = "T_TelegramServiceClient",
-                message = "Starting Unified Telegram Engine",
+                    level = TgLogEntry.LogLevel.INFO,
+                    source = "T_TelegramServiceClient",
+                    message = "Starting Unified Telegram Engine",
             )
             _connectionState.value = TgConnectionState.Connecting
 
@@ -227,19 +229,19 @@ class T_TelegramServiceClient private constructor(
             val phoneNumber = settings.tgPhoneNumber.first() // Can be empty
 
             config =
-                ConfigLoader.load(
-                    context = context,
-                    apiId = apiIdOverride,
-                    apiHash = apiHashOverride,
-                    phoneNumber = phoneNumber,
-                )
+                    ConfigLoader.load(
+                            context = context,
+                            apiId = apiIdOverride,
+                            apiHash = apiHashOverride,
+                            phoneNumber = phoneNumber,
+                    )
 
             // Create TdlClient
             client = TdlClient.create()
             TelegramLogRepository.log(
-                level = TgLogEntry.LogLevel.INFO,
-                source = "T_TelegramServiceClient",
-                message = "TdlClient created",
+                    level = TgLogEntry.LogLevel.INFO,
+                    source = "T_TelegramServiceClient",
+                    message = "TdlClient created",
             )
 
             // Apply TDLib log verbosity level from settings
@@ -247,29 +249,26 @@ class T_TelegramServiceClient private constructor(
 
             // Create core components
             session =
-                T_TelegramSession(
-                    client = client!!,
-                    config = config!!,
-                    scope = serviceScope,
-                )
+                    T_TelegramSession(
+                            client = client!!,
+                            config = config!!,
+                            scope = serviceScope,
+                    )
 
             browser =
-                T_ChatBrowser(
-                    session = session!!,
-                )
+                    T_ChatBrowser(
+                            session = session!!,
+                    )
 
             // Phase 2 & 3: Create settings provider for runtime configuration
-            settingsProvider =
-                com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider(
-                    settingsRepository = com.chris.m3usuite.data.repo.SettingsRepository(context),
-                )
+            settingsProvider = TelegramStreamingSettingsProviderHolder.get(context)
 
             downloader =
-                T_TelegramFileDownloader(
-                    context = context,
-                    session = session!!,
-                    settingsProvider = settingsProvider!!,
-                )
+                    T_TelegramFileDownloader(
+                            context = context,
+                            session = session!!,
+                            settingsProvider = settingsProvider!!,
+                    )
 
             // Start update distribution
             startUpdateDistribution()
@@ -281,16 +280,16 @@ class T_TelegramServiceClient private constructor(
             _isStarted.set(true)
 
             TelegramLogRepository.log(
-                level = TgLogEntry.LogLevel.INFO,
-                source = "T_TelegramServiceClient",
-                message = "Unified Telegram Engine started successfully",
+                    level = TgLogEntry.LogLevel.INFO,
+                    source = "T_TelegramServiceClient",
+                    message = "Unified Telegram Engine started successfully",
             )
         } catch (e: Exception) {
             TelegramLogRepository.log(
-                level = TgLogEntry.LogLevel.ERROR,
-                source = "T_TelegramServiceClient",
-                message = "Failed to start",
-                details = mapOf("error" to (e.message ?: "Unknown error")),
+                    level = TgLogEntry.LogLevel.ERROR,
+                    source = "T_TelegramServiceClient",
+                    message = "Failed to start",
+                    details = mapOf("error" to (e.message ?: "Unknown error")),
             )
             e.printStackTrace()
             _connectionState.value = TgConnectionState.Error(e.message ?: "Unknown error")
@@ -302,17 +301,16 @@ class T_TelegramServiceClient private constructor(
     }
 
     /**
-     * Initiate login flow.
-     * Delegates to T_TelegramSession for actual auth handling.
+     * Initiate login flow. Delegates to T_TelegramSession for actual auth handling.
      *
      * @param phone Phone number (optional, used if provided)
      * @param code Verification code (optional)
      * @param password 2FA password (optional)
      */
     suspend fun login(
-        phone: String? = null,
-        code: String? = null,
-        password: String? = null,
+            phone: String? = null,
+            code: String? = null,
+            password: String? = null,
     ) {
         val currentSession = session ?: throw IllegalStateException("Service not started")
 
@@ -327,7 +325,10 @@ class T_TelegramServiceClient private constructor(
                     currentSession.sendCode(code)
                 }
                 phone != null -> {
-                    TelegramLogRepository.debug("T_TelegramServiceClient", "Submitting phone number...")
+                    TelegramLogRepository.debug(
+                            "T_TelegramServiceClient",
+                            "Submitting phone number..."
+                    )
                     currentSession.sendPhoneNumber(phone)
                 }
                 else -> {
@@ -350,8 +351,8 @@ class T_TelegramServiceClient private constructor(
      * @return List of Chat objects
      */
     suspend fun listChats(
-        context: Context,
-        limit: Int = 100,
+            context: Context,
+            limit: Int = 100,
     ): List<Chat> {
         val currentBrowser = browser ?: throw IllegalStateException("Service not started")
         return currentBrowser.getTopChats(limit)
@@ -373,7 +374,8 @@ class T_TelegramServiceClient private constructor(
      *
      * @return T_TelegramFileDownloader instance
      */
-    fun downloader(): T_TelegramFileDownloader = downloader ?: throw IllegalStateException("Service not started")
+    fun downloader(): T_TelegramFileDownloader =
+            downloader ?: throw IllegalStateException("Service not started")
 
     /**
      * Get the chat browser component.
@@ -382,16 +384,12 @@ class T_TelegramServiceClient private constructor(
      */
     fun browser(): T_ChatBrowser = browser ?: throw IllegalStateException("Service not started")
 
-    /**
-     * Update sync state (called by TelegramSyncWorker).
-     */
+    /** Update sync state (called by TelegramSyncWorker). */
     fun updateSyncState(state: TgSyncState) {
         _syncState.value = state
     }
 
-    /**
-     * Emit activity event (called by various components).
-     */
+    /** Emit activity event (called by various components). */
     suspend fun emitActivityEvent(event: TgActivityEvent) {
         _activityEvents.emit(event)
     }
@@ -412,8 +410,8 @@ class T_TelegramServiceClient private constructor(
      *
      * Per design decision 6.11 (Auth & Ingestion Constraints):
      * - Ingestion MUST NOT run unless auth state is [TelegramAuthState.Ready]
-     * - If TDLib DB is already authorized from a previous session, this returns
-     *   immediately once the auth state collector receives the Ready state
+     * - If TDLib DB is already authorized from a previous session, this returns immediately once
+     * the auth state collector receives the Ready state
      * - All auth state transitions are logged via [TelegramLogRepository]
      *
      * Typical usage in sync workers:
@@ -427,8 +425,8 @@ class T_TelegramServiceClient private constructor(
      */
     suspend fun awaitAuthReady(timeoutMs: Long = 30_000L): Boolean {
         TelegramLogRepository.debug(
-            "T_TelegramServiceClient",
-            "Waiting for auth ready (current: ${_authState.value::class.simpleName}, timeout: ${timeoutMs}ms)",
+                "T_TelegramServiceClient",
+                "Waiting for auth ready (current: ${_authState.value::class.simpleName}, timeout: ${timeoutMs}ms)",
         )
 
         // If already ready, return immediately
@@ -439,16 +437,14 @@ class T_TelegramServiceClient private constructor(
 
         return try {
             withTimeout(timeoutMs) {
-                _authState
-                    .filter { it == TelegramAuthState.Ready }
-                    .first()
+                _authState.filter { it == TelegramAuthState.Ready }.first()
                 TelegramLogRepository.info("T_TelegramServiceClient", "Auth became ready")
                 true
             }
         } catch (e: TimeoutCancellationException) {
             TelegramLogRepository.warn(
-                "T_TelegramServiceClient",
-                "Auth ready timeout after ${timeoutMs}ms (current: ${_authState.value::class.simpleName})",
+                    "T_TelegramServiceClient",
+                    "Auth ready timeout after ${timeoutMs}ms (current: ${_authState.value::class.simpleName})",
             )
             false
         }
@@ -457,24 +453,22 @@ class T_TelegramServiceClient private constructor(
     /**
      * Wait for authentication to reach a specific state, with timeout.
      *
-     * Useful for UI to wait for specific states like [TelegramAuthState.WaitingForCode]
-     * during interactive login flows.
+     * Useful for UI to wait for specific states like [TelegramAuthState.WaitingForCode] during
+     * interactive login flows.
      *
      * @param targetState The specific [TelegramAuthState] to wait for
      * @param timeoutMs Maximum time to wait in milliseconds (default 10 seconds)
      * @return true if target state was reached within timeout, false otherwise
      */
     suspend fun awaitAuthState(
-        targetState: TelegramAuthState,
-        timeoutMs: Long = 10_000L,
+            targetState: TelegramAuthState,
+            timeoutMs: Long = 10_000L,
     ): Boolean {
         if (_authState.value == targetState) return true
 
         return try {
             withTimeout(timeoutMs) {
-                _authState
-                    .filter { it == targetState }
-                    .first()
+                _authState.filter { it == targetState }.first()
                 true
             }
         } catch (e: TimeoutCancellationException) {
@@ -482,9 +476,7 @@ class T_TelegramServiceClient private constructor(
         }
     }
 
-    /**
-     * Start distributing TDLib updates to components.
-     */
+    /** Start distributing TDLib updates to components. */
     private fun startUpdateDistribution() {
         val currentClient = client ?: return
 
@@ -493,14 +485,17 @@ class T_TelegramServiceClient private constructor(
             try {
                 currentClient.newMessageUpdates.collect { update ->
                     _activityEvents.emit(
-                        TgActivityEvent.NewMessage(
-                            chatId = update.message.chatId,
-                            messageId = update.message.id,
-                        ),
+                            TgActivityEvent.NewMessage(
+                                    chatId = update.message.chatId,
+                                    messageId = update.message.id,
+                            ),
                     )
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Error in newMessageUpdates flow: ${e.message}")
+                TelegramLogRepository.debug(
+                        "T_TelegramServiceClient",
+                        "Error in newMessageUpdates flow: ${e.message}"
+                )
             }
         }
 
@@ -513,15 +508,19 @@ class T_TelegramServiceClient private constructor(
 
                     if (isComplete) {
                         _activityEvents.emit(
-                            TgActivityEvent.DownloadComplete(
-                                fileId = file.id,
-                                fileName = file.local?.path?.substringAfterLast('/') ?: "unknown",
-                            ),
+                                TgActivityEvent.DownloadComplete(
+                                        fileId = file.id,
+                                        fileName = file.local?.path?.substringAfterLast('/')
+                                                        ?: "unknown",
+                                ),
                         )
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Error in file updates flow: ${e.message}")
+                TelegramLogRepository.debug(
+                        "T_TelegramServiceClient",
+                        "Error in file updates flow: ${e.message}"
+                )
             }
         }
 
@@ -529,8 +528,8 @@ class T_TelegramServiceClient private constructor(
     }
 
     /**
-     * Start the live update handler for real-time message processing.
-     * Called when auth state transitions to READY.
+     * Start the live update handler for real-time message processing. Called when auth state
+     * transitions to READY.
      */
     private fun startUpdateHandler() {
         if (updateHandler != null) {
@@ -540,24 +539,25 @@ class T_TelegramServiceClient private constructor(
 
         try {
             updateHandler =
-                com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler(
-                    context = applicationContext,
-                    serviceClient = this,
-                )
+                    com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler(
+                            context = applicationContext,
+                            serviceClient = this,
+                    )
             updateHandler?.start()
-            TelegramLogRepository.info("T_TelegramServiceClient", "TelegramUpdateHandler started for live updates")
+            TelegramLogRepository.info(
+                    "T_TelegramServiceClient",
+                    "TelegramUpdateHandler started for live updates"
+            )
         } catch (e: Exception) {
             TelegramLogRepository.error(
-                source = "T_TelegramServiceClient",
-                message = "Failed to start TelegramUpdateHandler",
-                exception = e,
+                    source = "T_TelegramServiceClient",
+                    message = "Failed to start TelegramUpdateHandler",
+                    exception = e,
             )
         }
     }
 
-    /**
-     * Start collecting auth events from session and mapping to external auth state.
-     */
+    /** Start collecting auth events from session and mapping to external auth state. */
     private fun startAuthEventCollection() {
         val currentSession = session ?: return
 
@@ -568,7 +568,10 @@ class T_TelegramServiceClient private constructor(
                         is AuthEvent.StateChanged -> {
                             val newState = mapAuthorizationStateToAuthState(event.state)
                             _authState.value = newState
-                            TelegramLogRepository.debug("T_TelegramServiceClient", "Auth state changed: $newState")
+                            TelegramLogRepository.debug(
+                                    "T_TelegramServiceClient",
+                                    "Auth state changed: $newState"
+                            )
                         }
                         is AuthEvent.Ready -> {
                             _authState.value = TelegramAuthState.Ready
@@ -578,48 +581,55 @@ class T_TelegramServiceClient private constructor(
                         }
                         is AuthEvent.Error -> {
                             _authState.value = TelegramAuthState.Error(event.message)
-                            TelegramLogRepository.debug("T_TelegramServiceClient", "Auth error: ${event.message}")
+                            TelegramLogRepository.debug(
+                                    "T_TelegramServiceClient",
+                                    "Auth error: ${event.message}"
+                            )
                         }
                         is AuthEvent.ReauthRequired -> {
                             _authState.value = TelegramAuthState.WaitingForPhone
-                            TelegramLogRepository.info("T_TelegramServiceClient", "Reauth required: ${event.reason}")
+                            TelegramLogRepository.info(
+                                    "T_TelegramServiceClient",
+                                    "Reauth required: ${event.reason}"
+                            )
                             // Show global snackbar notification
                             try {
                                 com.chris.m3usuite.ui.home.GlobalSnackbarEvent.show(
-                                    "Telegram benötigt eine erneute Anmeldung. Bitte öffne die Telegram-Einstellungen.",
+                                        "Telegram benötigt eine erneute Anmeldung. Bitte öffne die Telegram-Einstellungen.",
                                 )
                             } catch (e: Exception) {
-                                TelegramLogRepository.debug("T_TelegramServiceClient", "Error showing reauth snackbar: ${e.message}")
+                                TelegramLogRepository.debug(
+                                        "T_TelegramServiceClient",
+                                        "Error showing reauth snackbar: ${e.message}"
+                                )
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Error in auth events flow: ${e.message}")
+                TelegramLogRepository.debug(
+                        "T_TelegramServiceClient",
+                        "Error in auth events flow: ${e.message}"
+                )
             }
         }
     }
 
-    /**
-     * Map TDLib AuthorizationState to external TelegramAuthState.
-     */
+    /** Map TDLib AuthorizationState to external TelegramAuthState. */
     private fun mapAuthorizationStateToAuthState(state: AuthorizationState): TelegramAuthState =
-        when (state) {
-            is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitingForPhone
-            is AuthorizationStateWaitCode -> TelegramAuthState.WaitingForCode
-            is AuthorizationStateWaitPassword -> TelegramAuthState.WaitingForPassword
-            is AuthorizationStateReady -> TelegramAuthState.Ready
-            is AuthorizationStateWaitTdlibParameters -> TelegramAuthState.Connecting
-            is AuthorizationStateLoggingOut,
-            is AuthorizationStateClosing,
-            is AuthorizationStateClosed,
-            -> TelegramAuthState.Idle
-            else -> TelegramAuthState.Idle
-        }
+            when (state) {
+                is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitingForPhone
+                is AuthorizationStateWaitCode -> TelegramAuthState.WaitingForCode
+                is AuthorizationStateWaitPassword -> TelegramAuthState.WaitingForPassword
+                is AuthorizationStateReady -> TelegramAuthState.Ready
+                is AuthorizationStateWaitTdlibParameters -> TelegramAuthState.Connecting
+                is AuthorizationStateLoggingOut,
+                is AuthorizationStateClosing,
+                is AuthorizationStateClosed, -> TelegramAuthState.Idle
+                else -> TelegramAuthState.Idle
+            }
 
-    /**
-     * Shutdown the service and cleanup resources.
-     */
+    /** Shutdown the service and cleanup resources. */
     fun shutdown() {
         TelegramLogRepository.debug("T_TelegramServiceClient", "Shutting down...")
 
@@ -636,7 +646,10 @@ class T_TelegramServiceClient private constructor(
                 client?.close()
                 TelegramLogRepository.debug("T_TelegramServiceClient", "TdlClient closed")
             } catch (e: Exception) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Error closing TdlClient: ${e.message}")
+                TelegramLogRepository.debug(
+                        "T_TelegramServiceClient",
+                        "Error closing TdlClient: ${e.message}"
+                )
             }
         }
 
@@ -657,8 +670,8 @@ class T_TelegramServiceClient private constructor(
     }
 
     /**
-     * Apply TDLib log verbosity level from settings.
-     * This method is idempotent and can be called multiple times safely.
+     * Apply TDLib log verbosity level from settings. This method is idempotent and can be called
+     * multiple times safely.
      *
      * @param settings SettingsStore to read log verbosity from
      */
@@ -667,36 +680,36 @@ class T_TelegramServiceClient private constructor(
 
         try {
             val logLevel = settings.tgLogVerbosity.first()
-            
+
             // TDLib log verbosity levels: 0=FATAL, 1=ERROR, 2=WARNING, 3=INFO, 4=DEBUG, 5=VERBOSE
             val result = currentClient.setLogVerbosityLevel(logLevel)
-            
+
             when (result) {
                 is TdlResult.Success -> {
                     TelegramLogRepository.info(
-                        source = "T_TelegramServiceClient",
-                        message = "TDLib log verbosity set to level $logLevel",
+                            source = "T_TelegramServiceClient",
+                            message = "TDLib log verbosity set to level $logLevel",
                     )
                 }
                 is TdlResult.Failure -> {
                     TelegramLogRepository.error(
-                        source = "T_TelegramServiceClient",
-                        message = "Failed to set TDLib log verbosity: ${result.message}",
+                            source = "T_TelegramServiceClient",
+                            message = "Failed to set TDLib log verbosity: ${result.message}",
                     )
                 }
             }
         } catch (e: Exception) {
             TelegramLogRepository.error(
-                source = "T_TelegramServiceClient",
-                message = "Exception setting TDLib log verbosity",
-                exception = e,
+                    source = "T_TelegramServiceClient",
+                    message = "Exception setting TDLib log verbosity",
+                    exception = e,
             )
         }
     }
 
     /**
-     * Update TDLib log verbosity level at runtime.
-     * Can be called to change log level without restarting the service.
+     * Update TDLib log verbosity level at runtime. Can be called to change log level without
+     * restarting the service.
      *
      * @param settings SettingsStore to read log verbosity from
      */

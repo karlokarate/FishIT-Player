@@ -8,19 +8,19 @@ import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Global ExoPlayer holder and unified PlaybackSession for the entire app.
  *
- * ════════════════════════════════════════════════════════════════════════════════
- * PHASE 7 – Unified PlaybackSession
- * PHASE 8 – SessionLifecycleState added
- * PHASE 8 – Task 6: Structured PlaybackError + AppLog integration
+ * ════════════════════════════════════════════════════════════════════════════════ PHASE 7 –
+ * Unified PlaybackSession PHASE 8 – SessionLifecycleState added PHASE 8 – Task 6: Structured
+ * PlaybackError + AppLog integration
  * ════════════════════════════════════════════════════════════════════════════════
  *
  * This singleton manages:
@@ -36,9 +36,9 @@ import java.util.concurrent.atomic.AtomicReference
  * - No re-init on transitions: Player survives Full↔MiniPlayer navigation
  * - Thread-safe state updates via StateFlows
  * - Player is NOT destroyed when:
- *   - Leaving the full player
- *   - Opening the MiniPlayer
- *   - Navigating between screens
+ * - Leaving the full player
+ * - Opening the MiniPlayer
+ * - Navigating between screens
  * - Lifecycle state enables warm resume (Phase 8)
  * - Errors logged via AppLog with category "PLAYER_ERROR" (Phase 8 Task 6)
  *
@@ -49,9 +49,21 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object PlaybackSession : PlaybackSessionController {
     data class Holder(
-        val player: ExoPlayer,
-        val isNew: Boolean,
+            val player: ExoPlayer,
+            val isNew: Boolean,
     )
+
+    /** Metadata describing the currently tracked playback source. */
+    data class PlaybackSourceState(
+            val url: String?,
+            val playbackType: PlaybackType?,
+    ) {
+        val isTelegram: Boolean
+            get() = url?.startsWith("tg://", ignoreCase = true) == true
+
+        val isVodLike: Boolean
+            get() = playbackType != null && playbackType != PlaybackType.LIVE
+    }
 
     private val playerRef = AtomicReference<ExoPlayer?>()
     private val sourceRef = AtomicReference<String?>(null)
@@ -87,6 +99,7 @@ object PlaybackSession : PlaybackSessionController {
     private val _playbackState = MutableStateFlow(Player.STATE_IDLE)
     private val _isSessionActive = MutableStateFlow(false)
     private val _lifecycleState = MutableStateFlow(SessionLifecycleState.IDLE)
+    private val _currentSourceState = MutableStateFlow<PlaybackSourceState?>(null)
 
     /** Current media ID for error logging (Phase 8 Task 6) */
     private val _currentMediaId = AtomicReference<String?>(null)
@@ -101,30 +114,31 @@ object PlaybackSession : PlaybackSessionController {
     override val playbackState: StateFlow<Int> = _playbackState.asStateFlow()
     override val isSessionActive: StateFlow<Boolean> = _isSessionActive.asStateFlow()
     override val lifecycleState: StateFlow<SessionLifecycleState> = _lifecycleState.asStateFlow()
+    val currentSourceState: StateFlow<PlaybackSourceState?> = _currentSourceState.asStateFlow()
 
     // ══════════════════════════════════════════════════════════════════
     // PHASE 8 – LIFECYCLE HELPERS
     // ══════════════════════════════════════════════════════════════════
 
     /**
-     * Helper to check if the session is currently active (not IDLE or RELEASED).
-     * This is a convenience property derived from lifecycleState.
+     * Helper to check if the session is currently active (not IDLE or RELEASED). This is a
+     * convenience property derived from lifecycleState.
      */
     val isSessionActiveByLifecycle: Boolean
-        get() = _lifecycleState.value !in setOf(SessionLifecycleState.IDLE, SessionLifecycleState.RELEASED)
+        get() =
+                _lifecycleState.value !in
+                        setOf(SessionLifecycleState.IDLE, SessionLifecycleState.RELEASED)
 
-    /**
-     * Helper to check if playback can be resumed (session in a resumable state).
-     */
+    /** Helper to check if playback can be resumed (session in a resumable state). */
     val canResume: Boolean
         get() =
-            _lifecycleState.value in
-                setOf(
-                    SessionLifecycleState.PREPARED,
-                    SessionLifecycleState.PLAYING,
-                    SessionLifecycleState.PAUSED,
-                    SessionLifecycleState.BACKGROUND,
-                )
+                _lifecycleState.value in
+                        setOf(
+                                SessionLifecycleState.PREPARED,
+                                SessionLifecycleState.PLAYING,
+                                SessionLifecycleState.PAUSED,
+                                SessionLifecycleState.BACKGROUND,
+                        )
 
     // ══════════════════════════════════════════════════════════════════
     // PLAYER ACQUISITION (existing + Phase 7 extensions)
@@ -133,8 +147,8 @@ object PlaybackSession : PlaybackSessionController {
     /**
      * Acquire the shared ExoPlayer instance.
      *
-     * If no player exists, one is created using the provided builder.
-     * If a player already exists, it is returned.
+     * If no player exists, one is created using the provided builder. If a player already exists,
+     * it is returned.
      *
      * Phase 7: This method now automatically attaches the state listener.
      *
@@ -143,8 +157,8 @@ object PlaybackSession : PlaybackSessionController {
      * @return Holder containing the player and whether it was newly created
      */
     fun acquire(
-        context: Context,
-        builder: () -> ExoPlayer,
+            context: Context,
+            builder: () -> ExoPlayer,
     ): Holder {
         var created = false
         var current = playerRef.get()
@@ -173,11 +187,10 @@ object PlaybackSession : PlaybackSessionController {
     fun current(): ExoPlayer? = playerRef.get()
 
     /**
-     * Set the player instance directly.
-     * Note: Prefer using acquire() for normal use cases.
+     * Set the player instance directly. Note: Prefer using acquire() for normal use cases.
      *
-     * If a different player instance was previously set, it will be released.
-     * If null is passed, the current player is released.
+     * If a different player instance was previously set, it will be released. If null is passed,
+     * the current player is released.
      */
     fun set(player: ExoPlayer?) {
         val previous = playerRef.getAndSet(player)
@@ -205,8 +218,17 @@ object PlaybackSession : PlaybackSessionController {
 
     fun currentSource(): String? = sourceRef.get()
 
-    fun setSource(url: String?) {
+    fun setSource(
+            url: String?,
+            playbackType: PlaybackType? = null,
+    ) {
         sourceRef.set(url)
+        _currentSourceState.value =
+                if (url == null && playbackType == null) {
+                    null
+                } else {
+                    PlaybackSourceState(url = url, playbackType = playbackType)
+                }
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -240,7 +262,8 @@ object PlaybackSession : PlaybackSessionController {
 
     override fun setSpeed(speed: Float) {
         val player = playerRef.get() ?: return
-        player.playbackParameters = PlaybackParameters(speed.coerceIn(MIN_PLAYBACK_SPEED, MAX_PLAYBACK_SPEED))
+        player.playbackParameters =
+                PlaybackParameters(speed.coerceIn(MIN_PLAYBACK_SPEED, MAX_PLAYBACK_SPEED))
     }
 
     override fun enableTrickplay(speed: Float) {
@@ -284,25 +307,27 @@ object PlaybackSession : PlaybackSessionController {
     // ══════════════════════════════════════════════════════════════════
 
     /**
-     * Notify PlaybackSession that the app has moved to background.
-     * Called from Activity.onPause() or Activity.onStop().
+     * Notify PlaybackSession that the app has moved to background. Called from Activity.onPause()
+     * or Activity.onStop().
      *
-     * If playback is active, transitions to BACKGROUND state.
-     * This allows audio to continue playing in background if desired.
+     * If playback is active, transitions to BACKGROUND state. This allows audio to continue playing
+     * in background if desired.
      */
     fun onAppBackground() {
         val currentState = _lifecycleState.value
-        if (currentState == SessionLifecycleState.PLAYING || currentState == SessionLifecycleState.PAUSED) {
+        if (currentState == SessionLifecycleState.PLAYING ||
+                        currentState == SessionLifecycleState.PAUSED
+        ) {
             _lifecycleState.value = SessionLifecycleState.BACKGROUND
         }
     }
 
     /**
-     * Notify PlaybackSession that the app has returned to foreground.
-     * Called from Activity.onResume().
+     * Notify PlaybackSession that the app has returned to foreground. Called from
+     * Activity.onResume().
      *
-     * If in BACKGROUND state, transitions back to PLAYING or PAUSED
-     * based on current player state. Does NOT recreate ExoPlayer.
+     * If in BACKGROUND state, transitions back to PLAYING or PAUSED based on current player state.
+     * Does NOT recreate ExoPlayer.
      */
     fun onAppForeground() {
         if (_lifecycleState.value == SessionLifecycleState.BACKGROUND) {
@@ -320,8 +345,8 @@ object PlaybackSession : PlaybackSessionController {
     // ══════════════════════════════════════════════════════════════════
 
     /**
-     * Attach the state listener to the player.
-     * This listener updates all StateFlows when player state changes.
+     * Attach the state listener to the player. This listener updates all StateFlows when player
+     * state changes.
      */
     private fun attachStateListener(player: ExoPlayer) {
         // Remove any existing listener first
@@ -331,41 +356,41 @@ object PlaybackSession : PlaybackSessionController {
         }
 
         val listener =
-            object : Player.Listener {
-                override fun onEvents(
-                    player: Player,
-                    events: Player.Events,
-                ) {
-                    updateStateFromPlayer(player)
-                }
-
-                override fun onPlaybackStateChanged(state: Int) {
-                    _playbackState.value = state
-                    if (state == Player.STATE_ENDED || state == Player.STATE_IDLE) {
-                        _isSessionActive.value = state != Player.STATE_IDLE
+                object : Player.Listener {
+                    override fun onEvents(
+                            player: Player,
+                            events: Player.Events,
+                    ) {
+                        updateStateFromPlayer(player)
                     }
-                    // Phase 8: Update lifecycle state based on player state
-                    updateLifecycleFromPlaybackState(state)
-                }
 
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    _isPlaying.value = isPlaying
-                    // Phase 8: Transition between PLAYING and PAUSED
-                    updateLifecycleFromIsPlaying(isPlaying)
-                }
+                    override fun onPlaybackStateChanged(state: Int) {
+                        _playbackState.value = state
+                        if (state == Player.STATE_ENDED || state == Player.STATE_IDLE) {
+                            _isSessionActive.value = state != Player.STATE_IDLE
+                        }
+                        // Phase 8: Update lifecycle state based on player state
+                        updateLifecycleFromPlaybackState(state)
+                    }
 
-                override fun onPlayerError(error: PlaybackException) {
-                    handlePlayerError(error)
-                }
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        _isPlaying.value = isPlaying
+                        // Phase 8: Transition between PLAYING and PAUSED
+                        updateLifecycleFromIsPlaying(isPlaying)
+                    }
 
-                override fun onPlayerErrorChanged(error: PlaybackException?) {
-                    handlePlayerErrorChanged(error)
-                }
+                    override fun onPlayerError(error: PlaybackException) {
+                        handlePlayerError(error)
+                    }
 
-                override fun onVideoSizeChanged(videoSize: VideoSize) {
-                    _videoSize.value = videoSize
+                    override fun onPlayerErrorChanged(error: PlaybackException?) {
+                        handlePlayerErrorChanged(error)
+                    }
+
+                    override fun onVideoSizeChanged(videoSize: VideoSize) {
+                        _videoSize.value = videoSize
+                    }
                 }
-            }
 
         listenerRef.set(listener)
         player.addListener(listener)
@@ -374,19 +399,17 @@ object PlaybackSession : PlaybackSessionController {
         updateStateFromPlayer(player)
     }
 
-    /**
-     * Update all state flows from current player state.
-     */
+    /** Update all state flows from current player state. */
     private fun updateStateFromPlayer(player: Player) {
         _positionMs.value = player.currentPosition.coerceAtLeast(0L)
 
         val dur = player.duration
         _durationMs.value =
-            if (dur == C.TIME_UNSET) {
-                0L
-            } else {
-                dur.coerceAtLeast(0L)
-            }
+                if (dur == C.TIME_UNSET) {
+                    0L
+                } else {
+                    dur.coerceAtLeast(0L)
+                }
 
         _isPlaying.value = player.isPlaying
         _buffering.value = player.playbackState == Player.STATE_BUFFERING
@@ -398,14 +421,14 @@ object PlaybackSession : PlaybackSessionController {
     }
 
     /**
-     * Update lifecycle state based on ExoPlayer playback state changes.
-     * Phase 8: Maps Player.STATE_* to SessionLifecycleState
+     * Update lifecycle state based on ExoPlayer playback state changes. Phase 8: Maps
+     * Player.STATE_* to SessionLifecycleState
      */
     private fun updateLifecycleFromPlaybackState(exoPlayerState: Int) {
         // Don't update if already in terminal states
         val currentLifecycle = _lifecycleState.value
         if (currentLifecycle == SessionLifecycleState.RELEASED ||
-            currentLifecycle == SessionLifecycleState.STOPPED
+                        currentLifecycle == SessionLifecycleState.STOPPED
         ) {
             return
         }
@@ -427,24 +450,24 @@ object PlaybackSession : PlaybackSessionController {
                     _lifecycleState.value = SessionLifecycleState.IDLE
                 }
             }
-            // STATE_BUFFERING doesn't change lifecycle state
+        // STATE_BUFFERING doesn't change lifecycle state
         }
     }
 
     /**
-     * Update lifecycle state based on isPlaying changes.
-     * Phase 8: Transitions between PLAYING and PAUSED
+     * Update lifecycle state based on isPlaying changes. Phase 8: Transitions between PLAYING and
+     * PAUSED
      */
     private fun updateLifecycleFromIsPlaying(isPlaying: Boolean) {
         val currentLifecycle = _lifecycleState.value
         // Only transition if in an active playback state
         if (currentLifecycle !in
-            setOf(
-                SessionLifecycleState.PREPARED,
-                SessionLifecycleState.PLAYING,
-                SessionLifecycleState.PAUSED,
-                SessionLifecycleState.BACKGROUND,
-            )
+                        setOf(
+                                SessionLifecycleState.PREPARED,
+                                SessionLifecycleState.PLAYING,
+                                SessionLifecycleState.PAUSED,
+                                SessionLifecycleState.BACKGROUND,
+                        )
         ) {
             return
         }
@@ -490,28 +513,26 @@ object PlaybackSession : PlaybackSessionController {
     }
 
     private fun logPlaybackErrorToAppLog(error: PlaybackError) {
-        val extras =
-            buildMap {
-                put("type", error.typeName)
-                error.httpOrNetworkCodeAsString?.let { put("code", it) }
-                error.urlOrNull?.let { put("url", it) }
-                _currentMediaId.get()?.let { put("mediaId", it) }
-                put("positionMs", _positionMs.value.toString())
-                put("durationMs", _durationMs.value.toString())
-                runCatching {
-                    put(
+        val extras = buildMap {
+            put("type", error.typeName)
+            error.httpOrNetworkCodeAsString?.let { put("code", it) }
+            error.urlOrNull?.let { put("url", it) }
+            _currentMediaId.get()?.let { put("mediaId", it) }
+            put("positionMs", _positionMs.value.toString())
+            put("durationMs", _durationMs.value.toString())
+            runCatching {
+                put(
                         "miniPlayerVisible",
-                        DefaultMiniPlayerManager.state.value.visible
-                            .toString(),
-                    )
-                }
+                        DefaultMiniPlayerManager.state.value.visible.toString(),
+                )
             }
+        }
         AppLog.log(
-            category = LOG_CATEGORY_PLAYER_ERROR,
-            level = AppLog.Level.ERROR,
-            message = "Playback error: ${error.toShortSummary()}",
-            extras = extras,
-            bypassMaster = true,
+                category = LOG_CATEGORY_PLAYER_ERROR,
+                level = AppLog.Level.ERROR,
+                message = "Playback error: ${error.toShortSummary()}",
+                extras = extras,
+                bypassMaster = true,
         )
     }
 
@@ -533,8 +554,8 @@ object PlaybackSession : PlaybackSessionController {
     }
 
     /**
-     * Reset all state flows to initial values.
-     * Note: Does NOT reset lifecycleState - that is handled by stop()/release() explicitly.
+     * Reset all state flows to initial values. Note: Does NOT reset lifecycleState - that is
+     * handled by stop()/release() explicitly.
      */
     private fun resetStateFlows() {
         _positionMs.value = 0L
@@ -547,6 +568,7 @@ object PlaybackSession : PlaybackSessionController {
         _playbackState.value = Player.STATE_IDLE
         _isSessionActive.value = false
         _currentMediaId.set(null)
+        _currentSourceState.value = null
         // Note: _lifecycleState is set to RELEASED by release(), not here.
         // resetForTesting() sets it back to IDLE after release() for clean test state.
     }
@@ -555,10 +577,7 @@ object PlaybackSession : PlaybackSessionController {
     // TEST SUPPORT (for unit tests only)
     // ══════════════════════════════════════════════════════════════════
 
-    /**
-     * Reset all state for testing purposes.
-     * This should only be called from tests.
-     */
+    /** Reset all state for testing purposes. This should only be called from tests. */
     internal fun resetForTesting() {
         release()
         // Also reset lifecycle to IDLE for clean test state
