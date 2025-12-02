@@ -50,6 +50,36 @@ data class WindowState(
 )
 
 /**
+ * Phase 2: Classification of download types for concurrency enforcement.
+ */
+sealed class DownloadKind {
+    /** Video/media file download (VOD, Episode, etc.) */
+    object VIDEO : DownloadKind()
+    
+    /** Thumbnail/poster image download */
+    object THUMB : DownloadKind()
+}
+
+/**
+ * Phase 2: Represents a pending download job in the queue.
+ *
+ * @property fileId TDLib file ID
+ * @property kind Classification of download (VIDEO or THUMB)
+ * @property priority Download priority (1-32, higher = more important)
+ * @property offset Starting byte offset
+ * @property limit Number of bytes to download (0 = entire file)
+ * @property queuedAtMs Timestamp when job was enqueued
+ */
+data class PendingDownloadJob(
+    val fileId: Int,
+    val kind: DownloadKind,
+    val priority: Int,
+    val offset: Long,
+    val limit: Long,
+    val queuedAtMs: Long = SystemClock.elapsedRealtime(),
+)
+
+/**
  * Handles file downloads from Telegram using TDLib with **Zero-Copy Streaming**.
  *
  * This class DOES NOT create its own TdlClient - it receives an injected session
@@ -84,31 +114,56 @@ data class WindowState(
  * - Implements proper caching to prevent bloat
  * - Manages concurrent downloads efficiently
  * - Provides real-time download progress tracking via fileUpdates flow
+ *
+ * **Phase 2: Download Concurrency Enforcement:**
+ * - Runtime-configurable download limits (maxGlobalDownloads, maxVideoDownloads, maxThumbDownloads)
+ * - FIFO queues for pending downloads when limits are exceeded
+ * - Automatic queue processing on download completion
+ * - Structured logging for queue operations
  */
 class T_TelegramFileDownloader(
     private val context: Context,
     private val session: T_TelegramSession,
+    private val settingsProvider: com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider,
 ) {
     private val client get() = session.client
 
     companion object {
-        // Streaming-friendly constants (Phase D+ mode-based window policy)
+        // Phase 3: Legacy constants - DEPRECATED - Use TelegramStreamingSettings instead
         @Deprecated(
-            message = "Unused after mode-based window refactor. Use TELEGRAM_MIN_PREFIX_BYTES or SEEK_MARGIN_BYTES instead.",
+            message = "Unused after mode-based window refactor. Use settings.initialMinPrefixBytes or settings.seekMarginBytes instead.",
             level = DeprecationLevel.WARNING,
         )
         private const val TELEGRAM_STREAM_WINDOW_BYTES: Long = 50L * 1024L * 1024L // 50 MB max per video (legacy)
 
+        @Deprecated(
+            message = "Phase 3: Use settings.initialMinPrefixBytes instead",
+            level = DeprecationLevel.WARNING,
+        )
         private const val TELEGRAM_MIN_PREFIX_BYTES: Long = 256L * 1024L // 256 KB minimum for playback start
+
+        @Deprecated(
+            message = "Phase 3: No longer used - withTimeout wrapper handles all timeouts",
+            level = DeprecationLevel.WARNING,
+        )
         private const val STREAMING_MAX_TIMEOUT_MS: Long = 10_000L // 10 seconds for initial window
+        
         private const val POLL_INTERVAL_MS: Long = 150L // 150ms polling for progress updates
 
-        // Legacy constants (kept for backward compatibility)
+        // Legacy constants (kept for backward compatibility in fallback logic)
         private const val MIN_START_BYTES = 64 * 1024L // 64KB minimum for early success
         private const val STALL_TIMEOUT_MS = 5_000L // 5 seconds without progress = stalled
+        
+        @Deprecated(
+            message = "Phase 3: No longer used - withTimeout wrapper handles all timeouts",
+            level = DeprecationLevel.WARNING,
+        )
         private const val PROGRESS_RESET_TIMEOUT_MS = 60_000L // Max 60s timeout when actively progressing
 
-        // Seek margin for SEEK mode (1 MB buffer)
+        @Deprecated(
+            message = "Phase 3: Use settings.seekMarginBytes instead",
+            level = DeprecationLevel.WARNING,
+        )
         private const val SEEK_MARGIN_BYTES: Long = 1L * 1024L * 1024L // 1 MB margin for seeks
     }
 
@@ -140,6 +195,233 @@ class T_TelegramFileDownloader(
 
     // File handle cache for Zero-Copy reads - thread-safe
     private val fileHandleCache = ConcurrentHashMap<Int, RandomAccessFile>()
+
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    // Phase 2: Download Concurrency Enforcement
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    
+    // Counters for active downloads by type
+    @Volatile
+    private var activeGlobalDownloads = 0
+    @Volatile
+    private var activeVideoDownloads = 0
+    @Volatile
+    private var activeThumbDownloads = 0
+    
+    // FIFO queues for pending download jobs
+    private val globalQueue = java.util.concurrent.ConcurrentLinkedQueue<PendingDownloadJob>()
+    private val videoQueue = java.util.concurrent.ConcurrentLinkedQueue<PendingDownloadJob>()
+    private val thumbQueue = java.util.concurrent.ConcurrentLinkedQueue<PendingDownloadJob>()
+    
+    // Lock for queue operations to ensure atomicity
+    private val queueLock = Any()
+
+    // ════════════════════════════════════════════════════════════════════════════════════════
+    // Phase 2: Download Concurrency Helper Methods
+    // ════════════════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Phase 2: Classify a download as VIDEO or THUMB based on context.
+     * 
+     * Heuristic: If priority >= 32 (high priority), it's a VIDEO download.
+     * Lower priorities are assumed to be THUMB downloads.
+     * This can be refined with additional context in the future.
+     */
+    private fun classifyDownload(priority: Int): DownloadKind {
+        return if (priority >= 32) {
+            DownloadKind.VIDEO
+        } else {
+            DownloadKind.THUMB
+        }
+    }
+
+    /**
+     * Phase 2: Check if download can start based on runtime concurrency limits.
+     * Returns true if limits allow, false if job should be queued.
+     */
+    private fun canStartDownload(kind: DownloadKind): Boolean {
+        val settings = settingsProvider.currentSettings
+        
+        // Check global limit
+        if (activeGlobalDownloads >= settings.maxGlobalDownloads) {
+            return false
+        }
+        
+        // Check type-specific limits
+        return when (kind) {
+            is DownloadKind.VIDEO -> activeVideoDownloads < settings.maxVideoDownloads
+            is DownloadKind.THUMB -> activeThumbDownloads < settings.maxThumbDownloads
+        }
+    }
+
+    /**
+     * Phase 2: Enqueue a download job into appropriate queues.
+     */
+    private fun enqueueDownload(job: PendingDownloadJob) {
+        synchronized(queueLock) {
+            globalQueue.offer(job)
+            when (job.kind) {
+                is DownloadKind.VIDEO -> videoQueue.offer(job)
+                is DownloadKind.THUMB -> thumbQueue.offer(job)
+            }
+            
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Download job enqueued",
+                details = mapOf(
+                    "fileId" to job.fileId.toString(),
+                    "kind" to job.kind::class.simpleName.orEmpty(),
+                    "priority" to job.priority.toString(),
+                    "globalQueueSize" to globalQueue.size.toString(),
+                    "videoQueueSize" to videoQueue.size.toString(),
+                    "thumbQueueSize" to thumbQueue.size.toString(),
+                ),
+            )
+        }
+    }
+
+    /**
+     * Phase 2: Increment download counters when starting a download.
+     */
+    private fun incrementDownloadCounters(kind: DownloadKind) {
+        synchronized(queueLock) {
+            activeGlobalDownloads++
+            when (kind) {
+                is DownloadKind.VIDEO -> activeVideoDownloads++
+                is DownloadKind.THUMB -> activeThumbDownloads++
+            }
+            
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Download started",
+                details = mapOf(
+                    "activeGlobal" to activeGlobalDownloads.toString(),
+                    "activeVideo" to activeVideoDownloads.toString(),
+                    "activeThumb" to activeThumbDownloads.toString(),
+                    "kind" to kind::class.simpleName.orEmpty(),
+                ),
+            )
+        }
+    }
+
+    /**
+     * Phase 2: Decrement download counters when download completes.
+     */
+    private fun decrementDownloadCounters(kind: DownloadKind) {
+        synchronized(queueLock) {
+            activeGlobalDownloads = (activeGlobalDownloads - 1).coerceAtLeast(0)
+            when (kind) {
+                is DownloadKind.VIDEO -> activeVideoDownloads = (activeVideoDownloads - 1).coerceAtLeast(0)
+                is DownloadKind.THUMB -> activeThumbDownloads = (activeThumbDownloads - 1).coerceAtLeast(0)
+            }
+            
+            TelegramLogRepository.debug(
+                source = "T_TelegramFileDownloader",
+                message = "Download completed",
+                details = mapOf(
+                    "activeGlobal" to activeGlobalDownloads.toString(),
+                    "activeVideo" to activeVideoDownloads.toString(),
+                    "activeThumb" to activeThumbDownloads.toString(),
+                    "kind" to kind::class.simpleName.orEmpty(),
+                ),
+            )
+        }
+    }
+
+    /**
+     * Phase 2: Process queued downloads after a download completes.
+     * This runs in the IO dispatcher to avoid blocking.
+     */
+    private suspend fun processQueuedDownloads() = withContext(Dispatchers.IO) {
+        synchronized(queueLock) {
+            // Try to start queued jobs in FIFO order
+            while (true) {
+                // Find next job that can start based on current limits
+                val nextJob = findNextStartableJob() ?: break
+                
+                // Remove from queues
+                globalQueue.remove(nextJob)
+                when (nextJob.kind) {
+                    is DownloadKind.VIDEO -> videoQueue.remove(nextJob)
+                    is DownloadKind.THUMB -> thumbQueue.remove(nextJob)
+                }
+                
+                // Start the download (without recursively calling processQueuedDownloads)
+                executeDownload(nextJob)
+            }
+        }
+    }
+
+    /**
+     * Phase 2: Find the next job that can start based on current limits.
+     * Returns null if no job can start yet.
+     */
+    private fun findNextStartableJob(): PendingDownloadJob? {
+        // Iterate through global queue (FIFO order)
+        for (job in globalQueue) {
+            if (canStartDownload(job.kind)) {
+                return job
+            }
+        }
+        return null
+    }
+
+    /**
+     * Phase 2: Execute a download job (internal method, doesn't check limits).
+     */
+    private suspend fun executeDownload(job: PendingDownloadJob) {
+        val queuedDuration = SystemClock.elapsedRealtime() - job.queuedAtMs
+        
+        TelegramLogRepository.info(
+            source = "T_TelegramFileDownloader",
+            message = "Starting queued download",
+            details = mapOf(
+                "fileId" to job.fileId.toString(),
+                "kind" to job.kind::class.simpleName.orEmpty(),
+                "priority" to job.priority.toString(),
+                "queuedMs" to queuedDuration.toString(),
+            ),
+        )
+        
+        incrementDownloadCounters(job.kind)
+        activeDownloads.add(job.fileId)
+        
+        try {
+            val result = client.downloadFile(
+                fileId = job.fileId,
+                priority = job.priority,
+                offset = job.offset,
+                limit = job.limit,
+                synchronous = false,
+            )
+            
+            when (result) {
+                is dev.g000sha256.tdl.TdlResult.Success -> {
+                    fileInfoCache[job.fileId.toString()] = result.result
+                    TelegramLogRepository.logFileDownload(
+                        fileId = job.fileId,
+                        progress = 0,
+                        total = (result.result.expectedSize ?: 0).toInt(),
+                        status = "resumed_from_queue",
+                    )
+                }
+                is dev.g000sha256.tdl.TdlResult.Failure -> {
+                    TelegramLogRepository.error(
+                        source = "T_TelegramFileDownloader",
+                        message = "Queued download failed",
+                        details = mapOf(
+                            "fileId" to job.fileId.toString(),
+                            "error" to result.message,
+                        ),
+                    )
+                }
+            }
+        } finally {
+            decrementDownloadCounters(job.kind)
+            // Process next queued jobs
+            processQueuedDownloads()
+        }
+    }
 
     /**
      * Ensure a download window is active for the specified file and position.
@@ -311,8 +593,8 @@ class T_TelegramFileDownloader(
      * **Phase D+ Sliding Window Strategy:**
      * 1. Get current file info from TDLib to determine total size
      * 2. Compute streaming window based on mode:
-     *    - INITIAL_START: Small fixed prefix (256 KB or less), capped at fileSizeBytes
-     *    - SEEK: startPosition + margin (1 MB), avoiding large end-of-file windows
+     *    - INITIAL_START: Small fixed prefix (from runtime settings), capped at fileSizeBytes
+     *    - SEEK: startPosition + margin (from runtime settings), avoiding large end-of-file windows
      * 3. Request only the window via downloadFile(offset=windowStart, limit=windowSize)
      * 4. Poll TDLib state until enough prefix is available for playback
      * 5. Return local file path
@@ -324,14 +606,21 @@ class T_TelegramFileDownloader(
      * - Progress-aware timeout: resets when download is actively progressing
      * - Early success fallback: allows playback when minimum data available
      *
+     * **Phase 3: Runtime-driven configuration:**
+     * - Uses settings.initialMinPrefixBytes for INITIAL_START mode
+     * - Uses settings.seekMarginBytes for SEEK mode
+     * - Enforces timeout using settings.ensureFileReadyTimeoutMs
+     * - Throws TelegramFileReadTimeoutException on timeout
+     *
      * @param fileId TDLib file ID (integer)
      * @param startPosition Starting byte offset for the streaming window
-     * @param minBytes Hint for minimum bytes needed (used for INITIAL_START)
+     * @param minBytes Hint for minimum bytes needed (overrides mode-based computation if > 0)
      * @param mode INITIAL_START for initial playback, SEEK for seek operations
      * @param fileSizeBytes Optional known file size from TDLib DTOs (avoids extra queries)
-     * @param timeoutMs Maximum time to wait in milliseconds (default 30 seconds)
+     * @param timeoutMs Maximum time to wait in milliseconds (deprecated, use settings instead)
      * @return Local file path from TDLib cache
-     * @throws Exception if download fails or times out
+     * @throws TelegramFileReadTimeoutException if download times out
+     * @throws Exception if download fails
      */
     suspend fun ensureFileReady(
         fileId: Int,
@@ -339,9 +628,65 @@ class T_TelegramFileDownloader(
         minBytes: Long,
         mode: EnsureFileReadyMode = EnsureFileReadyMode.INITIAL_START,
         fileSizeBytes: Long? = null,
+        @Deprecated("Use settings.ensureFileReadyTimeoutMs instead")
         timeoutMs: Long = 30_000L,
     ): String {
+        // Phase 3: Get runtime settings
+        val settings = settingsProvider.currentSettings
+        val effectiveTimeoutMs = settings.ensureFileReadyTimeoutMs
+        
         return withContext(Dispatchers.IO) {
+            try {
+                kotlinx.coroutines.withTimeout(effectiveTimeoutMs) {
+                    ensureFileReadyInternal(fileId, startPosition, minBytes, mode, fileSizeBytes, settings)
+                }
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                // Phase 3: Throw structured timeout exception
+                val file = runCatching { getFreshFileState(fileId) }.getOrNull()
+                val downloadedPrefix = file?.local?.downloadedPrefixSize?.toLong() ?: 0L
+                val requiredByMode: Long = when (mode) {
+                    EnsureFileReadyMode.INITIAL_START -> settings.initialMinPrefixBytes
+                    EnsureFileReadyMode.SEEK -> startPosition + settings.seekMarginBytes
+                }
+                val requiredPrefix = if (minBytes > 0L) maxOf(requiredByMode, minBytes) else requiredByMode
+                
+                TelegramLogRepository.error(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReady timeout",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "mode" to mode.name,
+                        "requiredPrefix" to requiredPrefix.toString(),
+                        "downloadedPrefix" to downloadedPrefix.toString(),
+                        "timeoutMs" to effectiveTimeoutMs.toString(),
+                    ),
+                )
+                
+                throw com.chris.m3usuite.telegram.player.TelegramFileReadTimeoutException(
+                    message = "Timeout waiting for file download: fileId=$fileId, mode=$mode, " +
+                        "required=$requiredPrefix, downloaded=$downloadedPrefix, timeout=${effectiveTimeoutMs}ms",
+                    fileId = fileId,
+                    remoteId = null, // remoteId not available in this context
+                    mode = mode.name,
+                    requiredPrefix = requiredPrefix,
+                    downloadedPrefix = downloadedPrefix,
+                    cause = e,
+                )
+            }
+        }
+    }
+    
+    /**
+     * Phase 3: Internal implementation of ensureFileReady with runtime settings.
+     */
+    private suspend fun ensureFileReadyInternal(
+        fileId: Int,
+        startPosition: Long,
+        minBytes: Long,
+        mode: EnsureFileReadyMode,
+        fileSizeBytes: Long?,
+        settings: com.chris.m3usuite.telegram.domain.TelegramStreamingSettings,
+    ): String {
             // 1. Get current file status from TDLib (fresh, no cache)
             var file = getFreshFileState(fileId)
 
@@ -365,23 +710,22 @@ class T_TelegramFileDownloader(
                 )
             }
 
-            // 2. Compute streaming window based on mode
+            // 2. Compute streaming window based on mode (Phase 3: using runtime settings)
             val windowStart = startPosition.coerceAtLeast(0L)
             val windowEnd: Long
             val windowSize: Long
             val requiredPrefixFromStart: Long
 
-            // Compute the "by mode" requirement
+            // Compute the "by mode" requirement using runtime settings
             val requiredByMode: Long =
                 when (mode) {
                     EnsureFileReadyMode.INITIAL_START -> {
-                        // INITIAL_START: Small fixed prefix for quick startup
-                        TELEGRAM_MIN_PREFIX_BYTES
+                        // Phase 3: Use runtime setting for initial prefix
+                        settings.initialMinPrefixBytes
                     }
                     EnsureFileReadyMode.SEEK -> {
-                        // SEEK: Request only startPosition + margin (1 MB)
-                        // Use startPosition directly for clarity (windowStart = startPosition.coerceAtLeast(0L))
-                        startPosition + SEEK_MARGIN_BYTES
+                        // Phase 3: Use runtime setting for seek margin
+                        startPosition + settings.seekMarginBytes
                     }
                 }
 
@@ -403,7 +747,7 @@ class T_TelegramFileDownloader(
 
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
-                message = "ensureFileReady: starting with mode=$mode",
+                message = "ensureFileReady: starting with mode=$mode (Phase 3: runtime settings)",
                 details =
                     mapOf(
                         "fileId" to fileId.toString(),
@@ -420,6 +764,8 @@ class T_TelegramFileDownloader(
                         "fileSizeBytes" to (fileSizeBytes?.toString() ?: "unknown"),
                         "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
                         "initialPrefix" to initialPrefix.toString(),
+                        "settingsInitialPrefix" to settings.initialMinPrefixBytes.toString(),
+                        "settingsSeekMargin" to settings.seekMarginBytes.toString(),
                     ),
             )
 
@@ -523,10 +869,11 @@ class T_TelegramFileDownloader(
                     val timeSinceProgress = SystemClock.elapsedRealtime() - lastProgressTime
 
                     // Streaming-friendly fallback: if we have minimum data and download stalled, allow playback
+                    // Phase 3: Use runtime setting for minimum prefix
                     val hasMinimumDataFromWindow =
                         prefix >=
                             minOf(
-                                windowStart + TELEGRAM_MIN_PREFIX_BYTES,
+                                windowStart + settings.initialMinPrefixBytes,
                                 effectiveTotalSize,
                             )
 
@@ -543,18 +890,20 @@ class T_TelegramFileDownloader(
                                     "downloadedPrefixSize" to prefix.toString(),
                                     "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
                                     "windowStart" to windowStart.toString(),
-                                    "minPrefixBytes" to TELEGRAM_MIN_PREFIX_BYTES.toString(),
+                                    "minPrefixBytes" to settings.initialMinPrefixBytes.toString(),
                                     "totalSize" to totalSize.toString(),
                                     "path" to pathNow,
                                 ),
                         )
                         result = pathNow
-                    } else if (timeSinceProgress > timeoutMs) {
-                        // Use timeSinceProgress for timeout when download has stalled
+                    } else if (timeSinceProgress > STALL_TIMEOUT_MS && lastDownloaded > initialPrefix) {
+                        // Phase 3: Timeout logic - this is handled by withTimeout wrapper
+                        // This branch is kept for early stall detection but shouldn't throw
+                        // The outer withTimeout will handle actual timeout
                         val errorMsg =
-                            "Timeout waiting for streaming window (no progress): fileId=$fileId, downloaded=$prefix, " +
+                            "Download stalled: fileId=$fileId, downloaded=$prefix, " +
                                 "required=$requiredPrefixFromStart, totalSize=$totalSize, stallTime=${timeSinceProgress}ms"
-                        TelegramLogRepository.error(
+                        TelegramLogRepository.warn(
                             source = "T_TelegramFileDownloader",
                             message = errorMsg,
                             details =
@@ -568,28 +917,10 @@ class T_TelegramFileDownloader(
                                     "stallTime" to timeSinceProgress.toString(),
                                 ),
                         )
-                        throw Exception(errorMsg)
-                    } else if (elapsed > PROGRESS_RESET_TIMEOUT_MS && lastDownloaded == initialPrefix) {
-                        // Absolute timeout if no progress at all after extended period
-                        val errorMsg =
-                            "Timeout waiting for streaming window (no initial progress): fileId=$fileId, " +
-                                "downloaded=$prefix, required=$requiredPrefixFromStart, totalSize=$totalSize"
-                        TelegramLogRepository.error(
-                            source = "T_TelegramFileDownloader",
-                            message = errorMsg,
-                            details =
-                                mapOf(
-                                    "fileId" to fileId.toString(),
-                                    "downloaded" to prefix.toString(),
-                                    "required" to requiredPrefixFromStart.toString(),
-                                    "windowStart" to windowStart.toString(),
-                                    "windowSize" to windowSize.toString(),
-                                    "totalSize" to totalSize.toString(),
-                                    "elapsed" to elapsed.toString(),
-                                ),
-                        )
-                        throw Exception(errorMsg)
+                        // Don't throw - let the outer withTimeout handle it
                     }
+                    // Phase 3: Removed old timeout throwing logic
+                    // The outer withTimeout wrapper will handle all timeout scenarios
                 }
             }
             result

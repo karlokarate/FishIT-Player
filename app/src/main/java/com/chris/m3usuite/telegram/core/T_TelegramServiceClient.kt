@@ -141,6 +141,9 @@ class T_TelegramServiceClient private constructor(
     private var session: T_TelegramSession? = null
     private var browser: T_ChatBrowser? = null
     private var downloader: T_TelegramFileDownloader? = null
+    
+    // Phase 2 & 3: Runtime settings provider for streaming configuration
+    private var settingsProvider: com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider? = null
 
     // Live update handler for real-time message processing
     private var updateHandler: com.chris.m3usuite.telegram.ingestion.TelegramUpdateHandler? = null
@@ -255,10 +258,17 @@ class T_TelegramServiceClient private constructor(
                     session = session!!,
                 )
 
+            // Phase 2 & 3: Create settings provider for runtime configuration
+            settingsProvider =
+                com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider(
+                    settingsRepository = com.chris.m3usuite.data.repo.SettingsRepository(context),
+                )
+
             downloader =
                 T_TelegramFileDownloader(
                     context = context,
                     session = session!!,
+                    settingsProvider = settingsProvider!!,
                 )
 
             // Start update distribution
@@ -636,6 +646,7 @@ class T_TelegramServiceClient private constructor(
         session = null
         client = null
         config = null
+        settingsProvider = null // Phase 2 & 3: Clean up settings provider
 
         _isStarted.set(false)
         _authState.value = TelegramAuthState.Idle

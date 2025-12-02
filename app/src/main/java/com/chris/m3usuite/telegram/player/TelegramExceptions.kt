@@ -16,3 +16,19 @@ class TelegramUnavailableException(
     message: String,
     cause: Throwable? = null,
 ) : IOException(message, cause)
+
+/**
+ * Exception thrown when ensureFileReady() times out waiting for download.
+ *
+ * Phase 3: Runtime-driven timeout exception for streaming operations.
+ * Includes detailed context about the file, mode, and download state at timeout.
+ */
+class TelegramFileReadTimeoutException(
+    message: String,
+    val fileId: Int,
+    val remoteId: String? = null,
+    val mode: String,
+    val requiredPrefix: Long,
+    val downloadedPrefix: Long,
+    cause: Throwable? = null,
+) : IOException(message, cause)
