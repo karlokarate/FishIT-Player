@@ -417,7 +417,10 @@ class SettingsStore(
     // Streaming / buffering settings - defaults match T_TelegramFileDownloader constants
     val tgInitialPrefixBytes: Flow<Long> = context.dataStore.data.map { it[Keys.TG_INITIAL_PREFIX_BYTES] ?: 256L * 1024L } // 256 KB
     val tgSeekMarginBytes: Flow<Long> = context.dataStore.data.map { it[Keys.TG_SEEK_MARGIN_BYTES] ?: 1024L * 1024L } // 1 MB
-    val tgEnsureFileReadyTimeoutMs: Flow<Long> = context.dataStore.data.map { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] ?: 10_000L } // 10 seconds
+    val tgEnsureFileReadyTimeoutMs: Flow<Long> =
+        context.dataStore.data.map {
+            it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] ?: 10_000L
+        } // 10 seconds
     val tgShowStreamingOverlay: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SHOW_STREAMING_OVERLAY] ?: false }
 
     // Thumbnail / poster prefetch settings - reasonable defaults
@@ -431,7 +434,11 @@ class SettingsStore(
     val exoMinBufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_MIN_BUFFER_MS] ?: 50_000 } // 50 seconds
     val exoMaxBufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_MAX_BUFFER_MS] ?: 50_000 } // 50 seconds
     val exoBufferForPlaybackMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] ?: 2_500 } // 2.5 seconds
-    val exoBufferForPlaybackAfterRebufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] ?: 5_000 } // 5 seconds
+    val exoBufferForPlaybackAfterRebufferMs: Flow<Int> =
+        context.dataStore.data.map {
+            it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS]
+                ?: 5_000
+        } // 5 seconds
     val exoExactSeek: Flow<Boolean> = context.dataStore.data.map { it[Keys.EXO_EXACT_SEEK] ?: true }
 
     // Diagnostics / logging settings - safe defaults
