@@ -141,7 +141,14 @@ class TelegramSettingsViewModel(
                 details =
                     mapOf(
                         "enabled" to enabled.toString(),
-                        "caller" to Thread.currentThread().stackTrace.drop(2).take(5).joinToString(" -> ") { "${it.className}.${it.methodName}:${it.lineNumber}" },
+                        "caller" to
+                            Thread
+                                .currentThread()
+                                .stackTrace
+                                .drop(
+                                    2,
+                                ).take(5)
+                                .joinToString(" -> ") { "${it.className}.${it.methodName}:${it.lineNumber}" },
                     ),
             )
         } else {
@@ -537,32 +544,24 @@ class TelegramSettingsViewModel(
 data class TelegramSettingsState(
     // User decision - only changed by explicit user actions
     val enabled: Boolean = false,
-
     // Engine health - changed by engine failures/recoveries
     val isEngineHealthy: Boolean = true,
-
     // Recent error for display (does not affect enabled toggle)
     val recentError: String? = null,
-
     // API credentials
     val apiId: String = "",
     val apiHash: String = "",
-
     // Auth and connection state
     val authState: TelegramAuthState = TelegramAuthState.DISCONNECTED,
     val connectionState: TgConnectionState = TgConnectionState.Disconnected,
-
     // Loading states
     val isConnecting: Boolean = false,
     val isLoadingChats: Boolean = false,
-
     // Legacy error message (will be replaced by recentError)
     val errorMessage: String? = null,
-
     // Chat selection
     val selectedChats: List<String> = emptyList(),
     val availableChats: List<ChatInfo> = emptyList(),
-
     // Cache settings
     val cacheLimitGb: Int = 5,
 )

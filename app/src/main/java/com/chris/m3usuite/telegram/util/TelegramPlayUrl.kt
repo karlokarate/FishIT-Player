@@ -29,7 +29,7 @@ object TelegramPlayUrl {
     /**
      * Build Telegram file URL from a TelegramPlaybackRequest (remoteId-first).
      *
-     * URL format: tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...
+     * URL format: tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...&durationMs=...&fileSizeBytes=...
      *
      * The fileId in the path is used as a fast-path cache. If fileId is null or 0,
      * the DataSource will resolve it via remoteId.
@@ -41,11 +41,19 @@ object TelegramPlayUrl {
         val fileIdPath = request.fileId ?: 0
         val encodedRemoteId = URLEncoder.encode(request.remoteId, "UTF-8")
         val encodedUniqueId = URLEncoder.encode(request.uniqueId, "UTF-8")
-        return "tg://file/$fileIdPath?" +
-            "chatId=${request.chatId}&" +
-            "messageId=${request.messageId}&" +
-            "remoteId=$encodedRemoteId&" +
+        
+        val params = mutableListOf(
+            "chatId=${request.chatId}",
+            "messageId=${request.messageId}",
+            "remoteId=$encodedRemoteId",
             "uniqueId=$encodedUniqueId"
+        )
+        
+        // Add optional parameters if available
+        request.durationMs?.let { params.add("durationMs=$it") }
+        request.fileSizeBytes?.let { params.add("fileSizeBytes=$it") }
+        
+        return "tg://file/$fileIdPath?" + params.joinToString("&")
     }
 
     /**

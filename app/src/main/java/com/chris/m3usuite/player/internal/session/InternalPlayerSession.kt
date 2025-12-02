@@ -315,17 +315,34 @@ fun rememberInternalPlayerSession(
 
         // ════════════════════════════════════════════════════════════════════════════
         // BUG 1 FIX: Populate debug diagnostic fields after source resolution
+        // Initialize durationMs from Telegram URL if available
         // ════════════════════════════════════════════════════════════════════════════
         val truncatedUrl = if (url.length > 100) url.take(100) + "..." else url
+        // Use Telegram duration if available, otherwise keep player default (0L)
+        // The player will update durationMs once it parses the media container
+        val initialDurationMs = resolved.telegramDurationMs
         val debugUpdated =
             playerState.value.copy(
                 debugPlaybackUrl = truncatedUrl,
                 debugResolvedMimeType = resolved.mimeType,
                 debugInferredExtension = resolved.inferredExtension,
                 debugIsLiveFromUrl = resolved.isLiveFromUrl,
+                durationMs = initialDurationMs ?: playerState.value.durationMs,
             )
         playerState.value = debugUpdated
         onStateChanged(debugUpdated)
+
+        if (resolved.isTelegram && resolved.telegramDurationMs != null) {
+            TelegramLogRepository.info(
+                source = "InternalPlayerSession",
+                message = "Initialized duration from Telegram URL",
+                details =
+                    mapOf(
+                        "durationMs" to resolved.telegramDurationMs.toString(),
+                        "fileSizeBytes" to (resolved.telegramFileSizeBytes?.toString() ?: "unknown"),
+                    ),
+            )
+        }
 
         val mediaItem =
             buildMediaItemWithTelegramExtras(
@@ -344,9 +361,22 @@ fun rememberInternalPlayerSession(
                         "url" to url,
                         "playbackType" to playbackContext.type.name,
                         "mimeType" to (resolved.mimeType ?: "unknown"),
-                        "chatId" to (android.net.Uri.parse(url).getQueryParameter("chatId") ?: "unknown"),
-                        "messageId" to (android.net.Uri.parse(url).getQueryParameter("messageId") ?: "unknown"),
-                        "fileId" to (android.net.Uri.parse(url).pathSegments.lastOrNull() ?: "unknown"),
+                        "chatId" to (
+                            android.net.Uri
+                                .parse(url)
+                                .getQueryParameter("chatId") ?: "unknown"
+                        ),
+                        "messageId" to (
+                            android.net.Uri
+                                .parse(url)
+                                .getQueryParameter("messageId") ?: "unknown"
+                        ),
+                        "fileId" to (
+                            android.net.Uri
+                                .parse(url)
+                                .pathSegments
+                                .lastOrNull() ?: "unknown"
+                        ),
                     ),
             )
         }
@@ -572,7 +602,11 @@ fun rememberInternalPlayerSession(
                                         val fileIdStr = uri.pathSegments.lastOrNull() ?: "unknown"
                                         val fileId = fileIdStr.toIntOrNull() ?: 0
 
-                                        val downloader = com.chris.m3usuite.telegram.core.T_TelegramServiceClient.getInstance(context).downloader()
+                                        val downloader =
+                                            com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+                                                .getInstance(
+                                                    context,
+                                                ).downloader()
                                         val fileInfo = if (fileId > 0) downloader.getFileInfo(fileId) else null
 
                                         val downloadedPrefix = fileInfo?.local?.downloadedPrefixSize ?: 0

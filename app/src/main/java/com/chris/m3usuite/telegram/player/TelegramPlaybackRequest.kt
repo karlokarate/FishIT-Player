@@ -15,6 +15,8 @@ import com.chris.m3usuite.telegram.domain.TelegramMediaRef
  * @property remoteId Stable remote file identifier (REQUIRED)
  * @property uniqueId Stable unique file identifier (REQUIRED)
  * @property fileId Volatile TDLib-local file ID (OPTIONAL, may be stale)
+ * @property durationMs Duration in milliseconds from TDLib (OPTIONAL, from MessageVideo.video.duration)
+ * @property fileSizeBytes File size in bytes from TDLib (OPTIONAL, from file.size)
  */
 data class TelegramPlaybackRequest(
     val chatId: Long,
@@ -22,6 +24,8 @@ data class TelegramPlaybackRequest(
     val remoteId: String,
     val uniqueId: String,
     val fileId: Int? = null,
+    val durationMs: Long? = null,
+    val fileSizeBytes: Long? = null,
 )
 
 /**
@@ -45,4 +49,6 @@ fun TelegramMediaRef.toPlaybackRequest(
         remoteId = remoteId,
         uniqueId = uniqueId,
         fileId = fileId,
+        durationMs = durationSeconds?.let { it * 1000L },
+        fileSizeBytes = sizeBytes,
     )
