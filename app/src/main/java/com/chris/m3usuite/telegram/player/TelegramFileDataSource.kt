@@ -130,19 +130,54 @@ class TelegramFileDataSource(
         durationMs = durationMsStr?.toLongOrNull()
         fileSizeBytes = fileSizeBytesStr?.toLongOrNull()
 
+        // Phase D+ Fix: Add explicit logging at start of open() with Telegram engine state
+        val isStarted = serviceClient.isStarted
+        val isAuthReady = serviceClient.isAuthReady()
+        
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
-            message = "opening",
+            message = "open url=${uri} chatId=$chatId messageId=$messageId started=$isStarted authReady=$isAuthReady",
             details =
                 mapOf(
-                    "fileIdFromPath" to fileIdStr,
+                    "url" to uri.toString(),
                     "chatId" to chatId.toString(),
                     "messageId" to messageId.toString(),
+                    "fileIdFromPath" to fileIdStr,
                     "remoteId" to (remoteIdParam ?: "none"),
-                    "uniqueId" to (uniqueIdParam ?: "none"),
-                    "durationMs" to (durationMs?.toString() ?: "none"),
-                    "fileSizeBytes" to (fileSizeBytes?.toString() ?: "none"),
+                    "started" to isStarted.toString(),
+                    "authReady" to isAuthReady.toString(),
                     "dataSpecPosition" to dataSpec.position.toString(),
+                ),
+        )
+
+        // Phase D+ Fix: Check Telegram engine state and throw TelegramUnavailableException if not ready
+        if (!isStarted || !isAuthReady) {
+            TelegramLogRepository.error(
+                source = "TelegramFileDataSource",
+                message = "open aborted – Telegram not ready (started=$isStarted, authReady=$isAuthReady)",
+                details =
+                    mapOf(
+                        "url" to uri.toString(),
+                        "started" to isStarted.toString(),
+                        "authReady" to isAuthReady.toString(),
+                    ),
+            )
+            throw TelegramUnavailableException(
+                "Telegram engine not ready (started=$isStarted, authReady=$isAuthReady). " +
+                    "Please wait a moment or re-open the Telegram settings."
+            )
+        }
+
+        // Debug logging for URL parsing (Phase D+ backwards compatibility)
+        TelegramLogRepository.debug(
+            source = "TelegramFileDataSource",
+            message = "parsed tg:// URL",
+            details =
+                mapOf(
+                    "url" to uri.toString(),
+                    "durationMs" to (durationMs?.toString() ?: "not present"),
+                    "fileSizeBytes" to (fileSizeBytes?.toString() ?: "not present"),
+                    "backwardsCompatible" to "true",
                 ),
         )
 
@@ -224,7 +259,7 @@ class TelegramFileDataSource(
                     downloader.ensureFileReady(
                         fileId = fileIdInt,
                         startPosition = dataSpec.position,
-                        minBytes = MIN_PREFIX_BYTES,
+                        minBytes = 0L, // For video streaming, rely on mode defaults (256KB/1MB)
                         mode = ensureMode,
                         fileSizeBytes = fileSizeBytes, // Pass from URL parameters
                     )
@@ -280,7 +315,7 @@ class TelegramFileDataSource(
                                 downloader.ensureFileReady(
                                     fileId = candidateFileId,
                                     startPosition = dataSpec.position,
-                                    minBytes = MIN_PREFIX_BYTES,
+                                    minBytes = 0L, // For video streaming, rely on mode defaults
                                     mode = ensureMode,
                                     fileSizeBytes = fileSizeBytes,
                                 )

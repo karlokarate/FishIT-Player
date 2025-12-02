@@ -46,6 +46,10 @@ private class DelegatingDataSource(
     @Throws(IOException::class)
     override fun open(dataSpec: DataSpec): Long {
         val scheme = dataSpec.uri.scheme?.lowercase(Locale.US)
+        
+        // Log URL resolution for debugging
+        val isTelegramUrl = scheme == "tg"
+        
         val target: DataSource =
             when {
                 scheme == "tg" -> {
@@ -57,6 +61,10 @@ private class DelegatingDataSource(
                         } catch (e: Exception) {
                             throw IOException("Failed to get Telegram service client: ${e.message}", e)
                         }
+                    
+                    // Log that we're using TelegramFileDataSource
+                    println("[DelegatingDataSource] Using TelegramFileDataSource for ${dataSpec.uri}")
+                    
                     TelegramFileDataSource(serviceClient)
                 }
                 scheme == "rar" -> RarDataSource(context)
