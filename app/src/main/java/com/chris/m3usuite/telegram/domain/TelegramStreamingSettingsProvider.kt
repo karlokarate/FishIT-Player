@@ -41,8 +41,8 @@ class TelegramStreamingSettingsProvider(
      * Automatically updates when any underlying setting changes.
      */
     val settings: StateFlow<TelegramStreamingSettings> = combine(
-        // TDLib log level (already int, no conversion needed)
-        settingsRepository.tgAppLogLevel,
+        // TDLib native log level (0-5, passed directly to TDLib)
+        settingsRepository.tgLogVerbosity,
         
         // Download concurrency
         settingsRepository.tgMaxGlobalDownloads,
@@ -72,7 +72,7 @@ class TelegramStreamingSettingsProvider(
         settingsRepository.tgShowEngineOverlay,
         settingsRepository.tgShowStreamingOverlay,
         
-        // Logging
+        // App-side logging (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG)
         settingsRepository.tgAppLogLevel,
         
         // Jank telemetry
@@ -105,7 +105,7 @@ class TelegramStreamingSettingsProvider(
         scope = scope,
         started = SharingStarted.Eagerly,
         initialValue = TelegramStreamingSettings(
-            tdlibLogLevel = 1, // WARN
+            tdlibLogLevel = 1, // Default TDLib log level (WARN equivalent)
             maxGlobalDownloads = 5,
             maxVideoDownloads = 2,
             maxThumbDownloads = 3,
@@ -124,7 +124,7 @@ class TelegramStreamingSettingsProvider(
             exoExactSeek = true,
             showEngineOverlay = false,
             showStreamingOverlay = false,
-            tgAppLogLevel = 1, // WARN
+            tgAppLogLevel = 1, // WARN by default for app-side logs
             jankTelemetrySampleRate = 10, // Log every 10th event
         ),
     )
