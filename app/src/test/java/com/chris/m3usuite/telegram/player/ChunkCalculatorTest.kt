@@ -1,6 +1,7 @@
 package com.chris.m3usuite.telegram.player
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -360,31 +361,37 @@ class ChunkCalculatorTest {
         assertTrue("toString should contain size", str.contains("476.8 MB"))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `test invalid input - zero duration`() {
-        ChunkCalculator.calculateChunks(
-            durationMs = 0L,
-            fileSizeBytes = 1_000_000_000L,
-            chunkDurationMs = 30 * 60 * 1000L,
-        )
+        assertThrows(IllegalArgumentException::class.java) {
+            ChunkCalculator.calculateChunks(
+                durationMs = 0L,
+                fileSizeBytes = 1_000_000_000L,
+                chunkDurationMs = 30 * 60 * 1000L,
+            )
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `test invalid input - negative file size`() {
-        ChunkCalculator.calculateChunks(
-            durationMs = 120 * 60 * 1000L,
-            fileSizeBytes = -1L,
-            chunkDurationMs = 30 * 60 * 1000L,
-        )
+        assertThrows(IllegalArgumentException::class.java) {
+            ChunkCalculator.calculateChunks(
+                durationMs = 120 * 60 * 1000L,
+                fileSizeBytes = -1L,
+                chunkDurationMs = 30 * 60 * 1000L,
+            )
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `test invalid input - zero chunk duration`() {
-        ChunkCalculator.calculateChunks(
-            durationMs = 120 * 60 * 1000L,
-            fileSizeBytes = 1_000_000_000L,
-            chunkDurationMs = 0L,
-        )
+        assertThrows(IllegalArgumentException::class.java) {
+            ChunkCalculator.calculateChunks(
+                durationMs = 120 * 60 * 1000L,
+                fileSizeBytes = 1_000_000_000L,
+                chunkDurationMs = 0L,
+            )
+        }
     }
 
     @Test

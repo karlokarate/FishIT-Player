@@ -1,7 +1,5 @@
 package com.chris.m3usuite.telegram.player
 
-import kotlin.math.min
-
 /**
  * Utility for calculating video chunk boundaries for memory-efficient streaming.
  *
@@ -83,7 +81,7 @@ object ChunkCalculator {
         var chunkIndex = 0
 
         while (currentMs < durationMs) {
-            val endMs = min(currentMs + chunkDurationMs, durationMs)
+            val endMs = minOf(currentMs + chunkDurationMs, durationMs)
             val startByte = (currentMs * bytesPerMs).toLong()
             val endByte = (endMs * bytesPerMs).toLong()
             val sizeBytes = endByte - startByte

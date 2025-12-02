@@ -1,4 +1,4 @@
-# Telegram Playback Error - Analyse & Lösung
+# Telegram Playback Error – Analyse & Lösung
 
 ## Executive Summary
 

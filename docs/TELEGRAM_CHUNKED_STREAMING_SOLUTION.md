@@ -475,7 +475,7 @@ data class TelegramStreamingSettings(
 ### Phase 1: Analyse & Prototyp (1-2 Tage)
 
 - [x] Log-Analyse abgeschlossen
-- [ ] ChunkCalculator implementieren und testen
+- [x] ChunkCalculator implementieren und testen
 - [ ] Proof-of-Concept für TelegramChunkedDataSource
 
 ### Phase 2: Core Implementation (3-4 Tage)
