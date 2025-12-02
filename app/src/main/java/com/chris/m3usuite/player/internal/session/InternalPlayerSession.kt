@@ -293,12 +293,12 @@ fun rememberInternalPlayerSession(
                             .setLoadControl(loadControl)
                             .setSeekBackIncrementMs(10_000L)
                             .setSeekForwardIncrementMs(10_000L)
+                            .setSeekParameters(seekParameters)
                             .setMediaSourceFactory(mediaSourceFactory)
                             .build()
                 }
 
         val newPlayer = holder.player
-        newPlayer.seekParameters = seekParameters
         playerHolder.value = newPlayer
 
         // Store source URL for MiniPlayer visibility checks
