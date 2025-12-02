@@ -95,4 +95,75 @@ class SettingsRepository(
     suspend fun setEpgFavUseXtream(value: Boolean) = store.setEpgFavUseXtream(value)
 
     suspend fun setEpgFavSkipXmltvIfXtreamOk(value: Boolean) = store.setEpgFavSkipXmltvIfXtreamOk(value)
+
+    // --- Telegram Advanced Settings ---
+    // Engine settings
+    val tgMaxGlobalDownloads: Flow<Int> = store.tgMaxGlobalDownloads
+    val tgMaxVideoDownloads: Flow<Int> = store.tgMaxVideoDownloads
+    val tgMaxThumbDownloads: Flow<Int> = store.tgMaxThumbDownloads
+    val tgShowEngineOverlay: Flow<Boolean> = store.tgShowEngineOverlay
+
+    suspend fun setTgMaxGlobalDownloads(value: Int) = store.setTgMaxGlobalDownloads(value)
+
+    suspend fun setTgMaxVideoDownloads(value: Int) = store.setTgMaxVideoDownloads(value)
+
+    suspend fun setTgMaxThumbDownloads(value: Int) = store.setTgMaxThumbDownloads(value)
+
+    suspend fun setTgShowEngineOverlay(value: Boolean) = store.setTgShowEngineOverlay(value)
+
+    // Streaming / buffering settings
+    val tgInitialPrefixBytes: Flow<Long> = store.tgInitialPrefixBytes
+    val tgSeekMarginBytes: Flow<Long> = store.tgSeekMarginBytes
+    val tgEnsureFileReadyTimeoutMs: Flow<Long> = store.tgEnsureFileReadyTimeoutMs
+    val tgShowStreamingOverlay: Flow<Boolean> = store.tgShowStreamingOverlay
+
+    suspend fun setTgInitialPrefixBytes(value: Long) = store.setTgInitialPrefixBytes(value)
+
+    suspend fun setTgSeekMarginBytes(value: Long) = store.setTgSeekMarginBytes(value)
+
+    suspend fun setTgEnsureFileReadyTimeoutMs(value: Long) = store.setTgEnsureFileReadyTimeoutMs(value)
+
+    suspend fun setTgShowStreamingOverlay(value: Boolean) = store.setTgShowStreamingOverlay(value)
+
+    // Thumbnail / poster prefetch settings
+    val tgThumbPrefetchEnabled: Flow<Boolean> = store.tgThumbPrefetchEnabled
+    val tgThumbPrefetchBatchSize: Flow<Int> = store.tgThumbPrefetchBatchSize
+    val tgThumbMaxParallel: Flow<Int> = store.tgThumbMaxParallel
+    val tgThumbPauseWhileVodBuffering: Flow<Boolean> = store.tgThumbPauseWhileVodBuffering
+    val tgThumbFullDownload: Flow<Boolean> = store.tgThumbFullDownload
+
+    suspend fun setTgThumbPrefetchEnabled(value: Boolean) = store.setTgThumbPrefetchEnabled(value)
+
+    suspend fun setTgThumbPrefetchBatchSize(value: Int) = store.setTgThumbPrefetchBatchSize(value)
+
+    suspend fun setTgThumbMaxParallel(value: Int) = store.setTgThumbMaxParallel(value)
+
+    suspend fun setTgThumbPauseWhileVodBuffering(value: Boolean) = store.setTgThumbPauseWhileVodBuffering(value)
+
+    suspend fun setTgThumbFullDownload(value: Boolean) = store.setTgThumbFullDownload(value)
+
+    // ExoPlayer buffer settings
+    val exoMinBufferMs: Flow<Int> = store.exoMinBufferMs
+    val exoMaxBufferMs: Flow<Int> = store.exoMaxBufferMs
+    val exoBufferForPlaybackMs: Flow<Int> = store.exoBufferForPlaybackMs
+    val exoBufferForPlaybackAfterRebufferMs: Flow<Int> = store.exoBufferForPlaybackAfterRebufferMs
+    val exoExactSeek: Flow<Boolean> = store.exoExactSeek
+
+    suspend fun setExoMinBufferMs(value: Int) = store.setExoMinBufferMs(value)
+
+    suspend fun setExoMaxBufferMs(value: Int) = store.setExoMaxBufferMs(value)
+
+    suspend fun setExoBufferForPlaybackMs(value: Int) = store.setExoBufferForPlaybackMs(value)
+
+    suspend fun setExoBufferForPlaybackAfterRebufferMs(value: Int) = store.setExoBufferForPlaybackAfterRebufferMs(value)
+
+    suspend fun setExoExactSeek(value: Boolean) = store.setExoExactSeek(value)
+
+    // Diagnostics / logging settings
+    val tgAppLogLevel: Flow<Int> = store.tgAppLogLevel
+    val jankTelemetrySampleRate: Flow<Int> = store.jankTelemetrySampleRate
+
+    suspend fun setTgAppLogLevel(value: Int) = store.setTgAppLogLevel(value)
+
+    suspend fun setJankTelemetrySampleRate(value: Int) = store.setJankTelemetrySampleRate(value)
 }

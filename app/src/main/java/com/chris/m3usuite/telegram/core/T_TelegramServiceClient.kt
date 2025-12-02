@@ -7,6 +7,7 @@ import com.chris.m3usuite.telegram.config.ConfigLoader
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.logging.TgLogEntry
 import dev.g000sha256.tdl.TdlClient
+import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -237,6 +238,9 @@ class T_TelegramServiceClient private constructor(
                 source = "T_TelegramServiceClient",
                 message = "TdlClient created",
             )
+
+            // Apply TDLib log verbosity level from settings
+            applyTdlibLogVerbosity(settings)
 
             // Create core components
             session =
@@ -639,5 +643,53 @@ class T_TelegramServiceClient private constructor(
         _syncState.value = TgSyncState.Idle
 
         TelegramLogRepository.info("T_TelegramServiceClient", "Shutdown complete")
+    }
+
+    /**
+     * Apply TDLib log verbosity level from settings.
+     * This method is idempotent and can be called multiple times safely.
+     *
+     * @param settings SettingsStore to read log verbosity from
+     */
+    private suspend fun applyTdlibLogVerbosity(settings: SettingsStore) {
+        val currentClient = client ?: return
+
+        try {
+            val logLevel = settings.tgLogVerbosity.first()
+            
+            // TDLib log verbosity levels: 0=FATAL, 1=ERROR, 2=WARNING, 3=INFO, 4=DEBUG, 5=VERBOSE
+            val result = currentClient.setLogVerbosityLevel(logLevel)
+            
+            when (result) {
+                is TdlResult.Success -> {
+                    TelegramLogRepository.info(
+                        source = "T_TelegramServiceClient",
+                        message = "TDLib log verbosity set to level $logLevel",
+                    )
+                }
+                is TdlResult.Failure -> {
+                    TelegramLogRepository.error(
+                        source = "T_TelegramServiceClient",
+                        message = "Failed to set TDLib log verbosity: ${result.message}",
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            TelegramLogRepository.error(
+                source = "T_TelegramServiceClient",
+                message = "Exception setting TDLib log verbosity",
+                exception = e,
+            )
+        }
+    }
+
+    /**
+     * Update TDLib log verbosity level at runtime.
+     * Can be called to change log level without restarting the service.
+     *
+     * @param settings SettingsStore to read log verbosity from
+     */
+    suspend fun updateTdlibLogVerbosity(settings: SettingsStore) {
+        applyTdlibLogVerbosity(settings)
     }
 }

@@ -65,6 +65,8 @@ fun SettingsScreen(
     val telegramVm: TelegramSettingsViewModel = viewModel(factory = TelegramSettingsViewModel.factory(app))
     // Phase 4 Group 5: SubtitleSettingsViewModel
     val subtitleVm: SubtitleSettingsViewModel = viewModel(factory = SubtitleSettingsViewModel.factory(app))
+    // Telegram Advanced Settings ViewModel
+    val telegramAdvancedVm: TelegramAdvancedSettingsViewModel = viewModel(factory = TelegramAdvancedSettingsViewModel.factory(app))
 
     // --- States (bestehend) ---
     val playerState by playerVm.state.collectAsStateWithLifecycle()
@@ -75,6 +77,8 @@ fun SettingsScreen(
     val telegramState by telegramVm.state.collectAsStateWithLifecycle()
     // Phase 4 Group 5: Subtitle settings state
     val subtitleState by subtitleVm.state.collectAsStateWithLifecycle()
+    // Telegram Advanced Settings state
+    val telegramAdvancedState by telegramAdvancedVm.state.collectAsStateWithLifecycle()
 
     val scroll = rememberScrollState()
 
@@ -278,6 +282,14 @@ fun SettingsScreen(
                 onOpenLog = onOpenTelegramLog,
                 onOpenFeed = onOpenTelegramFeed,
             )
+
+            // --- Telegram Advanced Settings ---
+            if (telegramState.enabled) {
+                TelegramAdvancedSettingsSection(
+                    state = telegramAdvancedState,
+                    viewModel = telegramAdvancedVm,
+                )
+            }
 
             // --- Debug & Diagnostics (BUG 3 fix: moved from Telegram READY state) ---
             SettingsCard(title = "Debug & Diagnostics") {
@@ -923,5 +935,235 @@ private fun SubtitlePreviewBox(
                 )
             }
         }
+    }
+}
+
+/**
+ * Telegram Advanced Settings section with runtime controls for streaming/buffering/logging.
+ */
+@Composable
+private fun TelegramAdvancedSettingsSection(
+    state: TelegramAdvancedSettingsState,
+    viewModel: TelegramAdvancedSettingsViewModel,
+) {
+    // --- Telegram Engine ---
+    SettingsCard(title = "Telegram Engine (Advanced)") {
+        Text("Max Global Downloads", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.maxGlobalDownloads.toFloat(),
+            onValueChange = { viewModel.setMaxGlobalDownloads(it.toInt()) },
+            valueRange = 1f..20f,
+            steps = 18,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.maxGlobalDownloads}", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Max Video Downloads", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.maxVideoDownloads.toFloat(),
+            onValueChange = { viewModel.setMaxVideoDownloads(it.toInt()) },
+            valueRange = 1f..10f,
+            steps = 8,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.maxVideoDownloads}", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Max Thumbnail Downloads", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.maxThumbDownloads.toFloat(),
+            onValueChange = { viewModel.setMaxThumbDownloads(it.toInt()) },
+            valueRange = 1f..10f,
+            steps = 8,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.maxThumbDownloads}", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Show Engine Overlay", modifier = Modifier.weight(1f))
+            Switch(
+                checked = state.showEngineOverlay,
+                onCheckedChange = viewModel::setShowEngineOverlay,
+            )
+        }
+    }
+
+    // --- Streaming / Buffering ---
+    SettingsCard(title = "Streaming / Buffering (Advanced)") {
+        Text("Initial Prefix Size (KB)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.initialPrefixKb.toFloat(),
+            onValueChange = { viewModel.setInitialPrefixKb(it.toInt()) },
+            valueRange = 64f..2048f,
+            steps = 15,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.initialPrefixKb} KB", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Seek Margin (KB)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.seekMarginKb.toFloat(),
+            onValueChange = { viewModel.setSeekMarginKb(it.toInt()) },
+            valueRange = 256f..8192f,
+            steps = 15,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.seekMarginKb} KB", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("File Ready Timeout (seconds)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.ensureFileReadyTimeoutSec.toFloat(),
+            onValueChange = { viewModel.setEnsureFileReadyTimeoutSec(it.toInt()) },
+            valueRange = 2f..60f,
+            steps = 28,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.ensureFileReadyTimeoutSec} seconds", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Show Streaming Debug Overlay", modifier = Modifier.weight(1f))
+            Switch(
+                checked = state.showStreamingOverlay,
+                onCheckedChange = viewModel::setShowStreamingOverlay,
+            )
+        }
+    }
+
+    // --- Thumbnails & Artwork ---
+    SettingsCard(title = "Thumbnails & Artwork (Advanced)") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Thumbnail Prefetch Enabled", modifier = Modifier.weight(1f))
+            Switch(
+                checked = state.thumbPrefetchEnabled,
+                onCheckedChange = viewModel::setThumbPrefetchEnabled,
+            )
+        }
+
+        if (state.thumbPrefetchEnabled) {
+            Spacer(Modifier.height(8.dp))
+            Text("Prefetch Batch Size", style = MaterialTheme.typography.titleSmall)
+            Slider(
+                value = state.thumbPrefetchBatchSize.toFloat(),
+                onValueChange = { viewModel.setThumbPrefetchBatchSize(it.toInt()) },
+                valueRange = 1f..50f,
+                steps = 48,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text("${state.thumbPrefetchBatchSize}", style = MaterialTheme.typography.bodySmall)
+
+            Spacer(Modifier.height(8.dp))
+            Text("Max Parallel Thumbnail Downloads", style = MaterialTheme.typography.titleSmall)
+            Slider(
+                value = state.thumbMaxParallel.toFloat(),
+                onValueChange = { viewModel.setThumbMaxParallel(it.toInt()) },
+                valueRange = 1f..10f,
+                steps = 8,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text("${state.thumbMaxParallel}", style = MaterialTheme.typography.bodySmall)
+
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Pause Prefetch While VOD Buffering", modifier = Modifier.weight(1f))
+                Switch(
+                    checked = state.thumbPauseWhileVodBuffering,
+                    onCheckedChange = viewModel::setThumbPauseWhileVodBuffering,
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Full Download for Thumbnails", modifier = Modifier.weight(1f))
+                Switch(
+                    checked = state.thumbFullDownload,
+                    onCheckedChange = viewModel::setThumbFullDownload,
+                )
+            }
+        }
+    }
+
+    // --- Player Buffer (ExoPlayer) ---
+    SettingsCard(title = "Player Buffer (ExoPlayer)") {
+        Text("Min Buffer (seconds)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.exoMinBufferSec.toFloat(),
+            onValueChange = { viewModel.setExoMinBufferSec(it.toInt()) },
+            valueRange = 5f..300f,
+            steps = 58,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.exoMinBufferSec} seconds", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Max Buffer (seconds)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.exoMaxBufferSec.toFloat(),
+            onValueChange = { viewModel.setExoMaxBufferSec(it.toInt()) },
+            valueRange = 5f..300f,
+            steps = 58,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("${state.exoMaxBufferSec} seconds", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Buffer For Playback (seconds)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.exoBufferForPlaybackSec,
+            onValueChange = { viewModel.setExoBufferForPlaybackSec(it) },
+            valueRange = 0.5f..30f,
+            steps = 58,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(String.format("%.1f seconds", state.exoBufferForPlaybackSec), style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Text("Buffer For Playback After Rebuffer (seconds)", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.exoBufferForPlaybackAfterRebufferSec,
+            onValueChange = { viewModel.setExoBufferForPlaybackAfterRebufferSec(it) },
+            valueRange = 0.5f..30f,
+            steps = 58,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(String.format("%.1f seconds", state.exoBufferForPlaybackAfterRebufferSec), style = MaterialTheme.typography.bodySmall)
+
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Exact Seek (vs Approximate)", modifier = Modifier.weight(1f))
+            Switch(
+                checked = state.exoExactSeek,
+                onCheckedChange = viewModel::setExoExactSeek,
+            )
+        }
+    }
+
+    // --- Diagnostics & Logging ---
+    SettingsCard(title = "Diagnostics & Logging (Advanced)") {
+        Text("App-side Telegram Log Level", style = MaterialTheme.typography.titleSmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(0 to "ERROR", 1 to "WARN", 2 to "INFO", 3 to "DEBUG").forEach { (value, label) ->
+                FilterChip(
+                    selected = state.tgAppLogLevel == value,
+                    onClick = { viewModel.setTgAppLogLevel(value) },
+                    label = { Text(label) },
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Text("Jank Telemetry Sample Rate", style = MaterialTheme.typography.titleSmall)
+        Slider(
+            value = state.jankTelemetrySampleRate.toFloat(),
+            onValueChange = { viewModel.setJankTelemetrySampleRate(it.toInt()) },
+            valueRange = 1f..100f,
+            steps = 98,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("Log every ${state.jankTelemetrySampleRate}th event", style = MaterialTheme.typography.bodySmall)
     }
 }
