@@ -1,6 +1,7 @@
 package com.chris.m3usuite.player.datasource
 
 import android.content.Context
+import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
@@ -63,7 +64,7 @@ private class DelegatingDataSource(
                         }
 
                     // Log that we're using TelegramFileDataSource
-                    println("[DelegatingDataSource] Using TelegramFileDataSource for ${dataSpec.uri}")
+                    Log.d("DelegatingDataSource", "Using TelegramFileDataSource for ${dataSpec.uri}")
 
                     TelegramFileDataSource(serviceClient)
                 }

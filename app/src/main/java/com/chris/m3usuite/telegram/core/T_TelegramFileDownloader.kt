@@ -346,19 +346,21 @@ class T_TelegramFileDownloader(
             var file = getFreshFileState(fileId)
 
             // Use provided fileSizeBytes if available, otherwise use TDLib's expectedSize
-            val totalSize = fileSizeBytes ?: file.expectedSize?.toLong() ?: 0L
+            // Use Long.MAX_VALUE for unknown sizes to avoid confusion with empty files
+            val totalSize = fileSizeBytes ?: file.expectedSize?.toLong() ?: Long.MAX_VALUE
             val localPath = file.local?.path
 
-            // Log if totalSize is unknown or 0
-            if (totalSize <= 0L) {
+            // Log if totalSize is unknown or invalid
+            if (totalSize <= 0L || totalSize == Long.MAX_VALUE) {
                 TelegramLogRepository.warn(
                     source = "T_TelegramFileDownloader",
-                    message = "ensureFileReady: totalSize is unknown or 0",
+                    message = "ensureFileReady: totalSize is unknown or invalid",
                     details =
                         mapOf(
                             "fileId" to fileId.toString(),
                             "fileSizeBytes" to (fileSizeBytes?.toString() ?: "null"),
                             "expectedSize" to (file.expectedSize?.toString() ?: "null"),
+                            "totalSize" to totalSize.toString(),
                         ),
                 )
             }
@@ -378,8 +380,8 @@ class T_TelegramFileDownloader(
                     }
                     EnsureFileReadyMode.SEEK -> {
                         // SEEK: Request only startPosition + margin (1 MB)
-                        // This avoids "download almost the whole file" when seeking near the end
-                        windowStart + SEEK_MARGIN_BYTES
+                        // Use startPosition directly for clarity (windowStart = startPosition.coerceAtLeast(0L))
+                        startPosition + SEEK_MARGIN_BYTES
                     }
                 }
 
