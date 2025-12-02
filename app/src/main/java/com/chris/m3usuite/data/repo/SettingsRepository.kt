@@ -160,8 +160,11 @@ class SettingsRepository(
     suspend fun setExoExactSeek(value: Boolean) = store.setExoExactSeek(value)
 
     // Diagnostics / logging settings
+    val tgLogVerbosity: Flow<Int> = store.tgLogVerbosity // TDLib native log level (0-5)
     val tgAppLogLevel: Flow<Int> = store.tgAppLogLevel
     val jankTelemetrySampleRate: Flow<Int> = store.jankTelemetrySampleRate
+
+    suspend fun setTgLogVerbosity(value: Int) = store.setTelegramLogVerbosity(value)
 
     suspend fun setTgAppLogLevel(value: Int) = store.setTgAppLogLevel(value)
 
