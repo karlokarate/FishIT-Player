@@ -28,13 +28,19 @@ data class DownloadProgress(
 ) {
     val progressPercent: Int
         get() = if (totalBytes > 0) {
-            ((downloadedBytes * 100) / totalBytes).toInt()
+            ((downloadedBytes.toDouble() * 100) / totalBytes).toInt()
         } else {
             0
         }
 }
 
-/** Window state for legacy windowed streaming. */
+/** 
+ * Window state for legacy windowed streaming.
+ * 
+ * Note: localSize and isComplete are mutable (var) because they are updated
+ * in-place during download progress tracking to avoid creating new instances
+ * and updating the ConcurrentHashMap on every progress update.
+ */
 data class WindowState(
         val fileId: Int,
         val windowStart: Long,
