@@ -428,18 +428,10 @@ class TelegramFileLoader(
                 source = TAG,
                 message = "ensureFileForPlayback: Exception for fileId=$fileId",
                 exception = e,
-                        "downloadMode" to if (shouldDownloadFull) "FULL" else "PREFIX",
-                        "minBytes" to minBytes.toString(),
             )
             null
         }
 
-            if (
-                shouldDownloadFull &&
-                    totalSizeBytes > 0L &&
-                    downloadedPrefixSize < totalSizeBytes &&
-                    !isComplete
-            ) {
     // Phase T2: TelegramImageRef-based Image Loading
     // ==========================================================================
 
