@@ -271,7 +271,6 @@ class TelegramThumbPrefetcher(
             )
             }
         }
-    }
 
     /**
      * Prefetch a single thumbnail using TelegramImageRef (remoteId-first).

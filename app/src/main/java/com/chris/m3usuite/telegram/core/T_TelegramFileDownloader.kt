@@ -27,26 +27,20 @@ data class DownloadProgress(
         val isComplete: Boolean,
 ) {
     val progressPercent: Int
-        /**
-         * Phase 2: Process queued downloads after a download completes.
-         */
-        private suspend fun processQueuedDownloads() {
-                while (true) {
-                        val nextJob =
-                                synchronized(queueLock) {
-                                        val candidate = findNextStartableJob() ?: return
-                                        globalQueue.remove(candidate)
-                                        when (candidate.kind) {
-                                                is DownloadKind.VIDEO -> videoQueue.remove(candidate)
-                                                is DownloadKind.THUMB -> thumbQueue.remove(candidate)
-                                        }
-                                        markDownloadStartLocked(candidate)
-                                        candidate
-                                }
-
-                        runDownloadJob(nextJob)
-                }
+        get() = if (totalBytes > 0) {
+            ((downloadedBytes * 100) / totalBytes).toInt()
+        } else {
+            0
         }
+}
+
+/** Window state for legacy windowed streaming. */
+data class WindowState(
+        val fileId: Int,
+        val windowStart: Long,
+        val windowSize: Long,
+        var localSize: Long,
+        var isComplete: Boolean,
 )
 
 /** Phase 2: Classification of download types for concurrency enforcement. */
