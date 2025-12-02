@@ -315,17 +315,32 @@ fun rememberInternalPlayerSession(
 
         // ════════════════════════════════════════════════════════════════════════════
         // BUG 1 FIX: Populate debug diagnostic fields after source resolution
+        // Initialize durationMs from Telegram URL if available
         // ════════════════════════════════════════════════════════════════════════════
         val truncatedUrl = if (url.length > 100) url.take(100) + "..." else url
+        val initialDurationMs = resolved.telegramDurationMs ?: 0L
         val debugUpdated =
             playerState.value.copy(
                 debugPlaybackUrl = truncatedUrl,
                 debugResolvedMimeType = resolved.mimeType,
                 debugInferredExtension = resolved.inferredExtension,
                 debugIsLiveFromUrl = resolved.isLiveFromUrl,
+                durationMs = initialDurationMs,
             )
         playerState.value = debugUpdated
         onStateChanged(debugUpdated)
+
+        if (resolved.isTelegram && resolved.telegramDurationMs != null) {
+            TelegramLogRepository.info(
+                source = "InternalPlayerSession",
+                message = "Initialized duration from Telegram URL",
+                details =
+                    mapOf(
+                        "durationMs" to initialDurationMs.toString(),
+                        "fileSizeBytes" to (resolved.telegramFileSizeBytes?.toString() ?: "unknown"),
+                    ),
+            )
+        }
 
         val mediaItem =
             buildMediaItemWithTelegramExtras(

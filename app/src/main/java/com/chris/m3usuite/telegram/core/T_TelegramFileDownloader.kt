@@ -102,6 +102,26 @@ class T_TelegramFileDownloader(
         private const val MIN_START_BYTES = 64 * 1024L // 64KB minimum for early success
         private const val STALL_TIMEOUT_MS = 5_000L // 5 seconds without progress = stalled
         private const val PROGRESS_RESET_TIMEOUT_MS = 60_000L // Max 60s timeout when actively progressing
+        
+        // Seek margin for SEEK mode (1 MB buffer)
+        private const val SEEK_MARGIN_BYTES: Long = 1L * 1024L * 1024L // 1 MB margin for seeks
+    }
+
+    /**
+     * Mode for ensureFileReady to distinguish initial playback from seeks.
+     */
+    enum class EnsureFileReadyMode {
+        /**
+         * Initial start of playback (dataSpecPosition == 0).
+         * Requires only a small fixed prefix (256 KB or less), independent of any future positions.
+         */
+        INITIAL_START,
+
+        /**
+         * Seek operation (dataSpecPosition > 0).
+         * Requires only startPosition + margin (e.g., +1 MB) instead of startPosition + 256 KB up to totalSize.
+         */
+        SEEK,
     }
 
     // Cache for file info to avoid repeated TDLib calls - thread-safe
@@ -280,31 +300,30 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Ensure TDLib has downloaded a file with a sliding ~50MB window for streaming.
+     * Ensure TDLib has downloaded a file with a sliding window for streaming.
      * This is used by TelegramFileDataSource for zero-copy streaming.
      *
-     * **Phase D+ Sliding Window Strategy (~50MB max per video):**
+     * **Phase D+ Sliding Window Strategy:**
      * 1. Get current file info from TDLib to determine total size
-     * 2. Compute streaming window: [windowStart, windowEnd) where windowEnd - windowStart <= 50MB
+     * 2. Compute streaming window based on mode:
+     *    - INITIAL_START: Small fixed prefix (256 KB or less), capped at fileSizeBytes
+     *    - SEEK: startPosition + margin (1 MB), avoiding large end-of-file windows
      * 3. Request only the window via downloadFile(offset=windowStart, limit=windowSize)
      * 4. Poll TDLib state until enough prefix is available for playback
      * 5. Return local file path
      *
      * **Key behaviors:**
      * - Never downloads full file for streaming (uses limit parameter)
-     * - Window size capped at TELEGRAM_STREAM_WINDOW_BYTES (50 MB)
-     * - Minimum prefix required: TELEGRAM_MIN_PREFIX_BYTES (256 KB) for playback start
+     * - INITIAL_START: Quick startup with minimal prefix
+     * - SEEK: Avoids runaway downloads near end-of-file
      * - Progress-aware timeout: resets when download is actively progressing
      * - Early success fallback: allows playback when minimum data available
      *
-     * **Streaming-first design:**
-     * - For large files (e.g., 4GB movie), only ~50MB is ever downloaded at a time
-     * - ExoPlayer sees a stable file size (from file.size, not downloadedPrefixSize)
-     * - Seeking triggers a new window request, old data can be discarded
-     *
      * @param fileId TDLib file ID (integer)
      * @param startPosition Starting byte offset for the streaming window
-     * @param minBytes Hint for minimum bytes needed (actual window may be larger, capped at 50MB)
+     * @param minBytes Hint for minimum bytes needed (used for INITIAL_START)
+     * @param mode INITIAL_START for initial playback, SEEK for seek operations
+     * @param fileSizeBytes Optional known file size from TDLib DTOs (avoids extra queries)
      * @param timeoutMs Maximum time to wait in milliseconds (default 30 seconds)
      * @return Local file path from TDLib cache
      * @throws Exception if download fails or times out
@@ -313,37 +332,56 @@ class T_TelegramFileDownloader(
         fileId: Int,
         startPosition: Long,
         minBytes: Long,
+        mode: EnsureFileReadyMode = EnsureFileReadyMode.INITIAL_START,
+        fileSizeBytes: Long? = null,
         timeoutMs: Long = 30_000L,
     ): String {
         return withContext(Dispatchers.IO) {
             // 1. Get current file status from TDLib (fresh, no cache)
             var file = getFreshFileState(fileId)
 
-            val totalSize = file.expectedSize?.toLong() ?: Long.MAX_VALUE
+            // Use provided fileSizeBytes if available, otherwise use TDLib's expectedSize
+            val totalSize = fileSizeBytes ?: file.expectedSize?.toLong() ?: Long.MAX_VALUE
             val localPath = file.local?.path
 
-            // 2. Compute streaming window: [windowStart, windowEnd)
-            // Window is capped at TELEGRAM_STREAM_WINDOW_BYTES (50 MB)
+            // 2. Compute streaming window based on mode
             val windowStart = startPosition.coerceAtLeast(0L)
-            val windowEnd = (windowStart + TELEGRAM_STREAM_WINDOW_BYTES).coerceAtMost(totalSize)
-            val windowSize = windowEnd - windowStart
+            val windowEnd: Long
+            val windowSize: Long
+            val requiredPrefixFromStart: Long
 
-            // Required prefix for playback: at least TELEGRAM_MIN_PREFIX_BYTES from windowStart
-            val requiredPrefixFromStart = (windowStart + TELEGRAM_MIN_PREFIX_BYTES).coerceAtMost(totalSize)
+            when (mode) {
+                EnsureFileReadyMode.INITIAL_START -> {
+                    // INITIAL_START: Small fixed prefix for quick startup
+                    // Cap at totalSize to avoid requesting beyond file size
+                    windowEnd = (windowStart + TELEGRAM_MIN_PREFIX_BYTES).coerceAtMost(totalSize)
+                    windowSize = windowEnd - windowStart
+                    requiredPrefixFromStart = windowEnd
+                }
+                EnsureFileReadyMode.SEEK -> {
+                    // SEEK: Request only startPosition + margin (1 MB)
+                    // This avoids "download almost the whole file" when seeking near the end
+                    windowEnd = (windowStart + SEEK_MARGIN_BYTES).coerceAtMost(totalSize)
+                    windowSize = windowEnd - windowStart
+                    requiredPrefixFromStart = windowEnd
+                }
+            }
 
             val initialPrefix = file.local?.downloadedPrefixSize?.toLong() ?: 0L
 
             TelegramLogRepository.debug(
                 source = "T_TelegramFileDownloader",
-                message = "ensureFileReady: starting with ~50MB window policy",
+                message = "ensureFileReady: starting with mode=$mode",
                 details =
                     mapOf(
                         "fileId" to fileId.toString(),
+                        "mode" to mode.name,
                         "startPosition" to startPosition.toString(),
                         "windowStart" to windowStart.toString(),
                         "windowEnd" to windowEnd.toString(),
                         "windowSize" to windowSize.toString(),
                         "totalSize" to totalSize.toString(),
+                        "fileSizeBytes" to (fileSizeBytes?.toString() ?: "unknown"),
                         "requiredPrefixFromStart" to requiredPrefixFromStart.toString(),
                         "initialPrefix" to initialPrefix.toString(),
                     ),

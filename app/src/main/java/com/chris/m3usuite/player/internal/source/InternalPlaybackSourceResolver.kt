@@ -20,6 +20,8 @@ import com.chris.m3usuite.model.MediaItem as AppMediaItem
  * Now includes:
  * - isLiveFromUrl: URL-based live detection heuristic
  * - inferredExtension: File extension extracted from URL
+ * - telegramDurationMs: Duration in milliseconds from Telegram URL (if available)
+ * - telegramFileSizeBytes: File size in bytes from Telegram URL (if available)
  *
  * These fields enable better LIVE/VOD detection and debug visibility.
  */
@@ -32,6 +34,10 @@ data class ResolvedPlaybackSource(
     val isLiveFromUrl: Boolean = false,
     /** BUG 1 FIX: File extension inferred from URL path */
     val inferredExtension: String? = null,
+    /** Duration in milliseconds from Telegram URL query parameters (if available) */
+    val telegramDurationMs: Long? = null,
+    /** File size in bytes from Telegram URL query parameters (if available) */
+    val telegramFileSizeBytes: Long? = null,
 )
 
 /**
@@ -57,6 +63,20 @@ class PlaybackSourceResolver(
 
         // BUG 1 FIX: Detect if URL patterns suggest live streaming
         val isLiveFromUrl = isLikelyLiveUrl(url)
+
+        // Extract Telegram metadata from URL if available
+        val telegramDurationMs =
+            if (isTelegram) {
+                parsed.getQueryParameter("durationMs")?.toLongOrNull()
+            } else {
+                null
+            }
+        val telegramFileSizeBytes =
+            if (isTelegram) {
+                parsed.getQueryParameter("fileSizeBytes")?.toLongOrNull()
+            } else {
+                null
+            }
 
         val (mime, item) =
             when {
@@ -86,17 +106,21 @@ class PlaybackSourceResolver(
                 isTelegram = isTelegram,
                 isLiveFromUrl = isLiveFromUrl,
                 inferredExtension = inferredExtension,
+                telegramDurationMs = telegramDurationMs,
+                telegramFileSizeBytes = telegramFileSizeBytes,
             )
         AppLog.log(
             category = "player",
             level = AppLog.Level.DEBUG,
-            message = "resolved mime=$mime telegram=$isTelegram live=$isLiveFromUrl ext=$inferredExtension",
+            message = "resolved mime=$mime telegram=$isTelegram live=$isLiveFromUrl ext=$inferredExtension dur=$telegramDurationMs size=$telegramFileSizeBytes",
             extras =
                 buildMap {
                     put("url", url)
                     explicitMimeType?.let { put("explicit", it) }
                     preparedMediaItem?.containerExt?.let { put("containerExt", it) }
                     put("isLiveFromUrl", isLiveFromUrl.toString())
+                    telegramDurationMs?.let { put("telegramDurationMs", it.toString()) }
+                    telegramFileSizeBytes?.let { put("telegramFileSizeBytes", it.toString()) }
                 },
         )
         return resolved

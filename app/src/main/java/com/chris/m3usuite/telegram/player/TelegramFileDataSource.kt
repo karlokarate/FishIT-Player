@@ -48,6 +48,8 @@ class TelegramFileDataSource(
     private var messageId: Long? = null
     private var remoteId: String? = null
     private var uniqueId: String? = null
+    private var durationMs: Long? = null
+    private var fileSizeBytes: Long? = null
 
     companion object {
         /**
@@ -111,6 +113,8 @@ class TelegramFileDataSource(
         val messageIdStr = uri.getQueryParameter("messageId")
         val remoteIdParam = uri.getQueryParameter("remoteId")
         val uniqueIdParam = uri.getQueryParameter("uniqueId")
+        val durationMsStr = uri.getQueryParameter("durationMs")
+        val fileSizeBytesStr = uri.getQueryParameter("fileSizeBytes")
 
         if (chatIdStr.isNullOrBlank() || messageIdStr.isNullOrBlank()) {
             throw IOException("Missing chatId or messageId parameter in Telegram URI: $uri")
@@ -122,6 +126,8 @@ class TelegramFileDataSource(
             ?: throw IOException("Invalid messageId parameter in Telegram URI: $uri")
         remoteId = remoteIdParam
         uniqueId = uniqueIdParam
+        durationMs = durationMsStr?.toLongOrNull()
+        fileSizeBytes = fileSizeBytesStr?.toLongOrNull()
 
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
@@ -133,6 +139,8 @@ class TelegramFileDataSource(
                     "messageId" to messageId.toString(),
                     "remoteId" to (remoteIdParam ?: "none"),
                     "uniqueId" to (uniqueIdParam ?: "none"),
+                    "durationMs" to (durationMs?.toString() ?: "none"),
+                    "fileSizeBytes" to (fileSizeBytes?.toString() ?: "none"),
                     "dataSpecPosition" to dataSpec.position.toString(),
                 ),
         )
@@ -200,6 +208,14 @@ class TelegramFileDataSource(
         var localPath: String? = null
         var lastException: Exception? = null
 
+        // Determine mode based on dataSpec position
+        val ensureMode =
+            if (dataSpec.position == 0L) {
+                com.chris.m3usuite.telegram.core.T_TelegramFileDownloader.EnsureFileReadyMode.INITIAL_START
+            } else {
+                com.chris.m3usuite.telegram.core.T_TelegramFileDownloader.EnsureFileReadyMode.SEEK
+            }
+
         try {
             localPath =
                 runBlocking {
@@ -208,6 +224,8 @@ class TelegramFileDataSource(
                         fileId = fileIdInt,
                         startPosition = dataSpec.position,
                         minBytes = MIN_PREFIX_BYTES,
+                        mode = ensureMode,
+                        fileSizeBytes = fileSizeBytes, // Pass from URL parameters
                     )
                 }
         } catch (e: Exception) {
@@ -262,6 +280,8 @@ class TelegramFileDataSource(
                                     fileId = candidateFileId,
                                     startPosition = dataSpec.position,
                                     minBytes = MIN_PREFIX_BYTES,
+                                    mode = ensureMode,
+                                    fileSizeBytes = fileSizeBytes,
                                 )
                             }
                         // Only update instance variables if ensureFileReady succeeds
@@ -420,6 +440,8 @@ class TelegramFileDataSource(
         messageId = null
         remoteId = null
         uniqueId = null
+        durationMs = null
+        fileSizeBytes = null
     }
 }
 
