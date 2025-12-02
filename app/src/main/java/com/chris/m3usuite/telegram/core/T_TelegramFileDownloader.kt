@@ -102,7 +102,7 @@ class T_TelegramFileDownloader(
         private const val MIN_START_BYTES = 64 * 1024L // 64KB minimum for early success
         private const val STALL_TIMEOUT_MS = 5_000L // 5 seconds without progress = stalled
         private const val PROGRESS_RESET_TIMEOUT_MS = 60_000L // Max 60s timeout when actively progressing
-        
+
         // Seek margin for SEEK mode (1 MB buffer)
         private const val SEEK_MARGIN_BYTES: Long = 1L * 1024L * 1024L // 1 MB margin for seeks
     }

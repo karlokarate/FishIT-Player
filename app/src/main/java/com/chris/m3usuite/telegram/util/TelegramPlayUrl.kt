@@ -41,29 +41,19 @@ object TelegramPlayUrl {
         val fileIdPath = request.fileId ?: 0
         val encodedRemoteId = URLEncoder.encode(request.remoteId, "UTF-8")
         val encodedUniqueId = URLEncoder.encode(request.uniqueId, "UTF-8")
-        val baseUrl =
-            "tg://file/$fileIdPath?" +
-                "chatId=${request.chatId}&" +
-                "messageId=${request.messageId}&" +
-                "remoteId=$encodedRemoteId&" +
-                "uniqueId=$encodedUniqueId"
-
-        // Add optional durationMs and fileSizeBytes if available
-        val withDuration =
-            if (request.durationMs != null) {
-                "$baseUrl&durationMs=${request.durationMs}"
-            } else {
-                baseUrl
-            }
-
-        val withSize =
-            if (request.fileSizeBytes != null) {
-                "$withDuration&fileSizeBytes=${request.fileSizeBytes}"
-            } else {
-                withDuration
-            }
-
-        return withSize
+        
+        val params = mutableListOf(
+            "chatId=${request.chatId}",
+            "messageId=${request.messageId}",
+            "remoteId=$encodedRemoteId",
+            "uniqueId=$encodedUniqueId"
+        )
+        
+        // Add optional parameters if available
+        request.durationMs?.let { params.add("durationMs=$it") }
+        request.fileSizeBytes?.let { params.add("fileSizeBytes=$it") }
+        
+        return "tg://file/$fileIdPath?" + params.joinToString("&")
     }
 
     /**

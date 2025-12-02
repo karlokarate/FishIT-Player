@@ -7,6 +7,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
+import com.chris.m3usuite.telegram.core.T_TelegramFileDownloader
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import kotlinx.coroutines.runBlocking
@@ -211,9 +212,9 @@ class TelegramFileDataSource(
         // Determine mode based on dataSpec position
         val ensureMode =
             if (dataSpec.position == 0L) {
-                com.chris.m3usuite.telegram.core.T_TelegramFileDownloader.EnsureFileReadyMode.INITIAL_START
+                T_TelegramFileDownloader.EnsureFileReadyMode.INITIAL_START
             } else {
-                com.chris.m3usuite.telegram.core.T_TelegramFileDownloader.EnsureFileReadyMode.SEEK
+                T_TelegramFileDownloader.EnsureFileReadyMode.SEEK
             }
 
         try {
