@@ -154,6 +154,37 @@ object Keys {
     val TG_API_HASH = stringPreferencesKey("tg_api_hash")
     val TG_PHONE_NUMBER = stringPreferencesKey("tg_phone_number")
 
+    // Telegram Advanced Settings - Runtime Controls
+    // Engine settings
+    val TG_MAX_GLOBAL_DOWNLOADS = intPreferencesKey("tg_max_global_downloads")
+    val TG_MAX_VIDEO_DOWNLOADS = intPreferencesKey("tg_max_video_downloads")
+    val TG_MAX_THUMB_DOWNLOADS = intPreferencesKey("tg_max_thumb_downloads")
+    val TG_SHOW_ENGINE_OVERLAY = booleanPreferencesKey("tg_show_engine_overlay")
+
+    // Streaming / buffering settings
+    val TG_INITIAL_PREFIX_BYTES = longPreferencesKey("tg_initial_prefix_bytes")
+    val TG_SEEK_MARGIN_BYTES = longPreferencesKey("tg_seek_margin_bytes")
+    val TG_ENSURE_FILE_READY_TIMEOUT_MS = longPreferencesKey("tg_ensure_file_ready_timeout_ms")
+    val TG_SHOW_STREAMING_OVERLAY = booleanPreferencesKey("tg_show_streaming_overlay")
+
+    // Thumbnail / poster prefetch settings
+    val TG_THUMB_PREFETCH_ENABLED = booleanPreferencesKey("tg_thumb_prefetch_enabled")
+    val TG_THUMB_PREFETCH_BATCH_SIZE = intPreferencesKey("tg_thumb_prefetch_batch_size")
+    val TG_THUMB_MAX_PARALLEL = intPreferencesKey("tg_thumb_max_parallel")
+    val TG_THUMB_PAUSE_WHILE_VOD_BUFFERING = booleanPreferencesKey("tg_thumb_pause_while_vod_buffering")
+    val TG_THUMB_FULL_DOWNLOAD = booleanPreferencesKey("tg_thumb_full_download")
+
+    // ExoPlayer buffer settings
+    val EXO_MIN_BUFFER_MS = intPreferencesKey("exo_min_buffer_ms")
+    val EXO_MAX_BUFFER_MS = intPreferencesKey("exo_max_buffer_ms")
+    val EXO_BUFFER_FOR_PLAYBACK_MS = intPreferencesKey("exo_buffer_for_playback_ms")
+    val EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = intPreferencesKey("exo_buffer_for_playback_after_rebuffer_ms")
+    val EXO_EXACT_SEEK = booleanPreferencesKey("exo_exact_seek")
+
+    // Diagnostics / logging settings
+    val TG_APP_LOG_LEVEL = intPreferencesKey("tg_app_log_level") // 0=ERROR, 1=WARN, 2=INFO, 3=DEBUG
+    val JANK_TELEMETRY_SAMPLE_RATE = intPreferencesKey("jank_telemetry_sample_rate")
+
     // Debug/Logging
     val HTTP_LOG_ENABLED = booleanPreferencesKey("http_log_enabled")
     val GLOBAL_DEBUG_ENABLED = booleanPreferencesKey("global_debug_enabled")
@@ -375,6 +406,37 @@ class SettingsStore(
     val tgApiId: Flow<Int> = context.dataStore.data.map { it[Keys.TG_API_ID] ?: 0 }
     val tgApiHash: Flow<String> = context.dataStore.data.map { it[Keys.TG_API_HASH].orEmpty() }
     val tgPhoneNumber: Flow<String> = context.dataStore.data.map { it[Keys.TG_PHONE_NUMBER].orEmpty() }
+
+    // Telegram Advanced Settings - Runtime Controls
+    // Engine settings - defaults match current behavior
+    val tgMaxGlobalDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] ?: 5 }
+    val tgMaxVideoDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_VIDEO_DOWNLOADS] ?: 2 }
+    val tgMaxThumbDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_THUMB_DOWNLOADS] ?: 3 }
+    val tgShowEngineOverlay: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SHOW_ENGINE_OVERLAY] ?: false }
+
+    // Streaming / buffering settings - defaults match T_TelegramFileDownloader constants
+    val tgInitialPrefixBytes: Flow<Long> = context.dataStore.data.map { it[Keys.TG_INITIAL_PREFIX_BYTES] ?: 256L * 1024L } // 256 KB
+    val tgSeekMarginBytes: Flow<Long> = context.dataStore.data.map { it[Keys.TG_SEEK_MARGIN_BYTES] ?: 1024L * 1024L } // 1 MB
+    val tgEnsureFileReadyTimeoutMs: Flow<Long> = context.dataStore.data.map { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] ?: 10_000L } // 10 seconds
+    val tgShowStreamingOverlay: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SHOW_STREAMING_OVERLAY] ?: false }
+
+    // Thumbnail / poster prefetch settings - reasonable defaults
+    val tgThumbPrefetchEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_THUMB_PREFETCH_ENABLED] ?: true }
+    val tgThumbPrefetchBatchSize: Flow<Int> = context.dataStore.data.map { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] ?: 8 }
+    val tgThumbMaxParallel: Flow<Int> = context.dataStore.data.map { it[Keys.TG_THUMB_MAX_PARALLEL] ?: 2 }
+    val tgThumbPauseWhileVodBuffering: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_THUMB_PAUSE_WHILE_VOD_BUFFERING] ?: true }
+    val tgThumbFullDownload: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_THUMB_FULL_DOWNLOAD] ?: true }
+
+    // ExoPlayer buffer settings - defaults match Media3 DefaultLoadControl defaults
+    val exoMinBufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_MIN_BUFFER_MS] ?: 50_000 } // 50 seconds
+    val exoMaxBufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_MAX_BUFFER_MS] ?: 50_000 } // 50 seconds
+    val exoBufferForPlaybackMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] ?: 2_500 } // 2.5 seconds
+    val exoBufferForPlaybackAfterRebufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] ?: 5_000 } // 5 seconds
+    val exoExactSeek: Flow<Boolean> = context.dataStore.data.map { it[Keys.EXO_EXACT_SEEK] ?: true }
+
+    // Diagnostics / logging settings - safe defaults
+    val tgAppLogLevel: Flow<Int> = context.dataStore.data.map { it[Keys.TG_APP_LOG_LEVEL] ?: 1 } // WARN by default
+    val jankTelemetrySampleRate: Flow<Int> = context.dataStore.data.map { it[Keys.JANK_TELEMETRY_SAMPLE_RATE] ?: 10 } // Log every 10th event
 
     // Debug/Logging
     val httpLogEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.HTTP_LOG_ENABLED] ?: false }
@@ -1164,5 +1226,91 @@ class SettingsStore(
 
     suspend fun setShowAdults(value: Boolean) {
         context.dataStore.edit { it[Keys.SHOW_ADULTS] = value }
+    }
+
+    // Telegram Advanced Settings - Setters
+    // Engine settings
+    suspend fun setTgMaxGlobalDownloads(value: Int) {
+        context.dataStore.edit { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] = value.coerceIn(1, 20) }
+    }
+
+    suspend fun setTgMaxVideoDownloads(value: Int) {
+        context.dataStore.edit { it[Keys.TG_MAX_VIDEO_DOWNLOADS] = value.coerceIn(1, 10) }
+    }
+
+    suspend fun setTgMaxThumbDownloads(value: Int) {
+        context.dataStore.edit { it[Keys.TG_MAX_THUMB_DOWNLOADS] = value.coerceIn(1, 10) }
+    }
+
+    suspend fun setTgShowEngineOverlay(value: Boolean) {
+        context.dataStore.edit { it[Keys.TG_SHOW_ENGINE_OVERLAY] = value }
+    }
+
+    // Streaming / buffering settings
+    suspend fun setTgInitialPrefixBytes(value: Long) {
+        context.dataStore.edit { it[Keys.TG_INITIAL_PREFIX_BYTES] = value.coerceIn(64L * 1024L, 2048L * 1024L) }
+    }
+
+    suspend fun setTgSeekMarginBytes(value: Long) {
+        context.dataStore.edit { it[Keys.TG_SEEK_MARGIN_BYTES] = value.coerceIn(256L * 1024L, 8L * 1024L * 1024L) }
+    }
+
+    suspend fun setTgEnsureFileReadyTimeoutMs(value: Long) {
+        context.dataStore.edit { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = value.coerceIn(2_000L, 60_000L) }
+    }
+
+    suspend fun setTgShowStreamingOverlay(value: Boolean) {
+        context.dataStore.edit { it[Keys.TG_SHOW_STREAMING_OVERLAY] = value }
+    }
+
+    // Thumbnail / poster prefetch settings
+    suspend fun setTgThumbPrefetchEnabled(value: Boolean) {
+        context.dataStore.edit { it[Keys.TG_THUMB_PREFETCH_ENABLED] = value }
+    }
+
+    suspend fun setTgThumbPrefetchBatchSize(value: Int) {
+        context.dataStore.edit { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = value.coerceIn(1, 50) }
+    }
+
+    suspend fun setTgThumbMaxParallel(value: Int) {
+        context.dataStore.edit { it[Keys.TG_THUMB_MAX_PARALLEL] = value.coerceIn(1, 10) }
+    }
+
+    suspend fun setTgThumbPauseWhileVodBuffering(value: Boolean) {
+        context.dataStore.edit { it[Keys.TG_THUMB_PAUSE_WHILE_VOD_BUFFERING] = value }
+    }
+
+    suspend fun setTgThumbFullDownload(value: Boolean) {
+        context.dataStore.edit { it[Keys.TG_THUMB_FULL_DOWNLOAD] = value }
+    }
+
+    // ExoPlayer buffer settings
+    suspend fun setExoMinBufferMs(value: Int) {
+        context.dataStore.edit { it[Keys.EXO_MIN_BUFFER_MS] = value.coerceIn(5_000, 300_000) }
+    }
+
+    suspend fun setExoMaxBufferMs(value: Int) {
+        context.dataStore.edit { it[Keys.EXO_MAX_BUFFER_MS] = value.coerceIn(5_000, 300_000) }
+    }
+
+    suspend fun setExoBufferForPlaybackMs(value: Int) {
+        context.dataStore.edit { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = value.coerceIn(500, 30_000) }
+    }
+
+    suspend fun setExoBufferForPlaybackAfterRebufferMs(value: Int) {
+        context.dataStore.edit { it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = value.coerceIn(500, 30_000) }
+    }
+
+    suspend fun setExoExactSeek(value: Boolean) {
+        context.dataStore.edit { it[Keys.EXO_EXACT_SEEK] = value }
+    }
+
+    // Diagnostics / logging settings
+    suspend fun setTgAppLogLevel(value: Int) {
+        context.dataStore.edit { it[Keys.TG_APP_LOG_LEVEL] = value.coerceIn(0, 3) }
+    }
+
+    suspend fun setJankTelemetrySampleRate(value: Int) {
+        context.dataStore.edit { it[Keys.JANK_TELEMETRY_SAMPLE_RATE] = value.coerceIn(1, 100) }
     }
 }
