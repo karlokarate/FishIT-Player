@@ -53,7 +53,12 @@ class App : Application() {
         // Start Telegram thumbnail prefetcher
         val serviceClient = T_TelegramServiceClient.getInstance(this)
         val tgRepo = TelegramContentRepository(this, store)
-        telegramPrefetcher = TelegramThumbPrefetcher(this, serviceClient, tgRepo)
+        
+        // Phase 4: Create settings provider for prefetcher
+        val settingsRepo = com.chris.m3usuite.data.repo.SettingsRepository(this)
+        val settingsProvider = com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider(settingsRepo)
+        
+        telegramPrefetcher = TelegramThumbPrefetcher(this, serviceClient, tgRepo, settingsProvider)
 
         // Register in holder for global access
         com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder
