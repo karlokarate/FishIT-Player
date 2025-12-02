@@ -39,6 +39,21 @@ object ChunkCalculator {
     const val MIN_CHUNK_SIZE_BYTES = 10 * 1024 * 1024L // 10MB
 
     /**
+     * Initial chunk minimum size for MP4 MOOV atom support: 2MB.
+     * 
+     * MP4 videos contain MOOV atom (metadata) either at the beginning or end.
+     * For proper playback, the first chunk should be large enough to include:
+     * - FTYP atom (file type, typically 24-32 bytes)
+     * - MOOV atom at beginning (if Fast-Start MP4, typically 500KB-1MB)
+     * 
+     * 2MB ensures we capture the MOOV atom for most Fast-Start MP4 files.
+     * For Traditional MP4 (MOOV at end), additional suffix loading may be needed.
+     * 
+     * See: docs/MP4_MOOV_ATOM_CONSIDERATIONS.md for details
+     */
+    const val INITIAL_CHUNK_MIN_BYTES = 2 * 1024 * 1024L // 2MB
+
+    /**
      * Calculate video chunks based on duration and file size.
      *
      * **Algorithm:**
@@ -46,16 +61,25 @@ object ChunkCalculator {
      * 2. Iterate through video timeline in chunk-duration steps
      * 3. Compute byte ranges for each chunk
      * 4. Handle edge cases (last chunk, unknown duration)
+     * 5. Ensure first chunk meets INITIAL_CHUNK_MIN_BYTES for MOOV atom support
      *
      * **Example:**
      * ```
      * Video: 120 min (7,200,000 ms), 2GB (2,147,483,648 bytes)
      * Bitrate: 2,147,483,648 / 7,200,000 ≈ 298 bytes/ms
-     * Chunk 0: 0-30min (0-1,800,000ms) → 0-536,870,912 bytes (~512MB)
+     * Chunk 0: 0-30min (0-1,800,000ms) → 0-536,870,912 bytes (~512MB, but min 2MB enforced)
      * Chunk 1: 30-60min → 536,870,912-1,073,741,824 bytes (~512MB)
      * Chunk 2: 60-90min → 1,073,741,824-1,610,612,736 bytes (~512MB)
      * Chunk 3: 90-120min → 1,610,612,736-2,147,483,648 bytes (~512MB)
      * ```
+     *
+     * **MP4 MOOV Atom Consideration:**
+     * The first chunk is always guaranteed to be at least INITIAL_CHUNK_MIN_BYTES (2MB)
+     * to ensure proper MP4 container parsing by ExoPlayer. This covers the MOOV atom
+     * for Fast-Start MP4 files where metadata is at the beginning.
+     * 
+     * For Traditional MP4 files (MOOV at end), additional suffix loading is required.
+     * See: docs/MP4_MOOV_ATOM_CONSIDERATIONS.md
      *
      * @param durationMs Total video duration in milliseconds
      * @param fileSizeBytes Total file size in bytes
@@ -86,8 +110,16 @@ object ChunkCalculator {
             val endByte = (endMs * bytesPerMs).toLong()
             val sizeBytes = endByte - startByte
 
+            // For first chunk: Enforce minimum size for MP4 MOOV atom support
+            val adjustedSizeBytes =
+                if (chunkIndex == 0) {
+                    maxOf(sizeBytes, INITIAL_CHUNK_MIN_BYTES)
+                } else {
+                    sizeBytes
+                }
+
             // Skip chunks that are too small (edge case protection)
-            if (sizeBytes < MIN_CHUNK_SIZE_BYTES && currentMs > 0) {
+            if (adjustedSizeBytes < MIN_CHUNK_SIZE_BYTES && currentMs > 0) {
                 // Merge with previous chunk
                 val prevChunk = chunks.removeLast()
                 chunks.add(
@@ -104,8 +136,8 @@ object ChunkCalculator {
                         startMs = currentMs,
                         endMs = endMs,
                         startByte = startByte,
-                        endByte = endByte,
-                        sizeBytes = sizeBytes,
+                        endByte = if (chunkIndex == 0) startByte + adjustedSizeBytes else endByte,
+                        sizeBytes = adjustedSizeBytes,
                     ),
                 )
                 chunkIndex++

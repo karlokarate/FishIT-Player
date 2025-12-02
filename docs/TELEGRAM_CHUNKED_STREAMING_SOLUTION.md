@@ -47,6 +47,8 @@ Die Vermutung des Users war korrekt:
 
 **Problem**: Die "Zero-Copy" Architektur geht davon aus, dass TDLib die **gesamte Datei** herunterlädt, bevor ExoPlayer darauf zugreift. Das ist bei großen Videos (>100MB) speicherintensiv und langsam.
 
+**Wichtiger Hinweis**: Siehe `docs/MP4_MOOV_ATOM_CONSIDERATIONS.md` für Details zu MP4-Container-Metadaten und MOOV-Atom-Handling. ExoPlayer benötigt den MOOV-Atom (kann am Anfang oder Ende der Datei sein) zum Parsen des Containers.
+
 ### T_TelegramFileDownloader.ensureFileReady()
 
 ```kotlin
@@ -84,6 +86,28 @@ Bei Min 29:30:
   ✅ Chunk 2 wird aktiv
   🔄 Chunk 3 wird im Hintergrund geladen
 ```
+
+#### Wichtig: MP4 MOOV Atom Handling
+
+**Kritisches Problem**: MP4-Videos enthalten den MOOV-Atom (Metadaten) entweder:
+1. **Am Anfang** (Fast-Start MP4): ✅ Optimal für Streaming
+2. **Am Ende** (Traditional MP4): ⚠️ Problematisch für Chunked Streaming
+
+**Lösung für Initial Chunk**:
+```kotlin
+// Ersten Chunk IMMER größer laden (2 MB statt 256 KB)
+// um MOOV-Atom am Anfang zu erfassen
+if (chunkIndex == 0) {
+    val initialPrefixSize = 2 * 1024 * 1024L // 2 MB
+    
+    // Optional: Auch letzte 256 KB laden falls MOOV am Ende
+    if (totalSize > 10 * 1024 * 1024L) {
+        loadSuffix(fileId, totalSize - 256 * 1024L, 256 * 1024L)
+    }
+}
+```
+
+**Details**: Siehe `docs/MP4_MOOV_ATOM_CONSIDERATIONS.md` für vollständige Analyse und Implementierungs-Optionen.
 
 #### Architektur-Komponenten
 
