@@ -247,7 +247,6 @@ class TelegramThumbPrefetcher(
             results.forEach { success ->
                 if (success) successCount++ else failureCount++
             }
-            }
 
             // Log batch completion (Requirement 3.2.1)
             TelegramLogRepository.info(
@@ -309,26 +308,6 @@ class TelegramThumbPrefetcher(
             } finally {
                 // Phase 4: Release semaphore permit after download completes
                 downloadSemaphore?.release()
-            }
-        } catch (e: Exception) {
-            TelegramLogRepository.error(
-                source = TAG,
-                message = "Error prefetching thumbnail remoteId=${imageRef.remoteId}",
-                exception = e,
-            )
-            false
-        }
-                TelegramLogRepository.debug(
-                    source = TAG,
-                    message = "Prefetched thumbnail remoteId=${imageRef.remoteId}, path=$result",
-                )
-                true
-            } else {
-                TelegramLogRepository.warn(
-                    source = TAG,
-                    message = "Failed to prefetch thumbnail remoteId=${imageRef.remoteId}",
-                )
-                false
             }
         } catch (e: Exception) {
             TelegramLogRepository.error(

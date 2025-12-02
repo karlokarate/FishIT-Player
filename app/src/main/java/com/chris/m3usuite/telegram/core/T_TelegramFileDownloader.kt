@@ -686,7 +686,7 @@ class T_TelegramFileDownloader(
         mode: EnsureFileReadyMode,
         fileSizeBytes: Long?,
         settings: com.chris.m3usuite.telegram.domain.TelegramStreamingSettings,
-    ): String {
+    ): String = withContext(Dispatchers.IO) {
             // 1. Get current file status from TDLib (fresh, no cache)
             var file = getFreshFileState(fileId)
 
@@ -925,7 +925,6 @@ class T_TelegramFileDownloader(
             }
             result
         }
-    }
 
     /**
      * Get file size from TDLib.

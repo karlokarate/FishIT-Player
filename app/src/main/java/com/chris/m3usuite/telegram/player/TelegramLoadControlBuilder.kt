@@ -31,10 +31,10 @@ import com.chris.m3usuite.telegram.domain.TelegramStreamingSettings
 fun buildTelegramLoadControl(settings: TelegramStreamingSettings): LoadControl {
     return DefaultLoadControl.Builder()
         .setBufferDurationsMs(
-            minBufferMs = settings.exoMinBufferMs,
-            maxBufferMs = settings.exoMaxBufferMs,
-            bufferForPlaybackMs = settings.exoBufferForPlaybackMs,
-            bufferForPlaybackAfterRebufferMs = settings.exoBufferForPlaybackAfterRebufferMs,
+            settings.exoMinBufferMs,
+            settings.exoMaxBufferMs,
+            settings.exoBufferForPlaybackMs,
+            settings.exoBufferForPlaybackAfterRebufferMs,
         )
         // Use default allocator and back buffer settings
         .build()
