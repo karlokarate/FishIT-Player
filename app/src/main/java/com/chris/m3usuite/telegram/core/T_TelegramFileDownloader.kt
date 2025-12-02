@@ -67,15 +67,16 @@ sealed class DownloadKind {
  * @property offset Starting byte offset
  * @property limit Number of bytes to download (0 = entire file)
  * @property queuedAtMs Timestamp when job was enqueued
+ * @property completion Completion deferred - type erased to avoid KAPT issues with TdlResult generics
  */
-data class PendingDownloadJob(
+internal data class PendingDownloadJob(
         val fileId: Int,
         val kind: DownloadKind,
         val priority: Int,
         val offset: Long,
         val limit: Long,
         val queuedAtMs: Long = SystemClock.elapsedRealtime(),
-        val completion: CompletableDeferred<TdlResult<File>> = CompletableDeferred(),
+        val completion: CompletableDeferred<Any> = CompletableDeferred(),
 )
 
 /**
@@ -138,7 +139,6 @@ class T_TelegramFileDownloader(
                 TelegramLogRepository.warn(
                         source = "T_TelegramFileDownloader",
                         message = "File update collector stopped: ${e.message}",
-                        exception = e,
                 )
             }
         }
@@ -424,12 +424,16 @@ class T_TelegramFileDownloader(
         return null
     }
 
+        /**
+         * Internal wrapper to avoid KAPT issues with TdlResult generics in method signatures.
+         * Returns Any to prevent KAPT from generating generic TdlResult stubs.
+         */
         private suspend fun startOrQueueDownload(
                         fileId: Int,
                         priority: Int,
                         offset: Long,
                         limit: Long,
-        ): TdlResult<File> {
+        ): Any {
                 val job =
                                 PendingDownloadJob(
                                                 fileId = fileId,
@@ -457,7 +461,11 @@ class T_TelegramFileDownloader(
                 }
         }
 
-        private suspend fun runDownloadJob(job: PendingDownloadJob): TdlResult<File> {
+        /**
+         * Internal wrapper to avoid KAPT issues with TdlResult generics in method signatures.
+         * Returns Any to prevent KAPT from generating generic TdlResult stubs.
+         */
+        private suspend fun runDownloadJob(job: PendingDownloadJob): Any {
                 val queuedDuration = SystemClock.elapsedRealtime() - job.queuedAtMs
 
                 TelegramLogRepository.info(
@@ -625,13 +633,13 @@ class T_TelegramFileDownloader(
                         )
                 windowStates[fileIdInt] = newWindowState
 
-                        val result =
-                                startOrQueueDownload(
+                        @Suppress("UNCHECKED_CAST")
+                        val result = startOrQueueDownload(
                                         fileId = fileIdInt,
                                         priority = 32, // High priority for streaming
                                         offset = windowStart.coerceAtLeast(0L),
                                         limit = windowSize,
-                                )
+                                ) as TdlResult<File>
 
                         when (result) {
                                 is TdlResult.Success -> {
@@ -733,7 +741,7 @@ class T_TelegramFileDownloader(
             minBytes: Long,
             mode: EnsureFileReadyMode = EnsureFileReadyMode.INITIAL_START,
             fileSizeBytes: Long? = null,
-            @Deprecated("Use settings.ensureFileReadyTimeoutMs instead") timeoutMs: Long = 30_000L,
+            timeoutMs: Long = 30_000L, // Deprecated - use settings.ensureFileReadyTimeoutMs
     ): String {
         // Phase 3: Get runtime settings
         val settings = settingsProvider.currentSettings
@@ -922,13 +930,13 @@ class T_TelegramFileDownloader(
                                 ),
                 )
 
-                val downloadResult =
-                        startOrQueueDownload(
+                @Suppress("UNCHECKED_CAST")
+                val downloadResult = startOrQueueDownload(
                                 fileId = fileId,
                                 priority = 32, // High priority for streaming
                                 offset = windowStart,
                                 limit = windowSize,
-                        )
+                        ) as TdlResult<File>
 
                 if (downloadResult is TdlResult.Failure) {
                     val errorMsg = "Download failed: ${downloadResult.message}"
@@ -1312,13 +1320,13 @@ class T_TelegramFileDownloader(
                                     ),
                     )
 
-                    when (val result =
-                            startOrQueueDownload(
+                    @Suppress("UNCHECKED_CAST")
+                    when (val result = startOrQueueDownload(
                                     fileId = fileId,
                                     priority = priority,
                                     offset = 0L,
                                     limit = 0L,
-                            )) {
+                            ) as TdlResult<File>) {
                         is TdlResult.Success -> {
                             TelegramLogRepository.logFileDownload(
                                     fileId = fileId,
