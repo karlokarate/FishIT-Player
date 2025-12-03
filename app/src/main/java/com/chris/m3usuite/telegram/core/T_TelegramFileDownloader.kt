@@ -16,9 +16,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.min
 
 /** Download progress information for a file. */
 data class DownloadProgress(
@@ -38,7 +36,7 @@ data class DownloadProgress(
 
 /**
  * Window state for legacy windowed streaming.
- * 
+ *
  * @deprecated Removed as part of windowing removal (2025-12-03).
  * Use standard TDLib download behavior with offset=0, limit=0 instead.
  *
@@ -197,7 +195,7 @@ class T_TelegramFileDownloader(
 
     /**
      * Mode for ensureFileReady to distinguish initial playback from seeks.
-     * 
+     *
      * @deprecated Removed as part of windowing removal (2025-12-03).
      * Use ensureFileReadyWithMp4Validation() which doesn't require mode distinction.
      */
@@ -595,7 +593,7 @@ class T_TelegramFileDownloader(
 
     /**
      * Ensure TDLib has downloaded a file for streaming.
-     * 
+     *
      * @deprecated Use ensureFileReadyWithMp4Validation() instead (2025-12-03).
      * This legacy method is kept for backward compatibility but now delegates to standard TDLib download.
      *
@@ -635,7 +633,7 @@ class T_TelegramFileDownloader(
                     "mode" to mode.name,
                 ),
         )
-        
+
         // Delegate to the new method
         return ensureFileReadyWithMp4Validation(
             fileId = fileId,
@@ -824,7 +822,7 @@ class T_TelegramFileDownloader(
 
     /**
      * Explicitly cleanup file handle for a given file ID.
-     * 
+     *
      * @deprecated File handles are no longer cached (2025-12-03).
      * FileDataSource manages file handles directly. This is a no-op kept for compatibility.
      *
@@ -1223,14 +1221,15 @@ class T_TelegramFileDownloader(
                     // Check if this is a 404/"File not found" error and we have remoteId for fallback
                     val errorMessage = downloadResult.message
                     val errorCode = downloadResult.code
-                    
+
                     // Check for 404/not found errors using both code and message
                     // TDLib error code 400 (FILE_NOT_FOUND) or string matching
                     val is404Error =
-                        errorCode == 400 || // TDLib FILE_NOT_FOUND error code
-                        errorMessage.contains("404", ignoreCase = true) ||
-                        errorMessage.contains("not found", ignoreCase = true) ||
-                        errorMessage.contains("file not found", ignoreCase = true)
+                        errorCode == 400 ||
+                            // TDLib FILE_NOT_FOUND error code
+                            errorMessage.contains("404", ignoreCase = true) ||
+                            errorMessage.contains("not found", ignoreCase = true) ||
+                            errorMessage.contains("file not found", ignoreCase = true)
 
                     if (is404Error && !remoteId.isNullOrBlank()) {
                         // Log stale fileId warning (matching thumbnail pattern)

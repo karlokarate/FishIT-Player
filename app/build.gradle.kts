@@ -232,11 +232,12 @@ android {
         // Treat warnings as errors for critical severity
         warningsAsErrors = false
         // Disable specific checks that are too noisy or not applicable
-        disable += setOf(
-            "ObsoleteLintCustomCheck",
-            "VectorPath",
-            "UnusedResources",
-        )
+        disable +=
+            setOf(
+                "ObsoleteLintCustomCheck",
+                "VectorPath",
+                "UnusedResources",
+            )
         // Generate reports
         htmlReport = true
         xmlReport = true

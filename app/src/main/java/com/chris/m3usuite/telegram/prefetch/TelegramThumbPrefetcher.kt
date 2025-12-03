@@ -299,12 +299,12 @@ class TelegramThumbPrefetcher(
             if (fileId != null && fileId > 0) {
                 val downloader = serviceClient.downloader()
                 val fileInfo = downloader.getFileInfo(fileId)
-                
+
                 if (fileInfo != null) {
                     val isComplete = fileInfo.local?.isDownloadingCompleted ?: false
                     val localPath = fileInfo.local?.path
                     val expectedSize = fileInfo.expectedSize?.toLong() ?: 0L
-                    
+
                     if (isComplete && !localPath.isNullOrBlank()) {
                         val localFile = java.io.File(localPath)
                         if (localFile.exists() && (expectedSize <= 0L || localFile.length() >= expectedSize)) {

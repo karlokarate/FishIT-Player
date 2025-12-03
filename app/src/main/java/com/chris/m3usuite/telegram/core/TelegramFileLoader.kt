@@ -9,7 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlin.math.min
 
 /**
  * Handles downloading and accessing Telegram files via TDLib.
@@ -265,10 +264,11 @@ class TelegramFileLoader(
             }
 
             // Start full download: offset=0, limit=0 (standard TDLib)
-            val downloadStarted = downloader.startDownload(
-                fileId = fileId,
-                priority = DEFAULT_PRIORITY, // Lower priority for thumbnails
-            )
+            val downloadStarted =
+                downloader.startDownload(
+                    fileId = fileId,
+                    priority = DEFAULT_PRIORITY, // Lower priority for thumbnails
+                )
 
             if (!downloadStarted) {
                 TelegramLogRepository.error(
@@ -283,8 +283,8 @@ class TelegramFileLoader(
             val startTime = System.currentTimeMillis()
             var lastDownloadedSize = 0L
             var stallCount = 0
-            val maxStallCount = 50  // 5 seconds with 100ms delay
-            
+            val maxStallCount = 50 // 5 seconds with 100ms delay
+
             while (true) {
                 val elapsedMs = System.currentTimeMillis() - startTime
                 if (elapsedMs > timeoutMs) {
@@ -340,7 +340,7 @@ class TelegramFileLoader(
                 } else {
                     stallCount = 0
                     lastDownloadedSize = downloadedSize
-                    
+
                     // Log progress periodically (every 10 polls = ~1 second)
                     if (downloadedSize > 0L && (elapsedMs / 1000) % 1 == 0L) {
                         TelegramLogRepository.debug(
