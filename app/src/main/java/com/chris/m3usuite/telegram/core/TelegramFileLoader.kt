@@ -281,6 +281,10 @@ class TelegramFileLoader(
 
             // Poll until download is complete
             val startTime = System.currentTimeMillis()
+            var lastDownloadedSize = 0L
+            var stallCount = 0
+            val maxStallCount = 50  // 5 seconds with 100ms delay
+            
             while (true) {
                 val elapsedMs = System.currentTimeMillis() - startTime
                 if (elapsedMs > timeoutMs) {
@@ -299,7 +303,59 @@ class TelegramFileLoader(
                 // Get fresh file state from TDLib (bypass cache to see real-time progress)
                 val currentInfo = downloader.getFreshFileState(fileId)
                 val currentPath = currentInfo.local?.path
+                val downloadedSize = currentInfo.local?.downloadedSize?.toLong() ?: 0L
                 val isComplete = currentInfo.local?.isDownloadingCompleted ?: false
+                val isDownloading = currentInfo.local?.isDownloadingActive ?: false
+
+                // Check if download failed or was cancelled
+                if (!isDownloading && !isComplete && downloadedSize == 0L) {
+                    TelegramLogRepository.error(
+                        source = TAG,
+                        message = "thumb download failed or cancelled",
+                        details =
+                            mapOf(
+                                "fileId" to fileId.toString(),
+                                "downloadedSize" to downloadedSize.toString(),
+                            ),
+                    )
+                    return ThumbResult.OtherError("Download failed or was cancelled")
+                }
+
+                // Detect stall - no progress for consecutive polls
+                if (downloadedSize == lastDownloadedSize && !isComplete) {
+                    stallCount++
+                    if (stallCount >= maxStallCount) {
+                        TelegramLogRepository.error(
+                            source = TAG,
+                            message = "thumb download stalled",
+                            details =
+                                mapOf(
+                                    "fileId" to fileId.toString(),
+                                    "downloadedSize" to downloadedSize.toString(),
+                                    "stallDurationMs" to (stallCount * 100L).toString(),
+                                ),
+                        )
+                        return ThumbResult.OtherError("Download stalled after ${stallCount * 100L}ms with no progress")
+                    }
+                } else {
+                    stallCount = 0
+                    lastDownloadedSize = downloadedSize
+                    
+                    // Log progress periodically (every 10 polls = ~1 second)
+                    if (downloadedSize > 0L && (elapsedMs / 1000) % 1 == 0L) {
+                        TelegramLogRepository.debug(
+                            source = TAG,
+                            message = "thumb download progress",
+                            details =
+                                mapOf(
+                                    "fileId" to fileId.toString(),
+                                    "downloadedSize" to downloadedSize.toString(),
+                                    "expectedSize" to totalSizeBytes.toString(),
+                                    "progress" to if (totalSizeBytes > 0) "${(downloadedSize * 100 / totalSizeBytes)}%" else "unknown",
+                                ),
+                        )
+                    }
+                }
 
                 // Check if download is complete
                 if (isComplete && !currentPath.isNullOrBlank()) {
