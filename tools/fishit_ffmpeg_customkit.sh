@@ -10,7 +10,7 @@ set -euo pipefail
 # - mp4/fMP4 muxing
 # - no video SW decoders, no encoders, no filters, minimal protocols.
 
-: "${FFMPEGKIT_API_LEVEL:=24}"
+: "${FFMPEGKIT_API_LEVEL:=21}"   # LTS-freundlich für FireTV
 
 echo "=== FishIT FFmpegKit custom kit ==="
 echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<not set>}"
@@ -21,14 +21,14 @@ echo "FFMPEGKIT_API_LEVEL=${FFMPEGKIT_API_LEVEL}"
 ANDROID_SH_FLAGS=()
 
 # Architectures: arm64-v8a + armeabi-v7a, no x86
-# If you ever want to drop 32-bit, comment out the two lines below and enable --disable-arm-v7a + --disable-arm-v7a-neon.
-# ANDROID_SH_FLAGS+=(--disable-arm-v7a)
-# ANDROID_SH_FLAGS+=(--disable-arm-v7a-neon)
 ANDROID_SH_FLAGS+=(--disable-x86)
 ANDROID_SH_FLAGS+=(--disable-x86-64)
 
 # API level
 ANDROID_SH_FLAGS+=(--api-level="${FFMPEGKIT_API_LEVEL}")
+
+# LTS build (older NDK / API support, gut für FireTV)
+ANDROID_SH_FLAGS+=(--lts)
 
 # Built-in Android libs
 ANDROID_SH_FLAGS+=(--enable-android-zlib)
@@ -38,16 +38,12 @@ ANDROID_SH_FLAGS+=(--enable-android-media-codec)
 # → DO NOT add --enable-gpl here.
 
 # No external libs for now; we rely on FFmpeg core.
-# If you want Opus/Vorbis via external libs later, you can also add e.g.:
-# ANDROID_SH_FLAGS+=(--enable-opus)
-# ANDROID_SH_FLAGS+=(--enable-libvorbis)
 
-# Optimize for speed a bit (optional, remove if you want minimum size)
+# Optimize for speed (optional, kannst du entfernen wenn Größe wichtiger ist)
 ANDROID_SH_FLAGS+=(--speed)
 
 # ----- Fine-grained FFmpeg configure flags -----
 # ffmpeg-kit build scripts respect FFMPEG_EXTRA_CONFIGURE_FLAGS and pass it down to ffmpeg's ./configure.
-# We use this to slim down demuxers/decoders/muxers/protocols.
 
 FFMPEG_EXTRA_CONFIGURE_FLAGS=""
 FFMPEG_EXTRA_CONFIGURE_FLAGS+=" --disable-everything"
@@ -90,8 +86,6 @@ FFMPEG_EXTRA_CONFIGURE_FLAGS+=" --enable-parser=flac"
 # Protocols: only local file + pipe
 FFMPEG_EXTRA_CONFIGURE_FLAGS+=" --enable-protocol=file"
 FFMPEG_EXTRA_CONFIGURE_FLAGS+=" --enable-protocol=pipe"
-
-# No encoders, no filters, no video SW decoders, no network protocols.
 
 export FFMPEG_EXTRA_CONFIGURE_FLAGS
 
