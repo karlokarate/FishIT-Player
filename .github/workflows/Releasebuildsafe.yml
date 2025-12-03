@@ -1,4 +1,4 @@
-name: Release Build – APK (arm64-v8a & armeabi-v7a)
+name: Releasebuildsafe
 
 on:
   workflow_dispatch:
