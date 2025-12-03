@@ -223,6 +223,29 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+
+    lint {
+        // Treat fatal issues as errors
+        abortOnError = true
+        // Check all warnings
+        checkAllWarnings = true
+        // Don't treat warnings as errors (best-effort approach)
+        warningsAsErrors = false
+        // Disable specific checks that are too noisy or not applicable
+        disable +=
+            setOf(
+                "ObsoleteLintCustomCheck",
+                "VectorPath",
+                "UnusedResources",
+            )
+        // Generate reports
+        htmlReport = true
+        xmlReport = true
+        sarifReport = true
+        textReport = false
+        // Set baseline if needed
+        // baseline = file("lint-baseline.xml")
+    }
 }
 
 // Configure KAPT with Kotlin 1.9 language version for better compatibility
