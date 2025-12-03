@@ -367,7 +367,7 @@ jobs:
           echo "Starting Android emulator..."
           
           # Install emulator system image
-          sdkmanager --install "system-images;android-30;google_apis;x86_64" 2>&1 | tee reports/leakcanary/emulator-setup.txt || true
+          yes | sdkmanager --install "system-images;android-30;google_apis;x86_64" 2>&1 | tee reports/leakcanary/emulator-setup.txt || true
           
           # Create AVD
           echo no | avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;x86_64" --force || true
