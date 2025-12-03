@@ -285,14 +285,61 @@ class TelegramThumbPrefetcher(
      *
      * **Phase 4: Uses semaphore to limit parallel downloads.**
      *
+     * **Requirement 5: Prevents repeated downloads:**
+     * - Checks if thumbnail is already fully downloaded before scheduling
+     * - Skips download if file exists and size matches expected size
+     * - Logs why each thumbnail is scheduled or skipped
+     *
      * @param imageRef TelegramImageRef containing stable remoteId
      */
-    private suspend fun prefetchThumbnail(imageRef: TelegramImageRef): Boolean =
+    private suspend fun prefetchThumbnail(imageRef: TelegramImageRef): Boolean {
         try {
+            // First check if already fully downloaded (before acquiring semaphore)
+            val fileId = imageRef.fileId
+            if (fileId != null && fileId > 0) {
+                val downloader = serviceClient.downloader()
+                val fileInfo = downloader.getFileInfo(fileId)
+                
+                if (fileInfo != null) {
+                    val isComplete = fileInfo.local?.isDownloadingCompleted ?: false
+                    val localPath = fileInfo.local?.path
+                    val expectedSize = fileInfo.expectedSize?.toLong() ?: 0L
+                    
+                    if (isComplete && !localPath.isNullOrBlank()) {
+                        val localFile = java.io.File(localPath)
+                        if (localFile.exists() && (expectedSize <= 0L || localFile.length() >= expectedSize)) {
+                            TelegramLogRepository.debug(
+                                source = TAG,
+                                message = "Prefetch skipped: thumbnail already fully downloaded",
+                                details =
+                                    mapOf(
+                                        "remoteId" to imageRef.remoteId,
+                                        "fileId" to fileId.toString(),
+                                        "fileSize" to localFile.length().toString(),
+                                        "expectedSize" to expectedSize.toString(),
+                                    ),
+                            )
+                            prefetchedRemoteIds.add(imageRef.remoteId)
+                            return true
+                        }
+                    }
+                }
+            }
+
             // Phase 4: Acquire semaphore permit before downloading
             downloadSemaphore?.acquire()
 
             try {
+                TelegramLogRepository.info(
+                    source = TAG,
+                    message = "Prefetch scheduled: starting thumbnail download",
+                    details =
+                        mapOf(
+                            "remoteId" to imageRef.remoteId,
+                            "fileId" to (fileId?.toString() ?: "none"),
+                        ),
+                )
+
                 val result =
                     withTimeoutOrNull(THUMBNAIL_TIMEOUT_MS) {
                         // Use ensureThumbDownloaded which uses remoteId-first resolution
@@ -305,17 +352,23 @@ class TelegramThumbPrefetcher(
                 if (result != null) {
                     // Track by remoteId, not fileId (remoteId is stable)
                     prefetchedRemoteIds.add(imageRef.remoteId)
-                    TelegramLogRepository.debug(
+                    TelegramLogRepository.info(
                         source = TAG,
-                        message = "Prefetched thumbnail remoteId=${imageRef.remoteId}, path=$result",
+                        message = "Prefetch complete: thumbnail downloaded successfully",
+                        details =
+                            mapOf(
+                                "remoteId" to imageRef.remoteId,
+                                "path" to result,
+                            ),
                     )
-                    true
+                    return true
                 } else {
                     TelegramLogRepository.warn(
                         source = TAG,
-                        message = "Failed to prefetch thumbnail remoteId=${imageRef.remoteId}",
+                        message = "Prefetch failed: timeout or error",
+                        details = mapOf("remoteId" to imageRef.remoteId),
                     )
-                    false
+                    return false
                 }
             } finally {
                 // Phase 4: Release semaphore permit after download completes
@@ -324,11 +377,13 @@ class TelegramThumbPrefetcher(
         } catch (e: Exception) {
             TelegramLogRepository.error(
                 source = TAG,
-                message = "Error prefetching thumbnail remoteId=${imageRef.remoteId}",
+                message = "Prefetch error: exception during thumbnail download",
                 exception = e,
+                details = mapOf("remoteId" to imageRef.remoteId),
             )
-            false
+            return false
         }
+    }
 
     /**
      * Clear the prefetch cache.
