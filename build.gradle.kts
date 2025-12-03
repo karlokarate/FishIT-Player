@@ -7,7 +7,8 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
     id("com.github.ben-manes.versions") version "0.51.0" apply true
-    id("org.jetbrains.kotlinx.kover") version "0.8.3" apply true
+    id("org.jetbrains.kotlinx.kover") version "0.9.0" apply true
+    id("com.osacky.doctor") version "0.10.0" apply true
 }
 
 // Apply quality plugins to all subprojects
@@ -79,4 +80,14 @@ kover {
             }
         }
     }
+}
+
+// Configure Gradle Doctor for build health checks
+doctor {
+    // Warn about negative Avoidance Savings  
+    negativeAvoidanceThreshold = 500
+    // Don't fail build on GC warnings
+    warnWhenNotUsingParallelGC = false
+    // Enable test caching
+    enableTestCaching = true
 }
