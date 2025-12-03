@@ -210,18 +210,20 @@ class TelegramFileLoader(
      * Try to download thumbnail by fileId and return result.
      * Encapsulates download logic and error handling.
      *
-     * **Phase D+ Fix:** Downloads entire file for thumbnails/backdrops by passing
-     * minBytes = totalSizeBytes to ensureFileReady. This ensures full download
-     * instead of partial 256KB prefix.
+     * **Standard TDLib Behavior (2025-12-03):**
+     * - Always downloads entire thumbnail file using offset=0, limit=0
+     * - Waits for isDownloadingCompleted==true
+     * - Verifies local file length matches expectedSize
+     * - No partial/prefix downloads for thumbnails
      */
     private suspend fun tryDownloadThumbByFileId(
         fileId: Int,
         timeoutMs: Long,
-    ): ThumbResult =
+    ): ThumbResult {
         try {
-            TelegramLogRepository.debug(
+            TelegramLogRepository.info(
                 source = TAG,
-                message = "tryDownloadThumbByFileId start",
+                message = "thumb download started",
                 details = mapOf("fileId" to fileId.toString()),
             )
 
@@ -229,11 +231,10 @@ class TelegramFileLoader(
             val fileInfo = downloader.getFileInfo(fileId)
             val totalSizeBytes = fileInfo?.expectedSize?.toLong() ?: 0L
 
-            // Log if totalSize is unknown
             if (totalSizeBytes <= 0L) {
                 TelegramLogRepository.warn(
                     source = TAG,
-                    message = "tryDownloadThumbByFileId: totalSize unknown, will attempt download anyway",
+                    message = "thumb download: size unknown",
                     details =
                         mapOf(
                             "fileId" to fileId.toString(),
@@ -242,83 +243,120 @@ class TelegramFileLoader(
                 )
             }
 
-            val settings = settingsProvider.currentSettings
-            val shouldDownloadFull = settings.thumbFullDownload && totalSizeBytes > 0L
-            val prefixCandidate =
-                if (totalSizeBytes > 0L) {
-                    min(totalSizeBytes, settings.initialMinPrefixBytes)
-                } else {
-                    settings.initialMinPrefixBytes
+            // Check if already fully downloaded
+            val localPath = fileInfo?.local?.path
+            val isAlreadyComplete = fileInfo?.local?.isDownloadingCompleted ?: false
+            if (isAlreadyComplete && !localPath.isNullOrBlank()) {
+                val localFile = java.io.File(localPath)
+                if (localFile.exists() && (totalSizeBytes <= 0L || localFile.length() >= totalSizeBytes)) {
+                    TelegramLogRepository.info(
+                        source = TAG,
+                        message = "thumb already complete, skipping download",
+                        details =
+                            mapOf(
+                                "fileId" to fileId.toString(),
+                                "path" to localPath,
+                                "fileSize" to localFile.length().toString(),
+                                "expectedSize" to totalSizeBytes.toString(),
+                            ),
+                    )
+                    return ThumbResult.Success(localPath)
                 }
-            val minBytes =
-                if (shouldDownloadFull && totalSizeBytes > 0L) {
-                    totalSizeBytes
-                } else {
-                    prefixCandidate.coerceAtLeast(MIN_THUMB_PREFIX_BYTES)
-                }
-
-            // Use downloader to ensure the file is ready (entire file when configured)
-            val path =
-                downloader.ensureFileReady(
-                    fileId = fileId,
-                    startPosition = 0,
-                    minBytes = minBytes,
-                    mode = T_TelegramFileDownloader.EnsureFileReadyMode.INITIAL_START,
-                    fileSizeBytes = totalSizeBytes,
-                    timeoutMs = timeoutMs,
-                )
-
-            // Verify download is complete
-            val finalFileInfo = downloader.getFileInfo(fileId)
-            val downloadedPrefixSize = finalFileInfo?.local?.downloadedPrefixSize?.toLong() ?: 0L
-            val isComplete = finalFileInfo?.local?.isDownloadingCompleted ?: false
-
-            TelegramLogRepository.debug(
-                source = TAG,
-                message = "tryDownloadThumbByFileId success",
-                details =
-                    mapOf(
-                        "fileId" to fileId.toString(),
-                        "path" to path,
-                        "totalSizeBytes" to totalSizeBytes.toString(),
-                        "downloadedPrefixSize" to downloadedPrefixSize.toString(),
-                        "isComplete" to isComplete.toString(),
-                        "fullyDownloaded" to (downloadedPrefixSize >= totalSizeBytes || isComplete).toString(),
-                    ),
-            )
-
-            // Confirm full download for thumbnails/backdrops
-            if (totalSizeBytes > 0L && downloadedPrefixSize < totalSizeBytes && !isComplete) {
-                TelegramLogRepository.warn(
-                    source = TAG,
-                    message = "tryDownloadThumbByFileId: partial download for thumbnail (expected full)",
-                    details =
-                        mapOf(
-                            "fileId" to fileId.toString(),
-                            "totalSizeBytes" to totalSizeBytes.toString(),
-                            "downloadedPrefixSize" to downloadedPrefixSize.toString(),
-                        ),
-                )
             }
 
-            ThumbResult.Success(path)
+            // Start full download: offset=0, limit=0 (standard TDLib)
+            val downloadStarted = downloader.startDownload(
+                fileId = fileId,
+                priority = DEFAULT_PRIORITY, // Lower priority for thumbnails
+            )
+
+            if (!downloadStarted) {
+                TelegramLogRepository.error(
+                    source = TAG,
+                    message = "thumb download failed to start",
+                    details = mapOf("fileId" to fileId.toString()),
+                )
+                return ThumbResult.OtherError("Failed to start download")
+            }
+
+            // Poll until download is complete
+            val startTime = System.currentTimeMillis()
+            while (true) {
+                val elapsedMs = System.currentTimeMillis() - startTime
+                if (elapsedMs > timeoutMs) {
+                    TelegramLogRepository.error(
+                        source = TAG,
+                        message = "thumb download timeout",
+                        details =
+                            mapOf(
+                                "fileId" to fileId.toString(),
+                                "timeoutMs" to timeoutMs.toString(),
+                            ),
+                    )
+                    return ThumbResult.OtherError("Download timeout after ${timeoutMs}ms")
+                }
+
+                // Get fresh file state
+                val currentInfo = downloader.getFileInfo(fileId)
+                val currentPath = currentInfo?.local?.path
+                val downloadedSize = currentInfo?.local?.downloadedSize?.toLong() ?: 0L
+                val isComplete = currentInfo?.local?.isDownloadingCompleted ?: false
+
+                // Check if download is complete
+                if (isComplete && !currentPath.isNullOrBlank()) {
+                    val localFile = java.io.File(currentPath)
+                    if (localFile.exists()) {
+                        val fileLength = localFile.length()
+                        val fullyDownloaded = totalSizeBytes <= 0L || fileLength >= totalSizeBytes
+
+                        TelegramLogRepository.info(
+                            source = TAG,
+                            message = "thumb download completed",
+                            details =
+                                mapOf(
+                                    "fileId" to fileId.toString(),
+                                    "path" to currentPath,
+                                    "fileSize" to fileLength.toString(),
+                                    "expectedSize" to totalSizeBytes.toString(),
+                                    "fullyDownloaded" to fullyDownloaded.toString(),
+                                ),
+                        )
+
+                        if (!fullyDownloaded) {
+                            TelegramLogRepository.warn(
+                                source = TAG,
+                                message = "thumb download incomplete",
+                                details =
+                                    mapOf(
+                                        "fileId" to fileId.toString(),
+                                        "fileSize" to fileLength.toString(),
+                                        "expectedSize" to totalSizeBytes.toString(),
+                                    ),
+                            )
+                        }
+
+                        return ThumbResult.Success(currentPath)
+                    }
+                }
+
+                // Wait before next poll
+                kotlinx.coroutines.delay(100L)
+            }
         } catch (e: Exception) {
             val message = e.message ?: ""
-            if (message.contains("404", ignoreCase = true) || message.contains("not found", ignoreCase = true)) {
+            return if (message.contains("404", ignoreCase = true) || message.contains("not found", ignoreCase = true)) {
                 ThumbResult.NotFound404
             } else {
-                TelegramLogRepository.debug(
+                TelegramLogRepository.error(
                     source = TAG,
-                    message = "tryDownloadThumbByFileId failed",
-                    details =
-                        mapOf(
-                            "fileId" to fileId.toString(),
-                            "error" to message,
-                        ),
+                    message = "thumb download failed",
+                    exception = e,
+                    details = mapOf("fileId" to fileId.toString()),
                 )
                 ThumbResult.OtherError(message)
             }
         }
+    }
 
     /**
      * Get local path for a file if already downloaded (Requirement 6).
