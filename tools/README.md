@@ -102,7 +102,7 @@ coroutineScope.launch {
 
 This directory also contains `fishit_ffmpeg_customkit.sh`, which is used by the GitHub Actions workflow at `.github/workflows/build-ffmpegkit.yml` to build a custom, optimized FFmpegKit AAR for FishIT-Player.
 
-**Important**: The workflow uses Android NDK 25.2.9519653 (r25c) for compatibility with FFmpegKit v6.0. NDK r27 and newer versions are not compatible due to build system changes.
+**Important**: The workflow uses Android NDK 22.1.7171670 (r22b) for compatibility with FFmpegKit v6.0. NDK r25 and newer versions are not compatible due to cpu-features library deprecation and build system changes.
 
 For more information about the FFmpegKit build process, see:
 - `docs/FFMPEGKIT_BUILD.md` - Complete build workflow documentation
