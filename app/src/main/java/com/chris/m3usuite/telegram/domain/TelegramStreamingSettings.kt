@@ -20,9 +20,7 @@ data class TelegramStreamingSettings(
     val maxGlobalDownloads: Int,
     val maxVideoDownloads: Int,
     val maxThumbDownloads: Int,
-    // ensureFileReady() streaming parameters (in bytes)
-    val initialMinPrefixBytes: Long,
-    val seekMarginBytes: Long,
+    // ensureFileReady() streaming parameters
     val ensureFileReadyTimeoutMs: Long,
     // Thumbnail prefetch settings
     val thumbPrefetchEnabled: Boolean,

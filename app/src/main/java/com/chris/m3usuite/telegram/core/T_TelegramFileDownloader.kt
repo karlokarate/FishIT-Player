@@ -151,17 +151,17 @@ class T_TelegramFileDownloader(
     }
 
     companion object {
-        // Phase 3: Legacy constants - DEPRECATED - Use TelegramStreamingSettings instead
+        // Phase 3: Legacy constants - DEPRECATED - No longer configurable
         @Deprecated(
             message =
-                "Unused after mode-based window refactor. Use settings.initialMinPrefixBytes or settings.seekMarginBytes instead.",
+                "Unused after mode-based window refactor. Custom windowing removed - use TDLib native download.",
             level = DeprecationLevel.WARNING,
         )
         private const val TELEGRAM_STREAM_WINDOW_BYTES: Long =
             50L * 1024L * 1024L // 50 MB max per video (legacy)
 
         @Deprecated(
-            message = "Phase 3: Use settings.initialMinPrefixBytes instead",
+            message = "Phase 3: No longer configurable - removed with streaming limit sliders",
             level = DeprecationLevel.WARNING,
         )
         private const val TELEGRAM_MIN_PREFIX_BYTES: Long =
@@ -187,7 +187,7 @@ class T_TelegramFileDownloader(
             60_000L // Max 60s timeout when actively progressing
 
         @Deprecated(
-            message = "Phase 3: Use settings.seekMarginBytes instead",
+            message = "Phase 3: No longer configurable - removed with streaming limit sliders",
             level = DeprecationLevel.WARNING,
         )
         private const val SEEK_MARGIN_BYTES: Long = 1L * 1024L * 1024L // 1 MB margin for seeks
