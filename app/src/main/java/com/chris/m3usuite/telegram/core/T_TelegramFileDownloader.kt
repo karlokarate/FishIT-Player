@@ -705,64 +705,6 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Read a chunk of data from a Telegram file with **Zero-Copy** optimization.
-     *
-     * @deprecated FileDataSource handles all file I/O directly (2025-12-03).
-     * This method is no longer needed as TelegramFileDataSource delegates to Media3's FileDataSource
-     * which reads directly from the TDLib cache without app-level buffering.
-     *
-     * Kept for backward compatibility only. New code should use TelegramFileDataSource
-     * which automatically uses FileDataSource for efficient, zero-copy reads.
-     *
-     * @param fileId TDLib file ID (string)
-     * @param position Offset in bytes
-     * @param buffer Destination buffer (provided by ExoPlayer/Media3)
-     * @param offset Offset in buffer to start writing
-     * @param length Number of bytes to read
-     * @return Number of bytes actually read, or -1 on EOF
-     */
-    @Deprecated(
-        message = "FileDataSource handles all file I/O. Use TelegramFileDataSource instead",
-        level = DeprecationLevel.WARNING,
-    )
-    suspend fun readFileChunk(
-        fileId: String,
-        position: Long,
-        buffer: ByteArray,
-        offset: Int,
-        length: Int,
-    ): Int =
-        withContext(Dispatchers.IO) {
-            // Legacy implementation kept for backward compatibility
-            // Get file info to determine local path
-            val fileInfo = getFileInfo(fileId)
-            val localPath = fileInfo.local?.path
-            
-            if (localPath.isNullOrBlank()) {
-                throw Exception("File path not available: $fileId")
-            }
-
-            val file = java.io.File(localPath)
-            if (!file.exists()) {
-                throw Exception("Downloaded file not found: $localPath")
-            }
-
-            // Simple file read without window checking
-            val raf = RandomAccessFile(file, "r")
-            try {
-                if (position >= raf.length()) {
-                    return@withContext -1 // EOF
-                }
-
-                raf.seek(position)
-                val bytesToRead = min(length, (raf.length() - position).toInt())
-                return@withContext raf.read(buffer, offset, bytesToRead)
-            } finally {
-                raf.close()
-            }
-        }
-
-    /**
      * Start downloading a file and return immediately. Use observeDownloadProgress() to track
      * progress.
      *
@@ -944,13 +886,13 @@ class T_TelegramFileDownloader(
         }
 
     /**
-     * Get fresh file state from TDLib without using cache. Used by ensureFileReady to poll actual
-     * download progress.
+     * Get fresh file state from TDLib without using cache. Used by thumbnail polling
+     * to get real-time download progress.
      *
      * @param fileId TDLib file ID (integer)
      * @return Fresh File object from TDLib
      */
-    private suspend fun getFreshFileState(fileId: Int): File = getFileOrThrow(fileId)
+    suspend fun getFreshFileState(fileId: Int): File = getFileOrThrow(fileId)
 
     /**
      * Get file information from TDLib. Uses cache to avoid repeated API calls.

@@ -296,10 +296,10 @@ class TelegramFileLoader(
                     return ThumbResult.OtherError("Download timeout after ${timeoutMs}ms")
                 }
 
-                // Get fresh file state
-                val currentInfo = downloader.getFileInfo(fileId)
-                val currentPath = currentInfo?.local?.path
-                val isComplete = currentInfo?.local?.isDownloadingCompleted ?: false
+                // Get fresh file state from TDLib (bypass cache to see real-time progress)
+                val currentInfo = downloader.getFreshFileState(fileId)
+                val currentPath = currentInfo.local?.path
+                val isComplete = currentInfo.local?.isDownloadingCompleted ?: false
 
                 // Check if download is complete
                 if (isComplete && !currentPath.isNullOrBlank()) {
