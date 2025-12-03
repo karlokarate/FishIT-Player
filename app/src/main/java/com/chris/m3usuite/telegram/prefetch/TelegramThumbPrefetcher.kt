@@ -55,11 +55,19 @@ class TelegramThumbPrefetcher(
         private const val THUMBNAIL_TIMEOUT_MS = 15_000L // 15 seconds per thumbnail
     }
 
-    private var prefetchJob: Job? = null
+    // Dedicated long-lived scope for thumbnail downloads
+    private val prefetchJob = SupervisorJob()
+    private val prefetchScope = CoroutineScope(Dispatchers.IO + prefetchJob)
+
+    private var observerJob: Job? = null
     private val prefetchedRemoteIds = mutableSetOf<String>()
 
     // Phase 4: Semaphore for controlling parallel downloads (will be initialized with runtime setting)
     private var downloadSemaphore: kotlinx.coroutines.sync.Semaphore? = null
+
+    // Soft pause mechanism - does not cancel in-flight downloads
+    @Volatile
+    private var isPaused = false
 
     private val vodBufferingFlow: Flow<Boolean> =
         combine(
@@ -73,12 +81,16 @@ class TelegramThumbPrefetcher(
     /**
      * Start the prefetcher in the given coroutine scope.
      * This will continuously monitor for new thumbnails to prefetch.
+     *
+     * The passed scope is only used for observing state changes (tgEnabled, content).
+     * Actual thumbnail downloads run in the dedicated prefetchScope to avoid cancellation
+     * when Telegram is paused or disabled.
      */
     fun start(scope: CoroutineScope) {
-        // Cancel existing job if any
-        prefetchJob?.cancel()
+        // Cancel existing observer job if any
+        observerJob?.cancel()
 
-        prefetchJob =
+        observerJob =
             scope.launch {
                 TelegramLogRepository.info(
                     source = TAG,
@@ -93,8 +105,12 @@ class TelegramThumbPrefetcher(
                                 source = TAG,
                                 message = "Telegram disabled, pausing prefetcher",
                             )
+                            pausePrefetch()
                             return@collectLatest
                         }
+
+                        // Resume prefetch when enabled
+                        resumePrefetch()
 
                         // Observe content changes and prefetch thumbnails
                         observeAndPrefetch()
@@ -102,7 +118,7 @@ class TelegramThumbPrefetcher(
                 } catch (e: CancellationException) {
                     TelegramLogRepository.info(
                         source = TAG,
-                        message = "TelegramThumbPrefetcher cancelled",
+                        message = "TelegramThumbPrefetcher observer cancelled",
                     )
                     throw e
                 } catch (e: Exception) {
@@ -116,12 +132,38 @@ class TelegramThumbPrefetcher(
     }
 
     /**
-     * Stop the prefetcher.
+     * Stop the prefetcher and clean up resources.
      */
     fun stop() {
-        prefetchJob?.cancel()
-        prefetchJob = null
+        observerJob?.cancel()
+        observerJob = null
+        prefetchJob.cancel()
         prefetchedRemoteIds.clear()
+    }
+
+    /**
+     * Soft pause - stops scheduling new downloads but lets in-flight downloads complete.
+     */
+    private fun pausePrefetch() {
+        isPaused = true
+        TelegramLogRepository.debug(
+            source = TAG,
+            message = "Prefetcher paused (in-flight downloads will complete)",
+        )
+    }
+
+    /**
+     * Resume prefetch after pause.
+     */
+    private fun resumePrefetch() {
+        val wasPaused = isPaused
+        isPaused = false
+        if (wasPaused) {
+            TelegramLogRepository.debug(
+                source = TAG,
+                message = "Prefetcher resumed",
+            )
+        }
     }
 
     /**
@@ -137,6 +179,10 @@ class TelegramThumbPrefetcher(
      * - Limits batch size using settings.thumbPrefetchBatchSize
      * - Enforces parallel downloads using settings.thumbMaxParallel via Semaphore
      * - Pauses while Telegram VOD is buffering when thumbPauseWhileVodBuffering is enabled
+     *
+     * **Soft Pause Mechanism:**
+     * - When isPaused=true, skips scheduling new downloads
+     * - In-flight downloads continue to completion
      */
     private suspend fun observeAndPrefetch() {
         // Phase 4: Get runtime settings
@@ -172,6 +218,15 @@ class TelegramThumbPrefetcher(
             vodBufferingFlow,
         ) { chatMap, vodBuffering -> chatMap to vodBuffering }
             .collectLatest { (chatMap, vodBuffering) ->
+                // Check soft pause state
+                if (isPaused) {
+                    TelegramLogRepository.debug(
+                        source = TAG,
+                        message = "Prefetch paused, skipping batch",
+                    )
+                    return@collectLatest
+                }
+
                 // Phase 4: Re-check settings in case they changed
                 val currentSettings = settingsProvider.currentSettings
                 if (!currentSettings.thumbPrefetchEnabled) {
@@ -245,15 +300,17 @@ class TelegramThumbPrefetcher(
 
                 // Phase 4: Prefetch thumbnails using semaphore for concurrency control
                 // Process all items in parallel but limited by semaphore
+                // Use dedicated prefetchScope instead of parent scope
                 val results =
-                    coroutineScope {
-                        posterRefs
-                            .map { posterRef ->
-                                async {
-                                    prefetchThumbnail(posterRef)
-                                }
-                            }.awaitAll()
-                    }
+                    prefetchScope
+                        .async {
+                            posterRefs
+                                .map { posterRef ->
+                                    async {
+                                        prefetchThumbnail(posterRef)
+                                    }
+                                }.awaitAll()
+                        }.await()
 
                 // Count results
                 results.forEach { success ->
@@ -290,21 +347,35 @@ class TelegramThumbPrefetcher(
      * - Skips download if file exists and size matches expected size
      * - Logs why each thumbnail is scheduled or skipped
      *
+     * **Coroutine Scope:**
+     * - Runs in dedicated prefetchScope (SupervisorJob + IO dispatcher)
+     * - CancellationException is handled as benign cancellation, not an error
+     *
      * @param imageRef TelegramImageRef containing stable remoteId
      */
     private suspend fun prefetchThumbnail(imageRef: TelegramImageRef): Boolean {
+        // Check soft pause before acquiring resources
+        if (isPaused) {
+            TelegramLogRepository.debug(
+                source = TAG,
+                message = "Prefetch skipped: prefetcher is paused",
+                details = mapOf("remoteId" to imageRef.remoteId),
+            )
+            return false
+        }
+
         try {
             // First check if already fully downloaded (before acquiring semaphore)
             val fileId = imageRef.fileId
             if (fileId != null && fileId > 0) {
                 val downloader = serviceClient.downloader()
                 val fileInfo = downloader.getFileInfo(fileId)
-                
+
                 if (fileInfo != null) {
                     val isComplete = fileInfo.local?.isDownloadingCompleted ?: false
                     val localPath = fileInfo.local?.path
                     val expectedSize = fileInfo.expectedSize?.toLong() ?: 0L
-                    
+
                     if (isComplete && !localPath.isNullOrBlank()) {
                         val localFile = java.io.File(localPath)
                         if (localFile.exists() && (expectedSize <= 0L || localFile.length() >= expectedSize)) {
@@ -374,6 +445,14 @@ class TelegramThumbPrefetcher(
                 // Phase 4: Release semaphore permit after download completes
                 downloadSemaphore?.release()
             }
+        } catch (e: CancellationException) {
+            // CancellationException is benign - scope was cancelled (e.g., app shutdown)
+            TelegramLogRepository.debug(
+                source = TAG,
+                message = "Prefetch cancelled: scope cancelled (not an error)",
+                details = mapOf("remoteId" to imageRef.remoteId),
+            )
+            throw e // Re-throw to propagate cancellation
         } catch (e: Exception) {
             TelegramLogRepository.error(
                 source = TAG,
