@@ -105,7 +105,7 @@ Download the **quality-artifacts** artifact to see:
 **When it fails**: Leaks detected or test failures  
 **Fix**: Review heap dumps in reports  
 **Blocker**: No (advisory only)  
-**Note**: Requires emulator, adds 10-15 minutes
+**Note**: Requires emulator, adds 10-20 minutes
 
 ### 🗜️ R8 Analysis (Code Shrinking)
 **What it does**: Analyzes code shrinking effectiveness  

@@ -4,13 +4,20 @@
 
 set -e
 
+# Check if script is being run from repository root
+if [ ! -f "build.gradle.kts" ] || [ ! -d ".github" ]; then
+  echo "Error: This script must be run from the repository root directory"
+  echo "Usage: ./scripts/test-quality-tools.sh"
+  exit 1
+fi
+
 echo "========================================="
 echo "Testing Quality Tools Configuration"
 echo "========================================="
 echo ""
 
-# Create reports directory
-mkdir -p reports/ktlint reports/kover reports/android-lint reports/gradle-doctor
+# Create reports directory (match workflow structure)
+mkdir -p reports/ktlint reports/kover reports/android-lint
 
 echo "1. Testing KTLint..."
 echo "-------------------"
@@ -20,7 +27,8 @@ echo ""
 
 echo "2. Testing Gradle Doctor..."
 echo "-------------------"
-./gradlew doctor --no-daemon --stacktrace 2>&1 | tee reports/gradle-doctor/output.txt || echo "Gradle Doctor completed with warnings"
+# Note: Workflow uses reports/gradle-doctor.txt (file, not directory)
+./gradlew help --no-daemon --stacktrace 2>&1 | tee reports/gradle-doctor.txt || echo "Gradle Doctor completed with warnings"
 echo "✓ Gradle Doctor executed"
 echo ""
 

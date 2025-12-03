@@ -229,7 +229,7 @@ android {
         abortOnError = true
         // Check all warnings
         checkAllWarnings = true
-        // Treat warnings as errors for critical severity
+        // Don't treat warnings as errors (best-effort approach)
         warningsAsErrors = false
         // Disable specific checks that are too noisy or not applicable
         disable +=

@@ -202,8 +202,8 @@ jobs:
           ./gradlew koverXmlReport --no-daemon --stacktrace 2>&1 | tee reports/kover/kover-output.txt
           KOVER_EXIT=$?
           
-          # Find and copy all kover reports
-          find . -path "*/build/reports/kover/*" -type f -exec cp --parents {} reports/kover/ \; 2>/dev/null || true
+          # Find and copy all kover reports (flatten structure)
+          find . -path "*/build/reports/kover/*" -type f -exec cp {} reports/kover/ \; 2>/dev/null || true
           
           if [ $KOVER_EXIT -eq 0 ]; then
             # Try to extract coverage percentage from XML
@@ -240,6 +240,9 @@ jobs:
           set +e
           
           # Install specific version of semgrep
+          # Note: For enhanced security, consider using hash-based verification with:
+          # pip3 install --require-hashes --hash sha256:... semgrep==1.107.0
+          # Or use the official Semgrep GitHub Action for better security guarantees
           pip3 install --quiet semgrep==1.107.0
           
           # Run semgrep with best-effort configuration
@@ -323,8 +326,8 @@ jobs:
           ./gradlew lintVitalRelease --no-daemon --stacktrace 2>&1 | tee reports/android-lint/lint-output.txt
           LINT_EXIT=$?
           
-          # Find and copy all lint results
-          find app/build/reports/lint* -type f -exec cp {} reports/android-lint/ \; 2>/dev/null || true
+          # Find and copy all lint results (specific path to avoid wildcards)
+          find app/build/reports/lint/ -type f -exec cp {} reports/android-lint/ \; 2>/dev/null || true
           
           # Summarize lint results
           LINT_XML=$(find reports/android-lint -name "*.xml" 2>/dev/null | head -1)
@@ -360,39 +363,65 @@ jobs:
           echo "## LeakCanary Leak Detection" >> quality-report.txt
           set +e
           
-          # Check if we should actually run this (it's expensive)
+          # Setup cleanup trap to ensure emulator is killed on any exit
+          cleanup_emulator() {
+            if [ -n "$EMULATOR_PID" ]; then
+              echo "Cleaning up emulator (PID: $EMULATOR_PID)..."
+              # Try graceful shutdown first
+              kill -TERM $EMULATOR_PID 2>/dev/null || true
+              sleep 2
+              # Force kill if still running
+              if kill -0 $EMULATOR_PID 2>/dev/null; then
+                kill -9 $EMULATOR_PID 2>/dev/null || true
+              fi
+            fi
+            adb emu kill 2>/dev/null || true
+          }
+          trap cleanup_emulator EXIT
+          
           echo "ℹ️ LeakCanary: Starting emulator-based leak detection..." >> quality-report.txt
           
-          # Enable emulator
-          echo "Starting Android emulator..."
-          
           # Install emulator system image
+          echo "Installing Android emulator system image..."
           yes | sdkmanager --install "system-images;android-30;google_apis;x86_64" 2>&1 | tee reports/leakcanary/emulator-setup.txt || true
           
           # Create AVD
+          echo "Creating AVD..."
           echo no | avdmanager create avd -n test_avd -k "system-images;android-30;google_apis;x86_64" --force || true
           
           # Start emulator in background
+          echo "Starting emulator..."
           $ANDROID_HOME/emulator/emulator -avd test_avd -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim &
           EMULATOR_PID=$!
           
+          # Verify emulator process started
+          sleep 2
+          if ! kill -0 $EMULATOR_PID 2>/dev/null; then
+            echo "⚠️ LeakCanary: Emulator failed to start" >> quality-report.txt
+            exit 0
+          fi
+          
           # Wait for emulator to boot
-          echo "Waiting for emulator to boot..."
+          echo "Waiting for emulator to boot (PID: $EMULATOR_PID)..."
           adb wait-for-device
           
-          # Wait for boot complete
+          # Wait for boot complete with process check
           timeout=300
-          until adb shell getprop sys.boot_completed | grep -q 1; do
+          until adb shell getprop sys.boot_completed 2>/dev/null | grep -q 1; do
+            # Check if emulator process is still alive
+            if ! kill -0 $EMULATOR_PID 2>/dev/null; then
+              echo "⚠️ LeakCanary: Emulator process died during boot" >> quality-report.txt
+              exit 0
+            fi
             sleep 5
             timeout=$((timeout - 5))
             if [ $timeout -le 0 ]; then
-              echo "⚠️ LeakCanary: Emulator boot timeout" >> quality-report.txt
-              kill $EMULATOR_PID 2>/dev/null || true
+              echo "⚠️ LeakCanary: Emulator boot timeout after 300s" >> quality-report.txt
               exit 0
             fi
           done
           
-          echo "Emulator booted. Running instrumentation tests..."
+          echo "Emulator booted successfully. Running instrumentation tests..."
           
           # Run connectedDebugAndroidTest
           ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace 2>&1 | tee reports/leakcanary/test-output.txt
@@ -401,9 +430,6 @@ jobs:
           # Pull LeakCanary reports from device
           adb pull /sdcard/Download/leakcanary/ reports/leakcanary/ 2>/dev/null || true
           adb pull /sdcard/Android/data/com.chris.m3usuite/files/leakcanary/ reports/leakcanary/ 2>/dev/null || true
-          
-          # Stop emulator
-          kill $EMULATOR_PID 2>/dev/null || true
           
           # Summarize results
           if [ $TEST_EXIT -eq 0 ]; then
@@ -624,15 +650,15 @@ jobs:
           
           ### Tools Configuration
           
-          | Tool | Enabled | Status | Version |
-          |------|---------|--------|---------|
-          | KTLint | ${{ github.event.inputs.run_ktlint }} | ${KTLINT_STATUS:-Skipped} | 12.1.2 / ktlint 1.5.0 |
-          | Kover | ${{ github.event.inputs.run_kover }} | ${KOVER_STATUS:-Skipped} | 0.9.0 |
-          | Semgrep | ${{ github.event.inputs.run_semgrep }} | ${SEMGREP_STATUS:-Skipped} | 1.107.0 |
-          | Gradle Doctor | ${{ github.event.inputs.run_gradle_doctor }} | ${DOCTOR_STATUS:-Skipped} | 0.10.0 |
-          | Android Lint | ${{ github.event.inputs.run_android_lint }} | ${LINT_STATUS:-Skipped} | AGP 8.6.1 |
-          | LeakCanary | ${{ github.event.inputs.run_leakcanary }} | ${LEAKCANARY_STATUS:-Skipped} | 2.14 |
-          | R8 Analysis | ${{ github.event.inputs.run_r8_analysis }} | ${R8_STATUS:-Skipped} | Built-in |
+          | Tool | Enabled | Version |
+          |------|---------|---------|
+          | KTLint | ${{ github.event.inputs.run_ktlint }} | 12.1.2 / ktlint 1.5.0 |
+          | Kover | ${{ github.event.inputs.run_kover }} | 0.9.0 |
+          | Semgrep | ${{ github.event.inputs.run_semgrep }} | 1.107.0 |
+          | Gradle Doctor | ${{ github.event.inputs.run_gradle_doctor }} | 0.10.0 |
+          | Android Lint | ${{ github.event.inputs.run_android_lint }} | AGP 8.6.1 |
+          | LeakCanary | ${{ github.event.inputs.run_leakcanary }} | 2.14 |
+          | R8 Analysis | ${{ github.event.inputs.run_r8_analysis }} | Built-in |
           
           ### Build Blockers vs Advisory
           
@@ -674,7 +700,7 @@ jobs:
           - To enable tools, check the corresponding boxes when starting the workflow
           
           **Tool-specific notes:**
-          - **LeakCanary**: Requires emulator setup, takes ~10-15 minutes
+          - **LeakCanary**: Requires emulator setup, takes ~10-20 minutes
           - **Kover**: Runs tests to generate coverage, may be slow for large projects
           - **Semgrep**: Scans only .kt and .java files with auto-config rules
           - **R8 Analysis**: Only runs after successful release build
