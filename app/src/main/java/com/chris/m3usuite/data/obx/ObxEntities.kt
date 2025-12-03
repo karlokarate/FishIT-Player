@@ -200,6 +200,7 @@ data class ObxTelegramMessage(
     @Index var messageId: Long = 0,
     @Index var fileId: Int? = null,
     @Index var fileUniqueId: String? = null,
+    @Index var remoteId: String? = null, // Stable TDLib remote_id (session-independent)
     var supportsStreaming: Boolean? = null,
     var caption: String? = null,
     @Index var captionLower: String? = null,

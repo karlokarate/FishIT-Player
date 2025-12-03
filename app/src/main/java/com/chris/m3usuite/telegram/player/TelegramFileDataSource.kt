@@ -7,9 +7,11 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
+import com.chris.m3usuite.telegram.core.StreamingConfigRefactor
 import com.chris.m3usuite.telegram.core.T_TelegramFileDownloader
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.telegram.util.Mp4HeaderParser
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -17,14 +19,14 @@ import java.io.IOException
 /**
  * DataSource for Telegram files using TDLib + FileDataSource for Zero-Copy Streaming.
  *
- * **Phase D+ RemoteId-First URL Format:**
+ * **RemoteId-First URL Format (TDLib Best Practices):**
  * `tg://file/<fileIdOrZero>?chatId=...&messageId=...&remoteId=...&uniqueId=...`
  *
  * **Resolution Strategy:**
  * 1. Parse URL to extract fileId, remoteId, chatId, messageId
- * 2. If fileId is valid (> 0), use it directly (fast path)
+ * 2. If fileId is valid (> 0), use it directly (fast path - same session)
  * 3. If fileId is 0 or invalid, resolve via getRemoteFile(remoteId)
- * 4. Call ensureFileReady() to ensure TDLib has downloaded prefix
+ * 4. Call ensureFileReadyWithMp4Validation() with TDLib-optimized parameters
  * 5. Delegate to FileDataSource for actual I/O
  *
  * **Zero-Copy Architecture:**
@@ -32,6 +34,11 @@ import java.io.IOException
  * - This DataSource delegates to Media3's FileDataSource for all I/O
  * - No ByteArray buffers, no custom position tracking
  * - ExoPlayer/FileDataSource handles seeking and scrubbing
+ *
+ * **MP4 Header Validation (2025-12-03):**
+ * - Uses StreamingConfigRefactor constants (offset=0, limit=0, priority=32)
+ * - Mp4HeaderParser validates complete moov atom before playback
+ * - No hard byte thresholds - structure-based validation
  *
  * @param serviceClient T_TelegramServiceClient for TDLib access
  */
@@ -54,15 +61,8 @@ class TelegramFileDataSource(
 
     companion object {
         /**
-         * Minimum prefix size to request from TDLib (256 KB).
-         * Ensures header and initial data are available for container parsing.
-         */
-        const val MIN_PREFIX_BYTES = 256 * 1024L
-
-        /**
          * Timeout for remoteId to fileId resolution (10 seconds).
-         * This is shorter than ensureFileReady() timeout since resolution is just an API call,
-         * not a file download operation.
+         * This is shorter than main download timeout since resolution is just an API call.
          */
         const val REMOTE_ID_RESOLUTION_TIMEOUT_MS = 10_000L
     }
@@ -244,24 +244,14 @@ class TelegramFileDataSource(
         var localPath: String? = null
         var lastException: Exception? = null
 
-        // Determine mode based on dataSpec position
-        val ensureMode =
-            if (dataSpec.position == 0L) {
-                T_TelegramFileDownloader.EnsureFileReadyMode.INITIAL_START
-            } else {
-                T_TelegramFileDownloader.EnsureFileReadyMode.SEEK
-            }
-
+        // Use MP4 header validation (TDLib best practices: offset=0, limit=0, moov validation)
         try {
             localPath =
                 runBlocking {
                     val downloader = serviceClient.downloader()
-                    downloader.ensureFileReady(
+                    downloader.ensureFileReadyWithMp4Validation(
                         fileId = fileIdInt,
-                        startPosition = dataSpec.position,
-                        minBytes = 0L, // For video streaming, rely on mode defaults (256KB/1MB)
-                        mode = ensureMode,
-                        fileSizeBytes = fileSizeBytes, // Pass from URL parameters
+                        timeoutMs = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
                     )
                 }
         } catch (e: Exception) {
@@ -312,15 +302,12 @@ class TelegramFileDataSource(
                         localPath =
                             runBlocking {
                                 val downloader = serviceClient.downloader()
-                                downloader.ensureFileReady(
+                                downloader.ensureFileReadyWithMp4Validation(
                                     fileId = candidateFileId,
-                                    startPosition = dataSpec.position,
-                                    minBytes = 0L, // For video streaming, rely on mode defaults
-                                    mode = ensureMode,
-                                    fileSizeBytes = fileSizeBytes,
+                                    timeoutMs = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
                                 )
                             }
-                        // Only update instance variables if ensureFileReady succeeds
+                        // Only update instance variables if ensureFileReadyWithMp4Validation succeeds
                         fileIdInt = candidateFileId
                         fileId = candidateFileId
                     } catch (retryEx: Exception) {
