@@ -324,7 +324,7 @@ jobs:
           LINT_EXIT=$?
           
           # Find and copy all lint results
-          find app/build/reports/lint* -type f -exec cp --parents {} reports/android-lint/ \; 2>/dev/null || true
+          find app/build/reports/lint* -type f -exec cp {} reports/android-lint/ \; 2>/dev/null || true
           
           # Summarize lint results
           LINT_XML=$(find reports/android-lint -name "*.xml" 2>/dev/null | head -1)
