@@ -3,6 +3,7 @@ package com.chris.m3usuite.telegram.prefetch
 import android.content.Context
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
+import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TelegramFileLoader
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
@@ -41,7 +42,7 @@ class TelegramThumbPrefetcher(
     private val repository: TelegramContentRepository, // Inject instead of create
     private val settingsProvider: com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider,
 ) {
-    private val fileLoader = TelegramFileLoader(serviceClient)
+    private val fileLoader = TelegramFileLoader(context, serviceClient, settingsProvider)
     private val store = SettingsStore(context)
 
     companion object {
@@ -60,9 +61,14 @@ class TelegramThumbPrefetcher(
     // Phase 4: Semaphore for controlling parallel downloads (will be initialized with runtime setting)
     private var downloadSemaphore: kotlinx.coroutines.sync.Semaphore? = null
     
-    // Phase 4: TODO - Flow for VOD buffering state (to be wired from player session)
-    // This will be implemented in Phase 4b to pause prefetch during active VOD buffering
-    // private val vodBufferingFlow: StateFlow<Boolean> = MutableStateFlow(false)
+    private val vodBufferingFlow: Flow<Boolean> =
+        combine(
+            PlaybackSession.buffering,
+            PlaybackSession.currentSourceState,
+        ) { isBuffering, source ->
+            val src = source ?: return@combine false
+            isBuffering && src.isTelegram && src.isVodLike
+        }.distinctUntilChanged()
 
     /**
      * Start the prefetcher in the given coroutine scope.
@@ -126,11 +132,11 @@ class TelegramThumbPrefetcher(
      * fileIds are volatile and become stale after TDLib session changes.
      * remoteIds are stable across sessions and should be used for resolution.
      *
-     * **Phase 4: Runtime Settings Integration:**
-     * - Checks settings.thumbPrefetchEnabled and returns early if disabled
-     * - Limits batch size using settings.thumbPrefetchBatchSize
-     * - Enforces parallel downloads using settings.thumbMaxParallel via Semaphore
-     * - TODO Phase 4b: Pause during VOD buffering via settings.thumbPauseWhileVodBuffering
+    * **Phase 4: Runtime Settings Integration:**
+    * - Checks settings.thumbPrefetchEnabled and returns early if disabled
+    * - Limits batch size using settings.thumbPrefetchBatchSize
+    * - Enforces parallel downloads using settings.thumbMaxParallel via Semaphore
+    * - Pauses while Telegram VOD is buffering when thumbPauseWhileVodBuffering is enabled
      */
     private suspend fun observeAndPrefetch() {
         // Phase 4: Get runtime settings
@@ -160,13 +166,25 @@ class TelegramThumbPrefetcher(
         )
         
         // Phase D: Use new TelegramItem-based flow instead of legacy MediaItem flows
-        repository.observeVodItemsByChat().collectLatest { chatMap ->
+        combine(
+            repository.observeVodItemsByChat(),
+            vodBufferingFlow,
+        ) { chatMap, vodBuffering -> chatMap to vodBuffering }
+            .collectLatest { (chatMap, vodBuffering) ->
             // Phase 4: Re-check settings in case they changed
             val currentSettings = settingsProvider.currentSettings
             if (!currentSettings.thumbPrefetchEnabled) {
                 TelegramLogRepository.debug(
                     source = TAG,
                     message = "Prefetch disabled, skipping batch",
+                )
+                return@collectLatest
+            }
+
+            if (currentSettings.thumbPauseWhileVodBuffering && vodBuffering) {
+                TelegramLogRepository.debug(
+                    source = TAG,
+                    message = "Prefetch paused – Telegram VOD buffering",
                 )
                 return@collectLatest
             }
@@ -184,15 +202,6 @@ class TelegramThumbPrefetcher(
                 )
                 return@collectLatest
             }
-
-            // TODO Phase 4b: Check if VOD is buffering and pause if needed
-            // if (currentSettings.thumbPauseWhileVodBuffering && vodBufferingFlow.value) {
-            //     TelegramLogRepository.debug(
-            //         source = TAG,
-            //         message = "Prefetch paused - VOD is buffering",
-            //     )
-            //     return@collectLatest
-            // }
 
             // Extract all poster TelegramImageRefs that need prefetching
             // Use remoteId as the unique key since fileId is volatile
@@ -260,8 +269,8 @@ class TelegramThumbPrefetcher(
                         "skipped" to skippedCount.toString(),
                     ),
             )
+            }
         }
-    }
 
     /**
      * Prefetch a single thumbnail using TelegramImageRef (remoteId-first).
