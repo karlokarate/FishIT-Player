@@ -299,7 +299,6 @@ class TelegramFileLoader(
                 // Get fresh file state
                 val currentInfo = downloader.getFileInfo(fileId)
                 val currentPath = currentInfo?.local?.path
-                val downloadedSize = currentInfo?.local?.downloadedSize?.toLong() ?: 0L
                 val isComplete = currentInfo?.local?.isDownloadingCompleted ?: false
 
                 // Check if download is complete
