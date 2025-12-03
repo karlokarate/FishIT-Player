@@ -754,7 +754,7 @@
     },
     {
       "id": "13:3463824368552542268",
-      "lastPropertyId": "32:1095475850419797386",
+      "lastPropertyId": "33:2254919090460768493",
       "name": "ObxTelegramMessage",
       "properties": [
         {
@@ -937,6 +937,13 @@
           "id": "32:1095475850419797386",
           "name": "episodeTitle",
           "type": 9
+        },
+        {
+          "id": "33:2254919090460768493",
+          "name": "remoteId",
+          "indexId": "88:7564852844395552305",
+          "type": 9,
+          "flags": 2048
         }
       ],
       "relations": []
@@ -1717,7 +1724,7 @@
     }
   ],
   "lastEntityId": "22:1292256483820167365",
-  "lastIndexId": "87:5002968944176158411",
+  "lastIndexId": "88:7564852844395552305",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
