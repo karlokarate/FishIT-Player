@@ -1,0 +1,217 @@
+name: Release Build – APK (arm64-v8a & armeabi-v7a)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version name (e.g., v1.0.0)"
+        required: true
+        type: string
+      version_code:
+        description: "Version code (e.g., 1)"
+        required: true
+        type: string
+      create_release:
+        description: "Create GitHub Release"
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark as pre-release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: release-build-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
+
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseParallelGC'"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.2
+
+      - name: Install Android SDK packages
+        run: |
+          set -euxo pipefail
+          echo ">>> Accepting SDK licenses..."
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          echo ">>> Installing SDK packages..."
+          sdkmanager --no_https --update || true
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;35.0.0" \
+            "ndk;29.0.13846066" || true
+          echo "SDK installation completed."
+
+      - name: Decode signing keystore
+        env:
+          KS_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${KS_B64:-}" ]]; then
+            echo "::warning::Keystore secret is empty - build will be unsigned"
+            exit 0
+          fi
+          
+          val="${KS_B64#base64:}"; val="${val#base64,}"
+          val="$(printf '%s' "$val" | tr -d ' \n\r\t')"
+          
+          if printf '%s' "$val" | base64 -d > release.keystore 2>/dev/null; then
+            echo "Keystore decoded successfully"
+          else
+            echo "::error::Invalid Base64 in keystore secret"
+            exit 1
+          fi
+          
+          if [[ -f release.keystore ]]; then
+            {
+              echo "MYAPP_UPLOAD_STORE_FILE=$PWD/release.keystore"
+              echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}"
+              echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.ANDROID_SIGN_KEY_ALIAS || secrets.ANDROID_SIGNING_KEY_ALIAS }}"
+              echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::warning::Keystore file not found - build will be unsigned"
+          fi
+
+      - name: Build release APK for ${{ matrix.abi }}
+        run: |
+          ./gradlew :app:assembleRelease \
+            -PabiFilters=${{ matrix.abi }} \
+            -PuseSplits=true \
+            -PuniversalApk=false \
+            -PversionCode=${{ github.event.inputs.version_code }} \
+            -PversionName=${{ github.event.inputs.version_name }} \
+            --build-cache \
+            --parallel \
+            --stacktrace \
+            --warning-mode all \
+            -x test
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+
+      - name: Verify APK signature
+        run: |
+          find app/build/outputs/apk/release -type f -name "*.apk" -print0 | \
+            xargs -0 -I{} bash -c 'apksigner verify --verbose "{}" || true'
+
+      - name: Calculate checksums
+        run: |
+          find app/build/outputs/apk/release -type f -name "*.apk" -print0 | \
+            xargs -0 sha256sum > checksums-${{ matrix.abi }}.txt
+          cat checksums-${{ matrix.abi }}.txt
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ matrix.abi }}
+          path: |
+            app/build/outputs/apk/release/*.apk
+            checksums-${{ matrix.abi }}.txt
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload ProGuard mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-${{ matrix.abi }}
+          path: app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+          if-no-files-found: warn
+
+  create-release:
+    needs: build
+    if: ${{ github.event.inputs.create_release == 'true' }}
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          
+          # Copy APKs and rename them with ABI suffix
+          find artifacts/app-release-arm64-v8a -name "*.apk" -exec cp {} release-assets/FishIT-Player-${{ github.event.inputs.version_name }}-arm64-v8a.apk \;
+          find artifacts/app-release-armeabi-v7a -name "*.apk" -exec cp {} release-assets/FishIT-Player-${{ github.event.inputs.version_name }}-armeabi-v7a.apk \;
+          
+          # Combine checksums
+          cat artifacts/app-release-*/checksums-*.txt > release-assets/checksums.txt
+          
+          # List release assets
+          ls -lh release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version_name }}
+          name: FishIT Player ${{ github.event.inputs.version_name }}
+          body: |
+            ## FishIT Player ${{ github.event.inputs.version_name }}
+            
+            ### Downloads
+            - **arm64-v8a**: For modern 64-bit ARM devices (recommended)
+            - **armeabi-v7a**: For older 32-bit ARM devices
+            
+            ### Build Information
+            - Version: ${{ github.event.inputs.version_name }}
+            - Version Code: ${{ github.event.inputs.version_code }}
+            - Built from: ${{ github.sha }}
+            - Build Date: ${{ github.event.repository.updated_at }}
+            
+            ### Dependencies
+            - TDLib: Using `dev.g000sha256:tdl-coroutines-android:5.0.0` from Maven Central
+            
+            ### Installation
+            1. Download the appropriate APK for your device architecture
+            2. Enable "Install from unknown sources" in your device settings
+            3. Install the APK
+            
+            ### Checksums
+            See `checksums.txt` for SHA256 hashes of all APKs.
+          files: |
+            release-assets/*.apk
+            release-assets/checksums.txt
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          fail_on_unmatched_files: true
