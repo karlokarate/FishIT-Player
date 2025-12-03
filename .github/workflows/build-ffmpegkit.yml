@@ -1,0 +1,351 @@
+name: Build Custom FFmpegKit AAR
+
+on:
+  workflow_dispatch:
+    inputs:
+      ffmpeg_kit_version:
+        description: "FFmpegKit version/tag to build (e.g., v6.0, main)"
+        required: false
+        default: "main"
+        type: string
+      enable_gpl:
+        description: "Enable GPL libraries (x264, x265, etc.)"
+        type: boolean
+        default: false
+      enable_arm_v7a:
+        description: "Build for armeabi-v7a (32-bit ARM)"
+        type: boolean
+        default: true
+      enable_arm64_v8a:
+        description: "Build for arm64-v8a (64-bit ARM)"
+        type: boolean
+        default: true
+      enable_external_libs:
+        description: "Enable external libraries (openssl, opus, etc.)"
+        type: boolean
+        default: false
+      create_release:
+        description: "Create GitHub Release with built AAR"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ffmpegkit-build-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-ffmpegkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240  # FFmpeg builds can take a long time
+    
+    env:
+      FFMPEG_KIT_VERSION: ${{ github.event.inputs.ffmpeg_kit_version || 'main' }}
+      ANDROID_NDK_VERSION: "27.2.12479018"  # Stable NDK version
+      
+    steps:
+      - name: Checkout FishIT-Player repository
+        uses: actions/checkout@v5
+        with:
+          path: fishit-player
+      
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.2
+      
+      - name: Install Android SDK & NDK
+        run: |
+          set -eo pipefail
+          echo ">>> Accepting SDK licenses..."
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          
+          echo ">>> Installing SDK packages..."
+          sdkmanager --update || true
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "platforms;android-24" \
+            "build-tools;35.0.0" \
+            "ndk;${ANDROID_NDK_VERSION}" || true
+          
+          echo ">>> SDK installation completed"
+          
+          # Set environment variables for FFmpegKit build
+          echo "ANDROID_SDK_ROOT=${ANDROID_HOME}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=${ANDROID_HOME}/ndk/${ANDROID_NDK_VERSION}" >> $GITHUB_ENV
+      
+      - name: Verify SDK & NDK installation
+        run: |
+          set -eo pipefail
+          echo "=== Android SDK Root ==="
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
+          ls -la "${ANDROID_SDK_ROOT}" || true
+          
+          echo -e "\n=== Android NDK Root ==="
+          echo "ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-}"
+          ls -la "${ANDROID_NDK_ROOT}" || true
+          
+          # Verify ANDROID_NDK_ROOT is set and directory exists
+          if [[ -z "${ANDROID_NDK_ROOT:-}" ]]; then
+            echo "::error::ANDROID_NDK_ROOT is not set"
+            exit 1
+          fi
+          
+          if [[ ! -d "${ANDROID_NDK_ROOT}" ]]; then
+            echo "::error::Android NDK not found at ${ANDROID_NDK_ROOT}"
+            exit 1
+          fi
+          
+          # Verify NDK version
+          if [[ -f "${ANDROID_NDK_ROOT}/source.properties" ]]; then
+            echo -e "\n=== NDK Version ==="
+            grep "Pkg.Revision" "${ANDROID_NDK_ROOT}/source.properties"
+          fi
+      
+      - name: Clone FFmpegKit repository
+        run: |
+          set -eo pipefail
+          echo ">>> Cloning FFmpegKit from arthenica/ffmpeg-kit (${FFMPEG_KIT_VERSION})..."
+          
+          if [[ "${FFMPEG_KIT_VERSION}" == "main" ]]; then
+            git clone --depth 1 https://github.com/arthenica/ffmpeg-kit.git ffmpeg-kit
+          else
+            git clone --depth 1 --branch "${FFMPEG_KIT_VERSION}" https://github.com/arthenica/ffmpeg-kit.git ffmpeg-kit
+          fi
+          
+          cd ffmpeg-kit
+          echo ">>> FFmpegKit repository cloned successfully"
+          echo ">>> Current commit:"
+          git log -1 --oneline
+      
+      - name: Prepare build configuration
+        id: config
+        run: |
+          set -eo pipefail
+          
+          # Build flags array
+          BUILD_FLAGS=()
+          
+          # Architecture configuration
+          if [[ "${{ github.event.inputs.enable_arm_v7a }}" != "true" ]]; then
+            BUILD_FLAGS+=("--disable-arm-v7a")
+            BUILD_FLAGS+=("--disable-arm-v7a-neon")
+          fi
+          
+          if [[ "${{ github.event.inputs.enable_arm64_v8a }}" != "true" ]]; then
+            BUILD_FLAGS+=("--disable-arm64-v8a")
+          fi
+          
+          # Always disable x86 architectures (not needed for mobile devices)
+          BUILD_FLAGS+=("--disable-x86")
+          BUILD_FLAGS+=("--disable-x86-64")
+          
+          # GPL licensing
+          if [[ "${{ github.event.inputs.enable_gpl }}" == "true" ]]; then
+            BUILD_FLAGS+=("--enable-gpl")
+            # Enable common GPL libraries for video encoding
+            BUILD_FLAGS+=("--enable-x264")
+            BUILD_FLAGS+=("--enable-x265")
+          fi
+          
+          # External libraries configuration
+          if [[ "${{ github.event.inputs.enable_external_libs }}" == "true" ]]; then
+            # Enable essential libraries for modern streaming
+            BUILD_FLAGS+=("--enable-openssl")  # HTTPS support
+            BUILD_FLAGS+=("--enable-opus")     # Audio codec
+            BUILD_FLAGS+=("--enable-libvpx")   # VP8/VP9 video
+            BUILD_FLAGS+=("--enable-dav1d")    # AV1 decoder
+          fi
+          
+          # Use built-in Android libraries
+          BUILD_FLAGS+=("--enable-android-zlib")
+          BUILD_FLAGS+=("--enable-android-media-codec")
+          
+          # Optimize for speed
+          BUILD_FLAGS+=("--speed")
+          
+          # Save flags to output
+          echo "build_flags=${BUILD_FLAGS[*]}" >> $GITHUB_OUTPUT
+          
+          echo "=== Build Configuration ==="
+          echo "Flags: ${BUILD_FLAGS[*]}"
+      
+      - name: Build FFmpegKit AAR
+        working-directory: ffmpeg-kit
+        run: |
+          set -eo pipefail
+          
+          echo "=== Starting FFmpegKit build ==="
+          echo "Build flags: ${{ steps.config.outputs.build_flags }}"
+          
+          # Run the build script
+          ./android.sh ${{ steps.config.outputs.build_flags }}
+          
+          echo "=== Build completed ==="
+      
+      - name: Locate and verify AAR
+        id: aar
+        working-directory: ffmpeg-kit
+        run: |
+          set -eo pipefail
+          
+          echo "=== Searching for built AAR ==="
+          find prebuilt -name "*.aar" -type f
+          
+          # Find the AAR file
+          AAR_PATH=$(find prebuilt -name "ffmpeg-kit-*.aar" -type f | head -1)
+          
+          if [[ -z "${AAR_PATH}" ]]; then
+            echo "::error::No AAR file found in prebuilt directory"
+            exit 1
+          fi
+          
+          echo "=== AAR found at: ${AAR_PATH} ==="
+          ls -lh "${AAR_PATH}"
+          
+          # Calculate SHA256
+          AAR_SHA256=$(sha256sum "${AAR_PATH}" | cut -d' ' -f1)
+          echo "SHA256: ${AAR_SHA256}"
+          
+          # Get AAR size
+          AAR_SIZE=$(du -h "${AAR_PATH}" | cut -f1)
+          echo "Size: ${AAR_SIZE}"
+          
+          # Set outputs
+          echo "aar_path=${AAR_PATH}" >> $GITHUB_OUTPUT
+          echo "aar_sha256=${AAR_SHA256}" >> $GITHUB_OUTPUT
+          echo "aar_size=${AAR_SIZE}" >> $GITHUB_OUTPUT
+          echo "aar_filename=$(basename ${AAR_PATH})" >> $GITHUB_OUTPUT
+      
+      - name: Extract AAR info
+        working-directory: ffmpeg-kit
+        run: |
+          set -eo pipefail
+          
+          AAR_PATH="${{ steps.aar.outputs.aar_path }}"
+          
+          echo "=== AAR Contents ==="
+          unzip -l "${AAR_PATH}" || true
+          
+          echo -e "\n=== Native libraries (ABIs) ==="
+          unzip -l "${AAR_PATH}" | grep "\.so$" | awk '{print $4}' | sort
+      
+      - name: Prepare release artifacts
+        run: |
+          set -eo pipefail
+          
+          mkdir -p release-artifacts
+          
+          # Copy AAR
+          cp "ffmpeg-kit/${{ steps.aar.outputs.aar_path }}" \
+             "release-artifacts/ffmpeg-kit-custom.aar"
+          
+          # Create checksums file
+          cd release-artifacts
+          sha256sum ffmpeg-kit-custom.aar > checksums.txt
+          
+          # Create build info file
+          cat > build-info.txt <<'EOFINFO'
+          FFmpegKit Custom Build
+          ======================
+          EOFINFO
+          
+          echo "" >> build-info.txt
+          echo "Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> build-info.txt
+          echo "FFmpegKit Version: ${FFMPEG_KIT_VERSION}" >> build-info.txt
+          echo "Repository: https://github.com/arthenica/ffmpeg-kit" >> build-info.txt
+          echo "Commit: $(cd ../ffmpeg-kit && git rev-parse HEAD)" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "Build Configuration:" >> build-info.txt
+          echo "--------------------" >> build-info.txt
+          echo "Build Flags: ${{ steps.config.outputs.build_flags }}" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "ARM v7a (32-bit): ${{ github.event.inputs.enable_arm_v7a }}" >> build-info.txt
+          echo "ARM64 v8a (64-bit): ${{ github.event.inputs.enable_arm64_v8a }}" >> build-info.txt
+          echo "GPL Enabled: ${{ github.event.inputs.enable_gpl }}" >> build-info.txt
+          echo "External Libraries: ${{ github.event.inputs.enable_external_libs }}" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "AAR Details:" >> build-info.txt
+          echo "------------" >> build-info.txt
+          echo "Filename: ${{ steps.aar.outputs.aar_filename }}" >> build-info.txt
+          echo "Size: ${{ steps.aar.outputs.aar_size }}" >> build-info.txt
+          echo "SHA256: ${{ steps.aar.outputs.aar_sha256 }}" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "NDK Version: ${ANDROID_NDK_VERSION}" >> build-info.txt
+          echo "Builder: GitHub Actions" >> build-info.txt
+          echo "Workflow: ${{ github.workflow }}" >> build-info.txt
+          echo "Run: ${{ github.run_number }}" >> build-info.txt
+          
+          cat build-info.txt
+      
+      - name: Upload AAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-kit-custom-aar
+          path: |
+            release-artifacts/ffmpeg-kit-custom.aar
+            release-artifacts/checksums.txt
+            release-artifacts/build-info.txt
+          retention-days: 90
+          if-no-files-found: error
+      
+      - name: Create GitHub Release
+        if: ${{ github.event.inputs.create_release == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ffmpeg-kit-custom-${{ github.run_number }}
+          name: FFmpegKit Custom Build ${{ github.run_number }}
+          body_path: release-artifacts/build-info.txt
+          files: |
+            release-artifacts/ffmpeg-kit-custom.aar
+            release-artifacts/checksums.txt
+            release-artifacts/build-info.txt
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+      
+      - name: Build summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## FFmpegKit Custom Build Summary
+          
+          ### Configuration
+          - **FFmpegKit Version:** ${FFMPEG_KIT_VERSION}
+          - **ARM v7a:** ${{ github.event.inputs.enable_arm_v7a }}
+          - **ARM64 v8a:** ${{ github.event.inputs.enable_arm64_v8a }}
+          - **GPL Libraries:** ${{ github.event.inputs.enable_gpl }}
+          - **External Libraries:** ${{ github.event.inputs.enable_external_libs }}
+          
+          ### Output
+          - **AAR Filename:** ${{ steps.aar.outputs.aar_filename }}
+          - **Size:** ${{ steps.aar.outputs.aar_size }}
+          - **SHA256:** \`${{ steps.aar.outputs.aar_sha256 }}\`
+          
+          ### Build Flags
+          \`\`\`
+          ${{ steps.config.outputs.build_flags }}
+          \`\`\`
+          
+          ### Next Steps
+          1. Download the AAR artifact from this workflow run
+          2. Add it to your project's \`libs/\` directory
+          3. Update \`app/build.gradle.kts\` to use the custom AAR:
+             \`\`\`kotlin
+             dependencies {
+                 implementation(files("libs/ffmpeg-kit-custom.aar"))
+             }
+             \`\`\`
+          4. Remove or comment out the Jellyfin Media3 FFmpeg dependency
+          EOF
