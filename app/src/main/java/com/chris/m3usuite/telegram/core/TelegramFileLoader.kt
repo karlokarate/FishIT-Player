@@ -387,40 +387,38 @@ class TelegramFileLoader(
     }
 
     /**
-     * Optional helper for future direct file-path playback.
-     * Currently unused by the main Telegram playback path,
-     * which relies on TelegramFileDataSource + downloader.
+     * Ensure file ready for playback with MP4 header validation.
+     * Used by legacy TelegramVideoDetailScreen ONLY.
      *
-     * Thin wrapper around T_TelegramFileDownloader.ensureFileReady().
-     * Downloads with high priority and ensures sufficient prefix is available.
+     * Phase D+ (2025-12-03): Updated to use ensureFileReadyWithMp4Validation()
+     * following TDLib best practices (offset=0, limit=0, moov validation).
+     *
+     * New playback paths should use TelegramFileDataSource via standard
+     * Media3/ExoPlayer tg:// URLs.
      *
      * @param fileId TDLib file ID
-     * @param minPrefixBytes Minimum bytes to download from start
-     * @param timeoutMs Maximum time to wait
-     * @return Local file path or null
+     * @param timeoutMs Maximum wait time in milliseconds
+     * @return Local path or null on failure
      */
     suspend fun ensureFileForPlayback(
         fileId: Int,
-        minPrefixBytes: Long = 1024 * 1024, // 1 MB default
-        timeoutMs: Long = 60_000L,
+        timeoutMs: Long = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
     ): String? =
         try {
             TelegramLogRepository.info(
                 source = TAG,
-                message = "ensureFileForPlayback: Starting for fileId=$fileId, minPrefix=$minPrefixBytes",
+                message = "ensureFileForPlayback: Starting with MP4 validation for fileId=$fileId",
             )
 
             val path =
-                downloader.ensureFileReady(
+                downloader.ensureFileReadyWithMp4Validation(
                     fileId = fileId,
-                    startPosition = 0,
-                    minBytes = minPrefixBytes,
                     timeoutMs = timeoutMs,
                 )
 
             TelegramLogRepository.info(
                 source = TAG,
-                message = "ensureFileForPlayback: Ready fileId=$fileId, path=$path",
+                message = "ensureFileForPlayback: Ready (moov validated) fileId=$fileId, path=$path",
             )
             path
         } catch (e: Exception) {

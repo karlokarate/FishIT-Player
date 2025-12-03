@@ -150,7 +150,7 @@ class RarDataSourceRefactor(
             /*
             val downloader: T_TelegramFileDownloader = serviceClient.fileDownloader
 
-            val minBytes = StreamingConfig.MIN_READ_AHEAD_BYTES
+            val minBytes = StreamingConfigRefactor.MIN_READ_AHEAD_BYTES
                 .coerceAtLeast(4L * 1024 * 1024) // min. 4 MiB, reicht locker als Start
 
             val path =
@@ -160,7 +160,7 @@ class RarDataSourceRefactor(
                             fileId = fileId,
                             startPosition = 0L,
                             minBytes = minBytes,
-                            timeoutMs = StreamingConfig.ENSURE_READY_TIMEOUT_MS,
+                            timeoutMs = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
                         )
                     }
                 } catch (t: Throwable) {

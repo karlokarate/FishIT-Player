@@ -276,6 +276,25 @@ private constructor(
             // Start auth event collection
             startAuthEventCollection()
 
+            // Query initial auth state from TDLib to avoid showing "Disconnected" when session is valid
+            // This fixes the issue where users see empty fields after app restart despite valid session
+            try {
+                val initialAuthState = client!!.getAuthorizationState().getOrNull()
+                if (initialAuthState != null) {
+                    val mappedState = mapAuthorizationStateToAuthState(initialAuthState)
+                    _authState.value = mappedState
+                    TelegramLogRepository.debug(
+                        "T_TelegramServiceClient",
+                        "Initial auth state after start: $mappedState (TDLib: ${initialAuthState::class.simpleName})"
+                    )
+                }
+            } catch (e: Exception) {
+                TelegramLogRepository.warn(
+                    "T_TelegramServiceClient",
+                    "Failed to query initial auth state: ${e.message}"
+                )
+            }
+
             _connectionState.value = TgConnectionState.Connected
             _isStarted.set(true)
 

@@ -3,7 +3,7 @@ package com.chris.m3usuite.telegram.core
 import android.content.Context
 import android.os.SystemClock
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
-import dev.g000sha256.tdl.TdlResult
+import com.chris.m3usuite.telegram.util.Mp4HeaderParser
 import dev.g000sha256.tdl.dto.File
 import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
@@ -28,7 +28,7 @@ data class DownloadProgress(
 ) {
     val progressPercent: Int
         get() = if (totalBytes > 0) {
-            ((downloadedBytes.toDouble() * 100) / totalBytes).toInt()
+            ((downloadedBytes * 100) / totalBytes).toInt()
         } else {
             0
         }
@@ -1154,9 +1154,9 @@ class T_TelegramFileDownloader(
                 val fileInfo = getFileInfo(fileId)
                 val fileIdInt = fileInfo.id
 
-                // Blocking retry: wait for TDLib to download the first bytes at position
-                var retryAttempts = 0
-                val maxRetryAttempts = StreamingConfig.READ_RETRY_MAX_ATTEMPTS
+            // Blocking retry: wait for TDLib to download the first bytes at position
+            var retryAttempts = 0
+            val maxRetryAttempts = StreamingConfigRefactor.READ_RETRY_MAX_ATTEMPTS
 
                 while (!isDownloadedAt(fileId, position)) {
                     if (retryAttempts >= maxRetryAttempts) {
@@ -1223,9 +1223,8 @@ class T_TelegramFileDownloader(
                     )
                 }
 
-                // Now proceed with actual file reading
-                val updatedFileInfo = getFileInfo(fileId)
-                val localPath = updatedFileInfo.local?.path
+                retryAttempts++
+                delay(StreamingConfigRefactor.READ_RETRY_DELAY_MS)
 
                 if (localPath.isNullOrBlank()) {
                     // This should not happen after retry loop, but handle gracefully
@@ -1242,8 +1241,9 @@ class T_TelegramFileDownloader(
                 var ioRetryCount = 0
                 val maxIoRetries = StreamingConfig.MAX_READ_ATTEMPTS
 
-                while (ioRetryCount < maxIoRetries) {
-                    ioRetryCount++
+            // Retry logic to handle race condition where file handle is closed by another thread
+            var ioRetryCount = 0
+            val maxIoRetries = StreamingConfigRefactor.MAX_READ_ATTEMPTS
 
                     try {
                         // Get or create cached file handle for Zero-Copy reads
@@ -1752,5 +1752,273 @@ class T_TelegramFileDownloader(
     fun clearFileCache() {
         fileInfoCache.clear()
         println("[T_TelegramFileDownloader] File info cache cleared")
+    }
+
+    /**
+     * Ensure file ready with MP4 header validation (StreamingConfigRefactor integration).
+     *
+     * **TDLib Best Practices Strategy:**
+     * 1. Start progressive download: downloadFile(fileId, offset=0, limit=0, priority=32)
+     * 2. Poll file.local.downloaded_prefix_size until >= MIN_PREFIX_FOR_VALIDATION_BYTES
+     * 3. Use Mp4HeaderParser to validate complete moov atom
+     * 4. Return local path only when moov is complete (no hard thresholds)
+     *
+     * **This is the recommended method for video streaming starting 2025-12-03.**
+     * It replaces fixed byte thresholds with intelligent MP4 structure validation.
+     *
+     * @param fileId TDLib file ID
+     * @param timeoutMs Maximum wait time (default: 30 seconds from StreamingConfigRefactor)
+     * @return Local file path from TDLib cache
+     * @throws Exception if download fails, timeout occurs, or file is not streamable
+     */
+    suspend fun ensureFileReadyWithMp4Validation(
+        fileId: Int,
+        timeoutMs: Long = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
+    ): String = withContext(Dispatchers.IO) {
+        val startTimeMs = System.currentTimeMillis()
+
+        TelegramLogRepository.info(
+            source = "T_TelegramFileDownloader",
+            message = "ensureFileReadyWithMp4Validation: Starting download with MP4 header validation",
+            details = mapOf(
+                "fileId" to fileId.toString(),
+                "timeoutMs" to timeoutMs.toString(),
+                "minPrefixForValidation" to StreamingConfigRefactor.MIN_PREFIX_FOR_VALIDATION_BYTES.toString(),
+                "maxPrefixScan" to StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES.toString(),
+            ),
+        )
+
+        // Step 1: Start progressive download from offset=0, limit=0 (full file)
+        val downloadResult = client.downloadFile(
+            fileId = fileId,
+            priority = StreamingConfigRefactor.DOWNLOAD_PRIORITY_STREAMING,
+            offset = StreamingConfigRefactor.DOWNLOAD_OFFSET_START,
+            limit = StreamingConfigRefactor.DOWNLOAD_LIMIT_FULL,
+            synchronous = false, // Asynchronous for progressive streaming
+        )
+
+        when (downloadResult) {
+            is dev.g000sha256.tdl.TdlResult.Failure -> {
+                TelegramLogRepository.error(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Download initiation failed",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "error" to downloadResult.message,
+                    ),
+                )
+                throw Exception("Failed to start download for fileId=$fileId: ${downloadResult.message}")
+            }
+            is dev.g000sha256.tdl.TdlResult.Success -> {
+                // Download started successfully
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Download initiated",
+                    details = mapOf("fileId" to fileId.toString()),
+                )
+            }
+        }
+
+        // Step 2: Poll until minimum prefix is available for validation
+        var lastLoggedPrefixSize = 0L
+        var moovCheckStarted = false
+        var moovIncompleteWarningLogged = false
+
+        while (true) {
+            val elapsedMs = System.currentTimeMillis() - startTimeMs
+            if (elapsedMs > timeoutMs) {
+                TelegramLogRepository.error(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Timeout waiting for file download",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "elapsedMs" to elapsedMs.toString(),
+                        "timeoutMs" to timeoutMs.toString(),
+                    ),
+                )
+                throw Exception("Timeout waiting for file download: fileId=$fileId, elapsed=${elapsedMs}ms")
+            }
+
+            // Get fresh file state from TDLib
+            val file = getFreshFileState(fileId)
+            val localPath = file.local?.path
+            val downloadedPrefixSize = file.local?.downloadedPrefixSize?.toLong() ?: 0L
+            val isDownloadingCompleted = file.local?.isDownloadingCompleted ?: false
+
+            // Verbose logging (only log significant progress changes)
+            if (StreamingConfigRefactor.ENABLE_VERBOSE_LOGGING ||
+                downloadedPrefixSize - lastLoggedPrefixSize >= 256 * 1024
+            ) {
+                TelegramLogRepository.debug(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Download progress",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                        "isDownloadingCompleted" to isDownloadingCompleted.toString(),
+                        "elapsedMs" to elapsedMs.toString(),
+                    ),
+                )
+                lastLoggedPrefixSize = downloadedPrefixSize
+            }
+
+            // Check if we have minimum prefix for header validation
+            if (downloadedPrefixSize < StreamingConfigRefactor.MIN_PREFIX_FOR_VALIDATION_BYTES) {
+                delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                continue
+            }
+
+            // Check if local path is available
+            if (localPath.isNullOrBlank()) {
+                TelegramLogRepository.warn(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Local path not available yet",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                    ),
+                )
+                delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                continue
+            }
+
+            // Check if file exists
+            val localFile = java.io.File(localPath)
+            if (!localFile.exists()) {
+                TelegramLogRepository.warn(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Local file does not exist yet",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "localPath" to localPath,
+                    ),
+                )
+                delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                continue
+            }
+
+            // Step 3: Validate MP4 header
+            if (!moovCheckStarted) {
+                moovCheckStarted = true
+                TelegramLogRepository.info(
+                    source = "T_TelegramFileDownloader",
+                    message = "ensureFileReadyWithMp4Validation: Starting MP4 header validation",
+                    details = mapOf(
+                        "fileId" to fileId.toString(),
+                        "localPath" to localPath,
+                        "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                    ),
+                )
+            }
+
+            // Validate moov atom
+            val validationResult = Mp4HeaderParser.validateMoovAtom(localFile, downloadedPrefixSize)
+
+            when (validationResult) {
+                is Mp4HeaderParser.ValidationResult.MoovComplete -> {
+                    // SUCCESS: moov atom complete, ready for playback
+                    TelegramLogRepository.info(
+                        source = "T_TelegramFileDownloader",
+                        message = "ensureFileReadyWithMp4Validation: SUCCESS - MP4 header validation complete",
+                        details = mapOf(
+                            "fileId" to fileId.toString(),
+                            "localPath" to localPath,
+                            "moovOffset" to validationResult.moovOffset.toString(),
+                            "moovSize" to validationResult.moovSize.toString(),
+                            "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                            "elapsedMs" to elapsedMs.toString(),
+                        ),
+                    )
+                    return@withContext localPath
+                }
+
+                is Mp4HeaderParser.ValidationResult.MoovIncomplete -> {
+                    // moov started but not complete yet
+                    if (!moovIncompleteWarningLogged) {
+                        TelegramLogRepository.info(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReadyWithMp4Validation: MP4 moov atom incomplete, waiting",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "moovOffset" to validationResult.moovOffset.toString(),
+                                "moovSize" to validationResult.moovSize.toString(),
+                                "availableBytes" to validationResult.availableBytes.toString(),
+                                "remainingBytes" to (validationResult.moovOffset + validationResult.moovSize - validationResult.availableBytes).toString(),
+                            ),
+                        )
+                        moovIncompleteWarningLogged = true
+                    }
+                    delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                    continue
+                }
+
+                is Mp4HeaderParser.ValidationResult.MoovNotFound -> {
+                    // moov not found yet - check limits
+                    if (downloadedPrefixSize >= StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES) {
+                        TelegramLogRepository.error(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReadyWithMp4Validation: MP4 moov not found within scan limit",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                "maxPrefixScanBytes" to StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES.toString(),
+                                "scannedAtoms" to validationResult.scannedAtoms.joinToString(","),
+                            ),
+                        )
+                        throw Exception(
+                            "MP4 moov atom not found within ${StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES} bytes. " +
+                                "File not optimized for streaming (moov likely at end). " +
+                                "Scanned atoms: ${validationResult.scannedAtoms.joinToString(", ")}",
+                        )
+                    }
+
+                    // Download complete but moov not found
+                    if (isDownloadingCompleted) {
+                        TelegramLogRepository.error(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReadyWithMp4Validation: Download complete but moov not found",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                "scannedAtoms" to validationResult.scannedAtoms.joinToString(","),
+                            ),
+                        )
+                        throw Exception(
+                            "MP4 moov atom not found in complete file. " +
+                                "File may be corrupted or not valid MP4. " +
+                                "Scanned atoms: ${validationResult.scannedAtoms.joinToString(", ")}",
+                        )
+                    }
+
+                    // Keep waiting for more data
+                    if (StreamingConfigRefactor.ENABLE_VERBOSE_LOGGING) {
+                        TelegramLogRepository.debug(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReadyWithMp4Validation: moov not found yet, continuing",
+                            details = mapOf(
+                                "fileId" to fileId.toString(),
+                                "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                "scannedAtoms" to validationResult.scannedAtoms.joinToString(","),
+                            ),
+                        )
+                    }
+                    delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                    continue
+                }
+
+                is Mp4HeaderParser.ValidationResult.Invalid -> {
+                    // File format invalid
+                    TelegramLogRepository.error(
+                        source = "T_TelegramFileDownloader",
+                        message = "ensureFileReadyWithMp4Validation: MP4 header validation failed",
+                        details = mapOf(
+                            "fileId" to fileId.toString(),
+                            "reason" to validationResult.reason,
+                        ),
+                    )
+                    throw Exception("Invalid MP4 format: ${validationResult.reason}")
+                }
+            }
+        }
     }
 }

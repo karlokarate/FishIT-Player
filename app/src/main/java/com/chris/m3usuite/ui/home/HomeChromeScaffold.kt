@@ -59,9 +59,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.player.miniplayer.MiniPlayerOverlayContainer
+import com.chris.m3usuite.player.miniplayer.MiniPlayerSnapshot
+import com.chris.m3usuite.player.session.PlaybackSession
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
+import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
 import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
 import kotlinx.coroutines.flow.collectLatest
@@ -501,10 +504,28 @@ fun HomeChromeScaffold(
 
         // Phase 7: Global MiniPlayer overlay using Phase 7 MiniPlayerManager
         // This uses the unified PlaybackSession and MiniPlayerState from Phase 7
-        if (onMiniPlayerExpandToFullPlayer != null) {
+        // Always render by consuming LocalMiniPlayerResume from MainActivity
+        val miniPlayerResume = com.chris.m3usuite.ui.home.LocalMiniPlayerResume.current
+        if (miniPlayerResume != null) {
             MiniPlayerOverlayContainer(
                 miniPlayerManager = DefaultMiniPlayerManager,
-                onRequestFullPlayer = onMiniPlayerExpandToFullPlayer,
+                onRequestFullPlayer = {
+                    // Use the provided callback if available, otherwise use CompositionLocal
+                    if (onMiniPlayerExpandToFullPlayer != null) {
+                        onMiniPlayerExpandToFullPlayer()
+                    } else {
+                        // Fallback: use LocalMiniPlayerResume to navigate back to player
+                        val state = DefaultMiniPlayerManager.state.value
+                        if (state.visible && state.descriptor != null) {
+                            miniPlayerResume(
+                                com.chris.m3usuite.player.miniplayer.MiniPlayerSnapshot(
+                                    descriptor = state.descriptor,
+                                    positionMs = PlaybackSession.current()?.currentPosition ?: 0L,
+                                ),
+                            )
+                        }
+                    }
+                },
             )
         }
 
