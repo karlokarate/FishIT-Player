@@ -66,7 +66,7 @@ jobs:
       
       - name: Install Android SDK & NDK
         run: |
-          set -euxo pipefail
+          set -eo pipefail
           echo ">>> Accepting SDK licenses..."
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           
@@ -87,15 +87,21 @@ jobs:
       
       - name: Verify SDK & NDK installation
         run: |
-          set -euo pipefail
+          set -eo pipefail
           echo "=== Android SDK Root ==="
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}"
-          echo "ANDROID_HOME=${ANDROID_HOME}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
           ls -la "${ANDROID_SDK_ROOT}" || true
           
           echo -e "\n=== Android NDK Root ==="
-          echo "ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT}"
+          echo "ANDROID_NDK_ROOT=${ANDROID_NDK_ROOT:-}"
           ls -la "${ANDROID_NDK_ROOT}" || true
+          
+          # Verify ANDROID_NDK_ROOT is set and directory exists
+          if [[ -z "${ANDROID_NDK_ROOT:-}" ]]; then
+            echo "::error::ANDROID_NDK_ROOT is not set"
+            exit 1
+          fi
           
           if [[ ! -d "${ANDROID_NDK_ROOT}" ]]; then
             echo "::error::Android NDK not found at ${ANDROID_NDK_ROOT}"
@@ -110,7 +116,7 @@ jobs:
       
       - name: Clone FFmpegKit repository
         run: |
-          set -euo pipefail
+          set -eo pipefail
           echo ">>> Cloning FFmpegKit from arthenica/ffmpeg-kit (${FFMPEG_KIT_VERSION})..."
           
           if [[ "${FFMPEG_KIT_VERSION}" == "main" ]]; then
@@ -127,7 +133,7 @@ jobs:
       - name: Prepare build configuration
         id: config
         run: |
-          set -euo pipefail
+          set -eo pipefail
           
           # Build flags array
           BUILD_FLAGS=()
@@ -179,7 +185,7 @@ jobs:
       - name: Build FFmpegKit AAR
         working-directory: ffmpeg-kit
         run: |
-          set -euo pipefail
+          set -eo pipefail
           
           echo "=== Starting FFmpegKit build ==="
           echo "Build flags: ${{ steps.config.outputs.build_flags }}"
@@ -193,7 +199,7 @@ jobs:
         id: aar
         working-directory: ffmpeg-kit
         run: |
-          set -euo pipefail
+          set -eo pipefail
           
           echo "=== Searching for built AAR ==="
           find prebuilt -name "*.aar" -type f
@@ -226,7 +232,7 @@ jobs:
       - name: Extract AAR info
         working-directory: ffmpeg-kit
         run: |
-          set -euo pipefail
+          set -eo pipefail
           
           AAR_PATH="${{ steps.aar.outputs.aar_path }}"
           
@@ -238,7 +244,7 @@ jobs:
       
       - name: Prepare release artifacts
         run: |
-          set -euo pipefail
+          set -eo pipefail
           
           mkdir -p release-artifacts
           
