@@ -5,8 +5,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.RandomAccessFile
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 /**
  * Unit tests for Mp4HeaderParser.
@@ -144,8 +142,10 @@ class Mp4HeaderParserTest {
         // Parser should handle size=0 as "to end of file"
         // In this case, moov would be considered complete if it's the last atom
         // Exact behavior depends on implementation
-        assertTrue(result is Mp4HeaderParser.ValidationResult.MoovComplete ||
-                   result is Mp4HeaderParser.ValidationResult.Invalid)
+        assertTrue(
+            result is Mp4HeaderParser.ValidationResult.MoovComplete ||
+                result is Mp4HeaderParser.ValidationResult.Invalid,
+        )
     }
 
     @Test
@@ -220,7 +220,10 @@ class Mp4HeaderParserTest {
         raf.writeInt(0x6D703431) // 'mp41'
     }
 
-    private fun writeMoovAtom(raf: RandomAccessFile, size: Int) {
+    private fun writeMoovAtom(
+        raf: RandomAccessFile,
+        size: Int,
+    ) {
         raf.writeInt(size)
         raf.writeInt(0x6D6F6F76) // 'moov'
         // Fill remaining bytes with dummy data
@@ -230,7 +233,10 @@ class Mp4HeaderParserTest {
         }
     }
 
-    private fun writeMdatAtom(raf: RandomAccessFile, size: Int) {
+    private fun writeMdatAtom(
+        raf: RandomAccessFile,
+        size: Int,
+    ) {
         raf.writeInt(size)
         raf.writeInt(0x6D646174) // 'mdat'
         val remaining = size - 8
@@ -239,7 +245,10 @@ class Mp4HeaderParserTest {
         }
     }
 
-    private fun writeFreeAtom(raf: RandomAccessFile, size: Int) {
+    private fun writeFreeAtom(
+        raf: RandomAccessFile,
+        size: Int,
+    ) {
         raf.writeInt(size)
         raf.writeInt(0x66726565) // 'free'
         val remaining = size - 8

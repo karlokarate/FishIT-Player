@@ -96,11 +96,11 @@ class TelegramSettingsViewModel(
 
     /**
      * Auto-start Telegram engine if enabled is persisted as true and API credentials exist.
-     * 
+     *
      * IMPORTANT: This method is ALSO called by App.onCreate() in the application scope.
      * To prevent race conditions, we ensure this call is idempotent and waits properly
      * for the ServiceClient to be fully started before proceeding.
-     * 
+     *
      * This fixes the issue where users had to toggle OFF/ON after app restart.
      */
     private fun ensureStartedIfEnabled() {
@@ -118,7 +118,7 @@ class TelegramSettingsViewModel(
                 try {
                     // ensureStarted() is idempotent - safe to call even if App.onCreate() already started it
                     serviceClient.ensureStarted(app, store)
-                    
+
                     // Only call login() if NOT already Ready (prevents unnecessary calls)
                     if (serviceClient.authState.value !is TelegramAuthState.Ready) {
                         TelegramLogRepository.debug(

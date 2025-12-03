@@ -61,9 +61,9 @@ import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.player.miniplayer.MiniPlayerOverlayContainer
 import com.chris.m3usuite.ui.focus.FocusKit
+import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
-import com.chris.m3usuite.ui.home.LocalMiniPlayerResume
 import com.chris.m3usuite.ui.home.header.FishITHeaderHeights
 import com.chris.m3usuite.ui.home.header.rememberHeaderAlpha
 import kotlinx.coroutines.flow.collectLatest

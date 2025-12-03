@@ -9,12 +9,12 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.prefetch.TelegramThumbPrefetcher
-import java.io.Closeable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.Closeable
 
 class App : Application() {
     private var telemetryCloser: Closeable? = null
@@ -53,12 +53,14 @@ class App : Application() {
 
         // Phase 4: Create settings provider for prefetcher
         val settingsProvider =
-                com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder.get(this)
+            com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
+                .get(this)
 
         telegramPrefetcher = TelegramThumbPrefetcher(this, serviceClient, tgRepo, settingsProvider)
 
         // Register in holder for global access
-        com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder.set(telegramPrefetcher)
+        com.chris.m3usuite.telegram.prefetch.TelegramPrefetcherHolder
+            .set(telegramPrefetcher)
 
         applicationScope.launch { telegramPrefetcher.start(this) }
 
@@ -71,27 +73,27 @@ class App : Application() {
 
                 if (enabled && hasApiCreds) {
                     TelegramLogRepository.info(
-                            source = "App",
-                            message = "Auto-starting Telegram engine (tgEnabled=true persisted)",
+                        source = "App",
+                        message = "Auto-starting Telegram engine (tgEnabled=true persisted)",
                     )
                     try {
                         serviceClient.ensureStarted(this@App, store)
                         serviceClient.login() // Let TDLib determine if session is valid
                         TelegramLogRepository.info(
-                                source = "App",
-                                message = "Telegram auto-start completed successfully",
+                            source = "App",
+                            message = "Telegram auto-start completed successfully",
                         )
                     } catch (e: Exception) {
                         TelegramLogRepository.warn(
-                                source = "App",
-                                message = "Telegram auto-start failed: ${e.message}",
+                            source = "App",
+                            message = "Telegram auto-start failed: ${e.message}",
                         )
                     }
                 }
             } catch (e: Exception) {
                 TelegramLogRepository.warn(
-                        source = "App",
-                        message = "Failed to check Telegram auto-start condition: ${e.message}",
+                    source = "App",
+                    message = "Failed to check Telegram auto-start condition: ${e.message}",
                 )
             }
         }

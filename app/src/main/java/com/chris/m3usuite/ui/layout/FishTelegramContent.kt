@@ -56,20 +56,20 @@ private fun rememberTelegramFileLoader(): TelegramFileLoader {
  */
 @Composable
 fun FishTelegramContent(
-        mediaItem: MediaItem,
-        modifier: Modifier = Modifier,
-        showNew: Boolean = false,
-        resumeFraction: Float? = null,
-        onPlay: (() -> Unit)? = null,
-        onAssign: (() -> Unit)? = null,
-        onClick: () -> Unit,
+    mediaItem: MediaItem,
+    modifier: Modifier = Modifier,
+    showNew: Boolean = false,
+    resumeFraction: Float? = null,
+    onPlay: (() -> Unit)? = null,
+    onAssign: (() -> Unit)? = null,
+    onClick: () -> Unit,
 ) {
     val fileLoader = rememberTelegramFileLoader()
 
     var thumbPath by
-            remember(mediaItem.posterId, mediaItem.localPosterPath) {
-                mutableStateOf(mediaItem.localPosterPath)
-            }
+        remember(mediaItem.posterId, mediaItem.localPosterPath) {
+            mutableStateOf(mediaItem.localPosterPath)
+        }
 
     LaunchedEffect(mediaItem.posterId) {
         if (thumbPath == null && mediaItem.posterId != null) {
@@ -84,37 +84,37 @@ fun FishTelegramContent(
         "series" -> {
             // Use SeriesFishTile style for series content
             FishTile(
-                    title = mediaItem.name,
-                    poster = posterModel,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = resumeFraction,
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = mediaItem.name,
+                poster = posterModel,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
         "episode" -> {
             // Use standard tile with episode indicator
             FishTile(
-                    title = mediaItem.name,
-                    poster = posterModel,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = resumeFraction,
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = mediaItem.name,
+                poster = posterModel,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
         else -> {
             // Default VOD/Movie/Clip/Archive style
             FishTile(
-                    title = mediaItem.name,
-                    poster = posterModel,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = resumeFraction,
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = mediaItem.name,
+                poster = posterModel,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
     }
@@ -124,15 +124,15 @@ fun FishTelegramContent(
 @Composable
 private fun TelegramBadge() {
     Box(
-            modifier =
-                    Modifier.size(32.dp).background(Color(0xFF0088CC), CircleShape).padding(4.dp),
-            contentAlignment = Alignment.Center,
+        modifier =
+            Modifier.size(32.dp).background(Color(0xFF0088CC), CircleShape).padding(4.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-                text = "T",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+            text = "T",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -161,11 +161,11 @@ private fun TelegramBadge() {
  */
 @Composable
 fun FishTelegramItemContent(
-        item: TelegramItem,
-        modifier: Modifier = Modifier,
-        showNew: Boolean = false,
-        resumeFraction: Float? = null,
-        onClick: () -> Unit,
+    item: TelegramItem,
+    modifier: Modifier = Modifier,
+    showNew: Boolean = false,
+    resumeFraction: Float? = null,
+    onClick: () -> Unit,
 ) {
     val fileLoader = rememberTelegramFileLoader()
 
@@ -190,49 +190,49 @@ fun FishTelegramItemContent(
     when (item.type) {
         TelegramItemType.SERIES_EPISODE -> {
             FishTile(
-                    title = title,
-                    poster = thumbPath,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = resumeFraction,
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
-        TelegramItemType.AUDIOBOOK, TelegramItemType.RAR_ITEM, -> {
+        TelegramItemType.AUDIOBOOK, TelegramItemType.RAR_ITEM -> {
             // Archive/audiobook items get a different visual treatment
             FishTile(
-                    title = title,
-                    poster = thumbPath,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = null, // No resume for archives
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = null, // No resume for archives
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
         TelegramItemType.POSTER_ONLY -> {
             // Poster-only items (no video)
             FishTile(
-                    title = title,
-                    poster = thumbPath,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = null, // No resume for poster-only
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = null, // No resume for poster-only
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
         else -> {
             // MOVIE, CLIP - standard VOD treatment
             FishTile(
-                    title = title,
-                    poster = thumbPath,
-                    modifier = modifier,
-                    showNew = showNew,
-                    resumeFraction = resumeFraction,
-                    topStartBadge = { TelegramBadge() },
-                    onClick = onClick,
+                title = title,
+                poster = thumbPath,
+                modifier = modifier,
+                showNew = showNew,
+                resumeFraction = resumeFraction,
+                topStartBadge = { TelegramBadge() },
+                onClick = onClick,
             )
         }
     }
@@ -252,23 +252,23 @@ fun FishTelegramItemContent(
  */
 @Composable
 fun FishTelegramItemRow(
-        items: List<TelegramItem>,
-        stateKey: String,
-        title: String,
-        modifier: Modifier = Modifier,
-        onItemClick: (TelegramItem) -> Unit,
+    items: List<TelegramItem>,
+    stateKey: String,
+    title: String,
+    modifier: Modifier = Modifier,
+    onItemClick: (TelegramItem) -> Unit,
 ) {
     FishRowLight(
-            stateKey = stateKey,
-            itemCount = items.size,
-            itemKey = { idx -> items[idx].anchorMessageId },
-            modifier = modifier,
-            title = title,
+        stateKey = stateKey,
+        itemCount = items.size,
+        itemKey = { idx -> items[idx].anchorMessageId },
+        modifier = modifier,
+        title = title,
     ) { index ->
         val item = items[index]
         FishTelegramItemContent(
-                item = item,
-                onClick = { onItemClick(item) },
+            item = item,
+            onClick = { onItemClick(item) },
         )
     }
 }
@@ -279,26 +279,26 @@ fun FishTelegramItemRow(
  */
 @Composable
 fun FishTelegramRow(
-        items: List<MediaItem>,
-        stateKey: String,
-        title: String,
-        modifier: Modifier = Modifier,
-        onItemClick: (MediaItem) -> Unit,
+    items: List<MediaItem>,
+    stateKey: String,
+    title: String,
+    modifier: Modifier = Modifier,
+    onItemClick: (MediaItem) -> Unit,
 ) {
     FishRow(
-            items = items,
-            stateKey = stateKey,
-            title = title,
-            modifier = modifier,
-            header =
-                    FishHeaderData.Text(
-                            text = title,
-                            anchorKey = "telegram_$stateKey",
-                    ),
+        items = items,
+        stateKey = stateKey,
+        title = title,
+        modifier = modifier,
+        header =
+            FishHeaderData.Text(
+                text = title,
+                anchorKey = "telegram_$stateKey",
+            ),
     ) { item ->
         FishTelegramContent(
-                mediaItem = item,
-                onClick = { onItemClick(item) },
+            mediaItem = item,
+            onClick = { onItemClick(item) },
         )
     }
 }

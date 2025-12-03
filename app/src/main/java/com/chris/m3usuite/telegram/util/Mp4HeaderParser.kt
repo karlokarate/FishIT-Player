@@ -42,16 +42,28 @@ object Mp4HeaderParser {
      */
     sealed class ValidationResult {
         /** moov atom found and completely within available data */
-        data class MoovComplete(val moovOffset: Long, val moovSize: Long) : ValidationResult()
+        data class MoovComplete(
+            val moovOffset: Long,
+            val moovSize: Long,
+        ) : ValidationResult()
 
         /** moov atom found but not yet complete */
-        data class MoovIncomplete(val moovOffset: Long, val moovSize: Long, val availableBytes: Long) : ValidationResult()
+        data class MoovIncomplete(
+            val moovOffset: Long,
+            val moovSize: Long,
+            val availableBytes: Long,
+        ) : ValidationResult()
 
         /** moov atom not yet found in available data */
-        data class MoovNotFound(val availableBytes: Long, val scannedAtoms: List<String>) : ValidationResult()
+        data class MoovNotFound(
+            val availableBytes: Long,
+            val scannedAtoms: List<String>,
+        ) : ValidationResult()
 
         /** File format invalid or corrupted */
-        data class Invalid(val reason: String) : ValidationResult()
+        data class Invalid(
+            val reason: String,
+        ) : ValidationResult()
     }
 
     /**
@@ -61,7 +73,10 @@ object Mp4HeaderParser {
      * @param availableBytes Number of bytes downloaded by TDLib (from downloaded_prefix_size)
      * @return ValidationResult indicating moov atom status
      */
-    fun validateMoovAtom(file: File, availableBytes: Long): ValidationResult {
+    fun validateMoovAtom(
+        file: File,
+        availableBytes: Long,
+    ): ValidationResult {
         if (!file.exists() || !file.canRead()) {
             return ValidationResult.Invalid("File does not exist or is not readable: ${file.path}")
         }
@@ -85,7 +100,10 @@ object Mp4HeaderParser {
     /**
      * Scan MP4 file for moov atom within available bytes.
      */
-    private fun scanForMoov(raf: RandomAccessFile, availableBytes: Long): ValidationResult {
+    private fun scanForMoov(
+        raf: RandomAccessFile,
+        availableBytes: Long,
+    ): ValidationResult {
         val scannedAtoms = mutableListOf<String>()
         var offset = 0L
 
@@ -101,25 +119,31 @@ object Mp4HeaderParser {
                 break // EOF or read error
             }
 
-            val atomSize = ByteBuffer.wrap(sizeBytes).order(ByteOrder.BIG_ENDIAN).int.toLong()
+            val atomSize =
+                ByteBuffer
+                    .wrap(sizeBytes)
+                    .order(ByteOrder.BIG_ENDIAN)
+                    .int
+                    .toLong()
             val atomType = ByteBuffer.wrap(typeBytes).order(ByteOrder.BIG_ENDIAN).int
 
             // Handle extended size (atomSize == 1 means 64-bit size follows)
-            val actualSize = if (atomSize == 1L) {
-                if (offset + 16 > availableBytes) {
-                    // Can't read extended size yet
-                    break
+            val actualSize =
+                if (atomSize == 1L) {
+                    if (offset + 16 > availableBytes) {
+                        // Can't read extended size yet
+                        break
+                    }
+                    raf.seek(offset + 8)
+                    val extSizeBytes = ByteArray(8)
+                    if (raf.read(extSizeBytes) != 8) break
+                    ByteBuffer.wrap(extSizeBytes).order(ByteOrder.BIG_ENDIAN).long
+                } else if (atomSize == 0L) {
+                    // atomSize 0 means "to end of file" - not useful for our validation
+                    availableBytes - offset
+                } else {
+                    atomSize
                 }
-                raf.seek(offset + 8)
-                val extSizeBytes = ByteArray(8)
-                if (raf.read(extSizeBytes) != 8) break
-                ByteBuffer.wrap(extSizeBytes).order(ByteOrder.BIG_ENDIAN).long
-            } else if (atomSize == 0L) {
-                // atomSize 0 means "to end of file" - not useful for our validation
-                availableBytes - offset
-            } else {
-                atomSize
-            }
 
             // Validate size sanity
             if (actualSize < ATOM_HEADER_SIZE) {
@@ -171,7 +195,12 @@ object Mp4HeaderParser {
      * Convert 4-byte atom type to readable string.
      */
     private fun atomTypeToString(type: Int): String {
-        val bytes = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(type).array()
+        val bytes =
+            ByteBuffer
+                .allocate(4)
+                .order(ByteOrder.BIG_ENDIAN)
+                .putInt(type)
+                .array()
         return String(bytes, Charsets.ISO_8859_1)
     }
 
