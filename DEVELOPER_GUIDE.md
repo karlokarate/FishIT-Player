@@ -536,6 +536,60 @@ Add to debug builds:
 debugImplementation("com.squareup.leakcanary:leakcanary-android:...")
 ```
 
+## Custom FFmpegKit Build
+
+FishIT-Player includes a workflow to build custom FFmpegKit AARs from source for optimized size and features.
+
+### Quick Start
+
+1. Go to **Actions** → **Build Custom FFmpegKit AAR**
+2. Select a preset (Minimal, Standard, or Full GPL)
+3. Click **Run workflow**
+4. Download the AAR artifact when complete
+5. Follow integration guide to use in the app
+
+### Documentation
+
+- **Build Guide**: `docs/FFMPEGKIT_BUILD.md` - Complete workflow documentation
+- **Integration Guide**: `docs/FFMPEGKIT_INTEGRATION.md` - How to use the custom AAR
+- **Presets**: `docs/FFMPEGKIT_PRESETS.md` - Ready-to-use build configurations
+
+### Build Presets
+
+**Minimal (Recommended for most uses)**
+- ARM64 only, basic codecs, smallest size (~15-20 MB)
+- Build time: ~45-60 minutes
+
+**Standard Modern Codecs**
+- ARM64 + ARM v7a, VP9/AV1/Opus support, HTTPS
+- Size: ~35-45 MB, Build time: ~90-120 minutes
+
+**Full GPL (Encoding)**
+- All features including x264/x265 encoders
+- Size: ~60-80 MB, Build time: ~150-180 minutes
+- ⚠️ GPL license applies to entire app
+
+### Why Custom Build?
+
+- **Size Optimization**: 50-70% smaller than full FFmpegKit packages
+- **Clean Build**: Built from verified source, no binary merging
+- **Feature Control**: Include only needed codecs and features
+- **ABI Selection**: Target specific architectures (ARM64, ARM v7a)
+
+### Current Usage
+
+The project currently uses Jellyfin's Media3 FFmpeg decoder:
+```kotlin
+implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.8.0+1")
+```
+
+To use a custom FFmpegKit AAR instead:
+```kotlin
+implementation(files("libs/ffmpeg-kit-custom.aar"))
+```
+
+See `docs/FFMPEGKIT_INTEGRATION.md` for complete integration instructions.
+
 ## Contributing
 
 1. Create a feature branch from `master`
@@ -552,3 +606,4 @@ debugImplementation("com.squareup.leakcanary:leakcanary-android:...")
 - [Media3 Documentation](https://developer.android.com/media/media3)
 - [ObjectBox Documentation](https://docs.objectbox.io/)
 - [Detekt Rules](https://detekt.dev/docs/rules/complexity)
+- [FFmpegKit Documentation](https://github.com/arthenica/ffmpeg-kit/wiki)
