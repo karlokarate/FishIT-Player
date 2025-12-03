@@ -76,6 +76,10 @@ class TelegramFileLoader(
      *
      * This is designed to be called from LaunchedEffect in tiles.
      *
+     * **CancellationException Handling:**
+     * - CancellationException is propagated as-is (benign cancellation)
+     * - Only true TDLib/IO failures are logged as errors
+     *
      * @param ref TelegramImageRef with remoteId/uniqueId/fileId
      * @param timeoutMs Maximum time to wait for download
      * @return Local file path or null
@@ -84,109 +88,117 @@ class TelegramFileLoader(
         ref: TelegramImageRef,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     ): String? {
-        // 0) Check Telegram service state – fail fast if not started
-        if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
-            TelegramLogRepository.debug(
-                source = TAG,
-                message = "Skipping thumb download – Telegram not ready",
-                details =
-                    mapOf(
-                        "remoteId" to ref.remoteId,
-                        "isStarted" to serviceClient.isStarted.toString(),
-                        "isAuthReady" to serviceClient.isAuthReady().toString(),
-                    ),
-            )
-            return null
-        }
-
-        // 1) If we have a fileId, try it once
-        val cachedFileId = ref.fileId?.takeIf { it > 0 }
-        if (cachedFileId != null) {
-            try {
-                val result = tryDownloadThumbByFileId(cachedFileId, timeoutMs)
-                when (result) {
-                    is ThumbResult.Success -> return result.localPath
-                    is ThumbResult.NotFound404 -> {
-                        // Mark this fileId as stale for this session
-                        TelegramLogRepository.warn(
-                            source = TAG,
-                            message = "Stale fileId, will fall back to remoteId",
-                            details =
-                                mapOf(
-                                    "staleFileId" to cachedFileId.toString(),
-                                    "remoteId" to ref.remoteId,
-                                ),
-                        )
-                        // Continue to remoteId resolution
-                    }
-                    is ThumbResult.OtherError -> {
-                        // For other errors (network, timeout), log and return null
-                        TelegramLogRepository.debug(
-                            source = TAG,
-                            message = "ensureThumbDownloaded failed with non-404 error",
-                            details =
-                                mapOf(
-                                    "fileId" to cachedFileId.toString(),
-                                    "remoteId" to ref.remoteId,
-                                    "error" to result.message,
-                                ),
-                        )
-                        return null
-                    }
-                }
-            } catch (e: Exception) {
-                // Unexpected exception, log and continue to remoteId
-                TelegramLogRepository.error(
+        try {
+            // 0) Check Telegram service state – fail fast if not started
+            if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
+                TelegramLogRepository.debug(
                     source = TAG,
-                    message = "Unexpected exception during fileId download, will try remoteId resolution",
-                    exception = e,
+                    message = "Skipping thumb download – Telegram not ready",
                     details =
                         mapOf(
-                            "fileId" to cachedFileId.toString(),
                             "remoteId" to ref.remoteId,
+                            "isStarted" to serviceClient.isStarted.toString(),
+                            "isAuthReady" to serviceClient.isAuthReady().toString(),
                         ),
                 )
+                return null
             }
-        }
 
-        // 2) Resolve a fresh fileId via remoteId in the current TDLib DB
-        val remoteId = ref.remoteId
-        if (remoteId.isBlank()) {
-            TelegramLogRepository.warn(
-                source = TAG,
-                message = "No remoteId available for fallback",
-            )
-            return null
-        }
+            // 1) If we have a fileId, try it once
+            val cachedFileId = ref.fileId?.takeIf { it > 0 }
+            if (cachedFileId != null) {
+                try {
+                    val result = tryDownloadThumbByFileId(cachedFileId, timeoutMs)
+                    when (result) {
+                        is ThumbResult.Success -> return result.localPath
+                        is ThumbResult.NotFound404 -> {
+                            // Mark this fileId as stale for this session
+                            TelegramLogRepository.warn(
+                                source = TAG,
+                                message = "Stale fileId, will fall back to remoteId",
+                                details =
+                                    mapOf(
+                                        "staleFileId" to cachedFileId.toString(),
+                                        "remoteId" to ref.remoteId,
+                                    ),
+                            )
+                            // Continue to remoteId resolution
+                        }
+                        is ThumbResult.OtherError -> {
+                            // For other errors (network, timeout), log and return null
+                            TelegramLogRepository.debug(
+                                source = TAG,
+                                message = "ensureThumbDownloaded failed with non-404 error",
+                                details =
+                                    mapOf(
+                                        "fileId" to cachedFileId.toString(),
+                                        "remoteId" to ref.remoteId,
+                                        "error" to result.message,
+                                    ),
+                            )
+                            return null
+                        }
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // Propagate cancellation as-is (benign)
+                    throw e
+                } catch (e: Exception) {
+                    // Unexpected exception, log and continue to remoteId
+                    TelegramLogRepository.error(
+                        source = TAG,
+                        message = "Unexpected exception during fileId download, will try remoteId resolution",
+                        exception = e,
+                        details =
+                            mapOf(
+                                "fileId" to cachedFileId.toString(),
+                                "remoteId" to ref.remoteId,
+                            ),
+                    )
+                }
+            }
 
-        val newFileId = downloader.resolveRemoteFileId(remoteId)
-        if (newFileId == null || newFileId <= 0) {
-            // Log once per remoteId (avoid spam)
-            if (logged404RemoteIds.add(remoteId)) {
+            // 2) Resolve a fresh fileId via remoteId in the current TDLib DB
+            val remoteId = ref.remoteId
+            if (remoteId.isBlank()) {
                 TelegramLogRepository.warn(
                     source = TAG,
-                    message = "remoteId resolution failed (404)",
-                    details = mapOf("remoteId" to remoteId),
+                    message = "No remoteId available for fallback",
                 )
+                return null
             }
-            return null
-        }
 
-        TelegramLogRepository.debug(
-            source = TAG,
-            message = "remoteId resolved to new fileId",
-            details =
-                mapOf(
-                    "remoteId" to remoteId,
-                    "newFileId" to newFileId.toString(),
-                ),
-        )
+            val newFileId = downloader.resolveRemoteFileId(remoteId)
+            if (newFileId == null || newFileId <= 0) {
+                // Log once per remoteId (avoid spam)
+                if (logged404RemoteIds.add(remoteId)) {
+                    TelegramLogRepository.warn(
+                        source = TAG,
+                        message = "remoteId resolution failed (404)",
+                        details = mapOf("remoteId" to remoteId),
+                    )
+                }
+                return null
+            }
 
-        // 3) Download thumb via new fileId
-        val result = tryDownloadThumbByFileId(newFileId, timeoutMs)
-        return when (result) {
-            is ThumbResult.Success -> result.localPath
-            else -> null
+            TelegramLogRepository.debug(
+                source = TAG,
+                message = "remoteId resolved to new fileId",
+                details =
+                    mapOf(
+                        "remoteId" to remoteId,
+                        "newFileId" to newFileId.toString(),
+                    ),
+            )
+
+            // 3) Download thumb via new fileId
+            val result = tryDownloadThumbByFileId(newFileId, timeoutMs)
+            return when (result) {
+                is ThumbResult.Success -> result.localPath
+                else -> null
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Propagate cancellation as-is (benign) - do not log as error
+            throw e
         }
     }
 
@@ -214,6 +226,11 @@ class TelegramFileLoader(
      * - Waits for isDownloadingCompleted==true
      * - Verifies local file length matches expectedSize
      * - No partial/prefix downloads for thumbnails
+     *
+     * **CancellationException Handling:**
+     * - CancellationException is treated as a benign cancellation, not an error
+     * - Logged at DEBUG level only
+     * - Does NOT count as a failure for prefetch diagnostics
      */
     private suspend fun tryDownloadThumbByFileId(
         fileId: Int,
@@ -397,6 +414,15 @@ class TelegramFileLoader(
                 // Wait before next poll
                 kotlinx.coroutines.delay(100L)
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // CancellationException is benign - scope was cancelled (e.g., prefetcher paused)
+            // Log at DEBUG level only, not as an error
+            TelegramLogRepository.debug(
+                source = TAG,
+                message = "Thumb download cancelled by scope, not a TDLib error",
+                details = mapOf("fileId" to fileId.toString()),
+            )
+            throw e // Re-throw to propagate cancellation
         } catch (e: Exception) {
             val message = e.message ?: ""
             return if (message.contains("404", ignoreCase = true) || message.contains("not found", ignoreCase = true)) {
@@ -544,6 +570,10 @@ class TelegramFileLoader(
      * Constraint: NO TDLib calls in Composables - all image loading goes
      * through this infra-level helper.
      *
+     * **CancellationException Handling:**
+     * - CancellationException is logged at DEBUG level only
+     * - Does not propagate cancellation to caller (fire-and-forget)
+     *
      * @param posterRef Poster image reference (may be null)
      * @param backdropRef Backdrop image reference (may be null)
      */
@@ -586,6 +616,13 @@ class TelegramFileLoader(
                         message = "prefetchImages: Poster prefetched",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // Cancellation is benign - log at DEBUG only
+                    TelegramLogRepository.debug(
+                        source = TAG,
+                        message = "prefetchImages: Poster prefetch cancelled (scope cancelled)",
+                        details = mapOf("remoteId" to ref.remoteId),
+                    )
                 } catch (e: Exception) {
                     TelegramLogRepository.debug(
                         source = TAG,
@@ -602,6 +639,13 @@ class TelegramFileLoader(
                     TelegramLogRepository.debug(
                         source = TAG,
                         message = "prefetchImages: Backdrop prefetched",
+                        details = mapOf("remoteId" to ref.remoteId),
+                    )
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // Cancellation is benign - log at DEBUG only
+                    TelegramLogRepository.debug(
+                        source = TAG,
+                        message = "prefetchImages: Backdrop prefetch cancelled (scope cancelled)",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
                 } catch (e: Exception) {

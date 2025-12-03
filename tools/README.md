@@ -97,3 +97,13 @@ coroutineScope.launch {
 
 > [!TIP]
 > You can use the `.toResult()` extension to convert the `TdlResult<T>` into the standard `Kotlin` `Result<T>`.
+
+## FFmpegKit Custom Build
+
+This directory also contains `fishit_ffmpeg_customkit.sh`, which is used by the GitHub Actions workflow at `.github/workflows/build-ffmpegkit.yml` to build a custom, optimized FFmpegKit AAR for FishIT-Player.
+
+**Important**: The workflow uses Android NDK 25.2.9519653 (r25c) for compatibility with FFmpegKit v6.0. NDK r27 and newer versions are not compatible due to build system changes.
+
+For more information about the FFmpegKit build process, see:
+- `docs/FFMPEGKIT_BUILD.md` - Complete build workflow documentation
+- `docs/FFMPEGKIT_IMPLEMENTATION.md` - Implementation details and architecture

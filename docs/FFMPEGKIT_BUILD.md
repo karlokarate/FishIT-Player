@@ -78,7 +78,7 @@ enable_external_libs: true
    - Ubuntu 24.04 runner
    - Java 21 (Temurin)
    - Android SDK 36
-   - Android NDK 27.2.12479018
+   - Android NDK 25.2.9519653 (NDK r25c, required for FFmpegKit v6.0 compatibility)
 
 2. **FFmpegKit Clone**
    - Clones from `https://github.com/arthenica/ffmpeg-kit`
@@ -224,9 +224,10 @@ sha256sum ffmpeg-kit-custom.aar
 
 **Problem**: NDK version mismatch or missing.
 
-**Solution**: The workflow uses NDK 27.2.12479018. If build fails, check:
+**Solution**: The workflow uses NDK 25.2.9519653 (r25c), which is compatible with FFmpegKit v6.0. If build fails, check:
 1. FFmpegKit compatibility with this NDK version
-2. Update `ANDROID_NDK_VERSION` in workflow if needed
+2. Note: NDK r27 is NOT compatible with FFmpegKit v6.0 due to build system changes
+3. Update `ANDROID_NDK_VERSION` in workflow only if using a different FFmpegKit version
 
 ### AAR Not Found After Build
 
