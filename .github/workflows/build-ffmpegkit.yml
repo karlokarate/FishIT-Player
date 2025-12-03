@@ -167,23 +167,23 @@ jobs:
           sha256sum fishit-ffmpegkit-slim-lts.aar > checksums.txt
 
           cat > build-info.txt <<EOFINFO
-FishIT-Player FFmpegKit Slim LTS Build
-======================================
+          FishIT-Player FFmpegKit Slim LTS Build
+          ======================================
 
-Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-FFmpegKit Version: ${FFMPEG_KIT_VERSION}
-Repository: https://github.com/arthenica/ffmpeg-kit
-Commit: $(cd ../ffmpeg-kit && git rev-parse HEAD)
+          Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          FFmpegKit Version: ${FFMPEG_KIT_VERSION}
+          Repository: https://github.com/arthenica/ffmpeg-kit
+          Commit: $(cd ../ffmpeg-kit && git rev-parse HEAD)
 
-AAR Details:
-------------
-Filename: $(basename fishit-ffmpegkit-slim-lts.aar)
-Size: ${{ steps.aar.outputs.aar_size }}
-SHA256: ${{ steps.aar.outputs.aar_sha256 }}
+          AAR Details:
+          ------------
+          Filename: $(basename fishit-ffmpegkit-slim-lts.aar)
+          Size: ${{ steps.aar.outputs.aar_size }}
+          SHA256: ${{ steps.aar.outputs.aar_sha256 }}
 
-NDK Version: ${ANDROID_NDK_VERSION}
-API Level (FFMPEGKIT_API_LEVEL): ${FFMPEGKIT_API_LEVEL}
-EOFINFO
+          NDK Version: ${ANDROID_NDK_VERSION}
+          API Level (FFMPEGKIT_API_LEVEL): ${FFMPEGKIT_API_LEVEL}
+          EOFINFO
 
           cat build-info.txt
 
