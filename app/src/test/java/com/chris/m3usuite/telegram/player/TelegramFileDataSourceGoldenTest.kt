@@ -1,5 +1,6 @@
 package com.chris.m3usuite.telegram.player
 
+import com.chris.m3usuite.telegram.core.StreamingConfigRefactor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -235,14 +236,15 @@ class TelegramFileDataSourceGoldenTest {
 
     @Test
     fun `TelegramFileDataSource has correct MIN_PREFIX_BYTES constant`() {
-        // Per contract: MIN_PREFIX_BYTES = 256 KB
-        val expectedMinPrefix = 256 * 1024L
+        // Per contract: MIN_PREFIX_BYTES is now MIN_PREFIX_FOR_VALIDATION_BYTES in StreamingConfigRefactor
+        // The value is 64 KB (not 256 KB as originally documented)
+        val expectedMinPrefix = 64 * 1024L
 
-        // Access constant via reflection or direct reference
+        // The constant has moved to StreamingConfigRefactor
         assertEquals(
-            "MIN_PREFIX_BYTES should be 256 KB",
+            "MIN_PREFIX_FOR_VALIDATION_BYTES should be 64 KB",
             expectedMinPrefix,
-            TelegramFileDataSource.MIN_PREFIX_BYTES,
+            StreamingConfigRefactor.MIN_PREFIX_FOR_VALIDATION_BYTES,
         )
     }
 

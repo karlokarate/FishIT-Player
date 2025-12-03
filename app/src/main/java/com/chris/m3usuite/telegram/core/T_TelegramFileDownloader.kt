@@ -1764,16 +1764,24 @@ class T_TelegramFileDownloader(
      * 3. Use Mp4HeaderParser to validate complete moov atom
      * 4. Return local path only when moov is complete (no hard thresholds)
      *
+     * **Stale FileId Handling (Phase D+):**
+     * - If downloadFile fails with "File not found" error and remoteId is provided
+     * - Automatically resolves remoteId to fresh fileId via resolveRemoteFileId()
+     * - Retries download with new fileId
+     * - Logs "Stale fileId, will fall back to remoteId" matching thumbnail pattern
+     *
      * **This is the recommended method for video streaming starting 2025-12-03.**
      * It replaces fixed byte thresholds with intelligent MP4 structure validation.
      *
      * @param fileId TDLib file ID
+     * @param remoteId Optional stable remote file ID for stale fileId fallback
      * @param timeoutMs Maximum wait time (default: 30 seconds from StreamingConfigRefactor)
      * @return Local file path from TDLib cache
      * @throws Exception if download fails, timeout occurs, or file is not streamable
      */
     suspend fun ensureFileReadyWithMp4Validation(
         fileId: Int,
+        remoteId: String? = null,
         timeoutMs: Long = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
     ): String = withContext(Dispatchers.IO) {
         val startTimeMs = System.currentTimeMillis()
@@ -1783,15 +1791,18 @@ class T_TelegramFileDownloader(
             message = "ensureFileReadyWithMp4Validation: Starting download with MP4 header validation",
             details = mapOf(
                 "fileId" to fileId.toString(),
+                "remoteId" to (remoteId ?: "none"),
                 "timeoutMs" to timeoutMs.toString(),
                 "minPrefixForValidation" to StreamingConfigRefactor.MIN_PREFIX_FOR_VALIDATION_BYTES.toString(),
                 "maxPrefixScan" to StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES.toString(),
             ),
         )
 
-        // Step 1: Start progressive download from offset=0, limit=0 (full file)
-        val downloadResult = client.downloadFile(
-            fileId = fileId,
+        // Step 1: Try to start progressive download from offset=0, limit=0 (full file)
+        // If this fails with 404 and we have remoteId, resolve and retry
+        var actualFileId = fileId
+        var downloadResult = client.downloadFile(
+            fileId = actualFileId,
             priority = StreamingConfigRefactor.DOWNLOAD_PRIORITY_STREAMING,
             offset = StreamingConfigRefactor.DOWNLOAD_OFFSET_START,
             limit = StreamingConfigRefactor.DOWNLOAD_LIMIT_FULL,
@@ -1800,22 +1811,107 @@ class T_TelegramFileDownloader(
 
         when (downloadResult) {
             is dev.g000sha256.tdl.TdlResult.Failure -> {
-                TelegramLogRepository.error(
-                    source = "T_TelegramFileDownloader",
-                    message = "ensureFileReadyWithMp4Validation: Download initiation failed",
-                    details = mapOf(
-                        "fileId" to fileId.toString(),
-                        "error" to downloadResult.message,
-                    ),
-                )
-                throw Exception("Failed to start download for fileId=$fileId: ${downloadResult.message}")
+                // Check if this is a 404/"File not found" error and we have remoteId for fallback
+                val errorMessage = downloadResult.message
+                val is404Error = errorMessage.contains("404", ignoreCase = true) || 
+                                 errorMessage.contains("not found", ignoreCase = true) ||
+                                 errorMessage.contains("file not found", ignoreCase = true)
+
+                if (is404Error && !remoteId.isNullOrBlank()) {
+                    // Log stale fileId warning (matching thumbnail pattern)
+                    TelegramLogRepository.warn(
+                        source = "T_TelegramFileDownloader",
+                        message = "Stale fileId, will fall back to remoteId",
+                        details = mapOf(
+                            "staleFileId" to actualFileId.toString(),
+                            "remoteId" to remoteId,
+                        ),
+                    )
+
+                    // Resolve remoteId to fresh fileId
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "Resolving remoteId to fileId",
+                        details = mapOf("remoteId" to remoteId),
+                    )
+
+                    val newFileId = resolveRemoteFileId(remoteId)
+                    if (newFileId == null || newFileId <= 0) {
+                        TelegramLogRepository.error(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReadyWithMp4Validation: remoteId resolution failed after 404",
+                            details = mapOf(
+                                "staleFileId" to actualFileId.toString(),
+                                "remoteId" to remoteId,
+                            ),
+                        )
+                        throw Exception("Failed to resolve remoteId=$remoteId after stale fileId=$actualFileId")
+                    }
+
+                    TelegramLogRepository.debug(
+                        source = "T_TelegramFileDownloader",
+                        message = "Resolved remoteId to fileId",
+                        details = mapOf(
+                            "remoteId" to remoteId,
+                            "newFileId" to newFileId.toString(),
+                        ),
+                    )
+
+                    // Update actualFileId and retry download
+                    actualFileId = newFileId
+                    downloadResult = client.downloadFile(
+                        fileId = actualFileId,
+                        priority = StreamingConfigRefactor.DOWNLOAD_PRIORITY_STREAMING,
+                        offset = StreamingConfigRefactor.DOWNLOAD_OFFSET_START,
+                        limit = StreamingConfigRefactor.DOWNLOAD_LIMIT_FULL,
+                        synchronous = false,
+                    )
+
+                    // Check retry result
+                    when (downloadResult) {
+                        is dev.g000sha256.tdl.TdlResult.Failure -> {
+                            TelegramLogRepository.error(
+                                source = "T_TelegramFileDownloader",
+                                message = "ensureFileReadyWithMp4Validation: Download failed even after remoteId resolution",
+                                details = mapOf(
+                                    "newFileId" to actualFileId.toString(),
+                                    "error" to downloadResult.message,
+                                ),
+                            )
+                            throw Exception("Failed to start download for resolved fileId=$actualFileId: ${downloadResult.message}")
+                        }
+                        is dev.g000sha256.tdl.TdlResult.Success -> {
+                            TelegramLogRepository.info(
+                                source = "T_TelegramFileDownloader",
+                                message = "ensureFileReadyWithMp4Validation: Download initiated after remoteId resolution",
+                                details = mapOf(
+                                    "staleFileId" to fileId.toString(),
+                                    "newFileId" to actualFileId.toString(),
+                                ),
+                            )
+                        }
+                    }
+                } else {
+                    // Not a 404 or no remoteId available - fail immediately
+                    TelegramLogRepository.error(
+                        source = "T_TelegramFileDownloader",
+                        message = "ensureFileReadyWithMp4Validation: Download initiation failed",
+                        details = mapOf(
+                            "fileId" to actualFileId.toString(),
+                            "error" to errorMessage,
+                            "is404" to is404Error.toString(),
+                            "hasRemoteId" to (!remoteId.isNullOrBlank()).toString(),
+                        ),
+                    )
+                    throw Exception("Failed to start download for fileId=$actualFileId: $errorMessage")
+                }
             }
             is dev.g000sha256.tdl.TdlResult.Success -> {
                 // Download started successfully
                 TelegramLogRepository.debug(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReadyWithMp4Validation: Download initiated",
-                    details = mapOf("fileId" to fileId.toString()),
+                    details = mapOf("fileId" to actualFileId.toString()),
                 )
             }
         }
@@ -1832,16 +1928,16 @@ class T_TelegramFileDownloader(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReadyWithMp4Validation: Timeout waiting for file download",
                     details = mapOf(
-                        "fileId" to fileId.toString(),
+                        "fileId" to actualFileId.toString(),
                         "elapsedMs" to elapsedMs.toString(),
                         "timeoutMs" to timeoutMs.toString(),
                     ),
                 )
-                throw Exception("Timeout waiting for file download: fileId=$fileId, elapsed=${elapsedMs}ms")
+                throw Exception("Timeout waiting for file download: fileId=$actualFileId, elapsed=${elapsedMs}ms")
             }
 
             // Get fresh file state from TDLib
-            val file = getFreshFileState(fileId)
+            val file = getFreshFileState(actualFileId)
             val localPath = file.local?.path
             val downloadedPrefixSize = file.local?.downloadedPrefixSize?.toLong() ?: 0L
             val isDownloadingCompleted = file.local?.isDownloadingCompleted ?: false
@@ -1854,7 +1950,7 @@ class T_TelegramFileDownloader(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReadyWithMp4Validation: Download progress",
                     details = mapOf(
-                        "fileId" to fileId.toString(),
+                        "fileId" to actualFileId.toString(),
                         "downloadedPrefixSize" to downloadedPrefixSize.toString(),
                         "isDownloadingCompleted" to isDownloadingCompleted.toString(),
                         "elapsedMs" to elapsedMs.toString(),
@@ -1875,7 +1971,7 @@ class T_TelegramFileDownloader(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReadyWithMp4Validation: Local path not available yet",
                     details = mapOf(
-                        "fileId" to fileId.toString(),
+                        "fileId" to actualFileId.toString(),
                         "downloadedPrefixSize" to downloadedPrefixSize.toString(),
                     ),
                 )
@@ -1890,7 +1986,7 @@ class T_TelegramFileDownloader(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReadyWithMp4Validation: Local file does not exist yet",
                     details = mapOf(
-                        "fileId" to fileId.toString(),
+                        "fileId" to actualFileId.toString(),
                         "localPath" to localPath,
                     ),
                 )
@@ -1905,7 +2001,7 @@ class T_TelegramFileDownloader(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReadyWithMp4Validation: Starting MP4 header validation",
                     details = mapOf(
-                        "fileId" to fileId.toString(),
+                        "fileId" to actualFileId.toString(),
                         "localPath" to localPath,
                         "downloadedPrefixSize" to downloadedPrefixSize.toString(),
                     ),
@@ -1922,7 +2018,7 @@ class T_TelegramFileDownloader(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: SUCCESS - MP4 header validation complete",
                         details = mapOf(
-                            "fileId" to fileId.toString(),
+                            "fileId" to actualFileId.toString(),
                             "localPath" to localPath,
                             "moovOffset" to validationResult.moovOffset.toString(),
                             "moovSize" to validationResult.moovSize.toString(),
@@ -1940,7 +2036,7 @@ class T_TelegramFileDownloader(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: MP4 moov atom incomplete, waiting",
                             details = mapOf(
-                                "fileId" to fileId.toString(),
+                                "fileId" to actualFileId.toString(),
                                 "moovOffset" to validationResult.moovOffset.toString(),
                                 "moovSize" to validationResult.moovSize.toString(),
                                 "availableBytes" to validationResult.availableBytes.toString(),
@@ -1960,7 +2056,7 @@ class T_TelegramFileDownloader(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: MP4 moov not found within scan limit",
                             details = mapOf(
-                                "fileId" to fileId.toString(),
+                                "fileId" to actualFileId.toString(),
                                 "downloadedPrefixSize" to downloadedPrefixSize.toString(),
                                 "maxPrefixScanBytes" to StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES.toString(),
                                 "scannedAtoms" to validationResult.scannedAtoms.joinToString(","),
@@ -1979,7 +2075,7 @@ class T_TelegramFileDownloader(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: Download complete but moov not found",
                             details = mapOf(
-                                "fileId" to fileId.toString(),
+                                "fileId" to actualFileId.toString(),
                                 "downloadedPrefixSize" to downloadedPrefixSize.toString(),
                                 "scannedAtoms" to validationResult.scannedAtoms.joinToString(","),
                             ),
@@ -1997,7 +2093,7 @@ class T_TelegramFileDownloader(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: moov not found yet, continuing",
                             details = mapOf(
-                                "fileId" to fileId.toString(),
+                                "fileId" to actualFileId.toString(),
                                 "downloadedPrefixSize" to downloadedPrefixSize.toString(),
                                 "scannedAtoms" to validationResult.scannedAtoms.joinToString(","),
                             ),
@@ -2013,7 +2109,7 @@ class T_TelegramFileDownloader(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: MP4 header validation failed",
                         details = mapOf(
-                            "fileId" to fileId.toString(),
+                            "fileId" to actualFileId.toString(),
                             "reason" to validationResult.reason,
                         ),
                     )
