@@ -84,7 +84,10 @@ For now, NDK r22b provides everything needed for FishIT-Player's use case.
 
 ## References
 
-- [FFmpegKit GitHub Issues #556, #889, #1076, #1080](https://github.com/arthenica/ffmpeg-kit/issues)
+- [FFmpegKit Issue #556](https://github.com/arthenica/ffmpeg-kit/issues/556)
+- [FFmpegKit Issue #889](https://github.com/arthenica/ffmpeg-kit/issues/889)
+- [FFmpegKit Issue #1076](https://github.com/arthenica/ffmpeg-kit/issues/1076)
+- [FFmpegKit Issue #1080](https://github.com/arthenica/ffmpeg-kit/issues/1080)
 - [Android NDK Releases](https://developer.android.com/ndk/downloads)
 - [FFmpegKit Retirement Announcement](https://arthenica.github.io/ffmpeg-kit/)
 - [CPU features documentation](https://developer.android.com/ndk/guides/cpu-features)

@@ -224,7 +224,7 @@ sha256sum ffmpeg-kit-custom.aar
 
 **Problem**: NDK version mismatch or missing.
 
-**Solution**: The workflow uses NDK 22.1.7171670 (r22b), which is recommended by the FFmpegKit community for v6.0 compatibility. If build fails, check:
+**Solution**: The workflow uses NDK 22.1.7171670 (r22b), which is recommended by the FFmpegKit community for v6.0 compatibility. If the build fails, check:
 1. FFmpegKit v6.0 requires NDK r22b for successful builds
 2. Note: NDK r25 and newer are NOT compatible with FFmpegKit v6.0 due to cpu-features library deprecation
 3. Update `ANDROID_NDK_VERSION` in workflow only if using a different FFmpegKit version

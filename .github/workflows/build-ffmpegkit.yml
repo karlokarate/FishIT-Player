@@ -31,7 +31,7 @@ jobs:
 
     env:
       FFMPEG_KIT_VERSION: ${{ github.event.inputs.ffmpeg_kit_version || 'v6.0' }}
-      # NDK r22b is recommended by FFmpeg-kit community for compatibility
+      # NDK r22b is recommended by FFmpegKit community for compatibility
       # NDK 25+ has known issues with cpu-features library
       ANDROID_NDK_VERSION: "22.1.7171670"
       # LTS/FireTV freundlich: API-Level 21; kann bei Bedarf angepasst werden
