@@ -48,9 +48,7 @@ class TelegramStreamingSettingsProvider(
             settingsRepository.tgMaxGlobalDownloads,
             settingsRepository.tgMaxVideoDownloads,
             settingsRepository.tgMaxThumbDownloads,
-            // Streaming parameters (already in bytes/ms)
-            settingsRepository.tgInitialPrefixBytes,
-            settingsRepository.tgSeekMarginBytes,
+            // Streaming parameters
             settingsRepository.tgEnsureFileReadyTimeoutMs,
             // Thumbnail prefetch
             settingsRepository.tgThumbPrefetchEnabled,
@@ -77,23 +75,21 @@ class TelegramStreamingSettingsProvider(
                 maxGlobalDownloads = values[1] as Int,
                 maxVideoDownloads = values[2] as Int,
                 maxThumbDownloads = values[3] as Int,
-                initialMinPrefixBytes = values[4] as Long,
-                seekMarginBytes = values[5] as Long,
-                ensureFileReadyTimeoutMs = values[6] as Long,
-                thumbPrefetchEnabled = values[7] as Boolean,
-                thumbPrefetchBatchSize = values[8] as Int,
-                thumbMaxParallel = values[9] as Int,
-                thumbPauseWhileVodBuffering = values[10] as Boolean,
-                thumbFullDownload = values[11] as Boolean,
-                exoMinBufferMs = values[12] as Int,
-                exoMaxBufferMs = values[13] as Int,
-                exoBufferForPlaybackMs = values[14] as Int,
-                exoBufferForPlaybackAfterRebufferMs = values[15] as Int,
-                exoExactSeek = values[16] as Boolean,
-                showEngineOverlay = values[17] as Boolean,
-                showStreamingOverlay = values[18] as Boolean,
-                tgAppLogLevel = values[19] as Int,
-                jankTelemetrySampleRate = values[20] as Int,
+                ensureFileReadyTimeoutMs = values[4] as Long,
+                thumbPrefetchEnabled = values[5] as Boolean,
+                thumbPrefetchBatchSize = values[6] as Int,
+                thumbMaxParallel = values[7] as Int,
+                thumbPauseWhileVodBuffering = values[8] as Boolean,
+                thumbFullDownload = values[9] as Boolean,
+                exoMinBufferMs = values[10] as Int,
+                exoMaxBufferMs = values[11] as Int,
+                exoBufferForPlaybackMs = values[12] as Int,
+                exoBufferForPlaybackAfterRebufferMs = values[13] as Int,
+                exoExactSeek = values[14] as Boolean,
+                showEngineOverlay = values[15] as Boolean,
+                showStreamingOverlay = values[16] as Boolean,
+                tgAppLogLevel = values[17] as Int,
+                jankTelemetrySampleRate = values[18] as Int,
             )
         }.stateIn(
             scope = scope,
@@ -104,8 +100,6 @@ class TelegramStreamingSettingsProvider(
                     maxGlobalDownloads = 5,
                     maxVideoDownloads = 2,
                     maxThumbDownloads = 3,
-                    initialMinPrefixBytes = 256L * 1024L, // 256 KB
-                    seekMarginBytes = 1024L * 1024L, // 1 MB
                     ensureFileReadyTimeoutMs = 10_000L, // 10 seconds
                     thumbPrefetchEnabled = true,
                     thumbPrefetchBatchSize = 8,

@@ -18,8 +18,6 @@ data class TelegramAdvancedSettingsState(
     val maxThumbDownloads: Int = 3,
     val showEngineOverlay: Boolean = false,
     // Streaming / buffering settings
-    val initialPrefixKb: Int = 256, // Stored as KB for UI convenience
-    val seekMarginKb: Int = 1024, // Stored as KB for UI convenience
     val ensureFileReadyTimeoutSec: Int = 10, // Stored as seconds for UI convenience
     val showStreamingOverlay: Boolean = false,
     // Thumbnail / poster prefetch settings
@@ -60,8 +58,6 @@ class TelegramAdvancedSettingsViewModel(
                 store.tgMaxThumbDownloads,
                 store.tgShowEngineOverlay,
                 // Streaming / buffering settings
-                store.tgInitialPrefixBytes,
-                store.tgSeekMarginBytes,
                 store.tgEnsureFileReadyTimeoutMs,
                 store.tgShowStreamingOverlay,
                 // Thumbnail / poster prefetch settings
@@ -86,26 +82,24 @@ class TelegramAdvancedSettingsViewModel(
                     maxVideoDownloads = values[1] as Int,
                     maxThumbDownloads = values[2] as Int,
                     showEngineOverlay = values[3] as Boolean,
-                    // Streaming / buffering settings (convert bytes to KB)
-                    initialPrefixKb = ((values[4] as Long) / 1024L).toInt(),
-                    seekMarginKb = ((values[5] as Long) / 1024L).toInt(),
-                    ensureFileReadyTimeoutSec = ((values[6] as Long) / 1000L).toInt(),
-                    showStreamingOverlay = values[7] as Boolean,
+                    // Streaming / buffering settings
+                    ensureFileReadyTimeoutSec = ((values[4] as Long) / 1000L).toInt(),
+                    showStreamingOverlay = values[5] as Boolean,
                     // Thumbnail / poster prefetch settings
-                    thumbPrefetchEnabled = values[8] as Boolean,
-                    thumbPrefetchBatchSize = values[9] as Int,
-                    thumbMaxParallel = values[10] as Int,
-                    thumbPauseWhileVodBuffering = values[11] as Boolean,
-                    thumbFullDownload = values[12] as Boolean,
+                    thumbPrefetchEnabled = values[6] as Boolean,
+                    thumbPrefetchBatchSize = values[7] as Int,
+                    thumbMaxParallel = values[8] as Int,
+                    thumbPauseWhileVodBuffering = values[9] as Boolean,
+                    thumbFullDownload = values[10] as Boolean,
                     // ExoPlayer buffer settings (convert ms to seconds)
-                    exoMinBufferSec = ((values[13] as Int) / 1000),
-                    exoMaxBufferSec = ((values[14] as Int) / 1000),
-                    exoBufferForPlaybackSec = ((values[15] as Int) / 1000f),
-                    exoBufferForPlaybackAfterRebufferSec = ((values[16] as Int) / 1000f),
-                    exoExactSeek = values[17] as Boolean,
+                    exoMinBufferSec = ((values[11] as Int) / 1000),
+                    exoMaxBufferSec = ((values[12] as Int) / 1000),
+                    exoBufferForPlaybackSec = ((values[13] as Int) / 1000f),
+                    exoBufferForPlaybackAfterRebufferSec = ((values[14] as Int) / 1000f),
+                    exoExactSeek = values[15] as Boolean,
                     // Diagnostics / logging settings
-                    tgAppLogLevel = values[18] as Int,
-                    jankTelemetrySampleRate = values[19] as Int,
+                    tgAppLogLevel = values[16] as Int,
+                    jankTelemetrySampleRate = values[17] as Int,
                 )
             }.collect { newState ->
                 _state.value = newState
@@ -131,14 +125,6 @@ class TelegramAdvancedSettingsViewModel(
     }
 
     // Streaming / buffering settings (convert from KB/seconds to bytes/ms)
-    fun setInitialPrefixKb(value: Int) {
-        viewModelScope.launch { store.setTgInitialPrefixBytes(value.toLong() * 1024L) }
-    }
-
-    fun setSeekMarginKb(value: Int) {
-        viewModelScope.launch { store.setTgSeekMarginBytes(value.toLong() * 1024L) }
-    }
-
     fun setEnsureFileReadyTimeoutSec(value: Int) {
         viewModelScope.launch { store.setTgEnsureFileReadyTimeoutMs(value.toLong() * 1000L) }
     }

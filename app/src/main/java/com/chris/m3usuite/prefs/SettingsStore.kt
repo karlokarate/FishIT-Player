@@ -162,8 +162,6 @@ object Keys {
     val TG_SHOW_ENGINE_OVERLAY = booleanPreferencesKey("tg_show_engine_overlay")
 
     // Streaming / buffering settings
-    val TG_INITIAL_PREFIX_BYTES = longPreferencesKey("tg_initial_prefix_bytes")
-    val TG_SEEK_MARGIN_BYTES = longPreferencesKey("tg_seek_margin_bytes")
     val TG_ENSURE_FILE_READY_TIMEOUT_MS = longPreferencesKey("tg_ensure_file_ready_timeout_ms")
     val TG_SHOW_STREAMING_OVERLAY = booleanPreferencesKey("tg_show_streaming_overlay")
 
@@ -415,8 +413,6 @@ class SettingsStore(
     val tgShowEngineOverlay: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SHOW_ENGINE_OVERLAY] ?: false }
 
     // Streaming / buffering settings - defaults match T_TelegramFileDownloader constants
-    val tgInitialPrefixBytes: Flow<Long> = context.dataStore.data.map { it[Keys.TG_INITIAL_PREFIX_BYTES] ?: 256L * 1024L } // 256 KB
-    val tgSeekMarginBytes: Flow<Long> = context.dataStore.data.map { it[Keys.TG_SEEK_MARGIN_BYTES] ?: 1024L * 1024L } // 1 MB
     val tgEnsureFileReadyTimeoutMs: Flow<Long> =
         context.dataStore.data.map {
             it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] ?: 10_000L
@@ -1254,14 +1250,6 @@ class SettingsStore(
     }
 
     // Streaming / buffering settings
-    suspend fun setTgInitialPrefixBytes(value: Long) {
-        context.dataStore.edit { it[Keys.TG_INITIAL_PREFIX_BYTES] = value.coerceIn(64L * 1024L, 2048L * 1024L) }
-    }
-
-    suspend fun setTgSeekMarginBytes(value: Long) {
-        context.dataStore.edit { it[Keys.TG_SEEK_MARGIN_BYTES] = value.coerceIn(256L * 1024L, 8L * 1024L * 1024L) }
-    }
-
     suspend fun setTgEnsureFileReadyTimeoutMs(value: Long) {
         context.dataStore.edit { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = value.coerceIn(2_000L, 60_000L) }
     }
