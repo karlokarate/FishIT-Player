@@ -509,8 +509,22 @@ fun HomeChromeScaffold(
             MiniPlayerOverlayContainer(
                 miniPlayerManager = DefaultMiniPlayerManager,
                 onRequestFullPlayer = {
-                    // Use the provided callback if available
-                    onMiniPlayerExpandToFullPlayer?.invoke()
+                    // Use the provided callback if available, otherwise use CompositionLocal
+                    if (onMiniPlayerExpandToFullPlayer != null) {
+                        onMiniPlayerExpandToFullPlayer()
+                    } else {
+                        // Fallback: use LocalMiniPlayerResume to navigate back to player
+                        val descriptor = MiniPlayerState.descriptor.value
+                        if (descriptor != null) {
+                            miniPlayerResume?.invoke(
+                                MiniPlayerSnapshot(
+                                    descriptor = descriptor,
+                                    positionMs = PlaybackSession.current()?.currentPosition ?: 0L,
+                                    durationMs = PlaybackSession.current()?.duration ?: 0L,
+                                ),
+                            )
+                        }
+                    }
                 },
             )
         }
