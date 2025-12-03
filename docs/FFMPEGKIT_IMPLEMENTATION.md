@@ -45,10 +45,12 @@ The workflow implements all requirements from the problem statement:
 **Ubuntu 24.04 Runner**
 - Java 21 (Temurin distribution)
 - Android SDK 36
-- Android NDK 27.2.12479018
+- Android NDK 25.2.9519653 (NDK r25c, required for FFmpegKit v6.0 compatibility)
 - Gradle (via FFmpegKit's build system)
 
 **Timeout**: 240 minutes (4 hours) - sufficient for full GPL builds
+
+**Note**: NDK r27 is not compatible with FFmpegKit v6.0 due to build system changes in the NDK.
 
 ### Configuration Options
 
@@ -69,7 +71,7 @@ The workflow exposes these user-configurable inputs:
 1. Checkout FishIT-Player repo (for context)
 2. Setup Java 21
 3. Setup Android SDK
-4. Install SDK packages and NDK 27.2
+4. Install SDK packages and NDK 25.2 (r25c)
 5. Verify NDK installation
 6. Clone FFmpegKit repository
 7. Prepare build configuration (convert inputs to flags)
