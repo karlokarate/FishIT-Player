@@ -31,7 +31,7 @@ jobs:
 
     env:
       FFMPEG_KIT_VERSION: ${{ github.event.inputs.ffmpeg_kit_version || 'v6.0' }}
-      ANDROID_NDK_VERSION: "27.2.12479018"
+      ANDROID_NDK_VERSION: "25.2.9519653"
       # LTS/FireTV freundlich: API-Level 21; kann bei Bedarf angepasst werden
       FFMPEGKIT_API_LEVEL: "21"
 
