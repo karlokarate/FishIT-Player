@@ -992,28 +992,6 @@ private fun TelegramAdvancedSettingsSection(
 
     // --- Streaming / Buffering ---
     SettingsCard(title = "Streaming / Buffering (Advanced)") {
-        Text("Initial Prefix Size (KB)", style = MaterialTheme.typography.titleSmall)
-        Slider(
-            value = state.initialPrefixKb.toFloat(),
-            onValueChange = { viewModel.setInitialPrefixKb(it.toInt()) },
-            valueRange = 64f..2048f,
-            steps = 15,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text("${state.initialPrefixKb} KB", style = MaterialTheme.typography.bodySmall)
-
-        Spacer(Modifier.height(8.dp))
-        Text("Seek Margin (KB)", style = MaterialTheme.typography.titleSmall)
-        Slider(
-            value = state.seekMarginKb.toFloat(),
-            onValueChange = { viewModel.setSeekMarginKb(it.toInt()) },
-            valueRange = 256f..8192f,
-            steps = 15,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text("${state.seekMarginKb} KB", style = MaterialTheme.typography.bodySmall)
-
-        Spacer(Modifier.height(8.dp))
         Text("File Ready Timeout (seconds)", style = MaterialTheme.typography.titleSmall)
         Slider(
             value = state.ensureFileReadyTimeoutSec.toFloat(),

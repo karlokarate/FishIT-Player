@@ -112,14 +112,8 @@ class SettingsRepository(
     suspend fun setTgShowEngineOverlay(value: Boolean) = store.setTgShowEngineOverlay(value)
 
     // Streaming / buffering settings
-    val tgInitialPrefixBytes: Flow<Long> = store.tgInitialPrefixBytes
-    val tgSeekMarginBytes: Flow<Long> = store.tgSeekMarginBytes
     val tgEnsureFileReadyTimeoutMs: Flow<Long> = store.tgEnsureFileReadyTimeoutMs
     val tgShowStreamingOverlay: Flow<Boolean> = store.tgShowStreamingOverlay
-
-    suspend fun setTgInitialPrefixBytes(value: Long) = store.setTgInitialPrefixBytes(value)
-
-    suspend fun setTgSeekMarginBytes(value: Long) = store.setTgSeekMarginBytes(value)
 
     suspend fun setTgEnsureFileReadyTimeoutMs(value: Long) = store.setTgEnsureFileReadyTimeoutMs(value)
 
