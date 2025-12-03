@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.util.Mp4HeaderParser
+import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.File
 import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
@@ -2020,5 +2021,8 @@ class T_TelegramFileDownloader(
                 }
             }
         }
+
+        // This line is unreachable but satisfies the Kotlin compiler's type checking
+        throw Exception("Unreachable code")
     }
 }
