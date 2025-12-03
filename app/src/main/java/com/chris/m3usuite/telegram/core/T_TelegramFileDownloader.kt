@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.util.Mp4HeaderParser
+import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.File
 import java.io.RandomAccessFile
 import java.util.concurrent.ConcurrentHashMap
@@ -1154,9 +1155,9 @@ class T_TelegramFileDownloader(
                 val fileInfo = getFileInfo(fileId)
                 val fileIdInt = fileInfo.id
 
-            // Blocking retry: wait for TDLib to download the first bytes at position
-            var retryAttempts = 0
-            val maxRetryAttempts = StreamingConfigRefactor.READ_RETRY_MAX_ATTEMPTS
+                // Blocking retry: wait for TDLib to download the first bytes at position
+                var retryAttempts = 0
+                val maxRetryAttempts = StreamingConfig.READ_RETRY_MAX_ATTEMPTS
 
                 while (!isDownloadedAt(fileId, position)) {
                     if (retryAttempts >= maxRetryAttempts) {
@@ -1223,9 +1224,8 @@ class T_TelegramFileDownloader(
                     )
                 }
 
-                retryAttempts++
-                delay(StreamingConfigRefactor.READ_RETRY_DELAY_MS)
-
+                // Get local path from file info
+                val localPath = fileInfo.local?.path
                 if (localPath.isNullOrBlank()) {
                     // This should not happen after retry loop, but handle gracefully
                     throw Exception("File path not available yet: $fileId (after retry)")
@@ -1236,15 +1236,11 @@ class T_TelegramFileDownloader(
                     throw Exception("Downloaded file not found: $localPath")
                 }
 
-                // Retry logic to handle race condition where file handle is closed by another
-                // thread
+                // Retry logic to handle race condition where file handle is closed by another thread
                 var ioRetryCount = 0
                 val maxIoRetries = StreamingConfig.MAX_READ_ATTEMPTS
 
-            // Retry logic to handle race condition where file handle is closed by another thread
-            var ioRetryCount = 0
-            val maxIoRetries = StreamingConfigRefactor.MAX_READ_ATTEMPTS
-
+                while (ioRetryCount < maxIoRetries) {
                     try {
                         // Get or create cached file handle for Zero-Copy reads
                         val raf =
@@ -1267,6 +1263,7 @@ class T_TelegramFileDownloader(
                         // Handle closed stream or stale handle - remove from cache and retry
                         fileHandleCache.remove(fileIdInt)?.runCatching { close() }
 
+                        ioRetryCount++
                         if (ioRetryCount >= maxIoRetries) {
                             // Max attempts reached, rethrow exception
                             throw Exception(
@@ -1286,6 +1283,9 @@ class T_TelegramFileDownloader(
                                                 "ioRetryCount" to ioRetryCount.toString(),
                                         ),
                         )
+
+                        // Small delay before retry
+                        delay(10)
                     } catch (e: Exception) {
                         // For other exceptions, remove stale handle and rethrow
                         fileHandleCache.remove(fileIdInt)?.runCatching { close() }
@@ -1293,6 +1293,7 @@ class T_TelegramFileDownloader(
                     }
                 }
 
+                // This should not be reached, but satisfy compiler
                 throw Exception("Failed to read file chunk after $maxIoRetries attempts")
             }
 
@@ -2020,5 +2021,8 @@ class T_TelegramFileDownloader(
                 }
             }
         }
+
+        // This line is unreachable but satisfies the Kotlin compiler's type checking
+        throw Exception("Unreachable code")
     }
 }

@@ -57,10 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
+import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.player.miniplayer.MiniPlayerOverlayContainer
-import com.chris.m3usuite.player.miniplayer.MiniPlayerSnapshot
-import com.chris.m3usuite.player.session.PlaybackSession
 import com.chris.m3usuite.ui.focus.FocusKit
 import com.chris.m3usuite.ui.home.MiniPlayerHost
 import com.chris.m3usuite.ui.home.MiniPlayerState
@@ -515,12 +514,13 @@ fun HomeChromeScaffold(
                         onMiniPlayerExpandToFullPlayer()
                     } else {
                         // Fallback: use LocalMiniPlayerResume to navigate back to player
-                        val state = DefaultMiniPlayerManager.state.value
-                        if (state.visible && state.descriptor != null) {
-                            miniPlayerResume(
-                                com.chris.m3usuite.player.miniplayer.MiniPlayerSnapshot(
-                                    descriptor = state.descriptor,
+                        val descriptor = MiniPlayerState.descriptor.value
+                        if (descriptor != null) {
+                            miniPlayerResume?.invoke(
+                                MiniPlayerSnapshot(
+                                    descriptor = descriptor,
                                     positionMs = PlaybackSession.current()?.currentPosition ?: 0L,
+                                    durationMs = PlaybackSession.current()?.duration ?: 0L,
                                 ),
                             )
                         }
