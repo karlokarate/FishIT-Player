@@ -226,16 +226,6 @@ class T_TelegramFileDownloader(
     private val activeDownloads = ConcurrentHashMap.newKeySet<Int>()
     private val downloadKindByFileId = ConcurrentHashMap<Int, DownloadKind>()
 
-    // Window state per file for streaming - thread-safe
-    // @deprecated Windowing removed - kept for backward compatibility only
-    @Deprecated("Custom windowing removed", level = DeprecationLevel.WARNING)
-    private val windowStates = ConcurrentHashMap<Int, WindowState>()
-
-    // File handle cache for Zero-Copy reads - thread-safe
-    // @deprecated FileDataSource handles file I/O now
-    @Deprecated("FileDataSource handles file I/O", level = DeprecationLevel.WARNING)
-    private val fileHandleCache = ConcurrentHashMap<Int, RandomAccessFile>()
-
     // ════════════════════════════════════════════════════════════════════════════════════════
     // Phase 2: Download Concurrency Enforcement
     // ════════════════════════════════════════════════════════════════════════════════════════
