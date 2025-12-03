@@ -8,10 +8,8 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.StreamingConfigRefactor
-import com.chris.m3usuite.telegram.core.T_TelegramFileDownloader
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
-import com.chris.m3usuite.telegram.util.Mp4HeaderParser
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -240,110 +238,36 @@ class TelegramFileDataSource(
         transferListener?.onTransferStart(this, dataSpec, /* isNetwork = */ true)
 
         // Ensure TDLib has the file ready with sufficient prefix
-        // Phase D+ Fix: If initial attempt fails with 404, try remoteId resolution
-        var localPath: String? = null
-        var lastException: Exception? = null
-
-        // Use MP4 header validation (TDLib best practices: offset=0, limit=0, moov validation)
-        try {
-            localPath =
+        // Pass remoteId to downloader for automatic stale fileId resolution
+        val localPath: String =
+            try {
                 runBlocking {
                     val downloader = serviceClient.downloader()
                     downloader.ensureFileReadyWithMp4Validation(
                         fileId = fileIdInt,
+                        remoteId = remoteIdParam, // Pass remoteId for stale fileId fallback
                         timeoutMs = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
                     )
                 }
-        } catch (e: Exception) {
-            // Check if this is a 404 error and we have a remoteId to fall back to
-            if (e.message?.contains("404") == true && !remoteIdParam.isNullOrBlank()) {
-                TelegramLogRepository.warn(
+            } catch (e: Exception) {
+                // Notify TransferListener that TDLib preparation phase failed
+                transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
+
+                TelegramLogRepository.error(
                     source = "TelegramFileDataSource",
-                    message = "fileId returned 404, attempting remoteId resolution",
+                    message = "Failed to ensure file ready",
+                    exception = e,
                     details =
                         mapOf(
-                            "staleFileId" to fileIdInt.toString(),
-                            "remoteId" to remoteIdParam,
+                            "fileId" to fileIdInt.toString(),
+                            "remoteId" to (remoteIdParam ?: "none"),
+                            "position" to dataSpec.position.toString(),
                         ),
                 )
-
-                // Try to resolve via remoteId
-                val resolvedFileId =
-                    try {
-                        runBlocking {
-                            kotlinx.coroutines.withTimeoutOrNull(REMOTE_ID_RESOLUTION_TIMEOUT_MS) {
-                                serviceClient.downloader().resolveRemoteFileId(remoteIdParam)
-                            }
-                        }
-                    } catch (resolveEx: Exception) {
-                        TelegramLogRepository.error(
-                            source = "TelegramFileDataSource",
-                            message = "remoteId resolution failed during 404 fallback: ${resolveEx.message}",
-                            details = mapOf("remoteId" to remoteIdParam),
-                        )
-                        null
-                    }
-
-                if (resolvedFileId != null && resolvedFileId > 0) {
-                    TelegramLogRepository.info(
-                        source = "TelegramFileDataSource",
-                        message = "remoteId resolved to new fileId after 404",
-                        details =
-                            mapOf(
-                                "staleFileId" to fileIdInt.toString(),
-                                "newFileId" to resolvedFileId.toString(),
-                                "remoteId" to remoteIdParam,
-                            ),
-                    )
-
-                    // Use local variable for candidate fileId; only update instance vars on success
-                    val candidateFileId = resolvedFileId
-                    try {
-                        localPath =
-                            runBlocking {
-                                val downloader = serviceClient.downloader()
-                                downloader.ensureFileReadyWithMp4Validation(
-                                    fileId = candidateFileId,
-                                    timeoutMs = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
-                                )
-                            }
-                        // Only update instance variables if ensureFileReadyWithMp4Validation succeeds
-                        fileIdInt = candidateFileId
-                        fileId = candidateFileId
-                    } catch (retryEx: Exception) {
-                        lastException = retryEx
-                    }
-                } else {
-                    // Resolution failed or returned same/invalid fileId
-                    lastException = e
-                }
-            } else {
-                // Not a 404 or no remoteId available
-                lastException = e
+                // Reset state variables to avoid partial initialization
+                resetState()
+                throw IOException("Failed to prepare Telegram file: ${e.message}", e)
             }
-        }
-
-        // Check if we succeeded
-        if (localPath == null) {
-            // Notify TransferListener that TDLib preparation phase failed
-            transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
-
-            val errorException = lastException ?: IOException("Failed to prepare Telegram file: unknown error")
-            TelegramLogRepository.error(
-                source = "TelegramFileDataSource",
-                message = "Failed to ensure file ready",
-                exception = errorException,
-                details =
-                    mapOf(
-                        "fileId" to fileIdInt.toString(),
-                        "remoteId" to (remoteIdParam ?: "none"),
-                        "position" to dataSpec.position.toString(),
-                    ),
-            )
-            // Reset state variables to avoid partial initialization
-            resetState()
-            throw IOException("Failed to prepare Telegram file: ${errorException.message}", errorException)
-        }
 
         // Notify TransferListener that TDLib preparation phase completed successfully
         transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)

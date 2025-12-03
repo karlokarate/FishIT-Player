@@ -15,17 +15,16 @@ object TelegramStreamingSettingsProviderHolder {
     @Volatile private var provider: TelegramStreamingSettingsProvider? = null
 
     fun get(context: Context): TelegramStreamingSettingsProvider =
-            provider
-                    ?: synchronized(this) {
-                        provider
-                                ?: TelegramStreamingSettingsProvider(
-                                                settingsRepository =
-                                                        SettingsRepository(
-                                                                SettingsStore(
-                                                                        context.applicationContext
-                                                                )
-                                                        ),
-                                        )
-                                        .also { provider = it }
-                    }
+        provider
+            ?: synchronized(this) {
+                provider
+                    ?: TelegramStreamingSettingsProvider(
+                        settingsRepository =
+                            SettingsRepository(
+                                SettingsStore(
+                                    context.applicationContext,
+                                ),
+                            ),
+                    ).also { provider = it }
+            }
 }

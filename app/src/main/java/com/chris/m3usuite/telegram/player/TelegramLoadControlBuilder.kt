@@ -28,8 +28,9 @@ import com.chris.m3usuite.telegram.domain.TelegramStreamingSettings
  * @param settings Runtime streaming settings with buffer configuration
  * @return Configured LoadControl instance for ExoPlayer
  */
-fun buildTelegramLoadControl(settings: TelegramStreamingSettings): LoadControl {
-    return DefaultLoadControl.Builder()
+fun buildTelegramLoadControl(settings: TelegramStreamingSettings): LoadControl =
+    DefaultLoadControl
+        .Builder()
         .setBufferDurationsMs(
             settings.exoMinBufferMs,
             settings.exoMaxBufferMs,
@@ -38,4 +39,3 @@ fun buildTelegramLoadControl(settings: TelegramStreamingSettings): LoadControl {
         )
         // Use default allocator and back buffer settings
         .build()
-}

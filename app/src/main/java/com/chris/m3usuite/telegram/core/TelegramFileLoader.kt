@@ -392,27 +392,31 @@ class TelegramFileLoader(
      *
      * Phase D+ (2025-12-03): Updated to use ensureFileReadyWithMp4Validation()
      * following TDLib best practices (offset=0, limit=0, moov validation).
+     * Now supports remoteId for stale fileId resolution.
      *
      * New playback paths should use TelegramFileDataSource via standard
      * Media3/ExoPlayer tg:// URLs.
      *
      * @param fileId TDLib file ID
+     * @param remoteId Optional stable remote file ID for stale fileId fallback
      * @param timeoutMs Maximum wait time in milliseconds
      * @return Local path or null on failure
      */
     suspend fun ensureFileForPlayback(
         fileId: Int,
+        remoteId: String? = null,
         timeoutMs: Long = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
     ): String? =
         try {
             TelegramLogRepository.info(
                 source = TAG,
-                message = "ensureFileForPlayback: Starting with MP4 validation for fileId=$fileId",
+                message = "ensureFileForPlayback: Starting with MP4 validation for fileId=$fileId, remoteId=${remoteId ?: "none"}",
             )
 
             val path =
                 downloader.ensureFileReadyWithMp4Validation(
                     fileId = fileId,
+                    remoteId = remoteId,
                     timeoutMs = timeoutMs,
                 )
 

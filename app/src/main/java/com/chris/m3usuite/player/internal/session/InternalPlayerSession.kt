@@ -20,7 +20,6 @@ import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.chris.m3usuite.core.playback.RememberPlayerController
 import com.chris.m3usuite.data.repo.EpgRepository
-import com.chris.m3usuite.model.MediaItem as AppMediaItem
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.datasource.DelegatingDataSourceFactory
 import com.chris.m3usuite.player.internal.domain.DefaultKidsPlaybackGate
@@ -45,6 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.chris.m3usuite.model.MediaItem as AppMediaItem
 
 /**
  * BUG 2 FIX: Result holder for rememberInternalPlayerSession.
@@ -53,8 +53,8 @@ import kotlinx.coroutines.launch
  * InternalPlayerEntry to wire the onJumpLiveChannel callback properly.
  */
 data class InternalPlayerSessionResult(
-        val player: ExoPlayer?,
-        val liveController: LivePlaybackController?,
+    val player: ExoPlayer?,
+    val liveController: LivePlaybackController?,
 )
 
 /**
@@ -116,24 +116,24 @@ data class InternalPlayerSessionResult(
  */
 @Composable
 fun rememberInternalPlayerSession(
-        context: Context,
-        url: String,
-        startMs: Long?,
-        mimeType: String?,
-        preparedMediaItem: AppMediaItem?,
-        playbackContext: PlaybackContext,
-        settings: SettingsStore,
-        networkHeaders: ImageHeaders,
-        controller: RememberPlayerController,
-        onStateChanged: (InternalPlayerUiState) -> Unit,
-        onError: (PlaybackException) -> Unit,
+    context: Context,
+    url: String,
+    startMs: Long?,
+    mimeType: String?,
+    preparedMediaItem: AppMediaItem?,
+    playbackContext: PlaybackContext,
+    settings: SettingsStore,
+    networkHeaders: ImageHeaders,
+    controller: RememberPlayerController,
+    onStateChanged: (InternalPlayerUiState) -> Unit,
+    onError: (PlaybackException) -> Unit,
 ): InternalPlayerSessionResult {
     val scope = rememberCoroutineScope()
 
     val resumeManager = remember(context) { DefaultResumeManager(context) }
     val kidsGate = remember(context, settings) { DefaultKidsPlaybackGate(context, settings) }
     val streamingSettingsProvider =
-            remember(context) { TelegramStreamingSettingsProviderHolder.get(context) }
+        remember(context) { TelegramStreamingSettingsProviderHolder.get(context) }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 4 Group 3: Subtitle Style & Track Selection
@@ -143,19 +143,19 @@ fun rememberInternalPlayerSession(
     // - SubtitleStyleManager: Manages per-profile subtitle styling via DataStore
     // - SubtitleSelectionPolicy: Selects subtitle tracks based on language preferences
     val subtitleStyleManager =
-            remember(settings, scope) {
-                com.chris.m3usuite.player.internal.subtitles.DefaultSubtitleStyleManager(
-                        settingsStore = settings,
-                        scope = scope,
-                )
-            }
+        remember(settings, scope) {
+            com.chris.m3usuite.player.internal.subtitles.DefaultSubtitleStyleManager(
+                settingsStore = settings,
+                scope = scope,
+            )
+        }
 
     val subtitleSelectionPolicy =
-            remember(settings) {
-                com.chris.m3usuite.player.internal.subtitles.DefaultSubtitleSelectionPolicy(
-                        settingsStore = settings,
-                )
-            }
+        remember(settings) {
+            com.chris.m3usuite.player.internal.subtitles.DefaultSubtitleSelectionPolicy(
+                settingsStore = settings,
+            )
+        }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 3 Step 3.B: LivePlaybackController for LIVE sessions
@@ -166,19 +166,19 @@ fun rememberInternalPlayerSession(
     // - Uses DefaultLiveEpgRepository to wrap existing EpgRepository
     // - Uses SystemTimeProvider for EPG overlay auto-hide timing
     val liveController =
-            remember(context, settings, playbackContext.type) {
-                if (playbackContext.type == PlaybackType.LIVE) {
-                    val liveRepo = DefaultLiveChannelRepository(context)
-                    val epgRepo = DefaultLiveEpgRepository(EpgRepository(context, settings))
-                    DefaultLivePlaybackController(
-                            liveRepository = liveRepo,
-                            epgRepository = epgRepo,
-                            clock = SystemTimeProvider,
-                    )
-                } else {
-                    null
-                }
+        remember(context, settings, playbackContext.type) {
+            if (playbackContext.type == PlaybackType.LIVE) {
+                val liveRepo = DefaultLiveChannelRepository(context)
+                val epgRepo = DefaultLiveEpgRepository(EpgRepository(context, settings))
+                DefaultLivePlaybackController(
+                    liveRepository = liveRepo,
+                    epgRepository = epgRepo,
+                    clock = SystemTimeProvider,
+                )
+            } else {
+                null
             }
+        }
 
     // ════════════════════════════════════════════════════════════════════════════
     // Phase 3 Step 3.D: LivePlaybackController → UI callback wiring (TODO)
@@ -206,13 +206,14 @@ fun rememberInternalPlayerSession(
     //
     // This allows PlayerSurface gestures → onJumpLiveChannel → LivePlaybackController.jumpChannel.
 
-    val playerState = remember {
-        mutableStateOf(
+    val playerState =
+        remember {
+            mutableStateOf(
                 InternalPlayerUiState(
-                        playbackType = playbackContext.type,
+                    playbackType = playbackContext.type,
                 ),
-        )
-    }
+            )
+        }
     val playerHolder = remember { mutableStateOf<ExoPlayer?>(null) }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -224,12 +225,12 @@ fun rememberInternalPlayerSession(
     val bufferingLogThrottleMs = 30_000L // Log at most once every 30 seconds
 
     LaunchedEffect(
-            url,
-            startMs,
-            mimeType,
-            preparedMediaItem,
-            networkHeaders,
-            playbackContext.type
+        url,
+        startMs,
+        mimeType,
+        preparedMediaItem,
+        networkHeaders,
+        playbackContext.type,
     ) {
         // ════════════════════════════════════════════════════════════════════════════
         // PHASE 7: Use PlaybackSession.acquire() instead of creating ExoPlayer directly
@@ -253,17 +254,18 @@ fun rememberInternalPlayerSession(
         val ua = headersMap["User-Agent"] ?: headersMap["user-agent"] ?: "IBOPlayer/1.4 (Android)"
 
         val isVodLike =
-                playbackContext.type !=
-                        com.chris.m3usuite.player.internal.domain.PlaybackType.LIVE &&
-                        (url.contains("/movie/", ignoreCase = true) || url.endsWith(".mp4", true))
+            playbackContext.type !=
+                com.chris.m3usuite.player.internal.domain.PlaybackType.LIVE &&
+                (url.contains("/movie/", ignoreCase = true) || url.endsWith(".mp4", true))
 
         val httpFactory =
-                DefaultHttpDataSource.Factory()
-                        .apply { if (ua.isNotBlank()) setUserAgent(ua) }
-                        .setAllowCrossProtocolRedirects(true)
-                        .apply { setDefaultRequestProperties(headersMap) }
-                        .setConnectTimeoutMs(if (isVodLike) 20_000 else 10_000)
-                        .setReadTimeoutMs(if (isVodLike) 30_000 else 15_000)
+            DefaultHttpDataSource
+                .Factory()
+                .apply { if (ua.isNotBlank()) setUserAgent(ua) }
+                .setAllowCrossProtocolRedirects(true)
+                .apply { setDefaultRequestProperties(headersMap) }
+                .setConnectTimeoutMs(if (isVodLike) 20_000 else 10_000)
+                .setReadTimeoutMs(if (isVodLike) 30_000 else 15_000)
 
         val baseDataSource = DefaultDataSource.Factory(context, httpFactory)
         val delegatingFactory = DelegatingDataSourceFactory(context, baseDataSource)
@@ -271,8 +273,11 @@ fun rememberInternalPlayerSession(
         val streamingSettings = streamingSettingsProvider.currentSettings
         val loadControl = buildTelegramLoadControl(streamingSettings)
         val seekParameters =
-                if (streamingSettings.exoExactSeek) SeekParameters.EXACT
-                else SeekParameters.CLOSEST_SYNC
+            if (streamingSettings.exoExactSeek) {
+                SeekParameters.EXACT
+            } else {
+                SeekParameters.CLOSEST_SYNC
+            }
 
         val mediaSourceFactory = DefaultMediaSourceFactory(delegatingFactory)
 
@@ -288,15 +293,16 @@ fun rememberInternalPlayerSession(
         // - Player survives Full↔MiniPlayer transitions
         // - Consistent state management across the app
         val holder =
-                PlaybackSession.acquire(context) {
-                    ExoPlayer.Builder(context)
-                            .setLoadControl(loadControl)
-                            .setSeekBackIncrementMs(10_000L)
-                            .setSeekForwardIncrementMs(10_000L)
-                            .setSeekParameters(seekParameters)
-                            .setMediaSourceFactory(mediaSourceFactory)
-                            .build()
-                }
+            PlaybackSession.acquire(context) {
+                ExoPlayer
+                    .Builder(context)
+                    .setLoadControl(loadControl)
+                    .setSeekBackIncrementMs(10_000L)
+                    .setSeekForwardIncrementMs(10_000L)
+                    .setSeekParameters(seekParameters)
+                    .setMediaSourceFactory(mediaSourceFactory)
+                    .build()
+            }
 
         val newPlayer = holder.player
         playerHolder.value = newPlayer
@@ -306,11 +312,11 @@ fun rememberInternalPlayerSession(
 
         val resolver = PlaybackSourceResolver(context)
         val resolved: ResolvedPlaybackSource =
-                resolver.resolve(
-                        url = url,
-                        explicitMimeType = mimeType,
-                        preparedMediaItem = preparedMediaItem,
-                )
+            resolver.resolve(
+                url = url,
+                explicitMimeType = mimeType,
+                preparedMediaItem = preparedMediaItem,
+            )
 
         // ════════════════════════════════════════════════════════════════════════════
         // BUG 1 FIX: Populate debug diagnostic fields after source resolution
@@ -321,58 +327,72 @@ fun rememberInternalPlayerSession(
         // The player will update durationMs once it parses the media container
         val initialDurationMs = resolved.telegramDurationMs
         val debugUpdated =
-                playerState.value.copy(
-                        debugPlaybackUrl = truncatedUrl,
-                        debugResolvedMimeType = resolved.mimeType,
-                        debugInferredExtension = resolved.inferredExtension,
-                        debugIsLiveFromUrl = resolved.isLiveFromUrl,
-                        durationMs = initialDurationMs ?: playerState.value.durationMs,
-                )
+            playerState.value.copy(
+                debugPlaybackUrl = truncatedUrl,
+                debugResolvedMimeType = resolved.mimeType,
+                debugInferredExtension = resolved.inferredExtension,
+                debugIsLiveFromUrl = resolved.isLiveFromUrl,
+                durationMs = initialDurationMs ?: playerState.value.durationMs,
+            )
         playerState.value = debugUpdated
         onStateChanged(debugUpdated)
 
         if (resolved.isTelegram && resolved.telegramDurationMs != null) {
             TelegramLogRepository.info(
-                    source = "InternalPlayerSession",
-                    message = "Initialized duration from Telegram URL",
-                    details =
-                            mapOf(
-                                    "durationMs" to resolved.telegramDurationMs.toString(),
-                                    "fileSizeBytes" to
-                                            (resolved.telegramFileSizeBytes?.toString()
-                                                    ?: "unknown"),
+                source = "InternalPlayerSession",
+                message = "Initialized duration from Telegram URL",
+                details =
+                    mapOf(
+                        "durationMs" to resolved.telegramDurationMs.toString(),
+                        "fileSizeBytes" to
+                            (
+                                resolved.telegramFileSizeBytes?.toString()
+                                    ?: "unknown"
                             ),
+                    ),
             )
         }
 
         val mediaItem =
-                buildMediaItemWithTelegramExtras(
-                        resolved = resolved,
-                )
+            buildMediaItemWithTelegramExtras(
+                resolved = resolved,
+            )
 
         // ════════════════════════════════════════════════════════════════════════
         // TELEGRAM PLAYBACK LOGGING (Task 1) - Log setMediaItem and prepare calls
         // ════════════════════════════════════════════════════════════════════════
         if (resolved.isTelegram) {
             TelegramLogRepository.info(
-                    source = "InternalPlayerSession",
-                    message = "setMediaItem() called for Telegram VOD",
-                    details =
-                            mapOf(
-                                    "url" to url,
-                                    "playbackType" to playbackContext.type.name,
-                                    "mimeType" to (resolved.mimeType ?: "unknown"),
-                                    "chatId" to
-                                            (android.net.Uri.parse(url).getQueryParameter("chatId")
-                                                    ?: "unknown"),
-                                    "messageId" to
-                                            (android.net.Uri.parse(url)
-                                                    .getQueryParameter("messageId")
-                                                    ?: "unknown"),
-                                    "fileId" to
-                                            (android.net.Uri.parse(url).pathSegments.lastOrNull()
-                                                    ?: "unknown"),
+                source = "InternalPlayerSession",
+                message = "setMediaItem() called for Telegram VOD",
+                details =
+                    mapOf(
+                        "url" to url,
+                        "playbackType" to playbackContext.type.name,
+                        "mimeType" to (resolved.mimeType ?: "unknown"),
+                        "chatId" to
+                            (
+                                android.net.Uri
+                                    .parse(url)
+                                    .getQueryParameter("chatId")
+                                    ?: "unknown"
                             ),
+                        "messageId" to
+                            (
+                                android.net.Uri
+                                    .parse(url)
+                                    .getQueryParameter("messageId")
+                                    ?: "unknown"
+                            ),
+                        "fileId" to
+                            (
+                                android.net.Uri
+                                    .parse(url)
+                                    .pathSegments
+                                    .lastOrNull()
+                                    ?: "unknown"
+                            ),
+                    ),
             )
         }
 
@@ -380,13 +400,13 @@ fun rememberInternalPlayerSession(
 
         if (resolved.isTelegram) {
             TelegramLogRepository.info(
-                    source = "InternalPlayerSession",
-                    message = "prepare() called for Telegram VOD",
-                    details =
-                            mapOf(
-                                    "url" to url,
-                                    "playbackType" to playbackContext.type.name,
-                            ),
+                source = "InternalPlayerSession",
+                message = "prepare() called for Telegram VOD",
+                details =
+                    mapOf(
+                        "url" to url,
+                        "playbackType" to playbackContext.type.name,
+                    ),
             )
         }
 
@@ -406,16 +426,16 @@ fun rememberInternalPlayerSession(
         // - Fail-open: On any error, continue without seeking
         try {
             val initialSeekMs: Long? =
-                    when {
-                        // Guard: Explicit start position takes priority
-                        startMs != null && startMs > 0 -> startMs
-                        // Guard: LIVE playback ignores resume (defense-in-depth)
-                        // Note: ResumeManager also returns null for LIVE, but this explicit
-                        // check avoids the suspending call and makes the code self-documenting.
-                        playbackContext.type == PlaybackType.LIVE -> null
-                        // Default: Try loading resume from storage
-                        else -> resumeManager.loadResumePositionMs(playbackContext)
-                    }
+                when {
+                    // Guard: Explicit start position takes priority
+                    startMs != null && startMs > 0 -> startMs
+                    // Guard: LIVE playback ignores resume (defense-in-depth)
+                    // Note: ResumeManager also returns null for LIVE, but this explicit
+                    // check avoids the suspending call and makes the code self-documenting.
+                    playbackContext.type == PlaybackType.LIVE -> null
+                    // Default: Try loading resume from storage
+                    else -> resumeManager.loadResumePositionMs(playbackContext)
+                }
 
             // Guard: Only seek if position is valid and positive
             if (initialSeekMs != null && initialSeekMs > 0) {
@@ -461,12 +481,12 @@ fun rememberInternalPlayerSession(
             kidsState = gateState
 
             val updated =
-                    playerState.value.copy(
-                            kidActive = gateState.kidActive,
-                            kidBlocked = gateState.kidBlocked,
-                            kidProfileId = gateState.kidProfileId,
-                            remainingKidsMinutes = gateState.remainingMinutes,
-                    )
+                playerState.value.copy(
+                    kidActive = gateState.kidActive,
+                    kidBlocked = gateState.kidBlocked,
+                    kidProfileId = gateState.kidProfileId,
+                    remainingKidsMinutes = gateState.remainingMinutes,
+                )
             playerState.value = updated
             onStateChanged(updated)
 
@@ -479,16 +499,16 @@ fun rememberInternalPlayerSession(
             // ════════════════════════════════════════════════════════════════════════
             if (resolved.isTelegram) {
                 TelegramLogRepository.info(
-                        source = "InternalPlayerSession",
-                        message = "play() called (playWhenReady set) for Telegram VOD",
-                        details =
-                                mapOf(
-                                        "url" to url,
-                                        "playbackType" to playbackContext.type.name,
-                                        "playWhenReady" to shouldPlay.toString(),
-                                        "kidActive" to gateState.kidActive.toString(),
-                                        "kidBlocked" to gateState.kidBlocked.toString(),
-                                ),
+                    source = "InternalPlayerSession",
+                    message = "play() called (playWhenReady set) for Telegram VOD",
+                    details =
+                        mapOf(
+                            "url" to url,
+                            "playbackType" to playbackContext.type.name,
+                            "playWhenReady" to shouldPlay.toString(),
+                            "kidActive" to gateState.kidActive.toString(),
+                            "kidBlocked" to gateState.kidBlocked.toString(),
+                        ),
                 )
             }
         } catch (_: Throwable) {
@@ -498,15 +518,15 @@ fun rememberInternalPlayerSession(
 
             if (resolved.isTelegram) {
                 TelegramLogRepository.info(
-                        source = "InternalPlayerSession",
-                        message = "play() called (playWhenReady set - fallback) for Telegram VOD",
-                        details =
-                                mapOf(
-                                        "url" to url,
-                                        "playbackType" to playbackContext.type.name,
-                                        "playWhenReady" to "true",
-                                        "reason" to "kids_gate_exception",
-                                ),
+                    source = "InternalPlayerSession",
+                    message = "play() called (playWhenReady set - fallback) for Telegram VOD",
+                    details =
+                        mapOf(
+                            "url" to url,
+                            "playbackType" to playbackContext.type.name,
+                            "playWhenReady" to "true",
+                            "reason" to "kids_gate_exception",
+                        ),
                 )
             }
         }
@@ -522,434 +542,445 @@ fun rememberInternalPlayerSession(
         // - TIME_UNSET duration: treated as 0
         // - positionMs > durationMs: position is clamped by player internally
         newPlayer.addListener(
-                object : Player.Listener {
-                    override fun onEvents(
-                            player: Player,
-                            events: Player.Events,
-                    ) {
-                        // Guard: Ensure position is never negative
-                        val pos = player.currentPosition.coerceAtLeast(0L)
-                        // Guard: Handle C.TIME_UNSET (-1) by treating as 0
-                        val dur =
-                                player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0L)
-                                        ?: 0L
-                        val isPlaying = player.isPlaying
-                        val isBuffering = player.playbackState == Player.STATE_BUFFERING
-                        val speed = player.playbackParameters.speed
-                        val error = player.playerError
+            object : Player.Listener {
+                override fun onEvents(
+                    player: Player,
+                    events: Player.Events,
+                ) {
+                    // Guard: Ensure position is never negative
+                    val pos = player.currentPosition.coerceAtLeast(0L)
+                    // Guard: Handle C.TIME_UNSET (-1) by treating as 0
+                    val dur =
+                        player.duration.takeIf { it != C.TIME_UNSET }?.coerceAtLeast(0L)
+                            ?: 0L
+                    val isPlaying = player.isPlaying
+                    val isBuffering = player.playbackState == Player.STATE_BUFFERING
+                    val speed = player.playbackParameters.speed
+                    val error = player.playerError
 
-                        val newState =
-                                playerState.value.copy(
-                                        isPlaying = isPlaying,
-                                        isBuffering = isBuffering,
-                                        positionMs = pos,
-                                        durationMs = dur,
-                                        playbackSpeed = speed,
-                                        playbackError = error,
-                                )
+                    val newState =
+                        playerState.value.copy(
+                            isPlaying = isPlaying,
+                            isBuffering = isBuffering,
+                            positionMs = pos,
+                            durationMs = dur,
+                            playbackSpeed = speed,
+                            playbackError = error,
+                        )
 
-                        playerState.value = newState
-                        onStateChanged(newState)
+                    playerState.value = newState
+                    onStateChanged(newState)
 
-                        // ════════════════════════════════════════════════════════════════
-                        // BUFFERING WATCHDOG (Task 2) - Track buffering duration
-                        // ════════════════════════════════════════════════════════════════
-                        if (resolved.isTelegram && playbackContext.type != PlaybackType.LIVE) {
-                            if (isBuffering && bufferingStartTime.value == null) {
-                                // Entering buffering state - start timer
-                                bufferingStartTime.value = System.currentTimeMillis()
-                                TelegramLogRepository.debug(
-                                        source = "InternalPlayer",
-                                        message = "Telegram VOD entered BUFFERING state",
-                                        details =
-                                                mapOf(
-                                                        "url" to url,
-                                                        "positionMs" to pos.toString(),
-                                                        "durationMs" to dur.toString(),
-                                                ),
-                                )
-                            } else if (!isBuffering && bufferingStartTime.value != null) {
-                                // Exiting buffering state - clear timer
-                                val bufferingDuration =
-                                        System.currentTimeMillis() - bufferingStartTime.value!!
-                                bufferingStartTime.value = null
-                                TelegramLogRepository.debug(
-                                        source = "InternalPlayer",
-                                        message = "Telegram VOD exited BUFFERING state",
-                                        details =
-                                                mapOf(
-                                                        "url" to url,
-                                                        "positionMs" to pos.toString(),
-                                                        "bufferingDurationMs" to
-                                                                bufferingDuration.toString(),
-                                                ),
-                                )
-                            } else if (isBuffering && bufferingStartTime.value != null) {
-                                // Still buffering - check if timeout exceeded
-                                val bufferingDuration =
-                                        System.currentTimeMillis() - bufferingStartTime.value!!
-                                val now = System.currentTimeMillis()
-                                val timeSinceLastLog = now - lastBufferingLogTime.value
-
-                                if (bufferingDuration > bufferingWatchdogTimeoutMs &&
-                                                timeSinceLastLog > bufferingLogThrottleMs
-                                ) {
-                                    // Log diagnostic event (throttled to avoid spam)
-                                    lastBufferingLogTime.value = now
-                                    scope.launch(Dispatchers.IO) {
-                                        try {
-                                            val uri = android.net.Uri.parse(url)
-                                            val fileIdStr =
-                                                    uri.pathSegments.lastOrNull() ?: "unknown"
-                                            val fileId = fileIdStr.toIntOrNull() ?: 0
-
-                                            val downloader =
-                                                    com.chris.m3usuite.telegram.core
-                                                            .T_TelegramServiceClient.getInstance(
-                                                                    context,
-                                                            )
-                                                            .downloader()
-                                            val fileInfo =
-                                                    if (fileId > 0) downloader.getFileInfo(fileId)
-                                                    else null
-
-                                            val downloadedPrefix =
-                                                    fileInfo?.local?.downloadedPrefixSize ?: 0
-                                            val expectedSize = fileInfo?.expectedSize ?: 0
-
-                                            TelegramLogRepository.warn(
-                                                    source = "InternalPlayer",
-                                                    message =
-                                                            "Telegram VOD buffering watchdog triggered",
-                                                    details =
-                                                            mapOf(
-                                                                    "url" to url,
-                                                                    "positionMs" to pos.toString(),
-                                                                    "durationMs" to dur.toString(),
-                                                                    "bufferingDurationMs" to
-                                                                            bufferingDuration
-                                                                                    .toString(),
-                                                                    "fileId" to fileIdStr,
-                                                                    "downloadedPrefixSize" to
-                                                                            downloadedPrefix
-                                                                                    .toString(),
-                                                                    "expectedSize" to
-                                                                            expectedSize.toString(),
-                                                                    "playWhenReady" to
-                                                                            player.playWhenReady
-                                                                                    .toString(),
-                                                                    "playbackState" to
-                                                                            when (player.playbackState
-                                                                            ) {
-                                                                                Player.STATE_IDLE ->
-                                                                                        "IDLE"
-                                                                                Player.STATE_BUFFERING ->
-                                                                                        "BUFFERING"
-                                                                                Player.STATE_READY ->
-                                                                                        "READY"
-                                                                                Player.STATE_ENDED ->
-                                                                                        "ENDED"
-                                                                                else -> "UNKNOWN"
-                                                                            },
-                                                            ),
-                                            )
-                                        } catch (e: Exception) {
-                                            TelegramLogRepository.error(
-                                                    source = "InternalPlayer",
-                                                    message =
-                                                            "Failed to collect buffering watchdog diagnostics",
-                                                    exception = e,
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (resolved.isTelegram) {
+                    // ════════════════════════════════════════════════════════════════
+                    // BUFFERING WATCHDOG (Task 2) - Track buffering duration
+                    // ════════════════════════════════════════════════════════════════
+                    if (resolved.isTelegram && playbackContext.type != PlaybackType.LIVE) {
+                        if (isBuffering && bufferingStartTime.value == null) {
+                            // Entering buffering state - start timer
+                            bufferingStartTime.value = System.currentTimeMillis()
                             TelegramLogRepository.debug(
-                                    source = "InternalPlayer",
-                                    message = "Telegram playback state change",
-                                    details =
-                                            mapOf(
+                                source = "InternalPlayer",
+                                message = "Telegram VOD entered BUFFERING state",
+                                details =
+                                    mapOf(
+                                        "url" to url,
+                                        "positionMs" to pos.toString(),
+                                        "durationMs" to dur.toString(),
+                                    ),
+                            )
+                        } else if (!isBuffering && bufferingStartTime.value != null) {
+                            // Exiting buffering state - clear timer
+                            val bufferingDuration =
+                                System.currentTimeMillis() - bufferingStartTime.value!!
+                            bufferingStartTime.value = null
+                            TelegramLogRepository.debug(
+                                source = "InternalPlayer",
+                                message = "Telegram VOD exited BUFFERING state",
+                                details =
+                                    mapOf(
+                                        "url" to url,
+                                        "positionMs" to pos.toString(),
+                                        "bufferingDurationMs" to
+                                            bufferingDuration.toString(),
+                                    ),
+                            )
+                        } else if (isBuffering && bufferingStartTime.value != null) {
+                            // Still buffering - check if timeout exceeded
+                            val bufferingDuration =
+                                System.currentTimeMillis() - bufferingStartTime.value!!
+                            val now = System.currentTimeMillis()
+                            val timeSinceLastLog = now - lastBufferingLogTime.value
+
+                            if (bufferingDuration > bufferingWatchdogTimeoutMs &&
+                                timeSinceLastLog > bufferingLogThrottleMs
+                            ) {
+                                // Log diagnostic event (throttled to avoid spam)
+                                lastBufferingLogTime.value = now
+                                scope.launch(Dispatchers.IO) {
+                                    try {
+                                        val uri = android.net.Uri.parse(url)
+                                        val fileIdStr =
+                                            uri.pathSegments.lastOrNull() ?: "unknown"
+                                        val fileId = fileIdStr.toIntOrNull() ?: 0
+
+                                        val downloader =
+                                            com.chris.m3usuite.telegram.core
+                                                .T_TelegramServiceClient
+                                                .getInstance(
+                                                    context,
+                                                ).downloader()
+                                        val fileInfo =
+                                            if (fileId > 0) {
+                                                downloader.getFileInfo(fileId)
+                                            } else {
+                                                null
+                                            }
+
+                                        val downloadedPrefix =
+                                            fileInfo?.local?.downloadedPrefixSize ?: 0
+                                        val expectedSize = fileInfo?.expectedSize ?: 0
+
+                                        TelegramLogRepository.warn(
+                                            source = "InternalPlayer",
+                                            message =
+                                                "Telegram VOD buffering watchdog triggered",
+                                            details =
+                                                mapOf(
                                                     "url" to url,
-                                                    "mimeType" to resolved.mimeType,
                                                     "positionMs" to pos.toString(),
                                                     "durationMs" to dur.toString(),
-                                                    "isPlaying" to isPlaying.toString(),
-                                                    "isBuffering" to isBuffering.toString(),
-                                                    "playbackType" to playbackContext.type.name,
-                                            ),
-                            )
-                        }
-                    }
-
-                    override fun onPlayerError(error: PlaybackException) {
-                        val newState =
-                                playerState.value.copy(
-                                        isPlaying = false,
-                                        isBuffering = false,
-                                        playbackError = error,
-                                )
-                        playerState.value = newState
-                        onStateChanged(newState)
-
-                        TelegramLogRepository.error(
-                                source = "InternalPlayer",
-                                message = "Playback error: ${error.message}",
-                                details =
-                                        mapOf(
-                                                "url" to url,
-                                                "mimeType" to (mimeType ?: "unknown"),
-                                                "playbackType" to playbackContext.type.name,
-                                        ),
-                                exception = error,
-                        )
-                        onError(error)
-                    }
-
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        // ════════════════════════════════════════════════════════════════
-                        // TELEGRAM PLAYBACK LOGGING (Task 1) - Log playback state changes
-                        // ════════════════════════════════════════════════════════════════
-                        if (resolved.isTelegram) {
-                            val stateStr =
-                                    when (playbackState) {
-                                        Player.STATE_IDLE -> "IDLE"
-                                        Player.STATE_BUFFERING -> "BUFFERING"
-                                        Player.STATE_READY -> "READY"
-                                        Player.STATE_ENDED -> "ENDED"
-                                        else -> "UNKNOWN($playbackState)"
-                                    }
-
-                            TelegramLogRepository.info(
-                                    source = "InternalPlayerSession",
-                                    message = "onPlaybackStateChanged for Telegram VOD",
-                                    details =
-                                            mapOf(
-                                                    "url" to url,
-                                                    "playbackType" to playbackContext.type.name,
-                                                    "newState" to stateStr,
+                                                    "bufferingDurationMs" to
+                                                        bufferingDuration
+                                                            .toString(),
+                                                    "fileId" to fileIdStr,
+                                                    "downloadedPrefixSize" to
+                                                        downloadedPrefix
+                                                            .toString(),
+                                                    "expectedSize" to
+                                                        expectedSize.toString(),
                                                     "playWhenReady" to
-                                                            newPlayer.playWhenReady.toString(),
-                                                    "isPlaying" to newPlayer.isPlaying.toString(),
-                                                    "positionMs" to
-                                                            newPlayer.currentPosition.toString(),
-                                            ),
-                            )
-
-                            // Confirm we reach STATE_READY or STATE_PLAYING after ensureFileReady
-                            // success
-                            if (playbackState == Player.STATE_READY || newPlayer.isPlaying) {
-                                TelegramLogRepository.info(
-                                        source = "InternalPlayerSession",
-                                        message = "Telegram VOD reached playable state",
-                                        details =
-                                                mapOf(
-                                                        "url" to url,
-                                                        "playbackType" to playbackContext.type.name,
-                                                        "state" to stateStr,
-                                                        "playWhenReady" to
-                                                                newPlayer.playWhenReady.toString(),
-                                                        "isPlaying" to
-                                                                newPlayer.isPlaying.toString(),
-                                                ),
-                                )
-                            }
-                        }
-
-                        // ════════════════════════════════════════════════════════════════
-                        // PLAYBACK ENDED - Mirrors legacy InternalPlayerScreen L798-806
-                        // ════════════════════════════════════════════════════════════════
-                        //
-                        // Phase 3 activation: Resume is cleared when playback reaches end.
-                        //
-                        // Defensive guards match legacy behavior:
-                        // - Only triggers on STATE_ENDED (natural end of playback)
-                        // - LIVE content: No resume to clear (handled in ResumeManager)
-                        // - Fail-open: On any exception, continue silently
-                        if (playbackState == Player.STATE_ENDED) {
-                            scope.launch {
-                                try {
-                                    resumeManager.handleEnded(playbackContext)
-                                } catch (_: Throwable) {
-                                    // Fail-open: Continue silently on error
-                                    // Matches legacy behavior
-                                }
-                            }
-                        }
-                    }
-
-                    override fun onPlayWhenReadyChanged(
-                            playWhenReady: Boolean,
-                            reason: Int,
-                    ) {
-                        // ════════════════════════════════════════════════════════════════
-                        // TELEGRAM PLAYBACK LOGGING (Task 1) - Log playWhenReady changes
-                        // ════════════════════════════════════════════════════════════════
-                        if (resolved.isTelegram) {
-                            val reasonStr =
-                                    when (reason) {
-                                        Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST ->
-                                                "USER_REQUEST"
-                                        Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS ->
-                                                "AUDIO_FOCUS_LOSS"
-                                        Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY ->
-                                                "AUDIO_BECOMING_NOISY"
-                                        Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "REMOTE"
-                                        Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM ->
-                                                "END_OF_MEDIA_ITEM"
-                                        else -> "UNKNOWN($reason)"
-                                    }
-
-                            TelegramLogRepository.info(
-                                    source = "InternalPlayerSession",
-                                    message = "onPlayWhenReadyChanged for Telegram VOD",
-                                    details =
-                                            mapOf(
-                                                    "url" to url,
-                                                    "playbackType" to playbackContext.type.name,
-                                                    "playWhenReady" to playWhenReady.toString(),
-                                                    "reason" to reasonStr,
+                                                        player.playWhenReady
+                                                            .toString(),
                                                     "playbackState" to
-                                                            when (newPlayer.playbackState) {
-                                                                Player.STATE_IDLE -> "IDLE"
-                                                                Player.STATE_BUFFERING ->
-                                                                        "BUFFERING"
-                                                                Player.STATE_READY -> "READY"
-                                                                Player.STATE_ENDED -> "ENDED"
-                                                                else -> "UNKNOWN"
-                                                            },
-                                                    "isPlaying" to newPlayer.isPlaying.toString(),
-                                            ),
+                                                        when (
+                                                            player.playbackState
+                                                        ) {
+                                                            Player.STATE_IDLE ->
+                                                                "IDLE"
+                                                            Player.STATE_BUFFERING ->
+                                                                "BUFFERING"
+                                                            Player.STATE_READY ->
+                                                                "READY"
+                                                            Player.STATE_ENDED ->
+                                                                "ENDED"
+                                                            else -> "UNKNOWN"
+                                                        },
+                                                ),
+                                        )
+                                    } catch (e: Exception) {
+                                        TelegramLogRepository.error(
+                                            source = "InternalPlayer",
+                                            message =
+                                                "Failed to collect buffering watchdog diagnostics",
+                                            exception = e,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (resolved.isTelegram) {
+                        TelegramLogRepository.debug(
+                            source = "InternalPlayer",
+                            message = "Telegram playback state change",
+                            details =
+                                mapOf(
+                                    "url" to url,
+                                    "mimeType" to resolved.mimeType,
+                                    "positionMs" to pos.toString(),
+                                    "durationMs" to dur.toString(),
+                                    "isPlaying" to isPlaying.toString(),
+                                    "isBuffering" to isBuffering.toString(),
+                                    "playbackType" to playbackContext.type.name,
+                                ),
+                        )
+                    }
+                }
+
+                override fun onPlayerError(error: PlaybackException) {
+                    val newState =
+                        playerState.value.copy(
+                            isPlaying = false,
+                            isBuffering = false,
+                            playbackError = error,
+                        )
+                    playerState.value = newState
+                    onStateChanged(newState)
+
+                    TelegramLogRepository.error(
+                        source = "InternalPlayer",
+                        message = "Playback error: ${error.message}",
+                        details =
+                            mapOf(
+                                "url" to url,
+                                "mimeType" to (mimeType ?: "unknown"),
+                                "playbackType" to playbackContext.type.name,
+                            ),
+                        exception = error,
+                    )
+                    onError(error)
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    // ════════════════════════════════════════════════════════════════
+                    // TELEGRAM PLAYBACK LOGGING (Task 1) - Log playback state changes
+                    // ════════════════════════════════════════════════════════════════
+                    if (resolved.isTelegram) {
+                        val stateStr =
+                            when (playbackState) {
+                                Player.STATE_IDLE -> "IDLE"
+                                Player.STATE_BUFFERING -> "BUFFERING"
+                                Player.STATE_READY -> "READY"
+                                Player.STATE_ENDED -> "ENDED"
+                                else -> "UNKNOWN($playbackState)"
+                            }
+
+                        TelegramLogRepository.info(
+                            source = "InternalPlayerSession",
+                            message = "onPlaybackStateChanged for Telegram VOD",
+                            details =
+                                mapOf(
+                                    "url" to url,
+                                    "playbackType" to playbackContext.type.name,
+                                    "newState" to stateStr,
+                                    "playWhenReady" to
+                                        newPlayer.playWhenReady.toString(),
+                                    "isPlaying" to newPlayer.isPlaying.toString(),
+                                    "positionMs" to
+                                        newPlayer.currentPosition.toString(),
+                                ),
+                        )
+
+                        // Confirm we reach STATE_READY or STATE_PLAYING after ensureFileReady
+                        // success
+                        if (playbackState == Player.STATE_READY || newPlayer.isPlaying) {
+                            TelegramLogRepository.info(
+                                source = "InternalPlayerSession",
+                                message = "Telegram VOD reached playable state",
+                                details =
+                                    mapOf(
+                                        "url" to url,
+                                        "playbackType" to playbackContext.type.name,
+                                        "state" to stateStr,
+                                        "playWhenReady" to
+                                            newPlayer.playWhenReady.toString(),
+                                        "isPlaying" to
+                                            newPlayer.isPlaying.toString(),
+                                    ),
                             )
                         }
                     }
 
-                    override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
-                        // ════════════════════════════════════════════════════════════════
-                        // SUBTITLE TRACK SELECTION - Phase 4 Group 3
-                        // ════════════════════════════════════════════════════════════════
-                        //
-                        // Select initial subtitle track based on user preferences and kid mode.
-                        //
-                        // Defensive guards:
-                        // - Kid Mode: No subtitle track selected (returns null from policy)
-                        // - LIVE content: Subtitle tracks allowed but not persisted
-                        // - No tracks available: No-op
-                        // - Fail-open: On any exception, continue without subtitles
-                        try {
-                            val isKidMode = kidsState?.kidActive == true
-
-                            // Extract subtitle tracks from Media3 Tracks
-                            val availableSubtitleTracks =
-                                    mutableListOf<
-                                            com.chris.m3usuite.player.internal.subtitles.SubtitleTrack>()
-                            for (trackGroup in tracks.groups) {
-                                val group = trackGroup.mediaTrackGroup
-                                if (group.type == C.TRACK_TYPE_TEXT) {
-                                    for (i in 0 until group.length) {
-                                        val format = group.getFormat(i)
-                                        availableSubtitleTracks.add(
-                                                com.chris.m3usuite.player.internal.subtitles
-                                                        .SubtitleTrack(
-                                                                groupIndex =
-                                                                        tracks.groups.indexOf(
-                                                                                trackGroup
-                                                                        ),
-                                                                trackIndex = i,
-                                                                language = format.language,
-                                                                label = format.label
-                                                                                ?: format.language
-                                                                                        ?: "Unknown",
-                                                                isDefault =
-                                                                        (format.selectionFlags and
-                                                                                C.SELECTION_FLAG_DEFAULT) !=
-                                                                                0,
-                                                        ),
-                                        )
-                                    }
-                                }
+                    // ════════════════════════════════════════════════════════════════
+                    // PLAYBACK ENDED - Mirrors legacy InternalPlayerScreen L798-806
+                    // ════════════════════════════════════════════════════════════════
+                    //
+                    // Phase 3 activation: Resume is cleared when playback reaches end.
+                    //
+                    // Defensive guards match legacy behavior:
+                    // - Only triggers on STATE_ENDED (natural end of playback)
+                    // - LIVE content: No resume to clear (handled in ResumeManager)
+                    // - Fail-open: On any exception, continue silently
+                    if (playbackState == Player.STATE_ENDED) {
+                        scope.launch {
+                            try {
+                                resumeManager.handleEnded(playbackContext)
+                            } catch (_: Throwable) {
+                                // Fail-open: Continue silently on error
+                                // Matches legacy behavior
                             }
-
-                            // Always update available tracks in UiState (for CC button visibility)
-                            val tracksUpdated =
-                                    playerState.value.copy(
-                                            availableSubtitleTracks =
-                                                    availableSubtitleTracks.toList(),
-                                    )
-                            playerState.value = tracksUpdated
-                            onStateChanged(tracksUpdated)
-
-                            if (availableSubtitleTracks.isNotEmpty()) {
-                                // Get system language and profile languages (TODO: actual profile
-                                // language prefs)
-                                val systemLang = java.util.Locale.getDefault().language
-                                val preferredLanguages = listOf(systemLang)
-
-                                // Select initial track using policy
-                                val selectedTrack =
-                                        subtitleSelectionPolicy.selectInitialTrack(
-                                                availableTracks = availableSubtitleTracks,
-                                                preferredLanguages = preferredLanguages,
-                                                playbackType = playbackContext.type,
-                                                isKidMode = isKidMode,
-                                        )
-
-                                // Apply track selection to Media3
-                                if (selectedTrack != null && !isKidMode) {
-                                    // Find the corresponding track group
-                                    val trackGroupIndex = selectedTrack.groupIndex
-                                    if (trackGroupIndex >= 0 && trackGroupIndex < tracks.groups.size
-                                    ) {
-                                        val trackGroup = tracks.groups[trackGroupIndex]
-                                        val mediaTrackGroup = trackGroup.mediaTrackGroup
-
-                                        // Create TrackSelectionOverride for the selected track
-                                        val override =
-                                                androidx.media3.common.TrackSelectionOverride(
-                                                        mediaTrackGroup,
-                                                        listOf(selectedTrack.trackIndex),
-                                                )
-
-                                        // Apply the override to the player
-                                        newPlayer.trackSelectionParameters =
-                                                newPlayer
-                                                        .trackSelectionParameters
-                                                        .buildUpon()
-                                                        .setOverrideForType(override)
-                                                        .build()
-                                    }
-
-                                    // Update UiState with selected track
-                                    val updated =
-                                            playerState.value.copy(
-                                                    selectedSubtitleTrack = selectedTrack,
-                                            )
-                                    playerState.value = updated
-                                    onStateChanged(updated)
-                                } else {
-                                    // No track selected or Kid Mode: clear subtitle track
-                                    newPlayer.trackSelectionParameters =
-                                            newPlayer
-                                                    .trackSelectionParameters
-                                                    .buildUpon()
-                                                    .clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                                                    .build()
-
-                                    val updated =
-                                            playerState.value.copy(
-                                                    selectedSubtitleTrack = null,
-                                            )
-                                    playerState.value = updated
-                                    onStateChanged(updated)
-                                }
-                            }
-                        } catch (_: Throwable) {
-                            // Fail-open: Continue without subtitles on error
                         }
                     }
-                },
+                }
+
+                override fun onPlayWhenReadyChanged(
+                    playWhenReady: Boolean,
+                    reason: Int,
+                ) {
+                    // ════════════════════════════════════════════════════════════════
+                    // TELEGRAM PLAYBACK LOGGING (Task 1) - Log playWhenReady changes
+                    // ════════════════════════════════════════════════════════════════
+                    if (resolved.isTelegram) {
+                        val reasonStr =
+                            when (reason) {
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST ->
+                                    "USER_REQUEST"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS ->
+                                    "AUDIO_FOCUS_LOSS"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY ->
+                                    "AUDIO_BECOMING_NOISY"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "REMOTE"
+                                Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM ->
+                                    "END_OF_MEDIA_ITEM"
+                                else -> "UNKNOWN($reason)"
+                            }
+
+                        TelegramLogRepository.info(
+                            source = "InternalPlayerSession",
+                            message = "onPlayWhenReadyChanged for Telegram VOD",
+                            details =
+                                mapOf(
+                                    "url" to url,
+                                    "playbackType" to playbackContext.type.name,
+                                    "playWhenReady" to playWhenReady.toString(),
+                                    "reason" to reasonStr,
+                                    "playbackState" to
+                                        when (newPlayer.playbackState) {
+                                            Player.STATE_IDLE -> "IDLE"
+                                            Player.STATE_BUFFERING ->
+                                                "BUFFERING"
+                                            Player.STATE_READY -> "READY"
+                                            Player.STATE_ENDED -> "ENDED"
+                                            else -> "UNKNOWN"
+                                        },
+                                    "isPlaying" to newPlayer.isPlaying.toString(),
+                                ),
+                        )
+                    }
+                }
+
+                override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                    // ════════════════════════════════════════════════════════════════
+                    // SUBTITLE TRACK SELECTION - Phase 4 Group 3
+                    // ════════════════════════════════════════════════════════════════
+                    //
+                    // Select initial subtitle track based on user preferences and kid mode.
+                    //
+                    // Defensive guards:
+                    // - Kid Mode: No subtitle track selected (returns null from policy)
+                    // - LIVE content: Subtitle tracks allowed but not persisted
+                    // - No tracks available: No-op
+                    // - Fail-open: On any exception, continue without subtitles
+                    try {
+                        val isKidMode = kidsState?.kidActive == true
+
+                        // Extract subtitle tracks from Media3 Tracks
+                        val availableSubtitleTracks =
+                            mutableListOf<
+                                com.chris.m3usuite.player.internal.subtitles.SubtitleTrack,
+                            >()
+                        for (trackGroup in tracks.groups) {
+                            val group = trackGroup.mediaTrackGroup
+                            if (group.type == C.TRACK_TYPE_TEXT) {
+                                for (i in 0 until group.length) {
+                                    val format = group.getFormat(i)
+                                    availableSubtitleTracks.add(
+                                        com.chris.m3usuite.player.internal.subtitles
+                                            .SubtitleTrack(
+                                                groupIndex =
+                                                    tracks.groups.indexOf(
+                                                        trackGroup,
+                                                    ),
+                                                trackIndex = i,
+                                                language = format.language,
+                                                label =
+                                                    format.label
+                                                        ?: format.language
+                                                        ?: "Unknown",
+                                                isDefault =
+                                                    (
+                                                        format.selectionFlags and
+                                                            C.SELECTION_FLAG_DEFAULT
+                                                    ) !=
+                                                        0,
+                                            ),
+                                    )
+                                }
+                            }
+                        }
+
+                        // Always update available tracks in UiState (for CC button visibility)
+                        val tracksUpdated =
+                            playerState.value.copy(
+                                availableSubtitleTracks =
+                                    availableSubtitleTracks.toList(),
+                            )
+                        playerState.value = tracksUpdated
+                        onStateChanged(tracksUpdated)
+
+                        if (availableSubtitleTracks.isNotEmpty()) {
+                            // Get system language and profile languages (TODO: actual profile
+                            // language prefs)
+                            val systemLang =
+                                java.util.Locale
+                                    .getDefault()
+                                    .language
+                            val preferredLanguages = listOf(systemLang)
+
+                            // Select initial track using policy
+                            val selectedTrack =
+                                subtitleSelectionPolicy.selectInitialTrack(
+                                    availableTracks = availableSubtitleTracks,
+                                    preferredLanguages = preferredLanguages,
+                                    playbackType = playbackContext.type,
+                                    isKidMode = isKidMode,
+                                )
+
+                            // Apply track selection to Media3
+                            if (selectedTrack != null && !isKidMode) {
+                                // Find the corresponding track group
+                                val trackGroupIndex = selectedTrack.groupIndex
+                                if (trackGroupIndex >= 0 && trackGroupIndex < tracks.groups.size
+                                ) {
+                                    val trackGroup = tracks.groups[trackGroupIndex]
+                                    val mediaTrackGroup = trackGroup.mediaTrackGroup
+
+                                    // Create TrackSelectionOverride for the selected track
+                                    val override =
+                                        androidx.media3.common.TrackSelectionOverride(
+                                            mediaTrackGroup,
+                                            listOf(selectedTrack.trackIndex),
+                                        )
+
+                                    // Apply the override to the player
+                                    newPlayer.trackSelectionParameters =
+                                        newPlayer
+                                            .trackSelectionParameters
+                                            .buildUpon()
+                                            .setOverrideForType(override)
+                                            .build()
+                                }
+
+                                // Update UiState with selected track
+                                val updated =
+                                    playerState.value.copy(
+                                        selectedSubtitleTrack = selectedTrack,
+                                    )
+                                playerState.value = updated
+                                onStateChanged(updated)
+                            } else {
+                                // No track selected or Kid Mode: clear subtitle track
+                                newPlayer.trackSelectionParameters =
+                                    newPlayer
+                                        .trackSelectionParameters
+                                        .buildUpon()
+                                        .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                                        .build()
+
+                                val updated =
+                                    playerState.value.copy(
+                                        selectedSubtitleTrack = null,
+                                    )
+                                playerState.value = updated
+                                onStateChanged(updated)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                        // Fail-open: Continue without subtitles on error
+                    }
+                }
+            },
         )
 
         // TODO: Sleep-Timer feature not yet implemented in SettingsStore
@@ -1025,9 +1056,9 @@ fun rememberInternalPlayerSession(
                     // - Near-end (<10s remaining): Clear resume
                     // - Normal: Save current position
                     resumeManager.handlePeriodicTick(
-                            context = playbackContext,
-                            positionMs = pos,
-                            durationMs = dur,
+                        context = playbackContext,
+                        positionMs = pos,
+                        durationMs = dur,
                     )
 
                     // ────────────────────────────────────────────────────────────────
@@ -1040,9 +1071,9 @@ fun rememberInternalPlayerSession(
                     // - Reset accumulation when paused or not kid profile
                     val currentKids = kidsState
                     if (currentKids != null &&
-                                    currentKids.kidActive &&
-                                    newPlayer.playWhenReady &&
-                                    newPlayer.isPlaying
+                        currentKids.kidActive &&
+                        newPlayer.playWhenReady &&
+                        newPlayer.isPlaying
                     ) {
                         tickAccumSecs += 3
                         if (tickAccumSecs >= 60) {
@@ -1053,28 +1084,30 @@ fun rememberInternalPlayerSession(
                             // Log when the screen-time limit triggers a block
                             if (!currentKids.kidBlocked && updatedKids.kidBlocked) {
                                 TelegramLogRepository.info(
-                                        source = "InternalPlayer",
-                                        message =
-                                                "Kids screen-time limit reached, blocking playback",
-                                        details =
-                                                mapOf(
-                                                        "profileId" to
-                                                                (updatedKids.kidProfileId
-                                                                        ?.toString()
-                                                                        ?: "null"),
-                                                        "playbackType" to playbackContext.type.name,
-                                                        "url" to url,
+                                    source = "InternalPlayer",
+                                    message =
+                                        "Kids screen-time limit reached, blocking playback",
+                                    details =
+                                        mapOf(
+                                            "profileId" to
+                                                (
+                                                    updatedKids.kidProfileId
+                                                        ?.toString()
+                                                        ?: "null"
                                                 ),
+                                            "playbackType" to playbackContext.type.name,
+                                            "url" to url,
+                                        ),
                                 )
                             }
 
                             val updatedState =
-                                    playerState.value.copy(
-                                            kidActive = updatedKids.kidActive,
-                                            kidBlocked = updatedKids.kidBlocked,
-                                            kidProfileId = updatedKids.kidProfileId,
-                                            remainingKidsMinutes = updatedKids.remainingMinutes,
-                                    )
+                                playerState.value.copy(
+                                    kidActive = updatedKids.kidActive,
+                                    kidBlocked = updatedKids.kidBlocked,
+                                    kidProfileId = updatedKids.kidProfileId,
+                                    remainingKidsMinutes = updatedKids.remainingMinutes,
+                                )
                             playerState.value = updatedState
                             onStateChanged(updatedState)
 
@@ -1119,11 +1152,11 @@ fun rememberInternalPlayerSession(
                     val changed = channel?.id != lastChannelId
 
                     val updated =
-                            playerState.value.copy(
-                                    liveChannelName = channel?.name,
-                                    controlsVisible = true,
-                                    controlsTick = playerState.value.controlsTick + 1,
-                            )
+                        playerState.value.copy(
+                            liveChannelName = channel?.name,
+                            controlsVisible = true,
+                            controlsTick = playerState.value.controlsTick + 1,
+                        )
                     playerState.value = updated
                     onStateChanged(updated)
 
@@ -1145,14 +1178,15 @@ fun rememberInternalPlayerSession(
 
                                 // Build new MediaItem for the channel
                                 val newMediaItem =
-                                        MediaItem.Builder()
-                                                .setUri(channelUrl)
-                                                .setMediaMetadata(
-                                                        MediaMetadata.Builder()
-                                                                .setTitle(channel.name)
-                                                                .build(),
-                                                )
-                                                .build()
+                                    MediaItem
+                                        .Builder()
+                                        .setUri(channelUrl)
+                                        .setMediaMetadata(
+                                            MediaMetadata
+                                                .Builder()
+                                                .setTitle(channel.name)
+                                                .build(),
+                                        ).build()
 
                                 // Set new media item and play
                                 newPlayer.setMediaItem(newMediaItem)
@@ -1165,18 +1199,18 @@ fun rememberInternalPlayerSession(
                                 // SecurityException (missing permissions), and other runtime
                                 // exceptions.
                                 com.chris.m3usuite.core.logging.AppLog.log(
-                                        category = "live",
-                                        level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
-                                        message =
-                                                "Failed to switch live channel: ${e.message ?: e::class.simpleName}",
-                                        extras =
-                                                mapOf(
-                                                        "channelId" to channel.id.toString(),
-                                                        "channelName" to channel.name,
-                                                        "url" to channelUrl,
-                                                        "exceptionType" to
-                                                                (e::class.simpleName ?: "Unknown"),
-                                                ),
+                                    category = "live",
+                                    level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                                    message =
+                                        "Failed to switch live channel: ${e.message ?: e::class.simpleName}",
+                                    extras =
+                                        mapOf(
+                                            "channelId" to channel.id.toString(),
+                                            "channelName" to channel.name,
+                                            "url" to channelUrl,
+                                            "exceptionType" to
+                                                (e::class.simpleName ?: "Unknown"),
+                                        ),
                                 )
                             }
                         }
@@ -1198,11 +1232,11 @@ fun rememberInternalPlayerSession(
                     if (playerHolder.value !== newPlayer) return@collect
 
                     val updated =
-                            playerState.value.copy(
-                                    liveNowTitle = overlay.nowTitle,
-                                    liveNextTitle = overlay.nextTitle,
-                                    epgOverlayVisible = overlay.visible,
-                            )
+                        playerState.value.copy(
+                            liveNowTitle = overlay.nowTitle,
+                            liveNextTitle = overlay.nextTitle,
+                            epgOverlayVisible = overlay.visible,
+                        )
                     playerState.value = updated
                     onStateChanged(updated)
                 }
@@ -1226,9 +1260,9 @@ fun rememberInternalPlayerSession(
                 if (playerHolder.value !== newPlayer) return@collect
 
                 val updated =
-                        playerState.value.copy(
-                                subtitleStyle = style,
-                        )
+                    playerState.value.copy(
+                        subtitleStyle = style,
+                    )
                 playerState.value = updated
                 onStateChanged(updated)
 
@@ -1266,8 +1300,8 @@ fun rememberInternalPlayerSession(
 
     // BUG 2 FIX: Return both player and liveController for proper channel zapping wiring
     return InternalPlayerSessionResult(
-            player = playerHolder.value,
-            liveController = liveController,
+        player = playerHolder.value,
+        liveController = liveController,
     )
 }
 
@@ -1325,8 +1359,8 @@ fun applyPlayerCommand_PlayPause(player: ExoPlayer?) {
 }
 
 fun applyPlayerCommand_SeekBy(
-        player: ExoPlayer?,
-        deltaMs: Long,
+    player: ExoPlayer?,
+    deltaMs: Long,
 ) {
     player ?: return
     val target = (player.currentPosition + deltaMs).coerceAtLeast(0L)
@@ -1334,24 +1368,24 @@ fun applyPlayerCommand_SeekBy(
 }
 
 fun applyPlayerCommand_SeekTo(
-        player: ExoPlayer?,
-        positionMs: Long,
+    player: ExoPlayer?,
+    positionMs: Long,
 ) {
     player ?: return
     player.seekTo(positionMs.coerceAtLeast(0L))
 }
 
 fun applyPlayerCommand_ChangeSpeed(
-        player: ExoPlayer?,
-        speed: Float,
+    player: ExoPlayer?,
+    speed: Float,
 ) {
     player ?: return
     player.playbackParameters = PlaybackParameters(speed)
 }
 
 fun applyPlayerCommand_ToggleLoop(
-        player: ExoPlayer?,
-        looping: Boolean,
+    player: ExoPlayer?,
+    looping: Boolean,
 ) {
     player ?: return
     player.repeatMode = if (looping) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
