@@ -1521,6 +1521,9 @@ class T_TelegramFileDownloader(
                     is Mp4HeaderParser.ValidationResult.MoovIncomplete -> {
                         // moov started but not complete yet
                         if (!moovIncompleteWarningLogged) {
+                            val remainingBytes =
+                                validationResult.moovOffset + validationResult.moovSize -
+                                    validationResult.availableBytes
                             TelegramLogRepository.info(
                                 source = "T_TelegramFileDownloader",
                                 message = "ensureFileReadyWithMp4Validation: MP4 moov atom incomplete, waiting",
@@ -1530,11 +1533,7 @@ class T_TelegramFileDownloader(
                                         "moovOffset" to validationResult.moovOffset.toString(),
                                         "moovSize" to validationResult.moovSize.toString(),
                                         "availableBytes" to validationResult.availableBytes.toString(),
-                                        "remainingBytes" to
-                                            (
-                                                validationResult.moovOffset + validationResult.moovSize -
-                                                    validationResult.availableBytes
-                                            ).toString(),
+                                        "remainingBytes" to remainingBytes.toString(),
                                     ),
                             )
                             moovIncompleteWarningLogged = true
