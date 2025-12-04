@@ -8,6 +8,9 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
     id("com.github.ben-manes.versions") version "0.51.0" apply true
     id("org.jetbrains.kotlinx.kover") version "0.8.3" apply true
+    
+    // Add the dependency for the Google services Gradle plugin
+    id("com.google.gms.google-services") version "4.4.4" apply false
 }
 
 // Apply quality plugins to all subprojects

@@ -1,0 +1,37 @@
+{
+  "name": "FishIT-Player Android Development",
+  "image": "mcr.microsoft.com/devcontainers/java:21",
+  "features": {
+    "ghcr.io/devcontainers/features/android-sdk:1": {
+      "version": "latest",
+      "cmdlineToolsVersion": "latest",
+      "sdkRoot": "/workspaces/FishIT-Player/.wsl-android-sdk"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "fwcd.kotlin",
+        "mathiasfrohlich.Kotlin",
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ],
+      "settings": {
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-21",
+            "path": "/home/codespace/java/current",
+            "default": true
+          }
+        ]
+      }
+    }
+  },
+  "remoteEnv": {
+    "ANDROID_HOME": "/workspaces/FishIT-Player/.wsl-android-sdk",
+    "ANDROID_SDK_ROOT": "/workspaces/FishIT-Player/.wsl-android-sdk",
+    "PATH": "${containerEnv:PATH}:/workspaces/FishIT-Player/.wsl-android-sdk/cmdline-tools/latest/bin:/workspaces/FishIT-Player/.wsl-android-sdk/platform-tools"
+  }
+}

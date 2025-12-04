@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1032810287814",
+    "project_id": "fishit-player",
+    "storage_bucket": "fishit-player.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1032810287814:android:27ff10e4146a5abfa13dc7",
+        "android_client_info": {
+          "package_name": "com.chris.m3usuite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABQakas2NNnlxmd01bc0INZMLMwqkd_Lg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
