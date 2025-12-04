@@ -21,4 +21,14 @@ if [ -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
     echo "✓ SDK licenses accepted"
 fi
 
+# Start memory monitor in background
+echo "=== Starting memory monitor ==="
+if [ ! -f /tmp/memory-monitor.pid ] || ! ps -p $(cat /tmp/memory-monitor.pid 2>/dev/null) > /dev/null 2>&1; then
+    nohup bash /workspaces/FishIT-Player/.devcontainer/monitor-memory.sh > /tmp/memory-monitor.log 2>&1 &
+    echo $! > /tmp/memory-monitor.pid
+    echo "✓ Memory monitor started (PID: $!)"
+else
+    echo "✓ Memory monitor already running"
+fi
+
 echo "=== Android environment ready ==="

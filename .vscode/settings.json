@@ -4,6 +4,18 @@
   "kotlin.compiler.jvm.target": "17",
   "kotlin.debugAdapter.enabled": true,
   
+  // Kotlin Language Server Memory Limits (prevent OOM crashes)
+  "kotlin.languageServer.jvmOptions": [
+    "-Xmx768m",
+    "-Xms128m",
+    "-XX:+UseG1GC",
+    "-XX:MaxMetaspaceSize=256m",
+    "-XX:+HeapDumpOnOutOfMemoryError",
+    "-XX:HeapDumpPath=/tmp/kotlin-ls-oom.hprof"
+  ],
+  "kotlin.compiler.noStdlib": false,
+  "kotlin.compiler.noReflect": false,
+  
   // ===== Java =====
   "java.configuration.runtimes": [
     {
@@ -13,6 +25,17 @@
     }
   ],
   "java.jdt.ls.java.home": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+  
+  // Java Language Server Memory Limits (optimized for 8GB Codespaces)
+  "java.jdt.ls.vmargs": "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms256m -Xmx1024m -XX:MaxMetaspaceSize=256m -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Djava.awt.headless=true -Djava.util.concurrent.ForkJoinPool.common.parallelism=2",
+  "java.import.gradle.java.home": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+  "java.import.gradle.wrapper.enabled": true,
+  "java.import.gradle.offline.enabled": false,
+  "java.autobuild.enabled": false,
+  "java.maxConcurrentBuilds": 1,
+  "java.completion.guessMethodArguments": false,
+  "java.refactor.renameFromFileExplorer": "never",
+  "java.codeGeneration.hashCodeEquals.useJava7Objects": true,
   
   // ===== Android =====
   "android.sdk": "${workspaceFolder}/.wsl-android-sdk",
@@ -88,6 +111,8 @@
     "ANDROID_NDK_HOME": "${workspaceFolder}/.wsl-android-sdk/ndk/26.1.10909125",
     "JAVA_HOME": "/usr/local/sdkman/candidates/java/21.0.9-ms",
     "GRADLE_USER_HOME": "${workspaceFolder}/.wsl-gradle",
+    "GRADLE_OPTS": "-Xmx1536m -Xms256m -XX:+UseG1GC -XX:MaxMetaspaceSize=384m -Dorg.gradle.daemon.idletimeout=300000 -Dorg.gradle.jvmargs=-Xmx1536m",
+    "_JAVA_OPTIONS": "-Xmx1536m -Xms256m",
     "PATH": "${workspaceFolder}/.wsl-cmake/bin:${workspaceFolder}/.wsl-gperf:/usr/local/sdkman/candidates/java/21.0.9-ms/bin:${workspaceFolder}/.wsl-android-sdk/cmdline-tools/latest/bin:${workspaceFolder}/.wsl-android-sdk/platform-tools:${workspaceFolder}/.wsl-android-sdk/emulator:${env:PATH}"
   },
   
@@ -103,9 +128,32 @@
   // ===== Compose =====
   "compose.preview.enabled": true,
   
-  // ===== Performance =====
-  "files.maxMemoryForLargeFilesMB": 8192,
-  "search.maxResults": 20000,
+  // ===== Performance & Memory Optimization =====
+  "files.maxMemoryForLargeFilesMB": 4096,
+  "search.maxResults": 10000,
+  "search.followSymlinks": false,
+  "search.smartCase": true,
+  "typescript.tsserver.maxTsServerMemory": 1024,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  
+  // Disable memory-intensive features
+  "editor.occurrencesHighlight": false,
+  "editor.selectionHighlight": false,
+  "editor.wordBasedSuggestions": false,
+  "editor.wordBasedSuggestionsMode": "currentDocument",
+  "editor.gotoLocation.multipleDefinitions": "goto",
+  "editor.gotoLocation.multipleImplementations": "goto",
+  "problems.decorations.enabled": true,
+  
+  // Git performance
+  "git.decorations.enabled": true,
+  "git.untrackedChanges": "hidden",
+  "git.ignoreLimitWarning": true,
+  
+  // Extension host limits
+  "extensions.autoUpdate": false,
+  "extensions.autoCheckUpdates": false,
+  "update.mode": "none",
   
   // ===== Tasks =====
   "task.autoDetect": "on",
