@@ -1,6 +1,7 @@
 package com.chris.m3usuite
 
 import android.app.Application
+import android.util.Log
 import com.chris.m3usuite.core.logging.CrashHandler
 import com.chris.m3usuite.core.telemetry.FrameTimeWatchdog
 import com.chris.m3usuite.core.telemetry.Telemetry
@@ -9,6 +10,11 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.logging.TelegramLogRepository
 import com.chris.m3usuite.telegram.prefetch.TelegramThumbPrefetcher
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.perf.FirebasePerformance
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.remoteConfigSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +32,10 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Install crash handler FIRST - before any other initialization
+        // Initialize Firebase FIRST - before crash handlers can use Crashlytics
+        initializeFirebase()
+
+        // Install crash handler after Firebase - it uses Crashlytics
         CrashHandler.install(this)
 
         // Initialize debug tools in debug builds
@@ -99,5 +108,43 @@ class App : Application() {
         }
     }
 
-    // Global image loader: our AsyncImage wrappers use AppImageLoader directly.
+    /**
+     * Initialize all Firebase services.
+     * Called before any other initialization to ensure Crashlytics captures all crashes.
+     */
+    private fun initializeFirebase() {
+        try {
+            // Initialize Firebase (usually auto-initialized via google-services.json, but explicit is safer)
+            FirebaseApp.initializeApp(this)
+
+            // Configure Crashlytics
+            val crashlytics = FirebaseCrashlytics.getInstance()
+            crashlytics.setCrashlyticsCollectionEnabled(true)
+            crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
+            crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
+            crashlytics.setCustomKey("build_type", BuildConfig.BUILD_TYPE)
+
+            // Configure Performance Monitoring
+            val perf = FirebasePerformance.getInstance()
+            perf.isPerformanceCollectionEnabled = true
+
+            // Configure Remote Config with sensible defaults
+            val remoteConfig = FirebaseRemoteConfig.getInstance()
+            val configSettings = remoteConfigSettings {
+                minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) 0 else 3600 // 1 hour in release
+            }
+            remoteConfig.setConfigSettingsAsync(configSettings)
+
+            // Fetch remote config in background
+            remoteConfig.fetchAndActivate()
+
+            Log.i(TAG, "Firebase initialized successfully (Crashlytics, Performance, RemoteConfig)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Firebase initialization failed", e)
+        }
+    }
+
+    companion object {
+        private const val TAG = "App"
+    }
 }

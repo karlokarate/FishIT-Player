@@ -4,14 +4,24 @@
 -dontwarn org.jetbrains.annotations.**
 
 
-# Logs in Release entfernen (CPU sparen)
+# Logs in Release entfernen (CPU sparen) - nur Debug/Verbose, Warnings behalten für Crashlytics
 -assumenosideeffects class android.util.Log {
   public static *** d(...);
   public static *** v(...);
-  public static *** i(...);
-  public static *** w(...);
-  public static *** println(...);
 }
+
+# ===== Firebase & Google Services =====
+# Keep Firebase classes
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+
+# Crashlytics - keep line numbers for readable stack traces
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+
+# Keep custom exception classes for better crash reports
+-keep class com.chris.m3usuite.**Exception { *; }
+-keep class com.chris.m3usuite.**Error { *; }
 
 # ObjectBox Entities und JNI
 -keep class io.objectbox.** { *; }

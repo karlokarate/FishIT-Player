@@ -172,9 +172,20 @@ android {
             } else {
                 println("⚠️  Release wird UNSIGNIERT gebaut (kein Keystore gefunden).")
             }
+            
+            // Firebase Crashlytics: Enable mapping file upload for readable stack traces
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+                nativeSymbolUploadEnabled = false // Enable if using native code
+            }
         }
         debug {
             isMinifyEnabled = false
+            
+            // Firebase Crashlytics: Disable mapping upload in debug (faster builds)
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
         }
     }
 

@@ -2,21 +2,24 @@ package com.chris.m3usuite.core.logging
 
 import android.content.Context
 import android.util.Log
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
 /**
- * Global crash handler that writes crash reports to persistent storage.
+ * Global crash handler that writes crash reports to persistent storage
+ * AND forwards to Firebase Crashlytics.
  *
  * Features:
  * - Captures uncaught exceptions before process death
- * - Writes crash report with stack trace and last N log entries
+ * - Reports to Firebase Crashlytics for cloud analysis
+ * - Writes crash report with stack trace and last N log entries locally
  * - Crash report survives app restart for post-crash analysis
  * - Chains to default handler for standard system crash dialog
  *
- * Installation (in App.onCreate()):
+ * Installation (in App.onCreate() AFTER Firebase init):
  * ```
  * CrashHandler.install(this)
  * ```
@@ -52,14 +55,17 @@ object CrashHandler {
 
     /**
      * Install the global uncaught exception handler.
-     * Should be called as early as possible in App.onCreate().
+     * Should be called as early as possible in App.onCreate(), AFTER Firebase init.
      */
     fun install(context: Context) {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
 
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
-                // Write crash to file BEFORE app dies
+                // Report to Firebase Crashlytics FIRST (most reliable)
+                reportToCrashlytics(thread, throwable)
+
+                // Write crash to file BEFORE app dies (local backup)
                 writeCrashToFile(context, thread, throwable)
 
                 // Log to AppLog (may not persist but good for debugging if we survive)
@@ -82,7 +88,37 @@ object CrashHandler {
             }
         }
 
-        Log.i(TAG, "CrashHandler installed")
+        Log.i(TAG, "CrashHandler installed (with Crashlytics integration)")
+    }
+
+    /**
+     * Report crash to Firebase Crashlytics with additional context.
+     */
+    private fun reportToCrashlytics(thread: Thread, throwable: Throwable) {
+        try {
+            val crashlytics = FirebaseCrashlytics.getInstance()
+            
+            // Add context about the crash
+            crashlytics.setCustomKey("crash_thread", thread.name)
+            crashlytics.setCustomKey("crash_time", System.currentTimeMillis())
+            
+            // Log last few app logs to Crashlytics for context
+            try {
+                val recentLogs = AppLog.history.value.takeLast(10)
+                recentLogs.forEachIndexed { index, entry ->
+                    crashlytics.log("[$index] ${entry.category}: ${entry.message}")
+                }
+            } catch (e: Exception) {
+                crashlytics.log("Failed to attach app logs: ${e.message}")
+            }
+            
+            // Record the exception
+            crashlytics.recordException(throwable)
+            
+            Log.d(TAG, "Crash reported to Crashlytics")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to report to Crashlytics", e)
+        }
     }
 
     /**
