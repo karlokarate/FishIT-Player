@@ -21,6 +21,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.chris.m3usuite.player.internal.subtitles.SubtitlePreset
 import com.chris.m3usuite.prefs.SettingsStore
+import com.google.firebase.crashlytics.ktx.crashlytics
+import com.google.firebase.ktx.Firebase
 
 // --- Bestehende Settings-VMs ---
 import com.chris.m3usuite.ui.screens.PlayerSettingsViewModel
@@ -317,6 +319,22 @@ fun SettingsScreen(
                             Text("Telegram Logs")
                         }
                     }
+                }
+                
+                // Firebase Crashlytics Test Button
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        // Force a test crash for Firebase Crashlytics verification
+                        Firebase.crashlytics.log("Test crash button pressed")
+                        throw RuntimeException("Test Crash - Firebase Crashlytics Verification")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Test Crash (Firebase)")
                 }
             }
 
