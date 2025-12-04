@@ -1197,7 +1197,9 @@ class T_TelegramFileDownloader(
 
             TelegramLogRepository.info(
                 source = "T_TelegramFileDownloader",
-                message = "ensureFileReadyWithMp4Validation: Starting download" + if (isSeeking) " (SEEK)" else " with MP4 header validation",
+                message =
+                    "ensureFileReadyWithMp4Validation: Starting download" +
+                        if (isSeeking) " (SEEK)" else " with MP4 header validation",
                 details =
                     mapOf(
                         "fileId" to fileId.toString(),
@@ -1415,9 +1417,10 @@ class T_TelegramFileDownloader(
                     // Check if we have any data downloaded at or after the seek offset
                     // For TDLib progressive download, we need downloadedPrefixSize to have progressed
                     // OR downloadedSize to indicate we have data
-                    val hasMinimumDataForSeek = downloadedPrefixSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
-                        downloadedSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
-                        isDownloadingCompleted
+                    val hasMinimumDataForSeek =
+                        downloadedPrefixSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
+                            downloadedSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
+                            isDownloadingCompleted
 
                     if (hasMinimumDataForSeek) {
                         TelegramLogRepository.info(
@@ -1528,7 +1531,10 @@ class T_TelegramFileDownloader(
                                         "moovSize" to validationResult.moovSize.toString(),
                                         "availableBytes" to validationResult.availableBytes.toString(),
                                         "remainingBytes" to
-                                            (validationResult.moovOffset + validationResult.moovSize - validationResult.availableBytes).toString(),
+                                            (
+                                                validationResult.moovOffset + validationResult.moovSize -
+                                                    validationResult.availableBytes
+                                            ).toString(),
                                     ),
                             )
                             moovIncompleteWarningLogged = true
