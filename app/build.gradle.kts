@@ -10,7 +10,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("io.objectbox") version "5.0.1"
     id("org.jetbrains.kotlinx.kover")
-    // id("com.google.gms.google-services") // enable if google-services.json is configured
+    
+    // Google services Gradle plugin for Firebase
+    id("com.google.gms.google-services")
 }
 
 /**
@@ -349,4 +351,13 @@ dependencies {
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
     debugImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.10.2")
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+    
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    
+    // Firebase Analytics (when using the BoM, don't specify versions in Firebase dependencies)
+    implementation("com.google.firebase:firebase-analytics")
+    
+    // Add the dependencies for any other desired Firebase products
+    // https://firebase.google.com/docs/android/setup#available-libraries
 }

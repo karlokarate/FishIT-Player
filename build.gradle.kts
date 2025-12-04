@@ -9,6 +9,9 @@ plugins {
     id("com.github.ben-manes.versions") version "0.51.0" apply true
     id("org.jetbrains.kotlinx.kover") version "0.9.0" apply true
     id("com.osacky.doctor") version "0.10.0" apply true
+    
+    // Add the dependency for the Google services Gradle plugin
+    id("com.google.gms.google-services") version "4.4.4" apply false
 }
 
 // Apply quality plugins to all subprojects
