@@ -1418,7 +1418,7 @@ class T_TelegramFileDownloader(
                     // For TDLib progressive download, we need downloadedPrefixSize to have progressed
                     // OR downloadedSize to indicate we have data
                     val hasMinimumDataForSeek =
-                        downloadedPrefixSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
+                        downloadedPrefixSize >= StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
                             downloadedSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
                             isDownloadingCompleted
 
