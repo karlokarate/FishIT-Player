@@ -21,9 +21,6 @@
     <!-- Exclude SharedPreferences (legacy settings) -->
     <exclude domain="sharedpref" path="." />
 
-    <!-- Exclude all caches -->
-    <exclude domain="cache" path="." />
-
     <!-- Exclude logs -->
     <exclude domain="file" path="logs/" />
 </full-backup-content>
