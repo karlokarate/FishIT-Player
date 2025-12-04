@@ -3,7 +3,7 @@ package com.chris.m3usuite.core.cache
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import com.chris.m3usuite.core.logging.UnifiedLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.obx.ObxStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -81,32 +81,26 @@ class CacheManager(
 
                 val duration = System.currentTimeMillis() - startTime
 
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "diagnostics",
-                    source = TAG,
-                    message = "Cleared DataStore (app settings)",
-                    details =
-                        mapOf(
-                            "filesDeleted" to filesDeleted.toString(),
-                            "bytesFreed" to bytesFreed.toString(),
-                            "durationMs" to duration.toString(),
-                        ),
+                UnifiedLog.info(
+                    TAG,
+                    "Cleared DataStore (app settings)",
+                    mapOf(
+                        "filesDeleted" to filesDeleted.toString(),
+                        "bytesFreed" to bytesFreed.toString(),
+                        "durationMs" to duration.toString(),
+                    ),
                 )
 
                 CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "diagnostics",
-                    source = TAG,
-                    message = "Failed to clear DataStore",
-                    details =
-                        mapOf(
-                            "error" to e.message.orEmpty(),
-                            "durationMs" to duration.toString(),
-                        ),
+                UnifiedLog.error(
+                    TAG,
+                    "Failed to clear DataStore",
+                    mapOf(
+                        "error" to e.message.orEmpty(),
+                        "durationMs" to duration.toString(),
+                    ),
                 )
                 CacheResult(success = false, errorMessage = e.message ?: "Unknown error")
             }
@@ -142,9 +136,9 @@ class CacheManager(
 
                 val duration = System.currentTimeMillis() - startTime
 
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.INFO,
+
                     source = TAG,
                     message = "Cleared ObjectBox database (all content)",
                     details =
@@ -158,9 +152,9 @@ class CacheManager(
                 CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear ObjectBox database",
                     details =
@@ -192,9 +186,9 @@ class CacheManager(
 
                 val duration = System.currentTimeMillis() - startTime
 
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.INFO,
+
                     source = TAG,
                     message = "Cleared SharedPreferences",
                     details =
@@ -208,9 +202,9 @@ class CacheManager(
                 CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear SharedPreferences",
                     details =
@@ -254,9 +248,9 @@ class CacheManager(
 
                 val duration = System.currentTimeMillis() - startTime
 
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.INFO,
+
                     source = TAG,
                     message = "Cleared ALL app data (nuclear reset)",
                     details =
@@ -276,9 +270,9 @@ class CacheManager(
                 )
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear all app data",
                     details =
@@ -353,9 +347,9 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
 
                 if (result.filesDeleted > 0) {
-                    UnifiedLogRepository.log(
-                        level = UnifiedLogRepository.Level.INFO,
-                        category = "diagnostics",
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.INFO,
+
                         source = TAG,
                         message = "Cleared log cache",
                         details =
@@ -370,9 +364,9 @@ class CacheManager(
                 result
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear log cache",
                     details =
@@ -411,9 +405,9 @@ class CacheManager(
                 val result = clearTdlibCacheInternal()
                 val duration = System.currentTimeMillis() - startTime
 
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "telegram",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.INFO,
+
                     source = TAG,
                     message = "Cleared TDLib cache",
                     details =
@@ -427,9 +421,9 @@ class CacheManager(
                 result
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "telegram",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear TDLib cache",
                     details =
@@ -479,9 +473,9 @@ class CacheManager(
                 val result = clearXtreamCacheInternal()
                 val duration = System.currentTimeMillis() - startTime
 
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "xtream",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.INFO,
+
                     source = TAG,
                     message = "Cleared Xtream/ExoPlayer cache",
                     details =
@@ -495,9 +489,9 @@ class CacheManager(
                 result
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "xtream",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear Xtream/ExoPlayer cache",
                     details =
@@ -563,9 +557,9 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
 
                 // Now log after all deletions are complete
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.INFO,
+
                     source = TAG,
                     message = "Cleared all caches",
                     details =
@@ -592,9 +586,9 @@ class CacheManager(
                 )
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.ERROR,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.ERROR,
+
                     source = TAG,
                     message = "Failed to clear all caches",
                     details =
@@ -631,9 +625,8 @@ class CacheManager(
                     }
                 }
             } catch (e: Exception) {
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.WARN,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
                     source = TAG,
                     message = "Failed to delete file",
                     details =
@@ -672,9 +665,8 @@ class CacheManager(
                     }
                 }
             } catch (e: Exception) {
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.WARN,
-                    category = "diagnostics",
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
                     source = TAG,
                     message = "Failed to delete file",
                     details =
@@ -692,9 +684,8 @@ class CacheManager(
                 deletedCount++
             }
         } catch (e: Exception) {
-            UnifiedLogRepository.log(
-                level = UnifiedLogRepository.Level.WARN,
-                category = "diagnostics",
+            UnifiedLog.log(
+                level = UnifiedLog.Level.WARN,
                 source = TAG,
                 message = "Failed to delete directory",
                 details =

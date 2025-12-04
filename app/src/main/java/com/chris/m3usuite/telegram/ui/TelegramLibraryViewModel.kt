@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.domain.ChatScanState
@@ -58,7 +59,7 @@ class TelegramLibraryViewModel(
             .observeAllItems()
             .onEach { items ->
                 // DEBUG: Log TelegramItem count for UI wiring diagnostics
-                android.util.Log.d("telegram-ui", "TelegramLibraryVM received ${items.size} TelegramItems from ObxTelegramItem")
+                UnifiedLog.debug("telegram-ui", "TelegramLibraryVM received ${items.size} TelegramItems from ObxTelegramItem")
                 // Phase T2: Log image stats once per app session for diagnostics
                 if (items.isNotEmpty()) {
                     TelegramImageStats.logStatsOnce(items, source = "TelegramLibraryViewModel")

@@ -80,7 +80,6 @@ import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.core.logging.UnifiedLog
-import com.chris.m3usuite.telegram.logging.UnifiedLog
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.components.rows.LiveAddTile
@@ -223,8 +222,8 @@ fun StartScreen(
     LaunchedEffect(Unit) {
         UnifiedLog.events.collect { entry ->
             when (entry.level) {
-                com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.WARN,
-                com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.ERROR,
+                UnifiedLog.Level.WARN,
+                UnifiedLog.Level.ERROR,
                 -> {
                     snackbarHost.showSnackbar(
                         message = "[${entry.level}] ${entry.message}",

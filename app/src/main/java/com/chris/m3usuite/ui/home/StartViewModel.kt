@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.KidContentRepository
@@ -308,7 +309,7 @@ class StartViewModel(
             // Observe chat summaries for quick overview
             launch {
                 tgRepo.observeVodChatSummaries().collectLatest { summaries ->
-                    android.util.Log.d(
+                    UnifiedLog.debug(
                         "telegram-ui",
                         "StartVM received ${summaries.size} Telegram chat summaries",
                     )
@@ -338,7 +339,7 @@ class StartViewModel(
                     }
 
                     val totalItems = chatMap.values.sumOf { it.size }
-                    android.util.Log.d(
+                    UnifiedLog.debug(
                         "telegram-ui",
                         "StartVM received ${chatMap.size} chats, $totalItems total items from ObxTelegramItem (new pipeline)",
                     )

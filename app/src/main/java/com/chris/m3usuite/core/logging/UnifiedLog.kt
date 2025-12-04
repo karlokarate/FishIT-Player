@@ -339,6 +339,29 @@ object UnifiedLog {
         }
     }
 
+    /**
+     * Log file download progress (Telegram-specific convenience method).
+     * Maps to DEBUG level with structured details for tracking download status.
+     */
+    fun logFileDownload(
+        fileId: Int,
+        progress: Int,
+        total: Int,
+        status: String,
+    ) {
+        debug(
+            source = "TelegramDownload",
+            message = "File download: $status",
+            details = mapOf(
+                "fileId" to fileId.toString(),
+                "progress" to progress.toString(),
+                "total" to total.toString(),
+                "status" to status,
+                "percent" to if (total > 0) "${(progress * 100 / total)}%" else "0%",
+            ),
+        )
+    }
+
     /** Get filtered entries */
     fun getFilteredEntries(filter: FilterState = _filterState.value): List<Entry> {
         return lock.read {

@@ -1,6 +1,7 @@
 package com.chris.m3usuite.data.repo
 
 import android.content.Context
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramItem
 import com.chris.m3usuite.data.obx.ObxTelegramItem_
@@ -140,7 +141,7 @@ class TelegramContentRepository(
                     }.find()
                     .map { it.toDomain() }
             // DEBUG: Log ObxTelegramItem count for UI wiring diagnostics
-            android.util.Log.d(
+            UnifiedLog.debug(
                 LOG_TAG_UI_WIRING,
                 "TelegramContentRepository.observeAllItems(): ${items.size} items in ObxTelegramItem (new table)",
             )
@@ -237,10 +238,10 @@ class TelegramContentRepository(
         store.tgSelectedVodChatsCsv
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
-                android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodItemsByChat: selectedChatIds=$chatIds")
+                UnifiedLog.debug(LOG_TAG_UI_WIRING, "observeVodItemsByChat: selectedChatIds=$chatIds")
 
                 if (chatIds.isEmpty()) {
-                    android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodItemsByChat: No chats selected, returning empty")
+                    UnifiedLog.debug(LOG_TAG_UI_WIRING, "observeVodItemsByChat: No chats selected, returning empty")
                     emptyMap()
                 } else {
                     buildVodItemsByChatMap(chatIds)
@@ -262,20 +263,20 @@ class TelegramContentRepository(
                             orderDesc(ObxTelegramItem_.createdAtUtc)
                         }.find()
 
-                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId, totalItems=${allItems.size}")
+                UnifiedLog.debug(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId, totalItems=${allItems.size}")
 
                 val items = allItems.map { it.toDomain() }.filter { it.isVodType() }
 
-                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId, vodItems=${items.size}")
+                UnifiedLog.debug(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId, vodItems=${items.size}")
 
                 if (items.isNotEmpty()) {
                     result[chatId] = items
                 } else {
-                    android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId has no VOD items, skipping")
+                    UnifiedLog.debug(LOG_TAG_UI_WIRING, "buildVodItemsByChatMap: chat=$chatId has no VOD items, skipping")
                 }
             }
 
-            android.util.Log.d(
+            UnifiedLog.debug(
                 LOG_TAG_UI_WIRING,
                 "buildVodItemsByChatMap: Final result=${result.size} chats, totalVod=${result.values.sumOf { it.size }}",
             )
@@ -321,10 +322,10 @@ class TelegramContentRepository(
         store.tgSelectedVodChatsCsv
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
-                android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodChatSummaries: selectedChatIds=$chatIds")
+                UnifiedLog.debug(LOG_TAG_UI_WIRING, "observeVodChatSummaries: selectedChatIds=$chatIds")
 
                 if (chatIds.isEmpty()) {
-                    android.util.Log.d(LOG_TAG_UI_WIRING, "observeVodChatSummaries: No chats selected, returning empty")
+                    UnifiedLog.debug(LOG_TAG_UI_WIRING, "observeVodChatSummaries: No chats selected, returning empty")
                     emptyList()
                 } else {
                     buildVodChatSummaries(chatIds)
@@ -346,14 +347,14 @@ class TelegramContentRepository(
                             orderDesc(ObxTelegramItem_.createdAtUtc)
                         }.find()
 
-                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId, totalItems=${allItems.size}")
+                UnifiedLog.debug(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId, totalItems=${allItems.size}")
 
                 val items = allItems.map { it.toDomain() }.filter { it.isVodType() }
 
-                android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId, vodItems=${items.size}")
+                UnifiedLog.debug(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId, vodItems=${items.size}")
 
                 if (items.isEmpty()) {
-                    android.util.Log.d(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId has no VOD items, skipping")
+                    UnifiedLog.debug(LOG_TAG_UI_WIRING, "buildVodChatSummaries: chat=$chatId has no VOD items, skipping")
                     continue
                 }
 
@@ -362,7 +363,11 @@ class TelegramContentRepository(
                     try {
                         resolveChatTitle(chatId)
                     } catch (e: Exception) {
-                        android.util.Log.w(LOG_TAG_UI_WIRING, "buildVodChatSummaries: Failed to resolve title for chat=$chatId", e)
+                        UnifiedLog.warn(
+                            LOG_TAG_UI_WIRING,
+                            "buildVodChatSummaries: Failed to resolve title for chat=$chatId",
+                            mapOf("error" to (e.message ?: "unknown")),
+                        )
                         "Chat $chatId"
                     }
 
@@ -380,7 +385,7 @@ class TelegramContentRepository(
             }
 
             // DEBUG: Log summary count for UI wiring diagnostics
-            android.util.Log.d(
+            UnifiedLog.debug(
                 LOG_TAG_UI_WIRING,
                 "buildVodChatSummaries: Final summaries=${summaries.size}, totalVod=${summaries.sumOf { it.vodCount }}",
             )
@@ -1151,7 +1156,7 @@ class TelegramContentRepository(
             .map { csv ->
                 val chatIds = parseChatIdsCsv(csv)
                 // DEBUG: Log query for UI wiring diagnostics
-                android.util.Log.d(
+                UnifiedLog.debug(
                     LOG_TAG_UI_WIRING,
                     "TelegramContentRepository.getTelegramVodByChat(): querying ${chatIds.size} chatIds from ObxTelegramMessage (legacy)",
                 )
@@ -1171,7 +1176,7 @@ class TelegramContentRepository(
 
             // DEBUG: Log total ObxTelegramMessage count for diagnostics
             val legacyMessageCount = messageBox.count()
-            android.util.Log.d(
+            UnifiedLog.debug(
                 LOG_TAG_UI_WIRING,
                 "TelegramContentRepository: Total ObxTelegramMessage count = $legacyMessageCount (legacy table)",
             )
@@ -1195,7 +1200,7 @@ class TelegramContentRepository(
             }
 
             // DEBUG: Log result
-            android.util.Log.d(
+            UnifiedLog.debug(
                 LOG_TAG_UI_WIRING,
                 "TelegramContentRepository.buildChatMoviesMap(): returning ${result.size} chats from ObxTelegramMessage (legacy)",
             )

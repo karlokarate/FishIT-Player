@@ -391,7 +391,7 @@ class TelegramIngestionCoordinator(
             contentRepository.upsertItems(items)
             UnifiedLog.debug(TAG, "Persisted ${items.size} items for chat $chatId")
             // DEBUG: Log persistence target for UI wiring diagnostics
-            android.util.Log.d(
+            UnifiedLog.debug(
                 "telegram-ui",
                 "TelegramIngestionCoordinator: Persisted ${items.size} TelegramItems to ObxTelegramItem (new table)",
             )
