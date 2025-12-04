@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chris.m3usuite.core.logging.UnifiedLog
+import com.chris.m3usuite.logs.ui.UnifiedLogViewerScreen
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.InternalPlayerEntry
@@ -36,7 +37,6 @@ import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.logs.ui.UnifiedLogViewerScreen
 import com.chris.m3usuite.telegram.ui.feed.TelegramActivityFeedScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.focus.isTvDevice

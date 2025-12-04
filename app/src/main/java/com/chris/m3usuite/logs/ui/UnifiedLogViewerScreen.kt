@@ -70,9 +70,10 @@ fun UnifiedLogViewerScreen(
     // Scroll to first error when clicking on error count
     LaunchedEffect(state.scrollToFirstErrorTrigger) {
         if (state.scrollToFirstErrorTrigger > 0) {
-            val firstErrorIndex = state.filteredEntries.indexOfFirst {
-                it.level == UnifiedLog.Level.ERROR
-            }
+            val firstErrorIndex =
+                state.filteredEntries.indexOfFirst {
+                    it.level == UnifiedLog.Level.ERROR
+                }
             if (firstErrorIndex >= 0) {
                 listState.animateScrollToItem(firstErrorIndex)
             }
@@ -93,11 +94,18 @@ fun UnifiedLogViewerScreen(
                     // Auto-scroll toggle
                     IconButton(onClick = { viewModel.toggleAutoScroll() }) {
                         Icon(
-                            if (state.isAutoScrollEnabled) Icons.Default.VerticalAlignBottom
-                            else Icons.Default.VerticalAlignCenter,
+                            if (state.isAutoScrollEnabled) {
+                                Icons.Default.VerticalAlignBottom
+                            } else {
+                                Icons.Default.VerticalAlignCenter
+                            },
                             contentDescription = if (state.isAutoScrollEnabled) "Auto-Scroll aktiv" else "Auto-Scroll inaktiv",
-                            tint = if (state.isAutoScrollEnabled) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint =
+                                if (state.isAutoScrollEnabled) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                         )
                     }
 
@@ -108,7 +116,7 @@ fun UnifiedLogViewerScreen(
                                 if (state.hasActiveFilters) {
                                     Badge { Text("!") }
                                 }
-                            }
+                            },
                         ) {
                             Icon(Icons.Default.FilterList, contentDescription = "Filter")
                         }
@@ -128,11 +136,12 @@ fun UnifiedLogViewerScreen(
                                 onClick = {
                                     showExportMenu = false
                                     val text = viewModel.exportFiltered()
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, text)
-                                        putExtra(Intent.EXTRA_SUBJECT, "FishIT App Logs")
-                                    }
+                                    val intent =
+                                        Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, text)
+                                            putExtra(Intent.EXTRA_SUBJECT, "FishIT App Logs")
+                                        }
                                     context.startActivity(Intent.createChooser(intent, "Logs teilen"))
                                 },
                                 leadingIcon = { Icon(Icons.Default.Share, null) },
@@ -144,24 +153,27 @@ fun UnifiedLogViewerScreen(
                                     val file = viewModel.saveToFile()
                                     if (file != null) {
                                         coroutineScope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                message = "Gespeichert: ${file.name}",
-                                                actionLabel = "Teilen",
-                                            ).let { result ->
-                                                if (result == SnackbarResult.ActionPerformed) {
-                                                    val uri = FileProvider.getUriForFile(
-                                                        context,
-                                                        "${context.packageName}.fileprovider",
-                                                        file,
-                                                    )
-                                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                                        type = "text/plain"
-                                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            snackbarHostState
+                                                .showSnackbar(
+                                                    message = "Gespeichert: ${file.name}",
+                                                    actionLabel = "Teilen",
+                                                ).let { result ->
+                                                    if (result == SnackbarResult.ActionPerformed) {
+                                                        val uri =
+                                                            FileProvider.getUriForFile(
+                                                                context,
+                                                                "${context.packageName}.fileprovider",
+                                                                file,
+                                                            )
+                                                        val intent =
+                                                            Intent(Intent.ACTION_SEND).apply {
+                                                                type = "text/plain"
+                                                                putExtra(Intent.EXTRA_STREAM, uri)
+                                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                            }
+                                                        context.startActivity(Intent.createChooser(intent, "Datei teilen"))
                                                     }
-                                                    context.startActivity(Intent.createChooser(intent, "Datei teilen"))
                                                 }
-                                            }
                                         }
                                     }
                                 },
@@ -174,11 +186,12 @@ fun UnifiedLogViewerScreen(
                                         showExportMenu = false
                                         val text = viewModel.exportFullSession()
                                         if (text != null) {
-                                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                                type = "text/plain"
-                                                putExtra(Intent.EXTRA_TEXT, text)
-                                                putExtra(Intent.EXTRA_SUBJECT, "FishIT Full Session Log")
-                                            }
+                                            val intent =
+                                                Intent(Intent.ACTION_SEND).apply {
+                                                    type = "text/plain"
+                                                    putExtra(Intent.EXTRA_TEXT, text)
+                                                    putExtra(Intent.EXTRA_SUBJECT, "FishIT Full Session Log")
+                                                }
                                             context.startActivity(Intent.createChooser(intent, "Session teilen"))
                                         } else {
                                             coroutineScope.launch {
@@ -201,10 +214,11 @@ fun UnifiedLogViewerScreen(
         },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
         ) {
             Spacer(Modifier.height(8.dp))
 
@@ -272,8 +286,12 @@ fun UnifiedLogViewerScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = if (state.statistics.total == 0) "Keine Log-Einträge"
-                            else "Keine Einträge für aktuelle Filter",
+                            text =
+                                if (state.statistics.total == 0) {
+                                    "Keine Log-Einträge"
+                                } else {
+                                    "Keine Einträge für aktuelle Filter"
+                                },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -324,16 +342,21 @@ fun UnifiedLogViewerScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirmDialog = false },
             title = { Text("Logs löschen?") },
-            text = { Text("Alle ${state.statistics.total} Log-Einträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.") },
+            text = {
+                Text(
+                    "Alle ${state.statistics.total} Log-Einträge werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+                )
+            },
             confirmButton = {
                 Button(
                     onClick = {
                         showClearConfirmDialog = false
                         viewModel.clearLogs()
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                    ),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) {
                     Text("Löschen")
                 }
@@ -451,9 +474,10 @@ private fun ActiveFiltersCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -586,9 +610,10 @@ private fun FilterBottomSheet(
         onDismissRequest = onDismiss,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -614,9 +639,10 @@ private fun FilterBottomSheet(
             )
             Spacer(Modifier.height(8.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 UnifiedLog.Level.entries.forEach { level ->
@@ -624,9 +650,10 @@ private fun FilterBottomSheet(
                         selected = level in filter.enabledLevels,
                         onClick = { onToggleLevel(level) },
                         label = { Text(level.name) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(level.color).copy(alpha = 0.3f),
-                        ),
+                        colors =
+                            FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(level.color).copy(alpha = 0.3f),
+                            ),
                     )
                 }
             }

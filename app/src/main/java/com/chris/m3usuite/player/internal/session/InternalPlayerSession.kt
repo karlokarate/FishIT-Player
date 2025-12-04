@@ -18,6 +18,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.playback.RememberPlayerController
 import com.chris.m3usuite.data.repo.EpgRepository
 import com.chris.m3usuite.playback.PlaybackSession
@@ -37,7 +38,6 @@ import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
-import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.player.buildTelegramLoadControl
 import com.chris.m3usuite.ui.util.ImageHeaders
 import kotlinx.coroutines.Dispatchers

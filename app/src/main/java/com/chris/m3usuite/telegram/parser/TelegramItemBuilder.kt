@@ -1,5 +1,6 @@
 package com.chris.m3usuite.telegram.parser
 
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.domain.MessageBlock
 import com.chris.m3usuite.telegram.domain.TelegramDocumentRef
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
@@ -7,7 +8,6 @@ import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.TelegramMediaRef
 import com.chris.m3usuite.telegram.domain.TelegramMetadata
-import com.chris.m3usuite.core.logging.UnifiedLog
 
 /**
  * Builds TelegramItem domain objects from MessageBlocks.

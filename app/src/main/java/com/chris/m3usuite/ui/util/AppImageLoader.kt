@@ -50,8 +50,19 @@ object AppImageLoader {
                 .diskCache { disk }
                 // Register Telegram thumbnail fetcher (Requirement 4)
                 .components {
+                    // Register TelegramThumbKey fetcher for on-demand loading
                     add(
                         com.chris.m3usuite.telegram.image.TelegramThumbFetcher
+                            .Factory(app),
+                    )
+                    // Register TelegramThumbKey keyer for stable cache keys
+                    add(
+                        com.chris.m3usuite.telegram.image
+                            .TelegramThumbKeyer(),
+                    )
+                    // Register legacy local file fetcher for backward compatibility
+                    add(
+                        com.chris.m3usuite.telegram.image.TelegramLocalFileFetcher
                             .Factory(),
                     )
                 }

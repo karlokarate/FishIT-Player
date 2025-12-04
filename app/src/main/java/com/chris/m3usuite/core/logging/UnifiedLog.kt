@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.PrintWriter
 import java.text.SimpleDateFormat
@@ -61,20 +60,25 @@ object UnifiedLog {
         DEBUG,
         INFO,
         WARN,
-        ERROR;
+        ERROR,
+        ;
 
         val color: Long
-            get() = when (this) {
-                VERBOSE -> 0xFF9E9E9E // Gray
-                DEBUG -> 0xFF4CAF50 // Green
-                INFO -> 0xFF2196F3 // Blue
-                WARN -> 0xFFFF9800 // Orange
-                ERROR -> 0xFFF44336 // Red
-            }
+            get() =
+                when (this) {
+                    VERBOSE -> 0xFF9E9E9E // Gray
+                    DEBUG -> 0xFF4CAF50 // Green
+                    INFO -> 0xFF2196F3 // Blue
+                    WARN -> 0xFFFF9800 // Orange
+                    ERROR -> 0xFFF44336 // Red
+                }
     }
 
     /** Predefined source categories for filtering */
-    enum class SourceCategory(val displayName: String, val sources: Set<String>) {
+    enum class SourceCategory(
+        val displayName: String,
+        val sources: Set<String>,
+    ) {
         PLAYBACK("Playback", setOf("playback", "player", "exo", "PlaybackSession", "PlaybackLauncher")),
         TELEGRAM_DOWNLOAD("TG Download", setOf("T_TelegramFileDownloader", "TelegramDataSource", "TdlibRandomAccessSource")),
         TELEGRAM_AUTH("TG Auth", setOf("T_TelegramSession", "T_TelegramServiceClient", "TgAuthOrchestrator")),
@@ -84,14 +88,14 @@ object UnifiedLog {
         NETWORK("Network", setOf("xtream", "epg", "network", "XtreamClient", "OkHttp")),
         DIAGNOSTICS("Diagnostics", setOf("diagnostics", "crash", "CrashHandler", "Telemetry")),
         APP("App", setOf("App", "Firebase", "WorkManager")),
-        OTHER("Other", emptySet());
+        OTHER("Other", emptySet()),
+        ;
 
         companion object {
-            fun forSource(source: String): SourceCategory {
-                return entries.firstOrNull { cat ->
+            fun forSource(source: String): SourceCategory =
+                entries.firstOrNull { cat ->
                     cat.sources.any { source.contains(it, ignoreCase = true) }
                 } ?: OTHER
-            }
         }
     }
 
@@ -120,20 +124,22 @@ object UnifiedLog {
             return details.entries.joinToString(", ") { "${it.key}=${it.value}" }
         }
 
-        fun toLogLine(): String = buildString {
-            append("[${formattedTime()}] [${level.name}] [$source] $message")
-            formattedDetails()?.let { append(" | $it") }
-        }
-
-        fun toExportLine(): String = buildString {
-            append("[${formattedDateTime()}] [${level.name}] [$source]")
-            appendLine()
-            append("  $message")
-            formattedDetails()?.let {
-                appendLine()
-                append("  Details: $it")
+        fun toLogLine(): String =
+            buildString {
+                append("[${formattedTime()}] [${level.name}] [$source] $message")
+                formattedDetails()?.let { append(" | $it") }
             }
-        }
+
+        fun toExportLine(): String =
+            buildString {
+                append("[${formattedDateTime()}] [${level.name}] [$source]")
+                appendLine()
+                append("  $message")
+                formattedDetails()?.let {
+                    appendLine()
+                    append("  Details: $it")
+                }
+            }
     }
 
     /** Filter state for UI */
@@ -184,20 +190,25 @@ object UnifiedLog {
             try {
                 val prefs = context.logPrefsDataStore.data.first()
 
-                val levels = prefs[KEY_ENABLED_LEVELS]?.mapNotNull { name ->
-                    runCatching { Level.valueOf(name) }.getOrNull()
-                }?.toSet() ?: Level.entries.toSet()
+                val levels =
+                    prefs[KEY_ENABLED_LEVELS]
+                        ?.mapNotNull { name ->
+                            runCatching { Level.valueOf(name) }.getOrNull()
+                        }?.toSet() ?: Level.entries.toSet()
 
-                val categories = prefs[KEY_ENABLED_SOURCES]?.mapNotNull { name ->
-                    runCatching { SourceCategory.valueOf(name) }.getOrNull()
-                }?.toSet() ?: SourceCategory.entries.toSet()
+                val categories =
+                    prefs[KEY_ENABLED_SOURCES]
+                        ?.mapNotNull { name ->
+                            runCatching { SourceCategory.valueOf(name) }.getOrNull()
+                        }?.toSet() ?: SourceCategory.entries.toSet()
 
                 fileBufferEnabled = prefs[KEY_FILE_BUFFER_ENABLED] ?: false
 
-                _filterState.value = FilterState(
-                    enabledLevels = levels,
-                    enabledCategories = categories,
-                )
+                _filterState.value =
+                    FilterState(
+                        enabledLevels = levels,
+                        enabledCategories = categories,
+                    )
 
                 if (fileBufferEnabled) {
                     enableFileBuffer()
@@ -246,13 +257,14 @@ object UnifiedLog {
         message: String,
         details: Map<String, String>? = null,
     ) {
-        val entry = Entry(
-            id = idCounter.incrementAndGet(),
-            level = level,
-            source = source,
-            message = message,
-            details = details,
-        )
+        val entry =
+            Entry(
+                id = idCounter.incrementAndGet(),
+                level = level,
+                source = source,
+                message = message,
+                details = details,
+            )
 
         // Add to ring buffer
         lock.write {
@@ -270,15 +282,16 @@ object UnifiedLog {
 
         // Write to logcat
         val tag = "FishIT/$source"
-        val fullMessage = buildString {
-            append(message)
-            details?.let { d ->
-                if (d.isNotEmpty()) {
-                    append(" | ")
-                    append(d.entries.joinToString(", ") { "${it.key}=${it.value}" })
+        val fullMessage =
+            buildString {
+                append(message)
+                details?.let { d ->
+                    if (d.isNotEmpty()) {
+                        append(" | ")
+                        append(d.entries.joinToString(", ") { "${it.key}=${it.value}" })
+                    }
                 }
             }
-        }
         when (level) {
             Level.VERBOSE -> Log.v(tag, fullMessage)
             Level.DEBUG -> Log.d(tag, fullMessage)
@@ -308,27 +321,48 @@ object UnifiedLog {
     }
 
     // Convenience methods
-    fun verbose(source: String, message: String, details: Map<String, String>? = null) =
-        log(Level.VERBOSE, source, message, details)
+    fun verbose(
+        source: String,
+        message: String,
+        details: Map<String, String>? = null,
+    ) = log(Level.VERBOSE, source, message, details)
 
-    fun debug(source: String, message: String, details: Map<String, String>? = null) =
-        log(Level.DEBUG, source, message, details)
+    fun debug(
+        source: String,
+        message: String,
+        details: Map<String, String>? = null,
+    ) = log(Level.DEBUG, source, message, details)
 
-    fun info(source: String, message: String, details: Map<String, String>? = null) =
-        log(Level.INFO, source, message, details)
+    fun info(
+        source: String,
+        message: String,
+        details: Map<String, String>? = null,
+    ) = log(Level.INFO, source, message, details)
 
-    fun warn(source: String, message: String, details: Map<String, String>? = null) =
-        log(Level.WARN, source, message, details)
+    fun warn(
+        source: String,
+        message: String,
+        details: Map<String, String>? = null,
+    ) = log(Level.WARN, source, message, details)
 
-    fun error(source: String, message: String, details: Map<String, String>? = null) =
-        log(Level.ERROR, source, message, details)
+    fun error(
+        source: String,
+        message: String,
+        details: Map<String, String>? = null,
+    ) = log(Level.ERROR, source, message, details)
 
-    fun error(source: String, message: String, exception: Throwable, details: Map<String, String>? = null) {
-        val errorDetails = buildMap {
-            details?.forEach { (k, v) -> put(k, v) }
-            put("error_type", exception::class.java.simpleName)
-            put("error_message", exception.message?.take(200) ?: "unknown")
-        }
+    fun error(
+        source: String,
+        message: String,
+        exception: Throwable,
+        details: Map<String, String>? = null,
+    ) {
+        val errorDetails =
+            buildMap {
+                details?.forEach { (k, v) -> put(k, v) }
+                put("error_type", exception::class.java.simpleName)
+                put("error_message", exception.message?.take(200) ?: "unknown")
+            }
         log(Level.ERROR, source, message, errorDetails)
 
         // Record exception to Crashlytics
@@ -352,28 +386,30 @@ object UnifiedLog {
         debug(
             source = "TelegramDownload",
             message = "File download: $status",
-            details = mapOf(
-                "fileId" to fileId.toString(),
-                "progress" to progress.toString(),
-                "total" to total.toString(),
-                "status" to status,
-                "percent" to if (total > 0) "${(progress * 100 / total)}%" else "0%",
-            ),
+            details =
+                mapOf(
+                    "fileId" to fileId.toString(),
+                    "progress" to progress.toString(),
+                    "total" to total.toString(),
+                    "status" to status,
+                    "percent" to if (total > 0) "${(progress * 100 / total)}%" else "0%",
+                ),
         )
     }
 
     /** Get filtered entries */
-    fun getFilteredEntries(filter: FilterState = _filterState.value): List<Entry> {
-        return lock.read {
+    fun getFilteredEntries(filter: FilterState = _filterState.value): List<Entry> =
+        lock.read {
             ringBuffer.filter { entry ->
                 entry.level in filter.enabledLevels &&
                     entry.category in filter.enabledCategories &&
-                    (filter.searchQuery.isEmpty() ||
-                        entry.message.contains(filter.searchQuery, ignoreCase = true) ||
-                        entry.source.contains(filter.searchQuery, ignoreCase = true))
+                    (
+                        filter.searchQuery.isEmpty() ||
+                            entry.message.contains(filter.searchQuery, ignoreCase = true) ||
+                            entry.source.contains(filter.searchQuery, ignoreCase = true)
+                    )
             }
         }
-    }
 
     /** Get statistics */
     fun getStatistics(filter: FilterState = _filterState.value): Statistics {
@@ -391,9 +427,10 @@ object UnifiedLog {
     }
 
     /** Get all unique sources */
-    fun getAllSources(): List<String> = lock.read {
-        ringBuffer.map { it.source }.distinct().sorted()
-    }
+    fun getAllSources(): List<String> =
+        lock.read {
+            ringBuffer.map { it.source }.distinct().sorted()
+        }
 
     /** Update filter state */
     fun setFilter(filter: FilterState) {
@@ -404,11 +441,12 @@ object UnifiedLog {
     /** Filter by level (toggle) */
     fun toggleLevel(level: Level) {
         val current = _filterState.value
-        val newLevels = if (level in current.enabledLevels) {
-            current.enabledLevels - level
-        } else {
-            current.enabledLevels + level
-        }
+        val newLevels =
+            if (level in current.enabledLevels) {
+                current.enabledLevels - level
+            } else {
+                current.enabledLevels + level
+            }
         _filterState.value = current.copy(enabledLevels = newLevels)
         persistFilters()
     }
@@ -416,11 +454,12 @@ object UnifiedLog {
     /** Filter by category (toggle) */
     fun toggleCategory(category: SourceCategory) {
         val current = _filterState.value
-        val newCategories = if (category in current.enabledCategories) {
-            current.enabledCategories - category
-        } else {
-            current.enabledCategories + category
-        }
+        val newCategories =
+            if (category in current.enabledCategories) {
+                current.enabledCategories - category
+            } else {
+                current.enabledCategories + category
+            }
         _filterState.value = current.copy(enabledCategories = newCategories)
         persistFilters()
     }
@@ -432,10 +471,11 @@ object UnifiedLog {
 
     /** Filter to show only specific level (for clickable statistics) */
     fun filterToLevel(level: Level) {
-        _filterState.value = _filterState.value.copy(
-            enabledLevels = setOf(level),
-            enabledCategories = SourceCategory.entries.toSet(),
-        )
+        _filterState.value =
+            _filterState.value.copy(
+                enabledLevels = setOf(level),
+                enabledCategories = SourceCategory.entries.toSet(),
+            )
         persistFilters()
     }
 
@@ -451,8 +491,14 @@ object UnifiedLog {
         scope.launch {
             try {
                 ctx.logPrefsDataStore.edit { prefs ->
-                    prefs[KEY_ENABLED_LEVELS] = _filterState.value.enabledLevels.map { it.name }.toSet()
-                    prefs[KEY_ENABLED_SOURCES] = _filterState.value.enabledCategories.map { it.name }.toSet()
+                    prefs[KEY_ENABLED_LEVELS] =
+                        _filterState.value.enabledLevels
+                            .map { it.name }
+                            .toSet()
+                    prefs[KEY_ENABLED_SOURCES] =
+                        _filterState.value.enabledCategories
+                            .map { it.name }
+                            .toSet()
                     prefs[KEY_FILE_BUFFER_ENABLED] = fileBufferEnabled
                 }
             } catch (e: Exception) {

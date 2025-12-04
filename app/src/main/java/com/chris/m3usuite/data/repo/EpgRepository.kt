@@ -214,7 +214,15 @@ class EpgRepository(
                 xtreamRes.ifEmpty {
                     fallbackXmlTvFor(
                         chanId,
-                    ).also { if (it.isNotEmpty()) UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId source=xmltv size=${it.size}") }
+                    ).also {
+                        if (it.isNotEmpty()) {
+                            UnifiedLog.log(
+                                UnifiedLog.Level.DEBUG,
+                                "epg",
+                                "sid=$streamId source=xmltv size=${it.size}",
+                            )
+                        }
+                    }
                 }
             // Soft fallback: if network yielded nothing but we have a stale OBX row, reuse it to avoid blank UI
             if (final.isEmpty() && !chanId.isNullOrBlank()) {
