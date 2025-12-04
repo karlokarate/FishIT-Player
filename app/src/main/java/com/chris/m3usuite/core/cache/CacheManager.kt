@@ -55,34 +55,25 @@ class CacheManager(
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             try {
-                val logsDir = File(context.filesDir, LOG_DIR)
-                if (!logsDir.exists()) {
+                val result = clearLogCacheInternal()
+                val duration = System.currentTimeMillis() - startTime
+
+                if (result.filesDeleted > 0) {
                     UnifiedLogRepository.log(
                         level = UnifiedLogRepository.Level.INFO,
                         category = "diagnostics",
                         source = TAG,
-                        message = "Log cache directory does not exist, nothing to clear",
+                        message = "Cleared log cache",
+                        details =
+                            mapOf(
+                                "filesDeleted" to result.filesDeleted.toString(),
+                                "bytesFreed" to result.bytesFreed.toString(),
+                                "durationMs" to duration.toString(),
+                            ),
                     )
-                    return@withContext CacheResult(success = true, filesDeleted = 0)
                 }
 
-                val (deleted, bytes) = deleteDirectoryContents(logsDir)
-                val duration = System.currentTimeMillis() - startTime
-
-                UnifiedLogRepository.log(
-                    level = UnifiedLogRepository.Level.INFO,
-                    category = "diagnostics",
-                    source = TAG,
-                    message = "Cleared log cache",
-                    details =
-                        mapOf(
-                            "filesDeleted" to deleted.toString(),
-                            "bytesFreed" to bytes.toString(),
-                            "durationMs" to duration.toString(),
-                        ),
-                )
-
-                CacheResult(success = true, filesDeleted = deleted, bytesFreed = bytes)
+                result
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLogRepository.log(
@@ -101,6 +92,20 @@ class CacheManager(
         }
 
     /**
+     * Internal method to clear log cache without logging.
+     * Used by clearAllCaches to avoid logging while clearing the log directory.
+     */
+    private fun clearLogCacheInternal(): CacheResult {
+        val logsDir = File(context.filesDir, LOG_DIR)
+        if (!logsDir.exists()) {
+            return CacheResult(success = true, filesDeleted = 0)
+        }
+
+        val (deleted, bytes) = deleteDirectoryContents(logsDir)
+        return CacheResult(success = true, filesDeleted = deleted, bytesFreed = bytes)
+    }
+
+    /**
      * Clear TDLib (Telegram) cache.
      * Deletes all files in noBackupFilesDir/tdlib-db and noBackupFilesDir/tdlib-files.
      * Note: TDLib will recreate necessary files on next use.
@@ -109,24 +114,7 @@ class CacheManager(
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             try {
-                val tdlibDbDir = File(context.noBackupFilesDir, TDLIB_DB_DIR)
-                val tdlibFilesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR)
-
-                var totalDeleted = 0
-                var totalBytes = 0L
-
-                if (tdlibDbDir.exists()) {
-                    val (deleted, bytes) = deleteDirectoryContents(tdlibDbDir)
-                    totalDeleted += deleted
-                    totalBytes += bytes
-                }
-
-                if (tdlibFilesDir.exists()) {
-                    val (deleted, bytes) = deleteDirectoryContents(tdlibFilesDir)
-                    totalDeleted += deleted
-                    totalBytes += bytes
-                }
-
+                val result = clearTdlibCacheInternal()
                 val duration = System.currentTimeMillis() - startTime
 
                 UnifiedLogRepository.log(
@@ -136,17 +124,13 @@ class CacheManager(
                     message = "Cleared TDLib cache",
                     details =
                         mapOf(
-                            "filesDeleted" to totalDeleted.toString(),
-                            "bytesFreed" to totalBytes.toString(),
+                            "filesDeleted" to result.filesDeleted.toString(),
+                            "bytesFreed" to result.bytesFreed.toString(),
                             "durationMs" to duration.toString(),
                         ),
                 )
 
-                if (totalDeleted == 0) {
-                    return@withContext CacheResult(success = true, filesDeleted = 0, bytesFreed = 0)
-                }
-
-                CacheResult(success = true, filesDeleted = totalDeleted, bytesFreed = totalBytes)
+                result
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLogRepository.log(
@@ -165,6 +149,31 @@ class CacheManager(
         }
 
     /**
+     * Internal method to clear TDLib cache without logging.
+     */
+    private fun clearTdlibCacheInternal(): CacheResult {
+        val tdlibDbDir = File(context.noBackupFilesDir, TDLIB_DB_DIR)
+        val tdlibFilesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR)
+
+        var totalDeleted = 0
+        var totalBytes = 0L
+
+        if (tdlibDbDir.exists()) {
+            val (deleted, bytes) = deleteDirectoryContents(tdlibDbDir)
+            totalDeleted += deleted
+            totalBytes += bytes
+        }
+
+        if (tdlibFilesDir.exists()) {
+            val (deleted, bytes) = deleteDirectoryContents(tdlibFilesDir)
+            totalDeleted += deleted
+            totalBytes += bytes
+        }
+
+        return CacheResult(success = true, filesDeleted = totalDeleted, bytesFreed = totalBytes)
+    }
+
+    /**
      * Clear Xtream/ExoPlayer cache.
      * Deletes RAR cache, image cache, and diagnostics export directory in cacheDir.
      * Note: ExoPlayer will rebuild cache as needed during playback.
@@ -173,31 +182,7 @@ class CacheManager(
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             try {
-                val rarCacheDir = File(context.cacheDir, RAR_CACHE_DIR)
-                val imageCacheDir = File(context.cacheDir, IMAGE_CACHE_DIR)
-                val diagExportDir = File(context.cacheDir, DIAGNOSTICS_EXPORT_DIR)
-
-                var totalDeleted = 0
-                var totalBytes = 0L
-
-                if (rarCacheDir.exists()) {
-                    val (deleted, bytes) = deleteDirectoryContents(rarCacheDir)
-                    totalDeleted += deleted
-                    totalBytes += bytes
-                }
-
-                if (imageCacheDir.exists()) {
-                    val (deleted, bytes) = deleteDirectoryContents(imageCacheDir)
-                    totalDeleted += deleted
-                    totalBytes += bytes
-                }
-
-                if (diagExportDir.exists()) {
-                    val (deleted, bytes) = deleteDirectoryContents(diagExportDir)
-                    totalDeleted += deleted
-                    totalBytes += bytes
-                }
-
+                val result = clearXtreamCacheInternal()
                 val duration = System.currentTimeMillis() - startTime
 
                 UnifiedLogRepository.log(
@@ -207,17 +192,13 @@ class CacheManager(
                     message = "Cleared Xtream/ExoPlayer cache",
                     details =
                         mapOf(
-                            "filesDeleted" to totalDeleted.toString(),
-                            "bytesFreed" to totalBytes.toString(),
+                            "filesDeleted" to result.filesDeleted.toString(),
+                            "bytesFreed" to result.bytesFreed.toString(),
                             "durationMs" to duration.toString(),
                         ),
                 )
 
-                if (totalDeleted == 0) {
-                    return@withContext CacheResult(success = true, filesDeleted = 0, bytesFreed = 0)
-                }
-
-                CacheResult(success = true, filesDeleted = totalDeleted, bytesFreed = totalBytes)
+                result
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLogRepository.log(
@@ -236,16 +217,50 @@ class CacheManager(
         }
 
     /**
+     * Internal method to clear Xtream cache without logging.
+     */
+    private fun clearXtreamCacheInternal(): CacheResult {
+        val rarCacheDir = File(context.cacheDir, RAR_CACHE_DIR)
+        val imageCacheDir = File(context.cacheDir, IMAGE_CACHE_DIR)
+        val diagExportDir = File(context.cacheDir, DIAGNOSTICS_EXPORT_DIR)
+
+        var totalDeleted = 0
+        var totalBytes = 0L
+
+        if (rarCacheDir.exists()) {
+            val (deleted, bytes) = deleteDirectoryContents(rarCacheDir)
+            totalDeleted += deleted
+            totalBytes += bytes
+        }
+
+        if (imageCacheDir.exists()) {
+            val (deleted, bytes) = deleteDirectoryContents(imageCacheDir)
+            totalDeleted += deleted
+            totalBytes += bytes
+        }
+
+        if (diagExportDir.exists()) {
+            val (deleted, bytes) = deleteDirectoryContents(diagExportDir)
+            totalDeleted += deleted
+            totalBytes += bytes
+        }
+
+        return CacheResult(success = true, filesDeleted = totalDeleted, bytesFreed = totalBytes)
+    }
+
+    /**
      * Clear all caches at once.
      * Combines log, TDLib, and Xtream cache clearing operations.
+     * Uses internal methods to avoid logging while clearing the log directory.
      */
     suspend fun clearAllCaches(): CacheResult =
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             try {
-                val logResult = clearLogCache()
-                val tdlibResult = clearTdlibCache()
-                val xtreamResult = clearXtreamCache()
+                // Use internal methods to avoid logging during deletion
+                val logResult = clearLogCacheInternal()
+                val tdlibResult = clearTdlibCacheInternal()
+                val xtreamResult = clearXtreamCacheInternal()
 
                 val totalDeleted = logResult.filesDeleted + tdlibResult.filesDeleted + xtreamResult.filesDeleted
                 val totalBytes = logResult.bytesFreed + tdlibResult.bytesFreed + xtreamResult.bytesFreed
@@ -253,6 +268,7 @@ class CacheManager(
 
                 val duration = System.currentTimeMillis() - startTime
 
+                // Now log after all deletions are complete
                 UnifiedLogRepository.log(
                     level = UnifiedLogRepository.Level.INFO,
                     category = "diagnostics",

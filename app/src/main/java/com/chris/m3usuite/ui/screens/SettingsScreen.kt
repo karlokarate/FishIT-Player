@@ -1265,7 +1265,8 @@ private fun CacheManagementSection(
     if (showLogCacheConfirmDialog) {
         CacheClearConfirmDialog(
             title = "Log-Cache löschen?",
-            message = "Alle App-Logs werden gelöscht. Dies kann bei Problemen zur Fehlerdiagnose verwendet werden.",
+            message = "Alle App-Logs werden gelöscht. Dies sollte nur durchgeführt werden, wenn die Logs " +
+                "nicht mehr benötigt werden oder zu viel Speicherplatz belegen.",
             onConfirm = {
                 showLogCacheConfirmDialog = false
                 onClearLogCache()

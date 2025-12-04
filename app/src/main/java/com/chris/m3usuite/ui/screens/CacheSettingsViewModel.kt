@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Cache operation type for tracking which operation is in progress.
@@ -53,6 +55,7 @@ class CacheSettingsViewModel(
     app: Application,
 ) : AndroidViewModel(app) {
     private val cacheManager = CacheManager(app)
+    private val operationMutex = Mutex()
 
     private val _state = MutableStateFlow(CacheSettingsState())
     val state: StateFlow<CacheSettingsState> = _state
@@ -61,18 +64,20 @@ class CacheSettingsViewModel(
      * Clear log cache.
      */
     fun clearLogCache() {
-        if (_state.value.isOperationInProgress) return
-
-        _state.update {
-            it.copy(
-                isOperationInProgress = true,
-                currentOperation = CacheOperationType.LOG,
-                lastResult = null,
-                showResultDialog = false,
-            )
-        }
-
         viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.LOG,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
             val result = cacheManager.clearLogCache()
             _state.update {
                 it.copy(
@@ -89,18 +94,20 @@ class CacheSettingsViewModel(
      * Clear TDLib (Telegram) cache.
      */
     fun clearTdlibCache() {
-        if (_state.value.isOperationInProgress) return
-
-        _state.update {
-            it.copy(
-                isOperationInProgress = true,
-                currentOperation = CacheOperationType.TDLIB,
-                lastResult = null,
-                showResultDialog = false,
-            )
-        }
-
         viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.TDLIB,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
             val result = cacheManager.clearTdlibCache()
             _state.update {
                 it.copy(
@@ -117,18 +124,20 @@ class CacheSettingsViewModel(
      * Clear Xtream/ExoPlayer cache.
      */
     fun clearXtreamCache() {
-        if (_state.value.isOperationInProgress) return
-
-        _state.update {
-            it.copy(
-                isOperationInProgress = true,
-                currentOperation = CacheOperationType.XTREAM,
-                lastResult = null,
-                showResultDialog = false,
-            )
-        }
-
         viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.XTREAM,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
             val result = cacheManager.clearXtreamCache()
             _state.update {
                 it.copy(
@@ -145,18 +154,20 @@ class CacheSettingsViewModel(
      * Clear all caches.
      */
     fun clearAllCaches() {
-        if (_state.value.isOperationInProgress) return
-
-        _state.update {
-            it.copy(
-                isOperationInProgress = true,
-                currentOperation = CacheOperationType.ALL,
-                lastResult = null,
-                showResultDialog = false,
-            )
-        }
-
         viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.ALL,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
             val result = cacheManager.clearAllCaches()
             _state.update {
                 it.copy(
