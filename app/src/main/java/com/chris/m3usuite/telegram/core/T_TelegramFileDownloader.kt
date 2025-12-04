@@ -1163,10 +1163,11 @@ class T_TelegramFileDownloader(
      * Ensure file ready with MP4 header validation (StreamingConfigRefactor integration).
      *
      * **TDLib Best Practices Strategy:**
-     * 1. Start progressive download: downloadFile(fileId, offset=0, limit=0, priority=32)
-     * 2. Poll file.local.downloaded_prefix_size until >= MIN_PREFIX_FOR_VALIDATION_BYTES
-     * 3. Use Mp4HeaderParser to validate complete moov atom
-     * 4. Return local path only when moov is complete (no hard thresholds)
+     * 1. Start progressive download: downloadFile(fileId, offset, limit=0, priority=32)
+     * 2. Poll file.local.downloaded_prefix_size until data is available
+     * 3. For initial playback (offset=0): Validate MP4 moov atom for streamability
+     * 4. For seeks (offset>0): Skip validation, just wait for data at seek position
+     * 5. Return local path when ready for playback
      *
      * **Stale FileId Handling (Phase D+):**
      * - If downloadFile fails with "File not found" error and remoteId is provided
@@ -1179,6 +1180,7 @@ class T_TelegramFileDownloader(
      *
      * @param fileId TDLib file ID
      * @param remoteId Optional stable remote file ID for stale fileId fallback
+     * @param offset Starting byte offset for download (0 for initial playback, >0 for seeks)
      * @param timeoutMs Maximum wait time (default: 30 seconds from StreamingConfigRefactor)
      * @return Local file path from TDLib cache
      * @throws Exception if download fails, timeout occurs, or file is not streamable
@@ -1186,32 +1188,36 @@ class T_TelegramFileDownloader(
     suspend fun ensureFileReadyWithMp4Validation(
         fileId: Int,
         remoteId: String? = null,
+        offset: Long = 0L,
         timeoutMs: Long = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
     ): String =
         withContext(Dispatchers.IO) {
             val startTimeMs = System.currentTimeMillis()
+            val isSeeking = offset > 0L
 
             TelegramLogRepository.info(
                 source = "T_TelegramFileDownloader",
-                message = "ensureFileReadyWithMp4Validation: Starting download with MP4 header validation",
+                message = "ensureFileReadyWithMp4Validation: Starting download" + if (isSeeking) " (SEEK)" else " with MP4 header validation",
                 details =
                     mapOf(
                         "fileId" to fileId.toString(),
                         "remoteId" to (remoteId ?: "none"),
+                        "offset" to offset.toString(),
+                        "isSeeking" to isSeeking.toString(),
                         "timeoutMs" to timeoutMs.toString(),
                         "minPrefixForValidation" to StreamingConfigRefactor.MIN_PREFIX_FOR_VALIDATION_BYTES.toString(),
                         "maxPrefixScan" to StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES.toString(),
                     ),
             )
 
-            // Step 1: Try to start progressive download from offset=0, limit=0 (full file)
+            // Step 1: Try to start progressive download from specified offset, limit=0 (to EOF)
             // If this fails with 404 and we have remoteId, resolve and retry
             var actualFileId = fileId
             var downloadResult =
                 client.downloadFile(
                     fileId = actualFileId,
                     priority = StreamingConfigRefactor.DOWNLOAD_PRIORITY_STREAMING,
-                    offset = StreamingConfigRefactor.DOWNLOAD_OFFSET_START,
+                    offset = offset, // Use specified offset (0 for initial, >0 for seeks)
                     limit = StreamingConfigRefactor.DOWNLOAD_LIMIT_FULL,
                     synchronous = false, // Asynchronous for progressive streaming
                 )
@@ -1282,7 +1288,7 @@ class T_TelegramFileDownloader(
                             client.downloadFile(
                                 fileId = actualFileId,
                                 priority = StreamingConfigRefactor.DOWNLOAD_PRIORITY_STREAMING,
-                                offset = StreamingConfigRefactor.DOWNLOAD_OFFSET_START,
+                                offset = offset, // Use same offset as original attempt
                                 limit = StreamingConfigRefactor.DOWNLOAD_LIMIT_FULL,
                                 synchronous = false,
                             )
@@ -1339,7 +1345,9 @@ class T_TelegramFileDownloader(
                 }
             }
 
-            // Step 2: Poll until minimum prefix is available for validation
+            // Step 2: Poll until minimum data is available
+            // For seeks (offset > 0), skip MP4 validation since file is already known valid
+            // For initial playback (offset = 0), validate MP4 header before allowing playback
             var lastLoggedPrefixSize = 0L
             var moovCheckStarted = false
             var moovIncompleteWarningLogged = false
@@ -1353,17 +1361,19 @@ class T_TelegramFileDownloader(
                         details =
                             mapOf(
                                 "fileId" to actualFileId.toString(),
+                                "offset" to offset.toString(),
                                 "elapsedMs" to elapsedMs.toString(),
                                 "timeoutMs" to timeoutMs.toString(),
                             ),
                     )
-                    throw Exception("Timeout waiting for file download: fileId=$actualFileId, elapsed=${elapsedMs}ms")
+                    throw Exception("Timeout waiting for file download: fileId=$actualFileId, offset=$offset, elapsed=${elapsedMs}ms")
                 }
 
                 // Get fresh file state from TDLib
                 val file = getFreshFileState(actualFileId)
                 val localPath = file.local?.path
                 val downloadedPrefixSize = file.local?.downloadedPrefixSize?.toLong() ?: 0L
+                val downloadedSize = file.local?.downloadedSize?.toLong() ?: 0L
                 val isDownloadingCompleted = file.local?.isDownloadingCompleted ?: false
 
                 // Verbose logging (only log significant progress changes)
@@ -1376,7 +1386,9 @@ class T_TelegramFileDownloader(
                         details =
                             mapOf(
                                 "fileId" to actualFileId.toString(),
+                                "offset" to offset.toString(),
                                 "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                "downloadedSize" to downloadedSize.toString(),
                                 "isDownloadingCompleted" to isDownloadingCompleted.toString(),
                                 "elapsedMs" to elapsedMs.toString(),
                             ),
@@ -1384,6 +1396,51 @@ class T_TelegramFileDownloader(
                     lastLoggedPrefixSize = downloadedPrefixSize
                 }
 
+                // For seeks, just wait for local file to be available with some data
+                // We don't need MP4 validation since file was already validated on initial playback
+                if (isSeeking) {
+                    // Check if local path is available
+                    if (localPath.isNullOrBlank()) {
+                        delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                        continue
+                    }
+
+                    // Check if file exists
+                    val localFile = java.io.File(localPath)
+                    if (!localFile.exists()) {
+                        delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                        continue
+                    }
+
+                    // Check if we have any data downloaded at or after the seek offset
+                    // For TDLib progressive download, we need downloadedPrefixSize to have progressed
+                    // OR downloadedSize to indicate we have data
+                    val hasMinimumDataForSeek = downloadedPrefixSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
+                        downloadedSize >= offset + StreamingConfigRefactor.MIN_READ_AHEAD_BYTES ||
+                        isDownloadingCompleted
+
+                    if (hasMinimumDataForSeek) {
+                        TelegramLogRepository.info(
+                            source = "T_TelegramFileDownloader",
+                            message = "ensureFileReadyWithMp4Validation: SEEK ready",
+                            details =
+                                mapOf(
+                                    "fileId" to actualFileId.toString(),
+                                    "offset" to offset.toString(),
+                                    "downloadedPrefixSize" to downloadedPrefixSize.toString(),
+                                    "downloadedSize" to downloadedSize.toString(),
+                                    "elapsedMs" to elapsedMs.toString(),
+                                    "localPath" to localPath,
+                                ),
+                        )
+                        return@withContext localPath
+                    }
+
+                    delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
+                    continue
+                }
+
+                // For initial playback (offset=0), perform full MP4 validation
                 // Check if we have minimum prefix for header validation
                 if (downloadedPrefixSize < StreamingConfigRefactor.MIN_PREFIX_FOR_VALIDATION_BYTES) {
                     delay(StreamingConfigRefactor.PREFIX_POLL_INTERVAL_MS)
@@ -1421,7 +1478,7 @@ class T_TelegramFileDownloader(
                     continue
                 }
 
-                // Step 3: Validate MP4 header
+                // Step 3: Validate MP4 header (only for initial playback)
                 if (!moovCheckStarted) {
                     moovCheckStarted = true
                     TelegramLogRepository.info(
