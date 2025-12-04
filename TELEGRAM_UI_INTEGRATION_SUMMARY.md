@@ -19,7 +19,7 @@ Multiple DataStore instances were being created for the same file (`settings.pre
 2. **Updated `SettingsStore`** (`prefs/SettingsStore.kt`)
    - Removed `private val Context.dataStore by preferencesDataStore("settings")`
    - Uses `SettingsDataStoreProvider.getInstance(context)` instead
-   - All references to `context.dataStore` replaced with `dataStore` member
+   - Replaced all 134+ references to `context.dataStore` with `dataStore` member variable
 
 3. **Updated `CacheManager`** (`core/cache/CacheManager.kt`)
    - Removed duplicate `preferencesDataStore("settings")` declaration

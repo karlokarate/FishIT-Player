@@ -39,6 +39,11 @@ class TelegramSettingsViewModel(
     // Service client - single source of truth
     private val serviceClient = T_TelegramServiceClient.getInstance(app)
 
+    // Reuse repository instance instead of creating new ones
+    private val repository by lazy {
+        com.chris.m3usuite.data.repo.TelegramContentRepository(app, store)
+    }
+
     // State flows
     private val _state = MutableStateFlow(TelegramSettingsState())
     val state: StateFlow<TelegramSettingsState> = _state.asStateFlow()
@@ -535,10 +540,7 @@ class TelegramSettingsViewModel(
                         ),
                 )
 
-                // Get TelegramContentRepository
-                val repository = com.chris.m3usuite.data.repo.TelegramContentRepository(app, store)
-
-                // Sync full chat history
+                // Sync full chat history using reused repository instance
                 val result =
                     repository.syncFullChatHistory(
                         chatId = chatId,
