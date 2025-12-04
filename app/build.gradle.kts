@@ -11,8 +11,10 @@ plugins {
     id("io.objectbox") version "5.0.1"
     id("org.jetbrains.kotlinx.kover")
     
-    // Google services Gradle plugin for Firebase
+    // Firebase plugins
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+    id("com.google.firebase.firebase-perf")
 }
 
 /**
@@ -352,12 +354,12 @@ dependencies {
     debugImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.10.2")
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    // Firebase BoM - manages all Firebase SDK versions
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     
-    // Firebase Analytics (when using the BoM, don't specify versions in Firebase dependencies)
-    implementation("com.google.firebase:firebase-analytics")
-    
-    // Add the dependencies for any other desired Firebase products
-    // https://firebase.google.com/docs/android/setup#available-libraries
+    // Firebase SDKs (versions managed by BoM)
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-config-ktx")
+    implementation("com.google.firebase:firebase-perf-ktx")
 }

@@ -10,8 +10,10 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.9.0" apply true
     id("com.osacky.doctor") version "0.10.0" apply true
     
-    // Add the dependency for the Google services Gradle plugin
+    // Firebase plugins
     id("com.google.gms.google-services") version "4.4.4" apply false
+    id("com.google.firebase.crashlytics") version "3.0.2" apply false
+    id("com.google.firebase.firebase-perf") version "1.4.2" apply false
 }
 
 // Apply quality plugins to all subprojects

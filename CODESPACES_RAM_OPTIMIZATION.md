@@ -5,12 +5,14 @@ Dieses Workspace ist für stabile Builds in 8GB Codespaces optimiert und verhind
 ## 🛡️ Automatische Schutzmaßnahmen
 
 ### Memory Monitor (Automatisch aktiv)
+
 - **Läuft im Hintergrund** und überwacht Speicherverbrauch alle 30 Sekunden
 - **Automatische Bereinigung** bei >85% RAM-Auslastung
 - **Logs:** `/tmp/memory-monitor.log`
 - **Status prüfen:** `ps aux | grep monitor-memory`
 
 **Manuelle Steuerung:**
+
 ```bash
 # Monitor starten
 nohup bash .devcontainer/monitor-memory.sh > /tmp/memory-monitor.log 2>&1 &
@@ -23,6 +25,7 @@ tail -f /tmp/memory-monitor.log
 ```
 
 ### Safe Build Wrapper
+
 Nutze `./safe-build.sh` statt `./gradlew` für garantiert stabile Builds:
 
 ```bash
@@ -40,6 +43,7 @@ Nutze `./safe-build.sh` statt `./gradlew` für garantiert stabile Builds:
 ```
 
 **Features:**
+
 - ✅ Pre-Build Memory Check & Cleanup
 - ✅ Konservative RAM-Limits (max 1.3GB)
 - ✅ Max 2 parallele Worker
@@ -51,7 +55,7 @@ Nutze `./safe-build.sh` statt `./gradlew` für garantiert stabile Builds:
 Optimierte Build-Tasks verfügbar:
 
 1. **Safe Build Debug** (Standard) - Sicherer Debug-Build
-2. **Safe Build Release** - Sicherer Release-Build  
+2. **Safe Build Release** - Sicherer Release-Build
 3. **Clean Build** - Clean + Debug Build
 4. **Stop All Daemons** - Alle Gradle Daemons beenden
 5. **Memory Cleanup** - Sofortige RAM-Bereinigung
@@ -60,21 +64,27 @@ Optimierte Build-Tasks verfügbar:
 ## ⚙️ Konfiguration
 
 ### Gradle Memory Limits
+
 `gradle.properties` ist auf 8GB Codespaces optimiert:
+
 - **Gradle Heap:** 1280 MB (war 1536 MB)
 - **Kotlin Daemon:** 512 MB
 - **Max Workers:** 2 (parallel)
 - **Daemon Timeout:** 5 Minuten
 
 ### Language Server Limits
+
 `.vscode/settings.json` limitiert alle Language Servers:
+
 - **Java LS:** 1024 MB (war 2048 MB)
 - **Kotlin LS:** 768 MB
 - **TypeScript:** 1024 MB
 - **Gradle Auto-Build:** Deaktiviert
 
 ### Terminal Environment
+
 Alle Terminal-Sessions haben automatisch:
+
 ```bash
 GRADLE_OPTS="-Xmx1536m ..."
 _JAVA_OPTIONS="-Xmx1536m ..."
@@ -114,18 +124,22 @@ tail -f /tmp/memory-monitor.log
 ## 🚨 Troubleshooting
 
 ### Build stirbt mit "daemon disappeared"
+
 ```bash
 # Reduziere Workers weiter
 ./gradlew assembleDebug --no-daemon --max-workers=1
 ```
 
 ### Kotlin LS crasht ständig
+
 Deaktiviere temporär in VS Code:
+
 ```json
 "kotlin.languageServer.enabled": false
 ```
 
 ### Extrem langsame Builds
+
 ```bash
 # Deaktiviere parallele Builds
 ./gradlew assembleDebug --no-parallel --no-daemon
@@ -141,14 +155,14 @@ Deaktiviere temporär in VS Code:
 
 ## 📊 Speicher-Budget (8GB Codespaces)
 
-| Komponente | RAM | Status |
-|------------|-----|--------|
-| System | ~1.5 GB | Fix |
-| VS Code | ~900 MB | Fix |
-| Java LS | ~200 MB | Optimiert |
-| Kotlin LS | ~150 MB | Optimiert |
-| Gradle Build | ~1.3 GB | Limitiert |
-| **Reserve** | **~4 GB** | **✅ Sicher** |
+| Komponente   | RAM       | Status        |
+| ------------ | --------- | ------------- |
+| System       | ~1.5 GB   | Fix           |
+| VS Code      | ~900 MB   | Fix           |
+| Java LS      | ~200 MB   | Optimiert     |
+| Kotlin LS    | ~150 MB   | Optimiert     |
+| Gradle Build | ~1.3 GB   | Limitiert     |
+| **Reserve**  | **~4 GB** | **✅ Sicher** |
 
 ## 🔄 Auto-Start beim Codespace-Start
 
