@@ -137,9 +137,9 @@
   "typescript.disableAutomaticTypeAcquisition": true,
   
   // Disable memory-intensive features
-  "editor.occurrencesHighlight": false,
+  "editor.occurrencesHighlight": "off",
   "editor.selectionHighlight": false,
-  "editor.wordBasedSuggestions": false,
+  "editor.wordBasedSuggestions": "off",
   "editor.wordBasedSuggestionsMode": "currentDocument",
   "editor.gotoLocation.multipleDefinitions": "goto",
   "editor.gotoLocation.multipleImplementations": "goto",

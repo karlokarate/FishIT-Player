@@ -65,12 +65,16 @@ Optimierte Build-Tasks verfügbar:
 
 ### Gradle Memory Limits
 
-`gradle.properties` ist auf 8GB Codespaces optimiert:
+`gradle.properties` bleibt bewusst auf den Default-Werten (Ø 2 GB Heap, parallele Builds), damit GitHub Actions
+und externe Builds genau die gleiche Konfiguration sehen wie vorher.
 
-- **Gradle Heap:** 1280 MB (war 1536 MB)
-- **Kotlin Daemon:** 512 MB
-- **Max Workers:** 2 (parallel)
-- **Daemon Timeout:** 5 Minuten
+Die lokale RAM-Restriktion wird ausschließlich über das Workspace-Setup geregelt:
+
+- `./safe-build.sh` setzt `GRADLE_OPTS`, `--max-workers=2`, `--no-daemon` sowie JVM- und Kotlin-Daemon-Flags.
+- VS Code-Terminals exportieren dieselben Limits (`terminal.integrated.env.linux.GRADLE_OPTS`).
+- Optional kann man eine persönliche `~/.gradle/gradle.properties` mit den Limits anlegen (ergibt nur lokalen Effekt).
+
+Wenn du ohne Wrapper bauen musst, verwende trotzdem die zuvor genannten Env-Variablen oder ruf den Wrapper aus dem Terminal.
 
 ### Language Server Limits
 
