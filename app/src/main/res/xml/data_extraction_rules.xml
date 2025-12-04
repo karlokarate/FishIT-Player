@@ -1,19 +1,39 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Data extraction rules for Android 12+ (API 31+).
+    Excludes sensitive/user-specific data that should not be restored on new installs.
+    This prevents the issue where app data reappears after "Clear Data" due to Google Drive backup.
+    
+    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Exclude all DataStore preferences (settings should start fresh) -->
+        <exclude domain="file" path="datastore/" />
+
+        <!-- Exclude ObjectBox database (content should be re-imported) -->
+        <exclude domain="file" path="objectbox/" />
+
+        <!-- Exclude TDLib data (Telegram session should not transfer) -->
+        <exclude domain="file" path="no_backup/" />
+
+        <!-- Exclude SharedPreferences (legacy settings) -->
+        <exclude domain="sharedpref" path="." />
+
+        <!-- Exclude all caches -->
+        <exclude domain="cache" path="." />
+
+        <!-- Exclude logs -->
+        <exclude domain="file" path="logs/" />
     </cloud-backup>
-    <!--
+
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <!-- Same exclusions for device-to-device transfer -->
+        <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="objectbox/" />
+        <exclude domain="file" path="no_backup/" />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="cache" path="." />
+        <exclude domain="file" path="logs/" />
     </device-transfer>
-    -->
 </data-extraction-rules>

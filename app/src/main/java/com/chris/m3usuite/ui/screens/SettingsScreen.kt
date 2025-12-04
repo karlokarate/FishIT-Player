@@ -405,6 +405,9 @@ fun SettingsScreen(
                 onClearTdlibCache = cacheVm::clearTdlibCache,
                 onClearXtreamCache = cacheVm::clearXtreamCache,
                 onClearAllCaches = cacheVm::clearAllCaches,
+                onClearDataStore = cacheVm::clearDataStore,
+                onClearObjectBox = cacheVm::clearObjectBoxDatabase,
+                onClearAllAppData = cacheVm::clearAllAppData,
                 onDismissResultDialog = cacheVm::dismissResultDialog,
             )
 
@@ -1188,24 +1191,40 @@ private fun CacheManagementSection(
     onClearTdlibCache: () -> Unit,
     onClearXtreamCache: () -> Unit,
     onClearAllCaches: () -> Unit,
+    onClearDataStore: () -> Unit,
+    onClearObjectBox: () -> Unit,
+    onClearAllAppData: () -> Unit,
     onDismissResultDialog: () -> Unit,
 ) {
+    val context = LocalContext.current
     var showLogCacheConfirmDialog by remember { mutableStateOf(false) }
     var showTdlibCacheConfirmDialog by remember { mutableStateOf(false) }
     var showXtreamCacheConfirmDialog by remember { mutableStateOf(false) }
     var showAllCachesConfirmDialog by remember { mutableStateOf(false) }
+    var showDataStoreConfirmDialog by remember { mutableStateOf(false) }
+    var showObjectBoxConfirmDialog by remember { mutableStateOf(false) }
+    var showNuclearConfirmDialog by remember { mutableStateOf(false) }
 
     SettingsCard(title = "Cache Verwaltung") {
         Text(
-            text = "Hier können Sie verschiedene App-Caches löschen. Nach dem Löschen werden die Caches bei Bedarf neu erstellt.",
+            text = "Hier können Sie verschiedene App-Daten löschen. Manche Aktionen erfordern einen Neustart.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.height(12.dp))
 
+        // Section: Regular Caches
+        Text(
+            text = "Temporäre Caches",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+
+        Spacer(Modifier.height(8.dp))
+
         // Clear Log Cache
-        Button(
+        OutlinedButton(
             onClick = { showLogCacheConfirmDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isOperationInProgress,
@@ -1214,17 +1233,16 @@ private fun CacheManagementSection(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(Modifier.width(8.dp))
             }
             Text("Log-Cache löschen")
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         // Clear TDLib Cache
-        Button(
+        OutlinedButton(
             onClick = { showTdlibCacheConfirmDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isOperationInProgress,
@@ -1233,17 +1251,16 @@ private fun CacheManagementSection(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Text("TDLib-Cache löschen")
+            Text("Telegram-Cache löschen")
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         // Clear Xtream Cache
-        Button(
+        OutlinedButton(
             onClick = { showXtreamCacheConfirmDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isOperationInProgress,
@@ -1252,14 +1269,13 @@ private fun CacheManagementSection(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Text("Xtream/ExoPlayer-Cache löschen")
+            Text("Streaming-Cache löschen")
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         // Clear All Caches
         OutlinedButton(
@@ -1271,11 +1287,90 @@ private fun CacheManagementSection(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.width(8.dp))
             }
             Text("Alle Caches löschen")
+        }
+
+        Spacer(Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(16.dp))
+
+        // Section: Persistent Data (requires restart)
+        Text(
+            text = "Persistente Daten (Neustart erforderlich)",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.error,
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Clear DataStore (Settings)
+        Button(
+            onClick = { showDataStoreConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.DATASTORE) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("Einstellungen zurücksetzen")
+        }
+
+        Spacer(Modifier.height(4.dp))
+
+        // Clear ObjectBox (Content Database)
+        Button(
+            onClick = { showObjectBoxConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.OBJECTBOX) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("Inhalte löschen (VOD/Serien/Live)")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // NUCLEAR: Clear ALL app data
+        Button(
+            onClick = { showNuclearConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.NUCLEAR) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onError,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("⚠️ ALLE App-Daten löschen")
         }
     }
 
@@ -1283,8 +1378,7 @@ private fun CacheManagementSection(
     if (showLogCacheConfirmDialog) {
         CacheClearConfirmDialog(
             title = "Log-Cache löschen?",
-            message = "Alle App-Logs werden gelöscht. Dies sollte nur durchgeführt werden, wenn die Logs " +
-                "nicht mehr benötigt werden oder zu viel Speicherplatz belegen.",
+            message = "Alle App-Logs werden gelöscht.",
             onConfirm = {
                 showLogCacheConfirmDialog = false
                 onClearLogCache()
@@ -1295,9 +1389,8 @@ private fun CacheManagementSection(
 
     if (showTdlibCacheConfirmDialog) {
         CacheClearConfirmDialog(
-            title = "TDLib-Cache löschen?",
-            message = "Telegram-Datenbank und Downloads werden gelöscht. TDLib wird die Daten bei " +
-                "Bedarf neu laden. Sie müssen sich möglicherweise erneut bei Telegram anmelden.",
+            title = "Telegram-Cache löschen?",
+            message = "Telegram-Downloads und temporäre Dateien werden gelöscht. Sie müssen sich möglicherweise erneut bei Telegram anmelden.",
             onConfirm = {
                 showTdlibCacheConfirmDialog = false
                 onClearTdlibCache()
@@ -1308,8 +1401,8 @@ private fun CacheManagementSection(
 
     if (showXtreamCacheConfirmDialog) {
         CacheClearConfirmDialog(
-            title = "Xtream/ExoPlayer-Cache löschen?",
-            message = "ExoPlayer-Cache, RAR-Cache und Bild-Cache werden gelöscht. Videos müssen möglicherweise neu gepuffert werden.",
+            title = "Streaming-Cache löschen?",
+            message = "ExoPlayer-Cache, Bilder-Cache und RAR-Cache werden gelöscht. Videos müssen neu gepuffert werden.",
             onConfirm = {
                 showXtreamCacheConfirmDialog = false
                 onClearXtreamCache()
@@ -1321,7 +1414,7 @@ private fun CacheManagementSection(
     if (showAllCachesConfirmDialog) {
         CacheClearConfirmDialog(
             title = "Alle Caches löschen?",
-            message = "Log-Cache, TDLib-Cache und Xtream/ExoPlayer-Cache werden gelöscht. Dies kann einige Zeit dauern.",
+            message = "Alle temporären Caches werden gelöscht (Logs, Telegram, Streaming). Dies kann einige Sekunden dauern.",
             onConfirm = {
                 showAllCachesConfirmDialog = false
                 onClearAllCaches()
@@ -1330,7 +1423,46 @@ private fun CacheManagementSection(
         )
     }
 
-    // Result Dialog
+    if (showDataStoreConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "Einstellungen zurücksetzen?",
+            message = "ALLE Einstellungen werden auf Werkseinstellungen zurückgesetzt. Die App wird danach geschlossen und muss neu gestartet werden.",
+            isDangerous = true,
+            onConfirm = {
+                showDataStoreConfirmDialog = false
+                onClearDataStore()
+            },
+            onDismiss = { showDataStoreConfirmDialog = false },
+        )
+    }
+
+    if (showObjectBoxConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "Alle Inhalte löschen?",
+            message = "ALLE importierten Inhalte (VOD, Serien, Live, Episoden, Favoriten) werden gelöscht. Sie müssen danach neu importieren. Die App wird geschlossen.",
+            isDangerous = true,
+            onConfirm = {
+                showObjectBoxConfirmDialog = false
+                onClearObjectBox()
+            },
+            onDismiss = { showObjectBoxConfirmDialog = false },
+        )
+    }
+
+    if (showNuclearConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "⚠️ ALLE Daten löschen?",
+            message = "WARNUNG: Dies löscht ALLE App-Daten:\n\n• Alle Einstellungen\n• Alle Inhalte (VOD/Serien/Live)\n• Alle Caches\n• Telegram-Session\n• Favoriten\n\nDies entspricht 'Daten löschen' in den Android-Einstellungen. Die App wird danach geschlossen.",
+            isDangerous = true,
+            onConfirm = {
+                showNuclearConfirmDialog = false
+                onClearAllAppData()
+            },
+            onDismiss = { showNuclearConfirmDialog = false },
+        )
+    }
+
+    // Result Dialog with restart option
     if (state.showResultDialog && state.lastResult != null) {
         val result = state.lastResult
         AlertDialog(
@@ -1339,7 +1471,7 @@ private fun CacheManagementSection(
             text = {
                 Column {
                     if (result.success) {
-                        Text("Cache erfolgreich gelöscht")
+                        Text("Daten erfolgreich gelöscht")
                         Spacer(Modifier.height(8.dp))
                         Text(
                             "Dateien gelöscht: ${result.filesDeleted}",
@@ -1351,8 +1483,16 @@ private fun CacheManagementSection(
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
+                        if (state.requiresRestart) {
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "⚠️ Die App muss neu gestartet werden!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     } else {
-                        Text("Fehler beim Löschen des Cache")
+                        Text("Fehler beim Löschen")
                         if (result.errorMessage != null) {
                             Spacer(Modifier.height(8.dp))
                             Text(
@@ -1365,10 +1505,32 @@ private fun CacheManagementSection(
                 }
             },
             confirmButton = {
-                TextButton(onClick = onDismissResultDialog) {
-                    Text("OK")
+                if (state.requiresRestart && result.success) {
+                    Button(
+                        onClick = {
+                            onDismissResultDialog()
+                            // Force close the app
+                            (context as? android.app.Activity)?.finishAffinity()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Text("App beenden")
+                    }
+                } else {
+                    TextButton(onClick = onDismissResultDialog) {
+                        Text("OK")
+                    }
                 }
             },
+            dismissButton = if (state.requiresRestart && result.success) {
+                {
+                    TextButton(onClick = onDismissResultDialog) {
+                        Text("Später")
+                    }
+                }
+            } else null,
         )
     }
 }
@@ -1380,16 +1542,32 @@ private fun CacheManagementSection(
 private fun CacheClearConfirmDialog(
     title: String,
     message: String,
+    isDangerous: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { 
+            Text(
+                text = title,
+                color = if (isDangerous) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            ) 
+        },
         text = { Text(message) },
         confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Löschen")
+            Button(
+                onClick = onConfirm,
+                colors = if (isDangerous) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    )
+                } else {
+                    ButtonDefaults.buttonColors()
+                },
+            ) {
+                Text(if (isDangerous) "Ja, löschen" else "Löschen")
             }
         },
         dismissButton = {

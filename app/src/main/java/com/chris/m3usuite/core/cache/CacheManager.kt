@@ -1,10 +1,16 @@
 package com.chris.m3usuite.core.cache
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import com.chris.m3usuite.core.logging.UnifiedLogRepository
+import com.chris.m3usuite.data.obx.ObxStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+
+// DataStore reference (same name as in SettingsStore)
+private val Context.dataStore by preferencesDataStore("settings")
 
 /**
  * Result of a cache clearing operation.
@@ -45,6 +51,294 @@ class CacheManager(
         private const val RAR_CACHE_DIR = "rar"
         private const val IMAGE_CACHE_DIR = "image_cache"
         private const val DIAGNOSTICS_EXPORT_DIR = "diagnostics_export"
+        private const val DATASTORE_DIR = "datastore"
+        private const val OBJECTBOX_DIR = "objectbox"
+        private const val SHARED_PREFS_DIR = "shared_prefs"
+    }
+
+    /**
+     * Clear DataStore (app settings/preferences).
+     * This will reset ALL app settings to defaults.
+     * The app should be restarted after this operation.
+     */
+    suspend fun clearDataStore(): CacheResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            try {
+                // Clear DataStore preferences programmatically
+                context.dataStore.edit { it.clear() }
+
+                // Also delete the physical file to ensure complete reset
+                val datastoreDir = File(context.filesDir, DATASTORE_DIR)
+                var filesDeleted = 0
+                var bytesFreed = 0L
+
+                if (datastoreDir.exists()) {
+                    val (deleted, bytes) = deleteDirectoryContents(datastoreDir)
+                    filesDeleted = deleted
+                    bytesFreed = bytes
+                }
+
+                val duration = System.currentTimeMillis() - startTime
+
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.INFO,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Cleared DataStore (app settings)",
+                    details =
+                        mapOf(
+                            "filesDeleted" to filesDeleted.toString(),
+                            "bytesFreed" to bytesFreed.toString(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+
+                CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
+            } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.ERROR,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Failed to clear DataStore",
+                    details =
+                        mapOf(
+                            "error" to e.message.orEmpty(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+                CacheResult(success = false, errorMessage = e.message ?: "Unknown error")
+            }
+        }
+
+    /**
+     * Clear ObjectBox database (all content: VOD, Series, Live, Episodes, etc.).
+     * This will remove all imported content and require a fresh import.
+     * The app should be restarted after this operation.
+     */
+    suspend fun clearObjectBoxDatabase(): CacheResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            try {
+                // Close ObjectBox first to release file locks
+                try {
+                    val store = ObxStore.get(context)
+                    store.close()
+                } catch (e: Exception) {
+                    // Store might not be initialized yet, that's fine
+                }
+
+                // Delete ObjectBox directory
+                val objectboxDir = File(context.filesDir, OBJECTBOX_DIR)
+                var filesDeleted = 0
+                var bytesFreed = 0L
+
+                if (objectboxDir.exists()) {
+                    val (deleted, bytes) = deleteDirectoryRecursively(objectboxDir)
+                    filesDeleted = deleted
+                    bytesFreed = bytes
+                }
+
+                val duration = System.currentTimeMillis() - startTime
+
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.INFO,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Cleared ObjectBox database (all content)",
+                    details =
+                        mapOf(
+                            "filesDeleted" to filesDeleted.toString(),
+                            "bytesFreed" to bytesFreed.toString(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+
+                CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
+            } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.ERROR,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Failed to clear ObjectBox database",
+                    details =
+                        mapOf(
+                            "error" to e.message.orEmpty(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+                CacheResult(success = false, errorMessage = e.message ?: "Unknown error")
+            }
+        }
+
+    /**
+     * Clear SharedPreferences (legacy preferences if any).
+     */
+    suspend fun clearSharedPreferences(): CacheResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            try {
+                val prefsDir = File(context.applicationInfo.dataDir, SHARED_PREFS_DIR)
+                var filesDeleted = 0
+                var bytesFreed = 0L
+
+                if (prefsDir.exists()) {
+                    val (deleted, bytes) = deleteDirectoryContents(prefsDir)
+                    filesDeleted = deleted
+                    bytesFreed = bytes
+                }
+
+                val duration = System.currentTimeMillis() - startTime
+
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.INFO,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Cleared SharedPreferences",
+                    details =
+                        mapOf(
+                            "filesDeleted" to filesDeleted.toString(),
+                            "bytesFreed" to bytesFreed.toString(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+
+                CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
+            } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.ERROR,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Failed to clear SharedPreferences",
+                    details =
+                        mapOf(
+                            "error" to e.message.orEmpty(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+                CacheResult(success = false, errorMessage = e.message ?: "Unknown error")
+            }
+        }
+
+    /**
+     * NUCLEAR OPTION: Clear ALL app data (settings, database, caches).
+     * This is equivalent to "Clear Data" in Android Settings.
+     * The app MUST be restarted after this operation.
+     */
+    suspend fun clearAllAppData(): CacheResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            try {
+                // Clear in order: ObjectBox first (needs closing), then settings, then caches
+                val objectboxResult = clearObjectBoxDatabaseInternal()
+                val datastoreResult = clearDataStoreInternal()
+                val sharedPrefsResult = clearSharedPreferencesInternal()
+                val logResult = clearLogCacheInternal()
+                val tdlibResult = clearTdlibCacheInternal()
+                val xtreamResult = clearXtreamCacheInternal()
+
+                val totalDeleted = objectboxResult.filesDeleted + datastoreResult.filesDeleted +
+                    sharedPrefsResult.filesDeleted + logResult.filesDeleted +
+                    tdlibResult.filesDeleted + xtreamResult.filesDeleted
+
+                val totalBytes = objectboxResult.bytesFreed + datastoreResult.bytesFreed +
+                    sharedPrefsResult.bytesFreed + logResult.bytesFreed +
+                    tdlibResult.bytesFreed + xtreamResult.bytesFreed
+
+                val allSuccess = objectboxResult.success && datastoreResult.success &&
+                    sharedPrefsResult.success && logResult.success &&
+                    tdlibResult.success && xtreamResult.success
+
+                val duration = System.currentTimeMillis() - startTime
+
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.INFO,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Cleared ALL app data (nuclear reset)",
+                    details =
+                        mapOf(
+                            "filesDeleted" to totalDeleted.toString(),
+                            "bytesFreed" to totalBytes.toString(),
+                            "durationMs" to duration.toString(),
+                            "allSuccess" to allSuccess.toString(),
+                        ),
+                )
+
+                CacheResult(
+                    success = allSuccess,
+                    filesDeleted = totalDeleted,
+                    bytesFreed = totalBytes,
+                    errorMessage = if (!allSuccess) "Some operations failed" else null,
+                )
+            } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                UnifiedLogRepository.log(
+                    level = UnifiedLogRepository.Level.ERROR,
+                    category = "diagnostics",
+                    source = TAG,
+                    message = "Failed to clear all app data",
+                    details =
+                        mapOf(
+                            "error" to e.message.orEmpty(),
+                            "durationMs" to duration.toString(),
+                        ),
+                )
+                CacheResult(success = false, errorMessage = e.message ?: "Unknown error")
+            }
+        }
+
+    // Internal methods without logging (for combined operations)
+
+    private suspend fun clearDataStoreInternal(): CacheResult {
+        return try {
+            context.dataStore.edit { it.clear() }
+            val datastoreDir = File(context.filesDir, DATASTORE_DIR)
+            if (datastoreDir.exists()) {
+                val (deleted, bytes) = deleteDirectoryContents(datastoreDir)
+                CacheResult(success = true, filesDeleted = deleted, bytesFreed = bytes)
+            } else {
+                CacheResult(success = true, filesDeleted = 0, bytesFreed = 0L)
+            }
+        } catch (e: Exception) {
+            CacheResult(success = false, errorMessage = e.message)
+        }
+    }
+
+    private fun clearObjectBoxDatabaseInternal(): CacheResult {
+        return try {
+            try {
+                val store = ObxStore.get(context)
+                store.close()
+            } catch (e: Exception) { /* ignore */ }
+
+            val objectboxDir = File(context.filesDir, OBJECTBOX_DIR)
+            if (objectboxDir.exists()) {
+                val (deleted, bytes) = deleteDirectoryRecursively(objectboxDir)
+                CacheResult(success = true, filesDeleted = deleted, bytesFreed = bytes)
+            } else {
+                CacheResult(success = true, filesDeleted = 0, bytesFreed = 0L)
+            }
+        } catch (e: Exception) {
+            CacheResult(success = false, errorMessage = e.message)
+        }
+    }
+
+    private fun clearSharedPreferencesInternal(): CacheResult {
+        return try {
+            val prefsDir = File(context.applicationInfo.dataDir, SHARED_PREFS_DIR)
+            if (prefsDir.exists()) {
+                val (deleted, bytes) = deleteDirectoryContents(prefsDir)
+                CacheResult(success = true, filesDeleted = deleted, bytesFreed = bytes)
+            } else {
+                CacheResult(success = true, filesDeleted = 0, bytesFreed = 0L)
+            }
+        } catch (e: Exception) {
+            CacheResult(success = false, errorMessage = e.message)
+        }
     }
 
     /**

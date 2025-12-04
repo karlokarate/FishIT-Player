@@ -23,6 +23,10 @@ enum class CacheOperationType {
     TDLIB,
     XTREAM,
     ALL,
+    DATASTORE,
+    OBJECTBOX,
+    SHARED_PREFS,
+    NUCLEAR,
 }
 
 /**
@@ -32,12 +36,14 @@ enum class CacheOperationType {
  * @param currentOperation Which cache operation is currently running
  * @param lastResult Result of the last cache operation
  * @param showResultDialog Whether to show the result dialog
+ * @param requiresRestart Whether the app needs to be restarted after the operation
  */
 data class CacheSettingsState(
     val isOperationInProgress: Boolean = false,
     val currentOperation: CacheOperationType = CacheOperationType.NONE,
     val lastResult: CacheResult? = null,
     val showResultDialog: Boolean = false,
+    val requiresRestart: Boolean = false,
 )
 
 /**
@@ -181,10 +187,106 @@ class CacheSettingsViewModel(
     }
 
     /**
+     * Clear DataStore (app settings).
+     * Requires app restart.
+     */
+    fun clearDataStore() {
+        viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.DATASTORE,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
+            val result = cacheManager.clearDataStore()
+            _state.update {
+                it.copy(
+                    isOperationInProgress = false,
+                    currentOperation = CacheOperationType.NONE,
+                    lastResult = result,
+                    showResultDialog = true,
+                    requiresRestart = result.success,
+                )
+            }
+        }
+    }
+
+    /**
+     * Clear ObjectBox database (all content).
+     * Requires app restart.
+     */
+    fun clearObjectBoxDatabase() {
+        viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.OBJECTBOX,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
+            val result = cacheManager.clearObjectBoxDatabase()
+            _state.update {
+                it.copy(
+                    isOperationInProgress = false,
+                    currentOperation = CacheOperationType.NONE,
+                    lastResult = result,
+                    showResultDialog = true,
+                    requiresRestart = result.success,
+                )
+            }
+        }
+    }
+
+    /**
+     * NUCLEAR: Clear ALL app data.
+     * Requires app restart.
+     */
+    fun clearAllAppData() {
+        viewModelScope.launch {
+            operationMutex.withLock {
+                if (_state.value.isOperationInProgress) return@launch
+
+                _state.update {
+                    it.copy(
+                        isOperationInProgress = true,
+                        currentOperation = CacheOperationType.NUCLEAR,
+                        lastResult = null,
+                        showResultDialog = false,
+                    )
+                }
+            }
+
+            val result = cacheManager.clearAllAppData()
+            _state.update {
+                it.copy(
+                    isOperationInProgress = false,
+                    currentOperation = CacheOperationType.NONE,
+                    lastResult = result,
+                    showResultDialog = true,
+                    requiresRestart = result.success,
+                )
+            }
+        }
+    }
+
+    /**
      * Dismiss the result dialog.
      */
     fun dismissResultDialog() {
-        _state.update { it.copy(showResultDialog = false) }
+        _state.update { it.copy(showResultDialog = false, requiresRestart = false) }
     }
 
     companion object {
