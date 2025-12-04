@@ -1,15 +1,13 @@
 package com.chris.m3usuite.prefs
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
-import androidx.datastore.preferences.preferencesDataStore
 import com.chris.m3usuite.core.xtream.XtreamCreds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-
-private val Context.dataStore by preferencesDataStore("settings")
 
 /**
  * Zentraler Settings-Store der App.
@@ -218,45 +216,48 @@ object Keys {
 class SettingsStore(
     private val context: Context,
 ) {
+    // Use singleton DataStore to prevent multiple instances
+    private val dataStore: DataStore<Preferences> = SettingsDataStoreProvider.getInstance(context)
+
     // -------- Flows (reaktiv) --------
-    val m3uUrl: Flow<String> = context.dataStore.data.map { it[Keys.M3U_URL].orEmpty() }
-    val epgUrl: Flow<String> = context.dataStore.data.map { it[Keys.EPG_URL].orEmpty() }
-    val userAgent: Flow<String> = context.dataStore.data.map { it[Keys.USER_AGENT] ?: "IBOPlayer/1.4 (Android)" }
-    val referer: Flow<String> = context.dataStore.data.map { it[Keys.REFERER].orEmpty() }
-    val extraHeadersJson: Flow<String> = context.dataStore.data.map { it[Keys.EXTRA_HEADERS].orEmpty() }
+    val m3uUrl: Flow<String> = dataStore.data.map { it[Keys.M3U_URL].orEmpty() }
+    val epgUrl: Flow<String> = dataStore.data.map { it[Keys.EPG_URL].orEmpty() }
+    val userAgent: Flow<String> = dataStore.data.map { it[Keys.USER_AGENT] ?: "IBOPlayer/1.4 (Android)" }
+    val referer: Flow<String> = dataStore.data.map { it[Keys.REFERER].orEmpty() }
+    val extraHeadersJson: Flow<String> = dataStore.data.map { it[Keys.EXTRA_HEADERS].orEmpty() }
 
-    val preferredPlayerPkg: Flow<String> = context.dataStore.data.map { it[Keys.PREF_PLAYER_PACKAGE].orEmpty() }
-    val playerMode: Flow<String> = context.dataStore.data.map { it[Keys.PLAYER_MODE] ?: "internal" } // ask/internal/external
+    val preferredPlayerPkg: Flow<String> = dataStore.data.map { it[Keys.PREF_PLAYER_PACKAGE].orEmpty() }
+    val playerMode: Flow<String> = dataStore.data.map { it[Keys.PLAYER_MODE] ?: "internal" } // ask/internal/external
 
-    val xtHost: Flow<String> = context.dataStore.data.map { it[Keys.XT_HOST].orEmpty() }
-    val xtPort: Flow<Int> = context.dataStore.data.map { it[Keys.XT_PORT] ?: 80 }
-    val xtUser: Flow<String> = context.dataStore.data.map { it[Keys.XT_USER].orEmpty() }
-    val xtPass: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.XT_PASS].orEmpty()) }
-    val xtOutput: Flow<String> = context.dataStore.data.map { it[Keys.XT_OUTPUT] ?: "m3u8" }
-    val xtPortVerified: Flow<Boolean> = context.dataStore.data.map { it[Keys.XT_PORT_VERIFIED] ?: false }
-    val xtOutputVerified: Flow<Boolean> = context.dataStore.data.map { it[Keys.XT_OUTPUT_VERIFIED] ?: false }
+    val xtHost: Flow<String> = dataStore.data.map { it[Keys.XT_HOST].orEmpty() }
+    val xtPort: Flow<Int> = dataStore.data.map { it[Keys.XT_PORT] ?: 80 }
+    val xtUser: Flow<String> = dataStore.data.map { it[Keys.XT_USER].orEmpty() }
+    val xtPass: Flow<String> = dataStore.data.map { Crypto.decrypt(it[Keys.XT_PASS].orEmpty()) }
+    val xtOutput: Flow<String> = dataStore.data.map { it[Keys.XT_OUTPUT] ?: "m3u8" }
+    val xtPortVerified: Flow<Boolean> = dataStore.data.map { it[Keys.XT_PORT_VERIFIED] ?: false }
+    val xtOutputVerified: Flow<Boolean> = dataStore.data.map { it[Keys.XT_OUTPUT_VERIFIED] ?: false }
 
-    val subtitleScale: Flow<Float> = context.dataStore.data.map { it[Keys.SUB_SCALE] ?: 0.06f }
-    val subtitleFg: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_FG] ?: 0xE6FFFFFF.toInt() } // Weiß, ~90% Deckkraft (Default)
-    val subtitleBg: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_BG] ?: 0x66000000 } // Schwarz, ~40% Deckkraft (Default)
-    val subtitleFgOpacityPct: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_FG_OPACITY_PCT] ?: 90 }
-    val subtitleBgOpacityPct: Flow<Int> = context.dataStore.data.map { it[Keys.SUB_BG_OPACITY_PCT] ?: 40 }
+    val subtitleScale: Flow<Float> = dataStore.data.map { it[Keys.SUB_SCALE] ?: 0.06f }
+    val subtitleFg: Flow<Int> = dataStore.data.map { it[Keys.SUB_FG] ?: 0xE6FFFFFF.toInt() } // Weiß, ~90% Deckkraft (Default)
+    val subtitleBg: Flow<Int> = dataStore.data.map { it[Keys.SUB_BG] ?: 0x66000000 } // Schwarz, ~40% Deckkraft (Default)
+    val subtitleFgOpacityPct: Flow<Int> = dataStore.data.map { it[Keys.SUB_FG_OPACITY_PCT] ?: 90 }
+    val subtitleBgOpacityPct: Flow<Int> = dataStore.data.map { it[Keys.SUB_BG_OPACITY_PCT] ?: 40 }
 
     val headerCollapsedDefaultInLandscape: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.HEADER_COLLAPSED_LAND] ?: true }
+        dataStore.data.map { it[Keys.HEADER_COLLAPSED_LAND] ?: true }
     val headerCollapsed: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.HEADER_COLLAPSED] ?: false }
+        dataStore.data.map { it[Keys.HEADER_COLLAPSED] ?: false }
     val rotationLocked: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.ROTATION_LOCKED] ?: false }
+        dataStore.data.map { it[Keys.ROTATION_LOCKED] ?: false }
     val libraryTabIndex: Flow<Int> =
-        context.dataStore.data.map { it[Keys.LIBRARY_TAB_INDEX] ?: 0 }
+        dataStore.data.map { it[Keys.LIBRARY_TAB_INDEX] ?: 0 }
     val autoplayNext: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.AUTOPLAY_NEXT] ?: false }
+        dataStore.data.map { it[Keys.AUTOPLAY_NEXT] ?: false }
     val hapticsEnabled: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.HAPTICS_ENABLED] ?: false }
+        dataStore.data.map { it[Keys.HAPTICS_ENABLED] ?: false }
 
     // Seeding prefixes (global). Default: DE,US,UK,VOD
-    val seedPrefixesCsv: Flow<String> = context.dataStore.data.map { it[Keys.SEED_PREFIXES_GLOBAL_CSV].orEmpty() }
+    val seedPrefixesCsv: Flow<String> = dataStore.data.map { it[Keys.SEED_PREFIXES_GLOBAL_CSV].orEmpty() }
 
     suspend fun seedPrefixesSet(): Set<String> {
         val csv = seedPrefixesCsv.first().trim()
@@ -270,70 +271,70 @@ class SettingsStore(
     }
 
     // Feature gates
-    val roomEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.ROOM_ENABLED] ?: false }
+    val roomEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.ROOM_ENABLED] ?: false }
 
     // Global M3U/Xtream worker + API gate (default ON)
-    val m3uWorkersEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.M3U_WORKERS_ENABLED] ?: true }
-    val showAdults: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_ADULTS] ?: false }
+    val m3uWorkersEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.M3U_WORKERS_ENABLED] ?: true }
+    val showAdults: Flow<Boolean> = dataStore.data.map { it[Keys.SHOW_ADULTS] ?: false }
 
     // Library sort toggles
-    val libVodSortNewest: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_VOD_SORT_NEWEST] ?: true }
-    val libSeriesSortNewest: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_SERIES_SORT_NEWEST] ?: true }
-    val libGroupByGenreLive: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_LIVE] ?: false }
-    val libGroupByGenreVod: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_VOD] ?: false }
-    val libGroupByGenreSeries: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_SERIES] ?: false }
+    val libVodSortNewest: Flow<Boolean> = dataStore.data.map { it[Keys.LIB_VOD_SORT_NEWEST] ?: true }
+    val libSeriesSortNewest: Flow<Boolean> = dataStore.data.map { it[Keys.LIB_SERIES_SORT_NEWEST] ?: true }
+    val libGroupByGenreLive: Flow<Boolean> = dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_LIVE] ?: false }
+    val libGroupByGenreVod: Flow<Boolean> = dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_VOD] ?: false }
+    val libGroupByGenreSeries: Flow<Boolean> = dataStore.data.map { it[Keys.LIB_GROUP_BY_GENRE_SERIES] ?: false }
 
     // Import diagnostics flows
-    val lastImportAtMs: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_IMPORT_AT_MS] ?: 0L }
-    val lastSeedLive: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_SEED_LIVE] ?: 0 }
-    val lastSeedVod: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_SEED_VOD] ?: 0 }
-    val lastSeedSeries: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_SEED_SERIES] ?: 0 }
-    val lastDeltaLive: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_DELTA_LIVE] ?: 0 }
-    val lastDeltaVod: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_DELTA_VOD] ?: 0 }
-    val lastDeltaSeries: Flow<Int> = context.dataStore.data.map { it[Keys.LAST_DELTA_SERIES] ?: 0 }
+    val lastImportAtMs: Flow<Long> = dataStore.data.map { it[Keys.LAST_IMPORT_AT_MS] ?: 0L }
+    val lastSeedLive: Flow<Int> = dataStore.data.map { it[Keys.LAST_SEED_LIVE] ?: 0 }
+    val lastSeedVod: Flow<Int> = dataStore.data.map { it[Keys.LAST_SEED_VOD] ?: 0 }
+    val lastSeedSeries: Flow<Int> = dataStore.data.map { it[Keys.LAST_SEED_SERIES] ?: 0 }
+    val lastDeltaLive: Flow<Int> = dataStore.data.map { it[Keys.LAST_DELTA_LIVE] ?: 0 }
+    val lastDeltaVod: Flow<Int> = dataStore.data.map { it[Keys.LAST_DELTA_VOD] ?: 0 }
+    val lastDeltaSeries: Flow<Int> = dataStore.data.map { it[Keys.LAST_DELTA_SERIES] ?: 0 }
 
-    val liveFilterGerman: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_GERMAN] ?: false }
-    val liveFilterKids: Flow<Boolean> = context.dataStore.data.map { it[Keys.LIVE_FILTER_KIDS] ?: false }
-    val liveFilterProvidersCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_FILTER_PROVIDERS].orEmpty() }
-    val liveFilterGenresCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_FILTER_GENRES].orEmpty() }
+    val liveFilterGerman: Flow<Boolean> = dataStore.data.map { it[Keys.LIVE_FILTER_GERMAN] ?: false }
+    val liveFilterKids: Flow<Boolean> = dataStore.data.map { it[Keys.LIVE_FILTER_KIDS] ?: false }
+    val liveFilterProvidersCsv: Flow<String> = dataStore.data.map { it[Keys.LIVE_FILTER_PROVIDERS].orEmpty() }
+    val liveFilterGenresCsv: Flow<String> = dataStore.data.map { it[Keys.LIVE_FILTER_GENRES].orEmpty() }
 
     val currentProfileId: Flow<Long> =
-        context.dataStore.data.map { it[Keys.CURRENT_PROFILE_ID] ?: -1L }
+        dataStore.data.map { it[Keys.CURRENT_PROFILE_ID] ?: -1L }
     val adultPinSet: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.ADULT_PIN_SET] ?: false }
+        dataStore.data.map { it[Keys.ADULT_PIN_SET] ?: false }
     val adultPinHash: Flow<String> =
-        context.dataStore.data.map { it[Keys.ADULT_PIN_HASH].orEmpty() }
+        dataStore.data.map { it[Keys.ADULT_PIN_HASH].orEmpty() }
     val rememberLastProfile: Flow<Boolean> =
-        context.dataStore.data.map { it[Keys.REMEMBER_LAST_PROFILE] ?: false }
+        dataStore.data.map { it[Keys.REMEMBER_LAST_PROFILE] ?: false }
 
     // New tracking flows
-    val firstVodSnapshot: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_VOD_SNAPSHOT] ?: false }
-    val firstSeriesSnapshot: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_SERIES_SNAPSHOT] ?: false }
-    val firstLiveSnapshot: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_LIVE_SNAPSHOT] ?: false }
-    val newVodIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_VOD_IDS_CSV].orEmpty() }
-    val newSeriesIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_SERIES_IDS_CSV].orEmpty() }
-    val newLiveIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.NEW_LIVE_IDS_CSV].orEmpty() }
-    val episodeSnapshotIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.EPISODE_SNAPSHOT_IDS_CSV].orEmpty() }
-    val lastAppStartMs: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_APP_START_MS] ?: 0L }
-    val favoriteLiveIdsCsv: Flow<String> = context.dataStore.data.map { it[Keys.FAV_LIVE_IDS_CSV].orEmpty() }
-    val epgFavUseXtream: Flow<Boolean> = context.dataStore.data.map { it[Keys.EPG_FAV_USE_XTREAM] ?: true }
-    val epgFavSkipXmltvIfXtreamOk: Flow<Boolean> = context.dataStore.data.map { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] ?: false }
+    val firstVodSnapshot: Flow<Boolean> = dataStore.data.map { it[Keys.FIRST_VOD_SNAPSHOT] ?: false }
+    val firstSeriesSnapshot: Flow<Boolean> = dataStore.data.map { it[Keys.FIRST_SERIES_SNAPSHOT] ?: false }
+    val firstLiveSnapshot: Flow<Boolean> = dataStore.data.map { it[Keys.FIRST_LIVE_SNAPSHOT] ?: false }
+    val newVodIdsCsv: Flow<String> = dataStore.data.map { it[Keys.NEW_VOD_IDS_CSV].orEmpty() }
+    val newSeriesIdsCsv: Flow<String> = dataStore.data.map { it[Keys.NEW_SERIES_IDS_CSV].orEmpty() }
+    val newLiveIdsCsv: Flow<String> = dataStore.data.map { it[Keys.NEW_LIVE_IDS_CSV].orEmpty() }
+    val episodeSnapshotIdsCsv: Flow<String> = dataStore.data.map { it[Keys.EPISODE_SNAPSHOT_IDS_CSV].orEmpty() }
+    val lastAppStartMs: Flow<Long> = dataStore.data.map { it[Keys.LAST_APP_START_MS] ?: 0L }
+    val favoriteLiveIdsCsv: Flow<String> = dataStore.data.map { it[Keys.FAV_LIVE_IDS_CSV].orEmpty() }
+    val epgFavUseXtream: Flow<Boolean> = dataStore.data.map { it[Keys.EPG_FAV_USE_XTREAM] ?: true }
+    val epgFavSkipXmltvIfXtreamOk: Flow<Boolean> = dataStore.data.map { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] ?: false }
 
     // Live category rows state
-    val liveCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_CAT_COLLAPSED_CSV].orEmpty() }
-    val liveCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV].orEmpty() }
+    val liveCatCollapsedCsv: Flow<String> = dataStore.data.map { it[Keys.LIVE_CAT_COLLAPSED_CSV].orEmpty() }
+    val liveCatExpandedOrderCsv: Flow<String> = dataStore.data.map { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV].orEmpty() }
 
     // VOD/Series category rows state
-    val vodCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.VOD_CAT_COLLAPSED_CSV].orEmpty() }
-    val vodCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV].orEmpty() }
-    val seriesCatCollapsedCsv: Flow<String> = context.dataStore.data.map { it[Keys.SERIES_CAT_COLLAPSED_CSV].orEmpty() }
-    val seriesCatExpandedOrderCsv: Flow<String> = context.dataStore.data.map { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV].orEmpty() }
+    val vodCatCollapsedCsv: Flow<String> = dataStore.data.map { it[Keys.VOD_CAT_COLLAPSED_CSV].orEmpty() }
+    val vodCatExpandedOrderCsv: Flow<String> = dataStore.data.map { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV].orEmpty() }
+    val seriesCatCollapsedCsv: Flow<String> = dataStore.data.map { it[Keys.SERIES_CAT_COLLAPSED_CSV].orEmpty() }
+    val seriesCatExpandedOrderCsv: Flow<String> = dataStore.data.map { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV].orEmpty() }
 
     // Telegram (default off)
-    val tgEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
+    val tgEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_ENABLED] ?: false }
 
     // Für neue Logik: ein gemeinsames CSV
-    val tgSelectedChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
+    val tgSelectedChatsCsv: Flow<String> = dataStore.data.map { it[Keys.TG_SELECTED_CHATS_CSV].orEmpty() }
 
     /**
      * Bequemer, typisierter Flow der ausgewählten Chat-IDs (Set<Long>), abgeleitet aus dem CSV.
@@ -349,29 +350,29 @@ class SettingsStore(
             }.distinctUntilChanged()
 
     // Legacy-Reader (falls Altdaten existieren):
-    val tgSelectedVodChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_VOD_CHATS_CSV].orEmpty() }
-    val tgSelectedSeriesChatsCsv: Flow<String> = context.dataStore.data.map { it[Keys.TG_SELECTED_SERIES_CHATS_CSV].orEmpty() }
-    val tgCacheLimitGb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_CACHE_LIMIT_GB] ?: 2 }
-    val tgPreferIpv6: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PREFER_IPV6] ?: true }
-    val tgStayOnline: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_STAY_ONLINE] ?: true }
-    val tgProxyType: Flow<String> = context.dataStore.data.map { it[Keys.TG_PROXY_TYPE].orEmpty() }
-    val tgProxyHost: Flow<String> = context.dataStore.data.map { it[Keys.TG_PROXY_HOST].orEmpty() }
-    val tgProxyPort: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PROXY_PORT] ?: 0 }
-    val tgProxyUsername: Flow<String> = context.dataStore.data.map { it[Keys.TG_PROXY_USERNAME].orEmpty() }
-    val tgProxyPassword: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_PASSWORD].orEmpty()) }
-    val tgProxySecret: Flow<String> = context.dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
-    val tgProxyEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
-    val tgLogVerbosity: Flow<Int> = context.dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
+    val tgSelectedVodChatsCsv: Flow<String> = dataStore.data.map { it[Keys.TG_SELECTED_VOD_CHATS_CSV].orEmpty() }
+    val tgSelectedSeriesChatsCsv: Flow<String> = dataStore.data.map { it[Keys.TG_SELECTED_SERIES_CHATS_CSV].orEmpty() }
+    val tgCacheLimitGb: Flow<Int> = dataStore.data.map { it[Keys.TG_CACHE_LIMIT_GB] ?: 2 }
+    val tgPreferIpv6: Flow<Boolean> = dataStore.data.map { it[Keys.TG_PREFER_IPV6] ?: true }
+    val tgStayOnline: Flow<Boolean> = dataStore.data.map { it[Keys.TG_STAY_ONLINE] ?: true }
+    val tgProxyType: Flow<String> = dataStore.data.map { it[Keys.TG_PROXY_TYPE].orEmpty() }
+    val tgProxyHost: Flow<String> = dataStore.data.map { it[Keys.TG_PROXY_HOST].orEmpty() }
+    val tgProxyPort: Flow<Int> = dataStore.data.map { it[Keys.TG_PROXY_PORT] ?: 0 }
+    val tgProxyUsername: Flow<String> = dataStore.data.map { it[Keys.TG_PROXY_USERNAME].orEmpty() }
+    val tgProxyPassword: Flow<String> = dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_PASSWORD].orEmpty()) }
+    val tgProxySecret: Flow<String> = dataStore.data.map { Crypto.decrypt(it[Keys.TG_PROXY_SECRET].orEmpty()) }
+    val tgProxyEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_PROXY_ENABLED] ?: false }
+    val tgLogVerbosity: Flow<Int> = dataStore.data.map { it[Keys.TG_LOG_VERBOSITY] ?: 1 }
     val logMasterEnabled: Flow<Boolean> =
-        context.dataStore.data
+        dataStore.data
             .map { it[Keys.LOG_MASTER_ENABLED] ?: false }
             .distinctUntilChanged()
     val logTelemetryEnabled: Flow<Boolean> =
-        context.dataStore.data
+        dataStore.data
             .map { it[Keys.LOG_TELEMETRY_ENABLED] ?: false }
             .distinctUntilChanged()
     val logCategories: Flow<Set<String>> =
-        context.dataStore.data
+        dataStore.data
             .map { prefs ->
                 prefs[Keys.LOG_CATEGORIES_CSV]
                     ?.split(',')
@@ -379,108 +380,108 @@ class SettingsStore(
                     ?.toSet()
                     ?: emptySet()
             }.distinctUntilChanged()
-    val logDirTreeUri: Flow<String> = context.dataStore.data.map { it[Keys.LOG_DIR_TREE_URI].orEmpty() }
-    val tgLogOverlayEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_LOG_OVERLAY] ?: false }
-    val tgPrefetchWindowMb: Flow<Int> = context.dataStore.data.map { it[Keys.TG_PREFETCH_WINDOW_MB] ?: 8 }
-    val tgSeekBoostEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SEEK_BOOST_ENABLED] ?: true }
-    val tgMaxParallelDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] ?: 2 }
-    val tgStorageOptimizerEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_STORAGE_OPTIMIZER] ?: true }
-    val tgIgnoreFileNames: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_IGNORE_FILE_NAMES] ?: false }
-    val tgAutoWifiEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_ENABLED] ?: true }
-    val tgAutoWifiPreloadLarge: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] ?: true }
-    val tgAutoWifiPreloadNextAudio: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] ?: true }
-    val tgAutoWifiPreloadStories: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] ?: false }
-    val tgAutoWifiLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] ?: false }
-    val tgAutoMobileEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_ENABLED] ?: true }
-    val tgAutoMobilePreloadLarge: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] ?: false }
-    val tgAutoMobilePreloadNextAudio: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] ?: false }
-    val tgAutoMobilePreloadStories: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] ?: false }
-    val tgAutoMobileLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] ?: true }
-    val tgAutoRoamingEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_ENABLED] ?: false }
-    val tgAutoRoamingPreloadLarge: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] ?: false }
-    val tgAutoRoamingPreloadNextAudio: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] ?: false }
-    val tgAutoRoamingPreloadStories: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] ?: false }
-    val tgAutoRoamingLessDataCalls: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] ?: true }
-    val tgApiId: Flow<Int> = context.dataStore.data.map { it[Keys.TG_API_ID] ?: 0 }
-    val tgApiHash: Flow<String> = context.dataStore.data.map { it[Keys.TG_API_HASH].orEmpty() }
-    val tgPhoneNumber: Flow<String> = context.dataStore.data.map { it[Keys.TG_PHONE_NUMBER].orEmpty() }
+    val logDirTreeUri: Flow<String> = dataStore.data.map { it[Keys.LOG_DIR_TREE_URI].orEmpty() }
+    val tgLogOverlayEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_LOG_OVERLAY] ?: false }
+    val tgPrefetchWindowMb: Flow<Int> = dataStore.data.map { it[Keys.TG_PREFETCH_WINDOW_MB] ?: 8 }
+    val tgSeekBoostEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_SEEK_BOOST_ENABLED] ?: true }
+    val tgMaxParallelDownloads: Flow<Int> = dataStore.data.map { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] ?: 2 }
+    val tgStorageOptimizerEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_STORAGE_OPTIMIZER] ?: true }
+    val tgIgnoreFileNames: Flow<Boolean> = dataStore.data.map { it[Keys.TG_IGNORE_FILE_NAMES] ?: false }
+    val tgAutoWifiEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_WIFI_ENABLED] ?: true }
+    val tgAutoWifiPreloadLarge: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] ?: true }
+    val tgAutoWifiPreloadNextAudio: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] ?: true }
+    val tgAutoWifiPreloadStories: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] ?: false }
+    val tgAutoWifiLessDataCalls: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] ?: false }
+    val tgAutoMobileEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_MOBILE_ENABLED] ?: true }
+    val tgAutoMobilePreloadLarge: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] ?: false }
+    val tgAutoMobilePreloadNextAudio: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] ?: false }
+    val tgAutoMobilePreloadStories: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] ?: false }
+    val tgAutoMobileLessDataCalls: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] ?: true }
+    val tgAutoRoamingEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_ROAM_ENABLED] ?: false }
+    val tgAutoRoamingPreloadLarge: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] ?: false }
+    val tgAutoRoamingPreloadNextAudio: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] ?: false }
+    val tgAutoRoamingPreloadStories: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] ?: false }
+    val tgAutoRoamingLessDataCalls: Flow<Boolean> = dataStore.data.map { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] ?: true }
+    val tgApiId: Flow<Int> = dataStore.data.map { it[Keys.TG_API_ID] ?: 0 }
+    val tgApiHash: Flow<String> = dataStore.data.map { it[Keys.TG_API_HASH].orEmpty() }
+    val tgPhoneNumber: Flow<String> = dataStore.data.map { it[Keys.TG_PHONE_NUMBER].orEmpty() }
 
     // Telegram Advanced Settings - Runtime Controls
     // Engine settings - defaults match current behavior
-    val tgMaxGlobalDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] ?: 5 }
-    val tgMaxVideoDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_VIDEO_DOWNLOADS] ?: 2 }
-    val tgMaxThumbDownloads: Flow<Int> = context.dataStore.data.map { it[Keys.TG_MAX_THUMB_DOWNLOADS] ?: 3 }
-    val tgShowEngineOverlay: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SHOW_ENGINE_OVERLAY] ?: false }
+    val tgMaxGlobalDownloads: Flow<Int> = dataStore.data.map { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] ?: 5 }
+    val tgMaxVideoDownloads: Flow<Int> = dataStore.data.map { it[Keys.TG_MAX_VIDEO_DOWNLOADS] ?: 2 }
+    val tgMaxThumbDownloads: Flow<Int> = dataStore.data.map { it[Keys.TG_MAX_THUMB_DOWNLOADS] ?: 3 }
+    val tgShowEngineOverlay: Flow<Boolean> = dataStore.data.map { it[Keys.TG_SHOW_ENGINE_OVERLAY] ?: false }
 
     // Streaming / buffering settings - defaults match T_TelegramFileDownloader constants
     val tgEnsureFileReadyTimeoutMs: Flow<Long> =
-        context.dataStore.data.map {
+        dataStore.data.map {
             it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] ?: 10_000L
         } // 10 seconds
-    val tgShowStreamingOverlay: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_SHOW_STREAMING_OVERLAY] ?: false }
+    val tgShowStreamingOverlay: Flow<Boolean> = dataStore.data.map { it[Keys.TG_SHOW_STREAMING_OVERLAY] ?: false }
 
     // Thumbnail / poster prefetch settings - reasonable defaults
-    val tgThumbPrefetchEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_THUMB_PREFETCH_ENABLED] ?: true }
-    val tgThumbPrefetchBatchSize: Flow<Int> = context.dataStore.data.map { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] ?: 8 }
-    val tgThumbMaxParallel: Flow<Int> = context.dataStore.data.map { it[Keys.TG_THUMB_MAX_PARALLEL] ?: 2 }
-    val tgThumbPauseWhileVodBuffering: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_THUMB_PAUSE_WHILE_VOD_BUFFERING] ?: true }
-    val tgThumbFullDownload: Flow<Boolean> = context.dataStore.data.map { it[Keys.TG_THUMB_FULL_DOWNLOAD] ?: true }
+    val tgThumbPrefetchEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.TG_THUMB_PREFETCH_ENABLED] ?: true }
+    val tgThumbPrefetchBatchSize: Flow<Int> = dataStore.data.map { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] ?: 8 }
+    val tgThumbMaxParallel: Flow<Int> = dataStore.data.map { it[Keys.TG_THUMB_MAX_PARALLEL] ?: 2 }
+    val tgThumbPauseWhileVodBuffering: Flow<Boolean> = dataStore.data.map { it[Keys.TG_THUMB_PAUSE_WHILE_VOD_BUFFERING] ?: true }
+    val tgThumbFullDownload: Flow<Boolean> = dataStore.data.map { it[Keys.TG_THUMB_FULL_DOWNLOAD] ?: true }
 
     // ExoPlayer buffer settings - defaults match Media3 DefaultLoadControl defaults
-    val exoMinBufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_MIN_BUFFER_MS] ?: 50_000 } // 50 seconds
-    val exoMaxBufferMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_MAX_BUFFER_MS] ?: 50_000 } // 50 seconds
-    val exoBufferForPlaybackMs: Flow<Int> = context.dataStore.data.map { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] ?: 2_500 } // 2.5 seconds
+    val exoMinBufferMs: Flow<Int> = dataStore.data.map { it[Keys.EXO_MIN_BUFFER_MS] ?: 50_000 } // 50 seconds
+    val exoMaxBufferMs: Flow<Int> = dataStore.data.map { it[Keys.EXO_MAX_BUFFER_MS] ?: 50_000 } // 50 seconds
+    val exoBufferForPlaybackMs: Flow<Int> = dataStore.data.map { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] ?: 2_500 } // 2.5 seconds
     val exoBufferForPlaybackAfterRebufferMs: Flow<Int> =
-        context.dataStore.data.map {
+        dataStore.data.map {
             it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS]
                 ?: 5_000
         } // 5 seconds
-    val exoExactSeek: Flow<Boolean> = context.dataStore.data.map { it[Keys.EXO_EXACT_SEEK] ?: true }
+    val exoExactSeek: Flow<Boolean> = dataStore.data.map { it[Keys.EXO_EXACT_SEEK] ?: true }
 
     // Diagnostics / logging settings - safe defaults
-    val tgAppLogLevel: Flow<Int> = context.dataStore.data.map { it[Keys.TG_APP_LOG_LEVEL] ?: 1 } // WARN by default
-    val jankTelemetrySampleRate: Flow<Int> = context.dataStore.data.map { it[Keys.JANK_TELEMETRY_SAMPLE_RATE] ?: 10 } // Log every 10th event
+    val tgAppLogLevel: Flow<Int> = dataStore.data.map { it[Keys.TG_APP_LOG_LEVEL] ?: 1 } // WARN by default
+    val jankTelemetrySampleRate: Flow<Int> = dataStore.data.map { it[Keys.JANK_TELEMETRY_SAMPLE_RATE] ?: 10 } // Log every 10th event
 
     // Debug/Logging
-    val httpLogEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.HTTP_LOG_ENABLED] ?: false }
-    val globalDebugEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.GLOBAL_DEBUG_ENABLED] ?: false }
+    val httpLogEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.HTTP_LOG_ENABLED] ?: false }
+    val globalDebugEnabled: Flow<Boolean> = dataStore.data.map { it[Keys.GLOBAL_DEBUG_ENABLED] ?: false }
 
     // -------- Setzen --------
     suspend fun set(
         key: Preferences.Key<String>,
         value: String,
     ) {
-        context.dataStore.edit { it[key] = value }
+        dataStore.edit { it[key] = value }
     }
 
     suspend fun setInt(
         key: Preferences.Key<Int>,
         value: Int,
     ) {
-        context.dataStore.edit { it[key] = value }
+        dataStore.edit { it[key] = value }
     }
 
     suspend fun setBool(
         key: Preferences.Key<Boolean>,
         value: Boolean,
     ) {
-        context.dataStore.edit { it[key] = value }
+        dataStore.edit { it[key] = value }
     }
 
     suspend fun setFloat(
         key: Preferences.Key<Float>,
         value: Float,
     ) {
-        context.dataStore.edit { it[key] = value }
+        dataStore.edit { it[key] = value }
     }
 
     // Komfortfunktionen
     suspend fun setPlayerMode(mode: String) { // "ask"|"internal"|"external"
-        context.dataStore.edit { it[Keys.PLAYER_MODE] = mode }
+        dataStore.edit { it[Keys.PLAYER_MODE] = mode }
     }
 
     suspend fun setPreferredPlayerPackage(pkg: String) {
-        context.dataStore.edit { it[Keys.PREF_PLAYER_PACKAGE] = pkg }
+        dataStore.edit { it[Keys.PREF_PLAYER_PACKAGE] = pkg }
     }
 
     suspend fun setSubtitleStyle(
@@ -488,7 +489,7 @@ class SettingsStore(
         fg: Int,
         bg: Int,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.SUB_SCALE] = scale
             it[Keys.SUB_FG] = fg
             it[Keys.SUB_BG] = bg
@@ -496,68 +497,68 @@ class SettingsStore(
     }
 
     suspend fun setSubtitleFgOpacityPct(value: Int) {
-        context.dataStore.edit { it[Keys.SUB_FG_OPACITY_PCT] = value.coerceIn(0, 100) }
+        dataStore.edit { it[Keys.SUB_FG_OPACITY_PCT] = value.coerceIn(0, 100) }
     }
 
     suspend fun setSubtitleBgOpacityPct(value: Int) {
-        context.dataStore.edit { it[Keys.SUB_BG_OPACITY_PCT] = value.coerceIn(0, 100) }
+        dataStore.edit { it[Keys.SUB_BG_OPACITY_PCT] = value.coerceIn(0, 100) }
     }
 
     suspend fun setHeaderCollapsed(value: Boolean) {
-        context.dataStore.edit { it[Keys.HEADER_COLLAPSED] = value }
+        dataStore.edit { it[Keys.HEADER_COLLAPSED] = value }
     }
 
     suspend fun setRotationLocked(value: Boolean) {
-        context.dataStore.edit { it[Keys.ROTATION_LOCKED] = value }
+        dataStore.edit { it[Keys.ROTATION_LOCKED] = value }
     }
 
     suspend fun setLibraryTabIndex(value: Int) {
-        context.dataStore.edit { it[Keys.LIBRARY_TAB_INDEX] = value }
+        dataStore.edit { it[Keys.LIBRARY_TAB_INDEX] = value }
     }
 
     suspend fun setAutoplayNext(value: Boolean) {
-        context.dataStore.edit { it[Keys.AUTOPLAY_NEXT] = value }
+        dataStore.edit { it[Keys.AUTOPLAY_NEXT] = value }
     }
 
     suspend fun setHapticsEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.HAPTICS_ENABLED] = value }
+        dataStore.edit { it[Keys.HAPTICS_ENABLED] = value }
     }
 
     suspend fun setLiveFilterGerman(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIVE_FILTER_GERMAN] = value }
+        dataStore.edit { it[Keys.LIVE_FILTER_GERMAN] = value }
     }
 
     suspend fun setLiveFilterKids(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIVE_FILTER_KIDS] = value }
+        dataStore.edit { it[Keys.LIVE_FILTER_KIDS] = value }
     }
 
     suspend fun setLiveFilterProvidersCsv(value: String) {
-        context.dataStore.edit { it[Keys.LIVE_FILTER_PROVIDERS] = value }
+        dataStore.edit { it[Keys.LIVE_FILTER_PROVIDERS] = value }
     }
 
     suspend fun setLiveFilterGenresCsv(value: String) {
-        context.dataStore.edit { it[Keys.LIVE_FILTER_GENRES] = value }
+        dataStore.edit { it[Keys.LIVE_FILTER_GENRES] = value }
     }
 
     // Explicit setters for frequently used settings
     suspend fun setM3uUrl(value: String) {
-        context.dataStore.edit { it[Keys.M3U_URL] = value }
+        dataStore.edit { it[Keys.M3U_URL] = value }
     }
 
     suspend fun setEpgUrl(value: String) {
-        context.dataStore.edit { it[Keys.EPG_URL] = value }
+        dataStore.edit { it[Keys.EPG_URL] = value }
     }
 
     suspend fun setUserAgent(value: String) {
-        context.dataStore.edit { it[Keys.USER_AGENT] = value }
+        dataStore.edit { it[Keys.USER_AGENT] = value }
     }
 
     suspend fun setReferer(value: String) {
-        context.dataStore.edit { it[Keys.REFERER] = value }
+        dataStore.edit { it[Keys.REFERER] = value }
     }
 
     suspend fun setExtraHeadersJson(value: String) {
-        context.dataStore.edit { it[Keys.EXTRA_HEADERS] = value }
+        dataStore.edit { it[Keys.EXTRA_HEADERS] = value }
     }
 
     suspend fun setNetworkBases(
@@ -566,7 +567,7 @@ class SettingsStore(
         ua: String,
         referer: String,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.M3U_URL] = m3u
             it[Keys.EPG_URL] = epg
             it[Keys.USER_AGENT] = ua
@@ -575,31 +576,31 @@ class SettingsStore(
     }
 
     suspend fun setXtHost(value: String) {
-        context.dataStore.edit { it[Keys.XT_HOST] = value }
+        dataStore.edit { it[Keys.XT_HOST] = value }
     }
 
     suspend fun setXtPort(value: Int) {
-        context.dataStore.edit { it[Keys.XT_PORT] = value }
+        dataStore.edit { it[Keys.XT_PORT] = value }
     }
 
     suspend fun setXtUser(value: String) {
-        context.dataStore.edit { it[Keys.XT_USER] = value }
+        dataStore.edit { it[Keys.XT_USER] = value }
     }
 
     suspend fun setXtPass(value: String) {
-        context.dataStore.edit { it[Keys.XT_PASS] = Crypto.encrypt(value) }
+        dataStore.edit { it[Keys.XT_PASS] = Crypto.encrypt(value) }
     }
 
     suspend fun setXtOutput(value: String) {
-        context.dataStore.edit { it[Keys.XT_OUTPUT] = value }
+        dataStore.edit { it[Keys.XT_OUTPUT] = value }
     }
 
     suspend fun setXtPortVerified(v: Boolean) {
-        context.dataStore.edit { it[Keys.XT_PORT_VERIFIED] = v }
+        dataStore.edit { it[Keys.XT_PORT_VERIFIED] = v }
     }
 
     suspend fun setXtOutputVerified(v: Boolean) {
-        context.dataStore.edit { it[Keys.XT_OUTPUT_VERIFIED] = v }
+        dataStore.edit { it[Keys.XT_OUTPUT_VERIFIED] = v }
     }
 
     // Helper to set all Xtream creds at once (no removal of existing API)
@@ -612,82 +613,82 @@ class SettingsStore(
     }
 
     suspend fun setCurrentProfileId(id: Long) {
-        context.dataStore.edit { it[Keys.CURRENT_PROFILE_ID] = id }
+        dataStore.edit { it[Keys.CURRENT_PROFILE_ID] = id }
     }
 
     suspend fun setAdultPinSet(value: Boolean) {
-        context.dataStore.edit { it[Keys.ADULT_PIN_SET] = value }
+        dataStore.edit { it[Keys.ADULT_PIN_SET] = value }
     }
 
     suspend fun setAdultPinHash(hash: String) {
-        context.dataStore.edit { it[Keys.ADULT_PIN_HASH] = hash }
+        dataStore.edit { it[Keys.ADULT_PIN_HASH] = hash }
     }
 
     suspend fun setRememberLastProfile(value: Boolean) {
-        context.dataStore.edit { it[Keys.REMEMBER_LAST_PROFILE] = value }
+        dataStore.edit { it[Keys.REMEMBER_LAST_PROFILE] = value }
     }
 
     // New tracking setters
     suspend fun setFirstVodSnapshot(value: Boolean) {
-        context.dataStore.edit { it[Keys.FIRST_VOD_SNAPSHOT] = value }
+        dataStore.edit { it[Keys.FIRST_VOD_SNAPSHOT] = value }
     }
 
     suspend fun setFirstSeriesSnapshot(value: Boolean) {
-        context.dataStore.edit { it[Keys.FIRST_SERIES_SNAPSHOT] = value }
+        dataStore.edit { it[Keys.FIRST_SERIES_SNAPSHOT] = value }
     }
 
     suspend fun setFirstLiveSnapshot(value: Boolean) {
-        context.dataStore.edit { it[Keys.FIRST_LIVE_SNAPSHOT] = value }
+        dataStore.edit { it[Keys.FIRST_LIVE_SNAPSHOT] = value }
     }
 
     suspend fun setNewVodIdsCsv(csv: String) {
-        context.dataStore.edit { it[Keys.NEW_VOD_IDS_CSV] = csv }
+        dataStore.edit { it[Keys.NEW_VOD_IDS_CSV] = csv }
     }
 
     suspend fun setNewSeriesIdsCsv(csv: String) {
-        context.dataStore.edit { it[Keys.NEW_SERIES_IDS_CSV] = csv }
+        dataStore.edit { it[Keys.NEW_SERIES_IDS_CSV] = csv }
     }
 
     suspend fun setNewLiveIdsCsv(csv: String) {
-        context.dataStore.edit { it[Keys.NEW_LIVE_IDS_CSV] = csv }
+        dataStore.edit { it[Keys.NEW_LIVE_IDS_CSV] = csv }
     }
 
     suspend fun setEpisodeSnapshotIdsCsv(csv: String) {
-        context.dataStore.edit { it[Keys.EPISODE_SNAPSHOT_IDS_CSV] = csv }
+        dataStore.edit { it[Keys.EPISODE_SNAPSHOT_IDS_CSV] = csv }
     }
 
     suspend fun setLastAppStartMs(value: Long) {
-        context.dataStore.edit { it[Keys.LAST_APP_START_MS] = value }
+        dataStore.edit { it[Keys.LAST_APP_START_MS] = value }
     }
 
     suspend fun setFavoriteLiveIdsCsv(csv: String) {
-        context.dataStore.edit { it[Keys.FAV_LIVE_IDS_CSV] = csv }
+        dataStore.edit { it[Keys.FAV_LIVE_IDS_CSV] = csv }
     }
 
     suspend fun setEpgFavUseXtream(value: Boolean) {
-        context.dataStore.edit { it[Keys.EPG_FAV_USE_XTREAM] = value }
+        dataStore.edit { it[Keys.EPG_FAV_USE_XTREAM] = value }
     }
 
     suspend fun setEpgFavSkipXmltvIfXtreamOk(value: Boolean) {
-        context.dataStore.edit { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] = value }
+        dataStore.edit { it[Keys.EPG_FAV_SKIP_XMLTV_IF_X_OK] = value }
     }
 
     suspend fun setSeedPrefixesCsv(csv: String) {
-        context.dataStore.edit { it[Keys.SEED_PREFIXES_GLOBAL_CSV] = csv }
+        dataStore.edit { it[Keys.SEED_PREFIXES_GLOBAL_CSV] = csv }
     }
 
     // Library sort setters
     suspend fun setLibVodSortNewest(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIB_VOD_SORT_NEWEST] = value }
+        dataStore.edit { it[Keys.LIB_VOD_SORT_NEWEST] = value }
     }
 
     suspend fun setLibSeriesSortNewest(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIB_SERIES_SORT_NEWEST] = value }
+        dataStore.edit { it[Keys.LIB_SERIES_SORT_NEWEST] = value }
     }
 
     // Import diagnostics setters
     suspend fun setLastImportAtMs(value: Long) {
-        context.dataStore.edit { it[Keys.LAST_IMPORT_AT_MS] = value }
+        dataStore.edit { it[Keys.LAST_IMPORT_AT_MS] = value }
     }
 
     suspend fun setLastSeedCounts(
@@ -695,7 +696,7 @@ class SettingsStore(
         vod: Int,
         series: Int,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.LAST_SEED_LIVE] = live
             it[Keys.LAST_SEED_VOD] = vod
             it[Keys.LAST_SEED_SERIES] = series
@@ -707,7 +708,7 @@ class SettingsStore(
         vod: Int,
         series: Int,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.LAST_DELTA_LIVE] = live
             it[Keys.LAST_DELTA_VOD] = vod
             it[Keys.LAST_DELTA_SERIES] = series
@@ -719,7 +720,7 @@ class SettingsStore(
         key: Preferences.Key<String>,
         default: String = "",
     ): String =
-        context.dataStore.data
+        dataStore.data
             .map { it[key] ?: default }
             .first()
 
@@ -727,7 +728,7 @@ class SettingsStore(
         key: Preferences.Key<Int>,
         default: Int = 0,
     ): Int =
-        context.dataStore.data
+        dataStore.data
             .map { it[key] ?: default }
             .first()
 
@@ -735,7 +736,7 @@ class SettingsStore(
         key: Preferences.Key<Boolean>,
         default: Boolean = false,
     ): Boolean =
-        context.dataStore.data
+        dataStore.data
             .map { it[key] ?: default }
             .first()
 
@@ -743,13 +744,13 @@ class SettingsStore(
         key: Preferences.Key<Float>,
         default: Float = 0.06f,
     ): Float =
-        context.dataStore.data
+        dataStore.data
             .map { it[key] ?: default }
             .first()
 
     // Raw dump/restore helpers to avoid multiple DataStore instances elsewhere
     suspend fun dumpAll(): Map<String, String> =
-        context.dataStore.data
+        dataStore.data
             .map { prefs ->
                 prefs.asMap().mapKeys { it.key.name }.mapValues { (_, v) -> v?.toString() ?: "" }
             }.first()
@@ -758,7 +759,7 @@ class SettingsStore(
         values: Map<String, String>,
         replace: Boolean,
     ) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             if (replace) prefs.clear()
             for ((name, s) in values) {
                 when {
@@ -799,7 +800,7 @@ class SettingsStore(
         pass: String,
         output: String,
     ) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[Keys.XT_HOST] = host
             prefs[Keys.XT_PORT] = port
             prefs[Keys.XT_USER] = user
@@ -814,7 +815,7 @@ class SettingsStore(
         ua: String,
         referer: String,
     ) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[Keys.M3U_URL] = m3u
             prefs[Keys.EPG_URL] = epg
             prefs[Keys.USER_AGENT] = ua
@@ -824,11 +825,11 @@ class SettingsStore(
 
     // Telegram setters
     suspend fun setTelegramEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_ENABLED] = value }
     }
 
     suspend fun setTelegramSelectedChatsCsv(value: String) {
-        context.dataStore.edit { it[Keys.TG_SELECTED_CHATS_CSV] = value }
+        dataStore.edit { it[Keys.TG_SELECTED_CHATS_CSV] = value }
     }
 
     /**
@@ -884,75 +885,75 @@ class SettingsStore(
     }
 
     suspend fun setTelegramCacheLimitGb(value: Int) {
-        context.dataStore.edit { it[Keys.TG_CACHE_LIMIT_GB] = value }
+        dataStore.edit { it[Keys.TG_CACHE_LIMIT_GB] = value }
     }
 
     suspend fun setTelegramSelectedVodChatsCsv(value: String) {
-        context.dataStore.edit { it[Keys.TG_SELECTED_VOD_CHATS_CSV] = value }
+        dataStore.edit { it[Keys.TG_SELECTED_VOD_CHATS_CSV] = value }
     }
 
     suspend fun setTelegramSelectedSeriesChatsCsv(value: String) {
-        context.dataStore.edit { it[Keys.TG_SELECTED_SERIES_CHATS_CSV] = value }
+        dataStore.edit { it[Keys.TG_SELECTED_SERIES_CHATS_CSV] = value }
     }
 
     suspend fun setTelegramApiId(value: Int) {
-        context.dataStore.edit { it[Keys.TG_API_ID] = value }
+        dataStore.edit { it[Keys.TG_API_ID] = value }
     }
 
     suspend fun setTelegramApiHash(value: String) {
-        context.dataStore.edit { it[Keys.TG_API_HASH] = value }
+        dataStore.edit { it[Keys.TG_API_HASH] = value }
     }
 
     suspend fun setTelegramPhoneNumber(value: String) {
-        context.dataStore.edit { it[Keys.TG_PHONE_NUMBER] = value }
+        dataStore.edit { it[Keys.TG_PHONE_NUMBER] = value }
     }
 
     suspend fun setTelegramPreferIpv6(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_PREFER_IPV6] = value }
+        dataStore.edit { it[Keys.TG_PREFER_IPV6] = value }
     }
 
     suspend fun setTelegramStayOnline(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_STAY_ONLINE] = value }
+        dataStore.edit { it[Keys.TG_STAY_ONLINE] = value }
     }
 
     suspend fun setTelegramProxyType(value: String) {
-        context.dataStore.edit { it[Keys.TG_PROXY_TYPE] = value }
+        dataStore.edit { it[Keys.TG_PROXY_TYPE] = value }
     }
 
     suspend fun setTelegramProxyHost(value: String) {
-        context.dataStore.edit { it[Keys.TG_PROXY_HOST] = value }
+        dataStore.edit { it[Keys.TG_PROXY_HOST] = value }
     }
 
     suspend fun setTelegramProxyPort(value: Int) {
-        context.dataStore.edit { it[Keys.TG_PROXY_PORT] = value }
+        dataStore.edit { it[Keys.TG_PROXY_PORT] = value }
     }
 
     suspend fun setTelegramProxyUsername(value: String) {
-        context.dataStore.edit { it[Keys.TG_PROXY_USERNAME] = value }
+        dataStore.edit { it[Keys.TG_PROXY_USERNAME] = value }
     }
 
     suspend fun setTelegramProxyPassword(value: String) {
-        context.dataStore.edit { it[Keys.TG_PROXY_PASSWORD] = Crypto.encrypt(value) }
+        dataStore.edit { it[Keys.TG_PROXY_PASSWORD] = Crypto.encrypt(value) }
     }
 
     suspend fun setTelegramProxySecret(value: String) {
-        context.dataStore.edit { it[Keys.TG_PROXY_SECRET] = Crypto.encrypt(value) }
+        dataStore.edit { it[Keys.TG_PROXY_SECRET] = Crypto.encrypt(value) }
     }
 
     suspend fun setTelegramProxyEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_PROXY_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_PROXY_ENABLED] = value }
     }
 
     suspend fun setLogMasterEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.LOG_MASTER_ENABLED] = enabled }
+        dataStore.edit { it[Keys.LOG_MASTER_ENABLED] = enabled }
     }
 
     suspend fun setLogCategories(categories: Set<String>) {
-        context.dataStore.edit { it[Keys.LOG_CATEGORIES_CSV] = categories.joinToString(",") }
+        dataStore.edit { it[Keys.LOG_CATEGORIES_CSV] = categories.joinToString(",") }
     }
 
     suspend fun setLogTelemetryEnabled(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.LOG_TELEMETRY_ENABLED] = enabled }
+        dataStore.edit { it[Keys.LOG_TELEMETRY_ENABLED] = enabled }
     }
 
     suspend fun setTgProxyType(value: String) = setTelegramProxyType(value)
@@ -970,31 +971,31 @@ class SettingsStore(
     suspend fun setTgProxyEnabled(value: Boolean) = setTelegramProxyEnabled(value)
 
     suspend fun setTelegramLogVerbosity(value: Int) {
-        context.dataStore.edit { it[Keys.TG_LOG_VERBOSITY] = value }
+        dataStore.edit { it[Keys.TG_LOG_VERBOSITY] = value }
     }
 
     suspend fun setTelegramPrefetchWindowMb(value: Int) {
-        context.dataStore.edit { it[Keys.TG_PREFETCH_WINDOW_MB] = value }
+        dataStore.edit { it[Keys.TG_PREFETCH_WINDOW_MB] = value }
     }
 
     suspend fun setTelegramSeekBoostEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_SEEK_BOOST_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_SEEK_BOOST_ENABLED] = value }
     }
 
     suspend fun setTelegramMaxParallelDownloads(value: Int) {
-        context.dataStore.edit { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] = value }
+        dataStore.edit { it[Keys.TG_MAX_PARALLEL_DOWNLOADS] = value }
     }
 
     suspend fun setTelegramStorageOptimizerEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_STORAGE_OPTIMIZER] = value }
+        dataStore.edit { it[Keys.TG_STORAGE_OPTIMIZER] = value }
     }
 
     suspend fun setTelegramIgnoreFileNames(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_IGNORE_FILE_NAMES] = value }
+        dataStore.edit { it[Keys.TG_IGNORE_FILE_NAMES] = value }
     }
 
     suspend fun setTelegramLogOverlayEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_LOG_OVERLAY] = value }
+        dataStore.edit { it[Keys.TG_LOG_OVERLAY] = value }
     }
 
     suspend fun setTelegramAutoWifi(
@@ -1004,7 +1005,7 @@ class SettingsStore(
         preloadStories: Boolean,
         lessDataCalls: Boolean,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.TG_AUTO_WIFI_ENABLED] = enabled
             it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] = preloadLarge
             it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] = preloadNextAudio
@@ -1020,7 +1021,7 @@ class SettingsStore(
         preloadStories: Boolean,
         lessDataCalls: Boolean,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.TG_AUTO_MOBILE_ENABLED] = enabled
             it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] = preloadLarge
             it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] = preloadNextAudio
@@ -1036,7 +1037,7 @@ class SettingsStore(
         preloadStories: Boolean,
         lessDataCalls: Boolean,
     ) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.TG_AUTO_ROAM_ENABLED] = enabled
             it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] = preloadLarge
             it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] = preloadNextAudio
@@ -1046,66 +1047,66 @@ class SettingsStore(
     }
 
     suspend fun setTgAutoWifiEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_WIFI_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_AUTO_WIFI_ENABLED] = value }
     }
 
     suspend fun setTgAutoWifiPreloadLarge(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] = value }
+        dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_LARGE] = value }
     }
 
     suspend fun setTgAutoWifiPreloadNextAudio(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] = value }
+        dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_NEXT_AUDIO] = value }
     }
 
     suspend fun setTgAutoWifiPreloadStories(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] = value }
+        dataStore.edit { it[Keys.TG_AUTO_WIFI_PRELOAD_STORIES] = value }
     }
 
     suspend fun setTgAutoWifiLessDataCalls(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] = value }
+        dataStore.edit { it[Keys.TG_AUTO_WIFI_LESS_DATA_CALLS] = value }
     }
 
     suspend fun setTgAutoMobileEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_AUTO_MOBILE_ENABLED] = value }
     }
 
     suspend fun setTgAutoMobilePreloadLarge(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] = value }
+        dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_LARGE] = value }
     }
 
     suspend fun setTgAutoMobilePreloadNextAudio(value: Boolean) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.TG_AUTO_MOBILE_PRELOAD_NEXT_AUDIO] =
                 value
         }
     }
 
     suspend fun setTgAutoMobilePreloadStories(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] = value }
+        dataStore.edit { it[Keys.TG_AUTO_MOBILE_PRELOAD_STORIES] = value }
     }
 
     suspend fun setTgAutoMobileLessDataCalls(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] = value }
+        dataStore.edit { it[Keys.TG_AUTO_MOBILE_LESS_DATA_CALLS] = value }
     }
 
     suspend fun setTgAutoRoamingEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_ROAM_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_AUTO_ROAM_ENABLED] = value }
     }
 
     suspend fun setTgAutoRoamingPreloadLarge(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] = value }
+        dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_LARGE] = value }
     }
 
     suspend fun setTgAutoRoamingPreloadNextAudio(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] = value }
+        dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_NEXT_AUDIO] = value }
     }
 
     suspend fun setTgAutoRoamingPreloadStories(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] = value }
+        dataStore.edit { it[Keys.TG_AUTO_ROAM_PRELOAD_STORIES] = value }
     }
 
     suspend fun setTgAutoRoamingLessDataCalls(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = value }
+        dataStore.edit { it[Keys.TG_AUTO_ROAM_LESS_DATA_CALLS] = value }
     }
 
     suspend fun setTgEnabled(value: Boolean) = setTelegramEnabled(value)
@@ -1123,7 +1124,7 @@ class SettingsStore(
     suspend fun setTgLogVerbosity(value: Int) = setTelegramLogVerbosity(value)
 
     suspend fun setLogDirTreeUri(value: String) {
-        context.dataStore.edit { it[Keys.LOG_DIR_TREE_URI] = value }
+        dataStore.edit { it[Keys.LOG_DIR_TREE_URI] = value }
     }
 
     data class Snapshot(
@@ -1145,7 +1146,7 @@ class SettingsStore(
     )
 
     suspend fun snapshot(): Snapshot {
-        val prefs = context.dataStore.data.first()
+        val prefs = dataStore.data.first()
 
         fun <T> get(
             k: Preferences.Key<T>,
@@ -1172,140 +1173,263 @@ class SettingsStore(
 
     // Live category rows state setters
     suspend fun setLiveCatCollapsedCsv(value: String) {
-        context.dataStore.edit { it[Keys.LIVE_CAT_COLLAPSED_CSV] = value }
+        dataStore.edit { it[Keys.LIVE_CAT_COLLAPSED_CSV] = value }
     }
 
     suspend fun setLiveCatExpandedOrderCsv(value: String) {
-        context.dataStore.edit { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV] = value }
+        dataStore.edit { it[Keys.LIVE_CAT_EXPANDED_ORDER_CSV] = value }
     }
 
     // VOD/Series category rows state setters
     suspend fun setVodCatCollapsedCsv(value: String) {
-        context.dataStore.edit { it[Keys.VOD_CAT_COLLAPSED_CSV] = value }
+        dataStore.edit { it[Keys.VOD_CAT_COLLAPSED_CSV] = value }
     }
 
     suspend fun setVodCatExpandedOrderCsv(value: String) {
-        context.dataStore.edit { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV] = value }
+        dataStore.edit { it[Keys.VOD_CAT_EXPANDED_ORDER_CSV] = value }
     }
 
     suspend fun setSeriesCatCollapsedCsv(value: String) {
-        context.dataStore.edit { it[Keys.SERIES_CAT_COLLAPSED_CSV] = value }
+        dataStore.edit { it[Keys.SERIES_CAT_COLLAPSED_CSV] = value }
     }
 
     suspend fun setSeriesCatExpandedOrderCsv(value: String) {
-        context.dataStore.edit { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV] = value }
+        dataStore.edit { it[Keys.SERIES_CAT_EXPANDED_ORDER_CSV] = value }
     }
 
     // Library grouping setters
     suspend fun setLibGroupByGenreLive(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_LIVE] = value }
+        dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_LIVE] = value }
     }
 
     suspend fun setLibGroupByGenreVod(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_VOD] = value }
+        dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_VOD] = value }
     }
 
     suspend fun setLibGroupByGenreSeries(value: Boolean) {
-        context.dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_SERIES] = value }
+        dataStore.edit { it[Keys.LIB_GROUP_BY_GENRE_SERIES] = value }
     }
 
     // Logging
     suspend fun setHttpLogEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.HTTP_LOG_ENABLED] = value }
+        dataStore.edit { it[Keys.HTTP_LOG_ENABLED] = value }
     }
 
     suspend fun setGlobalDebugEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.GLOBAL_DEBUG_ENABLED] = value }
+        dataStore.edit { it[Keys.GLOBAL_DEBUG_ENABLED] = value }
     }
 
     // Feature gates setters
     suspend fun setRoomEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.ROOM_ENABLED] = value }
+        dataStore.edit { it[Keys.ROOM_ENABLED] = value }
     }
 
     suspend fun setM3uWorkersEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.M3U_WORKERS_ENABLED] = value }
+        dataStore.edit { it[Keys.M3U_WORKERS_ENABLED] = value }
     }
 
     suspend fun setShowAdults(value: Boolean) {
-        context.dataStore.edit { it[Keys.SHOW_ADULTS] = value }
+        dataStore.edit { it[Keys.SHOW_ADULTS] = value }
     }
 
-    // Telegram Advanced Settings - Setters
-    // Engine settings
+    // Telegram Advanced Settings - Setters with safe clamping
+    // Engine settings - aligned with new engine behavior
     suspend fun setTgMaxGlobalDownloads(value: Int) {
-        context.dataStore.edit { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] = value.coerceIn(1, 20) }
+        // Clamp to 1-10 range for safe engine operation
+        dataStore.edit { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] = value.coerceIn(1, 10) }
     }
 
     suspend fun setTgMaxVideoDownloads(value: Int) {
-        context.dataStore.edit { it[Keys.TG_MAX_VIDEO_DOWNLOADS] = value.coerceIn(1, 10) }
+        // Clamp to 1-5 range to prevent overload
+        dataStore.edit { it[Keys.TG_MAX_VIDEO_DOWNLOADS] = value.coerceIn(1, 5) }
     }
 
     suspend fun setTgMaxThumbDownloads(value: Int) {
-        context.dataStore.edit { it[Keys.TG_MAX_THUMB_DOWNLOADS] = value.coerceIn(1, 10) }
+        // Clamp to 1-8 range (TelegramThumbFetcher uses Semaphore(4) internally)
+        dataStore.edit { it[Keys.TG_MAX_THUMB_DOWNLOADS] = value.coerceIn(1, 8) }
     }
 
     suspend fun setTgShowEngineOverlay(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_SHOW_ENGINE_OVERLAY] = value }
+        dataStore.edit { it[Keys.TG_SHOW_ENGINE_OVERLAY] = value }
     }
 
     // Streaming / buffering settings
     suspend fun setTgEnsureFileReadyTimeoutMs(value: Long) {
-        context.dataStore.edit { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = value.coerceIn(2_000L, 60_000L) }
+        // Clamp to 5-60 seconds for safe operation
+        dataStore.edit { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = value.coerceIn(5_000L, 60_000L) }
     }
 
     suspend fun setTgShowStreamingOverlay(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_SHOW_STREAMING_OVERLAY] = value }
+        dataStore.edit { it[Keys.TG_SHOW_STREAMING_OVERLAY] = value }
     }
 
     // Thumbnail / poster prefetch settings
     suspend fun setTgThumbPrefetchEnabled(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_THUMB_PREFETCH_ENABLED] = value }
+        dataStore.edit { it[Keys.TG_THUMB_PREFETCH_ENABLED] = value }
     }
 
     suspend fun setTgThumbPrefetchBatchSize(value: Int) {
-        context.dataStore.edit { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = value.coerceIn(1, 50) }
+        // Clamp to 1-16 range for reasonable prefetch behavior
+        dataStore.edit { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = value.coerceIn(1, 16) }
     }
 
     suspend fun setTgThumbMaxParallel(value: Int) {
-        context.dataStore.edit { it[Keys.TG_THUMB_MAX_PARALLEL] = value.coerceIn(1, 10) }
+        // Clamp to 1-8 range; note: TelegramThumbFetcher internal concurrency is fixed at 4
+        dataStore.edit { it[Keys.TG_THUMB_MAX_PARALLEL] = value.coerceIn(1, 8) }
     }
 
     suspend fun setTgThumbPauseWhileVodBuffering(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_THUMB_PAUSE_WHILE_VOD_BUFFERING] = value }
+        dataStore.edit { it[Keys.TG_THUMB_PAUSE_WHILE_VOD_BUFFERING] = value }
     }
 
     suspend fun setTgThumbFullDownload(value: Boolean) {
-        context.dataStore.edit { it[Keys.TG_THUMB_FULL_DOWNLOAD] = value }
+        // NOTE: This setting should be deprecated - new architecture uses thumbnail-sized files only
+        // Keeping for backward compatibility but should be phased out
+        dataStore.edit { it[Keys.TG_THUMB_FULL_DOWNLOAD] = value }
     }
 
-    // ExoPlayer buffer settings
+    // ExoPlayer buffer settings with invariant enforcement
     suspend fun setExoMinBufferMs(value: Int) {
-        context.dataStore.edit { it[Keys.EXO_MIN_BUFFER_MS] = value.coerceIn(5_000, 300_000) }
+        val clamped = value.coerceIn(1_000, 300_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_MIN_BUFFER_MS] = clamped
+            // Ensure MinBuffer <= MaxBuffer invariant
+            val currentMax = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            if (clamped > currentMax) {
+                prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoMaxBufferMs(value: Int) {
-        context.dataStore.edit { it[Keys.EXO_MAX_BUFFER_MS] = value.coerceIn(5_000, 300_000) }
+        val clamped = value.coerceIn(1_000, 300_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+            // Ensure MinBuffer <= MaxBuffer invariant
+            val currentMin = prefs[Keys.EXO_MIN_BUFFER_MS] ?: 50_000
+            if (clamped < currentMin) {
+                prefs[Keys.EXO_MIN_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoBufferForPlaybackMs(value: Int) {
-        context.dataStore.edit { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = value.coerceIn(500, 30_000) }
+        val clamped = value.coerceIn(500, 10_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = clamped
+            // Ensure BufferForPlayback <= MinBuffer <= MaxBuffer invariant
+            val currentMin = prefs[Keys.EXO_MIN_BUFFER_MS] ?: 50_000
+            val currentMax = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            if (clamped > currentMin) {
+                prefs[Keys.EXO_MIN_BUFFER_MS] = clamped
+                // Also adjust MaxBuffer if needed to maintain MinBuffer <= MaxBuffer
+                if (clamped > currentMax) {
+                    prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+                }
+            }
+        }
     }
 
     suspend fun setExoBufferForPlaybackAfterRebufferMs(value: Int) {
-        context.dataStore.edit { it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = value.coerceIn(500, 30_000) }
+        val clamped = value.coerceIn(500, 10_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = clamped
+            // Ensure BufferForPlaybackAfterRebuffer <= MaxBuffer invariant
+            val currentMax = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            if (clamped > currentMax) {
+                prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoExactSeek(value: Boolean) {
-        context.dataStore.edit { it[Keys.EXO_EXACT_SEEK] = value }
+        dataStore.edit { it[Keys.EXO_EXACT_SEEK] = value }
     }
 
     // Diagnostics / logging settings
     suspend fun setTgAppLogLevel(value: Int) {
-        context.dataStore.edit { it[Keys.TG_APP_LOG_LEVEL] = value.coerceIn(0, 3) }
+        dataStore.edit { it[Keys.TG_APP_LOG_LEVEL] = value.coerceIn(0, 3) }
     }
 
     suspend fun setJankTelemetrySampleRate(value: Int) {
-        context.dataStore.edit { it[Keys.JANK_TELEMETRY_SAMPLE_RATE] = value.coerceIn(1, 100) }
+        dataStore.edit { it[Keys.JANK_TELEMETRY_SAMPLE_RATE] = value.coerceIn(1, 100) }
+    }
+
+    /**
+     * Reset all settings to defaults.
+     * Uses DataStore edit { clear() } to safely clear all preferences
+     * without causing multi-DataStore errors.
+     */
+    suspend fun resetAllSettings() {
+        dataStore.edit { it.clear() }
+    }
+
+    /**
+     * Migrate and clamp advanced Telegram/buffer settings to safe ranges.
+     * This ensures existing user settings are within the new safe limits.
+     *
+     * Should be called once on app startup after DataStore is initialized.
+     */
+    suspend fun migrateAdvancedSettings() {
+        dataStore.edit { prefs ->
+            // Telegram engine settings - clamp to safe ranges
+            prefs[Keys.TG_MAX_GLOBAL_DOWNLOADS]?.let { current ->
+                if (current < 1 || current > 10) {
+                    prefs[Keys.TG_MAX_GLOBAL_DOWNLOADS] = current.coerceIn(1, 10)
+                }
+            }
+            prefs[Keys.TG_MAX_VIDEO_DOWNLOADS]?.let { current ->
+                if (current < 1 || current > 5) {
+                    prefs[Keys.TG_MAX_VIDEO_DOWNLOADS] = current.coerceIn(1, 5)
+                }
+            }
+            prefs[Keys.TG_MAX_THUMB_DOWNLOADS]?.let { current ->
+                if (current < 1 || current > 8) {
+                    prefs[Keys.TG_MAX_THUMB_DOWNLOADS] = current.coerceIn(1, 8)
+                }
+            }
+
+            // File ready timeout - clamp to 5-60 seconds
+            prefs[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS]?.let { current ->
+                if (current < 5_000L || current > 60_000L) {
+                    prefs[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = current.coerceIn(5_000L, 60_000L)
+                }
+            }
+
+            // Thumbnail prefetch settings - clamp to safe ranges
+            prefs[Keys.TG_THUMB_PREFETCH_BATCH_SIZE]?.let { current ->
+                if (current < 1 || current > 16) {
+                    prefs[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = current.coerceIn(1, 16)
+                }
+            }
+            prefs[Keys.TG_THUMB_MAX_PARALLEL]?.let { current ->
+                if (current < 1 || current > 8) {
+                    prefs[Keys.TG_THUMB_MAX_PARALLEL] = current.coerceIn(1, 8)
+                }
+            }
+
+            // ExoPlayer buffer settings - enforce invariants
+            val minBuffer = prefs[Keys.EXO_MIN_BUFFER_MS] ?: 50_000
+            val maxBuffer = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            val bufferForPlayback = prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] ?: 2_500
+            val bufferAfterRebuffer = prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] ?: 5_000
+
+            // Clamp to valid ranges
+            val clampedMin = minBuffer.coerceIn(1_000, 300_000)
+            val clampedMax = maxBuffer.coerceIn(1_000, 300_000)
+            val clampedPlayback = bufferForPlayback.coerceIn(500, 10_000)
+            val clampedRebuffer = bufferAfterRebuffer.coerceIn(500, 10_000)
+
+            // Enforce invariants: BufferForPlayback <= MinBuffer <= MaxBuffer
+            // Note: There is no requirement that bufferAfterRebuffer <= MaxBuffer.
+            // Only BufferForPlayback <= MinBuffer <= MaxBuffer is enforced.
+            val finalMin = maxOf(clampedMin, clampedPlayback)
+            val finalMax = maxOf(clampedMax, finalMin)
+
+            prefs[Keys.EXO_MIN_BUFFER_MS] = finalMin
+            prefs[Keys.EXO_MAX_BUFFER_MS] = finalMax
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = clampedPlayback
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = clampedRebuffer
+        }
     }
 }

@@ -2,15 +2,12 @@ package com.chris.m3usuite.core.cache
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.preferencesDataStore
 import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.obx.ObxStore
+import com.chris.m3usuite.prefs.SettingsDataStoreProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-
-// DataStore reference (same name as in SettingsStore)
-private val Context.dataStore by preferencesDataStore("settings")
 
 /**
  * Result of a cache clearing operation.
@@ -59,25 +56,16 @@ class CacheManager(
     /**
      * Clear DataStore (app settings/preferences).
      * This will reset ALL app settings to defaults.
-     * The app should be restarted after this operation.
+     * Uses edit { clear() } instead of deleting files to prevent multi-DataStore errors.
      */
     suspend fun clearDataStore(): CacheResult =
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             try {
-                // Clear DataStore preferences programmatically
-                context.dataStore.edit { it.clear() }
-
-                // Also delete the physical file to ensure complete reset
-                val datastoreDir = File(context.filesDir, DATASTORE_DIR)
-                var filesDeleted = 0
-                var bytesFreed = 0L
-
-                if (datastoreDir.exists()) {
-                    val (deleted, bytes) = deleteDirectoryContents(datastoreDir)
-                    filesDeleted = deleted
-                    bytesFreed = bytes
-                }
+                // Clear DataStore preferences programmatically using singleton instance
+                // DO NOT delete the physical file as this causes multi-DataStore errors
+                val dataStore = SettingsDataStoreProvider.getInstance(context)
+                dataStore.edit { it.clear() }
 
                 val duration = System.currentTimeMillis() - startTime
 
@@ -85,13 +73,11 @@ class CacheManager(
                     TAG,
                     "Cleared DataStore (app settings)",
                     mapOf(
-                        "filesDeleted" to filesDeleted.toString(),
-                        "bytesFreed" to bytesFreed.toString(),
                         "durationMs" to duration.toString(),
                     ),
                 )
 
-                CacheResult(success = true, filesDeleted = filesDeleted, bytesFreed = bytesFreed)
+                CacheResult(success = true, filesDeleted = 0, bytesFreed = 0L)
             } catch (e: Exception) {
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.error(
@@ -289,14 +275,10 @@ class CacheManager(
 
     private suspend fun clearDataStoreInternal(): CacheResult =
         try {
-            context.dataStore.edit { it.clear() }
-            val datastoreDir = File(context.filesDir, DATASTORE_DIR)
-            if (datastoreDir.exists()) {
-                val (deleted, bytes) = deleteDirectoryContents(datastoreDir)
-                CacheResult(success = true, filesDeleted = deleted, bytesFreed = bytes)
-            } else {
-                CacheResult(success = true, filesDeleted = 0, bytesFreed = 0L)
-            }
+            // Use singleton DataStore instance and edit { clear() } only
+            val dataStore = SettingsDataStoreProvider.getInstance(context)
+            dataStore.edit { it.clear() }
+            CacheResult(success = true, filesDeleted = 0, bytesFreed = 0L)
         } catch (e: Exception) {
             CacheResult(success = false, errorMessage = e.message)
         }

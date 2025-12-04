@@ -94,10 +94,12 @@ class TelegramThumbFetcher
                 cachedRepository?.let { return it }
                 return synchronized(this) {
                     cachedRepository
-                        ?: com.chris.m3usuite.data.repo.TelegramContentRepository(
-                            context,
-                            com.chris.m3usuite.prefs.SettingsStore(context),
-                        ).also { cachedRepository = it }
+                        ?: com.chris.m3usuite.data.repo
+                            .TelegramContentRepository(
+                                context,
+                                com.chris.m3usuite.prefs
+                                    .SettingsStore(context),
+                            ).also { cachedRepository = it }
                 }
             }
         }

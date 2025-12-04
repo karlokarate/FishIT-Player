@@ -56,6 +56,31 @@ class App : Application() {
             store.logTelemetryEnabled.collect { enabled -> Telemetry.setExternalEnabled(enabled) }
         }
 
+        // Migrate advanced settings to safe ranges on startup (blocking to ensure completion)
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                store.migrateAdvancedSettings()
+                UnifiedLog.info(
+                    source = "App",
+                    message = "Advanced settings migration completed",
+                )
+            } catch (e: Exception) {
+                UnifiedLog.warn(
+                    source = "App",
+                    message = "Advanced settings migration failed: ${e.message}",
+                )
+            }
+        }.invokeOnCompletion {
+            // Continue initialization after migration completes
+            initializeTelegramComponents(store)
+        }
+    }
+
+    /**
+     * Initialize Telegram components after settings migration is complete.
+     * This ensures components use properly migrated settings values.
+     */
+    private fun initializeTelegramComponents(store: SettingsStore) {
         // Start Telegram thumbnail prefetcher
         val serviceClient = T_TelegramServiceClient.getInstance(this)
         val tgRepo = TelegramContentRepository(this, store)
