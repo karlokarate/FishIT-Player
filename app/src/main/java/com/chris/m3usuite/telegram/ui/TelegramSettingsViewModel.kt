@@ -511,6 +511,94 @@ class TelegramSettingsViewModel(
     }
 
     /**
+     * Trigger full chat history sync for a specific chat.
+     * This uses the new streaming pagination to load unlimited history.
+     *
+     * @param chatId Chat ID to sync
+     * @param chatTitle Optional chat title for logging
+     */
+    fun onSyncFullChatHistory(
+        chatId: Long,
+        chatTitle: String? = null,
+    ) {
+        viewModelScope.launch {
+            try {
+                _state.update { it.copy(isSyncingHistory = true, syncProgress = null) }
+
+                UnifiedLog.info(
+                    source = "TelegramSettingsViewModel",
+                    message = "Starting full chat history sync",
+                    details =
+                        mapOf(
+                            "chatId" to chatId.toString(),
+                            "chatTitle" to (chatTitle ?: "unknown"),
+                        ),
+                )
+
+                // Get TelegramContentRepository
+                val repository = com.chris.m3usuite.data.repo.TelegramContentRepository(app, store)
+
+                // Sync full chat history
+                val result =
+                    repository.syncFullChatHistory(
+                        chatId = chatId,
+                        chatTitle = chatTitle,
+                        serviceClient = serviceClient,
+                    )
+
+                when {
+                    result.isSuccess -> {
+                        val itemsPersisted = result.getOrNull() ?: 0
+                        UnifiedLog.info(
+                            source = "TelegramSettingsViewModel",
+                            message = "Full chat history sync completed",
+                            details =
+                                mapOf(
+                                    "chatId" to chatId.toString(),
+                                    "itemsPersisted" to itemsPersisted.toString(),
+                                ),
+                        )
+                        _state.update {
+                            it.copy(
+                                isSyncingHistory = false,
+                                syncProgress = "Synced $itemsPersisted items",
+                            )
+                        }
+                    }
+                    result.isFailure -> {
+                        val error = result.exceptionOrNull()
+                        UnifiedLog.error(
+                            source = "TelegramSettingsViewModel",
+                            message = "Full chat history sync failed",
+                            exception = error,
+                        )
+                        _state.update {
+                            it.copy(
+                                isSyncingHistory = false,
+                                syncProgress = null,
+                                errorMessage = "Sync failed: ${error?.message}",
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.error(
+                    source = "TelegramSettingsViewModel",
+                    message = "Exception during full chat history sync",
+                    exception = e,
+                )
+                _state.update {
+                    it.copy(
+                        isSyncingHistory = false,
+                        syncProgress = null,
+                        errorMessage = "Sync exception: ${e.message}",
+                    )
+                }
+            }
+        }
+    }
+
+    /**
      * Map core auth state to UI auth state.
      */
     private fun mapCoreAuthStateToUI(coreState: com.chris.m3usuite.telegram.core.TelegramAuthState): TelegramAuthState =
@@ -576,6 +664,9 @@ data class TelegramSettingsState(
     // Loading states
     val isConnecting: Boolean = false,
     val isLoadingChats: Boolean = false,
+    // Full history sync state
+    val isSyncingHistory: Boolean = false,
+    val syncProgress: String? = null,
     // Legacy error message (will be replaced by recentError)
     val errorMessage: String? = null,
     // Chat selection
