@@ -131,10 +131,11 @@ class TelegramFileDataSource(
         // Phase D+ Fix: Add explicit logging at start of open() with Telegram engine state
         val isStarted = serviceClient.isStarted
         val isAuthReady = serviceClient.isAuthReady()
+        val isSeeking = dataSpec.position > 0
 
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
-            message = "open url=$uri chatId=$chatId messageId=$messageId started=$isStarted authReady=$isAuthReady",
+            message = "open url=$uri chatId=$chatId messageId=$messageId" + if (isSeeking) " (SEEK)" else "",
             details =
                 mapOf(
                     "url" to uri.toString(),
@@ -145,6 +146,7 @@ class TelegramFileDataSource(
                     "started" to isStarted.toString(),
                     "authReady" to isAuthReady.toString(),
                     "dataSpecPosition" to dataSpec.position.toString(),
+                    "isSeeking" to isSeeking.toString(),
                 ),
         )
 
@@ -238,7 +240,10 @@ class TelegramFileDataSource(
         transferListener?.onTransferStart(this, dataSpec, /* isNetwork = */ true)
 
         // Ensure TDLib has the file ready with sufficient prefix
+        // For initial playback (position=0), this validates MP4 header
+        // For seeks (position>0), this requests download from seek offset
         // Pass remoteId to downloader for automatic stale fileId resolution
+        val seekOffset = dataSpec.position
         val localPath: String =
             try {
                 runBlocking {
@@ -246,6 +251,7 @@ class TelegramFileDataSource(
                     downloader.ensureFileReadyWithMp4Validation(
                         fileId = fileIdInt,
                         remoteId = remoteIdParam, // Pass remoteId for stale fileId fallback
+                        offset = seekOffset, // Pass seek position to TDLib
                         timeoutMs = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
                     )
                 }
@@ -326,7 +332,7 @@ class TelegramFileDataSource(
 
         TelegramLogRepository.info(
             source = "TelegramFileDataSource",
-            message = "opened",
+            message = "opened" + if (dataSpec.position > 0) " (SEEK to ${dataSpec.position})" else "",
             details =
                 mapOf(
                     "fileId" to fileIdInt.toString(),
@@ -335,6 +341,7 @@ class TelegramFileDataSource(
                     "dataSpecPosition" to dataSpec.position.toString(),
                     "correctFileSize" to correctFileSize.toString(),
                     "localFileSize" to file.length().toString(),
+                    "isSeeking" to (dataSpec.position > 0).toString(),
                 ),
         )
 
