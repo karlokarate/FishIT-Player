@@ -67,6 +67,8 @@ fun SettingsScreen(
     val subtitleVm: SubtitleSettingsViewModel = viewModel(factory = SubtitleSettingsViewModel.factory(app))
     // Telegram Advanced Settings ViewModel
     val telegramAdvancedVm: TelegramAdvancedSettingsViewModel = viewModel(factory = TelegramAdvancedSettingsViewModel.factory(app))
+    // Cache Settings ViewModel
+    val cacheVm: CacheSettingsViewModel = viewModel(factory = CacheSettingsViewModel.factory(app))
 
     // --- States (bestehend) ---
     val playerState by playerVm.state.collectAsStateWithLifecycle()
@@ -79,6 +81,8 @@ fun SettingsScreen(
     val subtitleState by subtitleVm.state.collectAsStateWithLifecycle()
     // Telegram Advanced Settings state
     val telegramAdvancedState by telegramAdvancedVm.state.collectAsStateWithLifecycle()
+    // Cache settings state
+    val cacheState by cacheVm.state.collectAsStateWithLifecycle()
 
     val scroll = rememberScrollState()
 
@@ -375,6 +379,16 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // --- Cache Management ---
+            CacheManagementSection(
+                state = cacheState,
+                onClearLogCache = cacheVm::clearLogCache,
+                onClearTdlibCache = cacheVm::clearTdlibCache,
+                onClearXtreamCache = cacheVm::clearXtreamCache,
+                onClearAllCaches = cacheVm::clearAllCaches,
+                onDismissResultDialog = cacheVm::dismissResultDialog,
+            )
 
             Spacer(Modifier.height(24.dp))
         }
@@ -1144,4 +1158,237 @@ private fun TelegramAdvancedSettingsSection(
         )
         Text("Log every ${state.jankTelemetrySampleRate}th event", style = MaterialTheme.typography.bodySmall)
     }
+}
+
+/**
+ * Cache management section with buttons to clear various caches.
+ */
+@Composable
+private fun CacheManagementSection(
+    state: CacheSettingsState,
+    onClearLogCache: () -> Unit,
+    onClearTdlibCache: () -> Unit,
+    onClearXtreamCache: () -> Unit,
+    onClearAllCaches: () -> Unit,
+    onDismissResultDialog: () -> Unit,
+) {
+    var showLogCacheConfirmDialog by remember { mutableStateOf(false) }
+    var showTdlibCacheConfirmDialog by remember { mutableStateOf(false) }
+    var showXtreamCacheConfirmDialog by remember { mutableStateOf(false) }
+    var showAllCachesConfirmDialog by remember { mutableStateOf(false) }
+
+    SettingsCard(title = "Cache Verwaltung") {
+        Text(
+            text = "Hier können Sie verschiedene App-Caches löschen. Nach dem Löschen werden die Caches bei Bedarf neu erstellt.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Clear Log Cache
+        Button(
+            onClick = { showLogCacheConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.LOG) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("Log-Cache löschen")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Clear TDLib Cache
+        Button(
+            onClick = { showTdlibCacheConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.TDLIB) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("TDLib-Cache löschen")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Clear Xtream Cache
+        Button(
+            onClick = { showXtreamCacheConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.XTREAM) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("Xtream/ExoPlayer-Cache löschen")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Clear All Caches
+        OutlinedButton(
+            onClick = { showAllCachesConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isOperationInProgress,
+        ) {
+            if (state.isOperationInProgress && state.currentOperation == CacheOperationType.ALL) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text("Alle Caches löschen")
+        }
+    }
+
+    // Confirmation Dialogs
+    if (showLogCacheConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "Log-Cache löschen?",
+            message = "Alle App-Logs werden gelöscht. Dies kann bei Problemen zur Fehlerdiagnose verwendet werden.",
+            onConfirm = {
+                showLogCacheConfirmDialog = false
+                onClearLogCache()
+            },
+            onDismiss = { showLogCacheConfirmDialog = false },
+        )
+    }
+
+    if (showTdlibCacheConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "TDLib-Cache löschen?",
+            message = "Telegram-Datenbank und Downloads werden gelöscht. TDLib wird die Daten bei Bedarf neu laden. Sie müssen sich möglicherweise erneut bei Telegram anmelden.",
+            onConfirm = {
+                showTdlibCacheConfirmDialog = false
+                onClearTdlibCache()
+            },
+            onDismiss = { showTdlibCacheConfirmDialog = false },
+        )
+    }
+
+    if (showXtreamCacheConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "Xtream/ExoPlayer-Cache löschen?",
+            message = "ExoPlayer-Cache, RAR-Cache und Bild-Cache werden gelöscht. Videos müssen möglicherweise neu gepuffert werden.",
+            onConfirm = {
+                showXtreamCacheConfirmDialog = false
+                onClearXtreamCache()
+            },
+            onDismiss = { showXtreamCacheConfirmDialog = false },
+        )
+    }
+
+    if (showAllCachesConfirmDialog) {
+        CacheClearConfirmDialog(
+            title = "Alle Caches löschen?",
+            message = "Log-Cache, TDLib-Cache und Xtream/ExoPlayer-Cache werden gelöscht. Dies kann einige Zeit dauern.",
+            onConfirm = {
+                showAllCachesConfirmDialog = false
+                onClearAllCaches()
+            },
+            onDismiss = { showAllCachesConfirmDialog = false },
+        )
+    }
+
+    // Result Dialog
+    if (state.showResultDialog && state.lastResult != null) {
+        val result = state.lastResult
+        AlertDialog(
+            onDismissRequest = onDismissResultDialog,
+            title = { Text(if (result.success) "Erfolgreich" else "Fehler") },
+            text = {
+                Column {
+                    if (result.success) {
+                        Text("Cache erfolgreich gelöscht")
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Dateien gelöscht: ${result.filesDeleted}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        if (result.bytesFreed > 0) {
+                            Text(
+                                "Speicherplatz freigegeben: ${formatBytes(result.bytesFreed)}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    } else {
+                        Text("Fehler beim Löschen des Cache")
+                        if (result.errorMessage != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                result.errorMessage,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onDismissResultDialog) {
+                    Text("OK")
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Confirmation dialog for cache clearing operations.
+ */
+@Composable
+private fun CacheClearConfirmDialog(
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("Löschen")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        },
+    )
+}
+
+/**
+ * Format bytes to human-readable string.
+ */
+private fun formatBytes(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return String.format("%.2f KB", kb)
+    val mb = kb / 1024.0
+    if (mb < 1024) return String.format("%.2f MB", mb)
+    val gb = mb / 1024.0
+    return String.format("%.2f GB", gb)
 }
