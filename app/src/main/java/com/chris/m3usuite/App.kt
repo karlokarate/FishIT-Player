@@ -56,6 +56,22 @@ class App : Application() {
             store.logTelemetryEnabled.collect { enabled -> Telemetry.setExternalEnabled(enabled) }
         }
 
+        // Migrate advanced settings to safe ranges on startup
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                store.migrateAdvancedSettings()
+                UnifiedLog.info(
+                    source = "App",
+                    message = "Advanced settings migration completed",
+                )
+            } catch (e: Exception) {
+                UnifiedLog.warn(
+                    source = "App",
+                    message = "Advanced settings migration failed: ${e.message}",
+                )
+            }
+        }
+
         // Start Telegram thumbnail prefetcher
         val serviceClient = T_TelegramServiceClient.getInstance(this)
         val tgRepo = TelegramContentRepository(this, store)

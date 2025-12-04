@@ -1232,18 +1232,21 @@ class SettingsStore(
         dataStore.edit { it[Keys.SHOW_ADULTS] = value }
     }
 
-    // Telegram Advanced Settings - Setters
-    // Engine settings
+    // Telegram Advanced Settings - Setters with safe clamping
+    // Engine settings - aligned with new engine behavior
     suspend fun setTgMaxGlobalDownloads(value: Int) {
-        dataStore.edit { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] = value.coerceIn(1, 20) }
+        // Clamp to 1-10 range for safe engine operation
+        dataStore.edit { it[Keys.TG_MAX_GLOBAL_DOWNLOADS] = value.coerceIn(1, 10) }
     }
 
     suspend fun setTgMaxVideoDownloads(value: Int) {
-        dataStore.edit { it[Keys.TG_MAX_VIDEO_DOWNLOADS] = value.coerceIn(1, 10) }
+        // Clamp to 1-5 range to prevent overload
+        dataStore.edit { it[Keys.TG_MAX_VIDEO_DOWNLOADS] = value.coerceIn(1, 5) }
     }
 
     suspend fun setTgMaxThumbDownloads(value: Int) {
-        dataStore.edit { it[Keys.TG_MAX_THUMB_DOWNLOADS] = value.coerceIn(1, 10) }
+        // Clamp to 1-8 range (TelegramThumbFetcher uses Semaphore(4) internally)
+        dataStore.edit { it[Keys.TG_MAX_THUMB_DOWNLOADS] = value.coerceIn(1, 8) }
     }
 
     suspend fun setTgShowEngineOverlay(value: Boolean) {
@@ -1252,7 +1255,8 @@ class SettingsStore(
 
     // Streaming / buffering settings
     suspend fun setTgEnsureFileReadyTimeoutMs(value: Long) {
-        dataStore.edit { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = value.coerceIn(2_000L, 60_000L) }
+        // Clamp to 5-60 seconds for safe operation
+        dataStore.edit { it[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = value.coerceIn(5_000L, 60_000L) }
     }
 
     suspend fun setTgShowStreamingOverlay(value: Boolean) {
@@ -1265,11 +1269,13 @@ class SettingsStore(
     }
 
     suspend fun setTgThumbPrefetchBatchSize(value: Int) {
-        dataStore.edit { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = value.coerceIn(1, 50) }
+        // Clamp to 1-16 range for reasonable prefetch behavior
+        dataStore.edit { it[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = value.coerceIn(1, 16) }
     }
 
     suspend fun setTgThumbMaxParallel(value: Int) {
-        dataStore.edit { it[Keys.TG_THUMB_MAX_PARALLEL] = value.coerceIn(1, 10) }
+        // Clamp to 1-8 range; note: TelegramThumbFetcher internal concurrency is fixed at 4
+        dataStore.edit { it[Keys.TG_THUMB_MAX_PARALLEL] = value.coerceIn(1, 8) }
     }
 
     suspend fun setTgThumbPauseWhileVodBuffering(value: Boolean) {
@@ -1277,24 +1283,58 @@ class SettingsStore(
     }
 
     suspend fun setTgThumbFullDownload(value: Boolean) {
+        // NOTE: This setting should be deprecated - new architecture uses thumbnail-sized files only
+        // Keeping for backward compatibility but should be phased out
         dataStore.edit { it[Keys.TG_THUMB_FULL_DOWNLOAD] = value }
     }
 
-    // ExoPlayer buffer settings
+    // ExoPlayer buffer settings with invariant enforcement
     suspend fun setExoMinBufferMs(value: Int) {
-        dataStore.edit { it[Keys.EXO_MIN_BUFFER_MS] = value.coerceIn(5_000, 300_000) }
+        val clamped = value.coerceIn(1_000, 300_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_MIN_BUFFER_MS] = clamped
+            // Ensure MinBuffer <= MaxBuffer invariant
+            val currentMax = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            if (clamped > currentMax) {
+                prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoMaxBufferMs(value: Int) {
-        dataStore.edit { it[Keys.EXO_MAX_BUFFER_MS] = value.coerceIn(5_000, 300_000) }
+        val clamped = value.coerceIn(1_000, 300_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+            // Ensure MinBuffer <= MaxBuffer invariant
+            val currentMin = prefs[Keys.EXO_MIN_BUFFER_MS] ?: 50_000
+            if (clamped < currentMin) {
+                prefs[Keys.EXO_MIN_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoBufferForPlaybackMs(value: Int) {
-        dataStore.edit { it[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = value.coerceIn(500, 30_000) }
+        val clamped = value.coerceIn(500, 10_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = clamped
+            // Ensure BufferForPlayback <= MinBuffer invariant
+            val currentMin = prefs[Keys.EXO_MIN_BUFFER_MS] ?: 50_000
+            if (clamped > currentMin) {
+                prefs[Keys.EXO_MIN_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoBufferForPlaybackAfterRebufferMs(value: Int) {
-        dataStore.edit { it[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = value.coerceIn(500, 30_000) }
+        val clamped = value.coerceIn(500, 10_000)
+        dataStore.edit { prefs ->
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = clamped
+            // Ensure BufferForPlaybackAfterRebuffer <= MaxBuffer invariant
+            val currentMax = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            if (clamped > currentMax) {
+                prefs[Keys.EXO_MAX_BUFFER_MS] = clamped
+            }
+        }
     }
 
     suspend fun setExoExactSeek(value: Boolean) {
@@ -1317,5 +1357,72 @@ class SettingsStore(
      */
     suspend fun resetAllSettings() {
         dataStore.edit { it.clear() }
+    }
+
+    /**
+     * Migrate and clamp advanced Telegram/buffer settings to safe ranges.
+     * This ensures existing user settings are within the new safe limits.
+     *
+     * Should be called once on app startup after DataStore is initialized.
+     */
+    suspend fun migrateAdvancedSettings() {
+        dataStore.edit { prefs ->
+            // Telegram engine settings - clamp to safe ranges
+            prefs[Keys.TG_MAX_GLOBAL_DOWNLOADS]?.let { current ->
+                if (current < 1 || current > 10) {
+                    prefs[Keys.TG_MAX_GLOBAL_DOWNLOADS] = current.coerceIn(1, 10)
+                }
+            }
+            prefs[Keys.TG_MAX_VIDEO_DOWNLOADS]?.let { current ->
+                if (current < 1 || current > 5) {
+                    prefs[Keys.TG_MAX_VIDEO_DOWNLOADS] = current.coerceIn(1, 5)
+                }
+            }
+            prefs[Keys.TG_MAX_THUMB_DOWNLOADS]?.let { current ->
+                if (current < 1 || current > 8) {
+                    prefs[Keys.TG_MAX_THUMB_DOWNLOADS] = current.coerceIn(1, 8)
+                }
+            }
+
+            // File ready timeout - clamp to 5-60 seconds
+            prefs[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS]?.let { current ->
+                if (current < 5_000L || current > 60_000L) {
+                    prefs[Keys.TG_ENSURE_FILE_READY_TIMEOUT_MS] = current.coerceIn(5_000L, 60_000L)
+                }
+            }
+
+            // Thumbnail prefetch settings - clamp to safe ranges
+            prefs[Keys.TG_THUMB_PREFETCH_BATCH_SIZE]?.let { current ->
+                if (current < 1 || current > 16) {
+                    prefs[Keys.TG_THUMB_PREFETCH_BATCH_SIZE] = current.coerceIn(1, 16)
+                }
+            }
+            prefs[Keys.TG_THUMB_MAX_PARALLEL]?.let { current ->
+                if (current < 1 || current > 8) {
+                    prefs[Keys.TG_THUMB_MAX_PARALLEL] = current.coerceIn(1, 8)
+                }
+            }
+
+            // ExoPlayer buffer settings - enforce invariants
+            val minBuffer = prefs[Keys.EXO_MIN_BUFFER_MS] ?: 50_000
+            val maxBuffer = prefs[Keys.EXO_MAX_BUFFER_MS] ?: 50_000
+            val bufferForPlayback = prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] ?: 2_500
+            val bufferAfterRebuffer = prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] ?: 5_000
+
+            // Clamp to valid ranges
+            val clampedMin = minBuffer.coerceIn(1_000, 300_000)
+            val clampedMax = maxBuffer.coerceIn(1_000, 300_000)
+            val clampedPlayback = bufferForPlayback.coerceIn(500, 10_000)
+            val clampedRebuffer = bufferAfterRebuffer.coerceIn(500, 10_000)
+
+            // Enforce invariants: BufferForPlayback <= MinBuffer <= MaxBuffer
+            val finalMin = maxOf(clampedMin, clampedPlayback)
+            val finalMax = maxOf(clampedMax, finalMin, clampedRebuffer)
+
+            prefs[Keys.EXO_MIN_BUFFER_MS] = finalMin
+            prefs[Keys.EXO_MAX_BUFFER_MS] = finalMax
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_MS] = clampedPlayback
+            prefs[Keys.EXO_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS] = clampedRebuffer
+        }
     }
 }
