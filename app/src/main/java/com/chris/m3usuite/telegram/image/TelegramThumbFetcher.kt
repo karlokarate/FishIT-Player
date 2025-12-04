@@ -63,25 +63,41 @@ class TelegramThumbFetcher
             // Limit concurrent TDLib downloads to prevent overload
             private val downloadSemaphore = Semaphore(4)
 
-            // Cache for repository instance to avoid repeated initialization
+            // Cached instances to avoid repeated initialization
             @Volatile
             private var cachedServiceClient: T_TelegramServiceClient? = null
 
+            @Volatile
+            private var cachedRepository: com.chris.m3usuite.data.repo.TelegramContentRepository? = null
+
             private fun getServiceClient(context: Context): T_TelegramServiceClient? {
                 cachedServiceClient?.let { return it }
-                return try {
-                    T_TelegramServiceClient.getInstance(context).also {
-                        if (it.isStarted) {
-                            cachedServiceClient = it
+                return synchronized(this) {
+                    cachedServiceClient ?: try {
+                        T_TelegramServiceClient.getInstance(context).also {
+                            if (it.isStarted) {
+                                cachedServiceClient = it
+                            }
                         }
+                    } catch (e: Exception) {
+                        UnifiedLog.warn(
+                            TAG,
+                            "Failed to get TelegramServiceClient",
+                            mapOf("error" to (e.message ?: "unknown")),
+                        )
+                        null
                     }
-                } catch (e: Exception) {
-                    UnifiedLog.warn(
-                        TAG,
-                        "Failed to get TelegramServiceClient",
-                        mapOf("error" to (e.message ?: "unknown")),
-                    )
-                    null
+                }
+            }
+
+            private fun getRepository(context: Context): com.chris.m3usuite.data.repo.TelegramContentRepository {
+                cachedRepository?.let { return it }
+                return synchronized(this) {
+                    cachedRepository
+                        ?: com.chris.m3usuite.data.repo.TelegramContentRepository(
+                            context,
+                            com.chris.m3usuite.prefs.SettingsStore(context),
+                        ).also { cachedRepository = it }
                 }
             }
         }
@@ -99,12 +115,7 @@ class TelegramThumbFetcher
                     }
 
                     // Resolve fileId from remoteId via repository
-                    val repository =
-                        com.chris.m3usuite.data.repo.TelegramContentRepository(
-                            context,
-                            com.chris.m3usuite.prefs
-                                .SettingsStore(context),
-                        )
+                    val repository = getRepository(context)
 
                     val fileId =
                         repository.resolveThumbFileId(
