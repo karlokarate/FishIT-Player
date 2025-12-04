@@ -1277,7 +1277,8 @@ private fun CacheManagementSection(
     if (showTdlibCacheConfirmDialog) {
         CacheClearConfirmDialog(
             title = "TDLib-Cache löschen?",
-            message = "Telegram-Datenbank und Downloads werden gelöscht. TDLib wird die Daten bei Bedarf neu laden. Sie müssen sich möglicherweise erneut bei Telegram anmelden.",
+            message = "Telegram-Datenbank und Downloads werden gelöscht. TDLib wird die Daten bei " +
+                "Bedarf neu laden. Sie müssen sich möglicherweise erneut bei Telegram anmelden.",
             onConfirm = {
                 showTdlibCacheConfirmDialog = false
                 onClearTdlibCache()
