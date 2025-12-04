@@ -44,29 +44,29 @@ class TelegramHistoryScannerTest {
     fun `ScanResult has all required fields`() {
         val result =
             TelegramHistoryScanner.ScanResult(
-                messages = emptyList(),
                 oldestMessageId = 100L,
                 hasMoreHistory = true,
                 rawMessageCount = 50,
                 convertedCount = 45,
+                pagesProcessed = 5,
             )
 
-        assertTrue("messages should be empty list", result.messages.isEmpty())
         assertEquals(100L, result.oldestMessageId)
         assertTrue(result.hasMoreHistory)
         assertEquals(50, result.rawMessageCount)
         assertEquals(45, result.convertedCount)
+        assertEquals(5, result.pagesProcessed)
     }
 
     @Test
     fun `ScanResult tracks conversion ratio`() {
         val result =
             TelegramHistoryScanner.ScanResult(
-                messages = emptyList(),
                 oldestMessageId = 0L,
                 hasMoreHistory = false,
                 rawMessageCount = 100,
                 convertedCount = 90,
+                pagesProcessed = 10,
             )
 
         // 90% conversion rate

@@ -71,10 +71,12 @@ class TelegramHistoryScanner(
 
     /**
      * Result of a scan operation.
+     *
+     * This result contains only lightweight metadata about the scan operation.
+     * For unlimited scans (maxPages = Int.MAX_VALUE), messages are NOT accumulated
+     * in memory but are streamed via the onBatchReceived callback.
      */
     data class ScanResult(
-        /** List of converted ExportMessage objects */
-        val messages: List<ExportMessage>,
         /** Message ID of the oldest message scanned (for resume) */
         val oldestMessageId: Long,
         /** Whether there is more history to fetch */
@@ -83,15 +85,28 @@ class TelegramHistoryScanner(
         val rawMessageCount: Int,
         /** Number of messages successfully converted to ExportMessage */
         val convertedCount: Int,
+        /** Number of pages/batches processed */
+        val pagesProcessed: Int,
     )
 
     /**
-     * Scan chat history and convert to ExportMessages.
+     * Scan chat history and stream results via callback.
+     *
+     * **Streaming Behavior:**
+     * This method does NOT accumulate messages in memory. All messages are streamed
+     * to the onBatchReceived callback for processing. This makes it safe for unlimited
+     * scans (maxPages = Int.MAX_VALUE) without OOM risk.
+     *
+     * **Callback Requirement:**
+     * For unlimited or large scans, onBatchReceived MUST be provided to process
+     * messages incrementally. The callback is invoked for each page with converted
+     * ExportMessage objects.
      *
      * @param chatId Chat ID to scan
      * @param config Scan configuration
-     * @param onBatchReceived Optional callback invoked after each page is received with (messages, pageIndex)
-     * @return ScanResult containing converted messages and scan metadata
+     * @param onBatchReceived Callback invoked for each page with (messages, pageIndex).
+     *        REQUIRED for proper streaming behavior with large scans.
+     * @return ScanResult containing lightweight scan metadata (no message list)
      */
     suspend fun scan(
         chatId: Long,
@@ -103,13 +118,14 @@ class TelegramHistoryScanner(
             "Starting scan for chat $chatId (pageSize=${config.pageSize}, maxPages=${config.maxPages})",
         )
 
-        val allMessages = mutableListOf<ExportMessage>()
         val seenMessageIds = mutableSetOf<Long>()
         var fromMessageId = config.fromMessageId
         var consecutiveEmptyPages = 0
         var hasMoreHistory = true
         var totalRawCount = 0
+        var totalConvertedCount = 0
         var oldestMessageId = 0L
+        var pagesProcessed = 0
 
         for (pageIndex in 0 until config.maxPages) {
             // Determine offset based on TDLib paging rules
@@ -144,17 +160,18 @@ class TelegramHistoryScanner(
 
             consecutiveEmptyPages = 0
             totalRawCount += uniqueMessages.size
+            pagesProcessed++
 
             // Convert to ExportMessage
             val exportMessages = TdlMessageMapper.toExportMessages(uniqueMessages)
-            allMessages.addAll(exportMessages)
+            totalConvertedCount += exportMessages.size
 
             UnifiedLog.debug(
                 TAG,
                 "Page $pageIndex: ${uniqueMessages.size} raw -> ${exportMessages.size} converted",
             )
 
-            // Invoke callback if provided
+            // Stream to callback - this is the ONLY place messages exist in memory
             onBatchReceived?.invoke(exportMessages, pageIndex)
 
             // Find oldest message for pagination
@@ -187,15 +204,15 @@ class TelegramHistoryScanner(
 
         UnifiedLog.info(
             TAG,
-            "Scan complete for chat $chatId: $totalRawCount raw -> ${allMessages.size} converted",
+            "Scan complete for chat $chatId: $totalRawCount raw -> $totalConvertedCount converted in $pagesProcessed pages",
         )
 
         return ScanResult(
-            messages = allMessages,
             oldestMessageId = oldestMessageId,
             hasMoreHistory = hasMoreHistory,
             rawMessageCount = totalRawCount,
-            convertedCount = allMessages.size,
+            convertedCount = totalConvertedCount,
+            pagesProcessed = pagesProcessed,
         )
     }
 
