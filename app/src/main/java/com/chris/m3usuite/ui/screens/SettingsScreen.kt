@@ -306,7 +306,7 @@ fun SettingsScreen(
                         Text("App Log Viewer")
                     }
                 }
-                
+
                 // Firebase Crashlytics Test Button
                 Spacer(Modifier.height(8.dp))
                 Button(
@@ -316,9 +316,10 @@ fun SettingsScreen(
                         throw RuntimeException("Test Crash - Firebase Crashlytics Verification")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) {
                     Text("Test Crash (Firebase)")
                 }
@@ -1297,10 +1298,11 @@ private fun CacheManagementSection(
             onClick = { showDataStoreConfirmDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isOperationInProgress,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-            ),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
         ) {
             if (state.isOperationInProgress && state.currentOperation == CacheOperationType.DATASTORE) {
                 CircularProgressIndicator(
@@ -1320,10 +1322,11 @@ private fun CacheManagementSection(
             onClick = { showObjectBoxConfirmDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isOperationInProgress,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-            ),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
         ) {
             if (state.isOperationInProgress && state.currentOperation == CacheOperationType.OBJECTBOX) {
                 CircularProgressIndicator(
@@ -1343,10 +1346,11 @@ private fun CacheManagementSection(
             onClick = { showNuclearConfirmDialog = true },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isOperationInProgress,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
-            ),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
         ) {
             if (state.isOperationInProgress && state.currentOperation == CacheOperationType.NUCLEAR) {
                 CircularProgressIndicator(
@@ -1498,9 +1502,10 @@ private fun CacheManagementSection(
                             // Force close the app
                             (context as? android.app.Activity)?.finishAffinity()
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                        ),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                            ),
                     ) {
                         Text("App beenden")
                     }
@@ -1510,13 +1515,16 @@ private fun CacheManagementSection(
                     }
                 }
             },
-            dismissButton = if (state.requiresRestart && result.success) {
-                {
-                    TextButton(onClick = onDismissResultDialog) {
-                        Text("Später")
+            dismissButton =
+                if (state.requiresRestart && result.success) {
+                    {
+                        TextButton(onClick = onDismissResultDialog) {
+                            Text("Später")
+                        }
                     }
-                }
-            } else null,
+                } else {
+                    null
+                },
         )
     }
 }
@@ -1534,24 +1542,25 @@ private fun CacheClearConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { 
+        title = {
             Text(
                 text = title,
                 color = if (isDangerous) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            ) 
+            )
         },
         text = { Text(message) },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                colors = if (isDangerous) {
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    )
-                } else {
-                    ButtonDefaults.buttonColors()
-                },
+                colors =
+                    if (isDangerous) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        )
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    },
             ) {
                 Text(if (isDangerous) "Ja, löschen" else "Löschen")
             }

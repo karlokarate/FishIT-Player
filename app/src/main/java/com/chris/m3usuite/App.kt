@@ -3,12 +3,12 @@ package com.chris.m3usuite
 import android.app.Application
 import android.util.Log
 import com.chris.m3usuite.core.logging.CrashHandler
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.telemetry.FrameTimeWatchdog
 import com.chris.m3usuite.core.telemetry.Telemetry
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.prefetch.TelegramThumbPrefetcher
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -130,9 +130,10 @@ class App : Application() {
 
             // Configure Remote Config with sensible defaults
             val remoteConfig = FirebaseRemoteConfig.getInstance()
-            val configSettings = remoteConfigSettings {
-                minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) 0 else 3600 // 1 hour in release
-            }
+            val configSettings =
+                remoteConfigSettings {
+                    minimumFetchIntervalInSeconds = if (BuildConfig.DEBUG) 0 else 3600 // 1 hour in release
+                }
             remoteConfig.setConfigSettingsAsync(configSettings)
 
             // Fetch remote config in background

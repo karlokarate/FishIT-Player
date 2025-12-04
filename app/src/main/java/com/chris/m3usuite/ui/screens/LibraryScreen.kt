@@ -26,6 +26,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.core.util.isAdultCategory
 import com.chris.m3usuite.core.util.isAdultProvider
@@ -35,7 +36,6 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.model.isAdultCategory
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.ui.focus.OnPrefetchKeys
 import com.chris.m3usuite.ui.focus.OnPrefetchPaged
 import com.chris.m3usuite.ui.focus.focusScaleOnTv

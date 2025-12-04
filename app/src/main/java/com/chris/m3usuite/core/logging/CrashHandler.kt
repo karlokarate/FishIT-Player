@@ -94,14 +94,17 @@ object CrashHandler {
     /**
      * Report crash to Firebase Crashlytics with additional context.
      */
-    private fun reportToCrashlytics(thread: Thread, throwable: Throwable) {
+    private fun reportToCrashlytics(
+        thread: Thread,
+        throwable: Throwable,
+    ) {
         try {
             val crashlytics = FirebaseCrashlytics.getInstance()
-            
+
             // Add context about the crash
             crashlytics.setCustomKey("crash_thread", thread.name)
             crashlytics.setCustomKey("crash_time", System.currentTimeMillis())
-            
+
             // Log last few app logs to Crashlytics for context
             try {
                 val recentLogs = UnifiedLog.entries.value.takeLast(10)
@@ -111,10 +114,10 @@ object CrashHandler {
             } catch (e: Exception) {
                 crashlytics.log("Failed to attach app logs: ${e.message}")
             }
-            
+
             // Record the exception
             crashlytics.recordException(throwable)
-            
+
             Log.d(TAG, "Crash reported to Crashlytics")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to report to Crashlytics", e)

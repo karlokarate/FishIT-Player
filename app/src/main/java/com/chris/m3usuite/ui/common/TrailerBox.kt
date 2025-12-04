@@ -100,7 +100,7 @@ fun TrailerBox(
                     if (requested != 0) {
                         requested
                     } else {
-                    UnifiedLog.log(
+                        UnifiedLog.log(
                             level = UnifiedLog.Level.WARN,
                             source = "ui",
                             message = "Missing drawable for AppIcon.PlayCircle – using fallback icon",

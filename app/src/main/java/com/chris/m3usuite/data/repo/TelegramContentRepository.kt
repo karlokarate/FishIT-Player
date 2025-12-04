@@ -204,6 +204,195 @@ class TelegramContentRepository(
         }
 
     // =========================================================================
+    // Full History Synchronization
+    // =========================================================================
+
+    /**
+     * Synchronize full chat history for a given chatId.
+     *
+     * This method loads the entire chat history from TDLib without artificial limits,
+     * using pagination to avoid memory issues. Messages are persisted incrementally
+     * to the database in batches.
+     *
+     * **Behavior:**
+     * - Uses TelegramHistoryScanner with unlimited maxPages to load all messages
+     * - Processes messages in batches via callback to avoid holding all messages in memory
+     * - Persists each batch using the parser pipeline (TelegramBlockGrouper + TelegramItemBuilder)
+     * - De-duplication is handled at the database level via (chatId, anchorMessageId) uniqueness
+     * - Idempotent: repeated calls will not create duplicates
+     * - Structured logging tracks pagination progress (batches loaded, messages processed)
+     *
+     * **Requirements:**
+     * - Caller must ensure TelegramServiceClient is started and auth is ready
+     * - This operation can take significant time for chats with thousands of messages
+     * - Consider running this in a background worker (WorkManager) for large chats
+     *
+     * @param chatId Chat ID to synchronize
+     * @param chatTitle Optional chat title for metadata extraction (will be resolved if null)
+     * @param serviceClient T_TelegramServiceClient instance for TDLib operations
+     * @return Result containing total number of items persisted, or error
+     */
+    suspend fun syncFullChatHistory(
+        chatId: Long,
+        chatTitle: String? = null,
+        serviceClient: com.chris.m3usuite.telegram.core.T_TelegramServiceClient,
+    ): Result<Int> =
+        withContext(Dispatchers.IO) {
+            try {
+                UnifiedLog.info(
+                    "TelegramContentRepository",
+                    "Starting full history sync for chat $chatId",
+                )
+
+                val scanner =
+                    com.chris.m3usuite.telegram.ingestion.TelegramHistoryScanner(
+                        serviceClient,
+                    )
+
+                // Resolve chat title if not provided
+                val resolvedChatTitle =
+                    chatTitle ?: runCatching {
+                        serviceClient.resolveChatTitle(chatId)
+                    }.getOrElse { "Chat $chatId" }
+
+                var totalItemsPersisted = 0
+                var totalMessagesProcessed = 0
+
+                // Configure scanner for unlimited scanning
+                val config =
+                    com.chris.m3usuite.telegram.ingestion.TelegramHistoryScanner.ScanConfig(
+                        maxPages = Int.MAX_VALUE, // Unlimited
+                        pageSize = 100, // Use maximum TDLib page size for efficiency
+                    )
+
+                // Scan with batch callback for incremental persistence
+                val result =
+                    scanner.scan(
+                        chatId = chatId,
+                        config = config,
+                        onBatchReceived = { batch, pageIndex ->
+                            if (batch.isEmpty()) return@scan
+
+                            UnifiedLog.debug(
+                                "TelegramContentRepository",
+                                "Processing batch $pageIndex for chat $chatId: ${batch.size} messages",
+                            )
+
+                            // Group messages into blocks (3-message movie patterns, etc.)
+                            val blocks =
+                                com.chris.m3usuite.telegram.parser.TelegramBlockGrouper
+                                    .group(batch)
+
+                            UnifiedLog.debug(
+                                "TelegramContentRepository",
+                                "Grouped into ${blocks.size} blocks for chat $chatId",
+                            )
+
+                            // Build TelegramItems from blocks
+                            val items =
+                                blocks.mapNotNull { block ->
+                                    com.chris.m3usuite.telegram.parser.TelegramItemBuilder
+                                        .build(
+                                            block = block,
+                                            chatTitle = resolvedChatTitle,
+                                        )
+                                }
+
+                            UnifiedLog.debug(
+                                "TelegramContentRepository",
+                                "Built ${items.size} items from blocks for chat $chatId",
+                            )
+
+                            // Persist batch to database
+                            if (items.isNotEmpty()) {
+                                upsertItems(items)
+                                totalItemsPersisted += items.size
+                            }
+
+                            totalMessagesProcessed += batch.size
+
+                            UnifiedLog.info(
+                                "TelegramContentRepository",
+                                "Batch $pageIndex complete for chat $chatId: " +
+                                    "$totalMessagesProcessed messages -> $totalItemsPersisted items persisted",
+                            )
+                        },
+                    )
+
+                UnifiedLog.info(
+                    "TelegramContentRepository",
+                    "Full history sync complete for chat $chatId: " +
+                        "${result.rawMessageCount} messages -> $totalItemsPersisted items persisted",
+                )
+
+                Result.success(totalItemsPersisted)
+            } catch (e: Exception) {
+                UnifiedLog.error(
+                    source = "TelegramContentRepository",
+                    message = "Failed to sync full chat history for chat $chatId",
+                    exception = e,
+                )
+                Result.failure(e)
+            }
+        }
+
+    // =========================================================================
+    // Thumbnail Metadata Resolution
+    // =========================================================================
+
+    /**
+     * Resolve thumbnail fileId from remoteId for Coil image loading.
+     *
+     * This method provides the mapping needed by TelegramThumbFetcher to download
+     * thumbnails from TDLib. The remoteId is stable across sessions, while fileId
+     * may change.
+     *
+     * **Lookup Strategy:**
+     * 1. First try thumbFileId from ObxTelegramMessage (explicit thumbnail field)
+     * 2. Fall back to main fileId if thumbFileId is not available
+     * 3. Return null if no file reference exists for this remoteId
+     *
+     * @param remoteId Stable remote file identifier
+     * @param kind Thumbnail kind (for future size/quality selection)
+     * @param sizeBucket Target size bucket (for future optimization)
+     * @return fileId for TDLib download, or null if not found
+     */
+    suspend fun resolveThumbFileId(
+        remoteId: String,
+        kind: com.chris.m3usuite.telegram.image.ThumbKind = com.chris.m3usuite.telegram.image.ThumbKind.CHAT_MESSAGE,
+        sizeBucket: Int = 0,
+    ): Int? =
+        withContext(Dispatchers.IO) {
+            try {
+                // Query by remoteId
+                val message =
+                    messageBox
+                        .query {
+                            equal(ObxTelegramMessage_.remoteId, remoteId, StringOrder.CASE_SENSITIVE)
+                        }.findFirst()
+
+                // Prefer thumbFileId, fall back to main fileId
+                val fileId = message?.thumbFileId ?: message?.fileId
+
+                if (fileId == null) {
+                    UnifiedLog.debug(
+                        "TelegramContentRepository",
+                        "No fileId found for remoteId=$remoteId",
+                    )
+                }
+
+                fileId
+            } catch (e: Exception) {
+                UnifiedLog.warn(
+                    "TelegramContentRepository",
+                    "Error resolving thumbFileId for remoteId=$remoteId",
+                    mapOf("error" to (e.message ?: "unknown")),
+                )
+                null
+            }
+        }
+
+    // =========================================================================
     // Phase D UI Wiring: ObxTelegramItem-based Query APIs
     // =========================================================================
 

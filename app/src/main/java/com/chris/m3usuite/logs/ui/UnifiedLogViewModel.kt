@@ -13,8 +13,9 @@ import java.io.File
  *
  * Manages log filtering, export, and UI state.
  */
-class UnifiedLogViewModel(application: Application) : AndroidViewModel(application) {
-
+class UnifiedLogViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
     private val log = UnifiedLog
 
     /**
@@ -36,52 +37,58 @@ class UnifiedLogViewModel(application: Application) : AndroidViewModel(applicati
     /**
      * Combined state flow for the UI.
      */
-    val state: StateFlow<State> = combine(
-        log.entries,
-        log.filterState,
-        _autoScrollEnabled,
-        _scrollToErrorTrigger,
-    ) { entries, filter, autoScroll, errorTrigger ->
-        val filtered = entries.filter { entry ->
-            entry.level in filter.enabledLevels &&
-                entry.category in filter.enabledCategories &&
-                (filter.searchQuery.isEmpty() ||
-                    entry.message.contains(filter.searchQuery, ignoreCase = true) ||
-                    entry.source.contains(filter.searchQuery, ignoreCase = true) ||
-                    entry.details?.any { (k, v) ->
-                        k.contains(filter.searchQuery, ignoreCase = true) ||
-                            v.contains(filter.searchQuery, ignoreCase = true)
-                    } == true)
-        }
+    val state: StateFlow<State> =
+        combine(
+            log.entries,
+            log.filterState,
+            _autoScrollEnabled,
+            _scrollToErrorTrigger,
+        ) { entries, filter, autoScroll, errorTrigger ->
+            val filtered =
+                entries.filter { entry ->
+                    entry.level in filter.enabledLevels &&
+                        entry.category in filter.enabledCategories &&
+                        (
+                            filter.searchQuery.isEmpty() ||
+                                entry.message.contains(filter.searchQuery, ignoreCase = true) ||
+                                entry.source.contains(filter.searchQuery, ignoreCase = true) ||
+                                entry.details?.any { (k, v) ->
+                                    k.contains(filter.searchQuery, ignoreCase = true) ||
+                                        v.contains(filter.searchQuery, ignoreCase = true)
+                                } == true
+                        )
+                }
 
-        val stats = UnifiedLog.Statistics(
-            total = entries.size,
-            verbose = entries.count { it.level == UnifiedLog.Level.VERBOSE },
-            error = entries.count { it.level == UnifiedLog.Level.ERROR },
-            warn = entries.count { it.level == UnifiedLog.Level.WARN },
-            info = entries.count { it.level == UnifiedLog.Level.INFO },
-            debug = entries.count { it.level == UnifiedLog.Level.DEBUG },
-            filtered = filtered.size,
+            val stats =
+                UnifiedLog.Statistics(
+                    total = entries.size,
+                    verbose = entries.count { it.level == UnifiedLog.Level.VERBOSE },
+                    error = entries.count { it.level == UnifiedLog.Level.ERROR },
+                    warn = entries.count { it.level == UnifiedLog.Level.WARN },
+                    info = entries.count { it.level == UnifiedLog.Level.INFO },
+                    debug = entries.count { it.level == UnifiedLog.Level.DEBUG },
+                    filtered = filtered.size,
+                )
+
+            val hasActiveFilters =
+                filter.enabledLevels.size < UnifiedLog.Level.entries.size ||
+                    filter.enabledCategories.size < UnifiedLog.SourceCategory.entries.size ||
+                    filter.searchQuery.isNotEmpty()
+
+            State(
+                filteredEntries = filtered,
+                filter = filter,
+                statistics = stats,
+                hasActiveFilters = hasActiveFilters,
+                hasFileBuffer = log.isFileBufferEnabled(),
+                isAutoScrollEnabled = autoScroll,
+                scrollToFirstErrorTrigger = errorTrigger,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = State(),
         )
-
-        val hasActiveFilters = filter.enabledLevels.size < UnifiedLog.Level.entries.size ||
-            filter.enabledCategories.size < UnifiedLog.SourceCategory.entries.size ||
-            filter.searchQuery.isNotEmpty()
-
-        State(
-            filteredEntries = filtered,
-            filter = filter,
-            statistics = stats,
-            hasActiveFilters = hasActiveFilters,
-            hasFileBuffer = log.isFileBufferEnabled(),
-            isAutoScrollEnabled = autoScroll,
-            scrollToFirstErrorTrigger = errorTrigger,
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = State(),
-    )
 
     /**
      * Toggle a log level filter.
@@ -169,8 +176,8 @@ class UnifiedLogViewModel(application: Application) : AndroidViewModel(applicati
     /**
      * Export currently filtered logs as text.
      */
-    fun exportFiltered(): String {
-        return buildString {
+    fun exportFiltered(): String =
+        buildString {
             appendLine("=== FishIT App Logs ===")
             appendLine("Exported: ${java.time.Instant.now()}")
             appendLine("Entries: ${state.value.filteredEntries.size}")
@@ -183,19 +190,14 @@ class UnifiedLogViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
         }
-    }
 
     /**
      * Export full session (from file buffer if available).
      */
-    fun exportFullSession(): String? {
-        return log.exportFullSession()
-    }
+    fun exportFullSession(): String? = log.exportFullSession()
 
     /**
      * Save logs to a file and return the file.
      */
-    fun saveToFile(): File? {
-        return log.saveExportToFile()
-    }
+    fun saveToFile(): File? = log.saveExportToFile()
 }

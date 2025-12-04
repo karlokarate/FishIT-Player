@@ -128,12 +128,13 @@ class CacheManagerTest {
 
     @Test
     fun `CacheResult can store error messages`() {
-        val result = CacheResult(
-            success = false,
-            filesDeleted = 0,
-            bytesFreed = 0L,
-            errorMessage = "Test error message",
-        )
+        val result =
+            CacheResult(
+                success = false,
+                filesDeleted = 0,
+                bytesFreed = 0L,
+                errorMessage = "Test error message",
+            )
 
         assertFalse("Should be marked as failure", result.success)
         assertNotNull("Should have error message", result.errorMessage)

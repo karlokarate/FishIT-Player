@@ -1,7 +1,7 @@
 package com.chris.m3usuite.telegram.ingestion
 
-import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.core.logging.UnifiedLog
+import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.parser.ExportMessage
 import com.chris.m3usuite.telegram.parser.TdlMessageMapper
 import dev.g000sha256.tdl.dto.Message
@@ -55,8 +55,12 @@ class TelegramHistoryScanner(
     data class ScanConfig(
         /** Number of messages per page (max 100 per TDLib limits) */
         val pageSize: Int = DEFAULT_PAGE_SIZE,
-        /** Maximum number of pages to scan */
-        val maxPages: Int = 10,
+        /**
+         * Maximum number of pages to scan.
+         * Set to Int.MAX_VALUE for unlimited scanning (loads entire chat history).
+         * Default: Int.MAX_VALUE (unlimited).
+         */
+        val maxPages: Int = Int.MAX_VALUE,
         /** Maximum number of retries for empty results */
         val maxRetries: Int = DEFAULT_MAX_RETRIES,
         /** Whether to use only locally cached messages (onlyLocal=true) */

@@ -16,7 +16,7 @@ class TelegramHistoryScannerTest {
         val config = TelegramHistoryScanner.ScanConfig()
 
         assertEquals("Default pageSize should be 100", 100, config.pageSize)
-        assertEquals("Default maxPages should be 10", 10, config.maxPages)
+        assertEquals("Default maxPages should be Int.MAX_VALUE for unlimited scanning", Int.MAX_VALUE, config.maxPages)
         assertEquals("Default maxRetries should be 5", 5, config.maxRetries)
         assertEquals("Default onlyLocal should be false", false, config.onlyLocal)
         assertEquals("Default fromMessageId should be 0", 0L, config.fromMessageId)

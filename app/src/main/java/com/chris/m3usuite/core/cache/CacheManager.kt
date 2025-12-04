@@ -138,7 +138,6 @@ class CacheManager(
 
                 UnifiedLog.log(
                     level = UnifiedLog.Level.INFO,
-
                     source = TAG,
                     message = "Cleared ObjectBox database (all content)",
                     details =
@@ -154,7 +153,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear ObjectBox database",
                     details =
@@ -188,7 +186,6 @@ class CacheManager(
 
                 UnifiedLog.log(
                     level = UnifiedLog.Level.INFO,
-
                     source = TAG,
                     message = "Cleared SharedPreferences",
                     details =
@@ -204,7 +201,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear SharedPreferences",
                     details =
@@ -234,23 +230,28 @@ class CacheManager(
                 val tdlibResult = clearTdlibCacheInternal()
                 val xtreamResult = clearXtreamCacheInternal()
 
-                val totalDeleted = objectboxResult.filesDeleted + datastoreResult.filesDeleted +
-                    sharedPrefsResult.filesDeleted + logResult.filesDeleted +
-                    tdlibResult.filesDeleted + xtreamResult.filesDeleted
+                val totalDeleted =
+                    objectboxResult.filesDeleted + datastoreResult.filesDeleted +
+                        sharedPrefsResult.filesDeleted + logResult.filesDeleted +
+                        tdlibResult.filesDeleted + xtreamResult.filesDeleted
 
-                val totalBytes = objectboxResult.bytesFreed + datastoreResult.bytesFreed +
-                    sharedPrefsResult.bytesFreed + logResult.bytesFreed +
-                    tdlibResult.bytesFreed + xtreamResult.bytesFreed
+                val totalBytes =
+                    objectboxResult.bytesFreed + datastoreResult.bytesFreed +
+                        sharedPrefsResult.bytesFreed + logResult.bytesFreed +
+                        tdlibResult.bytesFreed + xtreamResult.bytesFreed
 
-                val allSuccess = objectboxResult.success && datastoreResult.success &&
-                    sharedPrefsResult.success && logResult.success &&
-                    tdlibResult.success && xtreamResult.success
+                val allSuccess =
+                    objectboxResult.success &&
+                        datastoreResult.success &&
+                        sharedPrefsResult.success &&
+                        logResult.success &&
+                        tdlibResult.success &&
+                        xtreamResult.success
 
                 val duration = System.currentTimeMillis() - startTime
 
                 UnifiedLog.log(
                     level = UnifiedLog.Level.INFO,
-
                     source = TAG,
                     message = "Cleared ALL app data (nuclear reset)",
                     details =
@@ -272,7 +273,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear all app data",
                     details =
@@ -287,8 +287,8 @@ class CacheManager(
 
     // Internal methods without logging (for combined operations)
 
-    private suspend fun clearDataStoreInternal(): CacheResult {
-        return try {
+    private suspend fun clearDataStoreInternal(): CacheResult =
+        try {
             context.dataStore.edit { it.clear() }
             val datastoreDir = File(context.filesDir, DATASTORE_DIR)
             if (datastoreDir.exists()) {
@@ -300,14 +300,15 @@ class CacheManager(
         } catch (e: Exception) {
             CacheResult(success = false, errorMessage = e.message)
         }
-    }
 
-    private fun clearObjectBoxDatabaseInternal(): CacheResult {
-        return try {
+    private fun clearObjectBoxDatabaseInternal(): CacheResult =
+        try {
             try {
                 val store = ObxStore.get(context)
                 store.close()
-            } catch (e: Exception) { /* ignore */ }
+            } catch (e: Exception) {
+                // ignore
+            }
 
             val objectboxDir = File(context.filesDir, OBJECTBOX_DIR)
             if (objectboxDir.exists()) {
@@ -319,10 +320,9 @@ class CacheManager(
         } catch (e: Exception) {
             CacheResult(success = false, errorMessage = e.message)
         }
-    }
 
-    private fun clearSharedPreferencesInternal(): CacheResult {
-        return try {
+    private fun clearSharedPreferencesInternal(): CacheResult =
+        try {
             val prefsDir = File(context.applicationInfo.dataDir, SHARED_PREFS_DIR)
             if (prefsDir.exists()) {
                 val (deleted, bytes) = deleteDirectoryContents(prefsDir)
@@ -333,7 +333,6 @@ class CacheManager(
         } catch (e: Exception) {
             CacheResult(success = false, errorMessage = e.message)
         }
-    }
 
     /**
      * Clear application log cache.
@@ -349,7 +348,6 @@ class CacheManager(
                 if (result.filesDeleted > 0) {
                     UnifiedLog.log(
                         level = UnifiedLog.Level.INFO,
-
                         source = TAG,
                         message = "Cleared log cache",
                         details =
@@ -366,7 +364,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear log cache",
                     details =
@@ -407,7 +404,6 @@ class CacheManager(
 
                 UnifiedLog.log(
                     level = UnifiedLog.Level.INFO,
-
                     source = TAG,
                     message = "Cleared TDLib cache",
                     details =
@@ -423,7 +419,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear TDLib cache",
                     details =
@@ -475,7 +470,6 @@ class CacheManager(
 
                 UnifiedLog.log(
                     level = UnifiedLog.Level.INFO,
-
                     source = TAG,
                     message = "Cleared Xtream/ExoPlayer cache",
                     details =
@@ -491,7 +485,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear Xtream/ExoPlayer cache",
                     details =
@@ -559,7 +552,6 @@ class CacheManager(
                 // Now log after all deletions are complete
                 UnifiedLog.log(
                     level = UnifiedLog.Level.INFO,
-
                     source = TAG,
                     message = "Cleared all caches",
                     details =
@@ -588,7 +580,6 @@ class CacheManager(
                 val duration = System.currentTimeMillis() - startTime
                 UnifiedLog.log(
                     level = UnifiedLog.Level.ERROR,
-
                     source = TAG,
                     message = "Failed to clear all caches",
                     details =

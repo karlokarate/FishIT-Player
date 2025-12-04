@@ -10,7 +10,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("io.objectbox") version "5.0.1"
     id("org.jetbrains.kotlinx.kover")
-    
+
     // Firebase plugins
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
@@ -172,7 +172,7 @@ android {
             } else {
                 println("⚠️  Release wird UNSIGNIERT gebaut (kein Keystore gefunden).")
             }
-            
+
             // Firebase Crashlytics: Enable mapping file upload for readable stack traces
             configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
                 mappingFileUploadEnabled = true
@@ -181,7 +181,7 @@ android {
         }
         debug {
             isMinifyEnabled = false
-            
+
             // Firebase Crashlytics: Disable mapping upload in debug (faster builds)
             configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
                 mappingFileUploadEnabled = false
@@ -364,10 +364,10 @@ dependencies {
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
     debugImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.10.2")
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
-    
+
     // Firebase BoM - manages all Firebase SDK versions
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    
+
     // Firebase SDKs (versions managed by BoM)
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
