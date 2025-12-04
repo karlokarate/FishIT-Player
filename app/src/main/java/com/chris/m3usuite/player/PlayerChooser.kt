@@ -38,25 +38,25 @@ object PlayerChooser {
 
         when (store.playerMode.first()) {
             "internal" -> {
-                com.chris.m3usuite.core.logging.AppLog.log(
+                com.chris.m3usuite.core.logging.UnifiedLog.log(
                     "player",
-                    com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
                     "mode=internal; starting internal",
                 )
                 buildInternal(startPositionMs, mimeType)
             }
             "external" -> {
-                com.chris.m3usuite.core.logging.AppLog.log(
+                com.chris.m3usuite.core.logging.UnifiedLog.log(
                     "player",
-                    com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
                     "mode=external; starting external preferredPkg=${store.preferredPlayerPkg.first()}",
                 )
                 val pkg = store.preferredPlayerPkg.first().ifBlank { null }
                 if (pkg == null) {
                     // No preferred external player selected → avoid system chooser; play internally
-                    com.chris.m3usuite.core.logging.AppLog.log(
+                    com.chris.m3usuite.core.logging.UnifiedLog.log(
                         "player",
-                        com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                        com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
                         "no preferred package; fallback to internal",
                     )
                     buildInternal(startPositionMs, mimeType)
@@ -73,9 +73,9 @@ object PlayerChooser {
             else -> {
                 // Immer fragen: Dialog mit "Intern" oder "Extern"
                 val wantInternal = askInternalOrExternal(context)
-                com.chris.m3usuite.core.logging.AppLog.log(
+                com.chris.m3usuite.core.logging.UnifiedLog.log(
                     "player",
-                    com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
                     "ask result: wantInternal=$wantInternal",
                 )
                 if (wantInternal) {

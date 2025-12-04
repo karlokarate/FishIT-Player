@@ -7,7 +7,7 @@ import com.chris.m3usuite.telegram.domain.TelegramItem
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.TelegramMediaRef
 import com.chris.m3usuite.telegram.domain.TelegramMetadata
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 
 /**
  * Builds TelegramItem domain objects from MessageBlocks.
@@ -62,7 +62,7 @@ object TelegramItemBuilder {
      */
     fun enableDebugLogging(chatIds: Set<Long>) {
         debugChatIds = chatIds
-        TelegramLogRepository.info(TAG, "Debug logging enabled for chats: $chatIds")
+        UnifiedLog.info(TAG, "Debug logging enabled for chats: $chatIds")
     }
 
     /**
@@ -70,7 +70,7 @@ object TelegramItemBuilder {
      */
     fun disableDebugLogging() {
         debugChatIds = emptySet()
-        TelegramLogRepository.info(TAG, "Debug logging disabled")
+        UnifiedLog.info(TAG, "Debug logging disabled")
     }
 
     /**
@@ -104,7 +104,7 @@ object TelegramItemBuilder {
         // Debug logging for block content
         if (debug) {
             val messageIds = block.messages.map { it.id }
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "[DEBUG] Chat $chatId - Block content: " +
                     "${block.messages.size} messages (IDs: $messageIds), " +
@@ -113,7 +113,7 @@ object TelegramItemBuilder {
             )
             // Log message types
             block.messages.forEach { msg ->
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     TAG,
                     "[DEBUG] Chat $chatId - Message ${msg.id}: ${msg::class.simpleName}",
                 )
@@ -133,7 +133,7 @@ object TelegramItemBuilder {
         // Debug logging for build decision
         if (debug) {
             if (result != null) {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     TAG,
                     "[DEBUG] Chat $chatId - Built item: type=${result.type}, " +
                         "anchorMessageId=${result.anchorMessageId}, " +
@@ -152,7 +152,7 @@ object TelegramItemBuilder {
                             (photos.isEmpty() || texts.isEmpty()) -> "no suitable content combination"
                         else -> "builder returned null"
                     }
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     TAG,
                     "[DEBUG] Chat $chatId - Block skipped, no item built: $reason",
                 )

@@ -7,7 +7,7 @@ import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgActivityEvent
 import com.chris.m3usuite.telegram.domain.MessageBlock
 import com.chris.m3usuite.telegram.domain.TelegramItem
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.parser.ExportMessageFactory
 import com.chris.m3usuite.telegram.parser.TelegramItemBuilder
 import dev.g000sha256.tdl.dto.Message
@@ -64,11 +64,11 @@ class TelegramUpdateHandler(
      */
     fun start() {
         if (isStarted) {
-            TelegramLogRepository.debug(TAG, "Already started")
+            UnifiedLog.debug(TAG, "Already started")
             return
         }
 
-        TelegramLogRepository.info(TAG, "Starting update handler (Phase T3)")
+        UnifiedLog.info(TAG, "Starting update handler (Phase T3)")
         isStarted = true
 
         // Subscribe to activity events from service client for logging
@@ -88,7 +88,7 @@ class TelegramUpdateHandler(
                         processNewTdlMessage(message)
                     }
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     TAG,
                     "Error in message updates flow",
                     exception = e,
@@ -103,7 +103,7 @@ class TelegramUpdateHandler(
     fun stop() {
         if (!isStarted) return
 
-        TelegramLogRepository.info(TAG, "Stopping update handler")
+        UnifiedLog.info(TAG, "Stopping update handler")
         isStarted = false
         // Note: scope cancellation would need to be handled if we want true stop
     }
@@ -116,7 +116,7 @@ class TelegramUpdateHandler(
         when (event) {
             is TgActivityEvent.NewMessage -> {
                 // Logging only - actual processing happens via observeAllNewMessages()
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     TAG,
                     "Activity event: new message",
                     details =
@@ -133,7 +133,7 @@ class TelegramUpdateHandler(
                 // No action needed here
             }
             is TgActivityEvent.ParseComplete -> {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     TAG,
                     "Parse complete: chat=${event.chatId}, items=${event.itemsFound}",
                 )
@@ -156,7 +156,7 @@ class TelegramUpdateHandler(
         val chatId = message.chatId
         val messageId = message.id
 
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             TAG,
             "Processing new TDLib message",
             details =
@@ -170,7 +170,7 @@ class TelegramUpdateHandler(
         // Step 1: Convert TDLib Message → ExportMessage using SAME factory as batch ingestion
         val exportMessage = ExportMessageFactory.fromTdlMessage(message)
         if (exportMessage == null) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "Message skipped: ExportMessageFactory returned null",
                 details =
@@ -198,7 +198,7 @@ class TelegramUpdateHandler(
         // Step 4: Build TelegramItem using SAME builder as batch ingestion
         val item = TelegramItemBuilder.build(block, chatTitle)
         if (item == null) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "Message skipped: TelegramItemBuilder returned null",
                 details =
@@ -213,7 +213,7 @@ class TelegramUpdateHandler(
         // Step 5: Persist to ObjectBox via TelegramContentRepository
         contentRepository.upsertItems(listOf(item))
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             TAG,
             "Live update: TelegramItem created/updated",
             details =
@@ -241,7 +241,7 @@ class TelegramUpdateHandler(
         try {
             serviceClient.resolveChatTitle(chatId).takeIf { it.isNotBlank() }
         } catch (e: Exception) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "Failed to resolve chat title",
                 details = mapOf("chatId" to chatId.toString(), "error" to (e.message ?: "unknown")),
@@ -263,14 +263,14 @@ class TelegramUpdateHandler(
         messageId: Long,
         chatTitle: String?,
     ): TelegramItem? {
-        TelegramLogRepository.debug(TAG, "Processing new message: chat=$chatId, message=$messageId")
+        UnifiedLog.debug(TAG, "Processing new message: chat=$chatId, message=$messageId")
 
         // Fetch the message from TDLib via browser
         val messages = serviceClient.browser().loadMessagesPaged(chatId, messageId, offset = 0, limit = 1)
         val message = messages.firstOrNull { it.id == messageId }
 
         if (message == null) {
-            TelegramLogRepository.warn(
+            UnifiedLog.warn(
                 TAG,
                 "Message not found",
                 details = mapOf("chatId" to chatId.toString(), "messageId" to messageId.toString()),
@@ -288,7 +288,7 @@ class TelegramUpdateHandler(
         // Persist
         contentRepository.upsertItems(listOf(item))
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             TAG,
             "Processed new message into TelegramItem",
             details =
@@ -312,10 +312,10 @@ class TelegramUpdateHandler(
         chatId: Long,
         anchorMessageId: Long,
     ) {
-        TelegramLogRepository.debug(TAG, "Handling message deletion: chat=$chatId, anchor=$anchorMessageId")
+        UnifiedLog.debug(TAG, "Handling message deletion: chat=$chatId, anchor=$anchorMessageId")
 
         contentRepository.deleteItem(chatId, anchorMessageId)
 
-        TelegramLogRepository.info(TAG, "Deleted item for message $anchorMessageId in chat $chatId")
+        UnifiedLog.info(TAG, "Deleted item for message $anchorMessageId in chat $chatId")
     }
 }

@@ -27,8 +27,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.chris.m3usuite.core.logging.AppLog
-import com.chris.m3usuite.logs.ui.LogViewerScreen
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.playback.PlaybackSession
 import com.chris.m3usuite.player.InternalPlayerEntry
@@ -37,7 +36,7 @@ import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
-import com.chris.m3usuite.telegram.ui.TelegramLogScreen
+import com.chris.m3usuite.logs.ui.UnifiedLogViewerScreen
 import com.chris.m3usuite.telegram.ui.feed.TelegramActivityFeedScreen
 import com.chris.m3usuite.ui.auth.ProfileGate
 import com.chris.m3usuite.ui.focus.isTvDevice
@@ -59,7 +58,6 @@ import com.chris.m3usuite.ui.screens.XtreamPortalCheckScreen
 import com.chris.m3usuite.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -135,21 +133,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                // Keep AppLog switches in sync with Settings
-                LaunchedEffect(lifecycleOwner) {
-                    lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                        launch {
-                            store.logMasterEnabled.collectLatest { enabled ->
-                                AppLog.setMasterEnabled(enabled)
-                            }
-                        }
-                        launch {
-                            store.logCategories.collectLatest { cats ->
-                                AppLog.setCategoriesEnabled(cats)
-                            }
-                        }
-                    }
-                }
+                // Note: AppLog master/category switches removed during UnifiedLog migration.
+                // UnifiedLog manages its own filter state via DataStore persistently.
 
                 // Track app start time for new-episode detection
                 LaunchedEffect(Unit) { store.setLastAppStartMs(System.currentTimeMillis()) }
@@ -258,11 +243,11 @@ class MainActivity : ComponentActivity() {
                                 ).importDelta(deleteOrphans = false, includeLive = false)
                         } catch (e: Exception) {
                             // BUG 4 fix: Log error instead of crashing
-                            AppLog.log(
-                                category = "xtream",
-                                level = AppLog.Level.ERROR,
+                            UnifiedLog.log(
+                                level = UnifiedLog.Level.ERROR,
+                                source = "xtream",
                                 message = "Delta import failed: ${e.message}",
-                                extras =
+                                details =
                                     mapOf(
                                         "host" to xtHost,
                                         "port" to xtPort.toString(),
@@ -593,11 +578,11 @@ class MainActivity : ComponentActivity() {
                                                 preparedMediaItem = mediaItems?.find { it.tgMessageId == messageId }
                                             }
                                         } catch (e: Exception) {
-                                            com.chris.m3usuite.core.logging.AppLog.log(
-                                                category = "player",
-                                                level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                                            com.chris.m3usuite.core.logging.UnifiedLog.log(
+                                                level = com.chris.m3usuite.core.logging.UnifiedLog.Level.ERROR,
+                                                source = "player",
                                                 message = "Failed to resolve Telegram MediaItem: ${e.message}",
-                                                extras = mapOf("url" to url),
+                                                details = mapOf("url" to url),
                                             )
                                         }
                                     }
@@ -671,7 +656,6 @@ class MainActivity : ComponentActivity() {
                                     nav.navigateTopLevel("library?qs=show")
                                 },
                                 onOpenPortalCheck = { nav.navigate("xt_cfcheck") },
-                                onOpenTelegramLog = { nav.navigate("telegram_log") },
                                 onOpenTelegramFeed = { nav.navigate("telegram_feed") },
                                 onOpenLogViewer = { nav.navigate("log_viewer") },
                                 runtimeLoggingEnabled = store.logMasterEnabled.collectAsStateWithLifecycle(initialValue = false).value,
@@ -740,9 +724,9 @@ class MainActivity : ComponentActivity() {
                             XtreamPortalCheckScreen(onDone = { nav.popBackStack() })
                         }
 
-                        // Telegram Log Screen
+                        // Unified Log Viewer Screen (replaces TelegramLogScreen)
                         composable("telegram_log") {
-                            TelegramLogScreen(
+                            UnifiedLogViewerScreen(
                                 onBack = { nav.popBackStack() },
                             )
                         }
@@ -763,9 +747,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Log Viewer Screen
+                        // Log Viewer Screen (unified)
                         composable("log_viewer") {
-                            LogViewerScreen(
+                            UnifiedLogViewerScreen(
                                 onBack = { nav.popBackStack() },
                             )
                         }
@@ -850,9 +834,9 @@ class MainActivity : ComponentActivity() {
                 enterPictureInPictureMode(params)
             } catch (e: Exception) {
                 // PiP not supported or failed - ignore silently
-                AppLog.log(
-                    category = "pip",
-                    level = AppLog.Level.WARN,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
+                    source = "pip",
                     message = "Failed to enter system PiP: ${e.message}",
                 )
             }
@@ -974,9 +958,9 @@ class MainActivity : ComponentActivity() {
             hideSystemBars()
         }
 
-        AppLog.log(
-            category = "pip",
-            level = AppLog.Level.DEBUG,
+        UnifiedLog.log(
+            level = UnifiedLog.Level.DEBUG,
+            source = "pip",
             message = if (isInPictureInPictureMode) "Entered PiP mode" else "Exited PiP mode",
         )
     }

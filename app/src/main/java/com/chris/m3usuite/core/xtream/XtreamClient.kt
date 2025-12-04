@@ -3,7 +3,7 @@ package com.chris.m3usuite.core.xtream
 import android.os.SystemClock
 import androidx.core.net.toUri
 import com.chris.m3usuite.core.debug.GlobalDebug
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -426,16 +426,16 @@ class XtreamClient(
                 if (imagesStr.isNotBlank()) add("images=$imagesStr")
             }.joinToString(", ")
 
-        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId detail { $detailParts }")
+        UnifiedLog.log(UnifiedLog.Level.INFO, tag, "vod:$vodId detail { $detailParts }")
 
         val infoStr = sanitised(info?.toString()) ?: "null"
-        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId info=$infoStr")
+        UnifiedLog.log(UnifiedLog.Level.INFO, tag, "vod:$vodId info=$infoStr")
 
         val movieStr = sanitised(movieData?.toString()) ?: "null"
-        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId movie_data=$movieStr")
+        UnifiedLog.log(UnifiedLog.Level.INFO, tag, "vod:$vodId movie_data=$movieStr")
 
         val rootStr = sanitised(JsonObject(root).toString()) ?: "null"
-        AppLog.log(tag, AppLog.Level.INFO, "vod:$vodId raw=$rootStr")
+        UnifiedLog.log(UnifiedLog.Level.INFO, tag, "vod:$vodId raw=$rootStr")
     }
 
     suspend fun getSeriesDetailFull(seriesId: Int): NormalizedSeriesDetail? {
@@ -585,21 +585,21 @@ class XtreamClient(
             val body: String =
                 if (cached != null) {
                     if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                        AppLog.log(
-                            category = "xtream",
-                            level = AppLog.Level.DEBUG,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.DEBUG,
+                            source = "xtream",
                             message = "CACHE hit",
-                            extras = mapOf("url" to redact(url)),
+                            details = mapOf("url" to redact(url)),
                         )
                     }
                     cached
                 } else {
                     if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                        AppLog.log(
-                            category = "xtream",
-                            level = AppLog.Level.DEBUG,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.DEBUG,
+                            source = "xtream",
                             message = "API call",
-                            extras = mapOf("url" to redact(url)),
+                            details = mapOf("url" to redact(url)),
                         )
                     }
                     takeRateSlot()
@@ -614,11 +614,11 @@ class XtreamClient(
                         val code = resp.code
                         val ct = resp.header("Content-Type").orEmpty()
                         if (!resp.isSuccessful) {
-                            AppLog.log(
-                                category = "xtream",
-                                level = AppLog.Level.WARN,
+                            UnifiedLog.log(
+                                level = UnifiedLog.Level.WARN,
+                                source = "xtream",
                                 message = "HTTP $code action=$action ct=$ct",
-                                extras = mapOf("url" to redact(url)),
+                                details = mapOf("url" to redact(url)),
                             )
                             return@withContext emptyList()
                         }
@@ -629,11 +629,11 @@ class XtreamClient(
                 }
             val root =
                 runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
-                    AppLog.log(
-                        category = "xtream",
-                        level = AppLog.Level.WARN,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.WARN,
+                        source = "xtream",
                         message = "parse_error action=$action err=${err.javaClass.simpleName}",
-                        extras =
+                        details =
                             mapOf(
                                 "bodyLen" to body.length.toString(),
                                 "head" to snippet(body),
@@ -644,11 +644,11 @@ class XtreamClient(
             if (root != null && root.isJsonArray()) {
                 root.jsonArray.mapNotNull { el -> el.jsonObjectOrNull()?.let { map(it) } }
             } else {
-                AppLog.log(
-                    category = "xtream",
-                    level = AppLog.Level.WARN,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
+                    source = "xtream",
                     message = "unexpected_body action=$action",
-                    extras =
+                    details =
                         mapOf(
                             "bodyLen" to body.length.toString(),
                             "head" to snippet(body),
@@ -673,9 +673,9 @@ class XtreamClient(
                     star
                 } else {
                     if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                        AppLog.log(
-                            category = "xtream",
-                            level = AppLog.Level.DEBUG,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.DEBUG,
+                            source = "xtream",
                             message = "Fallback category_id=0 for action=$action (star empty)",
                         )
                     }
@@ -684,9 +684,9 @@ class XtreamClient(
                         zero
                     } else {
                         if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                            AppLog.log(
-                                category = "xtream",
-                                level = AppLog.Level.DEBUG,
+                            UnifiedLog.log(
+                                level = UnifiedLog.Level.DEBUG,
+                                source = "xtream",
                                 message = "Fallback without category_id for action=$action (0 empty)",
                             )
                         }
@@ -712,21 +712,21 @@ class XtreamClient(
             val body: String =
                 if (cached != null) {
                     if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                        AppLog.log(
-                            category = "xtream",
-                            level = AppLog.Level.DEBUG,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.DEBUG,
+                            source = "xtream",
                             message = "CACHE hit",
-                            extras = mapOf("url" to redact(url)),
+                            details = mapOf("url" to redact(url)),
                         )
                     }
                     cached
                 } else {
                     if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                        AppLog.log(
-                            category = "xtream",
-                            level = AppLog.Level.DEBUG,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.DEBUG,
+                            source = "xtream",
                             message = "API call",
-                            extras = mapOf("url" to redact(url)),
+                            details = mapOf("url" to redact(url)),
                         )
                     }
                     takeRateSlot()
@@ -741,11 +741,11 @@ class XtreamClient(
                         val code = resp.code
                         val ct = resp.header("Content-Type").orEmpty()
                         if (!resp.isSuccessful) {
-                            AppLog.log(
-                                category = "xtream",
-                                level = AppLog.Level.WARN,
+                            UnifiedLog.log(
+                                level = UnifiedLog.Level.WARN,
+                                source = "xtream",
                                 message = "HTTP $code action=$action ct=$ct",
-                                extras = mapOf("url" to redact(url)),
+                                details = mapOf("url" to redact(url)),
                             )
                             return@withContext null
                         }
@@ -756,11 +756,11 @@ class XtreamClient(
                 }
             val root =
                 runCatching { json.parseToJsonElement(body) }.getOrElse { err ->
-                    AppLog.log(
-                        category = "xtream",
-                        level = AppLog.Level.WARN,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.WARN,
+                        source = "xtream",
                         message = "parse_error action=$action err=${err.javaClass.simpleName}",
-                        extras =
+                        details =
                             mapOf(
                                 "bodyLen" to body.length.toString(),
                                 "head" to snippet(body),
@@ -771,11 +771,11 @@ class XtreamClient(
             if (root != null && root.isJsonObject()) {
                 root.jsonObject
             } else {
-                AppLog.log(
-                    category = "xtream",
-                    level = AppLog.Level.WARN,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
+                    source = "xtream",
                     message = "unexpected_body action=$action",
-                    extras =
+                    details =
                         mapOf(
                             "bodyLen" to body.length.toString(),
                             "head" to snippet(body),
@@ -795,21 +795,21 @@ class XtreamClient(
             val cached = readCache(url, isEpg)
             if (cached != null) {
                 if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                    AppLog.log(
-                        category = "xtream",
-                        level = AppLog.Level.DEBUG,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.DEBUG,
+                        source = "xtream",
                         message = "CACHE hit",
-                        extras = mapOf("url" to redact(url)),
+                        details = mapOf("url" to redact(url)),
                     )
                 }
                 return@withContext cached
             }
             if (com.chris.m3usuite.BuildConfig.DEBUG) {
-                AppLog.log(
-                    category = "xtream",
-                    level = AppLog.Level.DEBUG,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.DEBUG,
+                    source = "xtream",
                     message = "API call",
-                    extras = mapOf("url" to redact(url)),
+                    details = mapOf("url" to redact(url)),
                 )
             }
             takeRateSlot()
@@ -824,11 +824,11 @@ class XtreamClient(
                 val code = resp.code
                 val ct = resp.header("Content-Type").orEmpty()
                 if (!resp.isSuccessful) {
-                    AppLog.log(
-                        category = "xtream",
-                        level = AppLog.Level.WARN,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.WARN,
+                        source = "xtream",
                         message = "HTTP $code action=$action ct=$ct",
-                        extras = mapOf("url" to redact(url)),
+                        details = mapOf("url" to redact(url)),
                     )
                     return@withContext null
                 }

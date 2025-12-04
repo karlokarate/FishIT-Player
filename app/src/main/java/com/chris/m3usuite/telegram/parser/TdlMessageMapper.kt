@@ -1,6 +1,6 @@
 package com.chris.m3usuite.telegram.parser
 
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import dev.g000sha256.tdl.dto.Message
 import dev.g000sha256.tdl.dto.MessageAudio
 import dev.g000sha256.tdl.dto.MessageDocument
@@ -42,7 +42,7 @@ object TdlMessageMapper {
     fun toExportMessage(message: Message): ExportMessage? {
         val result = ExportMessageFactory.fromTdlMessage(message)
         if (result == null) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "Skipping message ${message.id}: could not convert to ExportMessage",
             )
@@ -79,7 +79,7 @@ object TdlMessageMapper {
         fileType: String,
     ): Boolean {
         if (remoteId.isNullOrBlank() || uniqueId.isNullOrBlank()) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "Skipping $fileType message $messageId: missing remoteId or uniqueId",
             )

@@ -3,7 +3,7 @@ package com.chris.m3usuite.metrics
 import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import java.util.concurrent.ConcurrentHashMap
 
 object JankReporter {
@@ -29,9 +29,9 @@ object JankReporter {
         if (isJank) c.janks++
         if (now - c.lastLogMs >= WINDOW_MS) {
             val rate = if (c.frames > 0) 100.0 * c.janks / c.frames else 0.0
-            AppLog.log(
-                category = "diagnostics",
-                level = AppLog.Level.DEBUG,
+            UnifiedLog.log(
+                level = UnifiedLog.Level.DEBUG,
+                source = "diagnostics",
                 message = "route=$key window=${WINDOW_MS}ms frames=${c.frames} janks=${c.janks} rate=${"%.1f".format(rate)}%",
             )
             // reset sliding window

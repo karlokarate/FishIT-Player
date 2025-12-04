@@ -19,7 +19,7 @@ import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TelegramFileLoader
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.domain.TelegramItemType
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.util.TelegramPlayUrl
 import com.chris.m3usuite.ui.actions.MediaAction
 import com.chris.m3usuite.ui.actions.MediaActionId
@@ -224,7 +224,7 @@ fun TelegramDetailScreen(
 
         // Log detail screen opened
         data?.let { item ->
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "TelegramDetailScreen",
                 message = "User opened Telegram detail",
                 details =
@@ -244,7 +244,7 @@ fun TelegramDetailScreen(
         val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
 
         // Log playback started from detail screen
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "TelegramDetailScreen",
             message = "User started Telegram playback from DetailScreen",
             details =
@@ -445,7 +445,7 @@ fun TelegramItemDetailScreen(
 
         // Log detail screen opened
         data?.let { item ->
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "TelegramItemDetailScreen",
                 message = "User opened TelegramItem detail (Phase D)",
                 details =
@@ -483,7 +483,7 @@ fun TelegramItemDetailScreen(
         val startMs: Long? = if (!fromStart) resumeSecs?.toLong()?.times(1000) else null
 
         // Log playback started (Phase D.4: Playback wiring)
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "TelegramItemDetailScreen",
             message = "User started Telegram playback (Phase D)",
             details =

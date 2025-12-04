@@ -7,7 +7,7 @@ import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.domain.ChatScanState
 import com.chris.m3usuite.telegram.domain.ScanStatus
 import com.chris.m3usuite.telegram.domain.TelegramItem
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.parser.ExportAudio
 import com.chris.m3usuite.telegram.parser.ExportDocument
 import com.chris.m3usuite.telegram.parser.ExportMessage
@@ -147,7 +147,7 @@ class TelegramIngestionCoordinator(
         chatTitle: String? = null,
         config: TelegramHistoryScanner.ScanConfig = TelegramHistoryScanner.ScanConfig(),
     ): Int {
-        TelegramLogRepository.info(TAG, "Starting backfill for chat $chatId")
+        UnifiedLog.info(TAG, "Starting backfill for chat $chatId")
 
         // Get or create scan state
         val existingState = syncStateRepository.getScanState(chatId)
@@ -200,14 +200,14 @@ class TelegramIngestionCoordinator(
             syncStateRepository.updateScanState(completedState)
             updateInMemoryState(completedState)
 
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 TAG,
                 "Backfill complete for chat $chatId: ${scanResult.convertedCount} items",
             )
 
             scanResult.convertedCount
         } catch (e: Exception) {
-            TelegramLogRepository.error(
+            UnifiedLog.error(
                 TAG,
                 "Backfill failed for chat $chatId: ${e.message}",
             )
@@ -241,7 +241,7 @@ class TelegramIngestionCoordinator(
         // Check if there's existing state with more history
         val existingState = syncStateRepository.getScanState(chatId)
         if (existingState != null && !existingState.hasMoreHistory) {
-            TelegramLogRepository.info(TAG, "Chat $chatId has no more history to scan")
+            UnifiedLog.info(TAG, "Chat $chatId has no more history to scan")
             return 0
         }
 
@@ -267,7 +267,7 @@ class TelegramIngestionCoordinator(
             syncStateRepository.updateScanState(pausedState)
             updateInMemoryState(pausedState)
 
-            TelegramLogRepository.info(TAG, "Paused backfill for chat $chatId")
+            UnifiedLog.info(TAG, "Paused backfill for chat $chatId")
         }
     }
 
@@ -287,7 +287,7 @@ class TelegramIngestionCoordinator(
     suspend fun clearScanState(chatId: Long) {
         syncStateRepository.clearScanState(chatId)
         updateInMemoryState(null, chatId)
-        TelegramLogRepository.info(TAG, "Cleared scan state for chat $chatId")
+        UnifiedLog.info(TAG, "Cleared scan state for chat $chatId")
     }
 
     /**
@@ -341,7 +341,7 @@ class TelegramIngestionCoordinator(
         // Step 1: Group messages into blocks
         val blocks = TelegramBlockGrouper.group(messages)
 
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             TAG,
             "Processing batch: ${messages.size} messages -> ${blocks.size} blocks",
         )
@@ -355,7 +355,7 @@ class TelegramIngestionCoordinator(
             }
         }
 
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             TAG,
             "Built ${items.size} items from ${blocks.size} blocks",
         )
@@ -389,7 +389,7 @@ class TelegramIngestionCoordinator(
         // Step 3: Persist items
         if (items.isNotEmpty()) {
             contentRepository.upsertItems(items)
-            TelegramLogRepository.debug(TAG, "Persisted ${items.size} items for chat $chatId")
+            UnifiedLog.debug(TAG, "Persisted ${items.size} items for chat $chatId")
             // DEBUG: Log persistence target for UI wiring diagnostics
             android.util.Log.d(
                 "telegram-ui",

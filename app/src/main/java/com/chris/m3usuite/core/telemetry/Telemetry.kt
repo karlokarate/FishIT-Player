@@ -2,7 +2,7 @@ package com.chris.m3usuite.core.telemetry
 
 import android.content.Context
 import android.os.SystemClock
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import java.io.Closeable
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -67,11 +67,11 @@ object Telemetry {
             runCatching { it.event(name, attrs) }
                 .onFailure { err ->
                     if (it !is AppLogSink) {
-                        AppLog.log(
-                            category = "diagnostics",
-                            level = AppLog.Level.WARN,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.WARN,
+                            source = "diagnostics",
                             message = "telemetry sink failed on event=$name",
-                            extras =
+                            details =
                                 mapOf(
                                     "sink" to it.javaClass.simpleName,
                                     "error" to (err.message ?: "unknown"),
@@ -91,11 +91,11 @@ object Telemetry {
             runCatching { it.error(name, t, attrs) }
                 .onFailure { err ->
                     if (it !is AppLogSink) {
-                        AppLog.log(
-                            category = "diagnostics",
-                            level = AppLog.Level.WARN,
+                        UnifiedLog.log(
+                            level = UnifiedLog.Level.WARN,
+                            source = "diagnostics",
                             message = "telemetry sink failed on error=$name",
-                            extras =
+                            details =
                                 mapOf(
                                     "sink" to it.javaClass.simpleName,
                                     "error" to (err.message ?: "unknown"),
@@ -137,12 +137,11 @@ object Telemetry {
             name: String,
             attrs: Map<String, Any?>,
         ) {
-            AppLog.log(
-                category = "diagnostics",
-                level = AppLog.Level.DEBUG,
+            UnifiedLog.log(
+                level = UnifiedLog.Level.DEBUG,
+                source = "diagnostics",
                 message = "telemetry event: $name",
-                extras = attrs.toExtras(),
-                bypassMaster = true,
+                details = attrs.toExtras(),
             )
         }
 
@@ -151,12 +150,11 @@ object Telemetry {
             t: Throwable,
             attrs: Map<String, Any?>,
         ) {
-            AppLog.log(
-                category = "diagnostics",
-                level = AppLog.Level.ERROR,
+            UnifiedLog.log(
+                level = UnifiedLog.Level.ERROR,
+                source = "diagnostics",
                 message = "telemetry error: $name",
-                extras = attrs.toExtras() + ("exception" to (t.message ?: t.javaClass.simpleName)),
-                bypassMaster = true,
+                details = attrs.toExtras() + ("exception" to (t.message ?: t.javaClass.simpleName)),
             )
         }
     }

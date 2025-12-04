@@ -249,9 +249,9 @@ object PlayUrlHelper {
                 val port = store.xtPort.first()
                 val kind = if (type == Type.LIVE) "live" else "vod"
                 val extInfo = (resolvedContainerExt ?: "").ifBlank { "unknown" }
-                com.chris.m3usuite.core.logging.AppLog.log(
+                com.chris.m3usuite.core.logging.UnifiedLog.log(
                     category = "player",
-                    level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                    level = com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
                     message = "resolved url for kind=$kind id=${item.streamId} host=$host port=$port ext=$extInfo from=${if (item.url != null) "item.url" else "builder"}",
                 )
             }

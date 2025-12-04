@@ -573,9 +573,9 @@ class XtreamObxRepository(
                     seriesCount = seriesJob.await()
                 }
 
-                com.chris.m3usuite.core.logging.AppLog.log(
+                com.chris.m3usuite.core.logging.UnifiedLog.log(
                     category = "xtream",
-                    level = com.chris.m3usuite.core.logging.AppLog.Level.INFO,
+                    level = com.chris.m3usuite.core.logging.UnifiedLog.Level.INFO,
                     message = "seedListsQuick live=$liveCount vod=$vodCount series=$seriesCount perCategoryLimit=$perCategoryLimit",
                 )
                 runCatching { rebuildAggregatedIndexes(boxStore) }

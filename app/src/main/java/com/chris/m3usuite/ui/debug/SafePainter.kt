@@ -5,7 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 
 /**
  * Safely obtain a Painter from a drawable resource id.
@@ -28,7 +28,7 @@ fun safePainter(
                     0
                 }
             } catch (_: Throwable) {
-                AppLog.log("ui", AppLog.Level.WARN, "safePainter fallback for label=$label id=$id")
+                UnifiedLog.log(UnifiedLog.Level.WARN, "ui", "safePainter fallback for label=$label id=$id")
                 android.R.drawable.ic_menu_report_image
             }
         }

@@ -9,7 +9,7 @@ import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import com.chris.m3usuite.telegram.core.StreamingConfigRefactor
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -133,7 +133,7 @@ class TelegramFileDataSource(
         val isAuthReady = serviceClient.isAuthReady()
         val isSeeking = dataSpec.position > 0
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "TelegramFileDataSource",
             message = "open url=$uri chatId=$chatId messageId=$messageId" + if (isSeeking) " (SEEK)" else "",
             details =
@@ -152,7 +152,7 @@ class TelegramFileDataSource(
 
         // Phase D+ Fix: Check Telegram engine state and throw TelegramUnavailableException if not ready
         if (!isStarted || !isAuthReady) {
-            TelegramLogRepository.error(
+            UnifiedLog.error(
                 source = "TelegramFileDataSource",
                 message = "open aborted – Telegram not ready (started=$isStarted, authReady=$isAuthReady)",
                 details =
@@ -169,7 +169,7 @@ class TelegramFileDataSource(
         }
 
         // Debug logging for URL parsing (Phase D+ backwards compatibility)
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             source = "TelegramFileDataSource",
             message = "parsed tg:// URL",
             details =
@@ -184,7 +184,7 @@ class TelegramFileDataSource(
         // Phase D+: RemoteId-first resolution
         // If fileId is invalid (0 or negative), try to resolve via remoteId
         if (fileIdInt <= 0 && !remoteIdParam.isNullOrBlank()) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "TelegramFileDataSource",
                 message = "fileId invalid, resolving via remoteId",
                 details = mapOf("remoteId" to remoteIdParam),
@@ -200,7 +200,7 @@ class TelegramFileDataSource(
                         }
                     }
                 } catch (e: Exception) {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = "TelegramFileDataSource",
                         message = "Failed to resolve remoteId",
                         exception = e,
@@ -211,7 +211,7 @@ class TelegramFileDataSource(
 
             if (resolvedFileId != null && resolvedFileId > 0) {
                 fileIdInt = resolvedFileId
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramFileDataSource",
                     message = "Resolved remoteId to fileId",
                     details =
@@ -259,7 +259,7 @@ class TelegramFileDataSource(
                 // Notify TransferListener that TDLib preparation phase failed
                 transferListener?.onTransferEnd(this, dataSpec, /* isNetwork = */ true)
 
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramFileDataSource",
                     message = "Failed to ensure file ready",
                     exception = e,
@@ -287,7 +287,7 @@ class TelegramFileDataSource(
                     downloader.getFileInfo(fileIdInt)
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     source = "TelegramFileDataSource",
                     message = "Failed to get TDLib file info: ${e.message}, will use local file size",
                     details = mapOf("fileId" to fileIdInt.toString()),
@@ -299,7 +299,7 @@ class TelegramFileDataSource(
             tdlibFileInfo?.expectedSize?.toLong()
                 ?: run {
                     // Fallback to local file size if TDLib query fails
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = "TelegramFileDataSource",
                         message = "Using local file size as fallback",
                         details = mapOf("fileId" to fileIdInt.toString()),
@@ -330,7 +330,7 @@ class TelegramFileDataSource(
                 .setLength(if (correctFileSize > 0) correctFileSize else C.LENGTH_UNSET.toLong())
                 .build()
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "TelegramFileDataSource",
             message = "opened" + if (dataSpec.position > 0) " (SEEK to ${dataSpec.position})" else "",
             details =
@@ -380,7 +380,7 @@ class TelegramFileDataSource(
             resetState()
         }
 
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             source = "TelegramFileDataSource",
             message = "closed",
         )

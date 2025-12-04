@@ -9,7 +9,7 @@ import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.telegram.domain.TelegramItemType
 import com.chris.m3usuite.telegram.domain.toDomain
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
 
@@ -395,6 +395,6 @@ class TelegramDiagnosticsDumper(
 
     private fun log(message: String) {
         Log.d(TAG, message)
-        TelegramLogRepository.debug(TAG, message)
+        UnifiedLog.debug(TAG, message)
     }
 }

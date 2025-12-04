@@ -11,6 +11,7 @@ import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramMessage
 import com.chris.m3usuite.data.obx.ObxTelegramMessage_
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -164,7 +165,7 @@ class RarDataSourceRefactor(
                         )
                     }
                 } catch (t: Throwable) {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = "RarDataSource",
                         message = "Failed to ensure RAR file via TDLib",
                         details =
@@ -185,7 +186,7 @@ class RarDataSourceRefactor(
                 throw IOException("Telegram RAR file not found after TDLib download: $path")
             }
 
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "RarDataSource",
                 message = "Resolved Telegram RAR file path",
                 details =

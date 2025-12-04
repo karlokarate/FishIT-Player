@@ -70,9 +70,9 @@ object CrashHandler {
 
                 // Log to AppLog (may not persist but good for debugging if we survive)
                 try {
-                    AppLog.log(
+                    UnifiedLog.log(
                         category = "crash",
-                        level = AppLog.Level.ERROR,
+                        level = UnifiedLog.Level.ERROR,
                         message = "UNCAUGHT EXCEPTION: ${throwable::class.simpleName}: ${throwable.message}",
                         extras = mapOf("thread" to thread.name),
                     )
@@ -104,9 +104,9 @@ object CrashHandler {
             
             // Log last few app logs to Crashlytics for context
             try {
-                val recentLogs = AppLog.history.value.takeLast(10)
+                val recentLogs = UnifiedLog.entries.value.takeLast(10)
                 recentLogs.forEachIndexed { index, entry ->
-                    crashlytics.log("[$index] ${entry.category}: ${entry.message}")
+                    crashlytics.log("[$index] ${entry.category.displayName}: ${entry.message}")
                 }
             } catch (e: Exception) {
                 crashlytics.log("Failed to attach app logs: ${e.message}")
@@ -131,11 +131,11 @@ object CrashHandler {
     ) {
         val lastLogs =
             try {
-                AppLog.history.value.takeLast(LAST_LOGS_COUNT).map {
+                UnifiedLog.entries.value.takeLast(LAST_LOGS_COUNT).map {
                     LogEntrySummary(
                         timestamp = it.timestamp,
                         level = it.level.name,
-                        category = it.category,
+                        category = it.category.displayName,
                         message = it.message,
                     )
                 }

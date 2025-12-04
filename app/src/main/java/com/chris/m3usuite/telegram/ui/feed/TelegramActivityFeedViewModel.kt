@@ -9,7 +9,7 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgActivityEvent
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -41,7 +41,7 @@ class TelegramActivityFeedViewModel(
     val activityLog: StateFlow<List<ActivityLogEntry>> = _activityLog.asStateFlow()
 
     init {
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "TelegramActivityFeedViewModel",
             message = "Initializing Activity Feed",
         )
@@ -53,7 +53,7 @@ class TelegramActivityFeedViewModel(
                     handleActivityEvent(event)
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramActivityFeedViewModel",
                     message = "Error collecting activity events",
                     exception = e,
@@ -72,7 +72,7 @@ class TelegramActivityFeedViewModel(
             _feedState.update { it.copy(isLoading = true) }
             try {
                 repository.getTelegramFeedItems().collect { items ->
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = "TelegramActivityFeedViewModel",
                         message = "Loaded feed items",
                         details = mapOf("count" to items.size.toString()),
@@ -86,7 +86,7 @@ class TelegramActivityFeedViewModel(
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramActivityFeedViewModel",
                     message = "Error loading feed items",
                     exception = e,

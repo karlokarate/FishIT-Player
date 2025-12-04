@@ -94,7 +94,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.chris.m3usuite.R
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ResumeRepository
@@ -243,9 +243,9 @@ fun InternalPlayerScreen(
             if (!props.containsKey("Accept-Encoding")) props["Accept-Encoding"] = "identity"
 
             // Lightweight diagnostics
-            com.chris.m3usuite.core.logging.AppLog.log(
-                category = "player",
-                level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+            com.chris.m3usuite.core.logging.UnifiedLog.log(
+                level = com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
+                source = "player",
                 message = "http prepare ua=\"${ua}\" ref=\"${props["Referer"] ?: ""}\" accept=\"${props["Accept"]}\"",
             )
 
@@ -382,11 +382,11 @@ fun InternalPlayerScreen(
     LaunchedEffect(session.isNew, url, mimeType, startPositionMs) {
         val needsConfig = session.isNew || PlaybackSession.currentSource() != url
         if (needsConfig) {
-            AppLog.log(
-                category = "player",
-                level = AppLog.Level.DEBUG,
+            UnifiedLog.log(
+                level = UnifiedLog.Level.DEBUG,
+                source = "player",
                 message = "setMediaItem",
-                extras = mapOf("url" to url),
+                details = mapOf("url" to url),
             )
             val resolvedUri =
                 if (url.startsWith("tg://", ignoreCase = true)) {
@@ -448,9 +448,9 @@ fun InternalPlayerScreen(
                                     Pair(MimeTypes.VIDEO_MP4, null)
                                 }
                             } catch (e: Exception) {
-                                com.chris.m3usuite.core.logging.AppLog.log(
-                                    category = "player",
-                                    level = com.chris.m3usuite.core.logging.AppLog.Level.WARN,
+                                com.chris.m3usuite.core.logging.UnifiedLog.log(
+                                    level = com.chris.m3usuite.core.logging.UnifiedLog.Level.WARN,
+                                    source = "player",
                                     message = "Failed to get Telegram MIME type: ${e.message}",
                                 )
                                 Pair(MimeTypes.VIDEO_MP4, null)
@@ -485,14 +485,14 @@ fun InternalPlayerScreen(
 
             // Log media item details for Telegram (Requirement 3.3)
             if (url.startsWith("tg://", ignoreCase = true)) {
-                com.chris.m3usuite.core.logging.AppLog.log(
-                    category = "player",
-                    level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+                com.chris.m3usuite.core.logging.UnifiedLog.log(
+                    level = com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
+                    source = "player",
                     message = "Telegram MediaItem: uri=$resolvedUri, mimeType=$inferredMime",
                 )
 
-                // Log to TelegramLogRepository for observability (Requirement 3.3)
-                com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
+                // Log to UnifiedLog for observability (Requirement 3.3)
+                com.chris.m3usuite.core.logging.UnifiedLog.info(
                     source = "InternalPlayerScreen",
                     message = "Starting Telegram playback",
                     details =
@@ -551,13 +551,13 @@ fun InternalPlayerScreen(
 
         // Log artwork injection for Telegram content
         if (url.startsWith("tg://", ignoreCase = true)) {
-            AppLog.log(
-                category = "player",
-                level = AppLog.Level.DEBUG,
+            UnifiedLog.log(
+                level = UnifiedLog.Level.DEBUG,
+                source = "player",
                 message = "Telegram artwork injected",
-                extras = mapOf("mediaId" to item.id.toString()),
+                details = mapOf("mediaId" to item.id.toString()),
             )
-            com.chris.m3usuite.telegram.logging.TelegramLogRepository.info(
+            com.chris.m3usuite.core.logging.UnifiedLog.info(
                 source = "InternalPlayerScreen",
                 message = "Artwork injected into playing MediaItem",
                 details =
@@ -790,11 +790,11 @@ fun InternalPlayerScreen(
                             append(" message=${error.message ?: "no message"}")
                             append(" cause=${error.cause?.javaClass?.name ?: "no cause"}")
                         }
-                    AppLog.log(
-                        category = "player",
-                        level = AppLog.Level.ERROR,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.ERROR,
+                        source = "player",
                         message = errorDetails,
-                        extras =
+                        details =
                             mapOf(
                                 "stacktrace" to error.stackTraceToString().take(4000),
                             ),
@@ -802,7 +802,7 @@ fun InternalPlayerScreen(
 
                     // For Telegram URLs, log additional context
                     if (url.startsWith("tg://", ignoreCase = true)) {
-                        com.chris.m3usuite.telegram.logging.TelegramLogRepository.error(
+                        com.chris.m3usuite.core.logging.UnifiedLog.error(
                             source = "InternalPlayerScreen",
                             message = "Telegram playback error",
                             exception = error,
@@ -815,9 +815,9 @@ fun InternalPlayerScreen(
                                 ),
                         )
                     }
-                    com.chris.m3usuite.core.logging.AppLog.log(
-                        category = "player",
-                        level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                    com.chris.m3usuite.core.logging.UnifiedLog.log(
+                        level = com.chris.m3usuite.core.logging.UnifiedLog.Level.ERROR,
+                        source = "player",
                         message = errorDetails,
                     )
 

@@ -1,7 +1,7 @@
 package com.chris.m3usuite.player.internal.domain
 
 import android.content.Context
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.obx.ObxProfile
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.repo.ScreenTimeRepository
@@ -183,11 +183,11 @@ class DefaultKidsPlaybackGate(
                     remainingMinutes = remaining,
                 )
             } catch (t: Throwable) {
-                AppLog.log(
-                    category = "player",
-                    level = AppLog.Level.WARN,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
+                    source = "player",
                     message = "KidsPlaybackGate evaluateStart fail-open",
-                    extras = mapOf("error" to (t.message ?: t.javaClass.simpleName)),
+                    details = mapOf("error" to (t.message ?: t.javaClass.simpleName)),
                 )
                 KidsGateState(
                     kidActive = false,
@@ -216,11 +216,11 @@ class DefaultKidsPlaybackGate(
                     remainingMinutes = remaining,
                 )
             }.getOrElse { t ->
-                AppLog.log(
-                    category = "player",
-                    level = AppLog.Level.WARN,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.WARN,
+                    source = "player",
                     message = "KidsPlaybackGate onPlaybackTick fail-open",
-                    extras = mapOf("error" to (t.message ?: t.javaClass.simpleName)),
+                    details = mapOf("error" to (t.message ?: t.javaClass.simpleName)),
                 )
                 current
             }

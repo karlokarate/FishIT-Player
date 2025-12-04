@@ -4,7 +4,7 @@ import android.content.Context
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
 import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProvider
 import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -91,7 +91,7 @@ class TelegramFileLoader(
         try {
             // 0) Check Telegram service state – fail fast if not started
             if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = TAG,
                     message = "Skipping thumb download – Telegram not ready",
                     details =
@@ -113,7 +113,7 @@ class TelegramFileLoader(
                         is ThumbResult.Success -> return result.localPath
                         is ThumbResult.NotFound404 -> {
                             // Mark this fileId as stale for this session
-                            TelegramLogRepository.warn(
+                            UnifiedLog.warn(
                                 source = TAG,
                                 message = "Stale fileId, will fall back to remoteId",
                                 details =
@@ -126,7 +126,7 @@ class TelegramFileLoader(
                         }
                         is ThumbResult.OtherError -> {
                             // For other errors (network, timeout), log and return null
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 source = TAG,
                                 message = "ensureThumbDownloaded failed with non-404 error",
                                 details =
@@ -144,7 +144,7 @@ class TelegramFileLoader(
                     throw e
                 } catch (e: Exception) {
                     // Unexpected exception, log and continue to remoteId
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = TAG,
                         message = "Unexpected exception during fileId download, will try remoteId resolution",
                         exception = e,
@@ -160,7 +160,7 @@ class TelegramFileLoader(
             // 2) Resolve a fresh fileId via remoteId in the current TDLib DB
             val remoteId = ref.remoteId
             if (remoteId.isBlank()) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     source = TAG,
                     message = "No remoteId available for fallback",
                 )
@@ -171,7 +171,7 @@ class TelegramFileLoader(
             if (newFileId == null || newFileId <= 0) {
                 // Log once per remoteId (avoid spam)
                 if (logged404RemoteIds.add(remoteId)) {
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         source = TAG,
                         message = "remoteId resolution failed (404)",
                         details = mapOf("remoteId" to remoteId),
@@ -180,7 +180,7 @@ class TelegramFileLoader(
                 return null
             }
 
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "remoteId resolved to new fileId",
                 details =
@@ -237,7 +237,7 @@ class TelegramFileLoader(
         timeoutMs: Long,
     ): ThumbResult {
         try {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = TAG,
                 message = "thumb download started",
                 details = mapOf("fileId" to fileId.toString()),
@@ -248,7 +248,7 @@ class TelegramFileLoader(
             val totalSizeBytes = fileInfo?.expectedSize?.toLong() ?: 0L
 
             if (totalSizeBytes <= 0L) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     source = TAG,
                     message = "thumb download: size unknown",
                     details =
@@ -265,7 +265,7 @@ class TelegramFileLoader(
             if (isAlreadyComplete && !localPath.isNullOrBlank()) {
                 val localFile = java.io.File(localPath)
                 if (localFile.exists() && (totalSizeBytes <= 0L || localFile.length() >= totalSizeBytes)) {
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = TAG,
                         message = "thumb already complete, skipping download",
                         details =
@@ -288,7 +288,7 @@ class TelegramFileLoader(
                 )
 
             if (!downloadStarted) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = TAG,
                     message = "thumb download failed to start",
                     details = mapOf("fileId" to fileId.toString()),
@@ -305,7 +305,7 @@ class TelegramFileLoader(
             while (true) {
                 val elapsedMs = System.currentTimeMillis() - startTime
                 if (elapsedMs > timeoutMs) {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = TAG,
                         message = "thumb download timeout",
                         details =
@@ -326,7 +326,7 @@ class TelegramFileLoader(
 
                 // Check if download failed or was cancelled
                 if (!isDownloading && !isComplete && downloadedSize == 0L) {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = TAG,
                         message = "thumb download failed or cancelled",
                         details =
@@ -342,7 +342,7 @@ class TelegramFileLoader(
                 if (downloadedSize == lastDownloadedSize && !isComplete) {
                     stallCount++
                     if (stallCount >= maxStallCount) {
-                        TelegramLogRepository.error(
+                        UnifiedLog.error(
                             source = TAG,
                             message = "thumb download stalled",
                             details =
@@ -360,7 +360,7 @@ class TelegramFileLoader(
 
                     // Log progress periodically (every 10 polls = ~1 second)
                     if (downloadedSize > 0L && (elapsedMs / 1000) % 1 == 0L) {
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = TAG,
                             message = "thumb download progress",
                             details =
@@ -381,7 +381,7 @@ class TelegramFileLoader(
                         val fileLength = localFile.length()
                         val fullyDownloaded = totalSizeBytes <= 0L || fileLength >= totalSizeBytes
 
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = TAG,
                             message = "thumb download completed",
                             details =
@@ -395,7 +395,7 @@ class TelegramFileLoader(
                         )
 
                         if (!fullyDownloaded) {
-                            TelegramLogRepository.warn(
+                            UnifiedLog.warn(
                                 source = TAG,
                                 message = "thumb download incomplete",
                                 details =
@@ -417,7 +417,7 @@ class TelegramFileLoader(
         } catch (e: kotlinx.coroutines.CancellationException) {
             // CancellationException is benign - scope was cancelled (e.g., prefetcher paused)
             // Log at DEBUG level only, not as an error
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "Thumb download cancelled by scope, not a TDLib error",
                 details = mapOf("fileId" to fileId.toString()),
@@ -428,7 +428,7 @@ class TelegramFileLoader(
             return if (message.contains("404", ignoreCase = true) || message.contains("not found", ignoreCase = true)) {
                 ThumbResult.NotFound404
             } else {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = TAG,
                     message = "thumb download failed",
                     exception = e,
@@ -456,7 +456,7 @@ class TelegramFileLoader(
                 null
             }
         } catch (e: Exception) {
-            TelegramLogRepository.error(
+            UnifiedLog.error(
                 source = TAG,
                 message = "getLocalPathIfAvailable: Exception for fileId=$fileId",
                 exception = e,
@@ -486,7 +486,7 @@ class TelegramFileLoader(
     ): String? {
         // Check service state
         if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "Skipping thumb download (legacy API) – Telegram not ready",
                 details =
@@ -527,7 +527,7 @@ class TelegramFileLoader(
         timeoutMs: Long = StreamingConfigRefactor.ENSURE_READY_TIMEOUT_MS,
     ): String? =
         try {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = TAG,
                 message = "ensureFileForPlayback: Starting with MP4 validation for fileId=$fileId, remoteId=${remoteId ?: "none"}",
             )
@@ -539,13 +539,13 @@ class TelegramFileLoader(
                     timeoutMs = timeoutMs,
                 )
 
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = TAG,
                 message = "ensureFileForPlayback: Ready (moov validated) fileId=$fileId, path=$path",
             )
             path
         } catch (e: Exception) {
-            TelegramLogRepository.error(
+            UnifiedLog.error(
                 source = TAG,
                 message = "ensureFileForPlayback: Exception for fileId=$fileId",
                 exception = e,
@@ -585,7 +585,7 @@ class TelegramFileLoader(
         prefetchScope.launch {
             // Check service state before prefetching
             if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = TAG,
                     message = "prefetchImages: Skipping - Telegram not ready",
                     details =
@@ -597,7 +597,7 @@ class TelegramFileLoader(
                 return@launch
             }
 
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "prefetchImages: Starting prefetch",
                 details =
@@ -611,20 +611,20 @@ class TelegramFileLoader(
             posterRef?.let { ref ->
                 try {
                     ensureThumbDownloaded(ref, timeoutMs = 10_000L)
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "prefetchImages: Poster prefetched",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     // Cancellation is benign - log at DEBUG only
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "prefetchImages: Poster prefetch cancelled (scope cancelled)",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
                 } catch (e: Exception) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "prefetchImages: Poster prefetch failed (non-critical)",
                         details = mapOf("remoteId" to ref.remoteId, "error" to (e.message ?: "unknown")),
@@ -636,20 +636,20 @@ class TelegramFileLoader(
             backdropRef?.let { ref ->
                 try {
                     ensureThumbDownloaded(ref, timeoutMs = 10_000L)
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "prefetchImages: Backdrop prefetched",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     // Cancellation is benign - log at DEBUG only
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "prefetchImages: Backdrop prefetch cancelled (scope cancelled)",
                         details = mapOf("remoteId" to ref.remoteId),
                     )
                 } catch (e: Exception) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "prefetchImages: Backdrop prefetch failed (non-critical)",
                         details = mapOf("remoteId" to ref.remoteId, "error" to (e.message ?: "unknown")),

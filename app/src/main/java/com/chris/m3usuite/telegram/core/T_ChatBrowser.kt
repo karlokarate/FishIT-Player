@@ -1,6 +1,6 @@
 package com.chris.m3usuite.telegram.core
 
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import dev.g000sha256.tdl.dto.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -45,7 +45,7 @@ class T_ChatBrowser(
         limit: Int = 100,
         retries: Int = 3,
     ): List<Chat> {
-        TelegramLogRepository.debug("T_ChatBrowser", "Loading top chats (limit=$limit)...")
+        UnifiedLog.debug("T_ChatBrowser", "Loading top chats (limit=$limit)...")
 
         var lastError: Throwable? = null
         repeat(retries) { attempt ->
@@ -60,15 +60,15 @@ class T_ChatBrowser(
                         chatCache[id] = chat // Update cache
                         chats += chat
                     } catch (t: Throwable) {
-                        TelegramLogRepository.debug("T_ChatBrowser", "Error loading chat $id: ${t.message}")
+                        UnifiedLog.debug("T_ChatBrowser", "Error loading chat $id: ${t.message}")
                     }
                 }
 
-                TelegramLogRepository.debug("T_ChatBrowser", "Loaded ${chats.size} chats")
+                UnifiedLog.debug("T_ChatBrowser", "Loaded ${chats.size} chats")
                 return chats
             } catch (t: Throwable) {
                 lastError = t
-                TelegramLogRepository.debug("T_ChatBrowser", "Error loading chats (attempt ${attempt + 1}/$retries): ${t.message}")
+                UnifiedLog.debug("T_ChatBrowser", "Error loading chats (attempt ${attempt + 1}/$retries): ${t.message}")
 
                 if (attempt < retries - 1) {
                     delay(1000L * (attempt + 1)) // Exponential backoff
@@ -77,7 +77,7 @@ class T_ChatBrowser(
         }
 
         // All retries failed
-        TelegramLogRepository.debug("T_ChatBrowser", "Failed to load chats after $retries attempts: ${lastError?.message}")
+        UnifiedLog.debug("T_ChatBrowser", "Failed to load chats after $retries attempts: ${lastError?.message}")
         throw lastError ?: Exception("Failed to load chats")
     }
 
@@ -103,7 +103,7 @@ class T_ChatBrowser(
             chatCache[chatId] = chat // Update cache
             chat
         } catch (t: Throwable) {
-            TelegramLogRepository.debug("T_ChatBrowser", "Error loading chat $chatId: ${t.message}")
+            UnifiedLog.debug("T_ChatBrowser", "Error loading chat $chatId: ${t.message}")
             null
         }
     }
@@ -126,7 +126,7 @@ class T_ChatBrowser(
         limit: Int = 20,
         retries: Int = 3,
     ): List<Message> {
-        TelegramLogRepository.debug("T_ChatBrowser", "Loading messages (chatId=$chatId, from=$fromMessageId, offset=$offset, limit=$limit)")
+        UnifiedLog.debug("T_ChatBrowser", "Loading messages (chatId=$chatId, from=$fromMessageId, offset=$offset, limit=$limit)")
 
         var lastError: Throwable? = null
         repeat(retries) { attempt ->
@@ -144,11 +144,11 @@ class T_ChatBrowser(
                 val msgsArray: Array<Message?> = history.messages ?: emptyArray()
                 val messages = msgsArray.filterNotNull()
 
-                TelegramLogRepository.debug("T_ChatBrowser", "Loaded ${messages.size} messages")
+                UnifiedLog.debug("T_ChatBrowser", "Loaded ${messages.size} messages")
                 return messages
             } catch (t: Throwable) {
                 lastError = t
-                TelegramLogRepository.debug("T_ChatBrowser", "Error loading messages (attempt ${attempt + 1}/$retries): ${t.message}")
+                UnifiedLog.debug("T_ChatBrowser", "Error loading messages (attempt ${attempt + 1}/$retries): ${t.message}")
 
                 if (attempt < retries - 1) {
                     delay(500L * (attempt + 1))
@@ -156,7 +156,7 @@ class T_ChatBrowser(
             }
         }
 
-        TelegramLogRepository.debug("T_ChatBrowser", "Failed to load messages after $retries attempts: ${lastError?.message}")
+        UnifiedLog.debug("T_ChatBrowser", "Failed to load messages after $retries attempts: ${lastError?.message}")
         return emptyList() // Return empty list instead of throwing
     }
 
@@ -181,7 +181,7 @@ class T_ChatBrowser(
         pageSize: Int = 100,
         maxMessages: Int = 10000,
     ): List<Message> {
-        TelegramLogRepository.debug("T_ChatBrowser", "Loading all messages (chatId=$chatId, pageSize=$pageSize, max=$maxMessages)")
+        UnifiedLog.debug("T_ChatBrowser", "Loading all messages (chatId=$chatId, pageSize=$pageSize, max=$maxMessages)")
 
         val allMessages = mutableListOf<Message>()
         var fromMessageId = 0L
@@ -198,13 +198,13 @@ class T_ChatBrowser(
             // Handle TDLib async loading: first call often returns only 1 message
             // Wait and retry to get the full batch from server
             if (isFirstPage && batch.size == 1) {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     "T_ChatBrowser",
                     "First batch returned ${batch.size} message(s), waiting for TDLib async load...",
                 )
                 delay(500L)
                 batch = loadMessagesPaged(chatId, fromMessageId, offset = offset, limit = pageSize)
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     "T_ChatBrowser",
                     "After retry: ${batch.size} messages",
                 )
@@ -213,23 +213,23 @@ class T_ChatBrowser(
             isFirstPage = false
 
             if (batch.isEmpty()) {
-                TelegramLogRepository.debug("T_ChatBrowser", "No more messages, stopping")
+                UnifiedLog.debug("T_ChatBrowser", "No more messages, stopping")
                 break
             }
 
             allMessages.addAll(batch)
             fromMessageId = batch.last().id
 
-            TelegramLogRepository.debug("T_ChatBrowser", "Progress: ${allMessages.size} messages loaded")
+            UnifiedLog.debug("T_ChatBrowser", "Progress: ${allMessages.size} messages loaded")
 
             // Safety check to prevent infinite loops
             if (batch.size < pageSize) {
-                TelegramLogRepository.debug("T_ChatBrowser", "Received partial batch, assuming end of history")
+                UnifiedLog.debug("T_ChatBrowser", "Received partial batch, assuming end of history")
                 break
             }
         }
 
-        TelegramLogRepository.debug("T_ChatBrowser", "Total messages loaded: ${allMessages.size}")
+        UnifiedLog.debug("T_ChatBrowser", "Total messages loaded: ${allMessages.size}")
         return allMessages
     }
 
@@ -246,7 +246,7 @@ class T_ChatBrowser(
         query: String,
         limit: Int = 100,
     ): List<Message> {
-        TelegramLogRepository.debug("T_ChatBrowser", "Searching chat (chatId=$chatId, query='$query', limit=$limit)")
+        UnifiedLog.debug("T_ChatBrowser", "Searching chat (chatId=$chatId, query='$query', limit=$limit)")
 
         return try {
             val result =
@@ -263,10 +263,10 @@ class T_ChatBrowser(
 
             val messages = result.messages?.filterNotNull() ?: emptyList()
 
-            TelegramLogRepository.debug("T_ChatBrowser", "Found ${messages.size} matching messages")
+            UnifiedLog.debug("T_ChatBrowser", "Found ${messages.size} matching messages")
             messages
         } catch (t: Throwable) {
-            TelegramLogRepository.debug("T_ChatBrowser", "Error searching messages: ${t.message}")
+            UnifiedLog.debug("T_ChatBrowser", "Error searching messages: ${t.message}")
             emptyList()
         }
     }
@@ -307,7 +307,7 @@ class T_ChatBrowser(
      */
     fun clearCache() {
         chatCache.clear()
-        TelegramLogRepository.debug("T_ChatBrowser", "Cache cleared")
+        UnifiedLog.debug("T_ChatBrowser", "Cache cleared")
     }
 
     /**

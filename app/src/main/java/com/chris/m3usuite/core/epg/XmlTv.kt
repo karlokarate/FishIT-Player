@@ -3,7 +3,7 @@ package com.chris.m3usuite.core.epg
 import android.content.Context
 import android.util.Xml
 import com.chris.m3usuite.core.http.HttpClientFactory
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.prefs.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -43,10 +43,10 @@ object XmlTv {
             val client = HttpClientFactory.create(context, settings)
             val req = Request.Builder().url(url).build()
             val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
-            AppLog.log("epg", AppLog.Level.DEBUG, "currentNext url=\"$url\" chan=$channelId ua=\"$uaVal\"")
+            UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "currentNext url=\"$url\" chan=$channelId ua=\"$uaVal\"")
             client.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
-                    AppLog.log("epg", AppLog.Level.WARN, "status=${res.code} chan=$channelId")
+                    UnifiedLog.log(UnifiedLog.Level.WARN, "epg", "status=${res.code} chan=$channelId")
                     return@withContext null to null
                 }
                 val body = res.body ?: return@withContext null to null
@@ -125,11 +125,11 @@ object XmlTv {
             val req = Request.Builder().url(url).build()
             try {
                 val uaVal = settings.userAgent.first().ifBlank { "IBOPlayer/1.4 (Android)" }
-                AppLog.log(
-                    category = "live",
-                    level = AppLog.Level.DEBUG,
+                UnifiedLog.log(
+                    level = UnifiedLog.Level.DEBUG,
+                    source = "live",
                     message = "xmltv index",
-                    extras =
+                    details =
                         mapOf(
                             "url" to url,
                             "channels" to channelIds.size.toString(),
@@ -140,11 +140,11 @@ object XmlTv {
             }
             client.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
-                    AppLog.log(
-                        category = "live",
-                        level = AppLog.Level.WARN,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.WARN,
+                        source = "live",
                         message = "xmltv http status=${res.code}",
-                        extras = mapOf("channels" to channelIds.size.toString()),
+                        details = mapOf("channels" to channelIds.size.toString()),
                     )
                     return@withContext emptyMap()
                 }

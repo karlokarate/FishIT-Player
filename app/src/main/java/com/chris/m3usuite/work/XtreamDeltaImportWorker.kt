@@ -13,7 +13,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.xtream.XtreamImportCoordinator
 import com.chris.m3usuite.core.xtream.XtreamSeeder
 import com.chris.m3usuite.data.obx.ObxStore
@@ -114,17 +114,16 @@ class XtreamDeltaImportWorker(
      * Phase 8 Task 6b: Log worker error to AppLog with category "WORKER_ERROR".
      */
     private fun logWorkerError(e: Throwable) {
-        AppLog.log(
-            category = "WORKER_ERROR",
-            level = AppLog.Level.ERROR,
+        UnifiedLog.log(
+            level = UnifiedLog.Level.ERROR,
+            source = "WORKER_ERROR",
             message = "Worker XtreamDeltaImportWorker failed: ${e.message}",
-            extras =
+            details =
                 mapOf(
                     "worker" to "XtreamDeltaImportWorker",
                     "exception" to e.javaClass.simpleName,
                     "cause" to (e.cause?.javaClass?.simpleName ?: "none"),
                 ),
-            bypassMaster = true,
         )
     }
 

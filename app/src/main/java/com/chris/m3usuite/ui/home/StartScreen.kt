@@ -79,7 +79,8 @@ import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.navigation.navigateTopLevel
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.domain.TelegramItem
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
+import com.chris.m3usuite.telegram.logging.UnifiedLog
 import com.chris.m3usuite.ui.common.AppIcon
 import com.chris.m3usuite.ui.common.AppIconButton
 import com.chris.m3usuite.ui.components.rows.LiveAddTile
@@ -220,7 +221,7 @@ fun StartScreen(
 
     // Collect Telegram log events and show WARN/ERROR as snackbars
     LaunchedEffect(Unit) {
-        TelegramLogRepository.events.collect { entry ->
+        UnifiedLog.events.collect { entry ->
             when (entry.level) {
                 com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.WARN,
                 com.chris.m3usuite.telegram.logging.TgLogEntry.LogLevel.ERROR,
@@ -731,7 +732,7 @@ fun StartScreen(
 
                                 // Log navigation
                                 scope.launch {
-                                    TelegramLogRepository.info(
+                                    UnifiedLog.info(
                                         source = "StartScreen",
                                         message = "User selected Telegram item from StartScreen",
                                         details =

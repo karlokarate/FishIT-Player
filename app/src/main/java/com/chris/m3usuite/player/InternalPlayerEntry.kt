@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.chris.m3usuite.MainActivity
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.playback.rememberPlayerController
 import com.chris.m3usuite.player.internal.domain.PlaybackContext
 import com.chris.m3usuite.player.internal.domain.PlaybackType
@@ -80,11 +80,11 @@ fun InternalPlayerEntry(
     // Phase 9 Task 1 Step 3: Log SIP path activation
     // ════════════════════════════════════════════════════════════════════════════════
     LaunchedEffect(Unit) {
-        AppLog.log(
-            category = "PLAYER_ROUTE",
-            level = AppLog.Level.DEBUG,
+        UnifiedLog.log(
+            level = UnifiedLog.Level.DEBUG,
+            source = "PLAYER_ROUTE",
             message = "Using SIP player path (legacy disabled)",
-            extras = mapOf("source" to "InternalPlayerEntry"),
+            details = mapOf("source" to "InternalPlayerEntry"),
         )
     }
 

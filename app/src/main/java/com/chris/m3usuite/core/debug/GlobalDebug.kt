@@ -1,6 +1,6 @@
 package com.chris.m3usuite.core.debug
 
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -49,7 +49,7 @@ object GlobalDebug {
         to: String?,
     ) {
         if (!enabled.get()) return
-        AppLog.log("ui", AppLog.Level.INFO, "nav: ${from.orEmpty()} -> ${to.orEmpty()}")
+        UnifiedLog.log(UnifiedLog.Level.INFO, "ui", "nav: ${from.orEmpty()} -> ${to.orEmpty()}")
     }
 
     // DPAD / key interactions
@@ -60,13 +60,13 @@ object GlobalDebug {
         if (!enabled.get()) return
         val sfx = extras?.entries?.joinToString(", ") { (k, v) -> "$k=$v" }
         val msg = if (sfx.isNullOrBlank()) "dpad: $action" else "dpad: $action { $sfx }"
-        AppLog.log("focus", AppLog.Level.INFO, msg)
+        UnifiedLog.log(UnifiedLog.Level.INFO, "focus", msg)
     }
 
     // Tree/hierarchy hints
     fun logTree(node: String) {
         if (!enabled.get()) return
-        AppLog.log("diagnostics", AppLog.Level.DEBUG, "tree: $node")
+        UnifiedLog.log(UnifiedLog.Level.DEBUG, "diagnostics", "tree: $node")
     }
 
     fun logTree(
@@ -75,7 +75,7 @@ object GlobalDebug {
     ) {
         if (!enabled.get()) return
         val msg = if (hint.isNullOrBlank()) "tree: $node" else "tree: $node [$hint]"
-        AppLog.log("diagnostics", AppLog.Level.DEBUG, msg)
+        UnifiedLog.log(UnifiedLog.Level.DEBUG, "diagnostics", msg)
     }
 
     // Focus details emitted by rows/tiles
@@ -89,7 +89,7 @@ object GlobalDebug {
         val ui = uiTitle?.takeIf { it.isNotBlank() } ?: ""
         val obx = obxTitle?.takeIf { it.isNotBlank() } ?: ""
         val both = if (obx.isNotEmpty()) " ($obx)" else ""
-        AppLog.log("focus", AppLog.Level.INFO, "focus:$type id=$id $ui$both")
+        UnifiedLog.log(UnifiedLog.Level.INFO, "focus", "focus:$type id=$id $ui$both")
     }
 
     // Generic widget focus (Buttons, Chips, Clickables ...)
@@ -106,7 +106,7 @@ object GlobalDebug {
                 if (mod.isNotEmpty()) append(" module=").append(mod)
                 if (tg.isNotEmpty()) append(" tag=").append(tg)
             }
-        AppLog.log("focus", AppLog.Level.INFO, "focus:widget component=$component$suffix")
+        UnifiedLog.log(UnifiedLog.Level.INFO, "focus", "focus:widget component=$component$suffix")
     }
 
     // OBX index/key backfills
@@ -116,7 +116,7 @@ object GlobalDebug {
         change: String,
     ) {
         if (!enabled.get()) return
-        AppLog.log("diagnostics", AppLog.Level.INFO, "obxKey:$kind id=$id $change")
+        UnifiedLog.log(UnifiedLog.Level.INFO, "diagnostics", "obxKey:$kind id=$id $change")
     }
 
     fun logObxKey(
@@ -126,7 +126,7 @@ object GlobalDebug {
     ) {
         if (!enabled.get()) return
         val s = change.entries.joinToString(", ") { (k, v) -> "$k=$v" }
-        AppLog.log("diagnostics", AppLog.Level.INFO, "obxKey:$kind id=$id { $s }")
+        UnifiedLog.log(UnifiedLog.Level.INFO, "diagnostics", "obxKey:$kind id=$id { $s }")
     }
 
     fun logDetailSection(
@@ -142,11 +142,11 @@ object GlobalDebug {
                 val value = v?.toString()?.replace('\n', ' ')?.replace('\r', ' ') ?: ""
                 k to value
             }
-        AppLog.log(
-            category = "diagnostics",
-            level = AppLog.Level.DEBUG,
+        UnifiedLog.log(
+            level = UnifiedLog.Level.DEBUG,
+            source = "diagnostics",
             message = "detail:$type id=$id section=$section",
-            extras = clean,
+            details = clean,
         )
     }
 
@@ -168,7 +168,7 @@ object GlobalDebug {
         if (fr.isNotEmpty()) parts += "from=$fr"
         if (tg.isNotEmpty()) parts += "to=$tg"
         if (extra.isNotEmpty()) parts += extra
-        AppLog.log("focus", AppLog.Level.INFO, parts.joinToString(" "))
+        UnifiedLog.log(UnifiedLog.Level.INFO, "focus", parts.joinToString(" "))
     }
 
     // Row scroll plan (index + offset)
@@ -180,7 +180,7 @@ object GlobalDebug {
         if (!enabled.get()) return
         val suffix = reason?.takeIf { it.isNotBlank() } ?: ""
         val msg = if (suffix.isEmpty()) "row:scrollPlan index=$index offset=$offset" else "row:scrollPlan index=$index offset=$offset $suffix"
-        AppLog.log("focus", AppLog.Level.INFO, msg)
+        UnifiedLog.log(UnifiedLog.Level.INFO, "focus", msg)
     }
 
     fun logRowWindow(
@@ -193,7 +193,7 @@ object GlobalDebug {
     ) {
         if (!enabled.get()) return
         val rk = rowKey ?: ""
-        AppLog.log("focus", AppLog.Level.DEBUG, "row:window row=$rk first=$first last=$last vp=$vpStart..$vpEnd vis=[$items]")
+        UnifiedLog.log(UnifiedLog.Level.DEBUG, "focus", "row:window row=$rk first=$first last=$last vp=$vpStart..$vpEnd vis=[$items]")
     }
 
     fun logRowFocusState(
@@ -204,6 +204,6 @@ object GlobalDebug {
     ) {
         if (!enabled.get()) return
         val rk = rowKey ?: ""
-        AppLog.log("focus", AppLog.Level.DEBUG, "row:focusState row=$rk idx=$index self=$self has=$has")
+        UnifiedLog.log(UnifiedLog.Level.DEBUG, "focus", "row:focusState row=$rk idx=$index self=$self has=$has")
     }
 }

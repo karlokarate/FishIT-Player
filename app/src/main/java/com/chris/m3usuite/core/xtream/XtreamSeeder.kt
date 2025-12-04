@@ -3,7 +3,7 @@ package com.chris.m3usuite.core.xtream
 import android.content.Context
 import android.net.Uri
 import com.chris.m3usuite.core.http.HttpClientFactory
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.data.repo.XtreamObxRepository
 import com.chris.m3usuite.prefs.Keys
 import com.chris.m3usuite.prefs.SettingsStore
@@ -86,9 +86,9 @@ object XtreamSeeder {
                                 store.set(Keys.EPG_URL, epgUrl)
                             }
                         } catch (e: Throwable) {
-                            AppLog.log(
-                                category = "xtream",
-                                level = AppLog.Level.WARN,
+                            UnifiedLog.log(
+                                level = UnifiedLog.Level.WARN,
+                                source = "xtream",
                                 message = "Discovery failed (${reason.orEmpty()}): ${e.message}",
                             )
                         }
@@ -112,9 +112,9 @@ object XtreamSeeder {
                         }
                     } else {
                         result.exceptionOrNull()?.let { e ->
-                            AppLog.log(
-                                category = "xtream",
-                                level = AppLog.Level.WARN,
+                            UnifiedLog.log(
+                                level = UnifiedLog.Level.WARN,
+                                source = "xtream",
                                 message = "Head import failed (${reason.orEmpty()}): ${e.message}",
                             )
                         }

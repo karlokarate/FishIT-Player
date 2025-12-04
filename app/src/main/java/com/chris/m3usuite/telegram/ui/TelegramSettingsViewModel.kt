@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.*
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.work.SchedulingGateway
 import dev.g000sha256.tdl.dto.*
 import kotlinx.coroutines.flow.*
@@ -111,7 +111,7 @@ class TelegramSettingsViewModel(
             val hasApiCreds = apiId != 0 && apiHash.isNotBlank()
 
             if (enabled && hasApiCreds) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramSettingsViewModel",
                     message = "Ensuring Telegram engine is started (enabled=true persisted)",
                 )
@@ -121,19 +121,19 @@ class TelegramSettingsViewModel(
 
                     // Only call login() if NOT already Ready (prevents unnecessary calls)
                     if (serviceClient.authState.value !is TelegramAuthState.Ready) {
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = "TelegramSettingsViewModel",
                             message = "Auth not ready, triggering login flow",
                         )
                         serviceClient.login() // Let TDLib determine if session is valid
                     } else {
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = "TelegramSettingsViewModel",
                             message = "Auth already ready, skipping login call",
                         )
                     }
                 } catch (e: Exception) {
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         source = "TelegramSettingsViewModel",
                         message = "Ensure started failed: ${e.message}",
                     )
@@ -154,7 +154,7 @@ class TelegramSettingsViewModel(
     fun onToggleEnabled(enabled: Boolean) {
         // Log stack trace for auditing (debug builds only to avoid performance impact)
         if (com.chris.m3usuite.BuildConfig.DEBUG) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "TelegramSettingsViewModel",
                 message = "setTelegramEnabled called",
                 details =
@@ -171,7 +171,7 @@ class TelegramSettingsViewModel(
                     ),
             )
         } else {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "TelegramSettingsViewModel",
                 message = "setTelegramEnabled called",
                 details = mapOf("enabled" to enabled.toString()),
@@ -183,13 +183,13 @@ class TelegramSettingsViewModel(
             setTelegramEnabledInternal(enabled)
 
             if (!enabled) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramSettingsViewModel",
                     message = "Telegram disabled by user",
                 )
                 serviceClient.shutdown()
             } else if (!wasEnabled && enabled) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramSettingsViewModel",
                     message = "Telegram enabled by user - warm-up starting",
                 )
@@ -201,7 +201,7 @@ class TelegramSettingsViewModel(
                     // Mark engine as healthy after successful startup
                     _state.update { it.copy(isEngineHealthy = true, recentError = null) }
                 } catch (e: Exception) {
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = "TelegramSettingsViewModel",
                         message = "Warm-up failed: ${e.message}",
                     )
@@ -232,7 +232,7 @@ class TelegramSettingsViewModel(
             store.setTgEnabled(enabled)
             _state.update { it.copy(enabled = enabled) }
         } catch (e: Exception) {
-            TelegramLogRepository.error(
+            UnifiedLog.error(
                 source = "TelegramSettingsViewModel",
                 message = "Failed to persist enabled state",
                 exception = e,
@@ -281,7 +281,7 @@ class TelegramSettingsViewModel(
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramSettingsViewModel",
                     message = "Connection start failed",
                     exception = e,
@@ -300,7 +300,7 @@ class TelegramSettingsViewModel(
 
                 // Save phone number persistently
                 store.setTelegramPhoneNumber(phoneNumber)
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramSettingsViewModel",
                     message = "Phone number saved persistently",
                 )
@@ -321,7 +321,7 @@ class TelegramSettingsViewModel(
                         errorMessage = "Verbindung fehlgeschlagen: ${e.message}",
                     )
                 }
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramSettingsViewModel",
                     message = "Connection with phone failed",
                     exception = e,
@@ -347,7 +347,7 @@ class TelegramSettingsViewModel(
                         errorMessage = "Ungültiger Code: ${e.message}",
                     )
                 }
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramSettingsViewModel",
                     message = "Code verification failed",
                     exception = e,
@@ -373,7 +373,7 @@ class TelegramSettingsViewModel(
                         errorMessage = "Ungültiges Passwort: ${e.message}",
                     )
                 }
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramSettingsViewModel",
                     message = "Password verification failed",
                     exception = e,
@@ -422,7 +422,7 @@ class TelegramSettingsViewModel(
                         errorMessage = "Chats laden fehlgeschlagen: ${e.message}",
                     )
                 }
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramSettingsViewModel",
                     message = "Failed to load chats",
                     exception = e,
@@ -440,7 +440,7 @@ class TelegramSettingsViewModel(
      */
     fun onUpdateSelectedChats(chatIds: List<String>) {
         viewModelScope.launch {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "TelegramSettingsViewModel",
                 message = "User updated Telegram chat selection",
                 details = mapOf("selectedCount" to chatIds.size.toString()),
@@ -501,7 +501,7 @@ class TelegramSettingsViewModel(
                         errorMessage = "Trennung fehlgeschlagen: ${e.message}",
                     )
                 }
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "TelegramSettingsViewModel",
                     message = "Disconnect failed",
                     exception = e,

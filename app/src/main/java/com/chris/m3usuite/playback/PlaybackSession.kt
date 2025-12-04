@@ -7,7 +7,7 @@ import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.player.internal.domain.PlaybackType
 import com.chris.m3usuite.player.miniplayer.DefaultMiniPlayerManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -529,12 +529,11 @@ object PlaybackSession : PlaybackSessionController {
                     )
                 }
             }
-        AppLog.log(
-            category = LOG_CATEGORY_PLAYER_ERROR,
-            level = AppLog.Level.ERROR,
+        UnifiedLog.log(
+            level = UnifiedLog.Level.ERROR,
+            source = LOG_CATEGORY_PLAYER_ERROR,
             message = "Playback error: ${error.toShortSummary()}",
-            extras = extras,
-            bypassMaster = true,
+            details = extras,
         )
     }
 

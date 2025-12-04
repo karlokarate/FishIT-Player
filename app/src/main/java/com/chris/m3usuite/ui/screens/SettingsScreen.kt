@@ -48,9 +48,8 @@ fun SettingsScreen(
     onGlobalSearch: (() -> Unit)? = null,
     app: Application = LocalContext.current.applicationContext as Application,
     onOpenPortalCheck: (() -> Unit)? = null, // navigiert zu XtreamPortalCheckScreen
-    onOpenTelegramLog: (() -> Unit)? = null, // navigiert zu TelegramLogScreen
     onOpenTelegramFeed: (() -> Unit)? = null, // navigiert zu TelegramActivityFeedScreen
-    onOpenLogViewer: (() -> Unit)? = null, // navigiert zu LogViewerScreen
+    onOpenLogViewer: (() -> Unit)? = null, // navigiert zu UnifiedLogViewerScreen
     runtimeLoggingEnabled: Boolean = false,
     onToggleRuntimeLogging: (Boolean) -> Unit = {},
     telemetryForwardingEnabled: Boolean = false,
@@ -285,7 +284,6 @@ fun SettingsScreen(
                 onUpdateSelectedChats = telegramVm::onUpdateSelectedChats,
                 onUpdateCacheLimit = telegramVm::onUpdateCacheLimit,
                 onDisconnect = telegramVm::onDisconnect,
-                onOpenLog = onOpenTelegramLog,
                 onOpenFeed = onOpenTelegramFeed,
             )
 
@@ -299,25 +297,13 @@ fun SettingsScreen(
 
             // --- Debug & Diagnostics (BUG 3 fix: moved from Telegram READY state) ---
             SettingsCard(title = "Debug & Diagnostics") {
-                // Log Viewer is always available, not gated by Telegram auth
+                // Unified Log Viewer is always available
                 onOpenLogViewer?.let { handler ->
                     Button(
                         onClick = handler,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("App Log Viewer")
-                    }
-                }
-                // Telegram Logs button only shown when Telegram is enabled
-                if (telegramState.enabled) {
-                    onOpenTelegramLog?.let { handler ->
-                        Spacer(Modifier.height(8.dp))
-                        Button(
-                            onClick = handler,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text("Telegram Logs")
-                        }
                     }
                 }
                 

@@ -1,6 +1,6 @@
 package com.chris.m3usuite.diagnostics
 
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -163,18 +163,18 @@ object DiagnosticsLogger {
 
         // Unified logging
         runCatching {
-            AppLog.log(
-                category = "diagnostics",
+            UnifiedLog.log(
                 level =
                     when (event.level) {
-                        "VERBOSE" -> AppLog.Level.VERBOSE
-                        "DEBUG" -> AppLog.Level.DEBUG
-                        "WARN" -> AppLog.Level.WARN
-                        "ERROR" -> AppLog.Level.ERROR
-                        else -> AppLog.Level.INFO
+                        "VERBOSE" -> UnifiedLog.Level.VERBOSE
+                        "DEBUG" -> UnifiedLog.Level.DEBUG
+                        "WARN" -> UnifiedLog.Level.WARN
+                        "ERROR" -> UnifiedLog.Level.ERROR
+                        else -> UnifiedLog.Level.INFO
                     },
+                source = "diagnostics",
                 message = "${event.category}:${event.event}",
-                extras = event.metadata,
+                details = event.metadata,
             )
         }
 

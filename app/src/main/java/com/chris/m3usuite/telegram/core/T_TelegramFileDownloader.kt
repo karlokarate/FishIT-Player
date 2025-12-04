@@ -2,7 +2,7 @@ package com.chris.m3usuite.telegram.core
 
 import android.content.Context
 import android.os.SystemClock
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.util.Mp4HeaderParser
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.File
@@ -142,7 +142,7 @@ class T_TelegramFileDownloader(
             try {
                 client.fileUpdates.collect { update -> handleFileUpdate(update.file) }
             } catch (e: Exception) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     source = "T_TelegramFileDownloader",
                     message = "File update collector stopped: ${e.message}",
                 )
@@ -288,7 +288,7 @@ class T_TelegramFileDownloader(
                 is DownloadKind.THUMB -> thumbQueue.offer(job)
             }
 
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Download job enqueued",
                 details =
@@ -313,7 +313,7 @@ class T_TelegramFileDownloader(
                 is DownloadKind.THUMB -> activeThumbDownloads++
             }
 
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Download started",
                 details =
@@ -338,7 +338,7 @@ class T_TelegramFileDownloader(
                     activeThumbDownloads = (activeThumbDownloads - 1).coerceAtLeast(0)
             }
 
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Download completed",
                 details =
@@ -374,7 +374,7 @@ class T_TelegramFileDownloader(
         }
 
         if (released) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Download slot released",
                 details =
@@ -478,7 +478,7 @@ class T_TelegramFileDownloader(
     private suspend fun runDownloadJob(job: PendingDownloadJob): Any {
         val queuedDuration = SystemClock.elapsedRealtime() - job.queuedAtMs
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "T_TelegramFileDownloader",
             message = "Starting download",
             details =
@@ -526,7 +526,7 @@ class T_TelegramFileDownloader(
                     releaseDownloadSlot(job.fileId, job.kind, reason)
                 }
 
-                TelegramLogRepository.logFileDownload(
+                UnifiedLog.logFileDownload(
                     fileId = job.fileId,
                     progress = 0,
                     total = (result.result.expectedSize ?: 0).toInt(),
@@ -535,7 +535,7 @@ class T_TelegramFileDownloader(
             }
             is TdlResult.Failure -> {
                 releaseDownloadSlot(job.fileId, job.kind, "start_failed")
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "T_TelegramFileDownloader",
                     message = "Download failed to start",
                     details =
@@ -577,7 +577,7 @@ class T_TelegramFileDownloader(
         windowSize: Long,
     ): Boolean =
         withContext(Dispatchers.IO) {
-            TelegramLogRepository.warn(
+            UnifiedLog.warn(
                 source = "T_TelegramFileDownloader",
                 message = "ensureWindow is deprecated - use ensureFileReadyWithMp4Validation instead",
                 details =
@@ -624,7 +624,7 @@ class T_TelegramFileDownloader(
         fileSizeBytes: Long? = null,
         timeoutMs: Long = 30_000L,
     ): String {
-        TelegramLogRepository.warn(
+        UnifiedLog.warn(
             source = "T_TelegramFileDownloader",
             message = "ensureFileReady is deprecated - use ensureFileReadyWithMp4Validation instead",
             details =
@@ -716,7 +716,7 @@ class T_TelegramFileDownloader(
     ): Boolean =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Starting download",
                     details =
@@ -737,7 +737,7 @@ class T_TelegramFileDownloader(
                         ) as TdlResult<File>
                 ) {
                     is TdlResult.Success -> {
-                        TelegramLogRepository.logFileDownload(
+                        UnifiedLog.logFileDownload(
                             fileId = fileId,
                             progress = 0,
                             total = (result.result.expectedSize ?: 0).toInt(),
@@ -746,7 +746,7 @@ class T_TelegramFileDownloader(
                         true
                     }
                     is TdlResult.Failure -> {
-                        TelegramLogRepository.error(
+                        UnifiedLog.error(
                             source = "T_TelegramFileDownloader",
                             message = "Download start failed",
                             details =
@@ -759,7 +759,7 @@ class T_TelegramFileDownloader(
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "T_TelegramFileDownloader",
                     message = "Download start error",
                     exception = e,
@@ -788,7 +788,7 @@ class T_TelegramFileDownloader(
                 }
                 releaseDownloadSlot(fileId = fileIdInt, reason = "cancelled_string")
 
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
                     details = mapOf("fileId" to fileId),
@@ -812,7 +812,7 @@ class T_TelegramFileDownloader(
                 }
                 releaseDownloadSlot(fileId = fileId, reason = "cancelled_int")
 
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
                     details = mapOf("fileId" to fileId.toString()),
@@ -834,7 +834,7 @@ class T_TelegramFileDownloader(
     )
     suspend fun cleanupFileHandle(fileId: Int) =
         withContext(Dispatchers.IO) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "cleanupFileHandle is deprecated (no-op)",
                 details = mapOf("fileId" to fileId.toString()),
@@ -958,7 +958,7 @@ class T_TelegramFileDownloader(
      */
     suspend fun resolveRemoteFileId(remoteId: String): Int? =
         withContext(Dispatchers.IO) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Resolving remoteId to fileId",
                 details = mapOf("remoteId" to remoteId),
@@ -979,7 +979,7 @@ class T_TelegramFileDownloader(
                         // Cache the resolved file info
                         fileInfoCache[fileId.toString()] = file
 
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = "T_TelegramFileDownloader",
                             message = "Resolved remoteId to fileId",
                             details =
@@ -991,7 +991,7 @@ class T_TelegramFileDownloader(
                         fileId
                     }
                     is dev.g000sha256.tdl.TdlResult.Failure -> {
-                        TelegramLogRepository.error(
+                        UnifiedLog.error(
                             source = "T_TelegramFileDownloader",
                             message = "Failed to resolve remoteId",
                             details =
@@ -1005,7 +1005,7 @@ class T_TelegramFileDownloader(
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "T_TelegramFileDownloader",
                     message = "Exception resolving remoteId",
                     exception = e,
@@ -1028,7 +1028,7 @@ class T_TelegramFileDownloader(
      */
     suspend fun cleanupCache(maxCacheSizeMb: Long = 500) =
         withContext(Dispatchers.IO) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Checking cache size for cleanup...",
             )
@@ -1041,7 +1041,7 @@ class T_TelegramFileDownloader(
                     val stats = statsResult.result
                     val currentSizeMb = stats.filesSize / (1024 * 1024)
 
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = "T_TelegramFileDownloader",
                         message = "Current TDLib cache size",
                         details =
@@ -1052,7 +1052,7 @@ class T_TelegramFileDownloader(
                     )
 
                     if (currentSizeMb > maxCacheSizeMb) {
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "T_TelegramFileDownloader",
                             message = "Cache size exceeds limit, optimizing storage...",
                             details =
@@ -1083,13 +1083,13 @@ class T_TelegramFileDownloader(
                             is dev.g000sha256.tdl.TdlResult.Success -> {
                                 // Clear our cache as well
                                 fileInfoCache.clear()
-                                TelegramLogRepository.info(
+                                UnifiedLog.info(
                                     source = "T_TelegramFileDownloader",
                                     message = "Cache optimized successfully",
                                 )
                             }
                             is dev.g000sha256.tdl.TdlResult.Failure -> {
-                                TelegramLogRepository.error(
+                                UnifiedLog.error(
                                     source = "T_TelegramFileDownloader",
                                     message = "Storage optimization failed",
                                     details = mapOf("error" to optimizeResult.message),
@@ -1099,7 +1099,7 @@ class T_TelegramFileDownloader(
                     }
                 }
                 is dev.g000sha256.tdl.TdlResult.Failure -> {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = "T_TelegramFileDownloader",
                         message = "Storage stats query failed",
                         details = mapOf("error" to statsResult.message),
@@ -1124,7 +1124,7 @@ class T_TelegramFileDownloader(
                 fileId = fileId,
                 onlyIfPending = onlyIfPending,
             )
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Cancelled download on playback end",
                 details =
@@ -1134,7 +1134,7 @@ class T_TelegramFileDownloader(
                     ),
             )
         } catch (e: Exception) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "Failed to cancel download (non-critical)",
                 details =
@@ -1195,7 +1195,7 @@ class T_TelegramFileDownloader(
             val startTimeMs = System.currentTimeMillis()
             val isSeeking = offset > 0L
 
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "T_TelegramFileDownloader",
                 message =
                     "ensureFileReadyWithMp4Validation: Starting download" +
@@ -1241,7 +1241,7 @@ class T_TelegramFileDownloader(
 
                     if (is404Error && !remoteId.isNullOrBlank()) {
                         // Log stale fileId warning (matching thumbnail pattern)
-                        TelegramLogRepository.warn(
+                        UnifiedLog.warn(
                             source = "T_TelegramFileDownloader",
                             message = "Stale fileId, will fall back to remoteId",
                             details =
@@ -1254,7 +1254,7 @@ class T_TelegramFileDownloader(
                         )
 
                         // Resolve remoteId to fresh fileId
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = "T_TelegramFileDownloader",
                             message = "Resolving remoteId to fileId",
                             details = mapOf("remoteId" to remoteId),
@@ -1262,7 +1262,7 @@ class T_TelegramFileDownloader(
 
                         val newFileId = resolveRemoteFileId(remoteId)
                         if (newFileId == null || newFileId <= 0) {
-                            TelegramLogRepository.error(
+                            UnifiedLog.error(
                                 source = "T_TelegramFileDownloader",
                                 message = "ensureFileReadyWithMp4Validation: remoteId resolution failed after 404",
                                 details =
@@ -1274,7 +1274,7 @@ class T_TelegramFileDownloader(
                             throw Exception("Failed to resolve remoteId=$remoteId after stale fileId=$actualFileId")
                         }
 
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = "T_TelegramFileDownloader",
                             message = "Resolved remoteId to fileId",
                             details =
@@ -1298,7 +1298,7 @@ class T_TelegramFileDownloader(
                         // Check retry result
                         when (downloadResult) {
                             is dev.g000sha256.tdl.TdlResult.Failure -> {
-                                TelegramLogRepository.error(
+                                UnifiedLog.error(
                                     source = "T_TelegramFileDownloader",
                                     message = "ensureFileReadyWithMp4Validation: Download failed even after remoteId resolution",
                                     details =
@@ -1310,7 +1310,7 @@ class T_TelegramFileDownloader(
                                 throw Exception("Failed to start download for resolved fileId=$actualFileId: ${downloadResult.message}")
                             }
                             is dev.g000sha256.tdl.TdlResult.Success -> {
-                                TelegramLogRepository.info(
+                                UnifiedLog.info(
                                     source = "T_TelegramFileDownloader",
                                     message = "ensureFileReadyWithMp4Validation: Download initiated after remoteId resolution",
                                     details =
@@ -1323,7 +1323,7 @@ class T_TelegramFileDownloader(
                         }
                     } else {
                         // Not a 404 or no remoteId available - fail immediately
-                        TelegramLogRepository.error(
+                        UnifiedLog.error(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: Download initiation failed",
                             details =
@@ -1339,7 +1339,7 @@ class T_TelegramFileDownloader(
                 }
                 is dev.g000sha256.tdl.TdlResult.Success -> {
                     // Download started successfully
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: Download initiated",
                         details = mapOf("fileId" to actualFileId.toString()),
@@ -1357,7 +1357,7 @@ class T_TelegramFileDownloader(
             while (true) {
                 val elapsedMs = System.currentTimeMillis() - startTimeMs
                 if (elapsedMs > timeoutMs) {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: Timeout waiting for file download",
                         details =
@@ -1382,7 +1382,7 @@ class T_TelegramFileDownloader(
                 if (StreamingConfigRefactor.ENABLE_VERBOSE_LOGGING ||
                     downloadedPrefixSize - lastLoggedPrefixSize >= 256 * 1024
                 ) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: Download progress",
                         details =
@@ -1422,7 +1422,7 @@ class T_TelegramFileDownloader(
                             isDownloadingCompleted
 
                     if (hasMinimumDataForSeek) {
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: SEEK ready",
                             details =
@@ -1451,7 +1451,7 @@ class T_TelegramFileDownloader(
 
                 // Check if local path is available
                 if (localPath.isNullOrBlank()) {
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: Local path not available yet",
                         details =
@@ -1467,7 +1467,7 @@ class T_TelegramFileDownloader(
                 // Check if file exists
                 val localFile = java.io.File(localPath)
                 if (!localFile.exists()) {
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: Local file does not exist yet",
                         details =
@@ -1483,7 +1483,7 @@ class T_TelegramFileDownloader(
                 // Step 3: Validate MP4 header (only for initial playback)
                 if (!moovCheckStarted) {
                     moovCheckStarted = true
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReadyWithMp4Validation: Starting MP4 header validation",
                         details =
@@ -1501,7 +1501,7 @@ class T_TelegramFileDownloader(
                 when (validationResult) {
                     is Mp4HeaderParser.ValidationResult.MoovComplete -> {
                         // SUCCESS: moov atom complete, ready for playback
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: SUCCESS - MP4 header validation complete",
                             details =
@@ -1523,7 +1523,7 @@ class T_TelegramFileDownloader(
                             val remainingBytes =
                                 validationResult.moovOffset + validationResult.moovSize -
                                     validationResult.availableBytes
-                            TelegramLogRepository.info(
+                            UnifiedLog.info(
                                 source = "T_TelegramFileDownloader",
                                 message = "ensureFileReadyWithMp4Validation: MP4 moov atom incomplete, waiting",
                                 details =
@@ -1544,7 +1544,7 @@ class T_TelegramFileDownloader(
                     is Mp4HeaderParser.ValidationResult.MoovNotFound -> {
                         // moov not found yet - check limits
                         if (downloadedPrefixSize >= StreamingConfigRefactor.MAX_PREFIX_SCAN_BYTES) {
-                            TelegramLogRepository.error(
+                            UnifiedLog.error(
                                 source = "T_TelegramFileDownloader",
                                 message = "ensureFileReadyWithMp4Validation: MP4 moov not found within scan limit",
                                 details =
@@ -1564,7 +1564,7 @@ class T_TelegramFileDownloader(
 
                         // Download complete but moov not found
                         if (isDownloadingCompleted) {
-                            TelegramLogRepository.error(
+                            UnifiedLog.error(
                                 source = "T_TelegramFileDownloader",
                                 message = "ensureFileReadyWithMp4Validation: Download complete but moov not found",
                                 details =
@@ -1583,7 +1583,7 @@ class T_TelegramFileDownloader(
 
                         // Keep waiting for more data
                         if (StreamingConfigRefactor.ENABLE_VERBOSE_LOGGING) {
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 source = "T_TelegramFileDownloader",
                                 message = "ensureFileReadyWithMp4Validation: moov not found yet, continuing",
                                 details =
@@ -1600,7 +1600,7 @@ class T_TelegramFileDownloader(
 
                     is Mp4HeaderParser.ValidationResult.Invalid -> {
                         // File format invalid
-                        TelegramLogRepository.error(
+                        UnifiedLog.error(
                             source = "T_TelegramFileDownloader",
                             message = "ensureFileReadyWithMp4Validation: MP4 header validation failed",
                             details =

@@ -12,7 +12,7 @@ import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TgSyncState
 import com.chris.m3usuite.telegram.ingestion.TelegramHistoryScanner
 import com.chris.m3usuite.telegram.ingestion.TelegramIngestionCoordinator
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -63,12 +63,12 @@ class TelegramSyncWorker(
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             try {
-                TelegramLogRepository.info("TelegramSyncWorker", "Starting sync...")
+                UnifiedLog.info("TelegramSyncWorker", "Starting sync...")
 
                 // Load settings
                 val enabled = settingsStore.tgEnabled.first()
                 if (!enabled) {
-                    TelegramLogRepository.info("TelegramSyncWorker", "Telegram not enabled, skipping sync")
+                    UnifiedLog.info("TelegramSyncWorker", "Telegram not enabled, skipping sync")
                     return@withContext Result.success()
                 }
 
@@ -76,12 +76,12 @@ class TelegramSyncWorker(
                 val mode = inputData.getString(KEY_MODE) ?: MODE_ALL
                 val validModes = setOf(MODE_ALL, MODE_SELECTION_CHANGED, MODE_BACKFILL_SERIES)
                 if (mode !in validModes) {
-                    TelegramLogRepository.info("TelegramSyncWorker", "Invalid sync mode: $mode. Failing job.")
+                    UnifiedLog.info("TelegramSyncWorker", "Invalid sync mode: $mode. Failing job.")
                     return@withContext Result.failure()
                 }
                 val refreshHome = inputData.getBoolean(KEY_REFRESH_HOME, false)
 
-                TelegramLogRepository.info("TelegramSyncWorker", "Sync mode: $mode, refreshHome: $refreshHome")
+                UnifiedLog.info("TelegramSyncWorker", "Sync mode: $mode, refreshHome: $refreshHome")
 
                 // Ensure Telegram service is started
                 val serviceClient = T_TelegramServiceClient.getInstance(applicationContext)
@@ -92,7 +92,7 @@ class TelegramSyncWorker(
                 val isReady = serviceClient.awaitAuthReady(timeoutMs = 30_000L)
                 if (!isReady) {
                     val currentAuthState = serviceClient.authState.value
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         "TelegramSyncWorker",
                         "Auth not ready after timeout, cannot sync (state: ${currentAuthState::class.simpleName})",
                     )
@@ -102,7 +102,7 @@ class TelegramSyncWorker(
                     )
                 }
 
-                TelegramLogRepository.info("TelegramSyncWorker", "Auth ready, proceeding with sync")
+                UnifiedLog.info("TelegramSyncWorker", "Auth ready, proceeding with sync")
 
                 // Phase 8: Playback-aware throttling before heavy sync operations
                 throttleIfPlaybackActive(mode)
@@ -114,17 +114,17 @@ class TelegramSyncWorker(
                 val chatsToSync = determineChatIdsToSync(mode)
 
                 if (chatsToSync.isEmpty()) {
-                    TelegramLogRepository.info("TelegramSyncWorker", "No chats selected for sync")
+                    UnifiedLog.info("TelegramSyncWorker", "No chats selected for sync")
                     serviceClient.updateSyncState(TgSyncState.Completed(0))
                     return@withContext Result.success()
                 }
 
-                TelegramLogRepository.info("TelegramSyncWorker", "Syncing ${chatsToSync.size} chats")
+                UnifiedLog.info("TelegramSyncWorker", "Syncing ${chatsToSync.size} chats")
 
                 // Phase 8: Calculate adaptive parallelism based on device profile
                 // and playback state (reduced parallelism during active playback)
                 val parallelism = calculateParallelism()
-                TelegramLogRepository.info("TelegramSyncWorker", "Using parallelism: $parallelism")
+                UnifiedLog.info("TelegramSyncWorker", "Using parallelism: $parallelism")
 
                 // Sync chats in parallel
                 var totalProcessed = 0
@@ -149,7 +149,7 @@ class TelegramSyncWorker(
                 // Sum up results
                 totalProcessed = results.sum()
 
-                TelegramLogRepository.info("TelegramSyncWorker", "Sync completed: $totalProcessed items processed")
+                UnifiedLog.info("TelegramSyncWorker", "Sync completed: $totalProcessed items processed")
 
                 // Update sync state to Completed
                 serviceClient.updateSyncState(TgSyncState.Completed(totalProcessed))
@@ -161,7 +161,7 @@ class TelegramSyncWorker(
                     ),
                 )
             } catch (e: Exception) {
-                TelegramLogRepository.info("TelegramSyncWorker", "Sync failed: ${e.message}")
+                UnifiedLog.info("TelegramSyncWorker", "Sync failed: ${e.message}")
                 e.printStackTrace()
 
                 // Update sync state to Failed
@@ -223,7 +223,7 @@ class TelegramSyncWorker(
                 )
 
             if (page.isEmpty()) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramSyncWorker",
                     message = "Stopping pagination: empty page from TDLib",
                     details =
@@ -237,7 +237,7 @@ class TelegramSyncWorker(
 
             all += page
 
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "TelegramSyncWorker",
                 message = "Loaded Telegram page",
                 details =
@@ -252,7 +252,7 @@ class TelegramSyncWorker(
             // Use last message from the page to set next fromMessageId (consistent with T_ChatBrowser)
             val oldestMessage = page.lastOrNull()
             if (oldestMessage == null || oldestMessage.id == fromMessageId) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "TelegramSyncWorker",
                     message = "Stopping pagination: reached oldest known message",
                     details =
@@ -269,7 +269,7 @@ class TelegramSyncWorker(
             offset = 0
         }
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = "TelegramSyncWorker",
             message = "Stopping pagination: reached maxPages cap",
             details =
@@ -303,7 +303,7 @@ class TelegramSyncWorker(
             var itemsProcessed = 0
 
             try {
-                TelegramLogRepository.info("TelegramSyncWorker", "Syncing chat $chatId (type: $chatType, mode: $mode)")
+                UnifiedLog.info("TelegramSyncWorker", "Syncing chat $chatId (type: $chatType, mode: $mode)")
 
                 // Resolve chat title for context
                 val chatTitle = serviceClient.resolveChatTitle(chatId)
@@ -348,12 +348,12 @@ class TelegramSyncWorker(
                         config = scanConfig,
                     )
 
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     "TelegramSyncWorker",
                     "Chat $chatId: processed $itemsProcessed items via new pipeline",
                 )
             } catch (e: Exception) {
-                TelegramLogRepository.info("TelegramSyncWorker", "Error syncing chat $chatId: ${e.message}")
+                UnifiedLog.info("TelegramSyncWorker", "Error syncing chat $chatId: ${e.message}")
                 e.printStackTrace()
                 // Continue with other chats even if one fails
             }
@@ -441,13 +441,13 @@ class TelegramSyncWorker(
     /**
      * Phase 8: Delays execution when playback is active to avoid stuttering.
      * Uses [PlaybackPriority.PLAYBACK_THROTTLE_MS] delay when playback is active.
-     * Logs the throttling event via TelegramLogRepository.
+     * Logs the throttling event via UnifiedLog.
      *
      * @param mode Current sync mode for logging context
      */
     private suspend fun throttleIfPlaybackActive(mode: String) {
         if (PlaybackPriority.isPlaybackActive.value) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 "TelegramSyncWorker",
                 "Playback active, using throttled mode",
                 mapOf("mode" to mode),
@@ -496,7 +496,7 @@ class TelegramSyncWorker(
                     ).build()
 
             WorkManager.getInstance(context).enqueue(request)
-            TelegramLogRepository.info("TelegramSyncWorker", "Scheduled sync with mode: $mode")
+            UnifiedLog.info("TelegramSyncWorker", "Scheduled sync with mode: $mode")
         }
     }
 }

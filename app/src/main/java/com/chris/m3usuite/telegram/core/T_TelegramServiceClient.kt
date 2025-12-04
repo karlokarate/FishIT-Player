@@ -5,8 +5,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.config.AppConfig
 import com.chris.m3usuite.telegram.config.ConfigLoader
 import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
-import com.chris.m3usuite.telegram.logging.TgLogEntry
+import com.chris.m3usuite.core.logging.UnifiedLog
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.*
@@ -186,16 +185,15 @@ class T_TelegramServiceClient
             settings: SettingsStore,
         ) {
             if (_isStarted.get()) {
-                TelegramLogRepository.log(
-                    level = TgLogEntry.LogLevel.DEBUG,
-                    source = "T_TelegramServiceClient",
-                    message = "Already started",
+                UnifiedLog.debug(
+                    "T_TelegramServiceClient",
+                    "Already started",
                 )
                 return
             }
 
             if (!isInitializing.compareAndSet(false, true)) {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     "T_TelegramServiceClient",
                     "Already initializing, waiting...",
                 )
@@ -209,17 +207,16 @@ class T_TelegramServiceClient
             try {
                 // Recreate serviceScope if it was cancelled (e.g., after shutdown)
                 if (!serviceScope.isActive) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         "T_TelegramServiceClient",
                         "Recreating cancelled serviceScope...",
                     )
                     serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
                 }
 
-                TelegramLogRepository.log(
-                    level = TgLogEntry.LogLevel.INFO,
-                    source = "T_TelegramServiceClient",
-                    message = "Starting Unified Telegram Engine",
+                UnifiedLog.info(
+                    "T_TelegramServiceClient",
+                    "Starting Unified Telegram Engine",
                 )
                 _connectionState.value = TgConnectionState.Connecting
 
@@ -238,10 +235,9 @@ class T_TelegramServiceClient
 
                 // Create TdlClient
                 client = TdlClient.create()
-                TelegramLogRepository.log(
-                    level = TgLogEntry.LogLevel.INFO,
-                    source = "T_TelegramServiceClient",
-                    message = "TdlClient created",
+                UnifiedLog.info(
+                    "T_TelegramServiceClient",
+                    "TdlClient created",
                 )
 
                 // Apply TDLib log verbosity level from settings
@@ -284,20 +280,20 @@ class T_TelegramServiceClient
                         is TdlResult.Success -> {
                             val mappedState = mapAuthorizationStateToAuthState(authStateResult.result)
                             _authState.value = mappedState
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 "T_TelegramServiceClient",
                                 "Initial auth state after start: $mappedState (TDLib: ${authStateResult.result::class.simpleName})",
                             )
                         }
                         is TdlResult.Failure -> {
-                            TelegramLogRepository.error(
+                            UnifiedLog.error(
                                 "T_TelegramServiceClient",
                                 "Failed to get initial auth state: ${authStateResult.message}",
                             )
                         }
                     }
                 } catch (e: Exception) {
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         "T_TelegramServiceClient",
                         "Failed to query initial auth state: ${e.message}",
                     )
@@ -306,16 +302,14 @@ class T_TelegramServiceClient
                 _connectionState.value = TgConnectionState.Connected
                 _isStarted.set(true)
 
-                TelegramLogRepository.log(
-                    level = TgLogEntry.LogLevel.INFO,
-                    source = "T_TelegramServiceClient",
-                    message = "Unified Telegram Engine started successfully",
+                UnifiedLog.info(
+                    "T_TelegramServiceClient",
+                    "Unified Telegram Engine started successfully",
                 )
             } catch (e: Exception) {
-                TelegramLogRepository.log(
-                    level = TgLogEntry.LogLevel.ERROR,
-                    source = "T_TelegramServiceClient",
-                    message = "Failed to start",
+                UnifiedLog.error(
+                    "T_TelegramServiceClient",
+                    "Failed to start",
                     details = mapOf("error" to (e.message ?: "Unknown error")),
                 )
                 e.printStackTrace()
@@ -344,27 +338,27 @@ class T_TelegramServiceClient
             try {
                 when {
                     password != null -> {
-                        TelegramLogRepository.debug("T_TelegramServiceClient", "Submitting password...")
+                        UnifiedLog.debug("T_TelegramServiceClient", "Submitting password...")
                         currentSession.sendPassword(password)
                     }
                     code != null -> {
-                        TelegramLogRepository.debug("T_TelegramServiceClient", "Submitting code...")
+                        UnifiedLog.debug("T_TelegramServiceClient", "Submitting code...")
                         currentSession.sendCode(code)
                     }
                     phone != null -> {
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             "T_TelegramServiceClient",
                             "Submitting phone number...",
                         )
                         currentSession.sendPhoneNumber(phone)
                     }
                     else -> {
-                        TelegramLogRepository.debug("T_TelegramServiceClient", "Starting login flow...")
+                        UnifiedLog.debug("T_TelegramServiceClient", "Starting login flow...")
                         currentSession.login()
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Login error: ${e.message}")
+                UnifiedLog.debug("T_TelegramServiceClient", "Login error: ${e.message}")
                 _authState.value = TelegramAuthState.Error(e.message ?: "Login failed")
                 throw e
             }
@@ -438,7 +432,7 @@ class T_TelegramServiceClient
          * - Ingestion MUST NOT run unless auth state is [TelegramAuthState.Ready]
          * - If TDLib DB is already authorized from a previous session, this returns immediately once
          * the auth state collector receives the Ready state
-         * - All auth state transitions are logged via [TelegramLogRepository]
+         * - All auth state transitions are logged via [UnifiedLog]
          *
          * Typical usage in sync workers:
          * ```kotlin
@@ -450,25 +444,25 @@ class T_TelegramServiceClient
          * @return true if auth became ready within timeout, false otherwise
          */
         suspend fun awaitAuthReady(timeoutMs: Long = 30_000L): Boolean {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 "T_TelegramServiceClient",
                 "Waiting for auth ready (current: ${_authState.value::class.simpleName}, timeout: ${timeoutMs}ms)",
             )
 
             // If already ready, return immediately
             if (_authState.value == TelegramAuthState.Ready) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "Auth already ready")
+                UnifiedLog.debug("T_TelegramServiceClient", "Auth already ready")
                 return true
             }
 
             return try {
                 withTimeout(timeoutMs) {
                     _authState.filter { it == TelegramAuthState.Ready }.first()
-                    TelegramLogRepository.info("T_TelegramServiceClient", "Auth became ready")
+                    UnifiedLog.info("T_TelegramServiceClient", "Auth became ready")
                     true
                 }
             } catch (e: TimeoutCancellationException) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     "T_TelegramServiceClient",
                     "Auth ready timeout after ${timeoutMs}ms (current: ${_authState.value::class.simpleName})",
                 )
@@ -518,7 +512,7 @@ class T_TelegramServiceClient
                         )
                     }
                 } catch (e: Exception) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         "T_TelegramServiceClient",
                         "Error in newMessageUpdates flow: ${e.message}",
                     )
@@ -544,14 +538,14 @@ class T_TelegramServiceClient
                         }
                     }
                 } catch (e: Exception) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         "T_TelegramServiceClient",
                         "Error in file updates flow: ${e.message}",
                     )
                 }
             }
 
-            TelegramLogRepository.debug("T_TelegramServiceClient", "Update distribution started")
+            UnifiedLog.debug("T_TelegramServiceClient", "Update distribution started")
         }
 
         /**
@@ -560,7 +554,7 @@ class T_TelegramServiceClient
          */
         private fun startUpdateHandler() {
             if (updateHandler != null) {
-                TelegramLogRepository.debug("T_TelegramServiceClient", "UpdateHandler already started")
+                UnifiedLog.debug("T_TelegramServiceClient", "UpdateHandler already started")
                 return
             }
 
@@ -571,12 +565,12 @@ class T_TelegramServiceClient
                         serviceClient = this,
                     )
                 updateHandler?.start()
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     "T_TelegramServiceClient",
                     "TelegramUpdateHandler started for live updates",
                 )
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "T_TelegramServiceClient",
                     message = "Failed to start TelegramUpdateHandler",
                     exception = e,
@@ -595,27 +589,27 @@ class T_TelegramServiceClient
                             is AuthEvent.StateChanged -> {
                                 val newState = mapAuthorizationStateToAuthState(event.state)
                                 _authState.value = newState
-                                TelegramLogRepository.debug(
+                                UnifiedLog.debug(
                                     "T_TelegramServiceClient",
                                     "Auth state changed: $newState",
                                 )
                             }
                             is AuthEvent.Ready -> {
                                 _authState.value = TelegramAuthState.Ready
-                                TelegramLogRepository.debug("T_TelegramServiceClient", "Auth ready ✅")
+                                UnifiedLog.debug("T_TelegramServiceClient", "Auth ready ✅")
                                 // Start live update handler for real-time message processing
                                 startUpdateHandler()
                             }
                             is AuthEvent.Error -> {
                                 _authState.value = TelegramAuthState.Error(event.message)
-                                TelegramLogRepository.debug(
+                                UnifiedLog.debug(
                                     "T_TelegramServiceClient",
                                     "Auth error: ${event.message}",
                                 )
                             }
                             is AuthEvent.ReauthRequired -> {
                                 _authState.value = TelegramAuthState.WaitingForPhone
-                                TelegramLogRepository.info(
+                                UnifiedLog.info(
                                     "T_TelegramServiceClient",
                                     "Reauth required: ${event.reason}",
                                 )
@@ -625,7 +619,7 @@ class T_TelegramServiceClient
                                         "Telegram benötigt eine erneute Anmeldung. Bitte öffne die Telegram-Einstellungen.",
                                     )
                                 } catch (e: Exception) {
-                                    TelegramLogRepository.debug(
+                                    UnifiedLog.debug(
                                         "T_TelegramServiceClient",
                                         "Error showing reauth snackbar: ${e.message}",
                                     )
@@ -634,7 +628,7 @@ class T_TelegramServiceClient
                         }
                     }
                 } catch (e: Exception) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         "T_TelegramServiceClient",
                         "Error in auth events flow: ${e.message}",
                     )
@@ -659,7 +653,7 @@ class T_TelegramServiceClient
 
         /** Shutdown the service and cleanup resources. */
         fun shutdown() {
-            TelegramLogRepository.debug("T_TelegramServiceClient", "Shutting down...")
+            UnifiedLog.debug("T_TelegramServiceClient", "Shutting down...")
 
             // Stop update handler first
             updateHandler?.stop()
@@ -672,9 +666,9 @@ class T_TelegramServiceClient
             runBlocking {
                 try {
                     client?.close()
-                    TelegramLogRepository.debug("T_TelegramServiceClient", "TdlClient closed")
+                    UnifiedLog.debug("T_TelegramServiceClient", "TdlClient closed")
                 } catch (e: Exception) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         "T_TelegramServiceClient",
                         "Error closing TdlClient: ${e.message}",
                     )
@@ -694,7 +688,7 @@ class T_TelegramServiceClient
             _connectionState.value = TgConnectionState.Disconnected
             _syncState.value = TgSyncState.Idle
 
-            TelegramLogRepository.info("T_TelegramServiceClient", "Shutdown complete")
+            UnifiedLog.info("T_TelegramServiceClient", "Shutdown complete")
         }
 
         /**
@@ -714,20 +708,20 @@ class T_TelegramServiceClient
 
                 when (result) {
                     is TdlResult.Success -> {
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "T_TelegramServiceClient",
                             message = "TDLib log verbosity set to level $logLevel",
                         )
                     }
                     is TdlResult.Failure -> {
-                        TelegramLogRepository.error(
+                        UnifiedLog.error(
                             source = "T_TelegramServiceClient",
                             message = "Failed to set TDLib log verbosity: ${result.message}",
                         )
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "T_TelegramServiceClient",
                     message = "Exception setting TDLib log verbosity",
                     exception = e,

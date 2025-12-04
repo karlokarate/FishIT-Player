@@ -1,7 +1,7 @@
 package com.chris.m3usuite.telegram.ingestion
 
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.parser.ExportMessage
 import com.chris.m3usuite.telegram.parser.TdlMessageMapper
 import dev.g000sha256.tdl.dto.Message
@@ -94,7 +94,7 @@ class TelegramHistoryScanner(
         config: ScanConfig = ScanConfig(),
         onBatchReceived: (suspend (batch: List<ExportMessage>, pageIndex: Int) -> Unit)? = null,
     ): ScanResult {
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             TAG,
             "Starting scan for chat $chatId (pageSize=${config.pageSize}, maxPages=${config.maxPages})",
         )
@@ -128,7 +128,7 @@ class TelegramHistoryScanner(
             if (uniqueMessages.isEmpty()) {
                 consecutiveEmptyPages++
                 if (consecutiveEmptyPages >= 2) {
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         TAG,
                         "Stopping scan: $consecutiveEmptyPages consecutive empty pages",
                     )
@@ -145,7 +145,7 @@ class TelegramHistoryScanner(
             val exportMessages = TdlMessageMapper.toExportMessages(uniqueMessages)
             allMessages.addAll(exportMessages)
 
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 TAG,
                 "Page $pageIndex: ${uniqueMessages.size} raw -> ${exportMessages.size} converted",
             )
@@ -156,7 +156,7 @@ class TelegramHistoryScanner(
             // Find oldest message for pagination
             val oldestInBatch = uniqueMessages.minByOrNull { it.id }
             if (oldestInBatch == null || oldestInBatch.id == fromMessageId) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     TAG,
                     "Stopping scan: reached oldest known message",
                 )
@@ -172,7 +172,7 @@ class TelegramHistoryScanner(
 
             // If batch is smaller than page size, likely at end of history
             if (uniqueMessages.size < config.pageSize) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     TAG,
                     "Stopping scan: received partial batch (${uniqueMessages.size} < ${config.pageSize})",
                 )
@@ -181,7 +181,7 @@ class TelegramHistoryScanner(
             }
         }
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             TAG,
             "Scan complete for chat $chatId: $totalRawCount raw -> ${allMessages.size} converted",
         )
@@ -262,7 +262,7 @@ class TelegramHistoryScanner(
                     // Empty result - retry with backoff
                     if (attempt < maxRetries - 1) {
                         val delayMs = INITIAL_RETRY_DELAY_MS * (attempt + 1)
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             TAG,
                             "Empty batch from chat $chatId, retrying in ${delayMs}ms (attempt ${attempt + 1}/$maxRetries)",
                         )
@@ -275,7 +275,7 @@ class TelegramHistoryScanner(
                     // call shortly after delivers the rest (up to the set limit)"
                     // Wait for TDLib to finish loading from server, then retry.
                     // We retry up to 2 times (attempt 0 and 1) to allow TDLib time to load.
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         TAG,
                         "First batch from chat $chatId returned only ${messages.size} messages " +
                             "(TDLib async loading), waiting ${TDLIB_ASYNC_LOAD_DELAY_MS}ms and retrying",
@@ -287,7 +287,7 @@ class TelegramHistoryScanner(
                     return messages
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     TAG,
                     "Error loading batch from chat $chatId (attempt ${attempt + 1}/$maxRetries): ${e.message}",
                 )
@@ -298,7 +298,7 @@ class TelegramHistoryScanner(
             }
         }
 
-        TelegramLogRepository.warn(
+        UnifiedLog.warn(
             TAG,
             "Failed to load batch from chat $chatId after $maxRetries attempts",
         )

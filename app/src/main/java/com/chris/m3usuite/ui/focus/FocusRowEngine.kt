@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.model.MediaItem
 import com.chris.m3usuite.ui.fx.ShimmerBox
 import com.chris.m3usuite.ui.home.LocalChromeRowFocusSetter
@@ -147,11 +147,11 @@ fun MediaRowCorePaged(
                 } catch (_: CancellationException) {
                     // Row was disposed; ignore silently
                 } catch (t: Throwable) {
-                    AppLog.log(
-                        category = "focus",
-                        level = AppLog.Level.DEBUG,
+                    UnifiedLog.log(
+                        level = UnifiedLog.Level.DEBUG,
+                        source = "focus",
                         message = "row prefetch cancelled/failed",
-                        extras = mapOf("reason" to (t.message ?: "unknown")),
+                        details = mapOf("reason" to (t.message ?: "unknown")),
                     )
                 }
             }

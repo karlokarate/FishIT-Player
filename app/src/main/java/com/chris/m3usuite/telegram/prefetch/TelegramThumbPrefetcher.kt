@@ -7,7 +7,7 @@ import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
 import com.chris.m3usuite.telegram.core.TelegramFileLoader
 import com.chris.m3usuite.telegram.domain.TelegramImageRef
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -92,7 +92,7 @@ class TelegramThumbPrefetcher(
 
         observerJob =
             scope.launch {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = TAG,
                     message = "TelegramThumbPrefetcher started",
                 )
@@ -101,7 +101,7 @@ class TelegramThumbPrefetcher(
                     // Observe enabled state
                     store.tgEnabled.collectLatest { enabled ->
                         if (!enabled) {
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 source = TAG,
                                 message = "Telegram disabled, pausing prefetcher",
                             )
@@ -116,13 +116,13 @@ class TelegramThumbPrefetcher(
                         observeAndPrefetch()
                     }
                 } catch (e: CancellationException) {
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = TAG,
                         message = "TelegramThumbPrefetcher observer cancelled",
                     )
                     throw e
                 } catch (e: Exception) {
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = TAG,
                         message = "TelegramThumbPrefetcher error",
                         exception = e,
@@ -146,7 +146,7 @@ class TelegramThumbPrefetcher(
      */
     private fun pausePrefetch() {
         isPaused = true
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             source = TAG,
             message = "Prefetcher paused (in-flight downloads will complete)",
         )
@@ -159,7 +159,7 @@ class TelegramThumbPrefetcher(
         val wasPaused = isPaused
         isPaused = false
         if (wasPaused) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "Prefetcher resumed",
             )
@@ -190,7 +190,7 @@ class TelegramThumbPrefetcher(
 
         // Phase 4: Check if prefetch is enabled
         if (!settings.thumbPrefetchEnabled) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = TAG,
                 message = "Thumbnail prefetch disabled by settings",
             )
@@ -200,7 +200,7 @@ class TelegramThumbPrefetcher(
         // Phase 4: Initialize semaphore with runtime setting for parallel downloads
         downloadSemaphore = kotlinx.coroutines.sync.Semaphore(settings.thumbMaxParallel)
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = TAG,
             message = "Prefetch configured with runtime settings",
             details =
@@ -220,7 +220,7 @@ class TelegramThumbPrefetcher(
             .collectLatest { (chatMap, vodBuffering) ->
                 // Check soft pause state
                 if (isPaused) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "Prefetch paused, skipping batch",
                     )
@@ -230,7 +230,7 @@ class TelegramThumbPrefetcher(
                 // Phase 4: Re-check settings in case they changed
                 val currentSettings = settingsProvider.currentSettings
                 if (!currentSettings.thumbPrefetchEnabled) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "Prefetch disabled, skipping batch",
                     )
@@ -238,7 +238,7 @@ class TelegramThumbPrefetcher(
                 }
 
                 if (currentSettings.thumbPauseWhileVodBuffering && vodBuffering) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "Prefetch paused – Telegram VOD buffering",
                     )
@@ -247,7 +247,7 @@ class TelegramThumbPrefetcher(
 
                 // Check service state before prefetching
                 if (!serviceClient.isStarted || !serviceClient.isAuthReady()) {
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = TAG,
                         message = "Prefetch skipped – Telegram not started or not READY",
                         details =
@@ -273,7 +273,7 @@ class TelegramThumbPrefetcher(
                         .take(currentSettings.thumbPrefetchBatchSize) // Phase 4: Use runtime batch size
 
                 if (posterRefs.isEmpty()) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = TAG,
                         message = "No new thumbnails to prefetch",
                     )
@@ -281,7 +281,7 @@ class TelegramThumbPrefetcher(
                 }
 
                 // Log batch start (Requirement 3.2.1 + Phase 4: runtime settings)
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = TAG,
                     message = "Prefetch batch starting",
                     details =
@@ -318,7 +318,7 @@ class TelegramThumbPrefetcher(
                 }
 
                 // Log batch completion (Requirement 3.2.1)
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = TAG,
                     message = "Prefetch batch complete",
                     details =
@@ -356,7 +356,7 @@ class TelegramThumbPrefetcher(
     private suspend fun prefetchThumbnail(imageRef: TelegramImageRef): Boolean {
         // Check soft pause before acquiring resources
         if (isPaused) {
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "Prefetch skipped: prefetcher is paused",
                 details = mapOf("remoteId" to imageRef.remoteId),
@@ -379,7 +379,7 @@ class TelegramThumbPrefetcher(
                     if (isComplete && !localPath.isNullOrBlank()) {
                         val localFile = java.io.File(localPath)
                         if (localFile.exists() && (expectedSize <= 0L || localFile.length() >= expectedSize)) {
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 source = TAG,
                                 message = "Prefetch skipped: thumbnail already fully downloaded",
                                 details =
@@ -401,7 +401,7 @@ class TelegramThumbPrefetcher(
             downloadSemaphore?.acquire()
 
             try {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = TAG,
                     message = "Prefetch scheduled: starting thumbnail download",
                     details =
@@ -423,7 +423,7 @@ class TelegramThumbPrefetcher(
                 if (result != null) {
                     // Track by remoteId, not fileId (remoteId is stable)
                     prefetchedRemoteIds.add(imageRef.remoteId)
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = TAG,
                         message = "Prefetch complete: thumbnail downloaded successfully",
                         details =
@@ -434,7 +434,7 @@ class TelegramThumbPrefetcher(
                     )
                     return true
                 } else {
-                    TelegramLogRepository.warn(
+                    UnifiedLog.warn(
                         source = TAG,
                         message = "Prefetch failed: timeout or error",
                         details = mapOf("remoteId" to imageRef.remoteId),
@@ -447,14 +447,14 @@ class TelegramThumbPrefetcher(
             }
         } catch (e: CancellationException) {
             // CancellationException is benign - scope was cancelled (e.g., app shutdown)
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = TAG,
                 message = "Prefetch cancelled: scope cancelled (not an error)",
                 details = mapOf("remoteId" to imageRef.remoteId),
             )
             throw e // Re-throw to propagate cancellation
         } catch (e: Exception) {
-            TelegramLogRepository.error(
+            UnifiedLog.error(
                 source = TAG,
                 message = "Prefetch error: exception during thumbnail download",
                 exception = e,
@@ -470,7 +470,7 @@ class TelegramThumbPrefetcher(
      */
     fun clearCache() {
         prefetchedRemoteIds.clear()
-        TelegramLogRepository.debug(
+        UnifiedLog.debug(
             source = TAG,
             message = "Prefetch cache cleared",
         )

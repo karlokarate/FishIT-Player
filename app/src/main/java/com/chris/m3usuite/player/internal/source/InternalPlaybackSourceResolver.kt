@@ -3,7 +3,7 @@ package com.chris.m3usuite.player.internal.source
 import android.content.Context
 import android.net.Uri
 import androidx.media3.common.MimeTypes
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.playback.PlayUrlHelper
 import com.chris.m3usuite.data.obx.ObxStore
 import com.chris.m3usuite.data.obx.ObxTelegramItem
@@ -109,11 +109,11 @@ class PlaybackSourceResolver(
                 telegramDurationMs = telegramDurationMs,
                 telegramFileSizeBytes = telegramFileSizeBytes,
             )
-        AppLog.log(
-            category = "player",
-            level = AppLog.Level.DEBUG,
+        UnifiedLog.log(
+            level = UnifiedLog.Level.DEBUG,
+            source = "player",
             message = "resolved mime=$mime telegram=$isTelegram live=$isLiveFromUrl ext=$inferredExtension dur=$telegramDurationMs size=$telegramFileSizeBytes",
-            extras =
+            details =
                 buildMap {
                     put("url", url)
                     explicitMimeType?.let { put("explicit", it) }

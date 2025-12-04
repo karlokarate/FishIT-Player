@@ -1,7 +1,7 @@
 package com.chris.m3usuite.telegram.util
 
 import com.chris.m3usuite.telegram.domain.TelegramItem
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -57,7 +57,7 @@ object TelegramImageStats {
         source: String = TAG,
     ) {
         if (items.isEmpty()) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = source,
                 message = "Telegram image stats: No items to analyze",
             )
@@ -73,7 +73,7 @@ object TelegramImageStats {
         val posterPercentage = (withPosterRef * 100) / totalItems
         val backdropPercentage = (withBackdropRef * 100) / totalItems
 
-        TelegramLogRepository.info(
+        UnifiedLog.info(
             source = source,
             message = "Telegram image stats (Phase T2)",
             details =

@@ -2,7 +2,7 @@ package com.chris.m3usuite.telegram.core
 
 import android.content.Context
 import android.os.SystemClock
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import dev.g000sha256.tdl.dto.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -80,7 +80,7 @@ class T_TelegramFileDownloaderRefactor(
         withContext(Dispatchers.IO) {
             if (activeDownloads.contains(fileId)) {
                 // Already downloading
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "startDownload: already in progress",
                     details = mapOf("fileId" to fileId.toString()),
@@ -104,7 +104,7 @@ class T_TelegramFileDownloaderRefactor(
                     val file = result.result
                     fileInfoCache[fileId.toString()] = file
 
-                    TelegramLogRepository.logFileDownload(
+                    UnifiedLog.logFileDownload(
                         fileId = fileId,
                         progress = (file.local?.downloadedSize ?: 0L).toInt(),
                         total = (file.expectedSize ?: 0L).toInt(),
@@ -116,7 +116,7 @@ class T_TelegramFileDownloaderRefactor(
 
                 is dev.g000sha256.tdl.TdlResult.Failure -> {
                     activeDownloads.remove(fileId)
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = "T_TelegramFileDownloader",
                         message = "startDownload failed",
                         details =
@@ -163,7 +163,7 @@ class T_TelegramFileDownloaderRefactor(
 
             // 2. Check if already satisfied
             if (!localPath.isNullOrBlank() && initialPrefix >= requiredPrefixSize) {
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "ensureFileReady: already satisfied",
                     details =
@@ -178,7 +178,7 @@ class T_TelegramFileDownloaderRefactor(
             }
 
             // 3. Start/continue download of required range
-            TelegramLogRepository.debug(
+            UnifiedLog.debug(
                 source = "T_TelegramFileDownloader",
                 message = "ensureFileReady: starting download",
                 details =
@@ -216,7 +216,7 @@ class T_TelegramFileDownloaderRefactor(
                 val pathNow = file.local?.path
 
                 if (!pathNow.isNullOrBlank() && prefix >= requiredPrefixSize) {
-                    TelegramLogRepository.debug(
+                    UnifiedLog.debug(
                         source = "T_TelegramFileDownloader",
                         message = "ensureFileReady: ready",
                         details =
@@ -322,7 +322,7 @@ class T_TelegramFileDownloaderRefactor(
 
             val elapsed = SystemClock.elapsedRealtime() - startTime
             if (elapsed > timeoutMs) {
-                TelegramLogRepository.error(
+                UnifiedLog.error(
                     source = "T_TelegramFileDownloader",
                     message = "waitForDataAt(): timeout waiting for data",
                     details =
@@ -358,7 +358,7 @@ class T_TelegramFileDownloaderRefactor(
                 }
                 activeDownloads.remove(fileIdInt)
 
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
                     details = mapOf("fileId" to fileId),
@@ -382,7 +382,7 @@ class T_TelegramFileDownloaderRefactor(
                 }
                 activeDownloads.remove(fileId)
 
-                TelegramLogRepository.debug(
+                UnifiedLog.debug(
                     source = "T_TelegramFileDownloader",
                     message = "Cancelled download",
                     details = mapOf("fileId" to fileId.toString()),

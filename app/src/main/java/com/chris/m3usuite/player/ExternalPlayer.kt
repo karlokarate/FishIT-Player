@@ -22,9 +22,9 @@ object ExternalPlayer {
         startPositionMs: Long? = null,
     ) {
         val uri = url.toUri()
-        com.chris.m3usuite.core.logging.AppLog.log(
+        com.chris.m3usuite.core.logging.UnifiedLog.log(
             category = "player",
-            level = com.chris.m3usuite.core.logging.AppLog.Level.DEBUG,
+            level = com.chris.m3usuite.core.logging.UnifiedLog.Level.DEBUG,
             message = "open external pkg=${preferredPkg ?: "<chooser>"} url=${uri.scheme}://${uri.host}${uri.path?.let {
                 if (it.length > 24) {
                     it

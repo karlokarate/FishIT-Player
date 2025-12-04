@@ -8,7 +8,7 @@ import com.chris.m3usuite.core.telemetry.Telemetry
 import com.chris.m3usuite.data.repo.TelegramContentRepository
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.core.T_TelegramServiceClient
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.prefetch.TelegramThumbPrefetcher
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -81,26 +81,26 @@ class App : Application() {
                 val hasApiCreds = store.tgApiId.first() != 0 && store.tgApiHash.first().isNotBlank()
 
                 if (enabled && hasApiCreds) {
-                    TelegramLogRepository.info(
+                    UnifiedLog.info(
                         source = "App",
                         message = "Auto-starting Telegram engine (tgEnabled=true persisted)",
                     )
                     try {
                         serviceClient.ensureStarted(this@App, store)
                         serviceClient.login() // Let TDLib determine if session is valid
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "App",
                             message = "Telegram auto-start completed successfully",
                         )
                     } catch (e: Exception) {
-                        TelegramLogRepository.warn(
+                        UnifiedLog.warn(
                             source = "App",
                             message = "Telegram auto-start failed: ${e.message}",
                         )
                     }
                 }
             } catch (e: Exception) {
-                TelegramLogRepository.warn(
+                UnifiedLog.warn(
                     source = "App",
                     message = "Failed to check Telegram auto-start condition: ${e.message}",
                 )

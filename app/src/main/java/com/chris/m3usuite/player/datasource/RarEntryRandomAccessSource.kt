@@ -1,6 +1,6 @@
 package com.chris.m3usuite.player.datasource
 
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.github.junrar.Archive
 import com.github.junrar.exception.RarException
 import com.github.junrar.rarfile.FileHeader
@@ -102,7 +102,7 @@ class RarEntryRandomAccessSource(
             if (prepared.get()) return
             val outFile = File(cacheDir, cacheKey())
             if (!outFile.exists() || outFile.length() != sizeBytes) {
-                AppLog.log("player", AppLog.Level.DEBUG, "materialize ${rarFile.path}#$entryName -> ${outFile.path}")
+                UnifiedLog.log(UnifiedLog.Level.DEBUG, "player", "materialize ${rarFile.path}#$entryName -> ${outFile.path}")
                 Archive(rarFile).use { archive ->
                     val header = findHeader(archive) ?: throw IOException("Entry $entryName not found")
                     FileOutputStream(outFile).use { stream ->

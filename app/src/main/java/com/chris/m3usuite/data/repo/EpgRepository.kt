@@ -3,7 +3,7 @@ package com.chris.m3usuite.data.repo
 import android.content.Context
 import android.os.SystemClock
 import com.chris.m3usuite.core.epg.XmlTv
-import com.chris.m3usuite.core.logging.AppLog
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.core.xtream.EndpointPortStore
 import com.chris.m3usuite.core.xtream.ProviderCapabilityStore
 import com.chris.m3usuite.core.xtream.XtShortEPGProgramme
@@ -127,12 +127,12 @@ class EpgRepository(
                 lock.withLock {
                     val eAt = emptyCache[streamId]
                     if (eAt != null && (SystemClock.elapsedRealtime() - eAt) < emptyTtlMillis) {
-                        AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId cache=empty within ${emptyTtlMillis}ms")
+                        UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId cache=empty within ${emptyTtlMillis}ms")
                         return@withLock emptyList<XtShortEPGProgramme>()
                     }
                     val hit = cache[streamId]
                     if (hit != null && (SystemClock.elapsedRealtime() - hit.atElapsedMs) < ttlMillis) {
-                        AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId cache=hit size=${hit.data.size}")
+                        UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId cache=hit size=${hit.data.size}")
                         return@withLock hit.data
                     }
                     null
@@ -204,7 +204,7 @@ class EpgRepository(
                 if (client != null) {
                     val raw = runCatching { client.fetchShortEpg(streamId, limit) }.getOrNull()
                     val list = if (!raw.isNullOrBlank()) parseShortEpg(raw) else emptyList()
-                    if (list.isNotEmpty()) AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=xtream size=${list.size}")
+                    if (list.isNotEmpty()) UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId source=xtream size=${list.size}")
                     list
                 } else {
                     emptyList()
@@ -214,7 +214,7 @@ class EpgRepository(
                 xtreamRes.ifEmpty {
                     fallbackXmlTvFor(
                         chanId,
-                    ).also { if (it.isNotEmpty()) AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=xmltv size=${it.size}") }
+                    ).also { if (it.isNotEmpty()) UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId source=xmltv size=${it.size}") }
                 }
             // Soft fallback: if network yielded nothing but we have a stale OBX row, reuse it to avoid blank UI
             if (final.isEmpty() && !chanId.isNullOrBlank()) {
@@ -243,7 +243,7 @@ class EpgRepository(
                         list += XtShortEPGProgramme(title = xTitle, start = (xStart / 1000).toString(), end = (xEnd / 1000).toString())
                     }
                     final = list
-                    AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId source=obx-stale size=${final.size}")
+                    UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId source=obx-stale size=${final.size}")
                 }
             }
 
@@ -278,7 +278,7 @@ class EpgRepository(
                     if (existing != null) obx.id = existing.id
                     box.put(obx)
                 }
-                AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId persist ch=$chanId now=${now?.title} next=${next?.title}")
+                UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId persist ch=$chanId now=${now?.title} next=${next?.title}")
             }
             // Cache hit bookkeeping: content uses normal TTL; empty uses short TTL
             if (final.isNotEmpty()) {
@@ -292,7 +292,7 @@ class EpgRepository(
                     trimIfNeeded()
                 }
             }
-            AppLog.log("epg", AppLog.Level.DEBUG, "sid=$streamId result size=${final.size}")
+            UnifiedLog.log(UnifiedLog.Level.DEBUG, "epg", "sid=$streamId result size=${final.size}")
             final.take(limit)
         }
 
@@ -319,7 +319,7 @@ class EpgRepository(
                             } catch (ce: kotlinx.coroutines.CancellationException) {
                                 // ignore composition/lifecycle cancellations
                             } catch (t: Throwable) {
-                                AppLog.log("epg", AppLog.Level.WARN, "prefetch sid=$sid failed: ${t.message}")
+                                UnifiedLog.log(UnifiedLog.Level.WARN, "epg", "prefetch sid=$sid failed: ${t.message}")
                             }
                         }
                     }

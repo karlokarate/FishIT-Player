@@ -37,7 +37,7 @@ import com.chris.m3usuite.player.internal.source.ResolvedPlaybackSource
 import com.chris.m3usuite.player.internal.state.InternalPlayerUiState
 import com.chris.m3usuite.prefs.SettingsStore
 import com.chris.m3usuite.telegram.domain.TelegramStreamingSettingsProviderHolder
-import com.chris.m3usuite.telegram.logging.TelegramLogRepository
+import com.chris.m3usuite.core.logging.UnifiedLog
 import com.chris.m3usuite.telegram.player.buildTelegramLoadControl
 import com.chris.m3usuite.ui.util.ImageHeaders
 import kotlinx.coroutines.Dispatchers
@@ -105,7 +105,7 @@ data class InternalPlayerSessionResult(
  * - Push state updates into InternalPlayerUiState via onStateChanged
  * - Handle resume (load + periodic save/clear + on-ended)
  * - Handle kid/screentime gate (start + periodic tick)
- * - Log playback events into TelegramLogRepository
+ * - Log playback events into UnifiedLog
  *
  * This composable does NOT know about UI, DPAD, gestures or series/live logic.
  *
@@ -338,7 +338,7 @@ fun rememberInternalPlayerSession(
         onStateChanged(debugUpdated)
 
         if (resolved.isTelegram && resolved.telegramDurationMs != null) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "InternalPlayerSession",
                 message = "Initialized duration from Telegram URL",
                 details =
@@ -362,7 +362,7 @@ fun rememberInternalPlayerSession(
         // TELEGRAM PLAYBACK LOGGING (Task 1) - Log setMediaItem and prepare calls
         // ════════════════════════════════════════════════════════════════════════
         if (resolved.isTelegram) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "InternalPlayerSession",
                 message = "setMediaItem() called for Telegram VOD",
                 details =
@@ -399,7 +399,7 @@ fun rememberInternalPlayerSession(
         newPlayer.setMediaItem(mediaItem)
 
         if (resolved.isTelegram) {
-            TelegramLogRepository.info(
+            UnifiedLog.info(
                 source = "InternalPlayerSession",
                 message = "prepare() called for Telegram VOD",
                 details =
@@ -498,7 +498,7 @@ fun rememberInternalPlayerSession(
             // TELEGRAM PLAYBACK LOGGING (Task 1) - Log play() call
             // ════════════════════════════════════════════════════════════════════════
             if (resolved.isTelegram) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "InternalPlayerSession",
                     message = "play() called (playWhenReady set) for Telegram VOD",
                     details =
@@ -517,7 +517,7 @@ fun rememberInternalPlayerSession(
             newPlayer.playWhenReady = true
 
             if (resolved.isTelegram) {
-                TelegramLogRepository.info(
+                UnifiedLog.info(
                     source = "InternalPlayerSession",
                     message = "play() called (playWhenReady set - fallback) for Telegram VOD",
                     details =
@@ -578,7 +578,7 @@ fun rememberInternalPlayerSession(
                         if (isBuffering && bufferingStartTime.value == null) {
                             // Entering buffering state - start timer
                             bufferingStartTime.value = System.currentTimeMillis()
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 source = "InternalPlayer",
                                 message = "Telegram VOD entered BUFFERING state",
                                 details =
@@ -593,7 +593,7 @@ fun rememberInternalPlayerSession(
                             val bufferingDuration =
                                 System.currentTimeMillis() - bufferingStartTime.value!!
                             bufferingStartTime.value = null
-                            TelegramLogRepository.debug(
+                            UnifiedLog.debug(
                                 source = "InternalPlayer",
                                 message = "Telegram VOD exited BUFFERING state",
                                 details =
@@ -640,7 +640,7 @@ fun rememberInternalPlayerSession(
                                             fileInfo?.local?.downloadedPrefixSize ?: 0
                                         val expectedSize = fileInfo?.expectedSize ?: 0
 
-                                        TelegramLogRepository.warn(
+                                        UnifiedLog.warn(
                                             source = "InternalPlayer",
                                             message =
                                                 "Telegram VOD buffering watchdog triggered",
@@ -678,7 +678,7 @@ fun rememberInternalPlayerSession(
                                                 ),
                                         )
                                     } catch (e: Exception) {
-                                        TelegramLogRepository.error(
+                                        UnifiedLog.error(
                                             source = "InternalPlayer",
                                             message =
                                                 "Failed to collect buffering watchdog diagnostics",
@@ -691,7 +691,7 @@ fun rememberInternalPlayerSession(
                     }
 
                     if (resolved.isTelegram) {
-                        TelegramLogRepository.debug(
+                        UnifiedLog.debug(
                             source = "InternalPlayer",
                             message = "Telegram playback state change",
                             details =
@@ -718,7 +718,7 @@ fun rememberInternalPlayerSession(
                     playerState.value = newState
                     onStateChanged(newState)
 
-                    TelegramLogRepository.error(
+                    UnifiedLog.error(
                         source = "InternalPlayer",
                         message = "Playback error: ${error.message}",
                         details =
@@ -746,7 +746,7 @@ fun rememberInternalPlayerSession(
                                 else -> "UNKNOWN($playbackState)"
                             }
 
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "InternalPlayerSession",
                             message = "onPlaybackStateChanged for Telegram VOD",
                             details =
@@ -765,7 +765,7 @@ fun rememberInternalPlayerSession(
                         // Confirm we reach STATE_READY or STATE_PLAYING after ensureFileReady
                         // success
                         if (playbackState == Player.STATE_READY || newPlayer.isPlaying) {
-                            TelegramLogRepository.info(
+                            UnifiedLog.info(
                                 source = "InternalPlayerSession",
                                 message = "Telegram VOD reached playable state",
                                 details =
@@ -826,7 +826,7 @@ fun rememberInternalPlayerSession(
                                 else -> "UNKNOWN($reason)"
                             }
 
-                        TelegramLogRepository.info(
+                        UnifiedLog.info(
                             source = "InternalPlayerSession",
                             message = "onPlayWhenReadyChanged for Telegram VOD",
                             details =
@@ -1083,7 +1083,7 @@ fun rememberInternalPlayerSession(
 
                             // Log when the screen-time limit triggers a block
                             if (!currentKids.kidBlocked && updatedKids.kidBlocked) {
-                                TelegramLogRepository.info(
+                                UnifiedLog.info(
                                     source = "InternalPlayer",
                                     message =
                                         "Kids screen-time limit reached, blocking playback",
@@ -1198,9 +1198,9 @@ fun rememberInternalPlayerSession(
                                 // IllegalArgumentException (bad URL),
                                 // SecurityException (missing permissions), and other runtime
                                 // exceptions.
-                                com.chris.m3usuite.core.logging.AppLog.log(
+                                com.chris.m3usuite.core.logging.UnifiedLog.log(
                                     category = "live",
-                                    level = com.chris.m3usuite.core.logging.AppLog.Level.ERROR,
+                                    level = com.chris.m3usuite.core.logging.UnifiedLog.Level.ERROR,
                                     message =
                                         "Failed to switch live channel: ${e.message ?: e::class.simpleName}",
                                     extras =
