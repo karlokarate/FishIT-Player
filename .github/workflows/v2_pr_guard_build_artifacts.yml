@@ -31,28 +31,31 @@ jobs:
       - name: Check for build artifacts
         run: |
           echo "🔍 Checking PR for build artifacts..."
-          
+
           # Get list of changed files
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          
+
           echo "Changed files:"
           echo "$CHANGED"
           echo ""
-          
+
           # Check for build artifacts (excluding allowed default.json)
-          ARTIFACTS=$(echo "$CHANGED" | grep -E '(^|/)build/|\.class$|MyObjectBox\.(java|kt)|objectbox-models/.*\.json' | grep -v 'objectbox-models/default\.json' || true)
-          
+          PATTERN='(^|/)build/|\.class$|MyObjectBox\.(java|kt)|objectbox-models/.*\.json'
+          ARTIFACTS=$(echo "$CHANGED" | grep -E "$PATTERN" | \
+            grep -v 'objectbox-models/default\.json' || true)
+
           if [ -n "$ARTIFACTS" ]; then
             echo "❌ ERROR: PR contains build artifacts that should not be committed:"
             echo "$ARTIFACTS"
             echo ""
-            echo "Build artifacts must never be committed. Please remove these files:"
+            echo "Build artifacts must never be committed."
+            echo "Please remove these files:"
             echo "1. Run: git rm --cached <file>"
             echo "2. Verify .gitignore patterns are correct"
             echo "3. Re-push your changes"
             exit 1
           fi
-          
+
           echo "✅ OK: No build artifacts detected in PR"
 
       - name: Comment on PR if artifacts found
@@ -60,9 +63,27 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const body = [
+              '## ❌ Build Artifacts Detected',
+              '',
+              'This PR contains build artifacts that should not be committed:',
+              '',
+              '- Files in `build/` directories',
+              '- `.class` files',
+              '- Generated ObjectBox files (`MyObjectBox.java`, `MyObjectBox.kt`)',
+              '- Extra `objectbox-models/*.json` files (only `default.json` is allowed)',
+              '',
+              '**To fix:**',
+              '1. Remove artifacts: `git rm --cached <file>`',
+              '2. Verify `.gitignore` patterns',
+              '3. Re-push changes',
+              '',
+              'See `docs/v2-cleanup/V2_BUILD_ARTIFACT_GUARDRAILS.md` for more info.'
+            ].join('\n');
+            
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## ❌ Build Artifacts Detected\n\nThis PR contains build artifacts that should not be committed:\n\n- Files in `build/` directories\n- `.class` files\n- Generated ObjectBox files (`MyObjectBox.java`, `MyObjectBox.kt`)\n- Extra `objectbox-models/*.json` files (only `default.json` is allowed)\n\n**To fix:**\n1. Remove artifacts: `git rm --cached <file>`\n2. Verify `.gitignore` patterns\n3. Re-push changes\n\nSee `docs/v2-cleanup/V2_BUILD_ARTIFACT_GUARDRAILS.md` for more info.'
+              body: body
             })
