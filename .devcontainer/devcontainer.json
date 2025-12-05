@@ -5,7 +5,7 @@
     "ghcr.io/devcontainers/features/android-sdk:1": {
       "version": "latest",
       "cmdlineToolsVersion": "latest",
-      "sdkRoot": "/workspaces/FishIT-Player/.wsl-android-sdk"
+      "sdkRoot": "/home/codespace/.android-sdk"
     }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
@@ -30,8 +30,8 @@
     }
   },
   "remoteEnv": {
-    "ANDROID_HOME": "/workspaces/FishIT-Player/.wsl-android-sdk",
-    "ANDROID_SDK_ROOT": "/workspaces/FishIT-Player/.wsl-android-sdk",
-    "PATH": "${containerEnv:PATH}:/workspaces/FishIT-Player/.wsl-android-sdk/cmdline-tools/latest/bin:/workspaces/FishIT-Player/.wsl-android-sdk/platform-tools"
+    "ANDROID_HOME": "/home/codespace/.android-sdk",
+    "ANDROID_SDK_ROOT": "/home/codespace/.android-sdk",
+    "PATH": "${containerEnv:PATH}:/home/codespace/.android-sdk/cmdline-tools/latest/bin:/home/codespace/.android-sdk/platform-tools"
   }
 }

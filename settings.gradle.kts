@@ -39,5 +39,36 @@ dependencyResolutionManagement {
 
 rootProject.name = "FishITPlayer"
 
-// Modules
+// ========== v1 Legacy Modules ==========
 include(":app")
+
+// ========== v2 Modules ==========
+// App Entry
+include(":app-v2")
+
+// Core
+include(":core:model")
+include(":core:persistence")
+include(":core:firebase")
+
+// Playback & Player
+include(":playback:domain")
+include(":player:internal")
+
+// Pipelines (no UI)
+include(":pipeline:telegram")
+include(":pipeline:xtream")
+include(":pipeline:io")
+include(":pipeline:audiobook")
+
+// Feature Shells (UI)
+include(":feature:home")
+include(":feature:library")
+include(":feature:live")
+include(":feature:telegram-media")
+include(":feature:audiobooks")
+include(":feature:settings")
+
+// Infrastructure
+include(":infra:logging")
+include(":infra:tooling")

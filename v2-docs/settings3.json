@@ -1,0 +1,30 @@
+{
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "workbench.colorTheme": "Default Dark Modern",
+  "window.menuBarVisibility": "classic",
+  "redhat.telemetry.enabled": true,
+  "chat.tools.terminal.autoApprove": {
+    "sdkmanager": true,
+    "avdmanager": true,
+    "java": true,
+    "./gradlew": true,
+    "test": true,
+    "./dev.sh": true,
+    "git stash": true,
+    "git fetch": true,
+    "git checkout": true,
+    "rg": true,
+    "/^sudo apt-get update && sudo apt-get install -y ripgrep$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "read": true,
+    "sed": true,
+    "git commit": true,
+    "git push": true,
+    "git add": true
+  },
+  "chat.editing.autoAcceptDelay": 10,
+  "chat.agent.maxRequests": 150,
+  "keyboard.layout": "de"
+}

@@ -1,5 +1,22 @@
 Android Build Policy (WSL override)
 
+Branch-specific v2 SSOT
+
+- On branch `architecture/v2-bootstrap`, all work related to FishIT Player v2
+  (modules `:app-v2`, `:core:*`, `:playback:*`, `:player:internal`,
+  `:pipeline:*`, `:feature:*`, `:infra:*` as defined for v2) must follow the
+  rules in `AGENTS_V2.md`.
+- For v2 tasks on this branch, `AGENTS_V2.md` is the **single source of
+  truth** for agents and overrides v1-specific guidance in this file wherever
+  there is a conflict.
+- This `AGENTS.md` file continues to define the global repository, build, CI
+  and legacy (v1) behavior; v2-specific architecture and phase rules live in
+  `AGENTS_V2.md`.
+- **v1→v2 Porting Reference:** `v2-docs/V1_VS_V2_ANALYSIS_REPORT.md` documents
+  production-quality v1 systems (Tier 1/2 classification) and provides a
+  complete file mapping (~17,000 lines) for v2 porting. Consult this report
+  before implementing any v2 module to avoid reinventing existing abstractions.
+
 - For Android builds, this repository defers entirely to the global policy at /AGENTS.md (and /mnt/c/Users/admin/AGENTS.md when applicable).
 - Use ~/.local/bin/codex-android-build /home/chris <task> for all Android builds (assembleDebug/Release, tests, etc.).
 - Do not use repo-local .wsl-* toolchains or env (e.g., .wsl-android-sdk, .wsl-java-17, .wsl-gradle). Any conflicting guidance below is obsolete for Codex and must be ignored.

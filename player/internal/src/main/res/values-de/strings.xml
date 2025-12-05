@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Player controls -->
+    <string name="player_play">Abspielen</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_seek_forward">10 Sekunden vorspringen</string>
+    <string name="player_seek_backward">10 Sekunden zurückspulen</string>
+    <string name="player_mute">Stumm</string>
+    <string name="player_unmute">Ton an</string>
+    <string name="player_live">LIVE</string>
+    <string name="player_error_generic">Bei der Wiedergabe ist ein Fehler aufgetreten</string>
+</resources>

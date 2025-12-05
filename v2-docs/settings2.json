@@ -1,0 +1,38 @@
+{
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "workbench.colorTheme": "Default Dark Modern",
+  "window.menuBarVisibility": "classic",
+  "redhat.telemetry.enabled": true,
+  "chat.tools.terminal.autoApprove": {
+    "sdkmanager": true,
+    "avdmanager": true,
+    "java": true,
+    "./gradlew": true,
+    "test": true,
+    "./dev.sh": true,
+    "git stash": true,
+    "git fetch": true,
+    "git checkout": true,
+    "rg": true,
+    "/^sudo apt-get update && sudo apt-get install -y ripgrep$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "read": true,
+    "sed": true,
+    "git commit": true,
+    "git push": true,
+    "/^sed -i 's/import com\\.chris\\.m3usuite\\.core\\.logging\\.UnifiedLogRepository/import com\\.chris\\.m3usuite\\.core\\.logging\\.UnifiedLog/g' /workspaces/FishIT-Player/app/src/main/java/com/chris/m3usuite/core/cache/CacheManager\\.kt\n\n# Ersetze alle UnifiedLogRepository\\.log\\(\\.\\.\\., level = UnifiedLogRepository\\.Level\\.INFO, \\..\\.\\. durch UnifiedLog\\.info\\(\n# Das ist komplexer, ich mache es mit einem Perl-Einzeiler\nperl -i -0pe 's/UnifiedLogRepository\\\\\\.log\\\\\\(\\\\s\\*level = UnifiedLogRepository\\\\\\.Level\\\\\\.INFO,\\\\s\\*category = \"\\(\\.\\*\\?\\)\",\\\\s\\*source = \\(\\.\\*\\?\\),\\\\s\\*message = \"\\(\\.\\*\\?\\)\",\\\\s\\*details =\\\\s\\*mapOf\\\\\\(\\(\\.\\*\\?\\)\\\\\\),\\\\?\\\\s\\*\\\\\\)\\)/UnifiedLog\\.info\\(\\\\n                    source = \\\\2,\\\\n                    message = \"\\\\3\",\\\\n                    details =\\\\n                        mapOf\\(\\\\4\\),\\\\n                \\)/gs' /workspaces/FishIT-Player/app/src/main/java/com/chris/m3usuite/core/cache/CacheManager\\.kt$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^cd /workspaces/FishIT-Player && cat > /tmp/fix_cachemanager\\.py << 'EOF'\nimport re\n\nwith open\\('app/src/main/java/com/chris/m3usuite/core/cache/CacheManager\\.kt', 'r'\\) as f:\n    content = f\\.read\\(\\)\n\n# Pattern für INFO logs\ninfo_pattern = r'''UnifiedLogRepository\\\\\\.log\\\\\\(\n                    level = UnifiedLogRepository\\\\\\.Level\\\\\\.INFO,\n                    category = \"\\[\\^\"\\]\\+\",\n                    source = \\(\\[\\^,\\]\\+\\),\n                    message = \"\\(\\[\\^\"\\]\\+\\)\",\n                    details =\n                        mapOf\\\\\\(\n                            \\(\\[\\^\\)\\]\\+\\)\\\\\\),\n                \\\\\\)'''\n\ndef info_replacement\\(m\\):\n    source = m\\.group\\(1\\)\\.strip\\(\\)\n    message = m\\.group\\(2\\)\\.strip\\(\\)\n    details = m\\.group\\(3\\)\\.strip\\(\\)\n    # Reduziere Einrückung bei details\n    details_lines = details\\.split\\('\\\\n'\\)\n    details_formatted = '\\\\n'\\.join\\(l\\.replace\\('                            ', '                        '\\) for l in details_lines\\)\n    return f'''UnifiedLog\\.info\\(\n                    \\{source\\},\n                    \"\\{message\\}\",\n                    mapOf\\(\n                        \\{details_formatted\\}\\),\n                \\)'''\n\ncontent = re\\.sub\\(info_pattern, info_replacement, content, flags=re\\.DOTALL\\)\n\n# Pattern für ERROR logs\nerror_pattern = r'''UnifiedLogRepository\\\\\\.log\\\\\\(\n                    level = UnifiedLogRepository\\\\\\.Level\\\\\\.ERROR,\n                    category = \"\\[\\^\"\\]\\+\",\n                    source = \\(\\[\\^,\\]\\+\\),\n                    message = \"\\(\\[\\^\"\\]\\+\\)\",\n                    details =\n                        mapOf\\\\\\(\n                            \\(\\[\\^\\)\\]\\+\\)\\\\\\),\n                \\\\\\)'''\n\ndef error_replacement\\(m\\):\n    source = m\\.group\\(1\\)\\.strip\\(\\)\n    message = m\\.group\\(2\\)\\.strip\\(\\)\n    details = m\\.group\\(3\\)\\.strip\\(\\)\n    details_lines = details\\.split\\('\\\\n'\\)\n    details_formatted = '\\\\n'\\.join\\(l\\.replace\\('                            ', '                        '\\) for l in details_lines\\)\n    return f'''UnifiedLog\\.error\\(\n                    \\{source\\},\n                    \"\\{message\\}\",\n                    mapOf\\(\n                        \\{details_formatted\\}\\),\n                \\)'''\n\ncontent = re\\.sub\\(error_pattern, error_replacement, content, flags=re\\.DOTALL\\)\n\n# Ersetze auch andere verbleibende Referenzen\ncontent = content\\.replace\\('UnifiedLogRepository\\.Level\\.INFO', 'UnifiedLog\\.Level\\.INFO'\\)\ncontent = content\\.replace\\('UnifiedLogRepository\\.Level\\.ERROR', 'UnifiedLog\\.Level\\.ERROR'\\)\ncontent = content\\.replace\\('UnifiedLogRepository\\.log\\(', 'UnifiedLog\\.log\\('\\)\n\nwith open\\('app/src/main/java/com/chris/m3usuite/core/cache/CacheManager\\.kt', 'w'\\) as f:\n    f\\.write\\(content\\)\n\nprint\\(\"Done!\"\\)\nEOF\npython3 /tmp/fix_cachemanager\\.py$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "git add": true
+  },
+  "chat.editing.autoAcceptDelay": 10,
+  "chat.agent.maxRequests": 150,
+  "keyboard.layout": "de"
+}

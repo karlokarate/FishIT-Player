@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug Playback Screen -->
+    <string name="debug_playback_title">Wiedergabe-Test</string>
+    <string name="debug_playback_loading">Player wird geladen…</string>
+</resources>

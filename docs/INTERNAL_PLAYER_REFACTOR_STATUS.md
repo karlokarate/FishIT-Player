@@ -15,6 +15,7 @@ This document tracks the integration of the refactored internal player modules f
 The following modules were successfully extracted from the ZIP and placed into their correct package locations:
 
 #### Domain Layer (`com.chris.m3usuite.player.internal.domain`)
+
 - ✅ **PlaybackContext.kt** - High-level domain context for playback sessions
   - Defines `PlaybackContext` data class with playback metadata
   - Defines `PlaybackType` enum (VOD, SERIES, LIVE)
@@ -31,12 +32,14 @@ The following modules were successfully extracted from the ZIP and placed into t
   - Returns `KidsGateState` for UI feedback
 
 #### State Layer (`com.chris.m3usuite.player.internal.state`)
+
 - ✅ **InternalPlayerState.kt** - Core UI state for the internal player
   - Defines `InternalPlayerUiState` with playback metadata
   - Includes `AspectRatioMode` enum
   - Defines `InternalPlayerController` interface for commands
 
 #### Source Resolution (`com.chris.m3usuite.player.internal.source`)
+
 - ✅ **InternalPlaybackSourceResolver.kt** - Playback source resolution
   - Resolves URLs, headers, and MIME types
   - Defines `ResolvedPlaybackSource` data class
@@ -58,6 +61,7 @@ The following modules from the ZIP could not be integrated because they depend o
 - ❌ **ObxEntities.kt** - Only contains ObxTelegramMessage, missing other entities
 
 ### Documentation
+
 - ✅ **InternalPlayer_Refactor_Roadmap.md** - Copied to `docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md`
 
 ## Legacy Files
@@ -129,20 +133,24 @@ All remaining SIP modules from `tools/tdlib neu.zip` have been imported as refer
 ### Fully Integrated and Compilable Modules
 
 **UI/System Layer:**
+
 - ✅ **InternalPlayerControls.kt** - Player controls, dialogs (speed, tracks, debug), and overlays with fallback Material Icons
 - ✅ **InternalPlayerSystemUi.kt** - System UI management (back handler, screen-on, fullscreen, PiP)
 
 **Session Layer:**
+
 - ✅ **InternalPlayerSession.kt** - Player lifecycle management, resume handling, kids gate integration
   - Note: Sleep timer and subtitle support commented out pending API availability
 
 **Refactored Modules (with "Refactor" suffix to avoid conflicts):**
+
 - ✅ **StreamingConfigRefactor.kt** - Streaming configuration object
 - ✅ **T_TelegramFileDownloaderRefactor.kt** - File downloader with DownloadProgressRefactor type
 - ✅ **RarDataSourceRefactor.kt** - RAR archive data source (implementation stubbed pending fileDownloader API)
 - ✅ **ObxEntitiesRefactor.kt** - Refactored ObxTelegramMessage entity
 
 **Infrastructure Stubs:**
+
 - ✅ **RememberPlayerController.kt** - Stub interface for player lifecycle (TODO: Phase 7 implementation)
 - ✅ **R.string.pip_not_available** - String resource for PiP unavailable message
 
@@ -175,6 +183,7 @@ This allows future phases (3-10) of the roadmap to progressively replace legacy 
 Phase 1 of the refactor roadmap has been completed. All call sites in the application now use `PlaybackContext` to describe playback sessions, while preserving existing runtime behavior.
 
 **Bridge Entry Point Created:**
+
 - `InternalPlayerEntry.kt` - A Phase 1 bridge function that:
   - Accepts the new typed `PlaybackContext` model
   - Maps `PlaybackType` enum to legacy string types ("vod", "series", "live")
@@ -267,7 +276,6 @@ The following files have been extracted and integrated from `tools/tdlib neu.zip
 - Updated TelegramDetailScreen.kt
 - Updated ObxEntities.kt (refactored ObxTelegramMessage)
 
-
 These can serve as reference implementations for the corresponding future phases of the refactor.
 
 ---
@@ -284,21 +292,26 @@ These can serve as reference implementations for the corresponding future phases
 The following modules are now in place and ready for Phase 2 integration:
 
 **Domain Layer (`internal/domain/`):**
+
 - `ResumeManager.kt` - Interface + `DefaultResumeManager` implementation
 - `KidsPlaybackGate.kt` - Interface + `DefaultKidsPlaybackGate` implementation
 - `PlaybackContext.kt` - Domain context for playback sessions
 
 **State Layer (`internal/state/`):**
+
 - `InternalPlayerState.kt` - Contains `InternalPlayerUiState`, `AspectRatioMode`, `InternalPlayerController`
 
 **Session Layer (`internal/session/`):**
+
 - `InternalPlayerSession.kt` - Session management with resume and kids gate support
 - `Phase2Stubs.kt` - Anchor point for Phase 2 integration (NEW)
 
 **Source Resolution (`internal/source/`):**
+
 - `InternalPlaybackSourceResolver.kt` - URL resolution with `PlaybackSourceResolver` and `ResolvedPlaybackSource`
 
 **UI/System Layers:**
+
 - `internal/ui/InternalPlayerControls.kt` - Player controls reference
 - `internal/system/InternalPlayerSystemUi.kt` - System UI management reference
 
@@ -323,6 +336,7 @@ No runtime changes have been made - legacy `InternalPlayerScreen` remains the ac
 The following legacy behaviors in `InternalPlayerScreen.kt` have been mapped to Phase 2 abstractions:
 
 **Resume Handling:**
+
 | Legacy Location | Legacy Behavior | Phase 2 Abstraction |
 |-----------------|-----------------|---------------------|
 | L572-608 | Load resume position on start, seek if >10s | `ResumeManager.loadResumePositionMs()` |
@@ -331,6 +345,7 @@ The following legacy behaviors in `InternalPlayerScreen.kt` have been mapped to 
 | L798-806 | Clear resume on STATE_ENDED | `ResumeManager.handleEnded()` |
 
 **Kids/Screen-Time Gate:**
+
 | Legacy Location | Legacy Behavior | Phase 2 Abstraction |
 |-----------------|-----------------|---------------------|
 | L547-569 | Check kid profile & remaining time on start | `KidsPlaybackGate.evaluateStart()` |
@@ -340,6 +355,7 @@ The following legacy behaviors in `InternalPlayerScreen.kt` have been mapped to 
 ### Integration Anchor
 
 `Phase2Integration.kt` provides stable integration hooks that mirror legacy behavior:
+
 - `loadInitialResumePosition()` - Resume loading on playback start
 - `onPlaybackTick()` - Periodic resume save and kids gate tick
 - `onPlaybackEnded()` - Clear resume on playback completion
@@ -364,6 +380,7 @@ These functions are NOT called from production code paths and serve as the integ
 ### Detailed Behavioral Mapping in Phase2Integration.kt
 
 Each integration function now includes:
+
 - **Legacy Parameter Shape**: The exact parameters used by legacy InternalPlayerScreen
 - **Modular Parameter Shape**: The equivalent PlaybackContext-based parameters
 - **Behavioral Parity Notes**: Line-by-line correspondence to legacy code
@@ -374,6 +391,7 @@ Each integration function now includes:
 ### Full Parity TODOs Added
 
 **DefaultResumeManager TODOs:**
+
 - `>10s rule`: Only restore resume positions greater than 10 seconds
 - `<10s near-end clear`: Clear resume when remaining playback is less than 10 seconds
 - `Multi-ID mapping`: VOD uses mediaId, SERIES uses composite key (seriesId+season+episodeNum)
@@ -382,6 +400,7 @@ Each integration function now includes:
 - `STATE_ENDED clear`: Clear resume unconditionally on playback end
 
 **DefaultKidsPlaybackGate TODOs:**
+
 - `Profile detection`: currentProfileId.first() → ObxProfile lookup
 - `Kid profile type check`: prof?.type == "kid"
 - `Daily quota`: remainingMinutes() returns MINUTES for quota comparison
@@ -444,6 +463,7 @@ This phase implements the actual modular logic inside the SIP Phase 2 modules an
 **SIP InternalPlayerSession Integration:**
 
 The SIP `InternalPlayerSession` already integrates both modules:
+
 - Instantiates `DefaultResumeManager` and `DefaultKidsPlaybackGate` using existing dependencies
 - On session start: Uses `Phase2Integration.loadInitialResumePosition` to determine initial seek position
 - On periodic playback position updates (3s loop): Calls resume and kids gate tick handlers
@@ -455,6 +475,7 @@ The SIP `InternalPlayerSession` already integrates both modules:
 Added `InternalPlayerSessionPhase2Test.kt` with comprehensive tests:
 
 **ResumeManager Tests:**
+
 - Does not resume when stored position ≤ 10 seconds
 - Resumes when stored position > 10 seconds
 - Returns null for LIVE content
@@ -464,6 +485,7 @@ Added `InternalPlayerSessionPhase2Test.kt` with comprehensive tests:
 - Does not save when duration is invalid
 
 **KidsPlaybackGate Tests:**
+
 - Kid profile detection returns proper state
 - Returns blocked state when quota exhausted
 - 60-second accumulation triggers quota decrement
@@ -472,6 +494,7 @@ Added `InternalPlayerSessionPhase2Test.kt` with comprehensive tests:
 - Blocked state persists
 
 **Phase2Integration Tests:**
+
 - `loadInitialResumePosition` delegates correctly
 - `onPlaybackTick` handles both resume and kids gate
 - `onPlaybackEnded` clears resume
@@ -543,6 +566,7 @@ This phase finalizes Phase 2 by stabilizing the modular session infrastructure a
 New test file: `InternalPlayerSessionPhase2IntegrationTest.kt`
 
 Tests verify:
+
 - ResumeManager + KidsGate coordination through Phase2Integration
 - SIP session correctly updates InternalPlayerUiState
 - Blocking transitions do not affect runtime (no actual player)
@@ -600,11 +624,13 @@ This phase initiates shadow-mode activation of the modular SIP session, running 
 **1. Created InternalPlayerShadow Bridge (`internal/bridge/InternalPlayerShadow.kt`):**
 
 The shadow-mode entry point allows the modular session to be invoked in observation mode:
+
 - `startShadowSession(...)` - Starts shadow session without controlling playback
 - `stopShadowSession()` - Cleans up shadow session resources
 - `ShadowSessionState` - Data class for shadow state diagnostics
 
 **Shadow Mode Principles:**
+
 - Never controls real ExoPlayer instance
 - Never modifies legacy screen state
 - Never interrupts or affects user playback experience
@@ -618,6 +644,7 @@ The shadow-mode entry point allows the modular session to be invoked in observat
 | `shadowStateDebug` | String? | Debug string for overlay diagnostics |
 
 **Field Documentation:**
+
 - Not consumed by runtime UI
 - Used for Phase 3–4 overlay debugging and verification
 - Can be toggled via developer settings (future)
@@ -627,6 +654,7 @@ The shadow-mode entry point allows the modular session to be invoked in observat
 Comprehensive tests verify:
 
 **Shadow Session Safety:**
+
 - Modular session can start without UI, navigation, ObjectBox, or ExoPlayer
 - Shadow session never throws even with:
   - Missing mediaItem
@@ -635,17 +663,20 @@ Comprehensive tests verify:
   - Invalid PlaybackContext combinations
 
 **Clean Shutdown:**
+
 - Shadow session stops cleanly without affecting legacy behavior
 - Stop is safe to call multiple times
 - Stop is safe to call without prior start
 
 **State Independence:**
+
 - UI state shadow fields have stable defaults
 - Shadow fields can be set independently
 - Copy preserves shadow fields
 - Shadow fields do not affect legacy fields
 
 **Integration with Phase2 Modules:**
+
 - Phase2Integration works with shadow fakes
 - ResumeManager and KidsPlaybackGate work in shadow mode
 
@@ -659,10 +690,12 @@ Comprehensive tests verify:
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerSessionPhase3ShadowTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added shadow fields
 - `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
 
@@ -703,10 +736,12 @@ This step implements the comparison pipeline between legacy and shadow state for
 **1. Created ShadowComparisonService (`internal/shadow/ShadowComparisonService.kt`):**
 
 A diagnostics-only service for comparing legacy and shadow state:
+
 - `compare(legacy, shadow)` - Compares two `InternalPlayerUiState` instances
 - Returns `ComparisonResult` with parity flags and position offset
 
 **ComparisonResult fields:**
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `resumeParityOk` | Boolean | True if both states have same resumeStartMs |
@@ -717,11 +752,13 @@ A diagnostics-only service for comparing legacy and shadow state:
 **2. Added Comparison Callback to InternalPlayerShadow:**
 
 Extended `startShadowSession(...)` with new parameter:
+
 ```kotlin
 onShadowComparison: ((ShadowComparisonService.ComparisonResult) -> Unit)? = null
 ```
 
 Added utility function:
+
 ```kotlin
 fun invokeComparison(
     legacyState: InternalPlayerUiState,
@@ -738,6 +775,7 @@ fun invokeComparison(
 | `comparisonDurationMs` | Long? | Duration for parity comparison (separate from runtime durationMs) |
 
 **Documentation in InternalPlayerState.kt:**
+
 ```
 These fields exist to enable parity comparison between
 legacy and shadow sessions (Phase 3–4).
@@ -747,6 +785,7 @@ They MUST NOT drive any runtime UI behavior yet.
 **4. Added Dedicated Tests (`InternalPlayerShadowComparisonTest.kt`):**
 
 Comprehensive tests verify:
+
 - Resume parity detection (matching, null, mismatch cases)
 - Kids-gate parity detection (blocked/unblocked cases)
 - Position offset calculation (positive, negative, zero, null cases)
@@ -758,10 +797,12 @@ Comprehensive tests verify:
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/shadow/ShadowComparisonService.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerShadowComparisonTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added comparison fields
 - `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt` - Added comparison callback
 - `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
@@ -783,11 +824,13 @@ Comprehensive tests verify:
 Phase 3 is NOT complete. This was Step 3 of Phase 3.
 
 Completed Phase 3 steps:
+
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
 - [x] Step 3: Controls shadow mode activated
 
 Remaining Phase 3 work:
+
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 - [ ] Add diagnostics logging for shadow state
@@ -826,6 +869,7 @@ A diagnostics-only wrapper that mirrors all public behaviors from InternalPlayer
 | Errors | `playback error: <message>` |
 
 **Safety Guarantees:**
+
 - Never modifies InternalPlayerUiState
 - Never interacts with any UI component
 - Never affects ExoPlayer or legacy player
@@ -835,11 +879,13 @@ A diagnostics-only wrapper that mirrors all public behaviors from InternalPlayer
 **2. Extended InternalPlayerShadow with Controls Callback:**
 
 Added new callback parameter to `startShadowSession()`:
+
 ```kotlin
 onShadowControlsDiagnostic: ((String) -> Unit)? = null
 ```
 
 Added utility function:
+
 ```kotlin
 fun evaluateControlsInShadowMode(
     shadowState: InternalPlayerUiState,
@@ -852,6 +898,7 @@ fun evaluateControlsInShadowMode(
 Test categories:
 
 **Safety/Edge Case Tests (Must Never Throw):**
+
 - Default state
 - Null callback
 - Default aspectRatioMode
@@ -862,6 +909,7 @@ Test categories:
 - Extreme values (Long.MAX_VALUE, Float.MAX_VALUE)
 
 **Diagnostic String Emission Tests:**
+
 - Playback state (playing, buffering)
 - Trickplay (fast-forward, slow-motion, normal)
 - Aspect ratio (all modes)
@@ -877,14 +925,17 @@ Test categories:
 - Resume state
 
 **No Modification/Immutability Tests:**
+
 - UiState remains unchanged after evaluation
 
 **InternalPlayerShadow Integration Tests:**
+
 - evaluateControlsInShadowMode works correctly
 - Safe with null callback
 - startShadowSession accepts onShadowControlsDiagnostic parameter
 
 **No Linkage to UI Tests:**
+
 - Does not require Android Context
 - Works without Composable context
 - Pure function with no side effects
@@ -892,10 +943,12 @@ Test categories:
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerControlsShadow.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerControlsShadowTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt` - Added controls callback and utility
 - `docs/INTERNAL_PLAYER_REFACTOR_STATUS.md` - This documentation
 
@@ -938,6 +991,7 @@ This step implements spec-driven shadow diagnostics, evaluating SIP and Legacy b
 **1. Updated ShadowComparisonService with Spec-Driven Three-Way Comparison:**
 
 The comparison service now performs:
+
 1. SIP state vs Spec (Behavior Contract)
 2. Legacy state vs Spec (Behavior Contract)
 3. SIP vs Legacy (for context only)
@@ -1012,6 +1066,7 @@ New aggregator class for storing and forwarding shadow diagnostic events:
 - `ShadowEvent.Kind.ControlsDiagnostic` - For controls diagnostic strings
 
 Features:
+
 - Event storage for debugging/verification
 - Filtered views by dimension and ParityKind
 - Callback registration for downstream consumers
@@ -1037,6 +1092,7 @@ Tests load rules from the Behavior Contract (embedded as constants in ShadowComp
 **Legacy behavior is NOT the source of truth. The Behavior Contract defines correctness.**
 
 SIP is allowed to intentionally improve on legacy when the spec says so. Diagnostics classify differences as:
+
 - `SpecPreferredSIP`: SIP fixes a legacy bug
 - `SpecPreferredLegacy`: SIP has a bug that legacy got right
 - `ExactMatch`: Both comply with spec
@@ -1046,10 +1102,12 @@ SIP is allowed to intentionally improve on legacy when the spec says so. Diagnos
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/shadow/ShadowDiagnosticsAggregator.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerShadowSpecComparisonTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/shadow/ShadowComparisonService.kt` - Added spec-driven comparison
 - `app/src/main/java/com/chris/m3usuite/player/internal/shadow/InternalPlayerControlsShadow.kt` - Added spec-oriented diagnostics
 - `app/src/main/java/com/chris/m3usuite/player/internal/bridge/InternalPlayerShadow.kt` - Added spec comparison callback
@@ -1089,12 +1147,14 @@ InternalPlayerShadow (Shadow - PASSIVE, NOT WIRED YET)
 Phase 3 is NOT complete. Step 4 is complete.
 
 Completed Phase 3 steps:
+
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
 - [x] Step 3: Controls shadow mode activated
 - [x] Step 4: Spec-driven diagnostics integration
 
 Remaining Phase 3 work:
+
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 - [ ] Add diagnostics logging for shadow state
@@ -1114,6 +1174,7 @@ This section documents the implementation of the LivePlaybackController interfac
 **1. Created `internal/live` Package with Core Models:**
 
 - **LiveChannel.kt** - Domain model for live TV channels:
+
   ```kotlin
   data class LiveChannel(
       val id: Long,
@@ -1125,6 +1186,7 @@ This section documents the implementation of the LivePlaybackController interfac
   ```
 
 - **EpgOverlayState.kt** - Domain model for EPG overlay state:
+
   ```kotlin
   data class EpgOverlayState(
       val visible: Boolean,
@@ -1137,6 +1199,7 @@ This section documents the implementation of the LivePlaybackController interfac
 **2. Created LivePlaybackController Interface:**
 
 Defines the contract for live TV playback behavior:
+
 - `suspend fun initFromPlaybackContext(ctx: PlaybackContext)`
 - `fun jumpChannel(delta: Int)`
 - `fun selectChannel(channelId: Long)`
@@ -1163,6 +1226,7 @@ Defines the contract for live TV playback behavior:
 **5. Created LivePlaybackControllerTest:**
 
 Test skeleton with:
+
 - Fake implementations for all dependencies
 - Initial state assertions (`currentChannel.value == null`, `epgOverlay.value.visible == false`)
 - Data model property tests
@@ -1214,6 +1278,7 @@ As documented in the KDoc:
 **PR #307** completed Phase 3 – Step 1: LivePlaybackController structural foundation.
 
 **What was delivered:**
+
 - ✅ `LivePlaybackController` interface with full contract documentation
 - ✅ `LiveChannel` and `EpgOverlayState` domain models
 - ✅ `DefaultLivePlaybackController` stub implementation with TODO markers
@@ -1222,6 +1287,7 @@ As documented in the KDoc:
 - ✅ `LivePlaybackControllerTest` test skeleton with fake implementations
 
 **Behavior Contract Compliance (documented in KDoc):**
+
 - LIVE playback never participates in resume (Section 3.1)
 - Kids gating handled by existing `KidsPlaybackGate`
 - Controller is domain-only (pure Kotlin, no Android dependencies)
@@ -1229,6 +1295,7 @@ As documented in the KDoc:
 ### Next Steps (Phase 3 – Step 2)
 
 The following migration work remains for Step 2:
+
 - [ ] Implement LiveChannelRepository wrapping XtreamObxRepository/ObxLive
 - [ ] Implement LiveEpgRepository wrapping existing EpgRepository
 - [ ] Migrate `initFromPlaybackContext` logic from legacy screen
@@ -1274,6 +1341,7 @@ Added four new fields to support Live-TV playback in the SIP UI:
 | `epgOverlayVisible` | Boolean | Whether the EPG overlay is visible |
 
 **Field Documentation:**
+
 - All fields have comprehensive KDoc documenting their future Phase 3 UI consumption
 - Fields are properly annotated as "Phase 3 Step 3.A fields"
 - All fields are nullable (except `epgOverlayVisible` which defaults to `false`)
@@ -1284,6 +1352,7 @@ Added four new fields to support Live-TV playback in the SIP UI:
 New test file: `InternalPlayerUiStatePhase3LiveTest.kt`
 
 Test coverage includes:
+
 - Default values validation (all null/false by default)
 - Field setting and retrieval
 - Data class copy operations
@@ -1294,9 +1363,11 @@ Test coverage includes:
 ### Files Modified
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt` - Added Live-TV fields
 
 **New Files:**
+
 - `app/src/test/java/com/chris/m3usuite/player/internal/state/InternalPlayerUiStatePhase3LiveTest.kt` - Test coverage
 
 ### Runtime Status
@@ -1319,6 +1390,7 @@ Test coverage includes:
 Phase 3 - Step 3.A is **COMPLETE** ✅
 
 Completed Phase 3 steps:
+
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
 - [x] Step 3: Controls shadow mode activated
@@ -1327,6 +1399,7 @@ Completed Phase 3 steps:
 - [x] **Step 3.A: UiState Live fields added** ✅ **NEW**
 
 Remaining Phase 3 work:
+
 - [ ] Step 3.B: Wire LivePlaybackController to populate Live-TV fields
 - [ ] Step 3.C: Integrate EPG overlay state management
 - [ ] Implement shadow session internals
@@ -1338,6 +1411,7 @@ Remaining Phase 3 work:
 ### Next Steps (Phase 3 – Step 3.B)
 
 The following work remains for Step 3.B:
+
 - [ ] Wire `LivePlaybackController.currentChannel` to populate `liveChannelName`
 - [ ] Wire `LivePlaybackController.epgOverlay` to populate `liveNowTitle`, `liveNextTitle`, `epgOverlayVisible`
 - [ ] Add state mapping logic in InternalPlayerSession
@@ -1372,6 +1446,7 @@ Created concrete implementations that bridge the LivePlaybackController to the e
 **2. Wired LivePlaybackController in InternalPlayerSession:**
 
 Modified `rememberInternalPlayerSession` to:
+
 - Create `DefaultLivePlaybackController` when `playbackContext.type == PlaybackType.LIVE`
 - Initialize controller from `PlaybackContext` after player setup
 - Collect `currentChannel` StateFlow → map to `liveChannelName`
@@ -1380,6 +1455,7 @@ Modified `rememberInternalPlayerSession` to:
 - Cancel collection when session is disposed
 
 **State Mapping Logic:**
+
 ```kotlin
 // Collect currentChannel StateFlow
 scope.launch {
@@ -1411,6 +1487,7 @@ scope.launch {
 New test file: `InternalPlayerSessionPhase3LiveMappingTest.kt`
 
 Test coverage includes:
+
 - **LIVE playback with controller emitting channel data**
   - currentChannel → liveChannelName mapping
   - epgOverlay → nowTitle, nextTitle, epgOverlayVisible mapping
@@ -1429,11 +1506,13 @@ Test coverage includes:
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/DefaultLiveChannelRepository.kt`
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/DefaultLiveEpgRepository.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/session/InternalPlayerSessionPhase3LiveMappingTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/session/InternalPlayerSession.kt`
   - Added LivePlaybackController creation for LIVE sessions
   - Added controller initialization from PlaybackContext
@@ -1468,6 +1547,7 @@ Test coverage includes:
 Phase 3 - Step 3.B is **COMPLETE** ✅
 
 Completed Phase 3 steps:
+
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
 - [x] Step 3: Controls shadow mode activated
@@ -1478,6 +1558,7 @@ Completed Phase 3 steps:
 - [x] **Step 3.C: SIP InternalPlayerContent shows Live channel + EPG overlay** ✅ **NEW**
 
 Remaining Phase 3 work:
+
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 - [ ] Add diagnostics logging for shadow state
@@ -1499,12 +1580,14 @@ This step completes the visual integration of Live-TV fields in the SIP UI path 
 Added conditional rendering for Live-TV UI elements:
 
 **Live Channel Header:**
+
 - Rendered when: `state.isLive && state.liveChannelName != null`
 - Positioned at top-center of player
 - Uses `ElevatedCard` with channel name in `MaterialTheme.typography.titleMedium`
 - Simple, minimal design consistent with existing UI
 
 **EPG Overlay:**
+
 - Rendered when: `state.isLive && state.epgOverlayVisible == true`
 - Positioned at bottom-left of player (does not interfere with controls)
 - Shows "Now" and "Next" program titles when available
@@ -1513,6 +1596,7 @@ Added conditional rendering for Live-TV UI elements:
 - **Defensive:** Requires both LIVE playback type AND visibility flag to prevent accidental display on VOD/SERIES
 
 **Behavior Constraints Verified:**
+
 - ✅ No new state introduced (uses only existing `InternalPlayerUiState` fields)
 - ✅ Non-LIVE playback types (VOD, SERIES) never show Live UI elements
 - ✅ EPG overlay only visible when `epgOverlayVisible == true`
@@ -1535,6 +1619,7 @@ Added conditional rendering for Live-TV UI elements:
 New test file: `InternalPlayerContentPhase3LiveUiTest.kt`
 
 Test coverage includes (19 tests total):
+
 - **LIVE playback scenarios:**
   - Channel name rendering conditions
   - EPG overlay visibility control
@@ -1560,12 +1645,14 @@ Test coverage includes (19 tests total):
 ### Files Modified/Created
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
   - Modified `InternalPlayerContent` composable
   - Added `LiveChannelHeader` helper composable
   - Added `LiveEpgOverlay` helper composable
 
 **New Files:**
+
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/InternalPlayerContentPhase3LiveUiTest.kt`
   - Comprehensive UI logic tests (19 tests)
   - Validates rendering conditions for all scenarios
@@ -1598,20 +1685,24 @@ Test coverage includes (19 tests total):
 ### Design Decisions
 
 **Positioning:**
+
 - Channel header at top-center: Visible but not obtrusive
 - EPG overlay at bottom-left: Avoids collision with controls at bottom-center
 
 **Styling:**
+
 - Used existing `MaterialTheme.typography` tokens
 - Consistent with other overlays (e.g., `DebugInfoOverlay`)
 - `ElevatedCard` for both elements (matches debug overlay pattern)
 
 **Null Handling:**
+
 - Channel header: Only renders when `liveChannelName != null`
 - EPG overlay: Renders structure even with null titles, shows placeholder
 
 **Future Activation:**
 When Phase 3+ activates the SIP path:
+
 1. InternalPlayerSession will populate Live fields from LivePlaybackController
 2. InternalPlayerContent will automatically render channel + EPG based on state
 3. No additional UI work needed for basic Live-TV display
@@ -1639,6 +1730,7 @@ A new composable that encapsulates the ExoPlayer PlayerView and handles gesture 
 - **VOD/SERIES:** Gestures are ignored (future phases will add seek/trickplay)
 
 **Key Features:**
+
 - `playbackType` parameter determines behavior (LIVE vs VOD/SERIES)
 - `onJumpLiveChannel` callback has default no-op implementation (safe for non-LIVE usage)
 - AspectRatioMode support (FIT, FILL, ZOOM, STRETCH)
@@ -1647,6 +1739,7 @@ A new composable that encapsulates the ExoPlayer PlayerView and handles gesture 
 **2. Extended InternalPlayerController:**
 
 Added new method to the controller interface:
+
 ```kotlin
 val onJumpLiveChannel: (delta: Int) -> Unit = {}
 ```
@@ -1658,6 +1751,7 @@ val onJumpLiveChannel: (delta: Int) -> Unit = {}
 **3. Updated InternalPlayerContent:**
 
 Modified to use PlayerSurface instead of placeholder comment:
+
 - Threads `controller.onJumpLiveChannel` callback to PlayerSurface
 - `playbackType` and `aspectRatioMode` passed from state
 - Existing Live-TV UI elements (channel header, EPG overlay) remain unchanged
@@ -1666,6 +1760,7 @@ Modified to use PlayerSurface instead of placeholder comment:
 **4. Added LivePlaybackController Wiring Documentation:**
 
 Added TODO comment in InternalPlayerSession showing how future SIP screens will wire:
+
 ```kotlin
 val controller = InternalPlayerController(
     // ... other callbacks ...
@@ -1684,6 +1779,7 @@ This documents the pathway but doesn't implement it yet (SIP session is non-runt
 Comprehensive test suite (19 tests) covering:
 
 **LIVE Playback Scenarios:**
+
 - Swipe right → delta +1
 - Swipe left → delta -1
 - Threshold boundary tests (60px)
@@ -1692,15 +1788,18 @@ Comprehensive test suite (19 tests) covering:
 - Diagonal swipe with horizontal dominance → triggers callback
 
 **VOD/SERIES Playback Scenarios:**
+
 - Horizontal swipe → no callback (any magnitude)
 - Callback never invoked for non-LIVE types
 
 **Edge Cases:**
+
 - Zero drag
 - Exact threshold boundary
 - Just above threshold
 
 **Integration Tests:**
+
 - PlaybackType enum coverage
 - AspectRatioMode enum coverage
 - Callback optionality
@@ -1710,10 +1809,12 @@ Tests use `simulateGestureLogic` helper to abstract pointer gesture mechanics fo
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase3LiveGestureTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
   - Added `onJumpLiveChannel` to InternalPlayerController
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt`
@@ -1753,6 +1854,7 @@ Tests use `simulateGestureLogic` helper to abstract pointer gesture mechanics fo
 Phase 3 - Step 3.D is **COMPLETE** ✅
 
 Completed Phase 3 steps:
+
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
 - [x] Step 3: Controls shadow mode activated
@@ -1765,6 +1867,7 @@ Completed Phase 3 steps:
 - [x] **Phase 3 – Task 1: Live-TV Robustness & Data Integrity** ✅ **NEW**
 
 Remaining Phase 3 work:
+
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 - [ ] Add diagnostics logging for shadow state
@@ -1782,18 +1885,21 @@ This task implements comprehensive robustness features for DefaultLivePlaybackCo
 ### What Was Done
 
 **1. EPG Stale Detection:**
+
 - Tracks last EPG update timestamp and nowTitle
 - Auto-detects when EPG data hasn't changed for configurable threshold (default: 3 minutes)
 - Updates metrics when stale EPG is detected
 - Designed for future auto-refresh integration via coroutine scope
 
 **2. EPG Fallback & Caching:**
+
 - Caches last-known-good EpgOverlayState per channel ID
 - On repository errors, uses cached values instead of returning nulls
 - Prevents EPG overlay from flickering into "empty" state after errors
 - Tracks cache hit count in metrics
 
 **3. Smart Channel Zapping:**
+
 - Filters out channels with null or empty URLs during initialization
 - Removes duplicate channel entries based on URL
 - Applies category hint filtering from PlaybackContext
@@ -1801,12 +1907,14 @@ This task implements comprehensive robustness features for DefaultLivePlaybackCo
 - Maintains wrap-around behavior
 
 **4. Controller Sanity Guards:**
+
 - `jumpChannel` never crashes on empty/invalid channel lists
 - `epgOverlay` always emits safe structure (catch blocks prevent throws)
 - Overlay automatically hides when switching channels (prevents stale overlay)
 - `onPlaybackPositionChanged` never throws exceptions
 
 **5. Live Metrics Exposure:**
+
 - Created `LiveMetrics` data class with diagnostic counters
 - Exposed `liveMetrics` StateFlow in `LivePlaybackController` interface
 - Tracks: EPG refresh count, cache hit count, stale detection count, channel skip count
@@ -1815,6 +1923,7 @@ This task implements comprehensive robustness features for DefaultLivePlaybackCo
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/LiveMetrics.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/live/LiveControllerRobustnessTest.kt`
 
@@ -1829,6 +1938,7 @@ This task completes the SIP-only Live-TV interaction polish by implementing dete
 ### What Was Done
 
 **A) DefaultLivePlaybackController.kt:**
+
 1. **Deterministic 200ms Jump Throttle:**
    - Added `lastJumpAtRealtimeMs: Long = 0L` field
    - Added `jumpThrottleMs: Long = 200L` constant
@@ -1849,6 +1959,7 @@ This task completes the SIP-only Live-TV interaction polish by implementing dete
    - Progress percent set to 0.0f for LIVE content (no duration)
 
 **B) InternalPlayerContent.kt:**
+
 1. **AnimatedVisibility Integration:**
    - Replaced simple `if` statement with `AnimatedVisibility`
    - Uses `state.epgOverlayVisible` directly without delays or gating
@@ -1857,6 +1968,7 @@ This task completes the SIP-only Live-TV interaction polish by implementing dete
    - Visibility flag flips immediately, animation plays smoothly
 
 **C) File Structure Updates:**
+
 - Created `LiveEpgInfoState.kt` with KDoc documentation
 - Updated `LivePlaybackController.kt` interface
 - Updated `InternalPlayerSessionPhase3LiveMappingTest.kt` to include new StateFlow
@@ -1864,6 +1976,7 @@ This task completes the SIP-only Live-TV interaction polish by implementing dete
 ### Test Coverage
 
 **New Test Files:**
+
 1. **DefaultLivePlaybackControllerTask2Test.kt** (15 tests):
    - Jump throttle behavior (5 tests)
    - EPG overlay hide on channel change (3 tests)
@@ -1878,17 +1991,20 @@ This task completes the SIP-only Live-TV interaction polish by implementing dete
    - Edge cases and behavior contract (6 tests)
 
 **Existing Test Updates:**
+
 - Updated `LiveControllerRobustnessTest.wrap-around` to advance time between jumps (throttle compatibility)
 - Updated `InternalPlayerSessionPhase3LiveMappingTest.FakeLivePlaybackController` to include liveEpgInfoState
 
 ### Files Added/Modified
 
 **New Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/LiveEpgInfoState.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/live/DefaultLivePlaybackControllerTask2Test.kt`
 - `app/src/test/java/com/chris/m3usuite/player/internal/ui/InternalPlayerContentLiveOverlayPolishTest.kt`
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/LivePlaybackController.kt` - Added liveEpgInfoState StateFlow
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/DefaultLivePlaybackController.kt` - Implemented all Task 2 features
 - `app/src/main/java/com/chris/m3usuite/player/internal/ui/InternalPlayerControls.kt` - Added AnimatedVisibility with fade animations
@@ -1915,6 +2031,7 @@ This task completes the SIP-only Live-TV interaction polish by implementing dete
 ### Implementation Details
 
 **Jump Throttle Logic:**
+
 ```kotlin
 override fun jumpChannel(delta: Int) {
     // Deterministic 200ms throttle
@@ -1931,6 +2048,7 @@ override fun jumpChannel(delta: Int) {
 ```
 
 **AnimatedVisibility Usage:**
+
 ```kotlin
 AnimatedVisibility(
     visible = state.isLive && state.epgOverlayVisible,
@@ -1942,6 +2060,7 @@ AnimatedVisibility(
 ```
 
 **LiveEpgInfoState Update:**
+
 ```kotlin
 _liveEpgInfoState.value = LiveEpgInfoState(
     nowTitle = nowTitle,
@@ -1955,6 +2074,7 @@ _liveEpgInfoState.value = LiveEpgInfoState(
 Phase 3 - Task 2 is **COMPLETE** ✅
 
 Completed Phase 3 tasks:
+
 - [x] Step 1: Shadow mode initialization (InternalPlayerShadow entry point)
 - [x] Step 2: Legacy↔Shadow parity comparison pipeline
 - [x] Step 3: Controls shadow mode activated
@@ -1968,10 +2088,12 @@ Completed Phase 3 tasks:
 - [x] **Phase 3 – Task 2: SIP Live-TV Interaction & UX Polish** ✅ **DONE**
 
 Remaining Phase 3 work:
+
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 
 **Modified Files:**
+
 - `app/src/main/java/com/chris/m3usuite/player/internal/live/DefaultLivePlaybackController.kt`
   - Added robustness state tracking (EPG cache, timestamps, metrics)
   - Enhanced `initFromPlaybackContext` with smart channel filtering
@@ -1995,23 +2117,27 @@ Remaining Phase 3 work:
 Created comprehensive test suite with 32 new tests covering:
 
 **EPG Stale Detection (3 tests):**
+
 - Stale EPG detected when threshold exceeded
 - No false positives before threshold
 - Safe handling when no channel selected
 
 **EPG Fallback & Caching (4 tests):**
+
 - Cache populated on successful fetch
 - Fallback uses cached data on repository error
 - Fallback returns null when no cache exists
 - Overlay never flickers to empty after errors
 
 **Smart Channel Zapping (4 tests):**
+
 - Null/empty URLs filtered out
 - Duplicate channels removed
 - Category filter applied correctly
 - Skip count tracked in metrics
 
 **Controller Sanity Guards (6 tests):**
+
 - jumpChannel safe with empty list
 - jumpChannel handles repeated jumps with wrap-around
 - epgOverlay handles malformed data (long strings)
@@ -2020,6 +2146,7 @@ Created comprehensive test suite with 32 new tests covering:
 - onPlaybackPositionChanged never throws
 
 **Live Metrics (5 tests):**
+
 - EPG refresh count tracked
 - Cache hit count tracked
 - Stale detection count tracked
@@ -2027,6 +2154,7 @@ Created comprehensive test suite with 32 new tests covering:
 - Metrics have safe default values
 
 **Edge Cases (2 tests):**
+
 - All-invalid channel list handled gracefully
 - Wrap-around at list boundaries
 
@@ -2049,6 +2177,7 @@ Created comprehensive test suite with 32 new tests covering:
 ### Phase 3 Task 1 Complete ✅
 
 All requirements from the problem statement have been implemented:
+
 1. ✅ EPG stale detection with configurable threshold
 2. ✅ EPG fallback and caching with error recovery
 3. ✅ Smart channel zapping with filtering and deduplication
@@ -2056,6 +2185,7 @@ All requirements from the problem statement have been implemented:
 5. ✅ Live metrics exposure for shadow diagnostics
 
 **Next Steps:**
+
 - Roadmap documentation update
 - Future: Wire stale EPG refresh to coroutine scope for automatic refresh
 - Future: ShadowDiagnosticsAggregator can subscribe to liveMetrics flow
@@ -2071,6 +2201,7 @@ This section provides a high-level overview of the Internal Player Refactor prog
 **Status:** All work complete (2025-11-24)
 
 **What Was Done:**
+
 - ✅ Defined `PlaybackContext` domain model and `PlaybackType` enum (VOD, SERIES, LIVE)
 - ✅ Created `InternalPlayerEntry` bridge accepting PlaybackContext
 - ✅ Updated all call sites (MainActivity, LiveDetailScreen, SeriesDetailScreen, VodDetailScreen, TelegramDetailScreen)
@@ -2079,6 +2210,7 @@ This section provides a high-level overview of the Internal Player Refactor prog
 - ✅ 100% runtime behavior preservation
 
 **Architecture:**
+
 ```
 Call Sites → InternalPlayerEntry (Phase 1 Bridge) → InternalPlayerScreen (Legacy)
 ```
@@ -2090,6 +2222,7 @@ Call Sites → InternalPlayerEntry (Phase 1 Bridge) → InternalPlayerScreen (Le
 **Status:** All work complete (2025-11-25)
 
 **What Was Done:**
+
 - ✅ `ResumeManager` interface + `DefaultResumeManager` implementation
   - Load/save resume positions with >10s threshold
   - Clear resume when remaining < 10s
@@ -2107,6 +2240,7 @@ Call Sites → InternalPlayerEntry (Phase 1 Bridge) → InternalPlayerScreen (Le
 - ✅ 100% behavioral parity with legacy implementation
 
 **Architecture:**
+
 ```
 InternalPlayerSession (SIP - non-runtime)
   ├─→ DefaultResumeManager (mirrors legacy L572-608, L692-722, L798-806)
@@ -2122,6 +2256,7 @@ InternalPlayerSession (SIP - non-runtime)
 **What Was Done:**
 
 **Core LivePlaybackController:**
+
 - ✅ `LivePlaybackController` interface with full contract documentation
 - ✅ `DefaultLivePlaybackController` with complete legacy behavior migration:
   - ✅ Channel navigation (`jumpChannel`, `selectChannel`)
@@ -2138,6 +2273,7 @@ InternalPlayerSession (SIP - non-runtime)
 - ✅ `TimeProvider` abstraction for testable time operations
 
 **UI Integration (SIP):**
+
 - ✅ Extended `InternalPlayerUiState` with Live-TV fields:
   - `liveChannelName`, `liveNowTitle`, `liveNextTitle`, `epgOverlayVisible`
 - ✅ `InternalPlayerSession` wires LivePlaybackController StateFlows to UiState
@@ -2150,6 +2286,7 @@ InternalPlayerSession (SIP - non-runtime)
   - VOD/SERIES gestures ignored (future phases)
 
 **Testing:**
+
 - ✅ 68+ Live-TV controller tests (behavior, robustness, edge cases)
 - ✅ 19 UI rendering tests (InternalPlayerContentPhase3LiveUiTest)
 - ✅ 19 gesture handling tests (PlayerSurfacePhase3LiveGestureTest)
@@ -2157,12 +2294,14 @@ InternalPlayerSession (SIP - non-runtime)
 - ✅ All tests pass without modification
 
 **Runtime Status:**
+
 - ✅ **Legacy InternalPlayerScreen remains the active runtime implementation**
 - ✅ SIP Live-TV path is complete and ready for activation
 - ✅ Not wired to production navigation (future phase activation)
 - ✅ No changes to legacy code or behavior
 
 **Architecture:**
+
 ```
 InternalPlayerSession (SIP - non-runtime)
   └─→ DefaultLivePlaybackController
@@ -2201,6 +2340,7 @@ The following shadow-mode diagnostics infrastructure exists but is not yet wired
 - ✅ `ShadowDiagnosticsAggregator` (event collection)
 
 Shadow mode work remains:
+
 - [ ] Implement shadow session internals
 - [ ] Wire shadow session to observe real playback inputs
 - [ ] Add diagnostics logging for shadow state
@@ -2220,11 +2360,13 @@ Phase 4 kickoff has been initiated to plan and document the centralization of su
 ### What Was Done (Kickoff Task)
 
 **1. Documentation Review & Analysis:**
+
 - ✅ Read and analyzed `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md` (authoritative behavior contract)
 - ✅ Read existing `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` and `INTERNAL_PLAYER_REFACTOR_STATUS.md`
 - ✅ Verified Phase 1-3 completion status
 
 **2. Repository Scanning & Code Discovery:**
+
 - ✅ Identified all subtitle-related code in legacy `InternalPlayerScreen.kt`:
   - L208-212: Subtitle style preferences from SettingsStore
   - L1258-1266: Effective style helper functions
@@ -2238,6 +2380,7 @@ Phase 4 kickoff has been initiated to plan and document the centralization of su
 - ✅ Verified no existing SIP subtitle modules exist
 
 **3. Phase 4 Checklist Created:**
+
 - ✅ Created `docs/INTERNAL_PLAYER_PHASE4_CHECKLIST.md` (17,614 characters)
 - ✅ Defined 6 task groups with 21 specific tasks
 - ✅ Mapped all legacy behavior to SIP modules
@@ -2246,12 +2389,14 @@ Phase 4 kickoff has been initiated to plan and document the centralization of su
 - ✅ Included test requirements for each task
 
 **4. Roadmap Documentation Updated:**
+
 - ✅ Updated `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` Phase 4 section
 - ✅ Replaced coarse bullet points with detailed task breakdown
 - ✅ Added file mappings and legacy code references
 - ✅ Preserved Phase 1-3 sections (no changes)
 
 **5. Status Documentation Updated:**
+
 - ✅ Updated `INTERNAL_PLAYER_REFACTOR_STATUS.md` with Phase 4 kickoff section
 - ✅ Documented kickoff completion
 - ✅ Added kickoff task details
@@ -2259,29 +2404,35 @@ Phase 4 kickoff has been initiated to plan and document the centralization of su
 ### Task Groups Defined (from Checklist)
 
 **Task Group 1: SubtitleStyle Domain Model & Manager**
+
 - Task 1.1: SubtitleStyle Data Model (EdgeStyle enum, defaults, ranges)
 - Task 1.2: SubtitlePreset Enum (DEFAULT, HIGH_CONTRAST, TV_LARGE, MINIMAL)
 - Task 1.3: SubtitleStyleManager Interface (StateFlows, update methods)
 - Task 1.4: DefaultSubtitleStyleManager Implementation (DataStore persistence, per-profile)
 
 **Task Group 2: SubtitleSelectionPolicy**
+
 - Task 2.1: SubtitleSelectionPolicy Interface (SubtitleTrack model, selection logic)
 - Task 2.2: DefaultSubtitleSelectionPolicy Implementation (language priority, kid mode blocking)
 
 **Task Group 3: Player Integration (SIP Session)**
+
 - Task 3.1: Apply SubtitleStyle to PlayerView (CaptionStyleCompat mapping, opacity application)
 - Task 3.2: Subtitle Track Selection Integration (TrackSelectionOverride, onTracksChanged listener)
 
 **Task Group 4: CC Menu UI (SIP InternalPlayerControls)**
+
 - Task 4.1: CC Button in InternalPlayerControls (visibility rules, kid mode)
 - Task 4.2: CcMenuDialog Composable (DPAD navigation, segments, touch UI variant)
 - Task 4.3: Live Preview in CC Menu (pending style preview, isolation from playback)
 
 **Task Group 5: SettingsScreen Integration**
+
 - Task 5.1: Subtitle Settings Section (global controls, kid mode read-only)
 - Task 5.2: Subtitle Preview Box (real-time preview in settings)
 
 **Task Group 6: Testing & Validation**
+
 - Task 6.1: SubtitleStyleManager Tests (range validation, presets, persistence, thread safety)
 - Task 6.2: SubtitleSelectionPolicy Tests (priority order, kid mode, VOD/LIVE preferences)
 - Task 6.3: CC Menu UI Tests (visibility, DPAD navigation, preview accuracy)
@@ -2290,6 +2441,7 @@ Phase 4 kickoff has been initiated to plan and document the centralization of su
 ### Files to Create (SIP Only - 11 New Files)
 
 **Domain Layer:**
+
 1. `internal/subtitles/SubtitleStyle.kt` - Data model with EdgeStyle enum
 2. `internal/subtitles/SubtitlePreset.kt` - Preset enum with toStyle() conversion
 3. `internal/subtitles/SubtitleStyleManager.kt` - Interface definition
@@ -2338,6 +2490,7 @@ Phase 4 kickoff has been initiated to plan and document the centralization of su
 Phase 4 implementation must comply with `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md`:
 
 **Global Rules (Section 3):**
+
 - ✅ Kid Mode: No subtitles rendered (Section 3.1)
 - ✅ Kid Mode: No subtitle track selected (Section 3.1)
 - ✅ Kid Mode: No CC button shown (Section 3.1)
@@ -2345,27 +2498,32 @@ Phase 4 implementation must comply with `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PH
 - ✅ SIP-Only target (Section 3.2)
 
 **SubtitleStyle (Section 4):**
+
 - ✅ Required fields defined (textScale, colors, opacity, edgeStyle)
 - ✅ Defaults specified (1.0, White/Black, 100%/60%, Outline)
 - ✅ Allowed ranges (0.5-2.0 scale, 0.5-1.0 fgOpacity, 0.0-1.0 bgOpacity)
 
 **SubtitleStyleManager (Section 5):**
+
 - ✅ Interface definition (currentStyle, currentPreset, update methods)
 - ✅ Per-profile persistence
 - ✅ StateFlow propagation
 - ✅ Kid mode: Values stored but ignored
 
 **SubtitleSelectionPolicy (Section 6):**
+
 - ✅ Selection rules (language priority, default flag, fallback)
 - ✅ Kid mode: Always "no subtitles"
 - ✅ Persistence per profile
 
 **Player Integration (Section 7):**
+
 - ✅ CaptionStyleCompat mapping
 - ✅ Live style updates
 - ✅ Error handling (never crash)
 
 **CC/Subtitle UI (Section 8):**
+
 - ✅ Button visibility rules
 - ✅ Radial CC menu with segments
 - ✅ DPAD behavior specification
@@ -2373,6 +2531,7 @@ Phase 4 implementation must comply with `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PH
 - ✅ Live preview
 
 **SettingsScreen (Section 9):**
+
 - ✅ Global subtitle settings per profile
 - ✅ Preview box
 - ✅ Kid mode behavior
@@ -2380,25 +2539,30 @@ Phase 4 implementation must comply with `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PH
 ### Code Classification Summary
 
 **Legacy Code to Migrate (SIP-Only):**
+
 - ✅ All subtitle style code (L208-212, L1258-1266, L1748-1766)
 - ✅ All CC menu code (L2194-2210, L2253-2267, L2290-2390)
 - ✅ All track selection code (L1284-1304, L2304-2312)
 - ✅ Helper functions (L2476-2484)
 
 **Legacy Code NOT to Migrate (Obsolete):**
+
 - None identified (all legacy subtitle code is valid and must be migrated)
 
 **Code Already Covered by Checklist:**
+
 - All discovered legacy code is mapped to specific Phase 4 tasks
 - No gaps or missing behavior identified
 
 **Code Missing from Checklist (None):**
+
 - All requirements from contract are covered by checklist tasks
 - No additional tasks required
 
 ### Completion Criteria Established
 
 Phase 4 will be considered complete when:
+
 1. ✅ All 21 tasks across 6 task groups are complete
 2. ✅ All unit and integration tests passing
 3. ✅ SIP subtitle style working in isolation
@@ -2421,6 +2585,7 @@ Phase 4 will be considered complete when:
 **Kickoff Completed:** 2025-11-26
 
 **What's Next:**
+
 - Task Group 1 (SubtitleStyle Domain Model & Manager) - 4 tasks
 - Task Group 2 (SubtitleSelectionPolicy) - 2 tasks
 - Task Group 3 (Player Integration) - 2 tasks
@@ -2445,6 +2610,7 @@ This phase implements centralized subtitle styling, CC menu controls, and subtit
 **Group 1: SubtitleStyle Domain (Complete) ✅**
 
 Created complete domain model infrastructure:
+
 - ✅ `SubtitleStyle.kt` - Data class with full contract compliance
   - Contract-compliant defaults (textScale=1.0, White/Black, 60% opacity, OUTLINE)
   - Range validation (textScale 0.5-2.0, fgOpacity 0.5-1.0, bgOpacity 0.0-1.0)
@@ -2465,6 +2631,7 @@ Created complete domain model infrastructure:
 **Group 2: SubtitleSelectionPolicy (Complete) ✅**
 
 Created subtitle track selection infrastructure:
+
 - ✅ `SubtitleTrack.kt` - Data model for Media3 tracks
 - ✅ `SubtitleSelectionPolicy.kt` - Interface for track selection logic
 - ✅ `DefaultSubtitleSelectionPolicy.kt` - Implementation
@@ -2477,6 +2644,7 @@ Created subtitle track selection infrastructure:
 **Group 3: SIP Session Integration (Foundation) ✅**
 
 Prepared state infrastructure for subtitle integration:
+
 - ✅ Extended `InternalPlayerUiState` with subtitle fields:
   - `subtitleStyle: SubtitleStyle` - Current style applied to player
   - `selectedSubtitleTrack: SubtitleTrack?` - Currently selected track
@@ -2506,11 +2674,13 @@ All implemented modules follow `INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md`:
 ### Test Coverage
 
 **Unit Tests:**
+
 - ✅ 11 tests in SubtitleStyleTest (contract defaults, ranges, presets, edge styles)
 - ✅ 7 tests in SubtitleSelectionPolicyTest (kid mode, language priority, default flag)
 - ✅ All 18 tests passing
 
 **Build Status:**
+
 - ✅ `./gradlew :app:compileDebugKotlin` - Builds successfully
 - ✅ `./gradlew :app:testDebugUnitTest --tests "*.Subtitle*Test"` - All tests pass
 - ✅ No breaking changes to existing code
@@ -2607,15 +2777,18 @@ Implemented CC menu dialog with all required controls:
 ### Files Modified/Created
 
 **Modified Files (SIP Only):**
+
 - `internal/session/InternalPlayerSession.kt` - Added SubtitleStyleManager and SubtitleSelectionPolicy wiring
 - `internal/ui/PlayerSurface.kt` - Added subtitle style application to PlayerView
 - `internal/ui/InternalPlayerControls.kt` - Added CC button and dialog integration
 - `internal/state/InternalPlayerState.kt` - Added `showCcMenuDialog` field
 
 **New Files:**
+
 - `internal/ui/CcMenuDialog.kt` - CC menu dialog composable (305 lines)
 
 **No Changes to Legacy:**
+
 - ❌ `player/InternalPlayerScreen.kt` - **UNTOUCHED**
 
 ### Contract Compliance
@@ -2647,21 +2820,25 @@ Implemented CC menu dialog with all required controls:
 ### Remaining Work for Full Phase 4 Completion
 
 **Group 3: Minor Items**
+
 - [ ] Add SIP-level integration tests for subtitle session behavior
 
 **Group 4: Enhancements**
+
 - [ ] Wire CC menu callbacks to SubtitleStyleManager (TODO markers in place)
 - [ ] Wire track selection callback to actual track switching
 - [ ] Full radial menu for TV/DPAD (optional enhancement over current dialog)
 - [ ] Add UI tests for CC menu components
 
 **Group 5: SettingsScreen Integration (Not Started)**
+
 - [ ] Inspect existing subtitle settings in SettingsScreen
 - [ ] Decide: reuse and rewire OR replace with contract-driven UI
 - [ ] Ensure single subtitle settings system backed by SubtitleStyleManager
 - [ ] Remove any duplicate/parallel subtitle configs
 
 **Group 6: Testing & Validation (Partial)**
+
 - [x] SubtitleStyleManager tests (11 tests passing)
 - [x] SubtitleSelectionPolicy tests (7 tests passing)
 - [ ] CC Menu UI tests
@@ -2670,6 +2847,7 @@ Implemented CC menu dialog with all required controls:
 ### Summary
 
 Phase 4 Groups 3 & 4 are **functionally complete** with all core requirements met:
+
 - ✅ SIP session fully integrated with subtitle style and track selection
 - ✅ CC menu UI implemented with all required controls
 - ✅ Kid Mode enforcement at all levels
@@ -2677,6 +2855,7 @@ Phase 4 Groups 3 & 4 are **functionally complete** with all core requirements me
 - ✅ No legacy code modifications
 
 The remaining work is primarily:
+
 - SettingsScreen integration (Group 5)
 - Additional test coverage (Group 6)
 - Optional enhancements (full radial menu, full manager wiring)
@@ -2688,6 +2867,7 @@ The remaining work is primarily:
 ### Files Created (SIP-Only)
 
 **Domain Layer (7 files):**
+
 1. `internal/subtitles/SubtitleStyle.kt` (87 lines)
 2. `internal/subtitles/SubtitlePreset.kt` (53 lines)
 3. `internal/subtitles/SubtitleStyleManager.kt` (49 lines)
@@ -2700,6 +2880,7 @@ The remaining work is primarily:
 8. `test/.../subtitles/SubtitleSelectionPolicyTest.kt` (130 lines, 7 tests)
 
 **Modified Files (1 file):**
+
 - `internal/state/InternalPlayerState.kt` - Added subtitle fields and controller callbacks
 
 ### Phase 4 Task 2b – Groups 3-5 Completed
@@ -2709,6 +2890,7 @@ The remaining work is primarily:
 **What Was Delivered:**
 
 **Group 3: SIP Session Integration (Complete) ✅**
+
 - ✅ Wired SubtitleStyleManager into InternalPlayerSession
 - ✅ Applied SubtitleStyle to Media3 subtitleView (CaptionStyleCompat mapping)
 - ✅ Wired SubtitleSelectionPolicy for track selection (onTracksChanged)
@@ -2716,6 +2898,7 @@ The remaining work is primarily:
 - ✅ Added `availableSubtitleTracks` field to InternalPlayerUiState for CC button visibility
 
 **Group 4: CC Menu UI (Complete) ✅**
+
 - ✅ CC button in InternalPlayerControls (visibility: !kidActive && hasTracks)
 - ✅ CcMenuDialog fully wired to controller callbacks
 - ✅ `onUpdateSubtitleStyle` callback wired to SubtitleStyleManager
@@ -2724,6 +2907,7 @@ The remaining work is primarily:
 - ✅ All TODO markers resolved in CcMenuDialog
 
 **Group 5: SettingsScreen Integration (Complete) ✅**
+
 - ✅ Created `SubtitleSettingsViewModel` backed by `SubtitleStyleManager`
 - ✅ Added `SubtitleSettingsSection` composable with:
   - Live preview box reflecting real-time style changes
@@ -2736,6 +2920,7 @@ The remaining work is primarily:
 - ✅ Removed old subtitle settings from Player card (no duplicate systems)
 
 **Group 6: Testing (Complete) ✅**
+
 - ✅ Added `CcMenuPhase4UiTest.kt` with 19 unit tests covering:
   - CC button visibility rules (kid mode, track availability)
   - CC dialog display conditions
@@ -2757,6 +2942,7 @@ The remaining work is primarily:
 **Completion Date:** 2025-11-26
 
 **Summary:**
+
 - All 6 Task Groups complete
 - All TODO markers resolved
 - Single unified subtitle settings system backed by SubtitleStyleManager
@@ -2783,6 +2969,7 @@ The remaining work is primarily:
 | Phase 10 – Tooling | ⬜ Not Started | - | Legacy | ⬜ No |
 
 **Legend:**
+
 - **Runtime Active:** Which implementation is currently active in production
 - **SIP Complete:** Whether the SIP (reference) implementation is complete
   - ✅ Yes = Fully implemented and tested
@@ -2795,6 +2982,7 @@ Phase 6 Task 5 completed. FocusZoneId enum, focusZone() modifier, and FocusKitNa
 Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain pending.
 
 **Added mandatory items:**
+
 - ✅ **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with DSL syntax (MANDATORY)
 - ✅ **TvInputController (Global)** – Single global controller with interface and responsibilities (MANDATORY)
 - ✅ **FocusZones Integration** – All 10 zones with FocusKit integration requirements (MANDATORY)
@@ -2803,6 +2991,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 - ✅ **TV Input Debug Overlay** – Inspector showing KeyEvent, TvKeyRole, TvAction, ScreenId, FocusZone, handled (MANDATORY)
 
 **Implementation checklist:**
+
 - Created `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` with 10 task groups (56 tasks)
 - Full repo scan completed: FocusKit, TvKeyDebouncer, HomeChromeScaffold, ProfileGate, InternalPlayerScreen
 - Repository analysis summary with "good/reusable", "becomes global", "becomes screen-specific", "must be replaced" classifications
@@ -2820,6 +3009,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 **No implementation tasks are marked as DONE** – all Phase 6 work remains pending.
 
 **Phase 5 Status:** ✅ **FULLY VALIDATED** (2025-11-27). All groups complete with code quality improvements:
+
 - Black bars enforced with contract-compliant backgrounds
 - Aspect ratio cycling implemented (FIT → FILL → ZOOM → FIT)
 - Trickplay state model and UI implemented with TrickplayIndicator and SeekPreviewOverlay
@@ -2830,9 +3020,10 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 - SIP is now the authoritative PlayerSurface implementation for future activation
 - Legacy InternalPlayerScreen unchanged
 
-**Phase 4 Status:** All Groups complete (1-6). SIP player fully integrated with subtitle styling and track selection. CC Menu fully wired to SubtitleStyleManager. SettingsScreen integrated with SubtitleSettingsSection and SubtitleSettingsViewModel. Kid profile detection hides subtitle settings. 
+**Phase 4 Status:** All Groups complete (1-6). SIP player fully integrated with subtitle styling and track selection. CC Menu fully wired to SubtitleStyleManager. SettingsScreen integrated with SubtitleSettingsSection and SubtitleSettingsViewModel. Kid profile detection hides subtitle settings.
 
 **Phase 4 Group 6 - Validation & Stabilization Complete (2025-11-26):**
+
 - ✅ Comprehensive test coverage added (95 total subtitle tests)
 - ✅ VOD/SERIES/LIVE subtitle selection validated
 - ✅ Kid Mode end-to-end behavior validated  
@@ -2851,6 +3042,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 ### What Was Done (Kickoff Task)
 
 **1. Contract Analysis:**
+
 - ✅ Read and analyzed `INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md`
 - ✅ Extracted all requirements related to:
   - PlayerSurface composable responsibilities (video surface, aspect ratio, gestures, auto-hide)
@@ -2885,6 +3077,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 | L1836-1837 | Tap toggles controls | PlayerSurface onTap | ✅ |
 
 **4. Checklist Created:**
+
 - ✅ Created `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
 - ✅ 5 Task Groups with 22 specific tasks:
   - Group 1: PlayerSurface Foundation & Black Bars (3 tasks) ✅ **DONE**
@@ -2896,6 +3089,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 - ✅ Legacy behavior mapped to SIP modules
 
 **5. Documentation Updated:**
+
 - ✅ Updated `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` with Phase 5 task groups
 - ✅ Updated `INTERNAL_PLAYER_REFACTOR_STATUS.md` with kickoff entry
 
@@ -2962,6 +3156,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
 ### Files Modified
 
 **Main Source:**
+
 1. `app/src/main/java/com/chris/m3usuite/player/internal/ui/PlayerSurface.kt`
    - Added `import android.graphics.Color as AndroidColor`
    - Added `import androidx.compose.ui.graphics.Color`
@@ -2980,6 +3175,7 @@ Tasks 1-5 are complete. Tasks 6+ (Debug UI, screen consumer integration) remain 
    - Added XML comment documenting Phase 5 contract compliance
 
 **Test Source:**
+
 1. `app/src/test/java/com/chris/m3usuite/player/internal/ui/PlayerSurfacePhase5BlackBarTest.kt`
    - New test file with 14 tests for Groups 1 & 2
 
@@ -3114,6 +3310,7 @@ The following task groups remain for future implementation:
 ### Files Modified
 
 **Main Source:**
+
 1. `app/src/main/java/com/chris/m3usuite/player/internal/state/InternalPlayerState.kt`
    - Added trickplay state fields: `trickplayActive`, `trickplaySpeed`, `seekPreviewVisible`, `seekPreviewTargetMs`
    - Added controls state fields: `controlsVisible`, `controlsTick`
@@ -3137,6 +3334,7 @@ The following task groups remain for future implementation:
    - Updated KDoc with Phase 5 trickplay documentation
 
 **Test Source:**
+
 1. `app/src/test/java/com/chris/m3usuite/player/internal/ui/InternalPlayerTrickplayPhase5Test.kt`
    - New test file with 24 trickplay behavior tests
 
@@ -3144,6 +3342,7 @@ The following task groups remain for future implementation:
    - New test file with 33 auto-hide behavior tests
 
 **Documentation:**
+
 1. `docs/INTERNAL_PLAYER_PHASE5_CHECKLIST.md`
    - Marked Groups 3 & 4 tasks as DONE
    - Updated legacy behavior mapping table
@@ -3185,6 +3384,7 @@ The following task groups remain for future implementation:
 Phase 6 roadmap has been **fully aligned** with `INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`.
 
 **Added mandatory items:**
+
 - **TvScreenInputConfig & Declarative DSL** – Per-screen key→action mapping with DSL syntax
 - **TvInputController (Global)** – Single global controller with explicit interface and responsibilities
 - **FocusZones Integration** – All 10 zones with FocusKit integration requirements
@@ -3240,6 +3440,7 @@ screen(PLAYER) {
 ```
 
 **DSL Requirements (ALL MANDATORY):**
+
 - Override mappings per screen
 - Missing mappings interpreted as "no action" (returns `null`)
 - Profile-dependent policies (Kids Mode filtering applied BEFORE DSL resolution)
@@ -3258,6 +3459,7 @@ interface TvInputController {
 ```
 
 **Responsibilities (ALL MANDATORY):**
+
 1. KeyEvent → TvKeyRole mapping via global mapper
 2. Apply Kids Mode filtering BEFORE screen config
 3. Resolve TvAction via TvScreenInputConfig
@@ -3280,6 +3482,7 @@ All 10 required focus zones are now documented:
 10. `profile_grid` – Profile selection grid
 
 **TvActions MUST target FocusZones:**
+
 - `FOCUS_QUICK_ACTIONS` → `FocusKit.focusZone("quick_actions")`
 - `FOCUS_TIMELINE` → `FocusKit.focusZone("timeline")`
 
@@ -3290,11 +3493,13 @@ All 10 required focus zones are now documented:
 Kids Mode filtering **ALWAYS** happens **BEFORE** screen-level config.
 
 **Blocked Actions for Kids:**
+
 - `FAST_FORWARD`, `REWIND`
 - `SEEK_FORWARD_10S`, `SEEK_FORWARD_30S`, `SEEK_BACKWARD_10S`, `SEEK_BACKWARD_30S`
 - `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_LIVE_LIST`
 
 **Allowed Actions for Kids:**
+
 - `DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, `DPAD_RIGHT`, `DPAD_CENTER` (all DPAD navigation)
 - `BACK`
 - `MENU` → Opens kid-specific overlay only
@@ -3303,9 +3508,11 @@ Kids Mode filtering **ALWAYS** happens **BEFORE** screen-level config.
 ### Blocking Overlays Behavior (MANDATORY)
 
 **Blocking Overlays (ALL must be detected):**
+
 - CC Menu, Aspect Ratio Menu, Live List, Settings Dialog, Sleep Timer, ProfileGate, Error Dialogs
 
 **Input Restrictions When Blocking Overlay is Active:**
+
 - `NAVIGATE_UP`, `NAVIGATE_DOWN`, `NAVIGATE_LEFT`, `NAVIGATE_RIGHT` → Allowed inside overlay
 - `BACK` → Closes overlay
 - All other TvActions → Return `null` (blocked)
@@ -3313,6 +3520,7 @@ Kids Mode filtering **ALWAYS** happens **BEFORE** screen-level config.
 ### TV Input Debug Overlay (MANDATORY)
 
 A **TV Input Inspector** overlay must be implemented showing:
+
 - KeyEvent, TvKeyRole, TvAction, ScreenId, FocusZone, handled
 
 ### Testing Requirements
@@ -3329,6 +3537,7 @@ The roadmap now includes testing expectations:
 ### Implementation Checklist
 
 See `docs/INTERNAL_PLAYER_PHASE6_CHECKLIST.md` for complete task breakdown:
+
 1. Task Group 1: TvKeyRole & Global KeyEvent→Role mapping (4 tasks)
 2. Task Group 2: TvAction definitions & ScreenConfig DSL (5 tasks)
 3. Task Group 3: TvScreenContext and screen input routing (3 tasks)
@@ -3364,6 +3573,7 @@ The existing debug infrastructure is mature and should be leveraged by Phase 6:
 **2. FocusKit System (Unchanged - Foundation for FocusZones)**
 
 FocusKit (`ui/focus/FocusKit.kt`, 933 lines) provides the complete focus infrastructure:
+
 - `focusGroup()`, `focusRequester()`, `focusProperties()` - zone containers
 - `tvClickable()`, `tvFocusFrame()`, `focusScaleOnTv()` - focus visuals
 - `focusBringIntoViewOnFocus()` - auto-scroll
@@ -3375,6 +3585,7 @@ FocusKit (`ui/focus/FocusKit.kt`, 933 lines) provides the complete focus infrast
 **3. TvKeyDebouncer (Unchanged - Ready for Global Pipeline)**
 
 `TvKeyDebouncer` (`player/TvKeyDebouncer.kt`, 146 lines) is fully functional:
+
 - 300ms default debounce threshold
 - Per-key tracking via `lastKeyTime` map
 - Rate-limited and fully-debounced modes
@@ -3452,6 +3663,7 @@ Defines all hardware key roles per contract Section 3.1:
 | Numbers | `NUM_0` through `NUM_9` |
 
 Helper extension functions:
+
 - `isDpad()` - Check if role is DPAD navigation
 - `isMediaKey()` - Check if role is media playback
 - `isNumberKey()` - Check if role is number key
@@ -3460,12 +3672,14 @@ Helper extension functions:
 **2. TvKeyMapper (`tv/input/TvKeyMapper.kt`)**
 
 Deterministic KeyEvent → TvKeyRole mapping:
+
 - Maps Android `KeyEvent.KEYCODE_*` values to `TvKeyRole`
 - Returns `null` for unsupported keycodes
 - `mapDebounced(event)` - Entry point for debounced events
 - `isSupported(keyCode)` - Check if keycode is supported
 
 Integration pattern:
+
 - TvKeyDebouncer is placed at GlobalTvInputHost layer
 - TvKeyMapper receives already-debounced KeyEvents
 
@@ -3484,24 +3698,28 @@ Full semantic action set per contract:
 | System | `BACK` |
 
 Helper extension functions:
+
 - `isPlaybackAction()`, `isOverlayAction()`, `isNavigationAction()`, `isFocusAction()`, `isSeekAction()`, `isChannelAction()`
 - `getSeekDeltaMs()` - Get seek delta for seek actions
 
 **4. TvScreenId Enum (`tv/input/TvScreenId.kt`)**
 
 All app screen identifiers:
+
 - Main screens: `START`, `LIBRARY`, `PLAYER`, `SETTINGS`, `DETAIL`, `SEARCH`
 - Profile: `PROFILE_GATE`
 - Overlays: `LIVE_LIST`, `CC_MENU`, `ASPECT_MENU`, `QUICK_ACTIONS`, `EPG_GUIDE`, `ERROR_DIALOG`, `SLEEP_TIMER`, `SPEED_DIALOG`, `TRACKS_DIALOG`
 - Special: `TELEGRAM_BROWSER`, `UNKNOWN`
 
 Helper methods:
+
 - `isOverlay()` - Check if screen is a dialog/overlay
 - `isBlockingOverlay()` - Check if overlay blocks input
 
 **5. TvScreenContext (`tv/input/TvScreenContext.kt`)**
 
 Pure data class for screen input context:
+
 - `screenId: TvScreenId` - Current screen identifier
 - `isPlayerScreen: Boolean` - True if player screen
 - `isLive: Boolean` - True if playing live TV
@@ -3509,6 +3727,7 @@ Pure data class for screen input context:
 - `hasBlockingOverlay: Boolean` - True if blocking overlay shown
 
 Factory methods:
+
 - `player()`, `library()`, `settings()`, `profileGate()`, `detail()`, `blockingOverlay()`, `unknown()`
 
 ### Unit Tests Created
@@ -3533,6 +3752,7 @@ Factory methods:
 ### Files Created
 
 **Main Source (`app/src/main/java/com/chris/m3usuite/tv/input/`):**
+
 - `TvKeyRole.kt` (121 lines) - Key role enum
 - `TvKeyMapper.kt` (157 lines) - KeyEvent → TvKeyRole mapper
 - `TvAction.kt` (171 lines) - Semantic action enum
@@ -3540,6 +3760,7 @@ Factory methods:
 - `TvScreenContext.kt` (139 lines) - Screen context data class
 
 **Test Source (`app/src/test/java/com/chris/m3usuite/tv/input/`):**
+
 - `TvKeyRoleMappingTest.kt` - Key mapping tests
 - `TvKeyDebouncerIntegrationTest.kt` - Debouncer integration tests
 - `TvActionEnumTest.kt` - Action enum tests
@@ -3571,15 +3792,18 @@ This task implemented the declarative screen-specific mapping system and filteri
 **1. TvScreenInputConfig Model (`tv/input/TvScreenInputConfig.kt`)**
 
 Data model for per-screen key mappings:
+
 - `screenId: TvScreenId` - The screen this config applies to
 - `bindings: Map<TvKeyRole, TvAction?>` - Key role to action mappings
 
 Helper methods:
+
 - `getRawAction(role)` - Get raw action without filtering
 - `hasBinding(role)` - Check if role is bound
 - `boundRoles()` - Get all bound roles
 
 Top-level resolution function:
+
 - `resolve(config, role, ctx)` - Resolves action with Kids Mode and overlay filtering
 
 **2. DSL Builder (`tv/input/TvInputConfigDsl.kt`)**
@@ -3599,23 +3823,27 @@ tvInputConfig {
 ```
 
 DSL classes:
+
 - `TvInputConfigBuilder` - Top-level builder
 - `ScreenConfigBuilder` - Per-screen builder
 - `KeyBindingBuilder` - Individual binding builder with `mapsTo` infix
 
 Extension functions:
+
 - `Map<TvScreenId, TvScreenInputConfig>.getOrEmpty(screenId)` - Get config or empty
 - `Map<TvScreenId, TvScreenInputConfig>.resolve(screenId, role, ctx)` - Resolve with filtering
 
 **3. Kids Mode Filtering (`filterForKidsMode`)**
 
 Blocks actions for kid profiles (Contract Section 7.1):
+
 - **Blocked:** All `SEEK_*` actions, `OPEN_CC_MENU`, `OPEN_ASPECT_MENU`, `OPEN_LIVE_LIST`
 - **Allowed:** `NAVIGATE_*`, `BACK`, `PLAY_PAUSE`, `OPEN_QUICK_ACTIONS`, `PAGE_*`, `CHANNEL_*`, `FOCUS_*`
 
 **4. Overlay Blocking Filtering (`filterForOverlays`)**
 
 Restricts input when blocking overlay is active (Contract Section 8.1):
+
 - **Allowed:** `NAVIGATE_*`, `BACK` (to close overlay)
 - **Blocked:** All other actions
 
@@ -3682,6 +3910,7 @@ Defines the global TV input controller API per contract Section 5.1:
 - `focusedAction: State<TvAction?>` - Observable focused action for UI highlighting
 
 Supporting interfaces:
+
 - `TvNavigationDelegate` - Stub interface for FocusKit integration (Task 4)
 - `TvActionListener` - Callback interface for screen-specific action dispatch
 
@@ -3708,11 +3937,13 @@ Debug logging interface per contract Section 7:
 Global entry point for TV key events per contract Section 9.1:
 
 Pipeline:
+
 ```
 KeyEvent → TvKeyDebouncer → TvKeyMapper → TvInputController → TvAction dispatch
 ```
 
 Features:
+
 - Owns `TvKeyDebouncer` instance (300ms default for Fire TV)
 - Maps debounced KeyEvents to `TvKeyRole` via `TvKeyMapper`
 - Resolves `TvAction` via `TvScreenInputConfig` (Kids Mode + overlay filtering)
@@ -3741,6 +3972,7 @@ Extended `InternalPlayerContent` composable with TV input support:
 - Logs focused action changes via `GlobalDebug`
 
 **Constraints Honored:**
+
 - ✅ Does NOT modify legacy `InternalPlayerScreen`
 - ✅ FocusKit integration is stub-only (TvNavigationDelegate)
 - ✅ SIP player is a consumer only (no direct focus manipulation)
@@ -3770,16 +4002,19 @@ Extended `InternalPlayerContent` composable with TV input support:
 ### Files Created
 
 **Main Source (`app/src/main/java/com/chris/m3usuite/tv/input/`):**
+
 - `TvInputController.kt` (127 lines) - Interface + supporting types
 - `DefaultTvInputController.kt` (154 lines) - Default implementation
 - `TvInputDebugSink.kt` (55 lines) - Debug logging interface
 - `GlobalTvInputHost.kt` (159 lines) - Global key event host
 
 **Modified Files:**
+
 - `TvScreenContext.kt` - Added `toTvScreenContext()` extension
 - `InternalPlayerControls.kt` - Added TV input host/controller parameters
 
 **Test Source (`app/src/test/java/com/chris/m3usuite/tv/input/`):**
+
 - `TvInputControllerBasicTest.kt` - Controller unit tests
 - `GlobalTvInputHostTest.kt` - Host unit tests
 - `SipPlayerTvInputIntegrationTest.kt` - SIP player integration tests
@@ -3820,6 +4055,7 @@ Added 24 new actions to cover all behaviors from GLOBAL_TV_REMOTE_BEHAVIOR_MAP.m
 | Global/System | `EXIT_TO_HOME`, `OPEN_GLOBAL_SEARCH` |
 
 New helper extension functions:
+
 - `isPipAction()` - Check if action is PIP-specific
 - `isDetailAction()` - Check if action is for detail screen
 - `isSettingsAction()` - Check if action is for settings screen
@@ -3847,6 +4083,7 @@ Aligned all screen configurations with GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md:
 **4. Double BACK → Exit to Home Hook (`tv/input/GlobalTvInputHost.kt`)**
 
 Implemented contract-level hook for double-BACK detection:
+
 - Added `DOUBLE_BACK_THRESHOLD_MS = 500L` constant
 - Added `lastBackPressTimeMs` tracking
 - Added `resolveActionWithDoubleBackCheck()` method
@@ -3859,12 +4096,14 @@ Implemented contract-level hook for double-BACK detection:
 **5. Extended TvScreenContext (`tv/input/TvScreenContext.kt`)**
 
 Added factory methods:
+
 - `start()` - For START/home screen context
 - `miniPlayer()` - For mini-player/PIP mode context
 
 **6. Updated Kids Mode Filter (`tv/input/TvScreenInputConfig.kt`)**
 
 Extended `isBlockedForKids()` to block:
+
 - `PIP_SEEK_FORWARD`, `PIP_SEEK_BACKWARD`
 - `OPEN_ADVANCED_SETTINGS`
 
@@ -3893,6 +4132,7 @@ Extended `isBlockedForKids()` to block:
 ### Files Modified
 
 **Main Source:**
+
 - `tv/input/TvAction.kt` - Added 24 new actions + helper methods
 - `tv/input/TvScreenId.kt` - Added MINI_PLAYER
 - `tv/input/DefaultTvScreenConfigs.kt` - Aligned all screen configs
@@ -3901,6 +4141,7 @@ Extended `isBlockedForKids()` to block:
 - `tv/input/TvScreenInputConfig.kt` - Extended Kids Mode filter
 
 **Test Source:**
+
 - `tv/input/DefaultTvScreenConfigsTest.kt` - **NEW**
 - `tv/input/TvActionEnumTest.kt` - Extended
 - `tv/input/KidsModeFilteringTest.kt` - Extended
@@ -3949,6 +4190,7 @@ Added FocusZoneId enum with all 10 zones per contract Section 6.1:
 **2. focusZone() Modifier (`ui/focus/FocusKit.kt`)**
 
 Added `Modifier.focusZone(zoneId: FocusZoneId)` extension that:
+
 - Registers the zone with a FocusRequester in an internal registry
 - Tracks the currently focused zone when composable gains focus
 - Unregisters the zone when composable leaves composition
@@ -3974,11 +4216,12 @@ Added zone management methods to FocusKit object:
 
 Created implementation of TvNavigationDelegate that bridges TV input to FocusKit:
 
-- `moveFocus(action)` - Maps NAVIGATE_* actions to FocusKit.moveDpad*() methods
+- `moveFocus(action)` - Maps NAVIGATE_*actions to FocusKit.moveDpad*() methods
 - `focusZone(action)` - Maps FOCUS_* actions to FocusKit.requestZoneFocus()
 - `zoneForAction(action)` - Utility to get FocusZoneId for a focus action
 
 Action mappings:
+
 - `NAVIGATE_UP` → `FocusKit.moveDpadUp()`
 - `NAVIGATE_DOWN` → `FocusKit.moveDpadDown()`
 - `NAVIGATE_LEFT` → `FocusKit.moveDpadLeft()`
@@ -4007,6 +4250,7 @@ Fixed missing `GlobalDebug.log()` method call in InternalPlayerControls by using
 | `TvNavigationDelegateTest.kt` | 20+ | moveFocus, focusZone, zoneForAction, interface contracts |
 
 Test categories:
+
 - moveFocus with NAVIGATE_* actions
 - moveFocus with non-navigation actions
 - focusZone with FOCUS_* actions
@@ -4024,7 +4268,7 @@ Test categories:
 | 6.2 | Zone registration/unregistration | ✅ |
 | 6.2 | requestZoneFocus() method | ✅ |
 | 6.2 | TvNavigationDelegate using FocusKit | ✅ |
-| Task 3 | NAVIGATE_* → FocusKit.moveDpad* | ✅ |
+| Task 3 | NAVIGATE_*→ FocusKit.moveDpad* | ✅ |
 | Task 3 | FOCUS_* → FocusKit.requestZoneFocus | ✅ |
 | Task 4 | Mark zones in InternalPlayerControls | ✅ |
 | Task 4 | Mark zones in ProfileGate | ✅ |
@@ -4033,14 +4277,17 @@ Test categories:
 ### Files Created
 
 **Main Source:**
+
 - `tv/input/FocusKitNavigationDelegate.kt` (85 lines) - TvNavigationDelegate implementation
 
 **Test Source:**
+
 - `tv/input/TvNavigationDelegateTest.kt` (180+ lines) - Comprehensive unit tests
 
 ### Files Modified
 
 **Main Source:**
+
 - `ui/focus/FocusKit.kt` - Added FocusZoneId enum, focusZone() modifier, zone management functions
 - `player/internal/ui/InternalPlayerControls.kt` - Added focusZone import, PLAYER_CONTROLS marker, fixed GlobalDebug call
 - `ui/auth/ProfileGate.kt` - Added focusZone import, PROFILE_GRID marker
@@ -4106,6 +4353,7 @@ This task implemented the TV Input Inspector debug overlay and fixed pre-existin
 **2. DefaultTvInputDebugSink Implementation (`tv/input/DefaultTvInputDebugSink.kt`)**
 
 Default implementation of TvInputDebugSink that:
+
 - Logs events via `GlobalDebug.logDpad()` when GlobalDebug is enabled
 - Logs structured events via `DiagnosticsLogger.ComposeTV.logKeyEvent()`
 - Emits events to `events` SharedFlow for inspector overlay consumption
@@ -4113,6 +4361,7 @@ Default implementation of TvInputDebugSink that:
 - Supports enable/disable via `captureEnabled` flag
 
 **Data Model:**
+
 ```kotlin
 data class TvInputEventSnapshot(
     val timestamp: Long,
@@ -4129,6 +4378,7 @@ data class TvInputEventSnapshot(
 **3. GlobalDebug TV Input Inspector Toggle (`core/debug/GlobalDebug.kt`)**
 
 Added inspector toggle methods:
+
 - `setTvInputInspectorEnabled(on: Boolean)` - Enable/disable inspector overlay
 - `isTvInputInspectorEnabled()` - Check if inspector is enabled
 - Syncs with `DefaultTvInputDebugSink.captureEnabled`
@@ -4138,6 +4388,7 @@ Added inspector toggle methods:
 Debug-only UI overlay that displays real-time TV input events:
 
 Features:
+
 - Shows last 5 key events (most recent at top)
 - Displays: timestamp, keycode, TvKeyRole, TvAction, screen ID, focus zone, handled status
 - Color-coded: green background for handled, red for unhandled
@@ -4146,6 +4397,7 @@ Features:
 - Only visible in DEBUG builds and when `GlobalDebug.isTvInputInspectorEnabled()` returns true
 
 Layout:
+
 - Header: "📺 TV Input Inspector"
 - Event rows showing: time → keycode → role → action
 - Second line: screen=X zone=Y ✓/✗
@@ -4153,6 +4405,7 @@ Layout:
 **5. Unit Tests (`tv/input/DefaultTvInputDebugSinkTest.kt`)**
 
 Created comprehensive test suite:
+
 - Event capture when enabled
 - No capture when disabled
 - Null role/action handling
@@ -4179,15 +4432,18 @@ Created comprehensive test suite:
 ### Files Created
 
 **Main Source:**
+
 - `tv/input/DefaultTvInputDebugSink.kt` (136 lines) - Debug sink implementation
 - `ui/debug/TvInputInspectorOverlay.kt` (210 lines) - Debug overlay composable
 
 **Test Source:**
+
 - `tv/input/DefaultTvInputDebugSinkTest.kt` (200+ lines) - Unit tests
 
 ### Files Modified
 
 **Main Source:**
+
 - `core/logging/AppLog.kt` - Added Entry, history, events, setMasterEnabled, setCategoriesEnabled, bypassMaster
 - `core/debug/GlobalDebug.kt` - Added setTvInputInspectorEnabled, isTvInputInspectorEnabled
 - `logs/ui/LogViewerScreen.kt` - Added missing `remember` import
@@ -4195,6 +4451,7 @@ Created comprehensive test suite:
 - `MainActivity.kt` - Added launch import, rememberCoroutineScope for settings lambdas
 
 **Test Source:**
+
 - `tv/input/TvNavigationDelegateTest.kt` - Fixed assertion imports
 
 ### Build Status
@@ -4309,6 +4566,7 @@ Created comprehensive implementation checklist at `docs/INTERNAL_PLAYER_PHASE7_C
 ### Contract Reference
 
 All analysis and checklist items align with:
+
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`
 
 ### What's Next (Phase 7 Implementation)
@@ -4436,6 +4694,7 @@ This task implements the core domain/session layer for Phase 7 unified PlaybackS
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 3.1, 4.1, 6, 7
 - `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Groups 1–2
 
@@ -4531,6 +4790,7 @@ This task implements the In-App MiniPlayer UI overlay and refactors the SIP PIP 
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 3.2, 4.2, 5, 6
 - `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Groups 3–4, Task 6.3
 
@@ -4572,6 +4832,7 @@ This task implements System PiP for phones/tablets, long-press PLAY focus toggle
 | `updatePipParams()` | Dynamic state updates for PiP params |
 
 **Conditions for System PiP Entry:**
+
 - Device is NOT a TV (`isTvDevice(context) == false`)
 - `PlaybackSession.isPlaying.value == true`
 - `MiniPlayerState.visible == false` (in-app MiniPlayer takes precedence)
@@ -4593,6 +4854,7 @@ This task implements System PiP for phones/tablets, long-press PLAY focus toggle
 | `miniPlayerManager` | Injected via constructor for state checks |
 
 **Behavior:**
+
 - If `MiniPlayerState.visible == false` → action ignored (return false)
 - If current zone is `PRIMARY_UI` → focus `MINI_PLAYER`
 - If current zone is `MINI_PLAYER` → focus `PRIMARY_UI`
@@ -4633,6 +4895,7 @@ This task implements System PiP for phones/tablets, long-press PLAY focus toggle
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 4.3, 5, 6
 - `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Groups 5, 6.2, 7.1, 7.2
 
@@ -4753,6 +5016,7 @@ This task validates and hardens all Phase 7 behavior against the contracts and b
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
 - `docs/INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md` Sections 7, 8
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Sections 4.2, 4.3, 5, 6
@@ -4876,6 +5140,7 @@ Handles TV input actions based on MiniPlayer mode:
 ### Contract Reference
 
 Implementation aligns with:
+
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Section 4.1, 4.2
 - `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`: Mini-Context: Player + PIP Enabled
 - `docs/INTERNAL_PLAYER_PHASE7_CHECKLIST.md` Task Group 11
@@ -4915,6 +5180,7 @@ Implementation aligns with:
 Phase 7 introduces a unified PlaybackSession that owns the ExoPlayer instance globally, and an In-App MiniPlayer overlay that allows video playback to continue seamlessly while navigating the app.
 
 **Key Achievements:**
+
 - **Unified PlaybackSession**: Single ExoPlayer instance shared across Full Player and MiniPlayer
 - **In-App MiniPlayer**: Floating overlay with play/pause, expand, and resize capabilities
 - **Resize Mode**: FF/RW resize, DPAD move, CENTER confirm, BACK cancel
@@ -4928,6 +5194,7 @@ Phase 7 introduces a unified PlaybackSession that owns the ExoPlayer instance gl
 - **Regression Tests**: Comprehensive test suite for transitions, input isolation, behavior map
 
 **Constraints Honored:**
+
 - SIP-only changes (legacy InternalPlayerScreen untouched)
 - No Phase 8/9 behavior introduced
 - No breaking changes to TV input, Player, Subtitles, Live TV
@@ -5011,6 +5278,7 @@ Created comprehensive implementation checklist at `docs/INTERNAL_PLAYER_PHASE8_C
 ### Contract Reference
 
 All analysis and checklist items align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
 
 ### What's Next (Phase 8 Implementation)
@@ -5070,6 +5338,7 @@ This task implements the SessionLifecycleState state machine and lifecycle manag
 | `onMediaPrepared()` | Called when player.prepare() completes |
 
 **State Transitions Implemented:**
+
 - Player.STATE_READY → PREPARED (from IDLE)
 - Player.STATE_ENDED → STOPPED
 - Player.STATE_IDLE → IDLE
@@ -5124,6 +5393,7 @@ This task implements the SessionLifecycleState state machine and lifecycle manag
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 4
 - `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 1
 
@@ -5138,6 +5408,7 @@ All implementations align with:
 ### What's Next
 
 Phase 8 Group 1 is complete. Remaining groups:
+
 - **Group 2:** UI Rebinding & Rotation
 - **Group 3:** Navigation & Backstack Stability
 - **Group 4:** System PiP vs In-App MiniPlayer
@@ -5170,6 +5441,7 @@ This task implements UI rebinding and rotation resilience for PlayerSurface and 
 | DisposableEffect | Added for surface lifecycle tracking |
 
 **Warm Resume States (surface rebind without re-setting source):**
+
 - PREPARED: Media loaded, ready to play
 - PLAYING: Actively playing
 - PAUSED: Paused but retained
@@ -5184,6 +5456,7 @@ This task implements UI rebinding and rotation resilience for PlayerSurface and 
 | Surface Update | Added Phase 8 rebinding comment |
 
 **MiniPlayerState Preservation:**
+
 - `visible`, `mode`, `anchor`, `size`, `position` all preserved via singleton DefaultMiniPlayerManager
 - State survives Activity recreation (object singleton pattern)
 
@@ -5222,6 +5495,7 @@ This task implements UI rebinding and rotation resilience for PlayerSurface and 
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 4.4
 - `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 2
 
@@ -5269,6 +5543,7 @@ This task implements playback-aware worker scheduling and basic leak hygiene for
 | Thread Safety | Uses StateFlow with eager sharing |
 
 **Definition of "Active":**
+
 - `PlaybackSession.isPlaying.value == true` AND
 - `PlaybackSession.lifecycleState.value` in {PLAYING, PAUSED, BACKGROUND}
 
@@ -5299,6 +5574,7 @@ This task implements playback-aware worker scheduling and basic leak hygiene for
 **5. LeakCanary Verified**
 
 LeakCanary is already integrated in debug builds:
+
 ```kotlin
 debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 ```
@@ -5351,6 +5627,7 @@ debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 7
 - `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Groups 5–6
 
@@ -5388,6 +5665,7 @@ This task implements navigation and backstack stability for the SIP player, ensu
 | `PLAYER_ROUTE_PREFIX` | Constant for player route matching ("player") |
 
 **Key Design:**
+
 - Uses `launchSingleTop = true` to prevent duplicate player entries
 - Route identification via prefix matching
 - URL-encodes special characters in URLs
@@ -5404,6 +5682,7 @@ This task implements navigation and backstack stability for the SIP player, ensu
 | Enhanced `isAtHome()` | Checks multiple home route patterns |
 
 **MiniPlayer Behavior on EXIT_TO_HOME (Contract Decision):**
+
 - MiniPlayer **REMAINS VISIBLE** if playback is active
 - Navigation to home does NOT modify MiniPlayerState
 - Users can continue watching while at home screen
@@ -5452,6 +5731,7 @@ This task implements navigation and backstack stability for the SIP player, ensu
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 5
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` Section 8
 - `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
@@ -5501,6 +5781,7 @@ This task implements Compose and FocusKit performance hardening to reduce unnece
 | `player/internal/state/PlayerColdState.kt` | Rarely updating state (playbackType, subtitleStyle, kid settings, dialogs, live info) |
 
 **PlayerHotState Fields:**
+
 - `positionMs`, `durationMs` – Position updates every ~1s
 - `isPlaying`, `isBuffering` – Playback state changes
 - `trickplayActive`, `trickplaySpeed` – Trickplay state
@@ -5508,6 +5789,7 @@ This task implements Compose and FocusKit performance hardening to reduce unnece
 - `controlsVisible`, `controlsTick` – Controls visibility
 
 **PlayerColdState Fields:**
+
 - `playbackType`, `playbackSpeed`, `isLooping` – Media settings
 - `kid*` – Kid profile settings
 - `show*Dialog` – Dialog states
@@ -5515,6 +5797,7 @@ This task implements Compose and FocusKit performance hardening to reduce unnece
 - `subtitleStyle`, `*SubtitleTrack` – Subtitle settings
 
 **Extension Functions:**
+
 - `InternalPlayerUiState.toHotState()` – Extract hot state
 - `InternalPlayerUiState.toColdState()` – Extract cold state
 
@@ -5538,6 +5821,7 @@ This task implements Compose and FocusKit performance hardening to reduce unnece
 | `Modifier.focusDecorations()` (FocusKit.kt) | New modifier that applies scale, elevation, and border in one pass |
 
 **FocusDecorationConfig Fields:**
+
 - `focusedScale`, `pressedScale` – Scale factors
 - `focusedElevationDp` – Shadow elevation
 - `shape` – Border shape
@@ -5586,17 +5870,20 @@ This task implements Compose and FocusKit performance hardening to reduce unnece
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 9
 - `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 7
 
 ### Performance Benefits
 
 **Before:**
+
 - Single `InternalPlayerUiState` data class caused large layout trees to recompose on every position tick (~1s)
 - `tvFocusGlow` used stacked `border()` modifiers requiring multiple layout/draw passes
 - FocusKit applied focus effects via multiple separate modifiers
 
 **After:**
+
 - Hot/Cold state split allows small Composables to observe only frequently-changing fields
 - `tvFocusGlow` uses single `drawWithContent` call for both glow rings
 - `Modifier.focusDecorations()` consolidates scale, elevation, and border into one modifier chain
@@ -5633,6 +5920,7 @@ All implementations align with:
 ### What Was Done
 
 Final behavioral polish pass for Phase 8, focusing on:
+
 - System PiP vs in-app MiniPlayer behavior verification on phone/tablet vs TV
 - Edge cases for TV input & focus around MiniPlayer (long-PLAY toggle, EXIT_TO_HOME)
 - Small lifecycle & UX cleanups to make transitions feel seamless
@@ -5640,12 +5928,14 @@ Final behavioral polish pass for Phase 8, focusing on:
 ### Verification Results
 
 **1. PIP Button UI Behavior (Section 4.1):**
+
 - ✅ `InternalPlayerControls.kt` line 387: `onPipClick = controller.onEnterMiniPlayer`
 - ✅ No `android.app.Activity` import in InternalPlayerControls
 - ✅ No `enterPictureInPictureMode()` calls from UI button
 - ✅ PIP button ONLY triggers in-app MiniPlayer via MiniPlayerManager
 
 **2. System PiP Entry Conditions (Section 4.2):**
+
 - ✅ `MainActivity.tryEnterSystemPip()` correctly checks all conditions:
   - `isTvDevice(this)` → return early (no PiP on TV)
   - `PlaybackSession.isPlaying.value` must be true
@@ -5654,17 +5944,20 @@ Final behavioral polish pass for Phase 8, focusing on:
 - ✅ `setAutoEnterEnabled()` used for API >= 31
 
 **3. Return from System PiP (Section 4.3):**
+
 - ✅ PlaybackSession singleton survives PiP lifecycle
 - ✅ Position preserved in ExoPlayer instance
 - ✅ Track selections preserved
 - ✅ PlayerSurface rebinds via update block, no recreation
 
 **4. TV Device Blocking (Section 4.4):**
+
 - ✅ `isTvDevice()` check at top of `tryEnterSystemPip()`
 - ✅ Same check in `shouldAutoEnterPip()` for API 31+
 - ✅ Fire TV, Android TV, Google TV all blocked from system PiP
 
 **5. MiniPlayer Lifecycle Polish:**
+
 - ✅ MiniPlayerState preserved via singleton DefaultMiniPlayerManager
 - ✅ No duplicate enterMiniPlayer/exitMiniPlayer calls on recreation
 - ✅ No extra play/pause triggered by lifecycle changes
@@ -5731,6 +6024,7 @@ This task completes Phase 8 Group 8 by wiring the PlaybackErrorOverlay and MiniP
 | `ObxKeyBackfillWorker` | Added `logWorkerError()` function with "WORKER_ERROR" category |
 
 **Error Log Format:**
+
 ```kotlin
 AppLog.log(
     category = "WORKER_ERROR",
@@ -5794,6 +6088,7 @@ AppLog.log(
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` Section 10
 - `docs/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`
 - `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 8
@@ -5852,6 +6147,7 @@ This task completes Phase 8 by implementing the final regression test suite and 
 | `docs/PHASE8_QA_PROFILING_GUIDE.md` | Manual QA scenarios, profiling guidance, device recommendations |
 
 **QA Scenarios Documented:**
+
 - PlaybackSession Lifecycle (foreground/background, rotation, Full↔Mini↔Full)
 - MiniPlayer UX (resize mode, touch drag, focus toggle)
 - System PiP (phone/tablet vs TV behavior)
@@ -5861,6 +6157,7 @@ This task completes Phase 8 by implementing the final regression test suite and 
 - Worker Throttling (PlaybackPriority during playback)
 
 **Profiling Guidance Documented:**
+
 - Tools: Android Studio Profiler, Log Viewer, TvInputInspector, LeakCanary
 - Scenarios: Frequent seeks, worker activity, MiniPlayer transitions, rotation stress
 - Key metrics: CPU baseline, seek overhead, memory, GC events, frame rate
@@ -5906,6 +6203,7 @@ This task completes Phase 8 by implementing the final regression test suite and 
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
 - `docs/INTERNAL_PLAYER_PHASE8_CHECKLIST.md` Group 9
 - `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
@@ -5944,6 +6242,7 @@ All implementations align with:
 Phase 8 ensures that the unified PlaybackSession + In-App MiniPlayer behave robustly and efficiently under real-world conditions.
 
 **Key Achievements:**
+
 - **SessionLifecycleState**: IDLE → PREPARED → PLAYING ↔ PAUSED → BACKGROUND → STOPPED → RELEASED
 - **Warm Resume**: UI rebinds without ExoPlayer recreation on config changes
 - **Navigation Stability**: No ghost players, clean Full↔Mini↔Home flows
@@ -5955,6 +6254,7 @@ Phase 8 ensures that the unified PlaybackSession + In-App MiniPlayer behave robu
 - **Regression Suite**: 150+ tests covering Phases 4-8 behavior
 
 **Constraints Honored:**
+
 - SIP-only changes (legacy InternalPlayerScreen untouched)
 - No Telegram/Parser/ObjectBox module changes
 - No feature additions beyond Phase 8 scope
@@ -6149,6 +6449,7 @@ This task verifies and documents the complete integration of Telegram VOD playba
 ### Contract Reference
 
 All implementations verified against:
+
 - `docs/TELEGRAM_SIP_PLAYER_INTEGRATION.md`
 - `docs/TELEGRAM_PARSER_CONTRACT.md`
 - `docs/PHASE8_TASK3_TELEGRAM_LIFECYCLE_CROSSCHECK.md`
@@ -6173,7 +6474,6 @@ All implementations verified against:
 
 **Last Updated:** 2025-11-30
 
-
 ---
 
 ## Phase 9 – Sammel-Patch: Live/PIp/Debug/Xtream Issues Fixed
@@ -6187,12 +6487,14 @@ This patch addresses several runtime issues identified in the bug analysis repor
 ### What Was Done
 
 **BUG 1 – Live/VOD Detection & Debug Info ✅**
+
 - Added `isLikelyLiveUrl()` heuristic in `PlaybackSourceResolver`
 - Added diagnostic fields to `ResolvedPlaybackSource`: `isLiveFromUrl`, `inferredExtension`
 - Added debug fields to `InternalPlayerUiState`: `debugPlaybackUrl`, `debugResolvedMimeType`, `debugInferredExtension`, `debugIsLiveFromUrl`
 - Session populates debug fields after source resolution
 
 **BUG 2 – Live-TV Channel Zapping ✅**
+
 - Created `InternalPlayerSessionResult` to expose both player and `liveController`
 - Modified `rememberInternalPlayerSession` to return result with `liveController`
 - Updated `createSipController` to accept `liveController` and `playbackType`
@@ -6200,17 +6502,20 @@ This patch addresses several runtime issues identified in the bug analysis repor
 - Added automatic player source update when `currentChannel` changes in session
 
 **BUG 3 – Debug Log Viewer Accessibility ✅**
+
 - Created "Debug & Diagnostics" settings section that is always visible
 - Moved Log Viewer button from Telegram READY state to global section
 - Telegram Logs button still requires Telegram to be enabled
 
 **BUG 4 – Xtream First-Time Config Crash ✅**
+
 - Added 500ms debounce in `XtreamSettingsViewModel.onChange()`
 - Added 750ms debounce in MainActivity auto-import `LaunchedEffect`
 - Added port validation (`port > 0`)
 - Wrapped import in try/catch with proper `AppLog` error handling
 
 **BUG 5 – System PiP on Phone/Tablet ✅**
+
 - Added `LaunchedEffect` in `InternalPlayerEntry` to call `updatePipParams()` when playback state changes
 - Added `onPictureInPictureModeChanged` callback in `MainActivity`
 - PiP params now update reactively for API 31+ auto-enter support
@@ -6239,6 +6544,7 @@ This patch addresses several runtime issues identified in the bug analysis repor
 ### Contract Reference
 
 All implementations align with:
+
 - `docs/BUG_ANALYSIS_REPORT_2025-12-01.md`
 - `docs/TELEGRAM_SIP_PLAYER_INTEGRATION.md`
 - `docs/GLOBAL_TV_REMOTE_BEHAVIOR_MAP.md`
@@ -6252,4 +6558,3 @@ All implementations align with:
 ---
 
 **Last Updated:** 2025-12-01
-

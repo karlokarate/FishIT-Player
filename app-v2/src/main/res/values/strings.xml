@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FishIT Player v2</string>
+    <string name="skeleton_title">FishIT Player v2 – Skeleton</string>
+    <string name="skeleton_subtitle">Phase 0 complete. Module structure ready.</string>
+    
+    <!-- Phase 1 -->
+    <string name="debug_playback_title">Playback Debug</string>
+    <string name="debug_playback_subtitle">Phase 1 – Internal Player Test</string>
+</resources>

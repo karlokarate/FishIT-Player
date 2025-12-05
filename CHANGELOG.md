@@ -1,3 +1,42 @@
+2025-12-05
+
+- **docs(v2)**: Extended all v2 project docs to reference `V1_VS_V2_ANALYSIS_REPORT.md` as central porting resource
+  - Added "⚡ v1 Porting Reference" box to `AGENTS_V2.md` with mandatory reading instructions
+  - Added "Related Documents" table to `APP_VISION_AND_SCOPE.md` with analysis report as top entry
+  - Added "⚡ v1 Porting Reference" section to `ARCHITECTURE_OVERVIEW_V2.md` with Tier 1/2 summary
+  - Added "⚡ CRITICAL: v1 Quality Reference" section to `IMPLEMENTATION_PHASES_V2.md`
+  - Updated `AGENTS.md` "Branch-specific v2 SSOT" to include v1→v2 porting reference
+  - Added "How to Use This Document" section to `V1_VS_V2_ANALYSIS_REPORT.md`
+
+- **docs(v2)**: Comprehensive extension of `V1_VS_V2_ANALYSIS_REPORT.md` with full v1 quality assessment
+  - Added Tier 1 (Port Directly) classification: SIP Player, UnifiedLog, FocusKit, Fish*, Xtream, AppImageLoader
+  - Added Tier 2 (Minor Adapt) classification: PlaybackSession, DetailScaffold, MediaActionBar, TvButtons, MiniPlayer, HomeChrome
+  - Documented complete SIP Player Phase 1-8 architecture with module structure and completion status
+  - Documented UnifiedLog system (578 lines, ring buffer, Firebase Crashlytics, file export)
+  - Documented Fish* Layout System (14 composable files, token-based theming)
+  - Documented FocusKit (1353 lines, TV/DPAD focus facade, FocusZones)
+  - Documented Xtream Pipeline (XtreamClient, Seeder, Delta-Import, per-host pacing)
+  - Added complete v1→v2 file mapping in Appendix A (~17,000 lines portable code)
+  - Added v2 module mapping summary in Appendix B
+  - Added contract documents reference in Appendix C
+
+2025-12-04
+
+- **docs(v2)**: Create comprehensive v1 vs v2 analysis report (`v2-docs/V1_VS_V2_ANALYSIS_REPORT.md`)
+  - Identified 2 critical mismatches: v2 docs incorrectly stated "Room or equivalent" when v1 uses ObjectBox exclusively
+  - Classified v1 components into MUST/SHOULD/MUST NOT reuse categories
+  - Proposed and applied exact edits to all three v2 docs
+- **fix(v2-docs)**: Correct database technology in APP_VISION_AND_SCOPE.md
+  - Changed "Room or equivalent" → "ObjectBox" with explicit v1 reuse note
+- **fix(v2-docs)**: Correct database technology in ARCHITECTURE_OVERVIEW_V2.md
+  - Changed "Room or equivalent" → "ObjectBox - reused from v1"
+  - Added ObjectBox entity list to `:core:persistence` section
+  - Added v1 component reuse lists for `:pipeline:telegram` and `:pipeline:xtream`
+- **fix(v2-docs)**: Add ObjectBox reuse section in IMPLEMENTATION_PHASES_V2.md Phase 2
+  - Added `:core:persistence` to allowed modules
+  - Listed MUST-port v1 components for Telegram pipeline
+  - Added ObjectBox reuse instructions
+
 2025-12-02
 
 - feat(telegram/prefetch): Pause thumbnail batches whenever `PlaybackSession` reports Telegram VOD buffering, reuse the shared streaming settings provider across loader/prefetcher, and honor the `thumbFullDownload` toggle for `ensureFileReady()`.
