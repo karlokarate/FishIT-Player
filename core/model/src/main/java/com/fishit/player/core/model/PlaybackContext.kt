@@ -34,17 +34,20 @@ data class PlaybackContext(
     val startPositionMs: Long = 0L,
     val isKidsContent: Boolean = false,
     val profileId: Long? = null,
-    val extras: Map<String, String> = emptyMap()
+    val extras: Map<String, String> = emptyMap(),
 ) {
     companion object {
         /**
          * Creates a simple test context for debugging.
          */
-        fun testVod(url: String, title: String = "Test Video"): PlaybackContext =
+        fun testVod(
+            url: String,
+            title: String = "Test Video",
+        ): PlaybackContext =
             PlaybackContext(
                 type = PlaybackType.VOD,
                 uri = url,
-                title = title
+                title = title,
             )
     }
 }
