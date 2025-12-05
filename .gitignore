@@ -8,14 +8,21 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
-/build
-app/build/
-libtd/build/
-*/build/
-/captures
+
+# Gradle / Android build outputs - prevent ALL build artifacts
+**/build/
+.gradle/
+*.class
 .externalNativeBuild
 .cxx
 local.properties
+/captures
+
+# ObjectBox generated artifacts - allow only canonical model file
+**/objectbox-models/
+!**/objectbox-models/default.json
+**/MyObjectBox.java
+**/MyObjectBox.kt
 .wsl-android-sdk/
 .wsl-gradle/
 .wsl-java-17/
