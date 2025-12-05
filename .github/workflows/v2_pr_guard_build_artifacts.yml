@@ -42,7 +42,7 @@ jobs:
           # Check for build artifacts (excluding allowed default.json)
           PATTERN='(^|/)build/|\.class$|MyObjectBox\.(java|kt)|objectbox-models/.*\.json'
           ARTIFACTS=$(echo "$CHANGED" | grep -E "$PATTERN" | \
-            grep -v 'objectbox-models/default\.json' || true)
+            grep -v '/objectbox-models/default\.json$' || true)
 
           if [ -n "$ARTIFACTS" ]; then
             echo "❌ ERROR: PR contains build artifacts that should not be committed:"
