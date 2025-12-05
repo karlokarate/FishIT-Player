@@ -55,7 +55,7 @@ interface ScreenTimeRepository {
 
     /**
      * Get remaining minutes for a profile on a specific day.
-     * @return Remaining minutes, or Int.MAX_VALUE if no limit is set
+     * @return Remaining minutes (0 if limit is reached or exceeded)
      */
     suspend fun getRemainingMinutes(
         kidProfileId: Long,
