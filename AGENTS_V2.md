@@ -174,7 +174,7 @@ lower layers as allowed below, never the other way around.
 - `:core:persistence`
   - Persistence abstractions and impls:
     - DataStore wrappers
-    - Local DB (Room or equivalent) where v1 reuse makes sense
+    - Local DB obx where v1 reuse makes sense
     - File storage abstractions
   - Repositories such as:
     - `ProfileRepository`
