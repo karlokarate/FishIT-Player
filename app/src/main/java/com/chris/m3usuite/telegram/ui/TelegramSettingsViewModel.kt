@@ -569,11 +569,18 @@ class TelegramSettingsViewModel(
                     }
                     result.isFailure -> {
                         val error = result.exceptionOrNull()
-                        UnifiedLog.error(
-                            source = "TelegramSettingsViewModel",
-                            message = "Full chat history sync failed",
-                            exception = error,
-                        )
+                        if (error != null) {
+                            UnifiedLog.error(
+                                source = "TelegramSettingsViewModel",
+                                message = "Full chat history sync failed",
+                                exception = error,
+                            )
+                        } else {
+                            UnifiedLog.error(
+                                source = "TelegramSettingsViewModel",
+                                message = "Full chat history sync failed",
+                            )
+                        }
                         _state.update {
                             it.copy(
                                 isSyncingHistory = false,
