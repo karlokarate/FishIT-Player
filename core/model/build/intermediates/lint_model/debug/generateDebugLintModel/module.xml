@@ -1,0 +1,19 @@
+<lint-module
+    format="1"
+    dir="/home/runner/work/FishIT-Player/FishIT-Player/core/model"
+    name=":core:model"
+    type="LIBRARY"
+    maven="FishITPlayer.core:model:unspecified"
+    agpVersion="8.6.1"
+    buildFolder="build"
+    bootClassPath="/usr/local/lib/android/sdk/platforms/android-35/android.jar:/usr/local/lib/android/sdk/build-tools/34.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-35"
+    neverShrinking="true">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="debug"/>
+</lint-module>
