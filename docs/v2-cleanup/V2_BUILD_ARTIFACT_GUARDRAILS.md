@@ -172,6 +172,20 @@ echo "$CHANGED" | grep -E '(^|/)build/|\.class$|MyObjectBox\.(java|kt)|objectbox
 - `.github/workflows/v2_pr_guard_build_artifacts.yml` - PR guard workflow
 - `AGENTS_V2.md` - V2 architecture agent instructions
 - `v2-docs/ARCHITECTURE_OVERVIEW_V2.md` - V2 architecture overview
+- `docs/v2-cleanup/PHASE_2_IMPLEMENTATION_STATUS.md` - Phase 2 core persistence implementation status
+
+## Recent Updates
+
+### 2025-12-05: Phase 2 Core Persistence Implementation
+
+- ✅ Successfully implemented ObjectBox persistence layer for v2
+- ✅ Zero build artifacts committed (verified with `git ls-files | grep "/build/"`)
+- ✅ `.gitignore` patterns working correctly
+- ✅ 19 ObjectBox entities with proper code generation
+- ✅ All generated code remains in ignored `build/` directories
+- ✅ Only source files and tests committed to repository
+
+The Phase 2 implementation serves as validation that the build artifact guardrails are working as intended.
 
 ## Questions?
 
