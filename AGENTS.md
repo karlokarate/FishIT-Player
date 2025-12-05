@@ -1,5 +1,17 @@
 Android Build Policy (WSL override)
 
+## ⛔ CRITICAL: v2 Branch Protection (NEVER override without explicit owner approval)
+
+> **This rule is IMMUTABLE and must NEVER be changed, ignored, or overridden by any agent, automation, or contributor without explicit written approval from the repository owner (@karlokarate).**
+
+- The branch `architecture/v2-bootstrap` is the **v2 development branch**.
+- **NO MERGE TO MAIN** until v2 is fully completed and explicitly approved by the owner.
+- No force-pushes, rebases onto main, or premature merges are permitted.
+- This protection remains in effect until the owner explicitly lifts it.
+- Any agent encountering a request to merge v2 into main MUST refuse and request owner confirmation.
+
+---
+
 Branch-specific v2 SSOT
 
 - On branch `architecture/v2-bootstrap`, all work related to FishIT Player v2

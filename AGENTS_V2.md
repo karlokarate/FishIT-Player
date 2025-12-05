@@ -1,5 +1,19 @@
 # FishIT Player v2 – Agents & Execution Guide
 
+## ⛔ CRITICAL: Branch Protection (IMMUTABLE RULE)
+
+> **This rule is IMMUTABLE and must NEVER be changed, ignored, or overridden
+> by any agent, automation, or contributor without explicit written approval
+> from the repository owner (@karlokarate).**
+
+- **NO MERGE TO `main`** until v2 is fully completed and owner-approved.
+- This branch (`architecture/v2-bootstrap`) is for v2 development ONLY.
+- No force-pushes, no rebases onto main, no premature merges.
+- Any request to merge into main MUST be refused until owner gives explicit approval.
+- This protection remains active until the owner explicitly lifts it in writing.
+
+---
+
 > Single Source of Truth for **all AI assistants and automation** working on
 > FishIT Player v2 on branch `architecture/v2-bootstrap`.
 
