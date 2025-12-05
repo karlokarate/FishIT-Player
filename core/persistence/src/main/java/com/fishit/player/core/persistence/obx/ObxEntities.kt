@@ -1,6 +1,9 @@
 package com.fishit.player.core.persistence.obx
 
-import io.objectbox.annotation.*
+import io.objectbox.annotation.Entity
+import io.objectbox.annotation.Id
+import io.objectbox.annotation.Index
+import io.objectbox.annotation.Unique
 
 /**
  * ObjectBox entities for FishIT Player v2.

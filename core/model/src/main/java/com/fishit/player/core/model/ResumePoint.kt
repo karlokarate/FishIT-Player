@@ -16,7 +16,7 @@ data class ResumePoint(
     val positionMs: Long,
     val durationMs: Long,
     val updatedAt: Long = System.currentTimeMillis(),
-    val profileId: Long? = null
+    val profileId: Long? = null,
 ) {
     /**
      * Progress as a fraction (0.0 to 1.0).

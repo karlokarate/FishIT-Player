@@ -20,5 +20,5 @@ enum class PlaybackType {
     AUDIOBOOK,
 
     /** Local/IO content (device storage, SAF, network shares) */
-    IO
+    IO,
 }

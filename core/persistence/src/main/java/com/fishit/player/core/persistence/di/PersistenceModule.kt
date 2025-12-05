@@ -20,19 +20,18 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class PersistenceModule {
-    
     @Binds
     @Singleton
     abstract fun bindProfileRepository(impl: ObxProfileRepository): ProfileRepository
-    
+
     @Binds
     @Singleton
     abstract fun bindResumeRepository(impl: ObxResumeRepository): ResumeRepository
-    
+
     @Binds
     @Singleton
     abstract fun bindContentRepository(impl: ObxContentRepository): ContentRepository
-    
+
     @Binds
     @Singleton
     abstract fun bindScreenTimeRepository(impl: ObxScreenTimeRepository): ScreenTimeRepository

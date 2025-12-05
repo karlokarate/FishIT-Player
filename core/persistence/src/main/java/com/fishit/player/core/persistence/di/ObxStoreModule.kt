@@ -16,10 +16,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ObxStoreModule {
-    
     @Provides
     @Singleton
-    fun provideBoxStore(@ApplicationContext context: Context): BoxStore {
-        return ObxStore.get(context)
-    }
+    fun provideBoxStore(
+        @ApplicationContext context: Context,
+    ): BoxStore = ObxStore.get(context)
 }

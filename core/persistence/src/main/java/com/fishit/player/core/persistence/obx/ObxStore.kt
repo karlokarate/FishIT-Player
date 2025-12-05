@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Singleton ObjectBox store for FishIT Player v2.
- * 
+ *
  * This class provides lazy initialization of the BoxStore instance.
  * The actual DI wiring is done via Hilt in [PersistenceModule].
  */
@@ -16,7 +16,7 @@ object ObxStore {
     /**
      * Get or create the BoxStore instance.
      * Thread-safe lazy initialization with double-check locking.
-     * 
+     *
      * @param context Android application context
      * @return The initialized BoxStore instance
      */
@@ -26,9 +26,11 @@ object ObxStore {
         synchronized(this) {
             val again = ref.get()
             if (again != null) return again
-            val box = MyObjectBox.builder()
-                .androidContext(context.applicationContext)
-                .build()
+            val box =
+                MyObjectBox
+                    .builder()
+                    .androidContext(context.applicationContext)
+                    .build()
             ref.set(box)
             return box
         }
