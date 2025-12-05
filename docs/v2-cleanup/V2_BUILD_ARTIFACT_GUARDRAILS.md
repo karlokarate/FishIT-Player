@@ -163,7 +163,7 @@ To test the PR guard locally:
 # Simulate the PR guard check
 CHANGED=$(git diff --name-only origin/architecture/v2-bootstrap...HEAD)
 echo "$CHANGED" | grep -E '(^|/)build/|\.class$|MyObjectBox\.(java|kt)|objectbox-models/.*\.json' \
-  | grep -v 'objectbox-models/default\.json' && echo "FAIL: Artifacts found" || echo "PASS: No artifacts"
+  | grep -v '/objectbox-models/default\.json$' && echo "FAIL: Artifacts found" || echo "PASS: No artifacts"
 ```
 
 ## Related Documentation
