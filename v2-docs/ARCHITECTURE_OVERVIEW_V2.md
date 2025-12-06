@@ -81,10 +81,33 @@ All v2 modules live in the existing repo but are separate from the legacy app.
     - `SubtitleStyleStore` (persistence for subtitle style preferences)
     - `ResumeRepository` (backed by `ObxResumeMark`)
     - Cached feature flags / entitlements
+    - `CanonicalMediaRepository` (stores canonical media and source references - see `MEDIA_NORMALIZATION_CONTRACT.md`)
   - ObjectBox entities ported from v1:
     - `ObxCategory`, `ObxLive`, `ObxVod`, `ObxSeries`, `ObxEpisode`
     - `ObxEpgNowNext`, `ObxProfile`, `ObxProfilePermissions`
     - `ObxResumeMark`, `ObxTelegramMessage`
+
+- `:core:metadata-normalizer`
+  - **Cross-pipeline media normalization and identity** (see `MEDIA_NORMALIZATION_AND_UNIFICATION.md` and `MEDIA_NORMALIZATION_CONTRACT.md`)
+  - Types:
+    - `RawMediaMetadata` - Raw metadata from pipelines
+    - `NormalizedMediaMetadata` - Normalized, canonical metadata
+    - `CanonicalMediaId` - Global media identity
+  - Services:
+    - `MediaMetadataNormalizer` - Title cleaning, scene-naming parser, structural extraction
+    - `TmdbMetadataResolver` - TMDB search and enrichment via `tmdb-java`
+  - Processing flow:
+    ```
+    Pipeline → RawMediaMetadata → MediaMetadataNormalizer → 
+    NormalizedMediaMetadata → TmdbMetadataResolver → 
+    Enriched Metadata → CanonicalMediaId → Storage
+    ```
+  - Dependencies:
+    - `tmdb-java` (Apache 2.0) for TMDB API integration
+    - Scene-naming regex engine (custom Kotlin, inspired by Sonarr/Radarr/GuessIt/FileBot)
+  - MUST NOT depend on:
+    - Any `:pipeline:*` modules
+    - Any UI framework
 
 - `:core:firebase`
   - Firebase facade module.
@@ -190,10 +213,12 @@ Each pipeline module is responsible for **one content source** and contains **no
     - `RarDataSource` + `RarEntryRandomAccessSource` - RAR archive entry streaming
   - Contains helper extensions like:
     - `fun TelegramMediaItem.toPlaybackContext(...): PlaybackContext`
+    - `fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata` (for normalization - see `MEDIA_NORMALIZATION_CONTRACT.md`)
   - Must **not**:
     - Use Compose or any UI elements.
     - Depend on `:feature:*` modules.
     - Depend on `:player:internal`.
+    - Perform title normalization or TMDB lookups (handled by `:core:metadata-normalizer`)
 
 - `:pipeline:xtream`
   - Xtream / IPTV integration.
@@ -209,9 +234,14 @@ Each pipeline module is responsible for **one content source** and contains **no
   - **Ported from v1** (MUST reuse):
     - `DelegatingDataSourceFactory` - Routes URLs to correct DataSource by scheme
     - `XtreamObxRepository` - ObjectBox-backed content queries (adapted to v2 interfaces)
+  - Contains helper extensions:
+    - `fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata` (for normalization)
+    - `fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata`
+    - `fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata`
   - Must **not**:
     - Contain UI.
     - Depend on `:feature:*` or `:player:internal`.
+    - Perform title normalization or TMDB lookups
 
 - `:pipeline:io`
   - Local / IO content integration.
@@ -219,6 +249,7 @@ Each pipeline module is responsible for **one content source** and contains **no
     - `IoMediaItem`
     - `IoContentRepository` (local storage, SAF, future network shares)
     - `IoPlaybackSourceFactory`
+    - `fun IoMediaItem.toRawMediaMetadata(): RawMediaMetadata`
   - Initial implementation may be minimal, but the module and APIs exist from day one.
 
 - `:pipeline:audiobook`
@@ -227,9 +258,19 @@ Each pipeline module is responsible for **one content source** and contains **no
     - `AudiobookItem`
     - `AudiobookRepository`
     - `AudiobookPlaybackSourceFactory`
+    - `fun AudiobookItem.toRawMediaMetadata(): RawMediaMetadata`
   - Can start as a minimal skeleton; real behavior is introduced in later phases.
 
 Pipelines use interfaces defined in `core:model` / `playback:domain`, not the other way around.
+
+**Pipeline Contract for Metadata (binding):**
+
+All pipelines MUST comply with `MEDIA_NORMALIZATION_CONTRACT.md`:
+- Provide `toRawMediaMetadata()` for all media items
+- Never perform title normalization or cleaning
+- Never conduct TMDB or external database searches
+- Never attempt cross-pipeline media matching or identity decisions
+- Pass through external IDs (like TMDB IDs) only if provided by the source
 
 ---
 
@@ -376,6 +417,7 @@ Once v2 reaches parity:
 - `:pipeline:*` **may depend on**:
   - `:core:model`
   - `:core:persistence`
+  - `:core:metadata-normalizer` (only for accessing `RawMediaMetadata` type, NOT for calling normalizer services)
   - `:infra:logging`
   - External SDKs relevant to that pipeline (tdlib, HTTP clients, etc.)
 
@@ -393,6 +435,7 @@ Once v2 reaches parity:
 - `:core:*` **may depend on**:
   - Kotlin stdlib
   - Minimal AndroidX/core libs as needed
+  - External libraries for their specific purpose (e.g., `:core:metadata-normalizer` may depend on `tmdb-java`)
   - No feature, pipeline or player modules
 
 - `:infra:*` **may depend on**:
@@ -410,6 +453,9 @@ Once v2 reaches parity:
   - Depend on any `:feature:*` modules.
   - Depend on `:player:internal`.
   - Use Compose or any UI framework.
+  - Perform title normalization, cleaning, or heuristics (violation of `MEDIA_NORMALIZATION_CONTRACT.md`).
+  - Conduct TMDB, IMDB, TVDB or any external metadata searches.
+  - Compute or decide `CanonicalMediaId` or cross-pipeline identity.
 
 - `:player:internal` MUST NOT:
   - Depend on `:feature:*`.
@@ -492,6 +538,7 @@ When AI assistants work with this architecture:
    - `APP_VISION_AND_SCOPE.md`
    - `ARCHITECTURE_OVERVIEW_V2.md`
    - `IMPLEMENTATION_PHASES_V2.md`
+   - `MEDIA_NORMALIZATION_CONTRACT.md` (when working on pipelines, metadata, or canonical identity)
    - before touching v2 modules.
 
 2. **Respect dependency rules**:

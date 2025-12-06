@@ -13,9 +13,14 @@
 | `ARCHITECTURE_OVERVIEW_V2.md` | Module structure and layer definitions |
 | `IMPLEMENTATION_PHASES_V2.md` | Build order and phase checklists |
 | `AGENTS_V2.md` | Execution rules for AI assistants |
+| `MEDIA_NORMALIZATION_AND_UNIFICATION.md` | **Cross-Pipeline Media Identity** – Defines normalization strategy, TMDB-first resolution, and canonical identity system |
+| `MEDIA_NORMALIZATION_CONTRACT.md` | **Normalization Contract** – Formal rules for Raw/Normalized metadata, pipeline responsibilities, and compliance |
 
 > ⚠️ **For porting decisions**, always consult `V1_VS_V2_ANALYSIS_REPORT.md` first.
 > It documents which v1 systems are production-quality and should NOT be rewritten.
+>
+> ⚠️ **For metadata and identity**, always consult `MEDIA_NORMALIZATION_CONTRACT.md`.
+> It defines pipeline responsibilities and normalization flow as binding rules.
 
 ---
 
@@ -96,6 +101,45 @@ Pipelines differ only in **how they provide content**, not in how playback behav
   - Online streaming from Xtream/Telegram
   - Updating remote config and entitlements
   - Crash & performance reporting
+
+---
+
+### 3.3 Cross-Pipeline Media Identity Layer
+
+> **Authoritative References:**  
+> - `MEDIA_NORMALIZATION_AND_UNIFICATION.md`  
+> - `MEDIA_NORMALIZATION_CONTRACT.md`
+
+FishIT Player v2 implements a **unified, pipeline-agnostic metadata and identity system** that enables:
+
+- **Cross-pipeline resume:** Continue watching on any source that has the same media work.
+- **Unified detail screens:** See all available sources (Telegram, Xtream, IO, etc.) for the same movie or episode.
+- **Version selection:** Choose quality, language, or subtitles across different pipelines.
+- **Canonical identity:** Every media work receives a stable, global identity regardless of source.
+
+#### Key Principles
+
+1. **Pipelines Provide Raw Metadata Only**
+   - Each pipeline (Telegram, Xtream, IO, Audiobook, etc.) extracts metadata exactly as provided by the source.
+   - Pipelines MUST NOT perform title cleaning, heuristics, or TMDB searches.
+   - Pipelines expose `toRawMediaMetadata()` to convert their domain models to `RawMediaMetadata`.
+
+2. **Centralized Normalization**
+   - All normalization happens in `:core:metadata-normalizer`.
+   - A deterministic regex-based parser cleans titles, extracts years, seasons, episodes, and edition tags.
+   - Scene-naming conventions (inspired by Sonarr, Radarr, GuessIt) are handled centrally.
+
+3. **TMDB-First Identity Resolution**
+   - When a TMDB ID exists (from source or search), it becomes the canonical identity key.
+   - Without TMDB IDs, normalized title + year (+ season/episode for series) form the identity.
+   - `tmdb-java` library provides reliable TMDB integration.
+
+4. **Canonical Media Storage**
+   - Each unique media work is stored once with a `CanonicalMediaId`.
+   - Multiple sources (Telegram, Xtream, IO) are linked to the same canonical work via `MediaSourceRef`.
+   - Resume positions, watch history, and preferences are tied to canonical identity.
+
+This architecture ensures that adding new pipelines (Plex, Jellyfin, more Xtream providers) requires no changes to normalization logic or UI layers—only implementation of the `toRawMediaMetadata()` contract.
 
 ---
 
@@ -231,6 +275,8 @@ not inside feature or refactor tasks.
    - Clear interfaces
    - Isolated implementations
    - No UI inside pipelines
+   - Each pipeline provides `toRawMediaMetadata()` for canonical identity integration
+   - Pipelines never perform title normalization or TMDB lookups (see `MEDIA_NORMALIZATION_CONTRACT.md`)
 
 3. **Replaceable Experiences**  
    The visual experience (grid UI, list UI, experimental globe navigation, etc.) must be replaceable **without** touching:
@@ -294,6 +340,7 @@ When AI assistants (Copilot, ChatGPT, etc.) work on this project:
      - `APP_VISION_AND_SCOPE.md`
      - `ARCHITECTURE_OVERVIEW_V2.md`
      - `IMPLEMENTATION_PHASES_V2.md`
+     - `MEDIA_NORMALIZATION_CONTRACT.md` (when working on pipelines or metadata)
    - before doing any v2-related work.
 
 2. **English-Only Code**
