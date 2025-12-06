@@ -9,20 +9,30 @@
 
 This document outlines the future work needed to complete the Telegram pipeline integration after Phase 3 (Metadata Normalization Core) is implemented.
 
+**CRITICAL: Type Definitions:**
+- `RawMediaMetadata` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+- `NormalizedMediaMetadata` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+- `ExternalIds` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+- `SourceType` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+
+The Telegram pipeline NEVER defines these types locally.
+
 **Prerequisites:**
-1. `:core:metadata-normalizer` module created
-2. `RawMediaMetadata` and `NormalizedMediaMetadata` data classes defined
-3. `MediaMetadataNormalizer` interface and implementation
-4. `TmdbMetadataResolver` interface and implementation
-5. `CanonicalMediaRepository` for persistence
+1. `:core:metadata-normalizer` module created with type definitions
+2. `RawMediaMetadata` and `NormalizedMediaMetadata` data classes available
+3. `MediaMetadataNormalizer` interface and implementation (centralized)
+4. `TmdbMetadataResolver` interface and implementation (centralized)
+5. `CanonicalMediaRepository` for persistence (centralized)
 
 ---
 
 ## 1. Implement Real toRawMediaMetadata()
 
-**Task:** Convert the structure-only implementation in `TelegramMetadataNormalization.kt` into a working extension function.
+**Task:** Convert the structure-only documentation in `TelegramRawMetadataContract.kt` into a working extension function.
 
-**Location:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramMetadataNormalization.kt`
+**CRITICAL:** This implementation provides RAW data ONLY. NO cleaning, NO normalization, NO TMDB lookups.
+
+**Location:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramRawMetadataExtensions.kt` (new file)
 
 **Implementation Steps:**
 
@@ -36,8 +46,14 @@ This document outlines the future work needed to complete the Telegram pipeline 
 
 2. **Implement the extension function:**
    ```kotlin
+   import com.fishit.player.core.metadatanormalizer.RawMediaMetadata
+   import com.fishit.player.core.metadatanormalizer.ExternalIds
+   import com.fishit.player.core.metadatanormalizer.SourceType
+   
    fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
        return RawMediaMetadata(
+           // CRITICAL: extractRawTitle() does simple field priority ONLY
+           // NO cleaning, NO tag stripping, NO normalization
            originalTitle = extractRawTitle(),
            year = this.year,
            season = this.seasonNumber,
@@ -52,7 +68,8 @@ This document outlines the future work needed to complete the Telegram pipeline 
    
    private fun TelegramMediaItem.extractRawTitle(): String {
        // Priority: title > episodeTitle > caption > fileName
-       // NO cleaning of technical tags - pass raw source data
+       // CRITICAL: NO cleaning of technical tags - pass raw source data AS-IS
+       // Example: "Movie.2020.1080p.BluRay.x264-GROUP" -> returned unchanged
        return when {
            title.isNotBlank() -> title
            episodeTitle?.isNotBlank() == true -> episodeTitle!!
@@ -208,14 +225,17 @@ class TdLibTelegramPlaybackSourceFactory(
 
 ## 3. Pipeline Feeding Metadata to Normalizer
 
-**Task:** Integrate Telegram pipeline with the centralized metadata normalizer.
+**Task:** Integrate Telegram pipeline with the centralized metadata normalizer (EXTERNAL service).
+
+**CRITICAL:** The normalizer and TMDB resolver are EXTERNAL services provided by `:core:metadata-normalizer`.
+The Telegram pipeline NEVER implements normalization, TMDB lookups, or canonical identity logic.
 
 **Use Case:** When a user browses Telegram media, the app should:
 1. Load media items from `TelegramContentRepository`
-2. Convert to `RawMediaMetadata` via `toRawMediaMetadata()`
-3. Send to `MediaMetadataNormalizer.normalize()`
-4. Optionally enrich via `TmdbMetadataResolver.enrich()`
-5. Store in `CanonicalMediaRepository`
+2. Convert to `RawMediaMetadata` via `toRawMediaMetadata()` (raw data only)
+3. Send to `MediaMetadataNormalizer.normalize()` (EXTERNAL service)
+4. Optionally enrich via `TmdbMetadataResolver.enrich()` (EXTERNAL service)
+5. Store in `CanonicalMediaRepository` (EXTERNAL service)
 6. Enable cross-pipeline features (unified detail, resume)
 
 **Integration Points:**
@@ -227,6 +247,7 @@ class TdLibTelegramPlaybackSourceFactory(
 ```kotlin
 class TelegramMediaViewModel(
     private val contentRepository: TelegramContentRepository,
+    // EXTERNAL services from :core:metadata-normalizer
     private val metadataNormalizer: MediaMetadataNormalizer,
     private val tmdbResolver: TmdbMetadataResolver,
     private val canonicalMediaRepo: CanonicalMediaRepository
@@ -236,19 +257,19 @@ class TelegramMediaViewModel(
         // 1. Load raw media from Telegram pipeline
         val telegramItems = contentRepository.getMediaItemsByChat(chatId)
         
-        // 2. Convert to raw metadata
+        // 2. Convert to raw metadata (NO cleaning, NO normalization here)
         val rawMetadata = telegramItems.map { it.toRawMediaMetadata() }
         
-        // 3. Normalize each item
+        // 3. Normalize each item using EXTERNAL normalizer
         val normalized = rawMetadata.map { raw ->
-            val norm = metadataNormalizer.normalize(raw)
-            // Optionally enrich with TMDB
-            tmdbResolver.enrich(norm)
+            val norm = metadataNormalizer.normalize(raw)  // EXTERNAL
+            // Optionally enrich with TMDB using EXTERNAL resolver
+            tmdbResolver.enrich(norm)  // EXTERNAL
         }
         
-        // 4. Store canonical representations
+        // 4. Store canonical representations using EXTERNAL repository
         normalized.forEach { enriched ->
-            val canonicalId = canonicalMediaRepo.upsertCanonicalMedia(enriched)
+            val canonicalId = canonicalMediaRepo.upsertCanonicalMedia(enriched)  // EXTERNAL
             // Link Telegram source to canonical media
             val sourceRef = MediaSourceRef(
                 sourceType = SourceType.TELEGRAM,
@@ -256,15 +277,21 @@ class TelegramMediaViewModel(
                 sourceLabel = /* from raw metadata */,
                 // Add quality, language, subtitle info
             )
-            canonicalMediaRepo.addOrUpdateSourceRef(canonicalId, sourceRef)
+            canonicalMediaRepo.addOrUpdateSourceRef(canonicalId, sourceRef)  // EXTERNAL
         }
     }
 }
 ```
 
+**Responsibilities Breakdown:**
+- **Telegram Pipeline:** Provides raw `TelegramMediaItem` and converts to `RawMediaMetadata`
+- **MediaMetadataNormalizer (EXTERNAL):** Title cleaning, tag stripping, parsing
+- **TmdbMetadataResolver (EXTERNAL):** TMDB lookups, external ID resolution
+- **CanonicalMediaRepository (EXTERNAL):** Persistence, cross-pipeline linking
+
 ### 3.2 Background Sync Integration
 
-**Task:** Sync Telegram messages in the background and automatically normalize/enrich them.
+**Task:** Sync Telegram messages in the background and automatically normalize/enrich them using EXTERNAL services.
 
 **Worker:** `TelegramSyncWorker` (to be created)
 
@@ -273,23 +300,26 @@ class TelegramSyncWorker(
     context: Context,
     params: WorkerParameters,
     private val contentRepository: TelegramContentRepository,
+    // EXTERNAL services from :core:metadata-normalizer
     private val metadataNormalizer: MediaMetadataNormalizer,
     private val canonicalMediaRepo: CanonicalMediaRepository
 ) : CoroutineWorker(context, params) {
     
     override suspend fun doWork(): Result {
         return try {
-            // 1. Refresh Telegram content
+            // 1. Refresh Telegram content (TDLib data access)
             contentRepository.refresh()
             
-            // 2. Get new/updated items
+            // 2. Get new/updated items from Telegram
             val newItems = contentRepository.getRecentMediaItems(limit = 100)
             
-            // 3. Normalize and store
+            // 3. Convert to raw metadata (NO cleaning in pipeline)
+            // 4. Normalize using EXTERNAL normalizer
+            // 5. Store using EXTERNAL repository
             newItems.forEach { item ->
-                val raw = item.toRawMediaMetadata()
-                val normalized = metadataNormalizer.normalize(raw)
-                canonicalMediaRepo.upsertCanonicalMedia(normalized)
+                val raw = item.toRawMediaMetadata()  // Pipeline: raw data only
+                val normalized = metadataNormalizer.normalize(raw)  // EXTERNAL: cleaning/normalization
+                canonicalMediaRepo.upsertCanonicalMedia(normalized)  // EXTERNAL: storage
             }
             
             Result.success()
@@ -299,6 +329,13 @@ class TelegramSyncWorker(
     }
 }
 ```
+
+**Separation of Concerns:**
+- **TelegramSyncWorker:** Orchestrates the workflow
+- **TelegramContentRepository:** Telegram data access (TDLib)
+- **toRawMediaMetadata():** Raw field mapping (no cleaning)
+- **MediaMetadataNormalizer (EXTERNAL):** Title cleaning, tag stripping
+- **CanonicalMediaRepository (EXTERNAL):** Persistence
 
 ### 3.3 Batching Strategy
 

@@ -96,23 +96,27 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
 
 ### Phase 3 Prep - Media Normalization Contract (P2-T3 Continuation)
 **Date:** 2025-12-06  
-**Status:** ✅ **COMPLETE**
+**Status:** ✅ **COMPLETE** (Reviewed 2025-12-06)
 
 #### Deliverables:
-1. **TelegramMetadataNormalization.kt** - Structure-only implementation
-   - Documents the planned `toRawMediaMetadata()` signature
+1. **TelegramRawMetadataContract.kt** - Structure-only documentation
+   - Documents the planned `toRawMediaMetadata()` signature for Phase 3
    - Shows raw title extraction logic (NO cleaning, NO normalization)
    - Clarifies contract compliance requirements
    - References `:core:metadata-normalizer` as future dependency
+   - **CRITICAL:** Does NOT define `RawMediaMetadata`, `ExternalIds`, or `SourceType` types
+   - These types will be defined in `:core:metadata-normalizer` (Phase 3), NOT in `:pipeline:telegram`
 
 2. **Updated FOLLOWUP_P2-T3** - Enhanced normalization section
    - Added comprehensive "Normalization & Canonical Identity Integration" section
    - Clarified that extractTitle() MUST remain a simple field selector
    - Documented what Telegram MUST NOT do (no cleaning, no TMDB, no heuristics)
    - Listed contract compliance benefits
+   - **Fixed:** Corrected filename reference to `TelegramRawMetadataContract.kt`
+   - **Clarified:** Emphasized that types are NOT defined in pipeline module
 
 3. **Documentation references:**
-   - All work complies with `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md`
+   - All work complies with `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` (AUTHORITATIVE)
    - Structure aligns with `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
    - Follows same pattern as Xtream (P2-T2) and IO (P2-T4) pipelines
 
@@ -121,8 +125,14 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
 - ✅ NO normalization or heuristics
 - ✅ NO TMDB/IMDB/TVDB lookups
 - ✅ Simple field priority for title selection (title > episodeTitle > caption > fileName)
-- ✅ Raw metadata passed to centralizer as-is
+- ✅ Raw metadata passed to centralizer as-is (with concrete examples)
 - ✅ All intelligence centralized in `:core:metadata-normalizer`
+- ✅ NO local type definitions (RawMediaMetadata, ExternalIds, SourceType defined in core)
+
+#### Separation of Concerns:
+- **Pipeline Responsibility:** Provide raw source data via `toRawMediaMetadata()` (Phase 3)
+- **Normalizer Responsibility:** Title cleaning, tag stripping, TMDB lookups, canonical identity
+- **Type Ownership:** All normalization types (`RawMediaMetadata`, `ExternalIds`, `SourceType`) defined in `:core:metadata-normalizer`, NOT in `:pipeline:telegram`
 
 #### Future Implementation Note:
 The actual `toRawMediaMetadata()` extension function will be implemented when:

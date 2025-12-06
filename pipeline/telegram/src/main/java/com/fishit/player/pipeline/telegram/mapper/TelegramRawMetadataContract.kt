@@ -3,22 +3,30 @@ package com.fishit.player.pipeline.telegram.mapper
 /**
  * Telegram pipeline integration with the centralized media normalization contract.
  *
- * This file demonstrates the STRUCTURE of how Telegram will provide raw metadata
- * to the future `:core:metadata-normalizer` module.
+ * This file documents the STRUCTURE ONLY of how Telegram will provide raw metadata
+ * to the future `:core:metadata-normalizer` module in Phase 3.
  *
- * **IMPORTANT CONTRACT COMPLIANCE:**
+ * **CRITICAL: This is documentation only - NOT an implementation.**
+ *
+ * **CONTRACT COMPLIANCE:**
  * - Telegram provides RAW metadata ONLY (no cleaning, no normalization, no heuristics)
  * - Title extraction is a simple field priority selector (title > episodeTitle > caption > fileName)
  * - NO title cleaning, NO tag stripping, NO TMDB lookups
  * - All normalization happens centrally in `:core:metadata-normalizer`
  *
- * See: v2-docs/MEDIA_NORMALIZATION_CONTRACT.md for formal rules.
+ * **Type Definitions:**
+ * - `RawMediaMetadata` - Defined in `:core:metadata-normalizer` (NOT in this module)
+ * - `ExternalIds` - Defined in `:core:metadata-normalizer` (NOT in this module)
+ * - `SourceType` - Defined in `:core:metadata-normalizer` (NOT in this module)
  *
- * ## TODO: Future Implementation
+ * This module does NOT and MUST NOT define these types locally.
  *
- * This will be implemented once `:core:metadata-normalizer` module exists.
+ * See: v2-docs/MEDIA_NORMALIZATION_CONTRACT.md for authoritative type definitions and rules.
+ * See: v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md for architecture overview.
  *
- * Planned signature (STRUCTURE ONLY):
+ * ## Future Implementation (Phase 3+)
+ *
+ * When `:core:metadata-normalizer` module exists with the required types, implement:
  *
  * ```kotlin
  * fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
@@ -37,16 +45,19 @@ package com.fishit.player.pipeline.telegram.mapper
  * }
  * ```
  *
- * Where:
- * - `RawMediaMetadata` comes from `:core:metadata-normalizer`
- * - `ExternalIds` comes from `:core:metadata-normalizer`
- * - `SourceType.TELEGRAM` is an enum value in `:core:metadata-normalizer`
+ * **Type sources (Phase 3):**
+ * - `RawMediaMetadata` - from `:core:metadata-normalizer`
+ * - `ExternalIds` - from `:core:metadata-normalizer`
+ * - `SourceType.TELEGRAM` - enum value from `:core:metadata-normalizer`
  *
- * **extractRawTitle() logic (NO cleaning):**
+ * **extractRawTitle() helper (simple field priority selector):**
  * ```kotlin
  * private fun TelegramMediaItem.extractRawTitle(): String {
  *     // Priority: title > episodeTitle > caption > fileName
- *     // NO cleaning of technical tags - pass raw source data
+ *     // CRITICAL: NO cleaning of technical tags - pass raw source data AS-IS
+ *     // Examples of what stays unchanged:
+ *     //   "Movie.2020.1080p.BluRay.x264-GROUP" -> returned AS-IS (no stripping)
+ *     //   "Series.S01E05.HDTV.x264" -> returned AS-IS (no normalization)
  *     return when {
  *         title.isNotBlank() -> title
  *         episodeTitle?.isNotBlank() == true -> episodeTitle!!
@@ -57,7 +68,7 @@ package com.fishit.player.pipeline.telegram.mapper
  * }
  * ```
  *
- * **buildTelegramSourceLabel() logic:**
+ * **buildTelegramSourceLabel() helper:**
  * ```kotlin
  * private fun TelegramMediaItem.buildTelegramSourceLabel(): String {
  *     // Example: "Telegram Chat: Movies HD"
@@ -66,13 +77,18 @@ package com.fishit.player.pipeline.telegram.mapper
  * }
  * ```
  *
- * **Contract Guarantees:**
- * 1. ✅ NO title cleaning (no tag stripping, no normalization)
- * 2. ✅ NO TMDB/IMDB/TVDB lookups
- * 3. ✅ Simple field priority for title selection
- * 4. ✅ Pass through year, season, episode, duration as-is
- * 5. ✅ Provide stable sourceId for resume tracking
- * 6. ✅ All normalization handled by `:core:metadata-normalizer`
+ * **Pipeline Responsibilities (per contract):**
+ * 1. ✅ Provide raw title via simple field priority (NO cleaning, NO normalization)
+ * 2. ✅ Pass through year, season, episode, duration as-is from source
+ * 3. ✅ Provide stable sourceId for tracking (remoteId or "msg:chatId:messageId")
+ * 4. ✅ Leave externalIds empty (Telegram doesn't provide TMDB/IMDB/TVDB)
+ * 5. ✅ NO TMDB lookups, NO cross-pipeline matching, NO canonical identity computation
+ *
+ * **Centralizer Responsibilities (`:core:metadata-normalizer`):**
+ * - Title cleaning and normalization (strip tags, standardize format)
+ * - TMDB/IMDB/TVDB lookups and identity resolution
+ * - Cross-pipeline canonical identity assignment
+ * - Scene-style naming pattern parsing
  */
 object TelegramRawMetadataContract {
     /**

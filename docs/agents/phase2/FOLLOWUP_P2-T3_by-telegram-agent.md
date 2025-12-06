@@ -146,9 +146,11 @@ The v2 architecture introduces a **centralized normalization layer** (`:core:met
 
 1. **Telegram will provide RawMediaMetadata mapping:**
    - Future phase will implement `TelegramMediaItem.toRawMediaMetadata()` to feed the centralizer.
-   - **Structure defined in:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramMetadataNormalization.kt`
+   - **Structure documented in:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramRawMetadataContract.kt`
    - The mapping passes through raw titles **without any modification**.
    - Priority: title > episodeTitle > caption > fileName
+   - **CRITICAL:** Types like `RawMediaMetadata`, `ExternalIds`, `SourceType` are NOT and MUST NOT be defined in `:pipeline:telegram`
+   - These types will be defined in `:core:metadata-normalizer` (Phase 3)
 
 2. **extractTitle() MUST stay a simple field priority selector:**
    - The existing `extractTitle()` function in `TelegramMappers.kt` only selects the best source field.
@@ -178,8 +180,16 @@ The v2 architecture introduces a **centralized normalization layer** (`:core:met
 
 6. **Reference documentation:**
    - `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` - Architecture overview
-   - `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` - Formal rules and pipeline responsibilities
-   - `pipeline/telegram/mapper/TelegramMetadataNormalization.kt` - Structure-only implementation
+   - `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` - Formal rules and pipeline responsibilities (AUTHORITATIVE)
+   - `pipeline/telegram/mapper/TelegramRawMetadataContract.kt` - Structure-only documentation (NOT implementation)
+
+**Types NOT defined in `:pipeline:telegram`:**
+- `RawMediaMetadata` - Will be in `:core:metadata-normalizer` (Phase 3)
+- `NormalizedMediaMetadata` - Will be in `:core:metadata-normalizer` (Phase 3)
+- `ExternalIds` - Will be in `:core:metadata-normalizer` (Phase 3)
+- `SourceType` - Will be in `:core:metadata-normalizer` (Phase 3)
+
+The Telegram pipeline only references these types in documentation, never defines them locally.
 
 **Contract Compliance ensures:**
 - Cross-pipeline resume tracking (same movie from Telegram/Xtream/IO = same resume point)
