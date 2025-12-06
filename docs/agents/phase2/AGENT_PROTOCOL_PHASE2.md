@@ -74,18 +74,26 @@ Every agent working on Phase 2 MUST complete this initial task sequence **before
    - If a progress file exists with status `In Progress` or `Blocked`, task is **taken**
    - If a progress file exists with status `Completed`, task is **done**
 
-2. **Check Task Dependencies:**
+2. **⚠️ IMPORTANT: P2-T1 (Core Persistence) is COMPLETED:**
+   - **DO NOT** create new progress files for P2-T1
+   - **DO NOT** modify `:core:persistence/` as part of other Phase 2 tasks
+   - P2-T1 is frozen infrastructure and only referenced as a read-only dependency
+   - Any schema or repository changes must go through a dedicated maintenance task (e.g., "P2-T1B – Persistence Maintenance")
+
+3. **Check Task Dependencies:**
    - Review `Blocking Dependencies` in task definition (in parallelization plan)
    - If dependencies not satisfied, task **cannot start**
-   - Example: P2-T6 cannot start until P2-T1 is completed
+   - Example: P2-T6 cannot start until P2-T2, P2-T3, P2-T4, P2-T5 are completed
+   - Note: P2-T1 is already complete and serves as foundation for all tasks
 
-3. **Claim Task:**
+4. **Claim Task:**
    - Create your progress file immediately (see template below)
    - Set status to `Planned` initially
    - This prevents other agents from starting the same task
 
 **Task Priority (if multiple available):**
-- Wave 1 tasks (P2-T1 to P2-T5) can all start immediately – choose any
+- Wave 0: P2-T1 is **COMPLETED** (do not select)
+- Wave 1 tasks (P2-T2 to P2-T5) can all start immediately – choose any
 - Wave 2 task (P2-T6) must wait for Wave 1 completion
 - Wave 3 tasks (P2-T7, P2-T8) must wait for Wave 2 completion
 

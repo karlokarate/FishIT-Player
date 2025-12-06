@@ -8,12 +8,15 @@
 
 ## Executive Summary
 
-This document defines the parallelization strategy for Phase 2 of the FishIT Player v2 architecture implementation. Phase 2 focuses on implementing core persistence (ObjectBox) and pipeline stub modules (Xtream, Telegram, IO, Audiobook) while maintaining strict module isolation to enable safe parallel development.
+This document defines the parallelization strategy for Phase 2 of the FishIT Player v2 architecture implementation. Phase 2 focuses on implementing pipeline stub modules (Xtream, Telegram, IO, Audiobook) while maintaining strict module isolation to enable safe parallel development.
+
+**⚠️ IMPORTANT UPDATE:** P2-T1 (Core Persistence) has been completed and is now frozen infrastructure. This plan reflects the current project state with P2-T1 as Wave 0 (completed) and the remaining tasks as the active work.
 
 **Key Outcomes:**
 - 8 distinct tasks with clearly defined write scopes
-- 4 tasks can run fully in parallel (P2-T2, P2-T3, P2-T4, P2-T5)
-- 3 sequential checkpoints for integration and validation
+- **P2-T1 (Core Persistence) is COMPLETED** - serves as frozen foundation
+- 4 remaining tasks can run fully in parallel (P2-T2, P2-T3, P2-T4, P2-T5)
+- 3 sequential checkpoints for integration and validation (Wave 1, 2, 3)
 - Zero merge conflicts through strict module-scoped write access
 
 ---
@@ -23,7 +26,7 @@ This document defines the parallelization strategy for Phase 2 of the FishIT Pla
 ### Goals
 Phase 2 establishes the foundation for all content pipelines in FishIT Player v2:
 
-1. **Core Persistence** – Port ObjectBox from v1 and implement v2 repository interfaces
+1. **Core Persistence (✅ COMPLETED)** – ObjectBox from v1 has been ported and v2 repository interfaces are implemented
 2. **Pipeline Stubs** – Create interface-based stubs for all 4 pipelines (Xtream, Telegram, IO, Audiobook)
 3. **Playback Domain Integration** – Wire pipeline interfaces into playback domain for future use
 4. **Build & Quality Validation** – Ensure all modules compile and pass quality gates
@@ -56,7 +59,10 @@ Phase 2 establishes the foundation for all content pipelines in FishIT Player v2
 
 ### Task Definitions
 
-#### P2-T1: Core Persistence
+#### P2-T1: Core Persistence (✅ COMPLETED - Wave 0)
+
+**Status:** ✅ **COMPLETED** - This task has been fully implemented and is now frozen infrastructure.
+
 **Description:** Port ObjectBox from v1 and implement v2 repository interfaces
 
 **Primary Write Scope:**
@@ -66,14 +72,21 @@ Phase 2 establishes the foundation for all content pipelines in FishIT Player v2
 - `:core:model/` (may define interfaces that persistence implements)
 - `app/src/main/java/com/chris/m3usuite/data/obx/` (v1 ObjectBox entities for reference)
 
-**Deliverables:**
-- Port `ObxStore` singleton pattern
-- Port all v1 ObjectBox entities: `ObxCategory`, `ObxLive`, `ObxVod`, `ObxSeries`, `ObxEpisode`, `ObxEpgNowNext`, `ObxProfile`, `ObxProfilePermissions`, `ObxResumeMark`, `ObxTelegramMessage`
-- Implement repository interfaces: `ProfileRepository`, `EntitlementRepository`, `LocalMediaRepository`, `SubtitleStyleStore`, `ResumeRepository`
-- DataStore wrappers for preferences
-- Unit tests for core repository logic
+**Deliverables (✅ All Complete):**
+- ✅ Port `ObxStore` singleton pattern
+- ✅ Port all v1 ObjectBox entities: `ObxCategory`, `ObxLive`, `ObxVod`, `ObxSeries`, `ObxEpisode`, `ObxEpgNowNext`, `ObxProfile`, `ObxProfilePermissions`, `ObxResumeMark`, `ObxTelegramMessage`
+- ✅ Implement repository interfaces: `ProfileRepository`, `EntitlementRepository`, `LocalMediaRepository`, `SubtitleStyleStore`, `ResumeRepository`
+- ✅ DataStore wrappers for preferences
+- ✅ Unit tests for core repository logic
 
-**Blocking Dependencies:** None (can start immediately)
+**Blocking Dependencies:** None (already completed)
+
+**⚠️ IMPORTANT AGENT RULES:**
+- **DO NOT** create new progress files for P2-T1 unless there is an explicit bugfix/maintenance task
+- **DO NOT** modify `:core:persistence/` as part of other Phase 2 tasks
+- All other Phase 2 tasks (P2-T2 through P2-T8) MUST treat persistence as stable, frozen infrastructure
+- Any schema or repository changes to `:core:persistence/` must go through a dedicated, separate maintenance task (e.g., "P2-T1B – Persistence Maintenance")
+- P2-T1 is only referenced as a read-only dependency for other tasks
 
 ---
 
@@ -176,8 +189,8 @@ Phase 2 establishes the foundation for all content pipelines in FishIT Player v2
 - Integration tests validating pipeline interface contracts
 
 **Blocking Dependencies:** 
-- MUST wait for P2-T1 (Core Persistence)
-- SHOULD wait for P2-T2, P2-T3, P2-T4, P2-T5 (Pipeline stubs) for full integration
+- P2-T1 is already COMPLETED (Core Persistence serves as foundation)
+- MUST wait for P2-T2, P2-T3, P2-T4, P2-T5 (Pipeline stubs) for full integration
 
 ---
 
@@ -199,7 +212,8 @@ Phase 2 establishes the foundation for all content pipelines in FishIT Player v2
 - Test documentation
 
 **Blocking Dependencies:**
-- MUST wait for P2-T1, P2-T6 (core functionality must exist)
+- P2-T1 is already COMPLETED (Core Persistence exists)
+- MUST wait for P2-T6 (core functionality must exist)
 - SHOULD wait for P2-T2, P2-T3, P2-T4, P2-T5 (to test pipeline stubs)
 
 ---
@@ -229,19 +243,28 @@ Phase 2 establishes the foundation for all content pipelines in FishIT Player v2
 
 ## Parallelization Strategy for Phase 2
 
-### Wave 1: Foundation (Fully Parallel)
-**Duration Estimate:** 3-5 days  
-**Parallel Tasks:** P2-T1, P2-T2, P2-T3, P2-T4, P2-T5
+### Wave 0: Foundation (✅ COMPLETED)
+**Status:** ✅ **COMPLETED**  
+**Task:** P2-T1 (Core Persistence)
 
-These 5 tasks have **zero overlap** in write scopes and can be executed simultaneously by 5 different agents:
+P2-T1 has been completed and serves as the shared persistence foundation for all remaining Phase 2 tasks. The `:core:persistence/` module is now frozen infrastructure and must not be modified except through explicit maintenance tasks.
+
+---
+
+### Wave 1: Pipeline Stubs (Fully Parallel)
+**Duration Estimate:** 3-5 days  
+**Parallel Tasks:** P2-T2, P2-T3, P2-T4, P2-T5
+
+These 4 tasks have **zero overlap** in write scopes and can be executed simultaneously by 4 different agents:
 
 | Agent | Task | Write Scope | Start Condition |
 |-------|------|-------------|-----------------|
-| Agent-A | P2-T1 | `:core:persistence/` | Immediate |
 | Agent-B | P2-T2 | `:pipeline:xtream/` | Immediate |
 | Agent-C | P2-T3 | `:pipeline:telegram/` | Immediate |
 | Agent-D | P2-T4 | `:pipeline:io/` | Immediate |
 | Agent-E | P2-T5 | `:pipeline:audiobook/` | Immediate |
+
+**Note:** All Wave 1 tasks depend on the completed P2-T1 (Core Persistence) as a read-only dependency.
 
 **Synchronization Point:** All agents must complete and merge before Wave 2 begins.
 
@@ -255,7 +278,7 @@ This task **reads from** all Wave 1 outputs and **writes to** `:playback:domain/
 
 | Agent | Task | Write Scope | Start Condition |
 |-------|------|-------------|-----------------|
-| Agent-F | P2-T6 | `:playback:domain/` | After P2-T1, P2-T2, P2-T3, P2-T4, P2-T5 merged |
+| Agent-F | P2-T6 | `:playback:domain/` | After P2-T2, P2-T3, P2-T4, P2-T5 merged |
 
 **Synchronization Point:** P2-T6 must complete and merge before Wave 3 begins.
 
@@ -279,35 +302,35 @@ These tasks validate all previous work:
 ### Dependency Graph
 
 ```
-         ┌─────────┐
-         │ P2-T1   │  Core Persistence
-         │ Agent-A │
-         └────┬────┘
-              │
-    ┌─────────┼─────────────────┐
-    │         │                 │
-┌───▼───┐ ┌───▼───┐ ┌───▼───┐ ┌───▼───┐
-│ P2-T2 │ │ P2-T3 │ │ P2-T4 │ │ P2-T5 │
-│Agent-B│ │Agent-C│ │Agent-D│ │Agent-E│
-│Xtream │ │Telegr.│ │  IO   │ │Audio  │
-└───┬───┘ └───┬───┘ └───┬───┘ └───┬───┘
-    │         │         │         │
-    └─────────┼─────────┼─────────┘
-              │         │
-          ┌───▼─────────▼───┐
-          │     P2-T6        │  Playback Integration
-          │    Agent-F       │
-          └────────┬─────────┘
-                   │
-          ┌────────▼─────────┐
-          │     P2-T7        │  Integration Tests
-          │    Agent-G       │
-          └────────┬─────────┘
-                   │
-          ┌────────▼─────────┐
-          │     P2-T8        │  Quality Validation
-          │    Agent-H       │
-          └──────────────────┘
+                    ┌─────────────┐
+                    │   P2-T1     │  ✅ COMPLETED (Wave 0)
+                    │ Core Persist│  Frozen Infrastructure
+                    └──────┬──────┘
+                           │ (read-only dependency)
+          ┌────────────────┼────────────────┐
+          │                │                │
+     ┌────▼────┐   ┌───────▼──┐   ┌───────▼──┐   ┌─────▼────┐
+     │ P2-T2   │   │ P2-T3    │   │ P2-T4    │   │ P2-T5    │
+     │Agent-B  │   │Agent-C   │   │Agent-D   │   │Agent-E   │
+     │Xtream   │   │Telegram  │   │  IO      │   │Audio     │
+     └────┬────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘
+          │             │              │              │
+          └─────┬───────┴───────┬──────┴───────┬──────┘
+                │               │              │
+          ┌─────▼───────────────▼──────────────▼──────────┐
+          │                  P2-T6                        │
+          │          Playback Integration (Agent-F)       │
+          └───────────────────┬──────────────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │     P2-T7         │  Integration Tests
+                    │    Agent-G        │
+                    └─────────┬─────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │     P2-T8         │  Quality Validation
+                    │    Agent-H        │
+                    └───────────────────┘
 ```
 
 **Total Duration Estimate:** 6-10 days with parallel execution (vs 15-20 days sequential)
@@ -380,58 +403,26 @@ Every agent MUST follow this sequence before coding:
 
 ## Per-Task Guidance
 
-### P2-T1: Core Persistence
+### P2-T1: Core Persistence (✅ COMPLETED - For Reference Only)
 
-**Approach:**
-1. Create `:core:persistence/` package structure:
-   ```
-   com.fishit.player.core.persistence/
-     ├── objectbox/
-     │   ├── ObxStore.kt
-     │   ├── entities/
-     │   │   ├── ObxCategory.kt
-     │   │   ├── ObxLive.kt
-     │   │   ├── ObxVod.kt
-     │   │   ├── ObxSeries.kt
-     │   │   ├── ObxEpisode.kt
-     │   │   ├── ObxEpgNowNext.kt
-     │   │   ├── ObxProfile.kt
-     │   │   ├── ObxProfilePermissions.kt
-     │   │   ├── ObxResumeMark.kt
-     │   │   └── ObxTelegramMessage.kt
-     │   └── repositories/
-     │       ├── ProfileRepositoryImpl.kt
-     │       ├── EntitlementRepositoryImpl.kt
-     │       ├── LocalMediaRepositoryImpl.kt
-     │       ├── SubtitleStyleStoreImpl.kt
-     │       └── ResumeRepositoryImpl.kt
-     └── datastore/
-         └── PreferencesManager.kt
-   ```
+**Status:** ✅ **COMPLETED** - This section is for reference only. Do not create new progress files or modify `:core:persistence/` unless part of an explicit maintenance task.
 
-2. Port ObjectBox entities from v1 (`app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt`):
-   - Copy entity definitions verbatim (they are production-tested)
-   - Update package names to `com.fishit.player.core.persistence.objectbox.entities`
-   - Ensure ObjectBox annotations are preserved
+**⚠️ IMPORTANT:** P2-T1 has been fully implemented. The `:core:persistence/` module is now frozen infrastructure. All other Phase 2 tasks must treat it as a stable, read-only dependency.
 
-3. Implement repository interfaces:
-   - Define interfaces in `:core:model/` if they don't exist
-   - Implement in `:core:persistence/`
-   - Use constructor injection for dependencies (Hilt)
+**Implementation Summary (for reference):**
 
-4. Write unit tests:
-   - Test CRUD operations for each entity
-   - Test repository implementations with in-memory ObjectBox store
-   - Test DataStore read/write operations
+The completed implementation includes:
+1. ✅ `:core:persistence/` package structure with ObjectBox entities and repositories
+2. ✅ All v1 ObjectBox entities ported (ObxStore, entities, repositories)
+3. ✅ Repository interfaces implemented (ProfileRepository, EntitlementRepository, etc.)
+4. ✅ DataStore wrappers for preferences
+5. ✅ Unit tests for core repository logic
 
-**Key References:**
-- v1 ObjectBox: `app/src/main/java/com/chris/m3usuite/data/obx/`
-- v1 Repositories: `app/src/main/java/com/chris/m3usuite/data/repo/`
-
-**Quality Criteria:**
-- All tests pass: `./gradlew :core:persistence:testDebugUnitTest`
-- Zero ktlint errors: `./gradlew :core:persistence:ktlintCheck`
-- Module builds: `./gradlew :core:persistence:assembleDebug`
+**For Other Tasks:**
+- Use `:core:persistence/` as a read-only dependency
+- Reference existing entities and repositories
+- Do NOT modify the module
+- Any required changes must go through a separate maintenance task
 
 ---
 

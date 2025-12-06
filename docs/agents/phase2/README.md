@@ -15,8 +15,9 @@ Enable **safe parallel development** of Phase 2 tasks with:
 ### 1. Planning Documents (Read-Only for Agents)
 
 **`PHASE2_PARALLELIZATION_PLAN.md`**
-- Defines all 8 Phase 2 tasks (P2-T1 through P2-T8)
-- Documents dependencies and parallelization strategy
+- Defines 8 Phase 2 tasks (P2-T1 through P2-T8)
+- **P2-T1 (Core Persistence) is COMPLETED** - treated as frozen infrastructure
+- Documents dependencies and parallelization strategy for remaining tasks
 - Provides per-task implementation guidance
 - **Required reading before starting any task**
 
@@ -82,9 +83,11 @@ Enable **safe parallel development** of Phase 2 tasks with:
    ```bash
    ls docs/agents/phase2/agent-*_progress.md
    # Look for tasks not yet claimed or completed
+   # NOTE: P2-T1 is already COMPLETED - do not select
    ```
 
-3. **Claim Task**
+3. **Claim Task (P2-T2 through P2-T8 only)**
+   - **DO NOT** create progress files for P2-T1 (already complete)
    - Create progress file: `agent-<your-id>_P2-<task-id>_progress.md`
    - Use template from `AGENT_PROTOCOL_PHASE2.md`
    - Set status to `Planned`
@@ -134,16 +137,21 @@ docs/agents/phase2/
 
 Agents must adhere to their task's **Primary Write Scope**:
 
-| Task   | Write Scope                    |
-|--------|--------------------------------|
-| P2-T1  | `:core:persistence/`           |
-| P2-T2  | `:pipeline:xtream/`            |
-| P2-T3  | `:pipeline:telegram/`          |
-| P2-T4  | `:pipeline:io/`                |
-| P2-T5  | `:pipeline:audiobook/`         |
-| P2-T6  | `:playback:domain/`            |
-| P2-T7  | Test directories only          |
-| P2-T8  | None (validation only)         |
+| Task   | Status | Write Scope                    |
+|--------|--------|--------------------------------|
+| P2-T1  | ✅ COMPLETED | `:core:persistence/` (frozen) |
+| P2-T2  | Available | `:pipeline:xtream/`            |
+| P2-T3  | Available | `:pipeline:telegram/`          |
+| P2-T4  | Available | `:pipeline:io/`                |
+| P2-T5  | Available | `:pipeline:audiobook/`         |
+| P2-T6  | Available | `:playback:domain/`            |
+| P2-T7  | Available | Test directories only          |
+| P2-T8  | Available | None (validation only)         |
+
+**⚠️ IMPORTANT:**
+- **P2-T1 is COMPLETED** and `:core:persistence/` is frozen infrastructure
+- Agents MUST NOT write to `:core:persistence/` except through explicit maintenance tasks
+- All remaining tasks treat P2-T1 as a read-only dependency
 
 **Enforcement:**
 - Agents MUST NOT write to modules outside their scope
@@ -155,7 +163,8 @@ Agents must adhere to their task's **Primary Write Scope**:
 ### Why This System Works
 
 1. **Module-Level Isolation**
-   - Each Wave 1 task owns a different module
+   - Wave 0: P2-T1 is complete and serves as shared foundation
+   - Wave 1: Each remaining task (P2-T2 to P2-T5) owns a different module
    - No two agents write to the same module simultaneously
    - Zero file-level conflicts
 
@@ -165,8 +174,10 @@ Agents must adhere to their task's **Primary Write Scope**:
    - Prevents duplicate work
 
 3. **Sequential Waves**
-   - Wave 2 (P2-T6) waits for Wave 1 completion
-   - Wave 3 (P2-T7, P2-T8) waits for Wave 2 completion
+   - Wave 0: P2-T1 is COMPLETED (frozen infrastructure)
+   - Wave 1: P2-T2 to P2-T5 run in parallel
+   - Wave 2: P2-T6 waits for Wave 1 completion
+   - Wave 3: P2-T7, P2-T8 wait for Wave 2 completion
    - Dependencies enforced by protocol
 
 ### If Conflicts Occur Anyway
