@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.repository.stub
 
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
+import com.fishit.player.pipeline.xtream.model.XtreamSearchResult
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
 import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 import com.fishit.player.pipeline.xtream.repository.XtreamCatalogRepository
@@ -44,7 +45,7 @@ class StubXtreamCatalogRepository : XtreamCatalogRepository {
     override fun search(
         query: String,
         limit: Int,
-    ): Flow<List<Any>> = flowOf(emptyList())
+    ): Flow<List<XtreamSearchResult>> = flowOf(emptyList())
 
     override suspend fun refreshCatalog(): Result<Unit> = Result.success(Unit)
 }

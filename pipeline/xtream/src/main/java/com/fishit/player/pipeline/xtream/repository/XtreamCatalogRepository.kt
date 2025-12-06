@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.repository
 
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
+import com.fishit.player.pipeline.xtream.model.XtreamSearchResult
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
 import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 import kotlinx.coroutines.flow.Flow
@@ -80,7 +81,7 @@ interface XtreamCatalogRepository {
     fun search(
         query: String,
         limit: Int = 50,
-    ): Flow<List<Any>>
+    ): Flow<List<XtreamSearchResult>>
 
     /**
      * Refreshes the catalog from the remote source.
