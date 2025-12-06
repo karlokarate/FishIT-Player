@@ -33,6 +33,41 @@ Successfully implemented the `:pipeline:io` module stub as specified in Phase 2 
 
 ---
 
+## Media Normalization & TMDB Contract Compliance
+
+**IMPORTANT:** All future IO pipeline work MUST comply with the centralized media normalization and TMDB resolution contract.
+
+### Key Requirements:
+
+1. **IO will provide RawMediaMetadata mapping:**
+   - In a future phase, IO will expose `IoMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
+   - The mapping must pass through raw filenames and paths unchanged.
+
+2. **IO does NOT perform title cleaning:**
+   - Raw filenames/paths from the filesystem are passed through as-is to `RawMediaMetadata.originalTitle`.
+   - No scene-style parsing, no technical tag stripping in the IO pipeline.
+   - All title cleaning and normalization are handled centrally by `:core:metadata-normalizer`.
+
+3. **NO normalization or TMDB logic in `:pipeline:io`:**
+   - Do NOT implement title cleaning, heuristics, or TMDB searches within the IO pipeline.
+   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`.
+
+4. **Filesystem/SAF/SMB integration belongs in infra/app modules:**
+   - Platform-specific components (ContentResolver, SAF, SMB clients) should be implemented in `:infra:*` or app-level modules.
+   - The `:pipeline:io` module focuses on IO-specific domain logic and repository interfaces only.
+
+5. **Reference documentation:**
+   - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview.
+   - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities.
+
+**Compliance ensures:**
+- Cross-pipeline resume tracking
+- Unified detail screens
+- Version selection across pipelines
+- Predictable TMDB-first identity
+
+---
+
 ## Deliverables
 
 ### Source Files (7 files)
@@ -123,6 +158,11 @@ git ls-files | grep "/build/" | wc -l
    - Support user-specified root directories
    - Cache directory listings for performance
 
+4. **toRawMediaMetadata() Implementation**
+   - Extract filename as `originalTitle` (no cleaning)
+   - Pass through file path and size
+   - Let `:core:metadata-normalizer` handle all title parsing and TMDB resolution
+
 #### Dependencies:
 - Java File API (built-in)
 - Android MediaMetadataRetriever (for metadata)
@@ -136,12 +176,12 @@ git ls-files | grep "/build/" | wc -l
 
 #### Tasks:
 1. **SAF Source Implementation**
-   - Integrate Android ContentResolver
+   - Integrate Android ContentResolver in `:infra:storage` or app-level modules
    - Support content:// URIs from SAF document picker
    - Handle document tree browsing
 
 2. **SAF DataSource for ExoPlayer**
-   - Create `SafDataSource` extending Media3 DataSource
+   - Create `SafDataSource` extending Media3 DataSource in `:infra:playback` or `:player:internal`
    - Handle content:// scheme in `InternalPlaybackSourceResolver`
    - Support streaming from SAF URIs
 
@@ -151,7 +191,7 @@ git ls-files | grep "/build/" | wc -l
    - Remember user-selected directories
 
 #### Dependencies:
-- Android ContentResolver
+- Android ContentResolver (implement in infra/app modules, NOT in `:pipeline:io`)
 - DocumentFile APIs
 - Media3 DataSource APIs
 
@@ -164,12 +204,12 @@ git ls-files | grep "/build/" | wc -l
 
 #### Tasks:
 1. **SMB Client Integration**
-   - Integrate smbj library or equivalent
+   - Integrate smbj library or equivalent in `:infra:network` module
    - Support SMB 2/3 protocols
    - Handle authentication (username/password, guest)
 
 2. **SMB DataSource for ExoPlayer**
-   - Create `SmbDataSource` extending Media3 DataSource
+   - Create `SmbDataSource` extending Media3 DataSource in `:infra:playback` or `:player:internal`
    - Handle smb:// scheme
    - Optimize buffering for network streams
 
@@ -179,7 +219,7 @@ git ls-files | grep "/build/" | wc -l
    - Network discovery (optional)
 
 #### Dependencies:
-- smbj or similar SMB client library
+- smbj or similar SMB client library (integrate in infra module)
 - `:core:persistence` for credential storage
 
 ---
@@ -201,7 +241,7 @@ git ls-files | grep "/build/" | wc -l
    - Recently played tracking (via `:core:persistence`)
 
 3. **Search & Filtering**
-   - Full-text search on filenames
+   - Full-text search on filenames (raw, no normalization)
    - Filter by codec, resolution, duration
    - Sort by various criteria
 
@@ -249,7 +289,7 @@ git ls-files | grep "/build/" | wc -l
    - Real implementation needs Media3 DataSource
 
 ### By Design (Not Issues)
-- Platform-agnostic core (Android specifics will be isolated in implementations)
+- Platform-agnostic core (Android specifics will be isolated in infra/app implementations)
 - Pure Kotlin tests (no Robolectric or instrumented tests needed for interfaces)
 
 ---
@@ -282,16 +322,19 @@ git ls-files | grep "/build/" | wc -l
 1. **Start with local file scanning** - Most straightforward, no permissions complexity
 2. **Use existing Android APIs** - Avoid heavy external libraries initially
 3. **Test with real devices** - File access behavior varies by Android version
+4. **Implement toRawMediaMetadata()** - Expose raw filenames to centralizer without cleaning
 
 ### For Phase 4 (SAF)
 1. **SAF is complex** - Allocate sufficient time for testing edge cases
 2. **Android 11+ changes** - MANAGE_EXTERNAL_STORAGE impacts design
 3. **User education** - SAF permissions are confusing for users, provide clear UI
+4. **Keep in infra modules** - ContentResolver integration belongs in `:infra:storage`, not `:pipeline:io`
 
 ### For Phase 5 (SMB)
 1. **Evaluate SMB libraries** - smbj vs. jcifs vs. others
 2. **Network reliability** - Handle disconnections gracefully
 3. **Security** - Use secure credential storage, consider SMB 3 encryption
+4. **Module placement** - SMB client and DataSource belong in `:infra:network` and `:infra:playback`
 
 ---
 

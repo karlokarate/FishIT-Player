@@ -127,6 +127,7 @@ This implementation strictly follows the v2 architecture specifications:
 3. **Flow-Based APIs** - Reactive data streams using Kotlin Flow
 4. **PlaybackContext Integration** - Helper extensions enable integration with internal player
 5. **Constructor Injection** - No Hilt modules, allowing flexible wiring in later phases
+6. **Media Normalization Contract** - Future work will include `XtreamMediaItem.toRawMediaMetadata()` implementation; all normalization handled by `:core:metadata-normalizer` (see `FOLLOWUP_P2-T2_by-xtream-agent.md`)
 
 ---
 

@@ -112,6 +112,11 @@ Implement the `:pipeline:io` module stub with:
 - No Android UI framework usage
 - Pure Kotlin domain logic
 
+### Media Normalization Contract ✅
+- Future work will include `IoMediaItem.toRawMediaMetadata()` implementation
+- IO pipeline does NOT clean titles or perform normalization
+- All normalization handled by `:core:metadata-normalizer` (see `FOLLOWUP_P2-T4_by-io-agent.md`)
+
 ---
 
 ## Key Decisions

@@ -13,6 +13,36 @@ The Phase 2 stub implementation of the Xtream pipeline is now complete. This doc
 
 ---
 
+## Media Normalization & TMDB Contract Compliance
+
+**IMPORTANT:** All future Xtream pipeline work MUST comply with the centralized media normalization and TMDB resolution contract.
+
+### Key Requirements:
+
+1. **Xtream will provide RawMediaMetadata mapping:**
+   - In a future phase, Xtream will expose `XtreamMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
+   - The mapping must pass through raw titles, years, and external IDs (e.g., TMDB IDs from Xtream panels) without modification.
+
+2. **NO normalization or TMDB logic in `:pipeline:xtream`:**
+   - Do NOT implement title cleaning, heuristics, or TMDB searches within the Xtream pipeline.
+   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`.
+
+3. **DataSource-related work belongs in player/infra modules:**
+   - Components like `DelegatingDataSourceFactory`, `RarDataSource`, and similar playback infrastructure belong in `:player:internal` or `:infra:*` modules.
+   - The `:pipeline:xtream` module focuses on Xtream-specific domain logic, repository interfaces, and API clients only.
+
+4. **Reference documentation:**
+   - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview.
+   - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities.
+
+**Compliance ensures:**
+- Cross-pipeline resume tracking
+- Unified detail screens
+- Version selection across pipelines
+- Predictable TMDB-first identity
+
+---
+
 ## Phase 3: Production Implementation
 
 ### Priority 1: Core Xtream Integration
@@ -129,11 +159,17 @@ The Phase 2 stub implementation of the Xtream pipeline is now complete. This doc
 **Estimated Effort:** Medium  
 **Dependencies:** Task 3.3
 
+**IMPORTANT:** This task belongs in `:player:internal` or `:infra:*` modules, NOT in `:pipeline:xtream`.
+
 **Deliverables:**
-- Port `DelegatingDataSourceFactory` from v1 to route URLs by scheme
-- Port `RarDataSource` for RAR archive support (if needed)
+- Port `DelegatingDataSourceFactory` from v1 to `:player:internal` or `:infra:playback` to route URLs by scheme
+- Port `RarDataSource` for RAR archive support (if needed) to appropriate infra module
 - Integrate with internal player's `InternalPlaybackSourceResolver`
 - Test with different Xtream stream formats
+
+**Rationale:**
+- DataSource implementations are player/infrastructure concerns, not pipeline domain logic.
+- `:pipeline:xtream` should only provide domain models, repositories, and API clients.
 
 **Reference:**
 - v1: `app/src/main/java/com/chris/m3usuite/player/datasource/`

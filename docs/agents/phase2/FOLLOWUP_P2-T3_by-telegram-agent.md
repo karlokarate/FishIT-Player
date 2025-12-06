@@ -127,6 +127,41 @@ A  docs/agents/phase2/FOLLOWUP_P2-T3_by-telegram-agent.md
 
 ## Integration Notes for Phase 2 Continuation
 
+### Media Normalization & TMDB Contract Compliance
+
+**IMPORTANT:** All future Telegram pipeline work MUST comply with the centralized media normalization and TMDB resolution contract.
+
+#### Key Requirements:
+
+1. **Telegram will provide RawMediaMetadata mapping:**
+   - In a future phase, Telegram will expose `TelegramMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
+   - The mapping must pass through raw titles without modification.
+
+2. **extractTitle() does NOT clean technical tags:**
+   - The existing `extractTitle()` function in `TelegramMappers.kt` only selects the best source field (title > episodeTitle > caption > fileName).
+   - It does NOT strip resolution tags, codec info, or scene-style naming patterns.
+   - All title cleaning and normalization are handled centrally by `:core:metadata-normalizer`.
+
+3. **NO normalization or TMDB logic in `:pipeline:telegram`:**
+   - Do NOT implement title cleaning, heuristics, or TMDB searches within the Telegram pipeline.
+   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`.
+
+4. **TDLib is purely for Telegram data access:**
+   - TDLib integration focuses on message sync, file downloads, and chat browsing.
+   - Canonical identity and cross-pipeline unification are handled by the shared normalizer layer.
+
+5. **Reference documentation:**
+   - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview.
+   - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities.
+
+**Compliance ensures:**
+- Cross-pipeline resume tracking
+- Unified detail screens
+- Version selection across pipelines
+- Predictable TMDB-first identity
+
+---
+
 ### Ready for Next Phase (P2-T4)
 The stub implementation provides:
 1. **Complete interface contracts** - Ready for real implementations
