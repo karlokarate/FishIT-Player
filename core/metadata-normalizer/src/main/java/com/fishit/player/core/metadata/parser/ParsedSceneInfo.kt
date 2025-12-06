@@ -23,7 +23,7 @@ data class ParsedSceneInfo(
     val episode: Int? = null,
     val quality: QualityInfo? = null,
     val edition: EditionInfo? = null,
-    val extraTags: List<String> = emptyList()
+    val extraTags: List<String> = emptyList(),
 )
 
 /**
@@ -42,7 +42,7 @@ data class QualityInfo(
     val codec: String? = null,
     val audio: String? = null,
     val hdr: String? = null,
-    val group: String? = null
+    val group: String? = null,
 )
 
 /**
@@ -67,11 +67,19 @@ data class EditionInfo(
     val imax: Boolean = false,
     val remastered: Boolean = false,
     val proper: Boolean = false,
-    val repack: Boolean = false
+    val repack: Boolean = false,
 ) {
     /**
      * Returns true if any edition flag is set.
      */
-    fun hasAnyFlag(): Boolean = extended || directors || unrated || theatrical ||
-            threeD || imax || remastered || proper || repack
+    fun hasAnyFlag(): Boolean =
+        extended ||
+            directors ||
+            unrated ||
+            theatrical ||
+            threeD ||
+            imax ||
+            remastered ||
+            proper ||
+            repack
 }

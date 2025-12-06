@@ -592,7 +592,86 @@ fun toRawMediaMetadata(): RawMediaMetadata {
 
 ---
 
-## 10. Changelog
+## 10. Usage Examples
+
+### 10.1 Basic Usage
+
+```kotlin
+// Create parser
+val parser = RegexSceneNameParser()
+
+// Parse a movie filename
+val movieInfo = parser.parse("Die Maske - 1994.mp4")
+println("Title: ${movieInfo.title}")        // "Die Maske"
+println("Year: ${movieInfo.year}")          // 1994
+println("Is Episode: ${movieInfo.isEpisode}") // false
+
+// Parse a series filename
+val seriesInfo = parser.parse("Breaking Bad - S05 E16 - Felina.mp4")
+println("Title: ${seriesInfo.title}")       // "Breaking Bad Felina"
+println("Season: ${seriesInfo.season}")     // 5
+println("Episode: ${seriesInfo.episode}")   // 16
+println("Is Episode: ${seriesInfo.isEpisode}") // true
+
+// Parse with quality tags
+val qualityInfo = parser.parse("Movie Title 2020 1080p WEB-DL x264-GROUP.mp4")
+println("Title: ${qualityInfo.title}")                  // "Movie Title"
+println("Year: ${qualityInfo.year}")                    // 2020
+println("Resolution: ${qualityInfo.quality?.resolution}") // "1080p"
+println("Source: ${qualityInfo.quality?.source}")       // "WEB-DL"
+println("Codec: ${qualityInfo.quality?.codec}")         // "x264"
+println("Group: ${qualityInfo.quality?.group}")         // "GROUP"
+```
+
+### 10.2 Integration with Normalizer
+
+```kotlin
+// Create normalizer with parser
+val normalizer = RegexMediaMetadataNormalizer()
+
+// Normalize raw metadata from Telegram
+val raw = RawMediaMetadata(
+    originalTitle = "Champagne Problems - 2025 HDR DD+5.1.mp4",
+    year = null,  // Will be extracted from filename
+    season = null,
+    episode = null,
+    durationMinutes = 115,
+    externalIds = ExternalIds(),
+    sourceType = SourceType.TELEGRAM,
+    sourceLabel = "Telegram: Movies",
+    sourceId = "tg://message/123"
+)
+
+val normalized = normalizer.normalize(raw)
+println("Canonical Title: ${normalized.canonicalTitle}") // "Champagne Problems"
+println("Year: ${normalized.year}")                      // 2025
+```
+
+### 10.3 Handling Xtream API with Explicit Metadata
+
+```kotlin
+// Xtream provides structured metadata - normalizer prefers explicit values
+val xtreamRaw = RawMediaMetadata(
+    originalTitle = "Movie Title - 2019.mp4",  // Has year in filename
+    year = 2020,  // But API says it's actually 2020
+    season = null,
+    episode = null,
+    durationMinutes = 120,
+    externalIds = ExternalIds(tmdbId = "12345"),
+    sourceType = SourceType.XTREAM,
+    sourceLabel = "Xtream: Provider A",
+    sourceId = "xtream://vod/999"
+)
+
+val normalized = normalizer.normalize(xtreamRaw)
+// Uses explicit year from API, not parsed year
+println("Year: ${normalized.year}")  // 2020 (not 2019)
+println("TMDB ID: ${normalized.tmdbId}")  // "12345" (preserved)
+```
+
+---
+
+## 11. Changelog
 
 - **2025-12-06**: Initial design document created
   - Research phase completed (external parsers + real data analysis)

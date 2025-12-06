@@ -17,8 +17,8 @@ import com.fishit.player.core.model.RawMediaMetadata
  * This is intentional – full normalization logic comes in later phases.
  */
 class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
-    override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata {
-        return NormalizedMediaMetadata(
+    override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata =
+        NormalizedMediaMetadata(
             canonicalTitle = raw.originalTitle, // No cleaning - pass through
             year = raw.year,
             season = raw.season,
@@ -26,7 +26,6 @@ class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
             tmdbId = raw.externalIds.tmdbId, // Pass through if provided by source
             externalIds = raw.externalIds,
         )
-    }
 }
 
 /**
@@ -44,9 +43,8 @@ class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
  * @property sceneParser Parser for extracting metadata from filenames
  */
 class RegexMediaMetadataNormalizer(
-    private val sceneParser: SceneNameParser = RegexSceneNameParser()
+    private val sceneParser: SceneNameParser = RegexSceneNameParser(),
 ) : MediaMetadataNormalizer {
-
     override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata {
         // Parse filename to extract metadata
         val parsed = sceneParser.parse(raw.originalTitle)

@@ -15,43 +15,48 @@ package com.fishit.player.core.metadata.parser
  * Deterministic: Same input always produces same output.
  */
 class RegexSceneNameParser : SceneNameParser {
-
     companion object {
         // File extensions to remove
-        private val FILE_EXTENSIONS = Regex(
-            "\\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|m2ts|ts|vob|iso|3gp)$",
-            RegexOption.IGNORE_CASE
-        )
+        private val FILE_EXTENSIONS =
+            Regex(
+                "\\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|m2ts|ts|vob|iso|3gp)$",
+                RegexOption.IGNORE_CASE,
+            )
 
         // Resolution patterns
-        private val RESOLUTION_REGEX = Regex(
-            "\\b(480p|576p|720p|1080p|2160p|4320p|8K|4K|UHD)\\b",
-            RegexOption.IGNORE_CASE
-        )
+        private val RESOLUTION_REGEX =
+            Regex(
+                "\\b(480p|576p|720p|1080p|2160p|4320p|8K|4K|UHD)\\b",
+                RegexOption.IGNORE_CASE,
+            )
 
         // Video codec patterns
-        private val CODEC_REGEX = Regex(
-            "\\b(x264|x265|H\\.?264|H\\.?265|HEVC|AV1|XviD|DivX|VC-?1)\\b",
-            RegexOption.IGNORE_CASE
-        )
+        private val CODEC_REGEX =
+            Regex(
+                "\\b(x264|x265|H\\.?264|H\\.?265|HEVC|AV1|XviD|DivX|VC-?1)\\b",
+                RegexOption.IGNORE_CASE,
+            )
 
         // Source patterns
-        private val SOURCE_REGEX = Regex(
-            "\\b(WEB-?DL|WEB-?Rip|WEBRip|BluRay|Blu-Ray|BDRip|DVDRip|DVD-Rip|HDTV|PDTV|DVDSCR|BRRip)\\b",
-            RegexOption.IGNORE_CASE
-        )
+        private val SOURCE_REGEX =
+            Regex(
+                "\\b(WEB-?DL|WEB-?Rip|WEBRip|BluRay|Blu-Ray|BDRip|DVDRip|DVD-Rip|HDTV|PDTV|DVDSCR|BRRip)\\b",
+                RegexOption.IGNORE_CASE,
+            )
 
         // Audio codec patterns
-        private val AUDIO_REGEX = Regex(
-            "\\b(AAC(?:\\d\\.\\d)?|AC3|DD(?:\\+)?(?:\\d\\.\\d)?|DTS(?:-HD)?|Dolby\\s+Atmos|TrueHD|FLAC|Opus)\\b",
-            RegexOption.IGNORE_CASE
-        )
+        private val AUDIO_REGEX =
+            Regex(
+                "\\b(AAC(?:\\d\\.\\d)?|AC3|DD(?:\\+)?(?:\\d\\.\\d)?|DTS(?:-HD)?|Dolby\\s+Atmos|TrueHD|FLAC|Opus)\\b",
+                RegexOption.IGNORE_CASE,
+            )
 
         // HDR patterns
-        private val HDR_REGEX = Regex(
-            "\\b(HDR10\\+|HDR10|HDR|Dolby\\s+Vision|DV)\\b",
-            RegexOption.IGNORE_CASE
-        )
+        private val HDR_REGEX =
+            Regex(
+                "\\b(HDR10\\+|HDR10|HDR|Dolby\\s+Vision|DV)\\b",
+                RegexOption.IGNORE_CASE,
+            )
 
         // Edition flags
         private val EXTENDED_REGEX = Regex("\\b(Extended|EXTENDED)\\b")
@@ -65,36 +70,43 @@ class RegexSceneNameParser : SceneNameParser {
         private val REPACK_REGEX = Regex("\\b(REPACK)\\b", RegexOption.IGNORE_CASE)
 
         // Season/Episode patterns (multiple formats)
-        private val SEASON_EPISODE_REGEX = Regex(
-            "[Ss](\\d{1,2})[\\s_]?[Ee](\\d{1,3})"
-        )
-        private val SEASON_EPISODE_COMPACT = Regex(
-            "(\\d{1,2})x(\\d{1,3})",
-            RegexOption.IGNORE_CASE
-        )
+        private val SEASON_EPISODE_REGEX =
+            Regex(
+                "[Ss](\\d{1,2})[\\s_]?[Ee](\\d{1,3})",
+            )
+        private val SEASON_EPISODE_COMPACT =
+            Regex(
+                "(\\d{1,2})x(\\d{1,3})",
+                RegexOption.IGNORE_CASE,
+            )
 
         // Year patterns (with boundaries to avoid false positives)
-        private val YEAR_REGEX = Regex(
-            "\\b(19\\d{2}|20\\d{2})\\b"
-        )
+        private val YEAR_REGEX =
+            Regex(
+                "\\b(19\\d{2}|20\\d{2})\\b",
+            )
 
         // Year in parentheses (higher confidence)
-        private val YEAR_PAREN_REGEX = Regex(
-            "\\(?(19\\d{2}|20\\d{2})\\)?"
-        )
+        private val YEAR_PAREN_REGEX =
+            Regex(
+                "\\(?(19\\d{2}|20\\d{2})\\)?",
+            )
 
         // Release group patterns
-        private val GROUP_HYPHEN_REGEX = Regex(
-            "-\\s*([A-Za-z0-9]+)\\s*$"
-        )
-        private val GROUP_BRACKET_REGEX = Regex(
-            "\\[([A-Za-z0-9]+)]"
-        )
+        private val GROUP_HYPHEN_REGEX =
+            Regex(
+                "-\\s*([A-Za-z0-9]+)\\s*$",
+            )
+        private val GROUP_BRACKET_REGEX =
+            Regex(
+                "\\[([A-Za-z0-9]+)]",
+            )
 
         // Channel/user tags (Telegram specific)
-        private val CHANNEL_TAG_REGEX = Regex(
-            "@[A-Za-z0-9_]+"
-        )
+        private val CHANNEL_TAG_REGEX =
+            Regex(
+                "@[A-Za-z0-9_]+",
+            )
     }
 
     override fun parse(filename: String): ParsedSceneInfo {
@@ -213,10 +225,11 @@ class RegexSceneNameParser : SceneNameParser {
             val yearMatches = YEAR_REGEX.findAll(workingString).toList()
             if (yearMatches.isNotEmpty()) {
                 // Prefer year in last 40% of string (more likely release year)
-                val lastYearMatch = yearMatches.lastOrNull { match ->
-                    val position = match.range.first.toDouble() / workingString.length
-                    position > 0.6
-                } ?: yearMatches.last()
+                val lastYearMatch =
+                    yearMatches.lastOrNull { match ->
+                        val position = match.range.first.toDouble() / workingString.length
+                        position > 0.6
+                    } ?: yearMatches.last()
 
                 val yearCandidate = lastYearMatch.value.toIntOrNull()
                 if (yearCandidate != null && yearCandidate in 1900..2099) {
@@ -241,11 +254,12 @@ class RegexSceneNameParser : SceneNameParser {
         }
 
         // Step 8: Clean up title - replace common separators with spaces
-        var title = workingString
-            .replace(Regex("[._]"), " ")  // Dots and underscores to spaces
-            .replace(Regex("\\s+"), " ")  // Collapse multiple spaces
-            .replace(Regex("^[-\\s]+|[-\\s]+$"), "")  // Trim hyphens and spaces
-            .trim()
+        var title =
+            workingString
+                .replace(Regex("[._]"), " ") // Dots and underscores to spaces
+                .replace(Regex("\\s+"), " ") // Collapse multiple spaces
+                .replace(Regex("^[-\\s]+|[-\\s]+$"), "") // Trim hyphens and spaces
+                .trim()
 
         // If title is empty, use original filename without extension
         if (title.isBlank()) {
@@ -253,32 +267,43 @@ class RegexSceneNameParser : SceneNameParser {
         }
 
         // Build edition info
-        val edition = if (editionFlags.isNotEmpty()) {
-            EditionInfo(
-                extended = editionFlags["extended"] ?: false,
-                directors = editionFlags["directors"] ?: false,
-                unrated = editionFlags["unrated"] ?: false,
-                theatrical = editionFlags["theatrical"] ?: false,
-                threeD = editionFlags["threeD"] ?: false,
-                imax = editionFlags["imax"] ?: false,
-                remastered = editionFlags["remastered"] ?: false,
-                proper = editionFlags["proper"] ?: false,
-                repack = editionFlags["repack"] ?: false
-            )
-        } else null
+        val edition =
+            if (editionFlags.isNotEmpty()) {
+                EditionInfo(
+                    extended = editionFlags["extended"] ?: false,
+                    directors = editionFlags["directors"] ?: false,
+                    unrated = editionFlags["unrated"] ?: false,
+                    theatrical = editionFlags["theatrical"] ?: false,
+                    threeD = editionFlags["threeD"] ?: false,
+                    imax = editionFlags["imax"] ?: false,
+                    remastered = editionFlags["remastered"] ?: false,
+                    proper = editionFlags["proper"] ?: false,
+                    repack = editionFlags["repack"] ?: false,
+                )
+            } else {
+                null
+            }
 
         // Build quality info
-        val quality = if (resolution != null || source != null || codec != null ||
-            audio != null || hdr != null || group != null) {
-            QualityInfo(
-                resolution = resolution,
-                source = source,
-                codec = codec,
-                audio = audio,
-                hdr = hdr,
-                group = group
-            )
-        } else null
+        val quality =
+            if (resolution != null ||
+                source != null ||
+                codec != null ||
+                audio != null ||
+                hdr != null ||
+                group != null
+            ) {
+                QualityInfo(
+                    resolution = resolution,
+                    source = source,
+                    codec = codec,
+                    audio = audio,
+                    hdr = hdr,
+                    group = group,
+                )
+            } else {
+                null
+            }
 
         return ParsedSceneInfo(
             title = title,
@@ -288,7 +313,7 @@ class RegexSceneNameParser : SceneNameParser {
             episode = episode,
             quality = quality,
             edition = edition,
-            extraTags = emptyList()
+            extraTags = emptyList(),
         )
     }
 }
