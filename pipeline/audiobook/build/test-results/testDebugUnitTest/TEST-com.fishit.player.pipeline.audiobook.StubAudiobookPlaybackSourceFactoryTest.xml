@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.fishit.player.pipeline.audiobook.StubAudiobookPlaybackSourceFactoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-12-06T10:49:26.743Z" hostname="runnervmoqczp" time="0.195">
-  <properties/>
-  <testcase name="createPlaybackContext returns null" classname="com.fishit.player.pipeline.audiobook.StubAudiobookPlaybackSourceFactoryTest" time="0.183"/>
-  <testcase name="createPlaybackContext with start chapter returns null" classname="com.fishit.player.pipeline.audiobook.StubAudiobookPlaybackSourceFactoryTest" time="0.004"/>
-  <testcase name="createPlaybackContextForChapter returns null" classname="com.fishit.player.pipeline.audiobook.StubAudiobookPlaybackSourceFactoryTest" time="0.007"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -1,7 +1,0 @@
-com.fishit.player.core.model-pngs-0 /home/runner/work/FishIT-Player/FishIT-Player/core/model/build/generated/res/pngs/release
-com.fishit.player.core.model-resValues-1 /home/runner/work/FishIT-Player/FishIT-Player/core/model/build/generated/res/resValues/release
-com.fishit.player.core.model-mergeReleaseResources-2 /home/runner/work/FishIT-Player/FishIT-Player/core/model/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
-com.fishit.player.core.model-mergeReleaseResources-3 /home/runner/work/FishIT-Player/FishIT-Player/core/model/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
-com.fishit.player.core.model-release-4 /home/runner/work/FishIT-Player/FishIT-Player/core/model/build/intermediates/merged_res/release/mergeReleaseResources
-com.fishit.player.core.model-main-5 /home/runner/work/FishIT-Player/FishIT-Player/core/model/src/main/res
-com.fishit.player.core.model-release-6 /home/runner/work/FishIT-Player/FishIT-Player/core/model/src/release/res
