@@ -155,9 +155,11 @@ The persistence layer is now ready for Phase 2 Task 2 (Pipeline Integration). Th
 3. **Phase 3:** Metadata Normalization Core
    - Implement `:core:metadata-normalizer` module
    - Full implementation of normalization and TMDB resolution (see `MEDIA_NORMALIZATION_AND_UNIFICATION.md`)
-4. **Expand ContentRepository:** Add actual content queries when pipelines are integrated
-5. **Add more repository tests:** Test screen time and content repositories
-6. **Canonical Media Storage:** Implement `CanonicalMediaRepository` for cross-pipeline identity (Phase 4+)
+4. **Phase 4+:** Canonical Media Storage
+   - Implement `CanonicalMediaRepository` for cross-pipeline identity
+5. **Future Enhancements:**
+   - Expand `ContentRepository` with actual content queries when pipelines are integrated
+   - Add more repository tests (screen time and content repositories)
 
 ### Files Changed
 

@@ -89,11 +89,11 @@ All v2 modules live in the existing repo but are separate from the legacy app.
 
 - `:core:metadata-normalizer`
   - **Cross-pipeline media normalization and identity** (see `MEDIA_NORMALIZATION_AND_UNIFICATION.md` and `MEDIA_NORMALIZATION_CONTRACT.md`)
-  - Types:
+  - Types (defined in `:core:model`):
     - `RawMediaMetadata` - Raw metadata from pipelines
     - `NormalizedMediaMetadata` - Normalized, canonical metadata
     - `CanonicalMediaId` - Global media identity
-  - Services:
+  - Services (defined in `:core:metadata-normalizer`):
     - `MediaMetadataNormalizer` - Title cleaning, scene-naming parser, structural extraction
     - `TmdbMetadataResolver` - TMDB search and enrichment via `tmdb-java`
   - Processing flow:
