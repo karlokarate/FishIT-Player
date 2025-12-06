@@ -10,32 +10,39 @@ import com.fishit.player.core.model.PlaybackType
 /**
  * Converts an IoMediaItem to RawMediaMetadata for centralized normalization.
  *
- * This function provides the raw, unprocessed metadata from the IO pipeline to the
- * `:core:metadata-normalizer` module. Following the Media Normalization Contract:
+ * **IMPORTANT: Temporary Placeholder Implementation**
+ *
+ * This function currently returns a `Map<String, Any?>` as a structural placeholder for
+ * the future `RawMediaMetadata` data class that will be defined in `:core:model`.
+ *
+ * - The Map keys exactly mirror the `RawMediaMetadata` fields defined in
+ *   `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` (Section 1.1).
+ * - Once `RawMediaMetadata` is added to `:core:model`, this function signature will change
+ *   from `Map<String, Any?>` to `RawMediaMetadata`.
+ * - **DO NOT** define a local `RawMediaMetadata` type in `:pipeline:io`. The shared type
+ *   must come from `:core:model` to ensure consistency across all pipelines.
  *
  * **Contract Compliance:**
- * - `originalTitle` is set to the raw filename WITHOUT any cleaning, stripping, or normalization
- * - NO title normalization, scene-style parsing, or tag stripping occurs here
- * - Duration is forwarded if available (converted from milliseconds to minutes)
- * - All other metadata is forwarded as-is from the source
  *
- * **Important:**
- * - IO pipeline does NOT perform:
- *   - Title cleaning
- *   - Edition tag removal
- *   - Resolution tag stripping
- *   - TMDB lookups
- *   - Heuristic parsing
- * - All normalization is centralized in `:core:metadata-normalizer`
+ * This function strictly follows the Media Normalization Contract:
+ * - `originalTitle`: Raw filename WITHOUT any cleaning, stripping, or normalization
+ * - `year`, `season`, `episode`: Always null (extraction is the normalizer's responsibility)
+ * - `durationMinutes`: Forwarded if available (converted from ms to minutes)
+ * - `externalIds`: Empty map (filesystem does not provide TMDB/IMDB IDs)
+ * - `sourceType`, `sourceLabel`, `sourceId`: IO-specific identification
  *
- * **Future Implementation:**
- * This function currently returns a structural map representing RawMediaMetadata.
- * Once the actual `RawMediaMetadata` type is added to `:core:model`, this will be
- * updated to return that type instead.
+ * **IO Pipeline Does NOT:**
+ * - Clean titles or strip tags (scene-style names, resolution, release groups preserved)
+ * - Extract year/season/episode from filenames
+ * - Perform TMDB/IMDB lookups
+ * - Apply any heuristics or normalization logic
  *
- * @return Map representing RawMediaMetadata structure per MEDIA_NORMALIZATION_CONTRACT.md
+ * All normalization, matching, and identity resolution is handled centrally by
+ * `:core:metadata-normalizer` and TMDB resolver services.
  *
- * @see <a href="file:///v2-docs/MEDIA_NORMALIZATION_CONTRACT.md">MEDIA_NORMALIZATION_CONTRACT.md</a>
+ * @return Map with keys matching RawMediaMetadata structure from MEDIA_NORMALIZATION_CONTRACT.md
+ *
+ * @see <a href="file:///v2-docs/MEDIA_NORMALIZATION_CONTRACT.md">MEDIA_NORMALIZATION_CONTRACT.md Section 1.1</a>
  * @see <a href="file:///v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md">MEDIA_NORMALIZATION_AND_UNIFICATION.md</a>
  */
 fun IoMediaItem.toRawMediaMetadata(): Map<String, Any?> =
@@ -49,11 +56,12 @@ fun IoMediaItem.toRawMediaMetadata(): Map<String, Any?> =
         "episode" to null,
         // Duration forwarded if available, converted from ms to minutes
         "durationMinutes" to durationMs?.let { (it / 60_000).toInt() },
-        // No external IDs available from raw filesystem
+        // externalIds: Empty map as placeholder for ExternalIds type
+        // (filesystem does not provide TMDB/IMDB IDs)
         "externalIds" to emptyMap<String, String>(),
         // Source identification
         "sourceType" to "IO",
-        "sourceLabel" to "Local File: ${fileName}",
+        "sourceLabel" to "Local File: $fileName",
         "sourceId" to toContentId(),
     )
 

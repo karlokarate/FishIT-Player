@@ -108,14 +108,20 @@ class RealIoContentRepository(
 
 ## 2. Raw Metadata Forwarding to Normalizer
 
-### 2.1 Current State
+### 2.1 Current State (Phase 3 Prep Complete)
 
-**✅ Completed in Phase 3 Prep:**
-- `IoMediaItem.toRawMediaMetadata()` stub function exists
-- Returns `Map<String, Any?>` representing RawMediaMetadata structure
-- Forwards raw filename as `originalTitle` WITHOUT cleaning
-- Does NOT perform year/season/episode extraction
-- Does NOT perform title normalization or TMDB lookup
+**✅ Placeholder Implementation Complete:**
+- `IoMediaItem.toRawMediaMetadata()` returns `Map<String, Any?>` as a **temporary structural placeholder**
+- Map keys exactly match `RawMediaMetadata` structure from MEDIA_NORMALIZATION_CONTRACT.md Section 1.1
+- **This is NOT a local type definition** - IO must not define RawMediaMetadata locally
+- Forwards raw filename as `originalTitle` WITHOUT any cleaning, stripping, or normalization
+- Leaves `year`, `season`, `episode` as null (extraction is the normalizer's responsibility)
+- Provides empty map for `externalIds` (filesystem does not provide TMDB/IMDB IDs)
+
+**Migration Path:**
+- Once `RawMediaMetadata` type is added to `:core:model`, the function will be updated to return that shared type
+- The Map placeholder enables testing and validation before the shared type exists
+- Seamless migration: just change return type and construct the data class instead of Map
 
 ### 2.2 Integration with Metadata Normalizer
 
@@ -515,8 +521,9 @@ class UnifiedDetailViewModel(
 ### 7.1 What IO Pipeline MUST NOT Do
 
 **Never in `:pipeline:io`:**
+- ❌ Define a local `RawMediaMetadata` type (must use shared type from `:core:model`)
 - ❌ Title cleaning (scene-style parsing, tag stripping)
-- ❌ Year/season/episode extraction
+- ❌ Year/season/episode extraction or any heuristics
 - ❌ TMDB lookups or external database searches
 - ❌ Canonical identity computation
 - ❌ Cross-pipeline matching or grouping
@@ -529,9 +536,10 @@ class UnifiedDetailViewModel(
 **IO pipeline responsibilities:**
 - ✅ Define domain models (`IoMediaItem`, `IoSource`)
 - ✅ Define repository interfaces (`IoContentRepository`)
-- ✅ Provide raw metadata via `toRawMediaMetadata()`
+- ✅ Provide raw metadata via `toRawMediaMetadata()` (placeholder Map now, shared type later)
 - ✅ Provide playback context via `toPlaybackContext()`
-- ✅ Provide source references via `toMediaSourceRef()`
+- ✅ Provide source references via `toMediaSourceRef()` (future)
+- ✅ Remain pure Kotlin domain logic, testable on any JVM
 
 ### 7.2 Module Boundaries
 
@@ -549,29 +557,43 @@ class UnifiedDetailViewModel(
 ### 7.3 Latest Documentation Wins
 
 **Always check timestamps:**
-- `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` (2025-12-06 16:56)
-- `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` (2025-12-06 16:56)
+- `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` (latest: 2025-12-06 17:27)
+- `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` (latest: 2025-12-06 17:27)
 
 **If conflicts arise:**
 - Latest-timestamp document is authoritative
-- MEDIA_NORMALIZATION_CONTRACT.md defines formal rules
+- MEDIA_NORMALIZATION_CONTRACT.md defines formal rules (Section 1.1 for RawMediaMetadata)
 - MEDIA_NORMALIZATION_AND_UNIFICATION.md provides context and overview
+- All pipeline work must reference these documents, not duplicate their content
 
 ---
 
 ## 8. Summary
 
 **Phase 3 Prep (Completed 2025-12-06):**
-- ✅ `IoMediaItem.toRawMediaMetadata()` stub function implemented
-- ✅ Contract-compliant (no cleaning, no normalization, no TMDB)
+- ✅ `IoMediaItem.toRawMediaMetadata()` placeholder function implemented
+- ✅ Returns `Map<String, Any?>` matching RawMediaMetadata structure from contract
+- ✅ Documented as temporary placeholder until shared type added to `:core:model`
+- ✅ Contract-compliant (no cleaning, no normalization, no TMDB, no heuristics)
 - ✅ Tests added (6 new tests, 35 total)
-- ✅ Documentation updated with explicit boundaries
+- ✅ Documentation updated with explicit boundaries and delegation rules
 
 **Next Steps (Phase 3+):**
-1. Implement `:core:metadata-normalizer` (centralizes title cleaning)
-2. Implement `TmdbMetadataResolver` (TMDB integration)
-3. Implement canonical storage (`:core:persistence` enhancements)
-4. Implement filesystem access (`:infra:storage` with Local/SAF/SMB)
+1. Implement `:core:metadata-normalizer` (centralizes all title cleaning and heuristics)
+2. Add `RawMediaMetadata` shared type to `:core:model`
+3. Update IO placeholder to return shared type (seamless migration)
+4. Implement `TmdbMetadataResolver` (centralized TMDB integration)
+5. Implement canonical storage (`:core:persistence` enhancements)
+6. Implement filesystem access (`:infra:storage` with Local/SAF/SMB)
+7. Implement cross-pipeline indexing service
+8. Implement unified detail screens
+
+**IO pipeline is ready:**
+- Contract-compliant interface and stub implementations exist
+- Raw metadata placeholder mapping is implemented and tested
+- Platform-specific work will happen in `:infra:*` modules as planned
+- Ready for seamless migration to shared `RawMediaMetadata` type once available
+- No changes needed to `:pipeline:io` core logic until Phase 5+
 5. Implement cross-pipeline indexing service
 6. Implement unified detail screens
 

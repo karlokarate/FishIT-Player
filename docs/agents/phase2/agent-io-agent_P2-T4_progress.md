@@ -155,9 +155,13 @@ Implement the `:pipeline:io` module stub with:
 - Pure Kotlin domain logic
 
 ### Media Normalization Contract ✅
-- Future work will include `IoMediaItem.toRawMediaMetadata()` implementation
-- IO pipeline does NOT clean titles or perform normalization
-- All normalization handled by `:core:metadata-normalizer` (see `FOLLOWUP_P2-T4_by-io-agent.md`)
+- **Placeholder mapping implemented:** `IoMediaItem.toRawMediaMetadata()` returns `Map<String, Any?>` as structural placeholder
+- Map keys exactly match `RawMediaMetadata` structure from MEDIA_NORMALIZATION_CONTRACT.md Section 1.1
+- **Temporary implementation:** Will be updated to return shared `RawMediaMetadata` type once added to `:core:model`
+- **IO does NOT define RawMediaMetadata locally** - shared type comes from `:core:model` to ensure cross-pipeline consistency
+- IO pipeline does NOT clean titles, extract metadata, or perform normalization
+- All normalization delegated to `:core:metadata-normalizer` (see `FOLLOWUP_P2-T4_by-io-agent.md`)
+- Ready for seamless migration to shared type in Phase 3
 
 ---
 
@@ -188,13 +192,16 @@ Using sealed class for extensibility:
 
 ### What Was Added
 
-**1. toRawMediaMetadata() Stub Function:**
-- Added contract-compliant function to IoMediaItemExtensions.kt
-- Returns Map<String, Any?> representing RawMediaMetadata structure
+**1. toRawMediaMetadata() Placeholder Function:**
+- Added contract-compliant placeholder to IoMediaItemExtensions.kt
+- Returns `Map<String, Any?>` as **temporary structural placeholder** for future `RawMediaMetadata` type
+- Map keys exactly match `RawMediaMetadata` fields from MEDIA_NORMALIZATION_CONTRACT.md Section 1.1
+- **Documented as placeholder** - will be updated to return shared type once added to `:core:model`
+- **IO does NOT define RawMediaMetadata locally** - shared type ensures cross-pipeline consistency
 - Forwards raw filename as originalTitle WITHOUT any cleaning
 - Converts duration from milliseconds to minutes
 - Leaves year/season/episode as null (reserved for normalizer)
-- Includes comprehensive KDoc explaining contract compliance
+- Includes comprehensive KDoc explaining contract compliance and placeholder nature
 
 **2. Test Coverage:**
 - Added 6 new unit tests for toRawMediaMetadata()
@@ -216,12 +223,16 @@ Using sealed class for extensibility:
 ### Contract Compliance Verification
 
 **✅ Confirmed:**
-- IO does NOT perform title cleaning
-- IO does NOT extract year/season/episode
-- IO does NOT perform TMDB lookups
+- **Placeholder nature documented:** Map structure is temporary until shared type exists
+- **No local type definition:** IO does NOT define RawMediaMetadata locally (must use `:core:model`)
+- IO does NOT perform title cleaning or any normalization
+- IO does NOT extract year/season/episode or apply heuristics
+- IO does NOT perform TMDB lookups or external database searches
 - IO does NOT decide canonical identity
 - Raw filenames are forwarded unchanged (including scene-style tags)
-- Platform-specific code belongs in infra/app modules
+- All normalization delegated to `:core:metadata-normalizer`
+- All TMDB resolution delegated to centralized resolver
+- Platform-specific code (filesystem/SAF/SMB) belongs in infra/app modules
 
 **✅ Tests Verify:**
 - Scene-style filename "X-Men.2000.1080p.BluRay.x264-GROUP.mkv" is NOT cleaned
