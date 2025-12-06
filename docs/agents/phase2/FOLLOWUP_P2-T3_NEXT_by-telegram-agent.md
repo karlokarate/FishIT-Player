@@ -2,12 +2,26 @@
 
 **Agent:** telegram-agent  
 **Created:** 2025-12-06  
+**Updated:** 2025-12-06 (Export analysis completed)  
 **Status:** PENDING  
 **Dependencies:** Phase 3 (Metadata Normalization Core)
 
 ## Overview
 
 This document outlines the future work needed to complete the Telegram pipeline integration after Phase 3 (Metadata Normalization Core) is implemented.
+
+**Phase 2 Work Completed:**
+1. ✅ Initial STUB implementation (41 tests)
+2. ✅ Real Telegram export analysis (398 JSON files)
+3. ✅ DTO enhancements based on real data (52 tests total)
+4. ✅ Contract compliance verification (MEDIA_NORMALIZATION_CONTRACT.md)
+
+**Export Analysis Findings Summary:**
+- 46 video messages with scene-style filenames
+- 16 document messages (RARs, ZIPs with episode info)
+- 43 photo messages with multiple size variants
+- 87 text metadata messages with rich fields (year, FSK, TMDB URL, genres)
+- All DTOs now reflect actual Telegram export structures
 
 **CRITICAL: Type Definitions:**
 - `RawMediaMetadata` - Defined in `:core:model` (NOT in `:pipeline:telegram`)
@@ -32,9 +46,11 @@ The Telegram pipeline NEVER defines these types or implements normalization beha
 
 ## 1. Implement Real toRawMediaMetadata()
 
-**Task:** Convert the structure-only documentation in `TelegramRawMetadataContract.kt` into a working extension function.
+**Task:** Convert the structure-only documentation in `TelegramRawMetadataContract.kt` into a working extension function, incorporating findings from real export analysis.
 
 **CRITICAL:** This implementation provides RAW data ONLY. NO cleaning, NO normalization, NO TMDB lookups.
+
+**Export Analysis Insight:** Filenames like `Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv` must be preserved exactly.
 
 **Location:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramRawMetadataExtensions.kt` (new file)
 
@@ -45,7 +61,7 @@ The Telegram pipeline NEVER defines these types or implements normalization beha
    // pipeline/telegram/build.gradle.kts
    dependencies {
        implementation(project(":core:model"))  // For RawMediaMetadata types
-       implementation(project(":core:metadata-normalizer"))  // For normalization behavior (optional)
+       // NO dependency on :core:metadata-normalizer (separation of concerns)
    }
    ```
 
@@ -55,10 +71,21 @@ The Telegram pipeline NEVER defines these types or implements normalization beha
    import com.fishit.player.core.model.ExternalIds
    import com.fishit.player.core.model.SourceType
    
+   /**
+    * Converts TelegramMediaItem to RawMediaMetadata for central normalization.
+    *
+    * Based on analysis of 398 real Telegram export JSONs.
+    * Provides RAW data ONLY - NO cleaning, normalization, or TMDB lookups.
+    *
+    * CONTRACT COMPLIANCE:
+    * - Scene-style filenames preserved exactly (e.g., "Movie.2020.1080p.BluRay.x264-GROUP.mkv")
+    * - Archive filenames with episode info preserved (e.g., "Series - Episode 422-427.rar")
+    * - Captions and titles passed through as-is
+    * - All normalization delegated to :core:metadata-normalizer
+    */
    fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
        return RawMediaMetadata(
-           // CRITICAL: extractRawTitle() does simple field priority ONLY
-           // NO cleaning, NO tag stripping, NO normalization
+           // Simple field priority - NO cleaning, NO tag stripping
            originalTitle = extractRawTitle(),
            year = this.year,
            season = this.seasonNumber,
@@ -73,8 +100,11 @@ The Telegram pipeline NEVER defines these types or implements normalization beha
    
    private fun TelegramMediaItem.extractRawTitle(): String {
        // Priority: title > episodeTitle > caption > fileName
-       // CRITICAL: NO cleaning of technical tags - pass raw source data AS-IS
-       // Example: "Movie.2020.1080p.BluRay.x264-GROUP" -> returned unchanged
+       // CRITICAL: NO cleaning - pass raw source data AS-IS
+       // Real examples that stay unchanged:
+       //   "Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv" -> AS-IS
+       //   "Die Schlümpfe - Staffel 9 - Episode 422-427.rar" -> AS-IS
+       //   "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012" -> AS-IS
        return when {
            title.isNotBlank() -> title
            episodeTitle?.isNotBlank() == true -> episodeTitle!!
@@ -85,18 +115,48 @@ The Telegram pipeline NEVER defines these types or implements normalization beha
    }
    
    private fun TelegramMediaItem.buildTelegramSourceLabel(): String {
-       // Example: "Telegram Chat: Movies HD"
+       // Example: "Telegram Chat: 🎬 Filme von 2011 bis 2019 🎥"
        // Will be enriched with actual chat names when real TDLib integration exists
        return "Telegram Chat: $chatId"
    }
    ```
 
-3. **Add unit tests:**
-   - Test title extraction priority (title > episodeTitle > caption > fileName)
-   - Test that NO cleaning happens (tags preserved)
-   - Test year, season, episode, duration mapping
-   - Test sourceId generation (remoteId vs fallback)
-   - Test that externalIds is always empty for Telegram
+3. **Add unit tests (based on real export patterns):**
+   ```kotlin
+   class TelegramRawMetadataExtensionsTest {
+       @Test
+       fun `preserves scene-style filename exactly`() {
+           val item = TelegramMediaItem(
+               fileName = "Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv",
+               // ... other fields
+           )
+           val raw = item.toRawMediaMetadata()
+           assertEquals("Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv", raw.originalTitle)
+       }
+       
+       @Test
+       fun `preserves RAR filename with episode info`() {
+           val item = TelegramMediaItem(
+               fileName = "Die Schlümpfe - Staffel 9 - Episode 422-427.rar",
+           )
+           val raw = item.toRawMediaMetadata()
+           assertEquals("Die Schlümpfe - Staffel 9 - Episode 422-427.rar", raw.originalTitle)
+       }
+       
+       @Test
+       fun `uses caption when available before fileName`() {
+           val item = TelegramMediaItem(
+               caption = "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012",
+               fileName = "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012.mp4",
+           )
+           val raw = item.toRawMediaMetadata()
+           // Caption takes priority
+           assertEquals("Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012", raw.originalTitle)
+       }
+       
+       // ... more tests for title priority, year, season, episode, duration, sourceId
+   }
+   ```
 
 **Contract Requirements:**
 - ✅ NO title cleaning (preserve resolution tags, codec info, release groups)
@@ -107,7 +167,104 @@ The Telegram pipeline NEVER defines these types or implements normalization beha
 
 ---
 
-## 2. Real TDLib Integration
+## 2. Handle TelegramMetadataMessage Integration
+
+**Task:** Implement repository methods and mapping for text-only metadata messages.
+
+**Background:** Export analysis revealed 87 text metadata messages with rich structured data (year, FSK, TMDB URL, genres).
+
+**New DTO:** `TelegramMetadataMessage` (already created in Phase 2)
+
+### 2.1 Repository Interface Extension
+
+Add to `TelegramContentRepository`:
+```kotlin
+interface TelegramContentRepository {
+    // Existing methods...
+    
+    /**
+     * Get metadata message associated with a media item.
+     * Many Telegram chats pair media messages with preceding text metadata messages.
+     * 
+     * @param chatId Chat ID containing the media
+     * @param messageId Message ID of the media item
+     * @return Metadata message if found, null otherwise
+     */
+    suspend fun getMetadataForMedia(chatId: Long, messageId: Long): TelegramMetadataMessage?
+    
+    /**
+     * Get all metadata messages in a chat.
+     * Useful for browsing available content before downloading.
+     * 
+     * @param chatId Chat ID to query
+     * @return List of all metadata messages in the chat
+     */
+    suspend fun getMetadataMessages(chatId: Long): List<TelegramMetadataMessage>
+}
+```
+
+### 2.2 Mapping Logic
+
+The metadata messages complement media messages but are NOT converted to `RawMediaMetadata` directly (they have no playable content).
+
+**Usage Pattern:**
+```kotlin
+// Typical flow in repository:
+val mediaItem = getMediaItem(chatId, messageId)
+val metadata = getMetadataForMedia(chatId, messageId)
+
+// Combine for enriched RawMediaMetadata:
+val raw = mediaItem.toRawMediaMetadata().let { raw ->
+    metadata?.let { meta ->
+        raw.copy(
+            year = meta.year ?: raw.year,
+            // Note: DO NOT parse tmdbUrl to ID here (contract violation)
+            // The normalizer will handle TMDB URL extraction
+        )
+    } ?: raw
+}
+```
+
+**CRITICAL:** TelegramMetadataMessage fields are RAW:
+- `tmdbUrl` stays as string (NOT parsed to ID)
+- `genres` stays as list of raw strings
+- All normalization delegated to `:core:metadata-normalizer`
+
+### 2.3 ObxTelegramMessage Extension
+
+Since metadata messages don't have playable content, they may need a separate entity or flags:
+
+**Option A:** Add flag to existing entity:
+```kotlin
+// In ObxTelegramMessage:
+var isMetadataOnly: Boolean = false
+var metadataTitle: String? = null
+var metadataOriginalTitle: String? = null
+// ... other metadata fields
+```
+
+**Option B:** Create separate entity (cleaner separation):
+```kotlin
+@Entity
+data class ObxTelegramMetadata(
+    @Id var id: Long = 0,
+    var chatId: Long = 0,
+    var messageId: Long = 0,
+    var linkedMediaMessageId: Long? = null, // Link to media message if paired
+    var title: String? = null,
+    var originalTitle: String? = null,
+    var year: Int? = null,
+    var lengthMinutes: Int? = null,
+    var fsk: Int? = null,
+    // ... all metadata fields from TelegramMetadataMessage
+)
+```
+
+**Recommendation:** Option B (separate entity) for cleaner separation and easier querying.
+
+---
+
+## 3. Real TDLib Integration
 
 **Task:** Implement real TDLib-based repositories to replace stubs.
 

@@ -1,13 +1,16 @@
 # Phase 2 Task 3 (P2-T3) Follow-up Notes
 
 **Agent:** telegram-agent  
-**Task:** Telegram Pipeline STUB Implementation  
+**Task:** Telegram Pipeline STUB Implementation + Real Export Analysis  
 **Completed:** 2025-12-06  
-**Status:** ✅ COMPLETE
+**Updated:** 2025-12-06 (Export analysis and DTO refinement)  
+**Status:** ✅ COMPLETE + ✅ EXPORT ANALYSIS COMPLETE
 
 ## Summary
 
-Successfully implemented Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB according to specifications:
+Successfully implemented Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB according to specifications, then extended with comprehensive analysis of real Telegram export data:
+
+**Original Phase 2 STUB:**
 - Defined domain models (TelegramMediaItem, TelegramChatSummary, TelegramMessageStub)
 - Defined repository interfaces (TelegramContentRepository, TelegramPlaybackSourceFactory)
 - Implemented stub repositories returning deterministic empty/mock data
@@ -15,9 +18,123 @@ Successfully implemented Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB according
 - Implemented comprehensive unit tests (41 tests, 100% passing)
 - NO real TDLib integration (stub only)
 
+**Export Analysis Enhancement (2025-12-06):**
+- Analyzed 398 real Telegram export JSON files from `docs/telegram/exports/exports/`
+- Identified all message patterns: video (46), document (16), audio, photo (43), text metadata (87)
+- Created TelegramMediaType enum for message classification
+- Created TelegramPhotoSize DTO for multi-size photo handling
+- Created TelegramMetadataMessage DTO for text-only metadata messages
+- Updated TelegramMediaItem with new fields from real exports
+- Enhanced TelegramMappers with media type inference
+- Added 11 new tests (52 total tests, 100% passing)
+- Full compliance with MEDIA_NORMALIZATION_CONTRACT.md
+
+## Real Telegram Export Analysis Findings
+
+### Analyzed Files
+- **Total exports analyzed:** 398 JSON files
+- **Location:** `docs/telegram/exports/exports/*.json`
+- **Coverage:** Movie chats, series chats, music collections, photo galleries
+
+### Message Type Distribution
+
+**1. Video Messages (46 instances):**
+- Standard video files with `content.video`
+- Documents with video mime types (e.g., `video/x-matroska`, `video/mp4`)
+- **Key fields found:**
+  - `fileName`: Scene-style names (e.g., `Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv`)
+  - `mimeType`: `video/mp4`, `video/x-matroska`
+  - `duration`: in seconds (e.g., 5387)
+  - `width`, `height`: dimensions (e.g., 1920x1080, 856x480)
+  - `file.remote.id`: Telegram file ID
+  - `file.remote.uniqueId`: Stable unique ID
+  - `thumbnail`: Nested with own file, width, height
+  - `caption`: Human-readable title (often different from fileName)
+  - `supportsStreaming`: boolean
+
+**2. Document Messages (16 instances):**
+- RAR archives for multi-episode content
+- ZIP archives for collections
+- Documents with video content
+- **Example filenames:**
+  - `Die Schlümpfe - Staffel 9 - Episode 422-427.rar`
+  - `SpongeBob Schwammkopf Folge 49.zip`
+  - `Emilia.Perez.2024.SPANISH.1080p.WEBRip.YouthTrendx.mkv` (as document)
+- **Key fields:**
+  - `fileName`: Preserved exactly with episode ranges
+  - `mimeType`: `application/vnd.rar`, `application/x-zip-compressed`, `application/octet-stream`
+  - `document.remote.id`, `document.remote.uniqueId`
+  - Optional `minithumbnail` for video documents
+
+**3. Photo Messages (43 instances with multiple sizes):**
+- Posters, covers, promotional images
+- Multiple size variants per message
+- **Size examples from real data:**
+  - Original: 1707x2560 (926KB)
+  - Medium: 853x1280 (255KB)
+  - Small: 533x800 (107KB)
+  - Thumbnail: 213x320 (23KB)
+- **Key fields per size:**
+  - `width`, `height`
+  - `file.remote.id`, `file.remote.uniqueId`
+  - `size`: in bytes
+
+**4. Text Metadata Messages (87 instances):**
+- Pure metadata without playable media
+- Rich structured data parsed from bot messages
+- **Common fields found:**
+  - `year`: Release/air year (e.g., 2012)
+  - `lengthMinutes`: Runtime (e.g., 89)
+  - `fsk`: Age rating (e.g., 12, 16)
+  - `originalTitle`: Original language title
+  - `productionCountry`: Production location
+  - `director`: Director name(s)
+  - `genres`: Array of genre strings (e.g., ["TV-Film", "Action", "Science Fiction"])
+  - `tmdbUrl`: Raw TMDB URL string (e.g., "https://www.themoviedb.org/movie/149722-...")
+  - `tmdbRating`: Rating value (e.g., 4.456)
+  - `text`: Full raw text content
+- **Example from exports:**
+  ```
+  Titel: Das Ende der Welt - Die 12 Prophezeiungen der Maya
+  Originaltitel: The 12 Disasters of Christmas
+  Erscheinungsjahr: 2012
+  Länge: 89 Minuten
+  Produktionsland: Kanada
+  FSK: 12
+  Regie: Steven R. Monroe
+  TMDbRating: 4.456
+  Genres: TV-Film, Action, Science Fiction
+  ```
+
+### Critical Observations
+
+1. **Scene-style filenames are prevalent and must be preserved:**
+   - Examples: `Movie.2020.1080p.BluRay.x264-GROUP.mkv`
+   - NO cleaning or normalization in pipeline (delegated to `:core:metadata-normalizer`)
+
+2. **Captions differ from filenames:**
+   - Caption: "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012"
+   - FileName: "Das Ende der Welt - Die 12 Prophezeiungen der Maya - 2012.mp4"
+   - Both must be preserved as raw values
+
+3. **Multi-level nested structures:**
+   - Thumbnails: `content.thumbnail.file.remote.id`
+   - Documents: `content.document.remote.id`
+   - Photos: `content.photo.sizes[0].file.remote.id`
+
+4. **TMDB URLs are raw strings:**
+   - NOT parsed to IDs in pipeline
+   - Extraction delegated to `:core:metadata-normalizer`
+
+5. **Episode information in filenames:**
+   - `Die Schlümpfe - Staffel 9 - Episode 422-427.rar`
+   - NOT parsed in pipeline (raw preservation)
+
 ## Deliverables
 
 ### 1. Domain Models (`pipeline/telegram/model/`)
+
+**Original Phase 2:**
 - **TelegramMediaItem.kt** - Complete domain model with all fields from ObxTelegramMessage
   - Includes helper methods: `toTelegramUri()`, `isPlayable()`
   - Supports series metadata (season, episode, title)
@@ -29,6 +146,30 @@ Successfully implemented Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB according
 - **TelegramMessageStub.kt** - Stub message representation
   - Companion object with `empty()` and `withMedia()` factory methods
   - Used for testing without TDLib
+
+**Export Analysis Enhancements:**
+- **TelegramMediaType.kt** (NEW) - Message classification enum
+  - Values: VIDEO, DOCUMENT, AUDIO, PHOTO, TEXT_METADATA, OTHER
+  - Based on analysis of 398 real export files
+  
+- **TelegramPhotoSize.kt** (NEW) - Photo size variant DTO
+  - Fields: width, height, fileId, fileUniqueId, sizeBytes
+  - Represents one size variant from photo message
+  - Found in exports: 4 sizes per photo (original, medium, small, thumbnail)
+
+- **TelegramMetadataMessage.kt** (NEW) - Text-only metadata DTO
+  - Fields: title, originalTitle, year, lengthMinutes, fsk, productionCountry, director
+  - genres (list), tmdbUrl, tmdbRating, rawText
+  - Represents rich metadata messages (87 found in exports)
+  - **CONTRACT COMPLIANT:** All fields are RAW (no normalization, no TMDB ID parsing)
+
+- **TelegramMediaItem.kt** (ENHANCED) - Updated with new fields
+  - Added: `mediaType: TelegramMediaType`
+  - Added: `mediaAlbumId: Long?`
+  - Added: `fileUniqueId: String?`
+  - Added: `thumbnailFileId`, `thumbnailUniqueId`, `thumbnailWidth`, `thumbnailHeight`
+  - Added: `photoSizes: List<TelegramPhotoSize>`
+  - Enhanced documentation with real export examples
 
 ### 2. Repository Interfaces (`pipeline/telegram/repository/`)
 - **TelegramContentRepository.kt** - Content access interface
@@ -53,13 +194,37 @@ Successfully implemented Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB according
   - Validates playability
 
 ### 4. Mapping Utilities (`pipeline/telegram/mapper/`)
+
+**Original Phase 2:**
 - **TelegramMappers.kt**
   - `fromObxTelegramMessage()` - ObxTelegramMessage → TelegramMediaItem
   - `toObxTelegramMessage()` - TelegramMediaItem → ObxTelegramMessage
   - `extractTitle()` - Smart title extraction with fallbacks
   - Preserves all fields during round-trip conversion
 
+**Export Analysis Enhancements:**
+- **TelegramMappers.kt** (ENHANCED)
+  - Added `inferMediaType()` helper function
+    - Classifies messages based on mime type and field presence
+    - VIDEO: video mime types or has duration+dimensions
+    - DOCUMENT: archive mime types (zip, rar, octet-stream)
+    - AUDIO: audio mime types
+    - PHOTO: image mime types or dimensions without duration
+    - OTHER: fallback
+  - Enhanced `fromObxTelegramMessage()` to populate new fields
+    - Sets mediaType via inferMediaType()
+    - Populates fileUniqueId
+    - Prepares thumbnail metadata fields (TDLib integration in future)
+    - Initializes photoSizes list (TDLib integration in future)
+  - Enhanced `extractTitle()` documentation
+    - Clarifies RAW extraction (NO cleaning)
+    - Examples of scene-style names preserved
+    - Contract compliance notes added
+  - **CONTRACT COMPLIANT:** NO title cleaning, normalization, or heuristics
+
 ### 5. Unit Tests (`pipeline/telegram/test/`)
+
+**Original Phase 2:**
 - **StubTelegramContentRepositoryTest.kt** (16 tests)
   - Empty stub behavior validation
   - Mock data stub validation
@@ -78,13 +243,38 @@ Successfully implemented Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB according
   - Round-trip conversion
   - Null handling
 
+**Export Analysis Enhancements:**
+- **TelegramDtosTest.kt** (NEW - 11 tests)
+  - TelegramPhotoSize validation
+  - TelegramMetadataMessage field tests
+  - TelegramMetadataMessage with optional fields
+  - TelegramMediaType enum values
+  - TelegramMediaItem with photoSizes list
+  - Scene-style fileName preservation
+  - Thumbnail metadata fields
+
+- **TelegramMappersTest.kt** (ENHANCED - 7 new tests)
+  - Media type inference: VIDEO from mime type
+  - Media type inference: VIDEO from dimensions+duration
+  - Media type inference: DOCUMENT from archive mime types (rar, zip)
+  - Media type inference: AUDIO from audio mime types
+  - Media type inference: PHOTO from image mime types
+  - Media type inference: PHOTO from dimensions without duration
+  - Scene-style filename preservation (no cleaning)
+  - RAR filename with episode info preservation
+  - Thumbnail field mapping
+
 ## Test Results
 
+**Original Phase 2:** 41 tests, 100% passing
+**After Export Analysis:** 52 tests, 100% passing
+
 ```
-41 tests completed, 0 failed
+52 tests completed, 0 failed
 - StubTelegramContentRepositoryTest: 16/16 ✅
 - StubTelegramPlaybackSourceFactoryTest: 15/15 ✅
-- TelegramMappersTest: 10/10 ✅
+- TelegramMappersTest: 18/18 ✅ (10 original + 8 new)
+- TelegramDtosTest: 11/11 ✅ (NEW)
 ```
 
 ## Build Verification
