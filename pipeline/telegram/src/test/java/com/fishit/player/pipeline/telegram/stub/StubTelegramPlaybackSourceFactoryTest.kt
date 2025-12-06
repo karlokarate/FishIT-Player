@@ -28,11 +28,12 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with telegram uri`() {
-        val mediaItem = createTestMediaItem(
-            fileId = 12345,
-            chatId = 67890,
-            messageId = 99999,
-        )
+        val mediaItem =
+            createTestMediaItem(
+                fileId = 12345,
+                chatId = 67890,
+                messageId = 99999,
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -41,10 +42,11 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with title and subtitle`() {
-        val mediaItem = createTestMediaItem(
-            title = "Test Movie",
-            fileName = "test.mp4",
-        )
+        val mediaItem =
+            createTestMediaItem(
+                title = "Test Movie",
+                fileName = "test.mp4",
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -54,13 +56,14 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with series subtitle`() {
-        val mediaItem = createTestMediaItem(
-            title = "Test Series",
-            isSeries = true,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeTitle = "The Big Episode",
-        )
+        val mediaItem =
+            createTestMediaItem(
+                title = "Test Series",
+                isSeries = true,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeTitle = "The Big Episode",
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -70,12 +73,13 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with series subtitle without episode title`() {
-        val mediaItem = createTestMediaItem(
-            title = "Test Series",
-            isSeries = true,
-            seasonNumber = 2,
-            episodeNumber = 3,
-        )
+        val mediaItem =
+            createTestMediaItem(
+                title = "Test Series",
+                isSeries = true,
+                seasonNumber = 2,
+                episodeNumber = 3,
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -84,10 +88,11 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with content id`() {
-        val mediaItem = createTestMediaItem(
-            chatId = 12345,
-            messageId = 67890,
-        )
+        val mediaItem =
+            createTestMediaItem(
+                chatId = 12345,
+                messageId = 67890,
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -96,12 +101,13 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with series metadata`() {
-        val mediaItem = createTestMediaItem(
-            isSeries = true,
-            seriesName = "My Series",
-            seasonNumber = 1,
-            episodeNumber = 2,
-        )
+        val mediaItem =
+            createTestMediaItem(
+                isSeries = true,
+                seriesName = "My Series",
+                seasonNumber = 1,
+                episodeNumber = 2,
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -114,11 +120,12 @@ class StubTelegramPlaybackSourceFactoryTest {
     fun `creates playback context with profile and start position`() {
         val mediaItem = createTestMediaItem()
 
-        val context = factory.createPlaybackContext(
-            mediaItem = mediaItem,
-            profileId = 42,
-            startPositionMs = 120000,
-        )
+        val context =
+            factory.createPlaybackContext(
+                mediaItem = mediaItem,
+                profileId = 42,
+                startPositionMs = 120000,
+            )
 
         assertEquals(42L, context.profileId)
         assertEquals(120000L, context.startPositionMs)
@@ -126,14 +133,15 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with extras`() {
-        val mediaItem = createTestMediaItem(
-            fileId = 123,
-            remoteId = "remote123",
-            mimeType = "video/mp4",
-            sizeBytes = 1024000,
-            durationSecs = 300,
-            supportsStreaming = true,
-        )
+        val mediaItem =
+            createTestMediaItem(
+                fileId = 123,
+                remoteId = "remote123",
+                mimeType = "video/mp4",
+                sizeBytes = 1024000,
+                durationSecs = 300,
+                supportsStreaming = true,
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -147,10 +155,11 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `canPlay returns true for playable media`() {
-        val mediaItem = createTestMediaItem(
-            fileId = 123,
-            mimeType = "video/mp4",
-        )
+        val mediaItem =
+            createTestMediaItem(
+                fileId = 123,
+                mimeType = "video/mp4",
+            )
 
         val result = factory.canPlay(mediaItem)
 
@@ -159,10 +168,11 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `canPlay returns false for media without file id`() {
-        val mediaItem = createTestMediaItem(
-            fileId = null,
-            mimeType = "video/mp4",
-        )
+        val mediaItem =
+            createTestMediaItem(
+                fileId = null,
+                mimeType = "video/mp4",
+            )
 
         val result = factory.canPlay(mediaItem)
 
@@ -171,10 +181,11 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `canPlay returns false for media without mime type`() {
-        val mediaItem = createTestMediaItem(
-            fileId = 123,
-            mimeType = null,
-        )
+        val mediaItem =
+            createTestMediaItem(
+                fileId = 123,
+                mimeType = null,
+            )
 
         val result = factory.canPlay(mediaItem)
 
@@ -183,9 +194,10 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `creates playback context with poster url`() {
-        val mediaItem = createTestMediaItem(
-            thumbnailPath = "/path/to/thumb.jpg",
-        )
+        val mediaItem =
+            createTestMediaItem(
+                thumbnailPath = "/path/to/thumb.jpg",
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -194,14 +206,15 @@ class StubTelegramPlaybackSourceFactoryTest {
 
     @Test
     fun `handles media item without optional fields`() {
-        val mediaItem = TelegramMediaItem(
-            id = 1,
-            chatId = 123,
-            messageId = 456,
-            fileId = 789,
-            title = "Minimal",
-            mimeType = "video/mp4",
-        )
+        val mediaItem =
+            TelegramMediaItem(
+                id = 1,
+                chatId = 123,
+                messageId = 456,
+                fileId = 789,
+                title = "Minimal",
+                mimeType = "video/mp4",
+            )
 
         val context = factory.createPlaybackContext(mediaItem)
 
@@ -229,8 +242,8 @@ class StubTelegramPlaybackSourceFactoryTest {
         seasonNumber: Int? = null,
         episodeNumber: Int? = null,
         episodeTitle: String? = null,
-    ): TelegramMediaItem {
-        return TelegramMediaItem(
+    ): TelegramMediaItem =
+        TelegramMediaItem(
             id = id,
             chatId = chatId,
             messageId = messageId,
@@ -249,5 +262,4 @@ class StubTelegramPlaybackSourceFactoryTest {
             episodeNumber = episodeNumber,
             episodeTitle = episodeTitle,
         )
-    }
 }

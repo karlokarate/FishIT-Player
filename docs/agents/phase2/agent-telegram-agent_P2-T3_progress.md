@@ -82,17 +82,56 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
 
 ## Completion Summary
 
-**Status:** ✅ **COMPLETE**  
+**Status:** ✅ **COMPLETE** (Updated 2025-12-06)  
 **Date:** 2025-12-06  
 **Branch:** copilot/implement-p2t3-telegram-pipeline
 
-### Deliverables
+### Phase 2 Task 3 (P2-T3) Deliverables
 - 3 domain models (TelegramMediaItem, TelegramChatSummary, TelegramMessageStub)
 - 2 repository interfaces (TelegramContentRepository, TelegramPlaybackSourceFactory)
 - 2 stub implementations returning deterministic empty/mock data
 - 1 mapper utility (TelegramMappers for ObxTelegramMessage structure)
 - 41 unit tests (100% passing)
 - 2 documentation files
+
+### Phase 3 Prep - Media Normalization Contract (P2-T3 Continuation)
+**Date:** 2025-12-06  
+**Status:** ✅ **COMPLETE**
+
+#### Deliverables:
+1. **TelegramMetadataNormalization.kt** - Structure-only implementation
+   - Documents the planned `toRawMediaMetadata()` signature
+   - Shows raw title extraction logic (NO cleaning, NO normalization)
+   - Clarifies contract compliance requirements
+   - References `:core:metadata-normalizer` as future dependency
+
+2. **Updated FOLLOWUP_P2-T3** - Enhanced normalization section
+   - Added comprehensive "Normalization & Canonical Identity Integration" section
+   - Clarified that extractTitle() MUST remain a simple field selector
+   - Documented what Telegram MUST NOT do (no cleaning, no TMDB, no heuristics)
+   - Listed contract compliance benefits
+
+3. **Documentation references:**
+   - All work complies with `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md`
+   - Structure aligns with `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
+   - Follows same pattern as Xtream (P2-T2) and IO (P2-T4) pipelines
+
+#### Contract Guarantees:
+- ✅ NO title cleaning in Telegram pipeline
+- ✅ NO normalization or heuristics
+- ✅ NO TMDB/IMDB/TVDB lookups
+- ✅ Simple field priority for title selection (title > episodeTitle > caption > fileName)
+- ✅ Raw metadata passed to centralizer as-is
+- ✅ All intelligence centralized in `:core:metadata-normalizer`
+
+#### Future Implementation Note:
+The actual `toRawMediaMetadata()` extension function will be implemented when:
+1. `:core:metadata-normalizer` module is created
+2. `RawMediaMetadata` data class is defined
+3. `SourceType.TELEGRAM` enum value exists
+4. Phase 3 metadata normalization begins
+
+The structure documented in `TelegramMetadataNormalization.kt` serves as the blueprint.
 
 ### Build Status
 - Compilation: ✅ SUCCESS

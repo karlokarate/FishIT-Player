@@ -18,8 +18,8 @@ class StubTelegramPlaybackSourceFactory : TelegramPlaybackSourceFactory {
         mediaItem: TelegramMediaItem,
         profileId: Long?,
         startPositionMs: Long,
-    ): PlaybackContext {
-        return PlaybackContext(
+    ): PlaybackContext =
+        PlaybackContext(
             type = PlaybackType.TELEGRAM,
             uri = mediaItem.toTelegramUri(),
             title = mediaItem.title,
@@ -34,15 +34,14 @@ class StubTelegramPlaybackSourceFactory : TelegramPlaybackSourceFactory {
             profileId = profileId,
             extras = buildExtras(mediaItem),
         )
-    }
 
     override fun canPlay(mediaItem: TelegramMediaItem): Boolean {
         // Check if media item has minimum required metadata for playback
         return mediaItem.fileId != null && mediaItem.mimeType != null
     }
 
-    private fun buildSubtitle(mediaItem: TelegramMediaItem): String? {
-        return when {
+    private fun buildSubtitle(mediaItem: TelegramMediaItem): String? =
+        when {
             mediaItem.isSeries && mediaItem.episodeTitle != null -> {
                 "S${mediaItem.seasonNumber ?: 0}E${mediaItem.episodeNumber ?: 0}: ${mediaItem.episodeTitle}"
             }
@@ -54,11 +53,8 @@ class StubTelegramPlaybackSourceFactory : TelegramPlaybackSourceFactory {
             }
             else -> null
         }
-    }
 
-    private fun buildContentId(mediaItem: TelegramMediaItem): String {
-        return "telegram:${mediaItem.chatId}:${mediaItem.messageId}"
-    }
+    private fun buildContentId(mediaItem: TelegramMediaItem): String = "telegram:${mediaItem.chatId}:${mediaItem.messageId}"
 
     private fun buildExtras(mediaItem: TelegramMediaItem): Map<String, String> {
         val extras = mutableMapOf<String, String>()

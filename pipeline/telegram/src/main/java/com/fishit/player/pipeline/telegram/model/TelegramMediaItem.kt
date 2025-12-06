@@ -67,18 +67,15 @@ data class TelegramMediaItem(
      *
      * STUB: Returns placeholder URI for testing.
      */
-    fun toTelegramUri(): String {
-        return if (fileId != null) {
+    fun toTelegramUri(): String =
+        if (fileId != null) {
             "tg://file/$fileId?chatId=$chatId&messageId=$messageId"
         } else {
             "tg://stub/$id?chatId=$chatId&messageId=$messageId"
         }
-    }
 
     /**
      * Checks if this media item is playable (has sufficient metadata).
      */
-    fun isPlayable(): Boolean {
-        return fileId != null && mimeType != null
-    }
+    fun isPlayable(): Boolean = fileId != null && mimeType != null
 }
