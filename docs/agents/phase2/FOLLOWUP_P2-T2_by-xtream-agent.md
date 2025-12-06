@@ -30,8 +30,9 @@ These mappings are **contract-compliant**:
 - Pass through titles exactly as provided by source
 - NO TMDB lookups or title normalization
 - Fully tested with comprehensive unit tests
+- Ready to pass through external IDs (tmdbId/imdbId) once stub models are enhanced
 
-**Note:** The `RawMediaMetadata` type is currently defined in `:pipeline:xtream` as a temporary placeholder. In Phase 3, when `:core:metadata-normalizer` is implemented, this type will move there and all pipelines will reference the centralized version.
+**Note:** The shared types (`RawMediaMetadata`, `ExternalIds`, `SourceType`) are now defined in `:core:model` as required by the contract. All pipelines reference the same centralized types. The normalization behavior will be implemented in `:core:metadata-normalizer` in Phase 3.
 
 ### Key Requirements:
 
@@ -63,12 +64,13 @@ These mappings are **contract-compliant**:
 ### Phase 3 Integration Plan:
 
 When `:core:metadata-normalizer` is implemented:
-1. Move `RawMediaMetadata`, `ExternalIds`, and `SourceType` from `:pipeline:xtream` to `:core:metadata-normalizer`
-2. Update all pipeline imports to reference centralized types
-3. Pipeline `toRawMediaMetadata()` implementations remain unchanged (contract-compliant)
-4. Central normalizer will consume raw metadata and produce `NormalizedMediaMetadata`
-5. TMDB resolver will enrich normalized metadata with external IDs
-6. Canonical media repository will store unified identity across all pipelines
+1. ✅ **COMPLETED:** `RawMediaMetadata`, `ExternalIds`, and `SourceType` now live in `:core:model` (shared across all pipelines)
+2. All pipelines now reference the centralized types from `:core:model`
+3. Pipeline `toRawMediaMetadata()` implementations remain contract-compliant
+4. When Xtream stub models are enhanced with external ID fields (tmdbId/imdbId), the extension functions will pass them through
+5. Central normalizer (Phase 3) will consume raw metadata and produce `NormalizedMediaMetadata`
+6. TMDB resolver (Phase 3) will enrich normalized metadata with external IDs
+7. Canonical media repository (Phase 3) will store unified identity across all pipelines
 
 ---
 

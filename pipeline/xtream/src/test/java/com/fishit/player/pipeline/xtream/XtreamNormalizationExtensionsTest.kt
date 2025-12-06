@@ -1,5 +1,6 @@
 package com.fishit.player.pipeline.xtream
 
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.pipeline.xtream.model.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

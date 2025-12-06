@@ -160,13 +160,13 @@ All work strictly follows:
 
 ### Deliverables (✅ Complete)
 
-#### 1. RawMediaMetadata Structure (Temporary Placeholder)
-Created in `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/RawMediaMetadata.kt`:
+#### 1. RawMediaMetadata Structure (Shared Types in :core:model)
+Created in `core/model/src/main/java/com/fishit/player/core/model/RawMediaMetadata.kt`:
 - `RawMediaMetadata` data class with contract-defined fields
 - `ExternalIds` for TMDB/IMDB/TVDB IDs
 - `SourceType` enum for pipeline identification
 
-**Note:** This is a temporary definition. In Phase 3, when `:core:metadata-normalizer` is implemented, these types will move to that module and all pipelines will reference the centralized version.
+**Note:** These types are now in `:core:model` as required by the contract. All pipelines reference the same centralized types. The normalization behavior will be implemented in `:core:metadata-normalizer` in Phase 3.
 
 #### 2. toRawMediaMetadata() Extension Functions
 Created in `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamNormalizationExtensions.kt`:
@@ -182,6 +182,7 @@ Created in `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mode
 - ✅ NO TMDB lookups
 - ✅ Stable sourceId generation
 - ✅ Properly document stub limitations (year, duration, externalIds will be populated in Phase 3)
+- ✅ Ready to pass through external IDs once Xtream stub models are enhanced
 
 #### 3. Comprehensive Unit Tests
 Created in `pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/XtreamNormalizationExtensionsTest.kt`:
@@ -195,7 +196,7 @@ Created in `pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/Xtre
 Updated `docs/agents/phase2/FOLLOWUP_P2-T2_by-xtream-agent.md`:
 - ✅ Documented that toRawMediaMetadata() is now implemented
 - ✅ Clarified contract compliance
-- ✅ Explained temporary placeholder status of RawMediaMetadata
+- ✅ Updated to reflect shared types now in :core:model (not temporary placeholder)
 - ✅ Added Phase 3 integration plan
 - ✅ Emphasized SAF/SMB/DataSource belong in infra/player modules
 - ✅ Referenced both normalization contract documents explicitly
@@ -239,11 +240,11 @@ Result: 10 tests passed, 0 failed (59s)
 ### Files Created in Phase 3 Prep
 
 #### Source Files (2 new files)
-1. `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/RawMediaMetadata.kt`
+1. `core/model/src/main/java/com/fishit/player/core/model/RawMediaMetadata.kt` (shared types)
 2. `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamNormalizationExtensions.kt`
 
-#### Test Files (1 new file)
-3. `pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/XtreamNormalizationExtensionsTest.kt`
+#### Test Files (1 modified file)
+3. `pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/XtreamNormalizationExtensionsTest.kt` (updated imports)
 
 #### Documentation (2 modified, 1 new)
 4. `docs/agents/phase2/agent-xtream-agent_P2-T2_progress.md` (updated)

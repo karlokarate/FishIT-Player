@@ -1,10 +1,10 @@
-package com.fishit.player.pipeline.xtream.model
+package com.fishit.player.core.model
 
 /**
- * Temporary placeholder for RawMediaMetadata structure.
+ * Raw media metadata from a pipeline source.
  *
- * This type is defined here temporarily for Phase 3 prep work.
- * In Phase 3, this will move to :core:metadata-normalizer module.
+ * This type is shared across all pipeline modules (Telegram, Xtream, IO, etc.)
+ * and serves as the input to the centralized metadata normalization system.
  *
  * Per MEDIA_NORMALIZATION_CONTRACT.md:
  * - Pipelines MUST provide raw metadata without normalization
