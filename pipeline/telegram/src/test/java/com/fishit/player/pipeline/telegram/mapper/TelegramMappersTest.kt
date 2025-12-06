@@ -245,11 +245,111 @@ class TelegramMappersTest {
         assertEquals("Untitled Media 67890", mediaItem.title)
     }
 
+    @Test
+    fun `preserves internal fields when existingMessage is provided`() {
+        val existingObx = createTestObxMessage(
+            id = 1,
+            chatId = 12345,
+            messageId = 67890,
+            fileId = 123,
+            fileUniqueId = "unique_file_id_123",
+            thumbFileId = 456,
+            language = "en",
+            fsk = 12,
+            posterFileId = 789,
+            posterLocalPath = "/path/to/poster.jpg",
+        )
+
+        // Create a media item from the existing message
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(existingObx)
+        
+        // Convert back with the existing message to preserve internal fields
+        val convertedObx = TelegramMappers.toObxTelegramMessage(
+            mediaItem = mediaItem,
+            existingId = 1,
+            existingMessage = existingObx,
+        )
+
+        // Verify internal fields are preserved
+        assertEquals("unique_file_id_123", convertedObx.fileUniqueId)
+        assertEquals(456, convertedObx.thumbFileId)
+        assertEquals("en", convertedObx.language)
+        assertEquals(12, convertedObx.fsk)
+        assertEquals(789, convertedObx.posterFileId)
+        assertEquals("/path/to/poster.jpg", convertedObx.posterLocalPath)
+    }
+
+    @Test
+    fun `sets internal fields to null when no existingMessage provided`() {
+        val mediaItem = createTestMediaItem(
+            chatId = 12345,
+            messageId = 67890,
+            fileId = 123,
+            title = "Test Movie",
+        )
+
+        val obxMessage = TelegramMappers.toObxTelegramMessage(mediaItem)
+
+        // Verify internal fields are null when no existing message
+        assertNull(obxMessage.fileUniqueId)
+        assertNull(obxMessage.thumbFileId)
+        assertNull(obxMessage.language)
+        assertNull(obxMessage.fsk)
+        assertNull(obxMessage.posterFileId)
+        assertNull(obxMessage.posterLocalPath)
+    }
+
+    @Test
+    fun `round trip with existingMessage preserves all fields`() {
+        val originalObx = createTestObxMessage(
+            id = 1,
+            chatId = 12345,
+            messageId = 67890,
+            fileId = 123,
+            fileUniqueId = "unique_id",
+            remoteId = "remote_123",
+            title = "Test Movie",
+            fileName = "movie.mp4",
+            mimeType = "video/mp4",
+            sizeBytes = 1024000,
+            thumbFileId = 999,
+            language = "de",
+            fsk = 16,
+            posterFileId = 888,
+            posterLocalPath = "/poster.jpg",
+        )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(originalObx)
+        val convertedObx = TelegramMappers.toObxTelegramMessage(
+            mediaItem = mediaItem,
+            existingId = 1,
+            existingMessage = originalObx,
+        )
+
+        // Verify all fields including internal ones are preserved
+        assertEquals(originalObx.id, convertedObx.id)
+        assertEquals(originalObx.chatId, convertedObx.chatId)
+        assertEquals(originalObx.messageId, convertedObx.messageId)
+        assertEquals(originalObx.fileId, convertedObx.fileId)
+        assertEquals(originalObx.fileUniqueId, convertedObx.fileUniqueId)
+        assertEquals(originalObx.remoteId, convertedObx.remoteId)
+        assertEquals(originalObx.title, convertedObx.title)
+        assertEquals(originalObx.fileName, convertedObx.fileName)
+        assertEquals(originalObx.mimeType, convertedObx.mimeType)
+        assertEquals(originalObx.sizeBytes, convertedObx.sizeBytes)
+        assertEquals(originalObx.thumbFileId, convertedObx.thumbFileId)
+        assertEquals(originalObx.language, convertedObx.language)
+        assertEquals(originalObx.fsk, convertedObx.fsk)
+        assertEquals(originalObx.posterFileId, convertedObx.posterFileId)
+        assertEquals(originalObx.posterLocalPath, convertedObx.posterLocalPath)
+    }
+
     private fun createTestObxMessage(
         id: Long = 0,
         chatId: Long = 0,
         messageId: Long = 0,
         fileId: Int? = null,
+        fileUniqueId: String? = null,
         remoteId: String? = null,
         title: String? = null,
         fileName: String? = null,
@@ -261,8 +361,13 @@ class TelegramMappersTest {
         height: Int? = null,
         supportsStreaming: Boolean? = null,
         localPath: String? = null,
+        thumbFileId: Int? = null,
         thumbLocalPath: String? = null,
         date: Long? = null,
+        language: String? = null,
+        fsk: Int? = null,
+        posterFileId: Int? = null,
+        posterLocalPath: String? = null,
         isSeries: Boolean = false,
         seriesName: String? = null,
         seasonNumber: Int? = null,
@@ -277,6 +382,7 @@ class TelegramMappersTest {
             chatId = chatId,
             messageId = messageId,
             fileId = fileId,
+            fileUniqueId = fileUniqueId,
             remoteId = remoteId,
             title = title,
             fileName = fileName,
@@ -288,8 +394,13 @@ class TelegramMappersTest {
             height = height,
             supportsStreaming = supportsStreaming,
             localPath = localPath,
+            thumbFileId = thumbFileId,
             thumbLocalPath = thumbLocalPath,
             date = date,
+            language = language,
+            fsk = fsk,
+            posterFileId = posterFileId,
+            posterLocalPath = posterLocalPath,
             isSeries = isSeries,
             seriesName = seriesName,
             seasonNumber = seasonNumber,

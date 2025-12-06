@@ -71,25 +71,27 @@ object TelegramMappers {
      *
      * @param mediaItem Domain model
      * @param existingId Existing ObjectBox ID if updating (0 for new)
+     * @param existingMessage Optional existing ObxTelegramMessage to preserve internal fields
      * @return ObjectBox entity ready for persistence
      */
     fun toObxTelegramMessage(
         mediaItem: TelegramMediaItem,
         existingId: Long = 0,
+        existingMessage: ObxTelegramMessage? = null,
     ): ObxTelegramMessage {
         return ObxTelegramMessage(
             id = existingId,
             chatId = mediaItem.chatId,
             messageId = mediaItem.messageId,
             fileId = mediaItem.fileId,
-            fileUniqueId = null, // STUB: Not available in stub
+            fileUniqueId = existingMessage?.fileUniqueId,
             remoteId = mediaItem.remoteId,
             supportsStreaming = mediaItem.supportsStreaming,
             caption = mediaItem.caption,
             captionLower = mediaItem.caption?.lowercase(),
             date = mediaItem.date,
             localPath = mediaItem.localPath,
-            thumbFileId = null, // STUB: Not available in stub
+            thumbFileId = existingMessage?.thumbFileId,
             thumbLocalPath = mediaItem.thumbnailPath,
             fileName = mediaItem.fileName,
             durationSecs = mediaItem.durationSecs,
@@ -97,14 +99,14 @@ object TelegramMappers {
             sizeBytes = mediaItem.sizeBytes,
             width = mediaItem.width,
             height = mediaItem.height,
-            language = null, // STUB: Not available in stub
+            language = existingMessage?.language,
             title = mediaItem.title,
             year = mediaItem.year,
             genres = mediaItem.genres,
-            fsk = null, // STUB: Not available in stub
+            fsk = existingMessage?.fsk,
             description = mediaItem.description,
-            posterFileId = null, // STUB: Not available in stub
-            posterLocalPath = null, // STUB: Not available in stub
+            posterFileId = existingMessage?.posterFileId,
+            posterLocalPath = existingMessage?.posterLocalPath,
             isSeries = mediaItem.isSeries,
             seriesName = mediaItem.seriesName,
             seriesNameNormalized = mediaItem.seriesName?.lowercase()?.trim(),
