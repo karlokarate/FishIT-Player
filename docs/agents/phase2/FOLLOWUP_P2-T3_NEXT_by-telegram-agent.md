@@ -207,13 +207,23 @@ interface TelegramContentRepository {
 
 The metadata messages complement media messages but are NOT converted to `RawMediaMetadata` directly (they have no playable content).
 
-**Usage Pattern:**
+**Pipeline Repository Responsibility:**
+The pipeline repository simply provides access to both media items and metadata messages:
 ```kotlin
-// Typical flow in repository:
-val mediaItem = getMediaItem(chatId, messageId)
-val metadata = getMetadataForMedia(chatId, messageId)
+// Pipeline repository methods:
+suspend fun getMediaItem(chatId: Long, messageId: Long): TelegramMediaItem?
+suspend fun getMetadataForMedia(chatId: Long, messageId: Long): TelegramMetadataMessage?
+```
 
-// Combine for enriched RawMediaMetadata:
+**Domain/Unifier-Level Logic (NOT Pipeline Responsibility):**
+Combining media and metadata into enriched `RawMediaMetadata` happens in the domain/unifier layer, NOT in `:pipeline:telegram`:
+```kotlin
+// This combination logic belongs in domain services or unifier layer,
+// NOT in the Telegram pipeline repository:
+val mediaItem = telegramRepository.getMediaItem(chatId, messageId)
+val metadata = telegramRepository.getMetadataForMedia(chatId, messageId)
+
+// Domain layer combines the raw sources:
 val raw = mediaItem.toRawMediaMetadata().let { raw ->
     metadata?.let { meta ->
         raw.copy(
