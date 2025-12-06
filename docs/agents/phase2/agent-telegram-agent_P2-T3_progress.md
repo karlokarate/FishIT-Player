@@ -73,8 +73,9 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
 - PlaybackContext and PlaybackType already defined in core/model
 - Using deterministic stubs - no async flows, no real TDLib clients
 - All implementations return empty or mock data for Phase 2 testing
+- **Media Normalization Contract:** Future work will include `TelegramMediaItem.toRawMediaMetadata()` implementation; all normalization handled by `:core:metadata-normalizer` (see `FOLLOWUP_P2-T3_by-telegram-agent.md`)
 
-## Commit History
+---
 
 1. Initial plan and documentation setup
 2. Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB - Complete implementation
