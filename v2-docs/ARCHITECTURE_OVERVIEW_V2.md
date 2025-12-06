@@ -88,14 +88,15 @@ All v2 modules live in the existing repo but are separate from the legacy app.
     - `ObxResumeMark`, `ObxTelegramMessage`
 
 - `:core:metadata-normalizer`
+  - **Status: Phase 3 skeleton complete** – Module exists with interfaces and no-op implementations
   - **Cross-pipeline media normalization and identity** (see `MEDIA_NORMALIZATION_AND_UNIFICATION.md` and `MEDIA_NORMALIZATION_CONTRACT.md`)
   - Types (defined in `:core:model`):
-    - `RawMediaMetadata` - Raw metadata from pipelines
-    - `NormalizedMediaMetadata` - Normalized, canonical metadata
-    - `CanonicalMediaId` - Global media identity
+    - `RawMediaMetadata` - Raw metadata from pipelines ✅
+    - `NormalizedMediaMetadata` - Normalized, canonical metadata ✅
+    - `CanonicalMediaId` - Global media identity ✅
   - Services (defined in `:core:metadata-normalizer`):
-    - `MediaMetadataNormalizer` - Title cleaning, scene-naming parser, structural extraction
-    - `TmdbMetadataResolver` - TMDB search and enrichment via `tmdb-java`
+    - `MediaMetadataNormalizer` - Title cleaning, scene-naming parser, structural extraction ✅ (interface + default no-op)
+    - `TmdbMetadataResolver` - TMDB search and enrichment via `tmdb-java` ✅ (interface + default no-op)
   - Processing flow:
     ```
     Pipeline → RawMediaMetadata → MediaMetadataNormalizer → 
@@ -103,8 +104,9 @@ All v2 modules live in the existing repo but are separate from the legacy app.
     Enriched Metadata → CanonicalMediaId → Storage
     ```
   - Dependencies:
-    - `tmdb-java` (Apache 2.0) for TMDB API integration
-    - Scene-naming regex engine (custom Kotlin, inspired by Sonarr/Radarr/GuessIt/FileBot)
+    - `:core:model` ✅
+    - `tmdb-java` (Apache 2.0) for TMDB API integration ✅ (dependency added, no usage yet)
+    - Scene-naming regex engine (custom Kotlin, inspired by Sonarr/Radarr/GuessIt/FileBot) - Future implementation
   - MUST NOT depend on:
     - Any `:pipeline:*` modules
     - Any UI framework

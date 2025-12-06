@@ -267,28 +267,40 @@ At the end of Phase 2, users can browse Telegram media in v2 and play it with th
 
 ### Checklist
 
-- [ ] **Phase 3A: Metadata Normalization Core**
-  - [ ] In `:core:metadata-normalizer`:
-    - [ ] Define `NormalizedMediaMetadata` data class (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.2).
-    - [ ] Define `CanonicalMediaId` (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.3).
-    - [ ] Implement `MediaMetadataNormalizer` interface and default implementation:
+- [x] **Phase 3A: Metadata Normalization Core (Skeleton)**
+  - [x] In `:core:metadata-normalizer`:
+    - [x] **Module created** with Gradle configuration (Kotlin + coroutines)
+    - [x] **Dependency on `:core:model`** added
+    - [x] **Dependency on `tmdb-java`** added (version 2.11.0, no usage yet)
+    - [x] Define `NormalizedMediaMetadata` data class in `:core:model` (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.2)
+    - [x] Define `CanonicalMediaId` and `MediaKind` in `:core:model` (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.3)
+    - [x] Define `MediaMetadataNormalizer` interface in `:core:metadata-normalizer`
+    - [x] Define `TmdbMetadataResolver` interface in `:core:metadata-normalizer`
+    - [x] Implement `DefaultMediaMetadataNormalizer` (no-op: passes through input as-is)
+    - [x] Implement `DefaultTmdbMetadataResolver` (no-op: returns input unmodified)
+    - [x] Add unit tests:
+      - [x] Test default normalizer does not modify data (3 tests)
+      - [x] Test default resolver does not modify data (3 tests)
+  - [ ] **Full implementation (deferred to later):**
+    - [ ] Implement `MediaMetadataNormalizer` with actual normalization logic:
       - Title normalization (strip technical tags, normalize whitespace/case/punctuation)
       - Structural parsing (extract year, season, episode from scene-style naming)
       - Deterministic output (same input → same output)
     - [ ] Implement scene/title parser (custom Kotlin regex engine):
       - Inspired by Sonarr, Radarr, GuessIt, FileBot patterns (behavior only, no direct code porting)
       - Extract: cleaned title, year, season/episode, edition tags, resolution, media source
-    - [ ] Add Gradle dependency: `tmdb-java` (Apache 2.0)
-    - [ ] Implement `TmdbMetadataResolver` interface and default implementation:
+    - [ ] Implement `TmdbMetadataResolver` with TMDB integration:
       - TMDB search using `tmdb-java`
       - Enrich `NormalizedMediaMetadata` with TMDB ID, official titles, years
       - Handle ambiguous matches (log and/or skip setting TMDB ID)
-    - [ ] Add unit tests:
+    - [ ] Add comprehensive unit tests:
       - Scene-naming parser tests (various formats)
       - Normalization determinism tests
       - TMDB resolver tests (mock TMDB API)
-  - [ ] Documentation:
-    - Ensure all changes align with `MEDIA_NORMALIZATION_AND_UNIFICATION.md` and `MEDIA_NORMALIZATION_CONTRACT.md`
+  - [x] Documentation:
+    - [x] Update `ARCHITECTURE_OVERVIEW_V2.md` to confirm module exists with skeleton
+    - [x] Update `IMPLEMENTATION_PHASES_V2.md` to mark Phase 3A skeleton as complete
+    - All changes align with `MEDIA_NORMALIZATION_AND_UNIFICATION.md` and `MEDIA_NORMALIZATION_CONTRACT.md`
 
 - [ ] **Phase 3B: Xtream Pipeline Integration**
   - [ ] In `:pipeline:xtream`:
