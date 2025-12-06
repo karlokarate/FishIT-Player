@@ -149,9 +149,17 @@ com.fishit.player.core.persistence.repository (implementations)
 The persistence layer is now ready for Phase 2 Task 2 (Pipeline Integration). The following items should be addressed in subsequent phases:
 
 1. **Phase 2 Task 2:** Telegram Pipeline Integration
+   - Must include stub implementation of `TelegramMediaItem.toRawMediaMetadata()` as per `MEDIA_NORMALIZATION_CONTRACT.md`
 2. **Phase 2 Task 3:** Xtream Pipeline Integration
-3. **Expand ContentRepository:** Add actual content queries when pipelines are integrated
-4. **Add more repository tests:** Test screen time and content repositories
+   - Must include stub implementation of `toRawMediaMetadata()` for all Xtream media types
+3. **Phase 3:** Metadata Normalization Core
+   - Implement `:core:metadata-normalizer` module
+   - Full implementation of normalization and TMDB resolution (see `MEDIA_NORMALIZATION_AND_UNIFICATION.md`)
+4. **Phase 4+:** Canonical Media Storage
+   - Implement `CanonicalMediaRepository` for cross-pipeline identity
+5. **Future Enhancements:**
+   - Expand `ContentRepository` with actual content queries when pipelines are integrated
+   - Add more repository tests (screen time and content repositories)
 
 ### Files Changed
 

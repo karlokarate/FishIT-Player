@@ -64,6 +64,7 @@ and only then implemented in code.
 - `:app-v2`
 - `:core:model`
 - `:core:persistence`
+- `:core:metadata-normalizer`
 - `:core:firebase`
 - `:playback:domain`
 - `:player:internal`
@@ -174,6 +175,7 @@ At the end of Phase 1, `:app-v2` launches, and the SIP internal player can play 
 - `:feature:home`
 - `:infra:logging`
 - `:core:persistence` (for ObjectBox entity reuse)
+- `:core:metadata-normalizer` (only for `RawMediaMetadata` type definition, NOT implementation)
 
 Legacy Telegram code is read-only; logic is ported, not reused directly.
 
@@ -195,6 +197,10 @@ The following v1 components must be ported directly to `:pipeline:telegram`:
 
 ### Checklist
 
+- [ ] In `:core:metadata-normalizer`:
+  - [ ] Define `RawMediaMetadata` data class (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.1).
+  - [ ] This type will be used by pipelines in Phase 2+.
+  - [ ] No normalization logic is implemented yet—only the type definition.
 - [ ] In `:pipeline:telegram`:
   - [ ] Define Telegram domain models:
     - `TelegramMediaItem`
@@ -217,6 +223,11 @@ The following v1 components must be ported directly to `:pipeline:telegram`:
   - [ ] Add helper:
     - `fun TelegramMediaItem.toPlaybackContext(...): PlaybackContext`
     - This MUST live in `:pipeline:telegram`, not in `:playback:domain`.
+  - [ ] **Prepare for normalization (stub only for now):**
+    - Add stub: `fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata`
+    - This function extracts raw metadata as-is from the Telegram item (no cleaning, no heuristics).
+    - See `MEDIA_NORMALIZATION_CONTRACT.md` Section 2.1 for pipeline responsibilities.
+    - Full implementation will be validated in Phase 3+.
 
 - [ ] In `:player:internal`:
   - [ ] Extend `InternalPlaybackSourceResolver` so that:
@@ -252,21 +263,53 @@ At the end of Phase 2, users can browse Telegram media in v2 and play it with th
 - `:playback:domain` (if needed for Live behavior)
 - `:feature:home`
 - `:infra:logging`
+- `:core:metadata-normalizer` (implementation begins here)
 
 ### Checklist
 
-- [ ] In `:pipeline:xtream`:
-  - [ ] Define Xtream domain models:
-    - `XtreamVodItem`, `XtreamSeriesItem`, `XtreamEpisode`, `XtreamChannel`, `XtreamEpgEntry`, etc.
-  - [ ] Define interfaces:
-    - `XtreamCatalogRepository` (VOD/Series).
-    - `XtreamLiveRepository` (channels + EPG).
-    - `XtreamPlaybackSourceFactory`.
-  - [ ] Port stable v1 code:
-    - HTTP URL building.
-    - `DelegatingDataSourceFactory`.
-    - `RarDataSource`.
-  - [ ] Implement default repository implementations based on v1 HTTP/Xtream logic.
+- [ ] **Phase 3A: Metadata Normalization Core**
+  - [ ] In `:core:metadata-normalizer`:
+    - [ ] Define `NormalizedMediaMetadata` data class (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.2).
+    - [ ] Define `CanonicalMediaId` (see `MEDIA_NORMALIZATION_CONTRACT.md` Section 1.3).
+    - [ ] Implement `MediaMetadataNormalizer` interface and default implementation:
+      - Title normalization (strip technical tags, normalize whitespace/case/punctuation)
+      - Structural parsing (extract year, season, episode from scene-style naming)
+      - Deterministic output (same input → same output)
+    - [ ] Implement scene/title parser (custom Kotlin regex engine):
+      - Inspired by Sonarr, Radarr, GuessIt, FileBot patterns (behavior only, no direct code porting)
+      - Extract: cleaned title, year, season/episode, edition tags, resolution, media source
+    - [ ] Add Gradle dependency: `tmdb-java` (Apache 2.0)
+    - [ ] Implement `TmdbMetadataResolver` interface and default implementation:
+      - TMDB search using `tmdb-java`
+      - Enrich `NormalizedMediaMetadata` with TMDB ID, official titles, years
+      - Handle ambiguous matches (log and/or skip setting TMDB ID)
+    - [ ] Add unit tests:
+      - Scene-naming parser tests (various formats)
+      - Normalization determinism tests
+      - TMDB resolver tests (mock TMDB API)
+  - [ ] Documentation:
+    - Ensure all changes align with `MEDIA_NORMALIZATION_AND_UNIFICATION.md` and `MEDIA_NORMALIZATION_CONTRACT.md`
+
+- [ ] **Phase 3B: Xtream Pipeline Integration**
+  - [ ] In `:pipeline:xtream`:
+    - [ ] Define Xtream domain models:
+      - `XtreamVodItem`, `XtreamSeriesItem`, `XtreamEpisode`, `XtreamChannel`, `XtreamEpgEntry`, etc.
+    - [ ] Define interfaces:
+      - `XtreamCatalogRepository` (VOD/Series).
+      - `XtreamLiveRepository` (channels + EPG).
+      - `XtreamPlaybackSourceFactory`.
+    - [ ] Port stable v1 code:
+      - HTTP URL building.
+      - `DelegatingDataSourceFactory`.
+      - `RarDataSource`.
+    - [ ] Implement default repository implementations based on v1 HTTP/Xtream logic.
+    - [ ] **Implement `toRawMediaMetadata()` for all Xtream media items:**
+      - `fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata`
+      - `fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata`
+      - `fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata`
+      - Extract metadata exactly as provided by Xtream API (no cleaning, no heuristics)
+      - Pass through TMDB IDs if Xtream provides them
+      - See `MEDIA_NORMALIZATION_CONTRACT.md` Section 2.1
 
 - [ ] In `:player:internal`:
   - [ ] Extend `InternalPlaybackSourceResolver` so that:
@@ -300,28 +343,50 @@ No direct ExoPlayer or tdlib usage in feature modules.
 - `:feature:audiobooks`
 - `:feature:library` (if needed)
 - `:player:internal` (only to add IO/Audiobook cases in source resolver)
+- `:core:persistence` (for canonical media storage)
 
 ### Checklist
 
-- [ ] In `:pipeline:io`:
-  - [ ] Define `IoMediaItem`.
-  - [ ] Define `IoContentRepository` interface.
-  - [ ] Provide a minimal implementation that:
-    - Lists local files from one or two fixed locations or an OS picker.
-  - [ ] Define `IoPlaybackSourceFactory`.
-- [ ] In `:pipeline:audiobook`:
-  - [ ] Define `AudiobookItem` and `AudiobookRepository` interface.
-  - [ ] Define `AudiobookPlaybackSourceFactory`.
-  - [ ] Provide a stub or minimal implementation that:
-    - Returns mocked data or simple local files for early v2.
-- [ ] In `:player:internal`:
-  - [ ] Extend `InternalPlaybackSourceResolver` to:
-    - Support `PlaybackType.IO` using `IoPlaybackSourceFactory`.
-    - Support `PlaybackType.AUDIOBOOK` using `AudiobookPlaybackSourceFactory`.
-- [ ] In `:feature:audiobooks`:
-  - [ ] Implement a minimal placeholder shell:
-    - List a few `AudiobookItem`s (real or mocked).
-    - On click: build `PlaybackContext` and navigate to internal player.
+- [ ] **Phase 4A: IO Pipeline Foundations**
+  - [ ] In `:pipeline:io`:
+    - [ ] Define `IoMediaItem`.
+    - [ ] Define `IoContentRepository` interface.
+    - [ ] Provide a minimal implementation that:
+      - Lists local files from one or two fixed locations or an OS picker.
+    - [ ] Define `IoPlaybackSourceFactory`.
+    - [ ] Implement `fun IoMediaItem.toRawMediaMetadata(): RawMediaMetadata`
+      - Extract filename, path, duration if available
+      - No cleaning or heuristics (see `MEDIA_NORMALIZATION_CONTRACT.md`)
+  - [ ] In `:player:internal`:
+    - [ ] Extend `InternalPlaybackSourceResolver` to:
+      - Support `PlaybackType.IO` using `IoPlaybackSourceFactory`.
+
+- [ ] **Phase 4B: Audiobook Pipeline Foundations**
+  - [ ] In `:pipeline:audiobook`:
+    - [ ] Define `AudiobookItem` and `AudiobookRepository` interface.
+    - [ ] Define `AudiobookPlaybackSourceFactory`.
+    - [ ] Provide a stub or minimal implementation that:
+      - Returns mocked data or simple local files for early v2.
+    - [ ] Implement `fun AudiobookItem.toRawMediaMetadata(): RawMediaMetadata`
+  - [ ] In `:player:internal`:
+    - [ ] Extend `InternalPlaybackSourceResolver` to:
+      - Support `PlaybackType.AUDIOBOOK` using `AudiobookPlaybackSourceFactory`.
+  - [ ] In `:feature:audiobooks`:
+    - [ ] Implement a minimal placeholder shell:
+      - List a few `AudiobookItem`s (real or mocked).
+      - On click: build `PlaybackContext` and navigate to internal player.
+
+- [ ] **Phase 4C: Canonical Media Storage**
+  - [ ] In `:core:persistence`:
+    - [ ] Define `CanonicalMediaRepository` interface:
+      - `suspend fun upsertCanonicalMedia(normalized: NormalizedMediaMetadata): CanonicalMediaId`
+      - `suspend fun addOrUpdateSourceRef(canonicalId: CanonicalMediaId, source: MediaSourceRef)`
+      - `suspend fun findByCanonicalId(id: CanonicalMediaId): CanonicalMediaWithSources?`
+    - [ ] Implement ObjectBox-backed repository
+    - [ ] Add ObjectBox entities for canonical media and source references
+    - [ ] Wire into DI
+  - [ ] Documentation:
+    - Reference `MEDIA_NORMALIZATION_CONTRACT.md` Section 2.4 for persistence responsibilities
 
 **Note:**  
 These features may remain minimal for the first v2 release, but their presence in the architecture prevents future structural refactors.
@@ -535,6 +600,7 @@ When working on FishIT Player v2, agents MUST follow these rules:
      - `APP_VISION_AND_SCOPE.md`
      - `ARCHITECTURE_OVERVIEW_V2.md`
      - `IMPLEMENTATION_PHASES_V2.md`
+     - `MEDIA_NORMALIZATION_CONTRACT.md` (when working on pipelines, metadata, or canonical identity)
    - before starting any v2 task.
 
 2. **Respect phase boundaries**
@@ -568,5 +634,12 @@ When working on FishIT Player v2, agents MUST follow these rules:
    - When multiple agents are active:
      - Each task should focus on one module or a small group of modules.
      - Cross-module changes or refactors must be handled in dedicated architecture tasks.
+
+8. **Pipeline Metadata Contract**
+   - When implementing or modifying pipeline modules:
+     - Always implement `toRawMediaMetadata()` according to `MEDIA_NORMALIZATION_CONTRACT.md` Section 2.1.
+     - Never perform title cleaning, normalization, or heuristics in pipelines.
+     - Never conduct TMDB or external metadata searches in pipelines.
+     - Tests must validate `RawMediaMetadata` production, not normalization behavior.
 
 This document, together with the vision and architecture overview, forms the **executable plan** from an empty v2 skeleton to a production-ready APK.
