@@ -18,6 +18,18 @@ import com.fishit.player.core.model.SourceType
  *
  * All normalization will be handled centrally by :core:metadata-normalizer
  * in Phase 3.
+ *
+ * EXTERNAL ID PASSTHROUGH PATTERN:
+ * Current Xtream stub models don't include tmdbId/imdbId fields yet.
+ * When these are added in Phase 3, they must be passed through via the
+ * externalIds parameter like this:
+ *
+ *     externalIds = ExternalIds(
+ *         tmdbId = this.tmdbId,
+ *         imdbId = this.imdbId,
+ *     )
+ *
+ * This pattern applies to XtreamVodItem, XtreamEpisode, and XtreamSeriesItem.
  */
 
 /**
@@ -25,10 +37,6 @@ import com.fishit.player.core.model.SourceType
  *
  * This mapping extracts only raw metadata fields from the Xtream VOD item.
  * No title cleaning or normalization is performed.
- *
- * Note: Current stub model doesn't include tmdbId/imdbId fields. When these
- * are added to XtreamVodItem in Phase 3, they must be passed through via
- * externalIds parameter.
  *
  * @return RawMediaMetadata with raw fields extracted from this VOD item
  */
@@ -40,9 +48,7 @@ fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata {
         episode = null, // VOD items are not episodes
         durationMinutes = null, // Duration not in stub model yet
         externalIds = ExternalIds(
-            // TODO Phase 3: Pass through tmdbId/imdbId from XtreamVodItem when available
-            // tmdbId = this.tmdbId,
-            // imdbId = this.imdbId,
+            // TODO Phase 3: Pass through tmdbId/imdbId when available (see file header)
         ),
         sourceType = SourceType.XTREAM,
         sourceLabel = "Xtream VOD",
@@ -56,10 +62,6 @@ fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata {
  * This mapping extracts only raw metadata fields from the Xtream episode.
  * No title cleaning or normalization is performed.
  *
- * Note: Current stub model doesn't include tmdbId/imdbId fields. When these
- * are added to XtreamEpisode in Phase 3, they must be passed through via
- * externalIds parameter.
- *
  * @return RawMediaMetadata with raw fields extracted from this episode
  */
 fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata {
@@ -70,9 +72,7 @@ fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata {
         episode = episodeNumber,
         durationMinutes = null, // Duration not in stub model yet
         externalIds = ExternalIds(
-            // TODO Phase 3: Pass through tmdbId/imdbId from XtreamEpisode when available
-            // tmdbId = this.tmdbId,
-            // imdbId = this.imdbId,
+            // TODO Phase 3: Pass through tmdbId/imdbId when available (see file header)
         ),
         sourceType = SourceType.XTREAM,
         sourceLabel = "Xtream Episode",
@@ -87,10 +87,6 @@ fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata {
  * Note: Series items represent the show itself, not individual episodes.
  * No title cleaning or normalization is performed.
  *
- * Note: Current stub model doesn't include tmdbId/imdbId fields. When these
- * are added to XtreamSeriesItem in Phase 3, they must be passed through via
- * externalIds parameter.
- *
  * @return RawMediaMetadata with raw fields extracted from this series
  */
 fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata {
@@ -101,9 +97,7 @@ fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata {
         episode = null, // Series items don't have season/episode
         durationMinutes = null, // Duration not applicable for series container
         externalIds = ExternalIds(
-            // TODO Phase 3: Pass through tmdbId/imdbId from XtreamSeriesItem when available
-            // tmdbId = this.tmdbId,
-            // imdbId = this.imdbId,
+            // TODO Phase 3: Pass through tmdbId/imdbId when available (see file header)
         ),
         sourceType = SourceType.XTREAM,
         sourceLabel = "Xtream Series",

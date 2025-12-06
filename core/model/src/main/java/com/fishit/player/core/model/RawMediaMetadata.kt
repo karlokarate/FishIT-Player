@@ -45,13 +45,31 @@ data class ExternalIds(
 
 /**
  * Source type identifier for pipeline.
+ *
+ * Identifies which pipeline provided the raw media metadata.
+ * Used for tracking, debugging, and source-specific behavior.
+ *
+ * Use OTHER only when the source doesn't fit any specific category.
  */
 enum class SourceType {
+    /** Xtream Codes API provider (IPTV, VOD, Series) */
     XTREAM,
+    
+    /** Telegram media integration via TDLib */
     TELEGRAM,
+    
+    /** Local file system, SAF, SMB, ContentResolver */
     IO,
+    
+    /** Audiobook-specific pipeline */
     AUDIOBOOK,
+    
+    /** Local media library scanner */
     LOCAL,
+    
+    /** Plex Media Server integration */
     PLEX,
+    
+    /** Other/unknown source types */
     OTHER,
 }
