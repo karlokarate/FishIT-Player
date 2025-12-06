@@ -127,38 +127,85 @@ A  docs/agents/phase2/FOLLOWUP_P2-T3_by-telegram-agent.md
 
 ## Integration Notes for Phase 2 Continuation
 
-### Media Normalization & TMDB Contract Compliance
+### Media Normalization & Canonical Identity Integration
 
 **IMPORTANT:** All future Telegram pipeline work MUST comply with the centralized media normalization and TMDB resolution contract.
 
-#### Key Requirements:
+#### Normalization Contract Overview
+
+The v2 architecture introduces a **centralized normalization layer** that handles:
+- Title cleaning and normalization
+- Technical tag stripping (resolution, codec, release group)
+- Scene-style naming pattern parsing
+- TMDB/IMDB/TVDB lookup and identity resolution
+- Cross-pipeline canonical identity assignment
+
+**Architecture:**
+- **Data types** (`RawMediaMetadata`, `NormalizedMediaMetadata`, `ExternalIds`, `SourceType`) → defined in `:core:model`
+- **Normalization behavior** (`MediaMetadataNormalizer`, `TmdbMetadataResolver`) → implemented in `:core:metadata-normalizer`
+
+**Pipelines (including Telegram) provide RAW metadata ONLY.**
+
+#### Key Requirements for Telegram Pipeline:
 
 1. **Telegram will provide RawMediaMetadata mapping:**
-   - In a future phase, Telegram will expose `TelegramMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
-   - The mapping must pass through raw titles without modification.
+   - Future phase will implement `TelegramMediaItem.toRawMediaMetadata()` to feed the centralizer.
+   - **Structure documented in:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramRawMetadataContract.kt`
+   - The mapping passes through raw titles **without any modification**.
+   - Priority: title > episodeTitle > caption > fileName
+   - **CRITICAL:** Types like `RawMediaMetadata`, `ExternalIds`, `SourceType` are NOT and MUST NOT be defined in `:pipeline:telegram`
+   - These types will be defined in `:core:model` (Phase 3)
+   - Normalization behavior implemented in `:core:metadata-normalizer` (Phase 3)
 
-2. **extractTitle() does NOT clean technical tags:**
-   - The existing `extractTitle()` function in `TelegramMappers.kt` only selects the best source field (title > episodeTitle > caption > fileName).
-   - It does NOT strip resolution tags, codec info, or scene-style naming patterns.
-   - All title cleaning and normalization are handled centrally by `:core:metadata-normalizer`.
+2. **extractTitle() MUST stay a simple field priority selector:**
+   - The existing `extractTitle()` function in `TelegramMappers.kt` only selects the best source field.
+   - It does **NOT** strip resolution tags, codec info, or scene-style naming patterns.
+   - It does **NOT** clean, normalize, or transform titles in any way.
+   - All title cleaning is handled centrally by normalization behavior in `:core:metadata-normalizer`.
 
 3. **NO normalization or TMDB logic in `:pipeline:telegram`:**
-   - Do NOT implement title cleaning, heuristics, or TMDB searches within the Telegram pipeline.
-   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`.
+   - ❌ Do NOT implement title cleaning or heuristics
+   - ❌ Do NOT strip technical tags (1080p, x264, BluRay, etc.)
+   - ❌ Do NOT perform TMDB/IMDB/TVDB searches
+   - ❌ Do NOT attempt to match or unify media across sources
+   - ❌ Do NOT compute canonical identity
+   - ✅ DO provide raw source fields as-is
 
 4. **TDLib is purely for Telegram data access:**
-   - TDLib integration focuses on message sync, file downloads, and chat browsing.
+   - TDLib integration focuses on:
+     - Message sync and browsing
+     - File downloads and streaming
+     - Chat management
    - Canonical identity and cross-pipeline unification are handled by the shared normalizer layer.
 
-5. **Reference documentation:**
-   - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview.
-   - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities.
+5. **Telegram does NOT provide external IDs:**
+   - Telegram messages typically don't include TMDB/IMDB/TVDB IDs.
+   - The `externalIds` field in `RawMediaMetadata` will be empty for Telegram sources.
+   - TMDB resolution will be done centrally based on normalized titles.
 
-**Compliance ensures:**
-- Cross-pipeline resume tracking
-- Unified detail screens
-- Version selection across pipelines
-- Predictable TMDB-first identity
+6. **Reference documentation:**
+   - `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` - Architecture overview
+   - `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` - Formal rules and pipeline responsibilities (AUTHORITATIVE)
+   - `pipeline/telegram/mapper/TelegramRawMetadataContract.kt` - Structure-only documentation (NOT implementation)
+
+**Module Ownership:**
+- **Types (`:core:model`):**
+  - `RawMediaMetadata` - Data type for raw pipeline metadata
+  - `NormalizedMediaMetadata` - Data type for normalized metadata
+  - `ExternalIds` - External identifier collection
+  - `SourceType` - Pipeline source enum
+- **Behavior (`:core:metadata-normalizer`):**
+  - `MediaMetadataNormalizer` - Normalization logic
+  - `TmdbMetadataResolver` - TMDB lookup and enrichment
+
+The Telegram pipeline only references these types in documentation, never defines them locally.
+
+**Contract Compliance ensures:**
+- Cross-pipeline resume tracking (same movie from Telegram/Xtream/IO = same resume point)
+- Unified detail screens (all versions of a movie/episode grouped together)
+- Version selection across pipelines (quality, language, subtitles)
+- Predictable TMDB-first canonical identity
+- Clean separation of concerns (pipeline = raw data, types in `:core:model`, behavior in `:core:metadata-normalizer`)
 
 ---
 

@@ -72,9 +72,7 @@ open class StubTelegramContentRepository : TelegramContentRepository {
          * Creates a stub repository with mock data for testing.
          * Returns a small set of deterministic media items.
          */
-        fun withMockData(): StubTelegramContentRepository {
-            return StubTelegramContentRepositoryWithMockData()
-        }
+        fun withMockData(): StubTelegramContentRepository = StubTelegramContentRepositoryWithMockData()
     }
 }
 
@@ -82,80 +80,73 @@ open class StubTelegramContentRepository : TelegramContentRepository {
  * Stub implementation that returns a small set of mock data for testing.
  */
 private class StubTelegramContentRepositoryWithMockData : StubTelegramContentRepository() {
-    private val mockMediaItems = listOf(
-        TelegramMediaItem(
-            id = 1,
-            chatId = 12345,
-            messageId = 1001,
-            fileId = 1001,
-            remoteId = "stub_remote_1",
-            title = "Mock Video 1",
-            fileName = "mock_video_1.mp4",
-            mimeType = "video/mp4",
-            sizeBytes = 1024000,
-            durationSecs = 120,
-            width = 1920,
-            height = 1080,
-            supportsStreaming = true,
-        ),
-        TelegramMediaItem(
-            id = 2,
-            chatId = 12345,
-            messageId = 1002,
-            fileId = 1002,
-            remoteId = "stub_remote_2",
-            title = "Mock Video 2",
-            fileName = "mock_video_2.mp4",
-            mimeType = "video/mp4",
-            sizeBytes = 2048000,
-            durationSecs = 180,
-            width = 1920,
-            height = 1080,
-            supportsStreaming = true,
-            isSeries = true,
-            seriesName = "Mock Series",
-            seasonNumber = 1,
-            episodeNumber = 1,
-        ),
-    )
+    private val mockMediaItems =
+        listOf(
+            TelegramMediaItem(
+                id = 1,
+                chatId = 12345,
+                messageId = 1001,
+                fileId = 1001,
+                remoteId = "stub_remote_1",
+                title = "Mock Video 1",
+                fileName = "mock_video_1.mp4",
+                mimeType = "video/mp4",
+                sizeBytes = 1024000,
+                durationSecs = 120,
+                width = 1920,
+                height = 1080,
+                supportsStreaming = true,
+            ),
+            TelegramMediaItem(
+                id = 2,
+                chatId = 12345,
+                messageId = 1002,
+                fileId = 1002,
+                remoteId = "stub_remote_2",
+                title = "Mock Video 2",
+                fileName = "mock_video_2.mp4",
+                mimeType = "video/mp4",
+                sizeBytes = 2048000,
+                durationSecs = 180,
+                width = 1920,
+                height = 1080,
+                supportsStreaming = true,
+                isSeries = true,
+                seriesName = "Mock Series",
+                seasonNumber = 1,
+                episodeNumber = 1,
+            ),
+        )
 
-    private val mockChats = listOf(
-        TelegramChatSummary(
-            chatId = 12345,
-            title = "Mock Chat",
-            type = "channel",
-            mediaCount = 2,
-            lastMessageDate = System.currentTimeMillis() / 1000,
-        ),
-    )
+    private val mockChats =
+        listOf(
+            TelegramChatSummary(
+                chatId = 12345,
+                title = "Mock Chat",
+                type = "channel",
+                mediaCount = 2,
+                lastMessageDate = System.currentTimeMillis() / 1000,
+            ),
+        )
 
     override suspend fun getAllMediaItems(
         limit: Int,
         offset: Int,
-    ): List<TelegramMediaItem> {
-        return mockMediaItems.drop(offset).take(limit)
-    }
+    ): List<TelegramMediaItem> = mockMediaItems.drop(offset).take(limit)
 
     override suspend fun getMediaItemsByChat(
         chatId: Long,
         limit: Int,
         offset: Int,
-    ): List<TelegramMediaItem> {
-        return mockMediaItems
+    ): List<TelegramMediaItem> =
+        mockMediaItems
             .filter { it.chatId == chatId }
             .drop(offset)
             .take(limit)
-    }
 
-    override suspend fun getRecentMediaItems(limit: Int): List<TelegramMediaItem> {
-        return mockMediaItems.take(limit)
-    }
+    override suspend fun getRecentMediaItems(limit: Int): List<TelegramMediaItem> = mockMediaItems.take(limit)
 
-    override suspend fun getMediaItemById(id: Long): TelegramMediaItem? {
-        return mockMediaItems.find { it.id == id }
-    }
+    override suspend fun getMediaItemById(id: Long): TelegramMediaItem? = mockMediaItems.find { it.id == id }
 
-    override suspend fun getAllChats(): List<TelegramChatSummary> {
-        return mockChats
-    }
+    override suspend fun getAllChats(): List<TelegramChatSummary> = mockChats
 }

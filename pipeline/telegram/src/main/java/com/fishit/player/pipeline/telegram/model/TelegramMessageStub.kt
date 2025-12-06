@@ -32,14 +32,16 @@ data class TelegramMessageStub(
         /**
          * Creates an empty stub message for testing.
          */
-        fun empty(chatId: Long = 0L, messageId: Long = 0L): TelegramMessageStub {
-            return TelegramMessageStub(
+        fun empty(
+            chatId: Long = 0L,
+            messageId: Long = 0L,
+        ): TelegramMessageStub =
+            TelegramMessageStub(
                 chatId = chatId,
                 messageId = messageId,
                 date = System.currentTimeMillis() / 1000,
                 hasMediaContent = false,
             )
-        }
 
         /**
          * Creates a media stub message for testing.
@@ -50,8 +52,8 @@ data class TelegramMessageStub(
             fileName: String = "test_video.mp4",
             mimeType: String = "video/mp4",
             fileSize: Long = 1024000L,
-        ): TelegramMessageStub {
-            return TelegramMessageStub(
+        ): TelegramMessageStub =
+            TelegramMessageStub(
                 chatId = chatId,
                 messageId = messageId,
                 date = System.currentTimeMillis() / 1000,
@@ -61,6 +63,5 @@ data class TelegramMessageStub(
                 mimeType = mimeType,
                 fileSize = fileSize,
             )
-        }
     }
 }

@@ -24,8 +24,8 @@ object TelegramMappers {
      * @param obxMessage ObjectBox entity from persistence layer
      * @return TelegramMediaItem domain model
      */
-    fun fromObxTelegramMessage(obxMessage: ObxTelegramMessage): TelegramMediaItem {
-        return TelegramMediaItem(
+    fun fromObxTelegramMessage(obxMessage: ObxTelegramMessage): TelegramMediaItem =
+        TelegramMediaItem(
             id = obxMessage.id,
             chatId = obxMessage.chatId,
             messageId = obxMessage.messageId,
@@ -52,7 +52,6 @@ object TelegramMappers {
             genres = obxMessage.genres,
             description = obxMessage.description,
         )
-    }
 
     /**
      * Converts a list of ObxTelegramMessage entities to TelegramMediaItem list.
@@ -60,9 +59,8 @@ object TelegramMappers {
      * @param obxMessages List of ObjectBox entities
      * @return List of domain models
      */
-    fun fromObxTelegramMessages(obxMessages: List<ObxTelegramMessage>): List<TelegramMediaItem> {
-        return obxMessages.map { fromObxTelegramMessage(it) }
-    }
+    fun fromObxTelegramMessages(obxMessages: List<ObxTelegramMessage>): List<TelegramMediaItem> =
+        obxMessages.map { fromObxTelegramMessage(it) }
 
     /**
      * Converts a TelegramMediaItem back to ObxTelegramMessage for persistence.
@@ -78,8 +76,8 @@ object TelegramMappers {
         mediaItem: TelegramMediaItem,
         existingId: Long = 0,
         existingMessage: ObxTelegramMessage? = null,
-    ): ObxTelegramMessage {
-        return ObxTelegramMessage(
+    ): ObxTelegramMessage =
+        ObxTelegramMessage(
             id = existingId,
             chatId = mediaItem.chatId,
             messageId = mediaItem.messageId,
@@ -114,7 +112,6 @@ object TelegramMappers {
             episodeNumber = mediaItem.episodeNumber,
             episodeTitle = mediaItem.episodeTitle,
         )
-    }
 
     /**
      * Extracts a display title from ObxTelegramMessage.
@@ -123,13 +120,12 @@ object TelegramMappers {
      * @param obxMessage ObjectBox entity
      * @return Display title string
      */
-    private fun extractTitle(obxMessage: ObxTelegramMessage): String {
-        return when {
+    private fun extractTitle(obxMessage: ObxTelegramMessage): String =
+        when {
             !obxMessage.title.isNullOrBlank() -> obxMessage.title!!
             !obxMessage.episodeTitle.isNullOrBlank() -> obxMessage.episodeTitle!!
             !obxMessage.caption.isNullOrBlank() -> obxMessage.caption!!
             !obxMessage.fileName.isNullOrBlank() -> obxMessage.fileName!!
             else -> "Untitled Media ${obxMessage.messageId}"
         }
-    }
 }
