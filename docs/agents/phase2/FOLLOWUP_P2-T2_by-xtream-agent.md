@@ -17,29 +17,58 @@ The Phase 2 stub implementation of the Xtream pipeline is now complete. This doc
 
 **IMPORTANT:** All future Xtream pipeline work MUST comply with the centralized media normalization and TMDB resolution contract.
 
+### ✅ Phase 3 Prep Completed (2025-12-06):
+
+The Xtream pipeline now includes **`toRawMediaMetadata()` extension functions** for all media types:
+- `XtreamVodItem.toRawMediaMetadata()`
+- `XtreamEpisode.toRawMediaMetadata()`
+- `XtreamSeriesItem.toRawMediaMetadata()`
+- `XtreamChannel.toRawMediaMetadata()`
+
+These mappings are **contract-compliant**:
+- Extract raw fields ONLY (no cleaning, no heuristics)
+- Pass through titles exactly as provided by source
+- NO TMDB lookups or title normalization
+- Fully tested with comprehensive unit tests
+
+**Note:** The `RawMediaMetadata` type is currently defined in `:pipeline:xtream` as a temporary placeholder. In Phase 3, when `:core:metadata-normalizer` is implemented, this type will move there and all pipelines will reference the centralized version.
+
 ### Key Requirements:
 
-1. **Xtream will provide RawMediaMetadata mapping:**
-   - In a future phase, Xtream will expose `XtreamMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
-   - The mapping must pass through raw titles, years, and external IDs (e.g., TMDB IDs from Xtream panels) without modification.
+1. **✅ Xtream provides RawMediaMetadata mapping (IMPLEMENTED):**
+   - Xtream now exposes `XtreamMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
+   - The mapping passes through raw titles, years, and external IDs without modification.
+   - This prepares Xtream for Phase 3 integration with `:core:metadata-normalizer`.
 
-2. **NO normalization or TMDB logic in `:pipeline:xtream`:**
-   - Do NOT implement title cleaning, heuristics, or TMDB searches within the Xtream pipeline.
-   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`.
+2. **✅ NO normalization or TMDB logic in `:pipeline:xtream` (VERIFIED):**
+   - No title cleaning, heuristics, or TMDB searches in Xtream pipeline.
+   - All title normalization, canonical identity, and TMDB resolution will be handled centrally by `:core:metadata-normalizer` (Phase 3).
 
 3. **DataSource-related work belongs in player/infra modules:**
    - Components like `DelegatingDataSourceFactory`, `RarDataSource`, and similar playback infrastructure belong in `:player:internal` or `:infra:*` modules.
    - The `:pipeline:xtream` module focuses on Xtream-specific domain logic, repository interfaces, and API clients only.
+   - **SAF/SMB/DataSource layers will live in infra/player modules, NOT inside pipeline** (per architecture contract).
 
 4. **Reference documentation:**
    - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview.
    - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities.
+   - Both documents modified on 2025-12-06 17:55:27 - they are equally authoritative.
 
 **Compliance ensures:**
-- Cross-pipeline resume tracking
-- Unified detail screens
-- Version selection across pipelines
-- Predictable TMDB-first identity
+- Cross-pipeline resume tracking (via canonical identity)
+- Unified detail screens (via centralized normalization)
+- Version selection across pipelines (via TMDB-first identity)
+- Predictable TMDB-first identity (via central resolver)
+
+### Phase 3 Integration Plan:
+
+When `:core:metadata-normalizer` is implemented:
+1. Move `RawMediaMetadata`, `ExternalIds`, and `SourceType` from `:pipeline:xtream` to `:core:metadata-normalizer`
+2. Update all pipeline imports to reference centralized types
+3. Pipeline `toRawMediaMetadata()` implementations remain unchanged (contract-compliant)
+4. Central normalizer will consume raw metadata and produce `NormalizedMediaMetadata`
+5. TMDB resolver will enrich normalized metadata with external IDs
+6. Canonical media repository will store unified identity across all pipelines
 
 ---
 

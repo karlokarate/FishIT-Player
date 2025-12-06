@@ -4,11 +4,12 @@
 **Branch:** architecture/v2-bootstrap  
 **Feature Branch:** feature/v2-p2t2-xtream  
 **Task:** Implement Phase 2 – P2-T2 Xtream Pipeline STUB  
-**Date:** 2025-12-06
+**Date:** 2025-12-06  
+**Phase 3 Prep:** 2025-12-06
 
 ---
 
-## Implementation Status: ✅ COMPLETE
+## Implementation Status: ✅ COMPLETE (Phase 2 + Phase 3 Prep)
 
 All required components have been implemented and tested according to the Phase 2 stub specifications.
 
@@ -143,6 +144,113 @@ This implementation strictly follows the v2 architecture specifications:
 ## Next Steps
 
 See `FOLLOWUP_P2-T2_by-xtream-agent.md` for recommended follow-up tasks.
+
+---
+
+## Phase 3 Prep Work (2025-12-06)
+
+### Objective
+Prepare Xtream pipeline for Phase 3 integration by implementing contract-compliant `toRawMediaMetadata()` mappings.
+
+### Contract Compliance
+All work strictly follows:
+- `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
+- `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md`
+- Both modified 2025-12-06 17:55:27 (equally authoritative)
+
+### Deliverables (✅ Complete)
+
+#### 1. RawMediaMetadata Structure (Temporary Placeholder)
+Created in `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/RawMediaMetadata.kt`:
+- `RawMediaMetadata` data class with contract-defined fields
+- `ExternalIds` for TMDB/IMDB/TVDB IDs
+- `SourceType` enum for pipeline identification
+
+**Note:** This is a temporary definition. In Phase 3, when `:core:metadata-normalizer` is implemented, these types will move to that module and all pipelines will reference the centralized version.
+
+#### 2. toRawMediaMetadata() Extension Functions
+Created in `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamNormalizationExtensions.kt`:
+- `XtreamVodItem.toRawMediaMetadata()` - VOD mapping
+- `XtreamEpisode.toRawMediaMetadata()` - Episode mapping with season/episode
+- `XtreamSeriesItem.toRawMediaMetadata()` - Series container mapping
+- `XtreamChannel.toRawMediaMetadata()` - Live channel mapping
+
+**Contract-Compliant Behavior:**
+- ✅ Extract raw fields ONLY (no cleaning)
+- ✅ Pass through titles exactly as provided
+- ✅ NO normalization heuristics
+- ✅ NO TMDB lookups
+- ✅ Stable sourceId generation
+- ✅ Properly document stub limitations (year, duration, externalIds will be populated in Phase 3)
+
+#### 3. Comprehensive Unit Tests
+Created in `pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/XtreamNormalizationExtensionsTest.kt`:
+- 10 tests verifying raw metadata extraction
+- Tests verify NO title cleaning occurs
+- Tests verify deterministic sourceId generation
+- Tests verify stub model limitations
+- **All tests passing** ✅
+
+#### 4. Documentation Updates
+Updated `docs/agents/phase2/FOLLOWUP_P2-T2_by-xtream-agent.md`:
+- ✅ Documented that toRawMediaMetadata() is now implemented
+- ✅ Clarified contract compliance
+- ✅ Explained temporary placeholder status of RawMediaMetadata
+- ✅ Added Phase 3 integration plan
+- ✅ Emphasized SAF/SMB/DataSource belong in infra/player modules
+- ✅ Referenced both normalization contract documents explicitly
+
+Created `docs/agents/phase2/FOLLOWUP_P2-T2_NEXT_by-xtream-agent.md`:
+- Next steps strictly within pipeline boundaries
+- Preparation for XtreamApiClient
+- Separation of DTO and Domain models
+- No normalization logic
+- How Phase 3 will attach TMDB/Unifier
+
+### Scope Compliance
+
+#### ✅ Allowed Modifications
+- `pipeline/xtream/src/main/java/**` - New model and extension files
+- `pipeline/xtream/src/test/java/**` - New unit tests
+- `docs/agents/phase2/**` - Progress and follow-up documentation
+
+#### ❌ No Forbidden Modifications
+- No changes to `core/model/**`
+- No changes to `core/persistence/**`
+- No changes to `player/**`
+- No changes to `feature/**`
+- No changes to `metadata-normalizer/**` (doesn't exist yet)
+- No TMDB logic, no normalization, no heuristics implemented
+
+### Build & Test Results
+
+```bash
+✅ ./gradlew :pipeline:xtream:testDebugUnitTest --tests XtreamNormalizationExtensionsTest
+Result: 10 tests passed, 0 failed (59s)
+```
+
+### Contract Violations Check
+✅ **ZERO VIOLATIONS**
+- No title normalization in pipeline code
+- No TMDB lookups in pipeline code
+- No canonical identity computation in pipeline code
+- No normalization tests (only raw metadata extraction tests)
+
+### Files Created in Phase 3 Prep
+
+#### Source Files (2 new files)
+1. `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/RawMediaMetadata.kt`
+2. `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamNormalizationExtensions.kt`
+
+#### Test Files (1 new file)
+3. `pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/XtreamNormalizationExtensionsTest.kt`
+
+#### Documentation (2 modified, 1 new)
+4. `docs/agents/phase2/agent-xtream-agent_P2-T2_progress.md` (updated)
+5. `docs/agents/phase2/FOLLOWUP_P2-T2_by-xtream-agent.md` (updated)
+6. `docs/agents/phase2/FOLLOWUP_P2-T2_NEXT_by-xtream-agent.md` (new)
+
+**Phase 3 Prep Total:** 6 files created/modified, all within allowed scope.
 
 ---
 
