@@ -1,7 +1,5 @@
 package com.fishit.player.pipeline.io
 
-import com.fishit.player.pipeline.io.IoMediaItem
-import com.fishit.player.pipeline.io.IoSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

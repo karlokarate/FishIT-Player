@@ -1,7 +1,7 @@
 package com.fishit.player.pipeline.io
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
@@ -53,6 +53,6 @@ class IoSourceTest {
 
         // Data class equality
         assertEquals(source1, source2)
-        assert(source1 != source3)
+        assertNotEquals(source1, source3)
     }
 }
