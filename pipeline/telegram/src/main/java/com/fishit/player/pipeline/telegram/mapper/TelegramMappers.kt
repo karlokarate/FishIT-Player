@@ -2,10 +2,7 @@ package com.fishit.player.pipeline.telegram.mapper
 
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
-
 import com.fishit.player.pipeline.telegram.model.TelegramMediaType
-import com.fishit.player.pipeline.telegram.model.TelegramMetadataMessage
-import com.fishit.player.pipeline.telegram.model.TelegramPhotoSize
 
 /**
  * Mapping utilities for converting between ObxTelegramMessage and Telegram domain models.
@@ -147,18 +144,18 @@ object TelegramMappers {
      */
     private fun inferMediaType(obxMessage: ObxTelegramMessage): TelegramMediaType {
         val mimeType = obxMessage.mimeType?.lowercase()
-        
+
         return when {
             mimeType?.startsWith("video/") == true -> TelegramMediaType.VIDEO
             mimeType?.startsWith("audio/") == true -> TelegramMediaType.AUDIO
             mimeType?.startsWith("image/") == true -> TelegramMediaType.PHOTO
-            mimeType?.contains("zip") == true || 
+            mimeType?.contains("zip") == true ||
                 mimeType?.contains("rar") == true ||
                 mimeType?.contains("octet-stream") == true -> TelegramMediaType.DOCUMENT
-            obxMessage.durationSecs != null && 
-                obxMessage.width != null && 
+            obxMessage.durationSecs != null &&
+                obxMessage.width != null &&
                 obxMessage.height != null -> TelegramMediaType.VIDEO
-            obxMessage.width != null && 
+            obxMessage.width != null &&
                 obxMessage.height != null -> TelegramMediaType.PHOTO
             else -> TelegramMediaType.OTHER
         }
