@@ -41,3 +41,6 @@ rootProject.name = "FishITPlayer"
 
 // Modules
 include(":app")
+
+// V2 Pipeline Modules
+include(":pipeline:telegram")
