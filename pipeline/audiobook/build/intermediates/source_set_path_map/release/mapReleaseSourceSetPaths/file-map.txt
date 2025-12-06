@@ -1,0 +1,8 @@
+com.fishit.player.pipeline.audiobook-release-0 /home/runner/work/FishIT-Player/FishIT-Player/core/model/build/intermediates/packaged_res/release/packageReleaseResources
+com.fishit.player.pipeline.audiobook-pngs-1 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/build/generated/res/pngs/release
+com.fishit.player.pipeline.audiobook-resValues-2 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/build/generated/res/resValues/release
+com.fishit.player.pipeline.audiobook-mergeReleaseResources-3 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+com.fishit.player.pipeline.audiobook-mergeReleaseResources-4 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+com.fishit.player.pipeline.audiobook-release-5 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/build/intermediates/merged_res/release/mergeReleaseResources
+com.fishit.player.pipeline.audiobook-main-6 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/src/main/res
+com.fishit.player.pipeline.audiobook-release-7 /home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/src/release/res

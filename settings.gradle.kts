@@ -41,3 +41,9 @@ rootProject.name = "FishITPlayer"
 
 // Modules
 include(":app")
+
+// v2 Modules - Core
+include(":core:model")
+
+// v2 Modules - Pipeline
+include(":pipeline:audiobook")

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2025-12-06T10:49:26.649Z" hostname="runnervmoqczp" time="0.089">
+  <properties/>
+  <testcase name="AudiobookItem toPlaybackContext with start chapter includes metadata" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.056"/>
+  <testcase name="AudiobookChapter toPlaybackContext creates valid context" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.023"/>
+  <testcase name="AudiobookItem toPlaybackContext without filePath uses custom URI" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.001"/>
+  <testcase name="AudiobookItem with custom metadata preserves values" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.002"/>
+  <testcase name="AudiobookItem toPlaybackContext creates valid context" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.0"/>
+  <testcase name="AudiobookChapter duration is calculated correctly" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.001"/>
+  <testcase name="AudiobookChapter toPlaybackContext with filePath uses file URI" classname="com.fishit.player.pipeline.audiobook.AudiobookExtensionsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

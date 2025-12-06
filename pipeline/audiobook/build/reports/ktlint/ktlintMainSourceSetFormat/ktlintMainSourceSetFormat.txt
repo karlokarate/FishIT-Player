@@ -1,0 +1,4 @@
+[31m/home/runner/work/FishIT-Player/FishIT-Player/pipeline/audiobook/src/main/java/com/fishit/player/pipeline/audiobook/[0mAudiobookExtensions.kt[31m:[0m10[31m:1:[0m a KDoc may not be preceded by a KDoc [31m(standard:no-consecutive-comments)[0m
+
+Summary error count (descending) by rule:
+  standard:no-consecutive-comments: 1
