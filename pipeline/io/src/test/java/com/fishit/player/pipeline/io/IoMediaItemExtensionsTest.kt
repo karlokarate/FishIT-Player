@@ -93,4 +93,106 @@ class IoMediaItemExtensionsTest {
 
         assertEquals("/path/thumbnail.jpg", context.posterUrl)
     }
+
+    // Tests for toRawMediaMetadata() - Phase 3 contract compliance
+
+    @Test
+    fun `toRawMediaMetadata forwards raw filename without cleaning`() {
+        // Test that scene-style filenames are NOT cleaned by IO pipeline
+        val item =
+            IoMediaItem(
+                id = "test-id",
+                source = IoSource.LocalFile("/movies/X-Men.2000.1080p.BluRay.x264-GROUP.mkv"),
+                title = "X-Men",
+                fileName = "X-Men.2000.1080p.BluRay.x264-GROUP.mkv",
+            )
+
+        val raw = item.toRawMediaMetadata()
+
+        // Raw filename must be forwarded as-is, NO cleaning
+        assertEquals("X-Men.2000.1080p.BluRay.x264-GROUP.mkv", raw["originalTitle"])
+        // IO does NOT extract year/season/episode
+        assertEquals(null, raw["year"])
+        assertEquals(null, raw["season"])
+        assertEquals(null, raw["episode"])
+    }
+
+    @Test
+    fun `toRawMediaMetadata forwards duration in minutes`() {
+        val item =
+            IoMediaItem(
+                id = "test-id",
+                source = IoSource.LocalFile("/path/video.mp4"),
+                title = "Test Video",
+                fileName = "video.mp4",
+                durationMs = 7_260_000L, // 121 minutes
+            )
+
+        val raw = item.toRawMediaMetadata()
+
+        // Duration should be converted from ms to minutes
+        assertEquals(121, raw["durationMinutes"])
+    }
+
+    @Test
+    fun `toRawMediaMetadata handles missing duration`() {
+        val item =
+            IoMediaItem(
+                id = "test-id",
+                source = IoSource.LocalFile("/path/video.mp4"),
+                title = "Test Video",
+                fileName = "video.mp4",
+                durationMs = null,
+            )
+
+        val raw = item.toRawMediaMetadata()
+
+        assertEquals(null, raw["durationMinutes"])
+    }
+
+    @Test
+    fun `toRawMediaMetadata includes source identification`() {
+        val item =
+            IoMediaItem(
+                id = "test-id",
+                source = IoSource.LocalFile("/movies/video.mp4"),
+                title = "Test Video",
+                fileName = "video.mp4",
+            )
+
+        val raw = item.toRawMediaMetadata()
+
+        assertEquals("IO", raw["sourceType"])
+        assertEquals("Local File: video.mp4", raw["sourceLabel"])
+        assertEquals("io:file:file:///movies/video.mp4", raw["sourceId"])
+    }
+
+    @Test
+    fun `toRawMediaMetadata does not include external IDs`() {
+        // IO pipeline cannot provide TMDB/IMDB IDs from raw filesystem
+        val item = IoMediaItem.fake()
+
+        val raw = item.toRawMediaMetadata()
+
+        @Suppress("UNCHECKED_CAST")
+        val externalIds = raw["externalIds"] as Map<String, String>
+        assertTrue("IO should not provide external IDs", externalIds.isEmpty())
+    }
+
+    @Test
+    fun `toRawMediaMetadata preserves special characters in filename`() {
+        // Test that special characters are preserved without cleaning
+        val item =
+            IoMediaItem(
+                id = "test-id",
+                source = IoSource.LocalFile("/path/[Movie] Title (2023) {Edition}.mkv"),
+                title = "Title",
+                fileName = "[Movie] Title (2023) {Edition}.mkv",
+            )
+
+        val raw = item.toRawMediaMetadata()
+
+        // Special characters must be preserved
+        assertEquals("[Movie] Title (2023) {Edition}.mkv", raw["originalTitle"])
+    }
 }
