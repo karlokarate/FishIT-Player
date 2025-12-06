@@ -49,6 +49,7 @@ include(":app-v2")
 // Core
 include(":core:model")
 include(":core:persistence")
+include(":core:metadata-normalizer")
 include(":core:firebase")
 
 // Playback & Player
