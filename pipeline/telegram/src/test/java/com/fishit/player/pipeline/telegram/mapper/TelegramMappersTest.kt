@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.telegram.mapper
 
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
+import com.fishit.player.pipeline.telegram.model.TelegramMediaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -9,7 +10,8 @@ import org.junit.Test
 /**
  * Tests for TelegramMappers.
  *
- * Phase 2 Task 3 (P2-T3) - validates mapping structure without real TDLib.
+ * Updated based on analysis of real Telegram export JSONs from docs/telegram/exports/exports/.
+ * Validates mapping of all message types: video, document, audio, photo, and metadata.
  */
 class TelegramMappersTest {
     @Test
@@ -96,6 +98,151 @@ class TelegramMappersTest {
         assertEquals(2021, mediaItem.year)
         assertEquals("Action, Drama", mediaItem.genres)
         assertEquals("An exciting episode", mediaItem.description)
+    }
+
+    @Test
+    fun `infers VIDEO media type from video mime type`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "Movie.2020.1080p.BluRay.x264-GROUP.mkv",
+                mimeType = "video/x-matroska",
+                durationSecs = 7200,
+                width = 1920,
+                height = 1080,
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.VIDEO, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `infers VIDEO media type from dimensions and duration`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "movie.mp4",
+                mimeType = "video/mp4",
+                durationSecs = 5400,
+                width = 1280,
+                height = 720,
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.VIDEO, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `infers DOCUMENT media type from archive mime type`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "Series.S01.Episodes.01-10.rar",
+                mimeType = "application/vnd.rar",
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.DOCUMENT, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `infers DOCUMENT media type from zip mime type`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "SpongeBob Schwammkopf Folge 49.zip",
+                mimeType = "application/x-zip-compressed",
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.DOCUMENT, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `infers AUDIO media type from audio mime type`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "soundtrack.mp3",
+                mimeType = "audio/mpeg",
+                durationSecs = 180,
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.AUDIO, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `infers PHOTO media type from image mime type`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "poster.jpg",
+                mimeType = "image/jpeg",
+                width = 1707,
+                height = 2560,
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.PHOTO, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `infers PHOTO media type from dimensions without duration`() {
+        val obxMessage =
+            createTestObxMessage(
+                width = 520,
+                height = 780,
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals(TelegramMediaType.PHOTO, mediaItem.mediaType)
+    }
+
+    @Test
+    fun `preserves scene-style filename exactly without cleaning`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv",
+                mimeType = "video/x-matroska",
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        // Filename must be preserved EXACTLY (no cleaning, no normalization)
+        assertEquals("Das.Ende.der.Welt.2012.1080p.BluRay.x264-AWESOME.mkv", mediaItem.fileName)
+    }
+
+    @Test
+    fun `preserves RAR filename with episode info exactly`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileName = "Die Schlümpfe - Staffel 9 - Episode 422-427.rar",
+                caption = "Die Schlümpfe",
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        // Filename must be preserved EXACTLY (no parsing or extraction)
+        assertEquals("Die Schlümpfe - Staffel 9 - Episode 422-427.rar", mediaItem.fileName)
+        // Caption also preserved as-is
+        assertEquals("Die Schlümpfe", mediaItem.caption)
+    }
+
+    @Test
+    fun `maps thumbnail fields when available`() {
+        val obxMessage =
+            createTestObxMessage(
+                fileId = 123,
+                fileUniqueId = "AgAD-4YAAtWaAAFJcg",
+                thumbLocalPath = "/path/to/thumb.jpg",
+            )
+
+        val mediaItem = TelegramMappers.fromObxTelegramMessage(obxMessage)
+
+        assertEquals("AgAD-4YAAtWaAAFJcg", mediaItem.fileUniqueId)
+        assertEquals("/path/to/thumb.jpg", mediaItem.thumbnailPath)
     }
 
     @Test
