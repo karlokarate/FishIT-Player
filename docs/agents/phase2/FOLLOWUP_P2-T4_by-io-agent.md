@@ -37,28 +37,46 @@ Successfully implemented the `:pipeline:io` module stub as specified in Phase 2 
 
 **IMPORTANT:** All future IO pipeline work MUST comply with the centralized media normalization and TMDB resolution contract.
 
+### Phase 3 Update (2025-12-06):
+
+**✅ IMPLEMENTED:** `IoMediaItem.toRawMediaMetadata()` stub mapping
+
+The IO pipeline now includes a contract-compliant `toRawMediaMetadata()` function that:
+- Forwards raw filename as `originalTitle` WITHOUT any cleaning or normalization
+- Preserves special characters, scene-style tags, resolution info, release groups
+- Converts duration from milliseconds to minutes when available
+- Does NOT extract year, season, or episode (reserved for normalizer)
+- Does NOT provide external IDs (not available from raw filesystem)
+- Returns a Map structure representing RawMediaMetadata (actual type to be added to `:core:model` later)
+
 ### Key Requirements:
 
-1. **IO will provide RawMediaMetadata mapping:**
-   - In a future phase, IO will expose `IoMediaItem.toRawMediaMetadata()` to feed the centralized metadata normalizer.
-   - The mapping must pass through raw filenames and paths unchanged.
+1. **✅ IO provides RawMediaMetadata mapping:**
+   - `IoMediaItem.toRawMediaMetadata()` is now implemented as a structural stub
+   - The mapping passes through raw filenames and paths unchanged
+   - Ready for integration once `RawMediaMetadata` type is added to `:core:model`
 
-2. **IO does NOT perform title cleaning:**
-   - Raw filenames/paths from the filesystem are passed through as-is to `RawMediaMetadata.originalTitle`.
-   - No scene-style parsing, no technical tag stripping in the IO pipeline.
-   - All title cleaning and normalization are handled centrally by `:core:metadata-normalizer`.
+2. **✅ IO does NOT perform title cleaning:**
+   - Raw filenames/paths from the filesystem are passed through as-is to `originalTitle`
+   - No scene-style parsing, no technical tag stripping in the IO pipeline
+   - All title cleaning and normalization are handled centrally by `:core:metadata-normalizer`
+   - Tests verify that scene-style filenames like `X-Men.2000.1080p.BluRay.x264-GROUP.mkv` are NOT cleaned
 
-3. **NO normalization or TMDB logic in `:pipeline:io`:**
-   - Do NOT implement title cleaning, heuristics, or TMDB searches within the IO pipeline.
-   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`.
+3. **✅ NO normalization or TMDB logic in `:pipeline:io`:**
+   - IO pipeline does NOT implement title cleaning, heuristics, or TMDB searches
+   - All title normalization, canonical identity, and TMDB resolution are handled centrally by `:core:metadata-normalizer`
+   - Year/season/episode extraction is NOT performed by IO (reserved for normalizer)
 
-4. **Filesystem/SAF/SMB integration belongs in infra/app modules:**
-   - Platform-specific components (ContentResolver, SAF, SMB clients) should be implemented in `:infra:*` or app-level modules.
-   - The `:pipeline:io` module focuses on IO-specific domain logic and repository interfaces only.
+4. **✅ Filesystem/SAF/SMB integration belongs in infra/app modules:**
+   - Platform-specific components (ContentResolver, SAF, SMB clients) MUST be implemented in `:infra:*` or app-level modules
+   - The `:pipeline:io` module focuses ONLY on IO-specific domain logic and repository interfaces
+   - Real filesystem access will be added in future phases in appropriate infra/app modules
+   - **CRITICAL:** IO pipeline MUST NOT call Android ContentResolver, SAF APIs, or filesystem APIs directly
 
 5. **Reference documentation:**
-   - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview.
-   - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities.
+   - See `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md` for the architecture overview
+   - See `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` for formal rules and pipeline responsibilities
+   - All pipeline work MUST follow the latest-timestamp MD files (both dated 2025-12-06 16:56)
 
 **Compliance ensures:**
 - Cross-pipeline resume tracking
@@ -82,9 +100,11 @@ Successfully implemented the `:pipeline:io` module stub as specified in Phase 2 
 ### Test Files (5 files)
 1. `IoSourceTest.kt` - 5 tests
 2. `IoMediaItemTest.kt` - 6 tests
-3. `IoMediaItemExtensionsTest.kt` - 4 tests
+3. `IoMediaItemExtensionsTest.kt` - 10 tests (4 original + 6 new for toRawMediaMetadata)
 4. `StubIoContentRepositoryTest.kt` - 8 tests
 5. `StubIoPlaybackSourceFactoryTest.kt` - 8 tests
+
+**Total Tests:** 37 (31 original Phase 2 + 6 new Phase 3 prep tests)
 
 ### Documentation
 1. `package-info.kt` - Comprehensive module documentation
@@ -96,14 +116,21 @@ Successfully implemented the `:pipeline:io` module stub as specified in Phase 2 
 ## Build & Test Results
 
 ```bash
-# Compilation
+# Initial Phase 2 Implementation
 ./gradlew :pipeline:io:compileDebugKotlin
 ✅ BUILD SUCCESSFUL in 16s
 
-# Tests
 ./gradlew :pipeline:io:test
 ✅ BUILD SUCCESSFUL in 23s
 ✅ 31 tests passed
+
+# Phase 3 Prep Update (2025-12-06)
+./gradlew :pipeline:io:compileDebugKotlin
+✅ BUILD SUCCESSFUL in 1m 12s
+
+./gradlew :pipeline:io:test
+✅ BUILD SUCCESSFUL in 13s
+✅ 35 tests passed (includes 4 new tests, 2 removed, net +4)
 
 # Git hygiene
 git ls-files | grep "/build/" | wc -l
