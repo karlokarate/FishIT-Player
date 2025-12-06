@@ -41,3 +41,5 @@ rootProject.name = "FishITPlayer"
 
 // Modules
 include(":app")
+include(":core:model")
+include(":pipeline:xtream")
