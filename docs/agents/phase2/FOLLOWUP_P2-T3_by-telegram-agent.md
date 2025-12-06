@@ -133,12 +133,16 @@ A  docs/agents/phase2/FOLLOWUP_P2-T3_by-telegram-agent.md
 
 #### Normalization Contract Overview
 
-The v2 architecture introduces a **centralized normalization layer** (`:core:metadata-normalizer`) that handles:
+The v2 architecture introduces a **centralized normalization layer** that handles:
 - Title cleaning and normalization
 - Technical tag stripping (resolution, codec, release group)
 - Scene-style naming pattern parsing
 - TMDB/IMDB/TVDB lookup and identity resolution
 - Cross-pipeline canonical identity assignment
+
+**Architecture:**
+- **Data types** (`RawMediaMetadata`, `NormalizedMediaMetadata`, `ExternalIds`, `SourceType`) → defined in `:core:model`
+- **Normalization behavior** (`MediaMetadataNormalizer`, `TmdbMetadataResolver`) → implemented in `:core:metadata-normalizer`
 
 **Pipelines (including Telegram) provide RAW metadata ONLY.**
 
@@ -150,13 +154,14 @@ The v2 architecture introduces a **centralized normalization layer** (`:core:met
    - The mapping passes through raw titles **without any modification**.
    - Priority: title > episodeTitle > caption > fileName
    - **CRITICAL:** Types like `RawMediaMetadata`, `ExternalIds`, `SourceType` are NOT and MUST NOT be defined in `:pipeline:telegram`
-   - These types will be defined in `:core:metadata-normalizer` (Phase 3)
+   - These types will be defined in `:core:model` (Phase 3)
+   - Normalization behavior implemented in `:core:metadata-normalizer` (Phase 3)
 
 2. **extractTitle() MUST stay a simple field priority selector:**
    - The existing `extractTitle()` function in `TelegramMappers.kt` only selects the best source field.
    - It does **NOT** strip resolution tags, codec info, or scene-style naming patterns.
    - It does **NOT** clean, normalize, or transform titles in any way.
-   - All title cleaning is handled centrally by `:core:metadata-normalizer`.
+   - All title cleaning is handled centrally by normalization behavior in `:core:metadata-normalizer`.
 
 3. **NO normalization or TMDB logic in `:pipeline:telegram`:**
    - ❌ Do NOT implement title cleaning or heuristics
@@ -183,11 +188,15 @@ The v2 architecture introduces a **centralized normalization layer** (`:core:met
    - `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` - Formal rules and pipeline responsibilities (AUTHORITATIVE)
    - `pipeline/telegram/mapper/TelegramRawMetadataContract.kt` - Structure-only documentation (NOT implementation)
 
-**Types NOT defined in `:pipeline:telegram`:**
-- `RawMediaMetadata` - Will be in `:core:metadata-normalizer` (Phase 3)
-- `NormalizedMediaMetadata` - Will be in `:core:metadata-normalizer` (Phase 3)
-- `ExternalIds` - Will be in `:core:metadata-normalizer` (Phase 3)
-- `SourceType` - Will be in `:core:metadata-normalizer` (Phase 3)
+**Module Ownership:**
+- **Types (`:core:model`):**
+  - `RawMediaMetadata` - Data type for raw pipeline metadata
+  - `NormalizedMediaMetadata` - Data type for normalized metadata
+  - `ExternalIds` - External identifier collection
+  - `SourceType` - Pipeline source enum
+- **Behavior (`:core:metadata-normalizer`):**
+  - `MediaMetadataNormalizer` - Normalization logic
+  - `TmdbMetadataResolver` - TMDB lookup and enrichment
 
 The Telegram pipeline only references these types in documentation, never defines them locally.
 
@@ -196,7 +205,7 @@ The Telegram pipeline only references these types in documentation, never define
 - Unified detail screens (all versions of a movie/episode grouped together)
 - Version selection across pipelines (quality, language, subtitles)
 - Predictable TMDB-first canonical identity
-- Clean separation of concerns (pipeline = raw data, normalizer = intelligence)
+- Clean separation of concerns (pipeline = raw data, types in `:core:model`, behavior in `:core:metadata-normalizer`)
 
 ---
 

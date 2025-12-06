@@ -4,7 +4,7 @@ package com.fishit.player.pipeline.telegram.mapper
  * Telegram pipeline integration with the centralized media normalization contract.
  *
  * This file documents the STRUCTURE ONLY of how Telegram will provide raw metadata
- * to the future `:core:metadata-normalizer` module in Phase 3.
+ * to the centralization layer in Phase 3.
  *
  * **CRITICAL: This is documentation only - NOT an implementation.**
  *
@@ -12,12 +12,17 @@ package com.fishit.player.pipeline.telegram.mapper
  * - Telegram provides RAW metadata ONLY (no cleaning, no normalization, no heuristics)
  * - Title extraction is a simple field priority selector (title > episodeTitle > caption > fileName)
  * - NO title cleaning, NO tag stripping, NO TMDB lookups
- * - All normalization happens centrally in `:core:metadata-normalizer`
+ * - All normalization happens centrally
  *
  * **Type Definitions:**
- * - `RawMediaMetadata` - Defined in `:core:metadata-normalizer` (NOT in this module)
- * - `ExternalIds` - Defined in `:core:metadata-normalizer` (NOT in this module)
- * - `SourceType` - Defined in `:core:metadata-normalizer` (NOT in this module)
+ * - `RawMediaMetadata` - Defined in `:core:model` (NOT in this module)
+ * - `NormalizedMediaMetadata` - Defined in `:core:model` (NOT in this module)
+ * - `ExternalIds` - Defined in `:core:model` (NOT in this module)
+ * - `SourceType` - Defined in `:core:model` (NOT in this module)
+ *
+ * **Normalization Behavior:**
+ * - `MediaMetadataNormalizer` - Implemented in `:core:metadata-normalizer`
+ * - `TmdbMetadataResolver` - Implemented in `:core:metadata-normalizer`
  *
  * This module does NOT and MUST NOT define these types locally.
  *
@@ -26,7 +31,7 @@ package com.fishit.player.pipeline.telegram.mapper
  *
  * ## Future Implementation (Phase 3+)
  *
- * When `:core:metadata-normalizer` module exists with the required types, implement:
+ * When `:core:model` module has the required types, implement:
  *
  * ```kotlin
  * fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
@@ -46,9 +51,9 @@ package com.fishit.player.pipeline.telegram.mapper
  * ```
  *
  * **Type sources (Phase 3):**
- * - `RawMediaMetadata` - from `:core:metadata-normalizer`
- * - `ExternalIds` - from `:core:metadata-normalizer`
- * - `SourceType.TELEGRAM` - enum value from `:core:metadata-normalizer`
+ * - `RawMediaMetadata` - from `:core:model`
+ * - `ExternalIds` - from `:core:model`
+ * - `SourceType.TELEGRAM` - enum value from `:core:model`
  *
  * **extractRawTitle() helper (simple field priority selector):**
  * ```kotlin
@@ -84,11 +89,13 @@ package com.fishit.player.pipeline.telegram.mapper
  * 4. ✅ Leave externalIds empty (Telegram doesn't provide TMDB/IMDB/TVDB)
  * 5. ✅ NO TMDB lookups, NO cross-pipeline matching, NO canonical identity computation
  *
- * **Centralizer Responsibilities (`:core:metadata-normalizer`):**
- * - Title cleaning and normalization (strip tags, standardize format)
- * - TMDB/IMDB/TVDB lookups and identity resolution
- * - Cross-pipeline canonical identity assignment
- * - Scene-style naming pattern parsing
+ * **Centralizer Responsibilities:**
+ * - **Types (`:core:model`):** RawMediaMetadata, NormalizedMediaMetadata, ExternalIds, SourceType
+ * - **Behavior (`:core:metadata-normalizer`):**
+ *   - Title cleaning and normalization (strip tags, standardize format)
+ *   - TMDB/IMDB/TVDB lookups and identity resolution
+ *   - Cross-pipeline canonical identity assignment
+ *   - Scene-style naming pattern parsing
  */
 object TelegramRawMetadataContract {
     /**
@@ -97,7 +104,10 @@ object TelegramRawMetadataContract {
     const val CONTRACT_VERSION = "1.0"
 
     /**
-     * Future module dependency that will provide RawMediaMetadata types.
+     * Future module dependencies:
+     * - Types from `:core:model`
+     * - Normalization behavior from `:core:metadata-normalizer`
      */
-    const val MODULE_DEPENDENCY = ":core:metadata-normalizer"
+    const val TYPE_MODULE = ":core:model"
+    const val NORMALIZER_MODULE = ":core:metadata-normalizer"
 }

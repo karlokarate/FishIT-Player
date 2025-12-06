@@ -10,16 +10,20 @@
 This document outlines the future work needed to complete the Telegram pipeline integration after Phase 3 (Metadata Normalization Core) is implemented.
 
 **CRITICAL: Type Definitions:**
-- `RawMediaMetadata` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
-- `NormalizedMediaMetadata` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
-- `ExternalIds` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
-- `SourceType` - Defined in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+- `RawMediaMetadata` - Defined in `:core:model` (NOT in `:pipeline:telegram`)
+- `NormalizedMediaMetadata` - Defined in `:core:model` (NOT in `:pipeline:telegram`)
+- `ExternalIds` - Defined in `:core:model` (NOT in `:pipeline:telegram`)
+- `SourceType` - Defined in `:core:model` (NOT in `:pipeline:telegram`)
 
-The Telegram pipeline NEVER defines these types locally.
+**CRITICAL: Normalization Behavior:**
+- `MediaMetadataNormalizer` - Implemented in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+- `TmdbMetadataResolver` - Implemented in `:core:metadata-normalizer` (NOT in `:pipeline:telegram`)
+
+The Telegram pipeline NEVER defines these types or implements normalization behavior locally.
 
 **Prerequisites:**
-1. `:core:metadata-normalizer` module created with type definitions
-2. `RawMediaMetadata` and `NormalizedMediaMetadata` data classes available
+1. `:core:model` module has `RawMediaMetadata` and related type definitions
+2. `:core:metadata-normalizer` module created with behavior implementations
 3. `MediaMetadataNormalizer` interface and implementation (centralized)
 4. `TmdbMetadataResolver` interface and implementation (centralized)
 5. `CanonicalMediaRepository` for persistence (centralized)
@@ -36,19 +40,20 @@ The Telegram pipeline NEVER defines these types locally.
 
 **Implementation Steps:**
 
-1. **Add dependency on :core:metadata-normalizer:**
+1. **Add dependencies:**
    ```kotlin
    // pipeline/telegram/build.gradle.kts
    dependencies {
-       implementation(project(":core:metadata-normalizer"))
+       implementation(project(":core:model"))  // For RawMediaMetadata types
+       implementation(project(":core:metadata-normalizer"))  // For normalization behavior (optional)
    }
    ```
 
 2. **Implement the extension function:**
    ```kotlin
-   import com.fishit.player.core.metadatanormalizer.RawMediaMetadata
-   import com.fishit.player.core.metadatanormalizer.ExternalIds
-   import com.fishit.player.core.metadatanormalizer.SourceType
+   import com.fishit.player.core.model.RawMediaMetadata
+   import com.fishit.player.core.model.ExternalIds
+   import com.fishit.player.core.model.SourceType
    
    fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
        return RawMediaMetadata(
@@ -230,6 +235,10 @@ class TdLibTelegramPlaybackSourceFactory(
 **CRITICAL:** The normalizer and TMDB resolver are EXTERNAL services provided by `:core:metadata-normalizer`.
 The Telegram pipeline NEVER implements normalization, TMDB lookups, or canonical identity logic.
 
+**Type Ownership:**
+- **Data types (`:core:model`):** RawMediaMetadata, NormalizedMediaMetadata, ExternalIds, SourceType
+- **Behavior (`:core:metadata-normalizer`):** MediaMetadataNormalizer, TmdbMetadataResolver
+
 **Use Case:** When a user browses Telegram media, the app should:
 1. Load media items from `TelegramContentRepository`
 2. Convert to `RawMediaMetadata` via `toRawMediaMetadata()` (raw data only)
@@ -247,7 +256,7 @@ The Telegram pipeline NEVER implements normalization, TMDB lookups, or canonical
 ```kotlin
 class TelegramMediaViewModel(
     private val contentRepository: TelegramContentRepository,
-    // EXTERNAL services from :core:metadata-normalizer
+    // EXTERNAL services from :core:metadata-normalizer (behavior)
     private val metadataNormalizer: MediaMetadataNormalizer,
     private val tmdbResolver: TmdbMetadataResolver,
     private val canonicalMediaRepo: CanonicalMediaRepository
@@ -285,8 +294,9 @@ class TelegramMediaViewModel(
 
 **Responsibilities Breakdown:**
 - **Telegram Pipeline:** Provides raw `TelegramMediaItem` and converts to `RawMediaMetadata`
-- **MediaMetadataNormalizer (EXTERNAL):** Title cleaning, tag stripping, parsing
-- **TmdbMetadataResolver (EXTERNAL):** TMDB lookups, external ID resolution
+- **Types (`:core:model`):** RawMediaMetadata, ExternalIds, SourceType definitions
+- **MediaMetadataNormalizer (EXTERNAL - `:core:metadata-normalizer`):** Title cleaning, tag stripping, parsing
+- **TmdbMetadataResolver (EXTERNAL - `:core:metadata-normalizer`):** TMDB lookups, external ID resolution
 - **CanonicalMediaRepository (EXTERNAL):** Persistence, cross-pipeline linking
 
 ### 3.2 Background Sync Integration
@@ -300,7 +310,7 @@ class TelegramSyncWorker(
     context: Context,
     params: WorkerParameters,
     private val contentRepository: TelegramContentRepository,
-    // EXTERNAL services from :core:metadata-normalizer
+    // EXTERNAL services from :core:metadata-normalizer (behavior)
     private val metadataNormalizer: MediaMetadataNormalizer,
     private val canonicalMediaRepo: CanonicalMediaRepository
 ) : CoroutineWorker(context, params) {
@@ -334,7 +344,8 @@ class TelegramSyncWorker(
 - **TelegramSyncWorker:** Orchestrates the workflow
 - **TelegramContentRepository:** Telegram data access (TDLib)
 - **toRawMediaMetadata():** Raw field mapping (no cleaning)
-- **MediaMetadataNormalizer (EXTERNAL):** Title cleaning, tag stripping
+- **Types (`:core:model`):** RawMediaMetadata, ExternalIds, SourceType
+- **MediaMetadataNormalizer (EXTERNAL - `:core:metadata-normalizer`):** Title cleaning, tag stripping
 - **CanonicalMediaRepository (EXTERNAL):** Persistence
 
 ### 3.3 Batching Strategy
@@ -566,8 +577,8 @@ Phase 3 prep is complete when:
 ## Dependencies
 
 **Required Modules:**
-- `:core:metadata-normalizer` (Phase 3)
-- `:core:model` (exists)
+- `:core:model` (types: RawMediaMetadata, ExternalIds, SourceType)
+- `:core:metadata-normalizer` (behavior: normalization, TMDB resolution)
 - `:core:persistence` (exists)
 - `:infra:logging` (exists)
 

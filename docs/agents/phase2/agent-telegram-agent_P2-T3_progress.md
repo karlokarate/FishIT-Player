@@ -73,7 +73,7 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
 - PlaybackContext and PlaybackType already defined in core/model
 - Using deterministic stubs - no async flows, no real TDLib clients
 - All implementations return empty or mock data for Phase 2 testing
-- **Media Normalization Contract:** Future work will include `TelegramMediaItem.toRawMediaMetadata()` implementation; all normalization handled by `:core:metadata-normalizer` (see `FOLLOWUP_P2-T3_by-telegram-agent.md`)
+- **Media Normalization Contract:** Future work will include `TelegramMediaItem.toRawMediaMetadata()` implementation; types defined in `:core:model`, normalization behavior in `:core:metadata-normalizer` (see `FOLLOWUP_P2-T3_by-telegram-agent.md`)
 
 ---
 
@@ -103,9 +103,9 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
    - Documents the planned `toRawMediaMetadata()` signature for Phase 3
    - Shows raw title extraction logic (NO cleaning, NO normalization)
    - Clarifies contract compliance requirements
-   - References `:core:metadata-normalizer` as future dependency
+   - References dependencies: types from `:core:model`, normalization from `:core:metadata-normalizer`
    - **CRITICAL:** Does NOT define `RawMediaMetadata`, `ExternalIds`, or `SourceType` types
-   - These types will be defined in `:core:metadata-normalizer` (Phase 3), NOT in `:pipeline:telegram`
+   - These types will be defined in `:core:model` (Phase 3), NOT in `:pipeline:telegram`
 
 2. **Updated FOLLOWUP_P2-T3** - Enhanced normalization section
    - Added comprehensive "Normalization & Canonical Identity Integration" section
@@ -126,22 +126,20 @@ Implement Phase 2 Task 3 (P2-T3) Telegram Pipeline STUB as defined in the proble
 - ✅ NO TMDB/IMDB/TVDB lookups
 - ✅ Simple field priority for title selection (title > episodeTitle > caption > fileName)
 - ✅ Raw metadata passed to centralizer as-is (with concrete examples)
-- ✅ All intelligence centralized in `:core:metadata-normalizer`
-- ✅ NO local type definitions (RawMediaMetadata, ExternalIds, SourceType defined in core)
+- ✅ All intelligence centralized (types in `:core:model`, behavior in `:core:metadata-normalizer`)
+- ✅ NO local type definitions (RawMediaMetadata, ExternalIds, SourceType defined in `:core:model`)
 
 #### Separation of Concerns:
 - **Pipeline Responsibility:** Provide raw source data via `toRawMediaMetadata()` (Phase 3)
-- **Normalizer Responsibility:** Title cleaning, tag stripping, TMDB lookups, canonical identity
-- **Type Ownership:** All normalization types (`RawMediaMetadata`, `ExternalIds`, `SourceType`) defined in `:core:metadata-normalizer`, NOT in `:pipeline:telegram`
+- **Type Definitions (`:core:model`):** RawMediaMetadata, NormalizedMediaMetadata, ExternalIds, SourceType
+- **Normalization Behavior (`:core:metadata-normalizer`):** Title cleaning, tag stripping, TMDB lookups, canonical identity
 
 #### Future Implementation Note:
 The actual `toRawMediaMetadata()` extension function will be implemented when:
-1. `:core:metadata-normalizer` module is created
-2. `RawMediaMetadata` data class is defined
-3. `SourceType.TELEGRAM` enum value exists
-4. Phase 3 metadata normalization begins
+1. `:core:model` module has `RawMediaMetadata` and related types
+2. Phase 3 metadata normalization begins
 
-The structure documented in `TelegramMetadataNormalization.kt` serves as the blueprint.
+The structure documented in `TelegramRawMetadataContract.kt` serves as the blueprint.
 
 ### Build Status
 - Compilation: ✅ SUCCESS
