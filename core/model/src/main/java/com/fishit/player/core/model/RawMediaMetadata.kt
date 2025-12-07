@@ -12,6 +12,7 @@ package com.fishit.player.core.model
  * - All normalization handled centrally by :core:metadata-normalizer
  *
  * @property originalTitle Human-readable title as provided by source (NO cleaning)
+ * @property mediaType Type of media content (MOVIE, SERIES_EPISODE, LIVE, CLIP, etc.)
  * @property year Release year if available
  * @property season Season number for episodes, null for movies/VOD
  * @property episode Episode number for episodes, null for movies/VOD
@@ -23,6 +24,7 @@ package com.fishit.player.core.model
  */
 data class RawMediaMetadata(
     val originalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
     val year: Int? = null,
     val season: Int? = null,
     val episode: Int? = null,
@@ -54,22 +56,22 @@ data class ExternalIds(
 enum class SourceType {
     /** Xtream Codes API provider (IPTV, VOD, Series) */
     XTREAM,
-    
+
     /** Telegram media integration via TDLib */
     TELEGRAM,
-    
+
     /** Local file system, SAF, SMB, ContentResolver */
     IO,
-    
+
     /** Audiobook-specific pipeline */
     AUDIOBOOK,
-    
+
     /** Local media library scanner */
     LOCAL,
-    
+
     /** Plex Media Server integration */
     PLEX,
-    
+
     /** Other/unknown source types */
     OTHER,
 }

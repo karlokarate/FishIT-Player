@@ -12,6 +12,7 @@ package com.fishit.player.core.model
  * - Deterministic: same input → same normalized output
  *
  * @property canonicalTitle Cleaned, normalized title used for canonical identity
+ * @property mediaType Type of media content (may be refined during normalization)
  * @property year Release year (possibly refined after normalization/TMDB enrichment)
  * @property season Season number for episodes, null for movies
  * @property episode Episode number for episodes, null for movies
@@ -20,6 +21,7 @@ package com.fishit.player.core.model
  */
 data class NormalizedMediaMetadata(
     val canonicalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
     val year: Int? = null,
     val season: Int? = null,
     val episode: Int? = null,

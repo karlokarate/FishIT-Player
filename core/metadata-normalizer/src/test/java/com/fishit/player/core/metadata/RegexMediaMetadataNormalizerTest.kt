@@ -1,6 +1,7 @@
 package com.fishit.player.core.metadata
 
 import com.fishit.player.core.model.ExternalIds
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import kotlinx.coroutines.test.runTest
@@ -465,5 +466,86 @@ class RegexMediaMetadataNormalizerTest {
                 result1.canonicalTitle != result2.canonicalTitle ||
                     result1.year != result2.year,
             )
+        }
+
+    // ========== MEDIATYPE INFERENCE TESTS ==========
+
+    @Test
+    fun `normalize infers SERIES_EPISODE type from season and episode`() =
+        runTest {
+            // Given: raw metadata with UNKNOWN type but has season/episode
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Friends.S01E01.720p.BluRay.x264",
+                    mediaType = MediaType.UNKNOWN,
+                    year = null,
+                    season = null, // Will be parsed from filename
+                    episode = null, // Will be parsed from filename
+                    durationMinutes = 22,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.IO,
+                    sourceLabel = "Local Files",
+                    sourceId = "file:///storage/friends.mkv",
+                )
+
+            // When: normalizing
+            val normalized = normalizer.normalize(raw)
+
+            // Then: type is inferred as SERIES_EPISODE
+            assertEquals(MediaType.SERIES_EPISODE, normalized.mediaType)
+            assertEquals(1, normalized.season)
+            assertEquals(1, normalized.episode)
+        }
+
+    @Test
+    fun `normalize infers MOVIE type from year when no season or episode`() =
+        runTest {
+            // Given: raw metadata with UNKNOWN type but has year
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Inception.2010.1080p.BluRay.x264",
+                    mediaType = MediaType.UNKNOWN,
+                    year = null, // Will be parsed from filename
+                    season = null,
+                    episode = null,
+                    durationMinutes = 148,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.IO,
+                    sourceLabel = "Local Files",
+                    sourceId = "file:///storage/inception.mkv",
+                )
+
+            // When: normalizing
+            val normalized = normalizer.normalize(raw)
+
+            // Then: type is inferred as MOVIE
+            assertEquals(MediaType.MOVIE, normalized.mediaType)
+            assertEquals(2010, normalized.year)
+        }
+
+    @Test
+    fun `normalize preserves explicit mediaType over inference`() =
+        runTest {
+            // Given: raw metadata with explicit CLIP type but has year
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Trailer.2024.1080p.WEB",
+                    mediaType = MediaType.CLIP, // Explicit type
+                    year = null, // Will be parsed from filename
+                    season = null,
+                    episode = null,
+                    durationMinutes = 3,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.TELEGRAM,
+                    sourceLabel = "Telegram: Trailers",
+                    sourceId = "tg://message/789",
+                )
+
+            // When: normalizing
+            val normalized = normalizer.normalize(raw)
+
+            // Then: explicit CLIP type is preserved
+            assertEquals(MediaType.CLIP, normalized.mediaType)
+            assertEquals(2024, normalized.year)
         }
 }

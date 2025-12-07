@@ -27,7 +27,7 @@ data class CanonicalMediaId(
 enum class MediaKind {
     /** Feature film or VOD movie */
     MOVIE,
-    
+
     /** TV episode or series episode */
     EPISODE,
 }
