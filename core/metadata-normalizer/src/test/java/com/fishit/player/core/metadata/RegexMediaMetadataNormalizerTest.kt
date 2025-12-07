@@ -548,4 +548,29 @@ class RegexMediaMetadataNormalizerTest {
             assertEquals(MediaType.CLIP, normalized.mediaType)
             assertEquals(2024, normalized.year)
         }
+
+    @Test
+    fun `normalize keeps UNKNOWN type when no metadata for inference`() =
+        runTest {
+            // Given: raw metadata with UNKNOWN type and no year/season/episode
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Random Video File",
+                    mediaType = MediaType.UNKNOWN,
+                    year = null,
+                    season = null,
+                    episode = null,
+                    durationMinutes = 45,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.IO,
+                    sourceLabel = "Local Files",
+                    sourceId = "file:///storage/video.mkv",
+                )
+
+            // When: normalizing
+            val normalized = normalizer.normalize(raw)
+
+            // Then: type remains UNKNOWN (no inference possible)
+            assertEquals(MediaType.UNKNOWN, normalized.mediaType)
+        }
 }
