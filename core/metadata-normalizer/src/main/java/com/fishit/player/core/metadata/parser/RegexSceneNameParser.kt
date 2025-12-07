@@ -81,15 +81,17 @@ class RegexSceneNameParser : SceneNameParser {
             )
 
         // Year patterns (with boundaries to avoid false positives)
+        // Matches years with word boundaries or underscores as delimiters
         private val YEAR_REGEX =
             Regex(
-                "\\b(19\\d{2}|20\\d{2})\\b",
+                "(?:^|[\\s._-])(19\\d{2}|20\\d{2})(?=[\\s._-]|$)",
             )
 
         // Year in parentheses (higher confidence)
+        // Requires actual parentheses to avoid matching years inside timestamps/IDs
         private val YEAR_PAREN_REGEX =
             Regex(
-                "\\(?(19\\d{2}|20\\d{2})\\)?",
+                "\\((19\\d{2}|20\\d{2})\\)",
             )
 
         // Release group patterns
@@ -231,9 +233,10 @@ class RegexSceneNameParser : SceneNameParser {
                         position > 0.6
                     } ?: yearMatches.last()
 
-                val yearCandidate = lastYearMatch.value.toIntOrNull()
+                val yearCandidate = lastYearMatch.groupValues[1].toIntOrNull()
                 if (yearCandidate != null && yearCandidate in 1900..2099) {
                     year = yearCandidate
+                    // Replace the full match (including delimiters) with space
                     workingString = workingString.replace(lastYearMatch.value, " ")
                 }
             }

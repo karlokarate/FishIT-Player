@@ -358,6 +358,52 @@ class RegexMediaMetadataNormalizerTest {
             assertEquals("tt0133093", normalized.externalIds.imdbId)
         }
 
+    @Test
+    fun `normalize does not extract year from timestamp-like numbers`() =
+        runTest {
+            // Filenames with timestamps or message IDs should not have years extracted
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Movie_20231205_file.mp4",
+                    year = null,
+                    season = null,
+                    episode = null,
+                    durationMinutes = null,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.TELEGRAM,
+                    sourceLabel = "Telegram: Movies",
+                    sourceId = "tg://message/123",
+                )
+
+            val normalized = normalizer.normalize(raw)
+
+            // Should NOT extract 2023 from 20231205
+            assertEquals("Movie 20231205 file", normalized.canonicalTitle)
+            assertNull(normalized.year)
+        }
+
+    @Test
+    fun `normalize extracts year from actual parentheses`() =
+        runTest {
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "After the Hunt (2025).mp4",
+                    year = null,
+                    season = null,
+                    episode = null,
+                    durationMinutes = null,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.IO,
+                    sourceLabel = "Local Files",
+                    sourceId = "file:///movies/hunt.mp4",
+                )
+
+            val normalized = normalizer.normalize(raw)
+
+            assertEquals("After the Hunt", normalized.canonicalTitle)
+            assertEquals(2025, normalized.year)
+        }
+
     // ========== DETERMINISM TESTS ==========
 
     @Test
