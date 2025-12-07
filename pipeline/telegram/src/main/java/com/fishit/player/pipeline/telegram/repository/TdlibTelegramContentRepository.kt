@@ -42,7 +42,7 @@ class TdlibTelegramContentRepository(
         limit: Int,
         offset: Int
     ): List<TelegramMediaItem> {
-        UnifiedLog.debug(TAG, "getAllMediaItems() - STUB implementation")
+        UnifiedLog.d(TAG, "getAllMediaItems() - STUB implementation")
         return emptyList()
     }
     
@@ -51,12 +51,12 @@ class TdlibTelegramContentRepository(
         limit: Int,
         offset: Int
     ): List<TelegramMediaItem> {
-        UnifiedLog.debug(TAG, "getMediaItemsByChat() - STUB implementation")
+        UnifiedLog.d(TAG, "getMediaItemsByChat() - STUB implementation")
         return emptyList()
     }
     
     override suspend fun getRecentMediaItems(limit: Int): List<TelegramMediaItem> {
-        UnifiedLog.debug(TAG, "getRecentMediaItems() - STUB implementation")
+        UnifiedLog.d(TAG, "getRecentMediaItems() - STUB implementation")
         return emptyList()
     }
     
@@ -64,7 +64,7 @@ class TdlibTelegramContentRepository(
         query: String,
         limit: Int
     ): List<TelegramMediaItem> {
-        UnifiedLog.debug(TAG, "searchMediaItems() - STUB implementation")
+        UnifiedLog.d(TAG, "searchMediaItems() - STUB implementation")
         return emptyList()
     }
     
@@ -72,21 +72,21 @@ class TdlibTelegramContentRepository(
         seriesName: String,
         limit: Int
     ): List<TelegramMediaItem> {
-        UnifiedLog.debug(TAG, "getSeriesMediaItems() - STUB implementation")
+        UnifiedLog.d(TAG, "getSeriesMediaItems() - STUB implementation")
         return emptyList()
     }
     
     override suspend fun getMediaItemById(id: Long): TelegramMediaItem? {
-        UnifiedLog.debug(TAG, "getMediaItemById() - STUB implementation")
+        UnifiedLog.d(TAG, "getMediaItemById() - STUB implementation")
         return null
     }
     
     override suspend fun getAllChats(): List<TelegramChatSummary> {
-        UnifiedLog.debug(TAG, "getAllChats() - STUB implementation")
+        UnifiedLog.d(TAG, "getAllChats() - STUB implementation")
         return emptyList()
     }
     
     override suspend fun refresh() {
-        UnifiedLog.debug(TAG, "refresh() - STUB implementation")
+        UnifiedLog.d(TAG, "refresh() - STUB implementation")
     }
 }

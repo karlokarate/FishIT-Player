@@ -47,7 +47,7 @@ class TdlibTelegramClient(
     
     override suspend fun ensureAuthorized() {
         // STUB: For Phase 2, assume not authorized
-        UnifiedLog.debug(TAG, "ensureAuthorized() - STUB implementation")
+        UnifiedLog.d(TAG, "ensureAuthorized() - STUB implementation")
         throw TelegramAuthException("TDLib integration not complete - stub implementation")
     }
     
@@ -57,7 +57,7 @@ class TdlibTelegramClient(
         offsetMessageId: Long
     ): List<TelegramMediaItem> {
         // STUB: Return empty list
-        UnifiedLog.debug(TAG, "fetchMediaMessages() - STUB implementation")
+        UnifiedLog.d(TAG, "fetchMediaMessages() - STUB implementation")
         return emptyList()
     }
     
@@ -66,25 +66,25 @@ class TdlibTelegramClient(
         limit: Int
     ): List<TelegramMediaItem> {
         // STUB: Return empty list
-        UnifiedLog.debug(TAG, "fetchAllMediaMessages() - STUB implementation")
+        UnifiedLog.d(TAG, "fetchAllMediaMessages() - STUB implementation")
         return emptyList()
     }
     
     override suspend fun resolveFileLocation(fileId: Int): TelegramFileLocation {
         // STUB: Throw exception
-        UnifiedLog.debug(TAG, "resolveFileLocation() - STUB implementation")
+        UnifiedLog.d(TAG, "resolveFileLocation() - STUB implementation")
         throw TelegramFileException("TDLib integration not complete - stub implementation")
     }
     
     override suspend fun resolveFileByRemoteId(remoteId: String): Int {
         // STUB: Throw exception
-        UnifiedLog.debug(TAG, "resolveFileByRemoteId() - STUB implementation")
+        UnifiedLog.d(TAG, "resolveFileByRemoteId() - STUB implementation")
         throw TelegramFileException("TDLib integration not complete - stub implementation")
     }
     
     override suspend fun getChats(limit: Int): List<TelegramChatInfo> {
         // STUB: Return empty list
-        UnifiedLog.debug(TAG, "getChats() - STUB implementation")
+        UnifiedLog.d(TAG, "getChats() - STUB implementation")
         return emptyList()
     }
     
@@ -95,12 +95,12 @@ class TdlibTelegramClient(
         limit: Long
     ): TelegramFileLocation {
         // STUB: Throw exception
-        UnifiedLog.debug(TAG, "ensureFileReady() - STUB implementation")
+        UnifiedLog.d(TAG, "ensureFileReady() - STUB implementation")
         throw TelegramFileException("TDLib integration not complete - stub implementation")
     }
     
     override suspend fun close() {
-        UnifiedLog.debug(TAG, "close() - STUB implementation")
+        UnifiedLog.d(TAG, "close() - STUB implementation")
         _authState.value = TelegramAuthState.Idle
         _connectionState.value = TelegramConnectionState.Disconnected
     }
