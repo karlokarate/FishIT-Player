@@ -3,28 +3,29 @@ package com.fishit.player.pipeline.telegram.mapper
 /**
  * Telegram pipeline integration with the centralized media normalization contract.
  *
- * This file documents the STRUCTURE ONLY of how Telegram will provide raw metadata
- * to the centralization layer in Phase 3.
+ * **IMPLEMENTATION STATUS: COMPLETE (Phase 3)**
  *
- * **CRITICAL: This is documentation only - NOT an implementation.**
+ * The actual implementation is in:
+ * - `TelegramMediaItem.toRawMediaMetadata()` extension in
+ *   `com.fishit.player.pipeline.telegram.model.TelegramRawMetadataExtensions`
+ *
+ * This file is retained for contract documentation purposes.
  *
  * **CONTRACT COMPLIANCE:**
- * - Telegram provides RAW metadata ONLY (no cleaning, no normalization, no heuristics)
- * - Title extraction is a simple field priority selector (title > episodeTitle > caption > fileName)
- * - NO title cleaning, NO tag stripping, NO TMDB lookups
- * - All normalization happens centrally
+ * - ✅ Telegram provides RAW metadata ONLY (no cleaning, no normalization, no heuristics)
+ * - ✅ Title extraction via simple field priority (title > episodeTitle > caption > fileName)
+ * - ✅ NO title cleaning, NO tag stripping, NO TMDB lookups
+ * - ✅ All normalization delegated to :core:metadata-normalizer
  *
- * **Type Definitions:**
- * - `RawMediaMetadata` - Defined in `:core:model` (NOT in this module)
- * - `NormalizedMediaMetadata` - Defined in `:core:model` (NOT in this module)
- * - `ExternalIds` - Defined in `:core:model` (NOT in this module)
- * - `SourceType` - Defined in `:core:model` (NOT in this module)
+ * **Type Definitions (from :core:model):**
+ * - `RawMediaMetadata` - Input to normalization pipeline
+ * - `NormalizedMediaMetadata` - Output from normalization pipeline
+ * - `ExternalIds` - TMDB/IMDB/TVDB IDs
+ * - `SourceType` - Pipeline identifier (TELEGRAM)
  *
- * **Normalization Behavior:**
- * - `MediaMetadataNormalizer` - Implemented in `:core:metadata-normalizer`
- * - `TmdbMetadataResolver` - Implemented in `:core:metadata-normalizer`
- *
- * This module does NOT and MUST NOT define these types locally.
+ * **Normalization Behavior (from :core:metadata-normalizer):**
+ * - `MediaMetadataNormalizer` - Title cleaning, scene-naming parser
+ * - `TmdbMetadataResolver` - TMDB lookups and enrichment
  *
  * See: v2-docs/MEDIA_NORMALIZATION_CONTRACT.md for authoritative type definitions and rules.
  * See: v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md for architecture overview.
