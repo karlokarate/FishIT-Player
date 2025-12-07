@@ -245,7 +245,12 @@ detekt:
     ForbiddenComment:
       active: false
     ForbiddenImport:
-      active: false
+      active: false  # TODO: Enable after migrating all android.util.Log usage to UnifiedLog
+      imports:
+        - value: 'android.util.Log'
+          reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
+      excludes:
+        - '**/infra/logging/**'
     ForbiddenMethodCall:
       active: false
     ForbiddenPublicDataClass:
