@@ -287,9 +287,10 @@ class RegexMediaMetadataNormalizer(
 **Phase 2: Tag Extraction (Order Matters)**
 1. Extract edition flags (Extended, Director's Cut, Unrated, 3D, IMAX)
 2. Extract quality tags (resolution, source, codec, audio, HDR)
-3. Extract release group (after last `-` or in brackets)
+3. Extract channel tags
 4. Extract season/episode markers (SxxEyy patterns)
 5. Extract year (with anti-false-positive checks)
+6. Extract release group (after year to avoid conflicts; after last `-` or in brackets)
 
 **Phase 3: Title Extraction**
 1. Remove all extracted tags from filename
