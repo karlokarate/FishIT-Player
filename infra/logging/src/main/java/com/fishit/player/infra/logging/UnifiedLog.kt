@@ -29,14 +29,17 @@ import timber.log.Timber
  * @see UnifiedLogInitializer for initialization
  */
 object UnifiedLog {
-
     /**
      * Log level enum for filtering.
      *
      * Levels are ordered from most verbose to least verbose.
      */
     enum class Level {
-        VERBOSE, DEBUG, INFO, WARN, ERROR
+        VERBOSE,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR,
     }
 
     /**
@@ -69,7 +72,11 @@ object UnifiedLog {
      * @param message log message
      * @param throwable optional exception to log
      */
-    fun v(tag: String, message: String, throwable: Throwable? = null) {
+    fun v(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) {
         log(Level.VERBOSE, tag, message, throwable)
     }
 
@@ -82,7 +89,11 @@ object UnifiedLog {
      * @param message log message
      * @param throwable optional exception to log
      */
-    fun d(tag: String, message: String, throwable: Throwable? = null) {
+    fun d(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) {
         log(Level.DEBUG, tag, message, throwable)
     }
 
@@ -95,7 +106,11 @@ object UnifiedLog {
      * @param message log message
      * @param throwable optional exception to log
      */
-    fun i(tag: String, message: String, throwable: Throwable? = null) {
+    fun i(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) {
         log(Level.INFO, tag, message, throwable)
     }
 
@@ -108,7 +123,11 @@ object UnifiedLog {
      * @param message log message
      * @param throwable optional exception to log
      */
-    fun w(tag: String, message: String, throwable: Throwable? = null) {
+    fun w(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) {
         log(Level.WARN, tag, message, throwable)
     }
 
@@ -121,40 +140,62 @@ object UnifiedLog {
      * @param message log message
      * @param throwable optional exception to log
      */
-    fun e(tag: String, message: String, throwable: Throwable? = null) {
+    fun e(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) {
         log(Level.ERROR, tag, message, throwable)
     }
 
     // Legacy method names for backward compatibility with v1 code
+
     /**
      * @deprecated Use [d] instead for consistency with standard logging conventions
      */
     @Deprecated("Use d() instead", ReplaceWith("d(tag, message)"))
-    fun debug(tag: String, message: String) = d(tag, message)
+    fun debug(
+        tag: String,
+        message: String,
+    ) = d(tag, message)
 
     /**
      * @deprecated Use [i] instead for consistency with standard logging conventions
      */
     @Deprecated("Use i() instead", ReplaceWith("i(tag, message)"))
-    fun info(tag: String, message: String) = i(tag, message)
+    fun info(
+        tag: String,
+        message: String,
+    ) = i(tag, message)
 
     /**
      * @deprecated Use [w] instead for consistency with standard logging conventions
      */
     @Deprecated("Use w() instead", ReplaceWith("w(tag, message, throwable)"))
-    fun warn(tag: String, message: String, throwable: Throwable? = null) = w(tag, message, throwable)
+    fun warn(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) = w(tag, message, throwable)
 
     /**
      * @deprecated Use [e] instead for consistency with standard logging conventions
      */
     @Deprecated("Use e() instead", ReplaceWith("e(tag, message, throwable)"))
-    fun error(tag: String, message: String, throwable: Throwable? = null) = e(tag, message, throwable)
+    fun error(
+        tag: String,
+        message: String,
+        throwable: Throwable? = null,
+    ) = e(tag, message, throwable)
 
     /**
      * @deprecated Use [v] instead for consistency with standard logging conventions
      */
     @Deprecated("Use v() instead", ReplaceWith("v(tag, message)"))
-    fun verbose(tag: String, message: String) = v(tag, message)
+    fun verbose(
+        tag: String,
+        message: String,
+    ) = v(tag, message)
 
     /**
      * Internal logging implementation.
@@ -166,7 +207,7 @@ object UnifiedLog {
         level: Level,
         tag: String,
         message: String,
-        throwable: Throwable?
+        throwable: Throwable?,
     ) {
         // Filter by minimum level
         if (level.ordinal < minLevel.ordinal) return

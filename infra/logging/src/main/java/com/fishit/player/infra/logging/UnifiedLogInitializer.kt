@@ -17,7 +17,6 @@ import timber.log.Timber
  * @see UnifiedLog for the public logging API
  */
 object UnifiedLogInitializer {
-
     /**
      * Initialize the logging system.
      *
@@ -50,8 +49,12 @@ object UnifiedLogInitializer {
      * TODO(logging): Consider adding custom log level mapping for reporting services
      */
     private class ProductionReportingTree : Timber.Tree() {
-
-        override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+        override fun log(
+            priority: Int,
+            tag: String?,
+            message: String,
+            t: Throwable?,
+        ) {
             // Only log WARN and ERROR in production to reduce overhead
             if (priority < Log.WARN) {
                 return
