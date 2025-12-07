@@ -2,6 +2,7 @@ package com.fishit.player.core.metadata
 
 import com.fishit.player.core.metadata.parser.RegexSceneNameParser
 import com.fishit.player.core.metadata.parser.SceneNameParser
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.RawMediaMetadata
 
@@ -20,6 +21,7 @@ class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
     override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata =
         NormalizedMediaMetadata(
             canonicalTitle = raw.originalTitle, // No cleaning - pass through
+            mediaType = raw.mediaType, // Pass through media type
             year = raw.year,
             season = raw.season,
             episode = raw.episode,
@@ -58,8 +60,21 @@ class RegexMediaMetadataNormalizer(
         val season = raw.season ?: parsed.season
         val episode = raw.episode ?: parsed.episode
 
+        // Refine media type based on parsed metadata if UNKNOWN
+        val mediaType =
+            if (raw.mediaType == MediaType.UNKNOWN) {
+                when {
+                    season != null && episode != null -> MediaType.SERIES_EPISODE
+                    year != null -> MediaType.MOVIE
+                    else -> MediaType.UNKNOWN
+                }
+            } else {
+                raw.mediaType
+            }
+
         return NormalizedMediaMetadata(
             canonicalTitle = canonicalTitle,
+            mediaType = mediaType,
             year = year,
             season = season,
             episode = episode,

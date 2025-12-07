@@ -1,6 +1,7 @@
 package com.fishit.player.core.metadata
 
 import com.fishit.player.core.model.ExternalIds
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import kotlinx.coroutines.test.runTest
@@ -23,6 +24,7 @@ class DefaultMediaMetadataNormalizerTest {
             val raw =
                 RawMediaMetadata(
                     originalTitle = "X-Men.2000.1080p.BluRay.x264-GROUP",
+                    mediaType = MediaType.MOVIE,
                     year = 2000,
                     season = null,
                     episode = null,
@@ -38,6 +40,7 @@ class DefaultMediaMetadataNormalizerTest {
 
             // Then: output matches input (no cleaning)
             assertEquals(raw.originalTitle, normalized.canonicalTitle)
+            assertEquals(raw.mediaType, normalized.mediaType)
             assertEquals(raw.year, normalized.year)
             assertEquals(raw.season, normalized.season)
             assertEquals(raw.episode, normalized.episode)
@@ -52,6 +55,7 @@ class DefaultMediaMetadataNormalizerTest {
             val raw =
                 RawMediaMetadata(
                     originalTitle = "Breaking.Bad.S01E01.Pilot.720p.HDTV.x264",
+                    mediaType = MediaType.SERIES_EPISODE,
                     year = 2008,
                     season = 1,
                     episode = 1,
@@ -67,6 +71,7 @@ class DefaultMediaMetadataNormalizerTest {
 
             // Then: output matches input
             assertEquals(raw.originalTitle, normalized.canonicalTitle)
+            assertEquals(raw.mediaType, normalized.mediaType)
             assertEquals(raw.year, normalized.year)
             assertEquals(raw.season, normalized.season)
             assertEquals(raw.episode, normalized.episode)
@@ -79,6 +84,7 @@ class DefaultMediaMetadataNormalizerTest {
             val raw =
                 RawMediaMetadata(
                     originalTitle = "The Matrix",
+                    mediaType = MediaType.MOVIE,
                     year = 1999,
                     season = null,
                     episode = null,
@@ -95,5 +101,46 @@ class DefaultMediaMetadataNormalizerTest {
             // Then: TMDB ID is preserved
             assertEquals("603", normalized.tmdbId)
             assertEquals("tt0133093", normalized.externalIds.imdbId)
+        }
+
+    @Test
+    fun `normalize preserves mediaType from source`() =
+        runTest {
+            // Given: raw metadata with various media types
+            val liveRaw =
+                RawMediaMetadata(
+                    originalTitle = "ESPN HD",
+                    mediaType = MediaType.LIVE,
+                    year = null,
+                    season = null,
+                    episode = null,
+                    durationMinutes = null,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.XTREAM,
+                    sourceLabel = "Xtream: Live TV",
+                    sourceId = "xtream://live/999",
+                )
+
+            val clipRaw =
+                RawMediaMetadata(
+                    originalTitle = "Movie Trailer HD",
+                    mediaType = MediaType.CLIP,
+                    year = 2024,
+                    season = null,
+                    episode = null,
+                    durationMinutes = 3,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.TELEGRAM,
+                    sourceLabel = "Telegram: Clips",
+                    sourceId = "tg://message/456",
+                )
+
+            // When: normalizing
+            val liveNormalized = normalizer.normalize(liveRaw)
+            val clipNormalized = normalizer.normalize(clipRaw)
+
+            // Then: media types are preserved
+            assertEquals(MediaType.LIVE, liveNormalized.mediaType)
+            assertEquals(MediaType.CLIP, clipNormalized.mediaType)
         }
 }
