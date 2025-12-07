@@ -4,6 +4,8 @@
 
 The `:infra:logging` module provides a unified logging facade for the entire FishIT-Player application. This facade hides the internal logging backend (currently Timber) and provides a stable API that all modules use for logging.
 
+**For v2 architecture-specific requirements, see [v2-docs/LOGGING_CONTRACT_V2.md](../v2-docs/LOGGING_CONTRACT_V2.md), which is the authoritative contract for all v2 modules.**
+
 ## Design Principles
 
 1. **Single Source of Truth**: All logging must go through `UnifiedLog` - direct `android.util.Log` or Timber usage is forbidden outside the `:infra:logging` module
@@ -120,21 +122,21 @@ UnifiedLog.setMinLevel(UnifiedLog.Level.VERBOSE)
 
 ### Detekt Rule
 
-The project has a Detekt rule configured to prevent direct `android.util.Log` usage:
+The project has Detekt rules configured to enforce the logging contract:
 
 ```yaml
 ForbiddenImport:
-  active: false  # TODO: Enable after migrating all android.util.Log usage
+  active: true
   imports:
     - value: 'android.util.Log'
-      reason: 'Use UnifiedLog from :infra:logging instead'
+      reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
+    - value: 'timber.log.Timber'
+      reason: 'Use UnifiedLog from :infra:logging instead. Direct Timber usage is forbidden outside the logging module.'
   excludes:
     - '**/infra/logging/**'
 ```
 
-**Status**: Currently disabled to avoid breaking existing builds. The rule should be enabled after migrating all existing `android.util.Log` usage in the codebase to `UnifiedLog`.
-
-Once enabled, this rule will **fail the build** if any module (except `:infra:logging`) imports `android.util.Log`.
+**Status**: ✅ **Enabled** - This rule is now active for all v2 modules and will fail the build if any module (except `:infra:logging`) imports `android.util.Log` or `Timber`.
 
 ### Running Checks
 
@@ -211,7 +213,7 @@ UnifiedLog.e("TAG", "error", exception)
 ## FAQ
 
 ### Q: Can I use Timber directly in my module?
-**A:** No. Only the `:infra:logging` module should import Timber. All other modules must use `UnifiedLog`.
+**A:** No. Only the `:infra:logging` module should import Timber. All other modules must use `UnifiedLog`. This is enforced by Detekt.
 
 ### Q: Why not use android.util.Log directly?
 **A:** Direct android.util.Log usage:
@@ -226,8 +228,12 @@ UnifiedLog.e("TAG", "error", exception)
 ### Q: Can I change the backend from Timber to something else?
 **A:** Yes! That's the whole point of the facade. Simply update the internal implementation in `UnifiedLog` and `UnifiedLogInitializer` without touching any call sites.
 
+### Q: What about v2 modules?
+**A:** V2 modules MUST follow the contract defined in [v2-docs/LOGGING_CONTRACT_V2.md](../v2-docs/LOGGING_CONTRACT_V2.md). All v2 modules use `UnifiedLog`, and static enforcement is enabled via Detekt.
+
 ## References
 
+- [V2 Logging Contract](../v2-docs/LOGGING_CONTRACT_V2.md) - Authoritative contract for v2 modules
 - [Timber Documentation](https://github.com/JakeWharton/timber)
 - [Android Logging Best Practices](https://developer.android.com/studio/debug/am-logcat)
 - [Firebase Crashlytics](https://firebase.google.com/docs/crashlytics)
