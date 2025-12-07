@@ -63,8 +63,13 @@ class DefaultPlaybackSourceResolver : InternalPlaybackSourceResolver {
                 }
             }
             PlaybackType.TELEGRAM -> {
-                // Phase 2 will integrate TelegramPlaybackSourceFactory
-                TEST_STREAM_URL
+                // Phase 2: Use Telegram URI from context
+                // URI format: tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>&remoteId=<remoteId>
+                if (context.uri.startsWith("tg://")) {
+                    context.uri
+                } else {
+                    TEST_STREAM_URL
+                }
             }
             PlaybackType.AUDIOBOOK -> {
                 // Future: audiobook-specific handling
