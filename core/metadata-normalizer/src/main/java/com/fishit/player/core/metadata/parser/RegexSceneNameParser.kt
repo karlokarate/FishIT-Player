@@ -209,7 +209,7 @@ class RegexSceneNameParser : SceneNameParser {
             }
         }
 
-        // Step 7: Extract year (prefer parenthesized, then standalone)
+        // Step 6: Extract year (prefer parenthesized, then standalone)
         val yearParenMatch = YEAR_PAREN_REGEX.findAll(workingString).lastOrNull()
         if (yearParenMatch != null) {
             val yearStr = yearParenMatch.groupValues[1]
