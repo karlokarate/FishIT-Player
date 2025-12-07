@@ -49,39 +49,43 @@ package com.fishit.player.pipeline.telegram.model
  * @property description Content description
  */
 data class TelegramMediaItem(
-    val id: Long = 0,
-    val chatId: Long = 0,
-    val messageId: Long = 0,
-    val mediaAlbumId: Long? = null,
-    val mediaType: TelegramMediaType = TelegramMediaType.OTHER,
-    val fileId: Int? = null,
-    val fileUniqueId: String? = null,
-    val remoteId: String? = null,
-    val title: String = "",
-    val fileName: String? = null,
-    val caption: String? = null,
-    val mimeType: String? = null,
-    val sizeBytes: Long? = null,
-    val durationSecs: Int? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-    val supportsStreaming: Boolean? = null,
-    val localPath: String? = null,
-    val thumbnailFileId: String? = null,
-    val thumbnailUniqueId: String? = null,
-    val thumbnailWidth: Int? = null,
-    val thumbnailHeight: Int? = null,
-    val thumbnailPath: String? = null,
-    val photoSizes: List<TelegramPhotoSize> = emptyList(),
-    val date: Long? = null,
-    val isSeries: Boolean = false,
-    val seriesName: String? = null,
-    val seasonNumber: Int? = null,
-    val episodeNumber: Int? = null,
-    val episodeTitle: String? = null,
-    val year: Int? = null,
-    val genres: String? = null,
-    val description: String? = null,
+        val id: Long = 0,
+        val chatId: Long = 0,
+        val messageId: Long = 0,
+        val mediaAlbumId: Long? = null,
+        val mediaType: TelegramMediaType = TelegramMediaType.OTHER,
+        val fileId: Int? = null,
+        val fileUniqueId: String? = null,
+        val remoteId: String? = null,
+        val title: String = "",
+        val fileName: String? = null,
+        val caption: String? = null,
+        val mimeType: String? = null,
+        val sizeBytes: Long? = null,
+        val durationSecs: Int? = null,
+        val width: Int? = null,
+        val height: Int? = null,
+        val supportsStreaming: Boolean? = null,
+        val localPath: String? = null,
+        val thumbnailFileId: String? = null,
+        val thumbnailUniqueId: String? = null,
+        val thumbnailWidth: Int? = null,
+        val thumbnailHeight: Int? = null,
+        val thumbnailPath: String? = null,
+        val photoSizes: List<TelegramPhotoSize> = emptyList(),
+        // === Minithumbnail (inline JPEG bytes for instant blur placeholder) ===
+        val minithumbnailBytes: ByteArray? = null,
+        val minithumbnailWidth: Int? = null,
+        val minithumbnailHeight: Int? = null,
+        val date: Long? = null,
+        val isSeries: Boolean = false,
+        val seriesName: String? = null,
+        val seasonNumber: Int? = null,
+        val episodeNumber: Int? = null,
+        val episodeTitle: String? = null,
+        val year: Int? = null,
+        val genres: String? = null,
+        val description: String? = null,
 ) {
     /**
      * Returns a Telegram URI for this media item in the format:
@@ -90,14 +94,65 @@ data class TelegramMediaItem(
      * STUB: Returns placeholder URI for testing.
      */
     fun toTelegramUri(): String =
-        if (fileId != null) {
-            "tg://file/$fileId?chatId=$chatId&messageId=$messageId"
-        } else {
-            "tg://stub/$id?chatId=$chatId&messageId=$messageId"
-        }
+            if (fileId != null) {
+                "tg://file/$fileId?chatId=$chatId&messageId=$messageId"
+            } else {
+                "tg://stub/$id?chatId=$chatId&messageId=$messageId"
+            }
 
-    /**
-     * Checks if this media item is playable (has sufficient metadata).
-     */
+    /** Checks if this media item is playable (has sufficient metadata). */
     fun isPlayable(): Boolean = fileId != null && mimeType != null
+
+    /** Checks if this media item has a minithumbnail for instant preview. */
+    fun hasMinithumbnail(): Boolean = minithumbnailBytes != null && minithumbnailBytes.isNotEmpty()
+
+    // ByteArray requires custom equals/hashCode
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TelegramMediaItem) return false
+        return id == other.id &&
+                chatId == other.chatId &&
+                messageId == other.messageId &&
+                mediaAlbumId == other.mediaAlbumId &&
+                mediaType == other.mediaType &&
+                fileId == other.fileId &&
+                fileUniqueId == other.fileUniqueId &&
+                remoteId == other.remoteId &&
+                title == other.title &&
+                fileName == other.fileName &&
+                caption == other.caption &&
+                mimeType == other.mimeType &&
+                sizeBytes == other.sizeBytes &&
+                durationSecs == other.durationSecs &&
+                width == other.width &&
+                height == other.height &&
+                supportsStreaming == other.supportsStreaming &&
+                localPath == other.localPath &&
+                thumbnailFileId == other.thumbnailFileId &&
+                thumbnailUniqueId == other.thumbnailUniqueId &&
+                thumbnailWidth == other.thumbnailWidth &&
+                thumbnailHeight == other.thumbnailHeight &&
+                thumbnailPath == other.thumbnailPath &&
+                photoSizes == other.photoSizes &&
+                minithumbnailBytes.contentEquals(other.minithumbnailBytes) &&
+                minithumbnailWidth == other.minithumbnailWidth &&
+                minithumbnailHeight == other.minithumbnailHeight &&
+                date == other.date &&
+                isSeries == other.isSeries &&
+                seriesName == other.seriesName &&
+                seasonNumber == other.seasonNumber &&
+                episodeNumber == other.episodeNumber &&
+                episodeTitle == other.episodeTitle &&
+                year == other.year &&
+                genres == other.genres &&
+                description == other.description
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + chatId.hashCode()
+        result = 31 * result + messageId.hashCode()
+        result = 31 * result + (minithumbnailBytes?.contentHashCode() ?: 0)
+        return result
+    }
 }

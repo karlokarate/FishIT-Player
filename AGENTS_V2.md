@@ -62,6 +62,29 @@ This analysis report is updated whenever new v1 quality assessments are made.
   - New v2 modules: `:core:*`, `:playback:*`, `:player:internal`,
     `:pipeline:*`, `:feature:*`, `:infra:*` as defined below.
 
+### ⚠️ PRE-CREATE VALIDATION (MANDATORY for ALL Agents)
+
+**Before creating ANY new file, agents MUST verify:**
+
+1. **Path Validation:**
+   - ✅ ALLOWED: `core/*/src/main/java/com/fishit/player/...`
+   - ✅ ALLOWED: `feature/*/src/main/java/com/fishit/player/...`
+   - ✅ ALLOWED: `pipeline/*/src/main/java/com/fishit/player/...`
+   - ✅ ALLOWED: `playback/*/src/main/java/com/fishit/player/...`
+   - ✅ ALLOWED: `player/*/src/main/java/com/fishit/player/...`
+   - ✅ ALLOWED: `infra/*/src/main/java/com/fishit/player/...`
+   - ✅ ALLOWED: `app-v2/src/main/java/com/fishit/player/...`
+   - ❌ FORBIDDEN: `app/src/main/java/com/chris/...` (Legacy!)
+
+2. **Package Validation:**
+   - ✅ MUST USE: `package com.fishit.player.*`
+   - ❌ NEVER USE: `package com.chris.m3usuite.*`
+
+3. **If in doubt, STOP and ask the user.**
+
+Violation of these rules requires immediate rollback. See
+`v2-docs/CANONICAL_MEDIA_MIGRATION_STATUS.md` for the current audit status.
+
 Additional safety rules for this branch:
 
 - Do **not** delete, move or rename existing legacy modules (e.g. `:app` and

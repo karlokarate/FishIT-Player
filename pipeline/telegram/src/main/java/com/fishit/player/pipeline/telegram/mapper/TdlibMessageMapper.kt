@@ -11,6 +11,7 @@ import dev.g000sha256.tdl.dto.MessageAudio
 import dev.g000sha256.tdl.dto.MessageDocument
 import dev.g000sha256.tdl.dto.MessagePhoto
 import dev.g000sha256.tdl.dto.MessageVideo
+import dev.g000sha256.tdl.dto.Minithumbnail
 import dev.g000sha256.tdl.dto.PhotoSize
 import dev.g000sha256.tdl.dto.RemoteFile
 import dev.g000sha256.tdl.dto.Thumbnail
@@ -73,6 +74,7 @@ object TdlibMessageMapper {
         val video = content.video
         val videoFile: File = video.video
         val thumbnail: Thumbnail? = video.thumbnail
+        val minithumbnail: Minithumbnail? = video.minithumbnail
         val remote: RemoteFile = videoFile.remote
         val local: LocalFile = videoFile.local
 
@@ -107,6 +109,10 @@ object TdlibMessageMapper {
                 thumbnailWidth = thumbnail?.width,
                 thumbnailHeight = thumbnail?.height,
                 thumbnailPath = thumbnail?.file?.local?.safeCompletedPathOrNull(),
+                // === Minithumbnail (inline JPEG for instant blur placeholder) ===
+                minithumbnailBytes = minithumbnail?.toByteArray(),
+                minithumbnailWidth = minithumbnail?.width,
+                minithumbnailHeight = minithumbnail?.height,
                 date = message.date.toLong(),
         )
     }
@@ -115,6 +121,7 @@ object TdlibMessageMapper {
         val doc = content.document
         val docFile: File = doc.document
         val thumbnail: Thumbnail? = doc.thumbnail
+        val minithumbnail: Minithumbnail? = doc.minithumbnail
         val remote: RemoteFile = docFile.remote
         val local: LocalFile = docFile.local
 
@@ -149,6 +156,10 @@ object TdlibMessageMapper {
                 thumbnailWidth = thumbnail?.width,
                 thumbnailHeight = thumbnail?.height,
                 thumbnailPath = thumbnail?.file?.local?.safeCompletedPathOrNull(),
+                // === Minithumbnail (inline JPEG for instant blur placeholder) ===
+                minithumbnailBytes = minithumbnail?.toByteArray(),
+                minithumbnailWidth = minithumbnail?.width,
+                minithumbnailHeight = minithumbnail?.height,
                 date = message.date.toLong(),
         )
     }
@@ -157,6 +168,7 @@ object TdlibMessageMapper {
         val audio = content.audio
         val audioFile: File = audio.audio
         val albumCover: Thumbnail? = audio.albumCoverThumbnail
+        val minithumbnail: Minithumbnail? = audio.albumCoverMinithumbnail
         val remote: RemoteFile = audioFile.remote
         val local: LocalFile = audioFile.local
 
@@ -191,6 +203,10 @@ object TdlibMessageMapper {
                 thumbnailWidth = albumCover?.width,
                 thumbnailHeight = albumCover?.height,
                 thumbnailPath = albumCover?.file?.local?.safeCompletedPathOrNull(),
+                // === Minithumbnail (album cover mini for instant blur placeholder) ===
+                minithumbnailBytes = minithumbnail?.toByteArray(),
+                minithumbnailWidth = minithumbnail?.width,
+                minithumbnailHeight = minithumbnail?.height,
                 date = message.date.toLong(),
         )
     }
@@ -198,6 +214,7 @@ object TdlibMessageMapper {
     private fun mapPhotoMessage(message: Message, content: MessagePhoto): TelegramMediaItem? {
         val photo = content.photo
         val sizes: List<PhotoSize> = photo.sizes.toList()
+        val minithumbnail: Minithumbnail? = photo.minithumbnail
 
         // Get largest photo size for primary file info
         val largestSize: PhotoSize? = sizes.maxByOrNull { it.width * it.height }
@@ -235,6 +252,10 @@ object TdlibMessageMapper {
                 thumbnailHeight = null,
                 thumbnailPath = null,
                 photoSizes = sizes.mapNotNull { mapPhotoSize(it) },
+                // === Minithumbnail (inline JPEG for instant blur placeholder) ===
+                minithumbnailBytes = minithumbnail?.toByteArray(),
+                minithumbnailWidth = minithumbnail?.width,
+                minithumbnailHeight = minithumbnail?.height,
                 date = message.date.toLong(),
         )
     }
@@ -281,3 +302,20 @@ fun List<Message>.toTelegramMediaItems(): List<TelegramMediaItem> =
 
 /** Extension function for single Message conversion. */
 fun Message.toTelegramMediaItemOrNull(): TelegramMediaItem? = TdlibMessageMapper.toMediaItem(this)
+
+// =============================================================================
+// Minithumbnail Helpers
+// =============================================================================
+
+/**
+ * Convert TDLib Minithumbnail signed byte array to unsigned ByteArray.
+ *
+ * TDLib stores JPEG bytes as signed Byte (-128 to 127). This converts them to unsigned bytes
+ * (0-255) for standard JPEG decoding.
+ *
+ * The resulting ByteArray is a valid JPEG that can be decoded directly by Coil/Glide/etc.
+ */
+private fun Minithumbnail.toByteArray(): ByteArray {
+    // TDLib data is Array<Byte> (signed), convert to ByteArray
+    return data.toByteArray()
+}

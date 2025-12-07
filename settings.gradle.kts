@@ -51,6 +51,7 @@ include(":core:model")
 include(":core:persistence")
 include(":core:metadata-normalizer")
 include(":core:firebase")
+include(":core:ui-imaging")
 
 // Playback & Player
 include(":playback:domain")
