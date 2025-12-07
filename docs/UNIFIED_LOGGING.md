@@ -120,20 +120,21 @@ UnifiedLog.setMinLevel(UnifiedLog.Level.VERBOSE)
 
 ### Detekt Rule
 
-The project uses a Detekt rule to prevent direct `android.util.Log` usage:
+The project has a Detekt rule configured to prevent direct `android.util.Log` usage:
 
 ```yaml
 ForbiddenImport:
-  active: true
+  active: false  # TODO: Enable after migrating all android.util.Log usage
   imports:
     - value: 'android.util.Log'
       reason: 'Use UnifiedLog from :infra:logging instead'
   excludes:
     - '**/infra/logging/**'
-    - '**/test/**'
 ```
 
-This rule will **fail the build** if any module (except `:infra:logging`) imports `android.util.Log`.
+**Status**: Currently disabled to avoid breaking existing builds. The rule should be enabled after migrating all existing `android.util.Log` usage in the codebase to `UnifiedLog`.
+
+Once enabled, this rule will **fail the build** if any module (except `:infra:logging`) imports `android.util.Log`.
 
 ### Running Checks
 
