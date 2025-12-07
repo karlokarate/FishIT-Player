@@ -103,7 +103,7 @@ class TelegramFileDataSource(
             messageId = uri.getQueryParameter("messageId")?.toLongOrNull()
             remoteId = uri.getQueryParameter("remoteId")
             
-            UnifiedLog.debug(TAG, "Opening Telegram file: fileId=$fileId, chatId=$chatId, messageId=$messageId, remoteId=$remoteId")
+            UnifiedLog.d(TAG, "Opening Telegram file: fileId=$fileId, chatId=$chatId, messageId=$messageId, remoteId=$remoteId")
             
             // Resolve fileId if needed
             val resolvedFileId = runBlocking {
@@ -128,7 +128,7 @@ class TelegramFileDataSource(
                 throw IOException("File not found at local path: $localPath")
             }
             
-            UnifiedLog.debug(TAG, "File ready at: $localPath (size=${fileLocation.size} bytes)")
+            UnifiedLog.d(TAG, "File ready at: $localPath (size=${fileLocation.size} bytes)")
             
             // Create FileDataSource delegate and open it
             val fileDataSource = FileDataSource()
@@ -143,10 +143,10 @@ class TelegramFileDataSource(
             return fileDataSource.open(fileDataSpec)
             
         } catch (e: TelegramFileException) {
-            UnifiedLog.error(TAG, "Telegram file error", e)
+            UnifiedLog.e(TAG, "Telegram file error", e)
             throw IOException("Failed to access Telegram file: ${e.message}", e)
         } catch (e: Exception) {
-            UnifiedLog.error(TAG, "Failed to open Telegram file", e)
+            UnifiedLog.e(TAG, "Failed to open Telegram file", e)
             throw IOException("Failed to open Telegram file: ${e.message}", e)
         }
     }
@@ -162,11 +162,11 @@ class TelegramFileDataSource(
     private suspend fun resolveFileId(fileId: Int?, remoteId: String?): Int {
         return when {
             fileId != null && fileId > 0 -> {
-                UnifiedLog.debug(TAG, "Using fileId from URI: $fileId")
+                UnifiedLog.d(TAG, "Using fileId from URI: $fileId")
                 fileId
             }
             remoteId != null && remoteId.isNotEmpty() -> {
-                UnifiedLog.debug(TAG, "Resolving fileId via remoteId: $remoteId")
+                UnifiedLog.d(TAG, "Resolving fileId via remoteId: $remoteId")
                 tdlibClient.resolveFileByRemoteId(remoteId)
             }
             else -> {
