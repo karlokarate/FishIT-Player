@@ -1,5 +1,4 @@
 
-
 * Canonical Media & Normalizer
 * Pipelines: Telegram, Xtream, Audiobook, IO
 * Internal Player / Playback
@@ -353,7 +352,7 @@ infra/cache/
 
 ---
 
-## 4. Feature-Doku-Baum (`docs/v2/features/**`) – inklusive Xtream, Logging, etc.
+## 4. Feature-Doku-Baum (`docs/v2/features/**`) – inklusive Xtream, Logging, etc
 
 ### 4.1 Canonical Media & Normalizer
 
@@ -494,4 +493,3 @@ docs/v2/features/ui/
 
 * **Docs unter `docs/v2/features/**`**
   – 1:1 Spiegelung der Feature-IDs; alles, was wichtig ist (Xtream, Logging, Cache, FFMpegKit, Settings etc.), hat ein eigenes Contract-File.
-
