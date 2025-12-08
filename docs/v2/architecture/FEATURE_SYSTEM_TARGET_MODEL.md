@@ -105,7 +105,7 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 
 ## Current Implementation Status
 
-**Last Updated:** Phase 1.5 (Dec 2025)
+**Last Updated:** Phase 1.7 (Dec 2025)
 
 ### Implemented Components
 
@@ -126,12 +126,23 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 |----------|-----------|--------|--------|
 | `TelegramFullHistoryFeatureProvider` | `telegram.full_history_streaming` | `pipeline:telegram` | ✅ Done |
 | `TelegramLazyThumbnailsFeatureProvider` | `telegram.lazy_thumbnails` | `pipeline:telegram` | ✅ Done |
+| `XtreamLiveStreamingFeatureProvider` | `xtream.live_streaming` | `pipeline:xtream` | ✅ Done |
+| `XtreamVodPlaybackFeatureProvider` | `xtream.vod_playback` | `pipeline:xtream` | ✅ Done |
+| `XtreamSeriesMetadataFeatureProvider` | `xtream.series_metadata` | `pipeline:xtream` | ✅ Done |
+| `UnifiedLoggingFeatureProvider` | `infra.logging.unified` | `infra:logging` | ✅ Done |
+| `HomeScreenFeatureProvider` | `ui.screen.home` | `feature:home` | ✅ Done |
+| `LibraryScreenFeatureProvider` | `ui.screen.library` | `feature:library` | ✅ Done |
+| `LiveScreenFeatureProvider` | `ui.screen.live` | `feature:live` | ✅ Done |
+| `TelegramScreenFeatureProvider` | `ui.screen.telegram` | `feature:telegram-media` | ✅ Done |
+| `SettingsScreenFeatureProvider` | `ui.screen.settings` | `feature:settings` | ✅ Done |
 
 ### DI Integration
 
 - **Hilt multibindings**: FeatureProviders are collected via `@IntoSet` bindings
-- **TelegramFeatureModule**: Binds Telegram providers into the global `Set<FeatureProvider>`
-- **TelegramMediaViewModel**: First ViewModel to inject and use `FeatureRegistry`
+- **XtreamFeatureModule**: Binds Xtream pipeline providers
+- **LoggingFeatureModule**: Binds logging infrastructure provider
+- **UI Feature Modules**: Each UI screen has its own feature module (Home, Library, Live, Telegram, Settings)
+- **ViewModels**: HomeViewModel, LibraryViewModel, and SettingsViewModel inject and use `FeatureRegistry`
 
 ### Unit Tests
 
@@ -142,10 +153,11 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 
 ### Next Steps
 
-- Add more feature providers for other pipelines (Xtream, IO, Audiobook)
-- Add UI screen feature providers
-- Integrate feature checks in actual UI components
+- Add feature providers for remaining pipelines (IO, Audiobook) when needed
+- Add cache and settings infrastructure providers when those modules are created
+- Expand UI integration beyond ViewModels to actual Compose screens
 - Add feature flag integration layer
+- Create comprehensive feature contract docs for all registered features
 
 ---
 
