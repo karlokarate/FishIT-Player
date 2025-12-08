@@ -1,0 +1,45 @@
+{
+  "recommendations": [
+    // Kotlin & Android
+    "fwcd.kotlin",
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-gradle",
+    "mathiasfrohlich.kotlin",
+    "richardwillis.vscode-gradle",
+    
+    // Android Specific
+    "vscjava.vscode-java-debug",
+    "vscjava.vscode-java-test",
+    
+    // Code Quality
+    "jcbuisson.vue",
+    "esbenp.prettier-vscode",
+    
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    "donjayamanne.githistory",
+    
+    // XML & Resources
+    "redhat.vscode-xml",
+    "redhat.vscode-yaml",
+    
+    // Markdown
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    
+    // Utilities
+    "wayou.vscode-todo-highlight",
+    "gruntfuggly.todo-tree",
+    "usernamehw.errorlens",
+    "christian-kohler.path-intellisense",
+    "visualstudioexptteam.vscodeintellicode",
+    
+    // Database
+    "cweijan.vscode-database-client2",
+    
+    // Docker (for DevContainer)
+    "ms-vscode-remote.remote-containers",
+    "ms-azuretools.vscode-docker"
+  ]
+}

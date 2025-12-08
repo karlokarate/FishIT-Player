@@ -1,0 +1,98 @@
+{
+    "Compose Screen": {
+        "prefix": "composescreen",
+        "body": [
+            "@Composable",
+            "fun ${1:ScreenName}(",
+            "    modifier: Modifier = Modifier",
+            ") {",
+            "    Box(",
+            "        modifier = modifier.fillMaxSize()",
+            "    ) {",
+            "        $0",
+            "    }",
+            "}"
+        ],
+        "description": "Create a basic Compose screen"
+    },
+    "Compose ViewModel": {
+        "prefix": "composevm",
+        "body": [
+            "class ${1:ViewModel}(",
+            "    private val ${2:repository}: ${3:Repository}",
+            ") : ViewModel() {",
+            "    ",
+            "    private val _uiState = MutableStateFlow<UiState<${4:DataType}>>(UiState.Loading)",
+            "    val uiState: StateFlow<UiState<${4:DataType}>> = _uiState.asStateFlow()",
+            "    ",
+            "    init {",
+            "        $0",
+            "    }",
+            "}"
+        ],
+        "description": "Create a ViewModel with UiState"
+    },
+    "FishRow": {
+        "prefix": "fishrow",
+        "body": [
+            "FishRow(",
+            "    items = ${1:items},",
+            "    title = \"${2:Title}\",",
+            "    onItemClick = { ${3:item} ->",
+            "        $0",
+            "    }",
+            ")"
+        ],
+        "description": "Create a FishRow component"
+    },
+    "TvButton": {
+        "prefix": "tvbutton",
+        "body": [
+            "TvButton(",
+            "    onClick = { $0 },",
+            "    modifier = Modifier",
+            ") {",
+            "    Text(\"${1:Button Text}\")",
+            "}"
+        ],
+        "description": "Create a TV-optimized button"
+    },
+    "ObjectBox Query": {
+        "prefix": "obxquery",
+        "body": [
+            "box.query(",
+            "    ${1:Entity}_.${2:field}.equal(${3:value})",
+            ")",
+            ".build()",
+            ".find()"
+        ],
+        "description": "Create an ObjectBox query"
+    },
+    "Coroutine Launch": {
+        "prefix": "colaunch",
+        "body": [
+            "viewModelScope.launch {",
+            "    $0",
+            "}"
+        ],
+        "description": "Launch a coroutine in ViewModel"
+    },
+    "Remember Saveable": {
+        "prefix": "remsave",
+        "body": [
+            "var ${1:state} by rememberSaveable { mutableStateOf(${2:initialValue}) }"
+        ],
+        "description": "Create a remember saveable state"
+    },
+    "Focus Requester": {
+        "prefix": "focusreq",
+        "body": [
+            "val ${1:focusRequester} = remember { FocusRequester() }",
+            "",
+            "LaunchedEffect(Unit) {",
+            "    ${1:focusRequester}.requestFocus()",
+            "}"
+        ],
+        "description": "Create a focus requester with auto-focus"
+    }
+}

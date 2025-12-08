@@ -1,0 +1,35 @@
+{
+  "folders": [
+    {
+      "path": "..",
+      "name": "FishIT-Player"
+    }
+  ],
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.profiles.linux": {
+      "bash": {
+        "path": "bash",
+        "icon": "terminal-bash"
+      }
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "fwcd.kotlin",
+      "vscjava.vscode-java-pack",
+      "vscjava.vscode-gradle",
+      "eamodio.gitlens",
+      "redhat.vscode-xml",
+      "usernamehw.errorlens"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": []
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": []
+  }
+}
