@@ -58,7 +58,22 @@ if [ "$STASH_CREATED" = true ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# 4. Clear caches for fresh state
+# 4. Start memory monitor (if not running)
+# -----------------------------------------------------------------------------
+echo "🧠 Checking memory monitor..."
+MONITOR_SCRIPT="$REPO_DIR/.devcontainer/monitor-memory.sh"
+if [ -f "$MONITOR_SCRIPT" ]; then
+    if [ -f /tmp/memory-monitor.pid ] && ps -p $(cat /tmp/memory-monitor.pid 2>/dev/null) > /dev/null 2>&1; then
+        echo "   - Memory monitor already running (PID: $(cat /tmp/memory-monitor.pid))"
+    else
+        nohup bash "$MONITOR_SCRIPT" > /tmp/memory-monitor.log 2>&1 &
+        echo $! > /tmp/memory-monitor.pid
+        echo "   - Memory monitor started (PID: $!)"
+    fi
+fi
+
+# -----------------------------------------------------------------------------
+# 5. Clear caches for fresh state
 # -----------------------------------------------------------------------------
 echo "🧹 Clearing caches..."
 
@@ -79,7 +94,7 @@ fi
 # rm -rf app/build/intermediates app/build/tmp 2>/dev/null || true
 
 # -----------------------------------------------------------------------------
-# 5. Setup git alias if not present
+# 6. Setup git alias if not present
 # -----------------------------------------------------------------------------
 if ! git config --get alias.sync-v2 >/dev/null 2>&1; then
     git config alias.sync-v2 '!git fetch origin && git reset --hard origin/architecture/v2-bootstrap'
