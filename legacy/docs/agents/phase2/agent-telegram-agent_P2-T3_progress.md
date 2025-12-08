@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Phase 2 – Task 3: Telegram Pipeline STUB Progress
 
 **Agent ID:** telegram-agent  

@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # TDLib Integration for FishIT Player
 
 This document describes the TDLib (Telegram Database Library) integration implemented for FishIT Player, following the specifications in `tools/Telegram API readme.txt` and `tools/tdlib_coroutines_doku.md`.

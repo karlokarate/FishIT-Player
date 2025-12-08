@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Release Deletion Guide
 
 This guide explains how to delete all GitHub releases from the FishIT-Player repository to save space.

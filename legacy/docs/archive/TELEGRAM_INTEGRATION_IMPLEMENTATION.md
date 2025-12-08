@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Telegram Integration Implementation Summary (ARCHIVED)
 
 > **Note:** This document describes the legacy Telegram integration.

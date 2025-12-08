@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # TV-UX Integration Guide
 
 This document provides step-by-step instructions for integrating the new TV-optimized components into existing screens.

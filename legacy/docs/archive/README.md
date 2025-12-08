@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Documentation Archive
 
 This directory contains historical documentation that has been superseded by newer documents or is no longer actively maintained.

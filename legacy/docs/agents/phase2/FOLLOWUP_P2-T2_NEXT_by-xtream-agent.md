@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Phase 3 Xtream Pipeline – Next Steps (Within Pipeline Boundaries)
 
 **Agent ID:** xtream-agent  

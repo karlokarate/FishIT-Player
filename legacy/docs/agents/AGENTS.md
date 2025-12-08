@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 Android Build Policy (WSL override)
 
 ## ⛔ CRITICAL: v2 Branch Protection (NEVER override without explicit owner approval)

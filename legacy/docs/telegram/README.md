@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Telegram Reference Documentation
 
 This directory contains organized Telegram reference files extracted from uploaded ZIP archives.

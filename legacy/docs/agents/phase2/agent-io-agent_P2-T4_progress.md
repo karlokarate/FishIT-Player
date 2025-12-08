@@ -1,3 +1,6 @@
+> LEGACY (V1) – historical document  
+> Not valid for v2. For current architecture see `V2_PORTAL.md` and `docs/v2/**`.
+
 # Phase 2 – Task 4: IO Pipeline Stub
 
 **Agent ID:** `io-agent`  
