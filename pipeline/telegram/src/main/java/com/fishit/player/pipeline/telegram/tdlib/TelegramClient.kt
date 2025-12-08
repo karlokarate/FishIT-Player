@@ -114,6 +114,22 @@ interface TelegramClient {
      */
     suspend fun requestFileDownload(fileId: Int, priority: Int = 16): TelegramFileLocation
 
+    /**
+     * Request thumbnail download by remoteId (cross-session stable).
+     *
+     * Ported from v1 lazy thumbnail pattern with remoteId-first semantics for stability.
+     * Uses lower priority for thumbnails (8) compared to video files (16).
+     *
+     * @param remoteId Remote file ID (stable across sessions)
+     * @param priority Download priority hint (1-32, default 8 for thumbnails)
+     * @return File location metadata once download is initiated
+     * @throws TelegramFileException if thumbnail cannot be resolved or downloaded
+     */
+    suspend fun requestThumbnailDownload(
+            remoteId: String,
+            priority: Int = 8
+    ): TelegramFileLocation
+
     /** Close the client and release resources. */
     suspend fun close()
 }

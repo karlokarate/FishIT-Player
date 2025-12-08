@@ -66,14 +66,15 @@ The v2 rebuild follows a phased approach:
 ---
 
 ## Phase 1 – Feature System
-**Status: 🚧 IN PROGRESS**
+**Status: ✅ COMPLETED (Phase 1.7)**
 
 ### Goals
 - Implement core feature API (`FeatureId`, `FeatureRegistry`, `FeatureProvider`)
 - Define feature catalog based on Zielbild.md
 - Wire first features into `app-v2`
+- Port proven Telegram behaviors from v1 to v2
 
-### Tasks
+### Tasks (Completed)
 - [x] Create `core/feature-api` module with API types
 - [x] Define `FeatureId`, `FeatureScope`, `FeatureOwner`, `FeatureProvider`, `FeatureRegistry`
 - [x] Create `Features.kt` with grouped feature IDs
@@ -85,18 +86,34 @@ The v2 rebuild follows a phased approach:
 - [x] **Phase 1.5:** Add Hilt DI to `pipeline/telegram` and `feature/telegram-media`
 - [x] **Phase 1.5:** Unit tests for `AppFeatureRegistry`
 - [x] **Phase 1.5:** Unit tests for Telegram FeatureProviders
-- [ ] Add more feature providers across modules
-- [ ] Integrate feature checks in UI screens
+- [x] **Phase 1.7:** Port gold behaviors from v1 Telegram (full-history scanning, lazy thumbnails)
+- [x] **Phase 1.7:** Enhance TelegramMediaViewModel with feature-gated behavior
+- [x] **Phase 1.7:** Create TELEGRAM_V2_IMPLEMENTATION_STATUS.md
+
+### Telegram v2 Integration (Phase 1.7)
+- [x] Full-history scanning with proper TDLib pagination (from T_ChatBrowser)
+- [x] Lazy thumbnail loading with remoteId resolution (from T_TelegramFileDownloader)
+- [x] Retry logic with exponential backoff
+- [x] Feature-gated UI state management
+- [x] Implementation status documentation
+
+### Next Steps (Phase 2)
+- [ ] Full TDLib client implementation (auth flow, message parsing)
+- [ ] ObjectBox caching integration
+- [ ] Background sync setup
+- [ ] Add more feature providers across modules (Xtream, IO, Audiobook)
 
 ### Modules Affected
 - `core/feature-api` (new)
 - `app-v2`
-- `pipeline/telegram`
+- `pipeline/telegram` (enhanced with gold behaviors)
+- `feature/telegram-media` (feature-gated ViewModel)
 - Additional modules as providers are added
 
 ### Docs
 - [docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md](docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md) – Feature system specification
 - [docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md](docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md) – First feature contract
+- [docs/v2/telegram/TELEGRAM_V2_IMPLEMENTATION_STATUS.md](docs/v2/telegram/TELEGRAM_V2_IMPLEMENTATION_STATUS.md) – Telegram v2 status tracker
 - [docs/v2/Zielbild.md](docs/v2/Zielbild.md) – Feature catalog vision
 - [docs/v2/ARCHITECTURE_OVERVIEW_V2.md](docs/v2/ARCHITECTURE_OVERVIEW_V2.md) – V2 architecture
 

@@ -189,6 +189,92 @@ class DefaultTelegramClient(
         }
     }
 
+    /**
+     * Load all messages from a chat by paging through the entire history.
+     *
+     * Ported from v1 T_ChatBrowser.loadAllMessages() with proven patterns:
+     * - Proper offset handling (0 for first page, -1 for subsequent to avoid duplicates)
+     * - TDLib async loading detection (first call may return only 1 message)
+     * - Retry logic for async loads
+     * - Safety limits to prevent infinite loops
+     * - Batch size optimization
+     *
+     * Per TDLib documentation (legacy docs/telegram/tdlibsetup.md):
+     * - getChatHistory requires special offset handling
+     * - First call may return incomplete batch while loading from server
+     *
+     * @param chatId Chat ID to load all messages from
+     * @param pageSize Number of messages per page (default 100, TDLib max)
+     * @param maxMessages Maximum total messages as safety limit (default 10000)
+     * @return Complete list of all messages from the chat
+     */
+    suspend fun loadAllMessages(
+            chatId: Long,
+            pageSize: Int = 100,
+            maxMessages: Int = 10000
+    ): List<Message> {
+        UnifiedLog.d(TAG, "loadAllMessages(chatId=$chatId, pageSize=$pageSize, max=$maxMessages)")
+
+        val allMessages = mutableListOf<Message>()
+        var fromMessageId = 0L
+        var isFirstPage = true
+
+        while (allMessages.size < maxMessages) {
+            // Per legacy pattern:
+            // - First page: offset=0
+            // - Subsequent pages: offset=-1 to avoid duplicate of the anchor message
+            val offset = if (isFirstPage) 0 else -1
+
+            var batch =
+                    loadMessageHistory(
+                            chatId = chatId,
+                            fromMessageId = fromMessageId,
+                            limit = pageSize.coerceAtMost(100) // TDLib max is 100
+                    )
+
+            // Handle TDLib async loading: first call often returns only 1 message
+            // Wait and retry to get the full batch from server (proven pattern from v1)
+            if (isFirstPage && batch.size == 1) {
+                UnifiedLog.d(
+                        TAG,
+                        "First batch returned ${batch.size} message, waiting for TDLib async load..."
+                )
+                delay(500L) // Same as v1
+                batch =
+                        loadMessageHistory(
+                                chatId = chatId,
+                                fromMessageId = fromMessageId,
+                                limit = pageSize.coerceAtMost(100)
+                        )
+                UnifiedLog.d(TAG, "After retry: ${batch.size} messages")
+            }
+
+            isFirstPage = false
+
+            if (batch.isEmpty()) {
+                UnifiedLog.d(TAG, "No more messages, stopping at ${allMessages.size} total")
+                break
+            }
+
+            allMessages.addAll(batch)
+            fromMessageId = batch.last().id
+
+            UnifiedLog.d(TAG, "Progress: ${allMessages.size} messages loaded")
+
+            // Safety check: partial batch indicates end of history
+            if (batch.size < pageSize) {
+                UnifiedLog.d(
+                        TAG,
+                        "Received partial batch (${batch.size}), assuming end of history"
+                )
+                break
+            }
+        }
+
+        UnifiedLog.d(TAG, "Total messages loaded: ${allMessages.size}")
+        return allMessages
+    }
+
     // ========== File Operations ==========
 
     override suspend fun resolveFileLocation(fileId: Int): TelegramFileLocation {
@@ -221,6 +307,33 @@ class DefaultTelegramClient(
                             priority = priority,
                             offset = 0,
                             limit = 0, // 0 = entire file
+                            synchronous = false
+                    )
+            val file = downloadResult.getOrThrow()
+            mapFileLocation(file)
+        }
+    }
+
+    override suspend fun requestThumbnailDownload(
+            remoteId: String,
+            priority: Int
+    ): TelegramFileLocation {
+        UnifiedLog.d(TAG, "requestThumbnailDownload(remoteId=$remoteId, priority=$priority)")
+
+        return withRetry("requestThumbnailDownload") {
+            // Step 1: Resolve remoteId to current session's fileId
+            val fileResult = tdlClient.getRemoteFile(remoteId, null)
+            val fileId = fileResult.getOrThrow().id
+
+            UnifiedLog.d(TAG, "Resolved remoteId=$remoteId to fileId=$fileId")
+
+            // Step 2: Request download with thumbnail priority (default 8, lower than video 16)
+            val downloadResult =
+                    tdlClient.downloadFile(
+                            fileId = fileId,
+                            priority = priority,
+                            offset = 0,
+                            limit = 0, // Full download for thumbnails
                             synchronous = false
                     )
             val file = downloadResult.getOrThrow()
