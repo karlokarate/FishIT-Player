@@ -81,6 +81,10 @@ The v2 rebuild follows a phased approach:
 - [x] Create Hilt DI module for feature system
 - [x] Create first feature providers (`TelegramFullHistoryFeatureProvider`, `TelegramLazyThumbnailsFeatureProvider`)
 - [x] Create feature contract documentation template
+- [x] **Phase 1.5:** Wire FeatureRegistry into real code (`TelegramMediaViewModel`)
+- [x] **Phase 1.5:** Add Hilt DI to `pipeline/telegram` and `feature/telegram-media`
+- [x] **Phase 1.5:** Unit tests for `AppFeatureRegistry`
+- [x] **Phase 1.5:** Unit tests for Telegram FeatureProviders
 - [ ] Add more feature providers across modules
 - [ ] Integrate feature checks in UI screens
 

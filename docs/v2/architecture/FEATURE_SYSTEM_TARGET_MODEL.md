@@ -103,6 +103,52 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 
 ---
 
+## Current Implementation Status
+
+**Last Updated:** Phase 1.5 (Dec 2025)
+
+### Implemented Components
+
+| Component | Module | Status |
+|-----------|--------|--------|
+| `FeatureId` | `core:feature-api` | ✅ Done |
+| `FeatureScope` | `core:feature-api` | ✅ Done |
+| `FeatureOwner` | `core:feature-api` | ✅ Done |
+| `FeatureProvider` | `core:feature-api` | ✅ Done |
+| `FeatureRegistry` | `core:feature-api` | ✅ Done |
+| `Features.kt` catalog | `core:feature-api` | ✅ Done |
+| `AppFeatureRegistry` | `app-v2` | ✅ Done |
+| `FeatureModule` (Hilt DI) | `app-v2` | ✅ Done |
+
+### Registered Feature Providers
+
+| Provider | FeatureId | Module | Status |
+|----------|-----------|--------|--------|
+| `TelegramFullHistoryFeatureProvider` | `telegram.full_history_streaming` | `pipeline:telegram` | ✅ Done |
+| `TelegramLazyThumbnailsFeatureProvider` | `telegram.lazy_thumbnails` | `pipeline:telegram` | ✅ Done |
+
+### DI Integration
+
+- **Hilt multibindings**: FeatureProviders are collected via `@IntoSet` bindings
+- **TelegramFeatureModule**: Binds Telegram providers into the global `Set<FeatureProvider>`
+- **TelegramMediaViewModel**: First ViewModel to inject and use `FeatureRegistry`
+
+### Unit Tests
+
+| Test Class | Location | Coverage |
+|------------|----------|----------|
+| `AppFeatureRegistryTest` | `app-v2/src/test/` | `isSupported`, `providersFor`, `ownerOf`, `featureCount`, `allFeatureIds` |
+| `TelegramFeatureProviderTest` | `pipeline/telegram/src/test/` | Provider properties (featureId, scope, owner) |
+
+### Next Steps
+
+- Add more feature providers for other pipelines (Xtream, IO, Audiobook)
+- Add UI screen feature providers
+- Integrate feature checks in actual UI components
+- Add feature flag integration layer
+
+---
+
 ## 3. Feature ID Catalog
 
 ### 3.1 Canonical Media (`media.*`)

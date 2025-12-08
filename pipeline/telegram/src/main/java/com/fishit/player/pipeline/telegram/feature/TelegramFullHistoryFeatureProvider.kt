@@ -4,6 +4,7 @@ import com.fishit.player.core.feature.FeatureOwner
 import com.fishit.player.core.feature.FeatureProvider
 import com.fishit.player.core.feature.FeatureScope
 import com.fishit.player.core.feature.TelegramFeatures
+import javax.inject.Inject
 
 /**
  * Feature provider for Telegram full history streaming.
@@ -15,7 +16,7 @@ import com.fishit.player.core.feature.TelegramFeatures
  *
  * See: docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md
  */
-class TelegramFullHistoryFeatureProvider : FeatureProvider {
+class TelegramFullHistoryFeatureProvider @Inject constructor() : FeatureProvider {
 
     override val featureId = TelegramFeatures.FULL_HISTORY_STREAMING
 

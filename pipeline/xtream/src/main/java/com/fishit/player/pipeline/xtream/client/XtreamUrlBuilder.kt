@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.client
 
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /**
  * XtreamUrlBuilder – URL Factory für Xtream Codes API
@@ -299,7 +300,7 @@ class XtreamUrlBuilder(
          * @return XtreamApiConfig or null if URL is invalid.
          */
         fun parseCredentials(url: String): XtreamApiConfig? {
-            val parsed = runCatching { HttpUrl.parse(url) }.getOrNull() ?: return null
+            val parsed = url.toHttpUrlOrNull() ?: return null
 
             val username = parsed.queryParameter("username") ?: return null
             val password = parsed.queryParameter("password") ?: return null
@@ -307,7 +308,7 @@ class XtreamUrlBuilder(
             if (username.isBlank() || password.isBlank()) return null
 
             // Extract base path (everything before get.php or player_api.php)
-            val segments = parsed.pathSegments()
+            val segments = parsed.pathSegments
             val endpointIndex = segments.indexOfFirst { it in listOf("get.php", "player_api.php") }
             val basePath =
                     if (endpointIndex > 0) {
@@ -315,9 +316,9 @@ class XtreamUrlBuilder(
                     } else null
 
             return XtreamApiConfig(
-                    host = parsed.host(),
-                    port = parsed.port().takeIf { it != HttpUrl.defaultPort(parsed.scheme()) },
-                    scheme = parsed.scheme().uppercase(),
+                    host = parsed.host,
+                    port = parsed.port.takeIf { it != HttpUrl.defaultPort(parsed.scheme) },
+                    scheme = parsed.scheme.uppercase(),
                     username = username,
                     password = password,
                     basePath = basePath,
@@ -332,9 +333,9 @@ class XtreamUrlBuilder(
          * @return XtreamApiConfig or null if URL is invalid.
          */
         fun parsePlayUrl(url: String): XtreamApiConfig? {
-            val parsed = runCatching { HttpUrl.parse(url) }.getOrNull() ?: return null
+            val parsed = url.toHttpUrlOrNull() ?: return null
 
-            val segments = parsed.pathSegments()
+            val segments = parsed.pathSegments
 
             // Find kind segment (live/vod/movie/movies/series)
             val kindIndex =
@@ -355,9 +356,9 @@ class XtreamUrlBuilder(
                     } else null
 
             return XtreamApiConfig(
-                    host = parsed.host(),
-                    port = parsed.port().takeIf { it != HttpUrl.defaultPort(parsed.scheme()) },
-                    scheme = parsed.scheme().uppercase(),
+                    host = parsed.host,
+                    port = parsed.port.takeIf { it != HttpUrl.defaultPort(parsed.scheme) },
+                    scheme = parsed.scheme.uppercase(),
                     username = username,
                     password = password,
                     basePath = basePath,

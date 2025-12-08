@@ -1,6 +1,8 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -34,9 +36,15 @@ dependencies {
     // TDLib integration (g00sha tdlib-coroutines)
     implementation("dev.g000sha256:tdl-coroutines-android:5.0.0")
 
+    // Hilt DI
+    implementation("com.google.dagger:hilt-android:2.52")
+    ksp("com.google.dagger:hilt-compiler:2.52")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
+    // mockk-agent for mocking final classes (required for g00sha TDLib DTOs)
+    testImplementation("io.mockk:mockk-agent-jvm:1.13.12")
 }

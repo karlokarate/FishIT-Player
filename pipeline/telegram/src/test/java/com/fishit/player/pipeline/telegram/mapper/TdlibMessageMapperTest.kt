@@ -1,24 +1,8 @@
 package com.fishit.player.pipeline.telegram.mapper
 
 import com.fishit.player.pipeline.telegram.model.TelegramMediaType
-import dev.g000sha256.tdl.dto.Audio
-import dev.g000sha256.tdl.dto.Document
-import dev.g000sha256.tdl.dto.File
-import dev.g000sha256.tdl.dto.FormattedText
-import dev.g000sha256.tdl.dto.LocalFile
 import dev.g000sha256.tdl.dto.Message
-import dev.g000sha256.tdl.dto.MessageAudio
-import dev.g000sha256.tdl.dto.MessageDocument
-import dev.g000sha256.tdl.dto.MessagePhoto
-import dev.g000sha256.tdl.dto.MessageSenderUser
 import dev.g000sha256.tdl.dto.MessageText
-import dev.g000sha256.tdl.dto.MessageVideo
-import dev.g000sha256.tdl.dto.Photo
-import dev.g000sha256.tdl.dto.PhotoSize
-import dev.g000sha256.tdl.dto.RemoteFile
-import dev.g000sha256.tdl.dto.Video
-import io.mockk.every
-import io.mockk.mockk
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -27,8 +11,8 @@ import org.junit.Test
 /**
  * Unit Tests für TdlibMessageMapper.
  *
- * Tests the mapping from TDLib Message DTOs to TelegramMediaItem. Uses MockK to create mock g00sha
- * DTOs.
+ * Tests the mapping from TDLib Message DTOs to TelegramMediaItem.
+ * Uses TdlibTestFixtures to create REAL g000sha256 DTO instances (not mocks).
  *
  * **CONTRACT COMPLIANCE (MEDIA_NORMALIZATION_CONTRACT.md):**
  * - VIDEO/DOCUMENT/PHOTO: title MUST be empty (normalizer extracts from filename)
@@ -41,22 +25,21 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessageVideo to TelegramMediaItem with VIDEO type`() {
-        val message =
-                createVideoMessage(
-                        messageId = 12345L,
-                        chatId = 67890L,
-                        fileName = "Movie.2024.1080p.BluRay.x264.mkv",
-                        caption = "Great movie!",
-                        mimeType = "video/x-matroska",
-                        sizeBytes = 1500000000L,
-                        duration = 7200,
-                        width = 1920,
-                        height = 1080,
-                        supportsStreaming = true,
-                        remoteId = "remote_file_123",
-                        uniqueId = "unique_abc",
-                        fileId = 999
-                )
+        val message = TdlibTestFixtures.createVideoMessage(
+            messageId = 12345L,
+            chatId = 67890L,
+            fileName = "Movie.2024.1080p.BluRay.x264.mkv",
+            caption = "Great movie!",
+            mimeType = "video/x-matroska",
+            sizeBytes = 1500000000L,
+            duration = 7200,
+            width = 1920,
+            height = 1080,
+            supportsStreaming = true,
+            remoteId = "remote_file_123",
+            uniqueId = "unique_abc",
+            fileId = 999
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -79,7 +62,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `VIDEO title is empty per contract - normalizer extracts`() {
-        val message = createVideoMessage(fileName = "Breaking.Bad.S01E01.720p.mkv")
+        val message = TdlibTestFixtures.createVideoMessage(fileName = "Breaking.Bad.S01E01.720p.mkv")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -92,7 +75,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `returns null for video with blank remoteId`() {
-        val message = createVideoMessage(remoteId = "", uniqueId = "valid_unique")
+        val message = TdlibTestFixtures.createVideoMessage(remoteId = "", uniqueId = "valid_unique")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -101,7 +84,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `returns null for video with blank uniqueId`() {
-        val message = createVideoMessage(remoteId = "valid_remote", uniqueId = "")
+        val message = TdlibTestFixtures.createVideoMessage(remoteId = "valid_remote", uniqueId = "")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -112,17 +95,16 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessageDocument to TelegramMediaItem with DOCUMENT type`() {
-        val message =
-                createDocumentMessage(
-                        messageId = 54321L,
-                        chatId = 11111L,
-                        fileName = "Game.of.Thrones.S01E01.1080p.mkv",
-                        caption = "Episode 1",
-                        mimeType = "video/x-matroska",
-                        sizeBytes = 2500000000L,
-                        remoteId = "doc_remote_456",
-                        uniqueId = "doc_unique_xyz"
-                )
+        val message = TdlibTestFixtures.createDocumentMessage(
+            messageId = 54321L,
+            chatId = 11111L,
+            fileName = "Game.of.Thrones.S01E01.1080p.mkv",
+            caption = "Episode 1",
+            mimeType = "video/x-matroska",
+            sizeBytes = 2500000000L,
+            remoteId = "doc_remote_456",
+            uniqueId = "doc_unique_xyz"
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -144,7 +126,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `DOCUMENT title is empty per contract`() {
-        val message = createDocumentMessage(fileName = "The.Matrix.1999.REMASTERED.mkv")
+        val message = TdlibTestFixtures.createDocumentMessage(fileName = "The.Matrix.1999.REMASTERED.mkv")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -156,19 +138,18 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessageAudio to TelegramMediaItem with AUDIO type`() {
-        val message =
-                createAudioMessage(
-                        messageId = 77777L,
-                        chatId = 88888L,
-                        audioTitle = "Bohemian Rhapsody",
-                        performer = "Queen",
-                        fileName = "bohemian_rhapsody.mp3",
-                        mimeType = "audio/mpeg",
-                        sizeBytes = 12000000L,
-                        duration = 355,
-                        remoteId = "audio_remote_789",
-                        uniqueId = "audio_unique_qrs"
-                )
+        val message = TdlibTestFixtures.createAudioMessage(
+            messageId = 77777L,
+            chatId = 88888L,
+            audioTitle = "Bohemian Rhapsody",
+            performer = "Queen",
+            fileName = "bohemian_rhapsody.mp3",
+            mimeType = "audio/mpeg",
+            sizeBytes = 12000000L,
+            duration = 355,
+            remoteId = "audio_remote_789",
+            uniqueId = "audio_unique_qrs"
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -186,7 +167,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `AUDIO title uses TDLib audio title - has ID3 metadata`() {
-        val message = createAudioMessage(audioTitle = "Track Title from ID3")
+        val message = TdlibTestFixtures.createAudioMessage(audioTitle = "Track Title from ID3")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -199,17 +180,16 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessagePhoto to TelegramMediaItem with PHOTO type`() {
-        val message =
-                createPhotoMessage(
-                        messageId = 99999L,
-                        chatId = 11112L,
-                        caption = "Beautiful sunset",
-                        largestWidth = 2048,
-                        largestHeight = 1536,
-                        sizeBytes = 5000000L,
-                        remoteId = "photo_remote_abc",
-                        uniqueId = "photo_unique_def"
-                )
+        val message = TdlibTestFixtures.createPhotoMessage(
+            messageId = 99999L,
+            chatId = 11112L,
+            caption = "Beautiful sunset",
+            largestWidth = 2048,
+            largestHeight = 1536,
+            sizeBytes = 5000000L,
+            remoteId = "photo_remote_abc",
+            uniqueId = "photo_unique_def"
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -230,7 +210,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `PHOTO title is empty per contract`() {
-        val message = createPhotoMessage()
+        val message = TdlibTestFixtures.createPhotoMessage()
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -240,18 +220,16 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `photo returns largest size`() {
-        val message =
-                createPhotoMessageWithMultipleSizes(
-                        sizes =
-                                listOf(
-                                        160 to 120, // thumbnail
-                                        320 to 240, // small
-                                        1280 to 960, // medium
-                                        2560 to 1920 // large (should be selected)
-                                ),
-                        remoteId = "photo_multi",
-                        uniqueId = "photo_multi_unique"
-                )
+        val message = TdlibTestFixtures.createPhotoMessageWithMultipleSizes(
+            sizes = listOf(
+                Triple(160, 120, 10000L),     // thumbnail
+                Triple(320, 240, 30000L),     // small
+                Triple(1280, 960, 150000L),   // medium
+                Triple(2560, 1920, 500000L)   // large (should be selected)
+            ),
+            remoteId = "photo_multi",
+            uniqueId = "photo_multi_unique"
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -275,14 +253,13 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `toMediaItems filters non-media messages`() {
-        val messages =
-                listOf(
-                        createVideoMessage(messageId = 1),
-                        createTextMessage(text = "Skip me"),
-                        createDocumentMessage(messageId = 2),
-                        createTextMessage(text = "Skip me too"),
-                        createAudioMessage(messageId = 3)
-                )
+        val messages = listOf(
+            TdlibTestFixtures.createVideoMessage(messageId = 1),
+            createTextMessage(text = "Skip me"),
+            TdlibTestFixtures.createDocumentMessage(messageId = 2),
+            createTextMessage(text = "Skip me too"),
+            TdlibTestFixtures.createAudioMessage(messageId = 3)
+        )
 
         val result = TdlibMessageMapper.toMediaItems(messages)
 
@@ -292,8 +269,10 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `extension function toTelegramMediaItems works`() {
-        val messages =
-                listOf(createVideoMessage(messageId = 100), createAudioMessage(messageId = 200))
+        val messages = listOf(
+            TdlibTestFixtures.createVideoMessage(messageId = 100),
+            TdlibTestFixtures.createAudioMessage(messageId = 200)
+        )
 
         val result = messages.toTelegramMediaItems()
 
@@ -305,18 +284,19 @@ class TdlibMessageMapperTest {
     // ========== Edge Cases ==========
 
     @Test
-    fun `handles null caption gracefully`() {
-        val message = createVideoMessage(caption = null)
+    fun `handles empty caption gracefully`() {
+        val message = TdlibTestFixtures.createVideoMessage(caption = "")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
         assertNotNull(result)
+        // Empty caption should become null after processing
         assertNull(result.caption)
     }
 
     @Test
     fun `handles blank caption as null`() {
-        val message = createVideoMessage(caption = "   ")
+        val message = TdlibTestFixtures.createVideoMessage(caption = "   ")
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -327,7 +307,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `mediaAlbumId preserved when non-zero`() {
-        val message = createVideoMessage(mediaAlbumId = 123456789L)
+        val message = TdlibTestFixtures.createVideoMessage(mediaAlbumId = 123456789L)
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -337,7 +317,7 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `mediaAlbumId null when zero`() {
-        val message = createVideoMessage(mediaAlbumId = 0L)
+        val message = TdlibTestFixtures.createVideoMessage(mediaAlbumId = 0L)
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -347,11 +327,10 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `localPath populated when download completed`() {
-        val message =
-                createVideoMessage(
-                        localPath = "/storage/telegram/videos/movie.mkv",
-                        isDownloadCompleted = true
-                )
+        val message = TdlibTestFixtures.createVideoMessage(
+            localPath = "/storage/telegram/videos/movie.mkv",
+            isDownloadCompleted = true
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -361,11 +340,10 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `localPath null when download not completed`() {
-        val message =
-                createVideoMessage(
-                        localPath = "/storage/telegram/videos/movie.mkv",
-                        isDownloadCompleted = false
-                )
+        val message = TdlibTestFixtures.createVideoMessage(
+            localPath = "/storage/telegram/videos/movie.mkv",
+            isDownloadCompleted = false
+        )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -373,296 +351,15 @@ class TdlibMessageMapperTest {
         assertNull(result.localPath)
     }
 
-    // ========== Helper Factory Methods ==========
-
-    private fun createVideoMessage(
-            messageId: Long = 1L,
-            chatId: Long = 100L,
-            fileName: String = "test.mp4",
-            caption: String? = null,
-            mimeType: String = "video/mp4",
-            sizeBytes: Long = 1000000L,
-            duration: Int = 3600,
-            width: Int = 1920,
-            height: Int = 1080,
-            supportsStreaming: Boolean = true,
-            remoteId: String = "remote_default",
-            uniqueId: String = "unique_default",
-            fileId: Int = 1,
-            mediaAlbumId: Long = 0L,
-            localPath: String? = null,
-            isDownloadCompleted: Boolean = false
-    ): Message {
-        val localFile =
-                mockk<LocalFile> {
-                    every { path } returns (localPath ?: "")
-                    every { isDownloadingCompleted } returns isDownloadCompleted
-                }
-        val remoteFile =
-                mockk<RemoteFile> {
-                    every { id } returns remoteId
-                    every { uniqueId } returns uniqueId
-                }
-        val file =
-                mockk<File> {
-                    every { id } returns fileId
-                    every { size } returns sizeBytes.toInt()
-                    every { local } returns localFile
-                    every { remote } returns remoteFile
-                }
-        val video =
-                mockk<Video> {
-                    every { this@mockk.video } returns file
-                    every { this@mockk.fileName } returns fileName
-                    every { this@mockk.mimeType } returns mimeType
-                    every { this@mockk.duration } returns duration
-                    every { this@mockk.width } returns width
-                    every { this@mockk.height } returns height
-                    every { this@mockk.supportsStreaming } returns supportsStreaming
-                    every { thumbnail } returns null
-                }
-        val captionText = mockk<FormattedText> { every { text } returns (caption ?: "") }
-        val content =
-                mockk<MessageVideo> {
-                    every { this@mockk.video } returns video
-                    every { this@mockk.caption } returns captionText
-                }
-        val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-        return mockk<Message> {
-            every { id } returns messageId
-            every { this@mockk.chatId } returns chatId
-            every { this@mockk.content } returns content
-            every { this@mockk.mediaAlbumId } returns mediaAlbumId
-            every { date } returns 1704067200 // 2024-01-01
-            every { senderId } returns sender
-        }
-    }
-
-    private fun createDocumentMessage(
-            messageId: Long = 1L,
-            chatId: Long = 100L,
-            fileName: String = "test.mkv",
-            caption: String? = null,
-            mimeType: String = "video/x-matroska",
-            sizeBytes: Long = 2000000L,
-            remoteId: String = "doc_remote_default",
-            uniqueId: String = "doc_unique_default",
-            fileId: Int = 2
-    ): Message {
-        val localFile =
-                mockk<LocalFile> {
-                    every { path } returns ""
-                    every { isDownloadingCompleted } returns false
-                }
-        val remoteFile =
-                mockk<RemoteFile> {
-                    every { id } returns remoteId
-                    every { uniqueId } returns uniqueId
-                }
-        val file =
-                mockk<File> {
-                    every { id } returns fileId
-                    every { size } returns sizeBytes.toInt()
-                    every { local } returns localFile
-                    every { remote } returns remoteFile
-                }
-        val document =
-                mockk<Document> {
-                    every { this@mockk.document } returns file
-                    every { this@mockk.fileName } returns fileName
-                    every { this@mockk.mimeType } returns mimeType
-                    every { thumbnail } returns null
-                }
-        val captionText = mockk<FormattedText> { every { text } returns (caption ?: "") }
-        val content =
-                mockk<MessageDocument> {
-                    every { this@mockk.document } returns document
-                    every { this@mockk.caption } returns captionText
-                }
-        val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-        return mockk<Message> {
-            every { id } returns messageId
-            every { this@mockk.chatId } returns chatId
-            every { this@mockk.content } returns content
-            every { mediaAlbumId } returns 0L
-            every { date } returns 1704067200
-            every { senderId } returns sender
-        }
-    }
-
-    private fun createAudioMessage(
-            messageId: Long = 1L,
-            chatId: Long = 100L,
-            audioTitle: String = "",
-            performer: String = "",
-            fileName: String = "audio.mp3",
-            mimeType: String = "audio/mpeg",
-            sizeBytes: Long = 10000000L,
-            duration: Int = 300,
-            remoteId: String = "audio_remote_default",
-            uniqueId: String = "audio_unique_default",
-            fileId: Int = 3
-    ): Message {
-        val localFile =
-                mockk<LocalFile> {
-                    every { path } returns ""
-                    every { isDownloadingCompleted } returns false
-                }
-        val remoteFile =
-                mockk<RemoteFile> {
-                    every { id } returns remoteId
-                    every { uniqueId } returns uniqueId
-                }
-        val file =
-                mockk<File> {
-                    every { id } returns fileId
-                    every { size } returns sizeBytes.toInt()
-                    every { local } returns localFile
-                    every { remote } returns remoteFile
-                }
-        val audio =
-                mockk<Audio> {
-                    every { this@mockk.audio } returns file
-                    every { this@mockk.title } returns audioTitle
-                    every { this@mockk.performer } returns performer
-                    every { this@mockk.fileName } returns fileName
-                    every { this@mockk.mimeType } returns mimeType
-                    every { this@mockk.duration } returns duration
-                    every { albumCoverThumbnail } returns null
-                }
-        val captionText = mockk<FormattedText> { every { text } returns "" }
-        val content =
-                mockk<MessageAudio> {
-                    every { this@mockk.audio } returns audio
-                    every { caption } returns captionText
-                }
-        val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-        return mockk<Message> {
-            every { id } returns messageId
-            every { this@mockk.chatId } returns chatId
-            every { this@mockk.content } returns content
-            every { mediaAlbumId } returns 0L
-            every { date } returns 1704067200
-            every { senderId } returns sender
-        }
-    }
-
-    private fun createPhotoMessage(
-            messageId: Long = 1L,
-            chatId: Long = 100L,
-            caption: String? = null,
-            largestWidth: Int = 1920,
-            largestHeight: Int = 1080,
-            sizeBytes: Long = 3000000L,
-            remoteId: String = "photo_remote_default",
-            uniqueId: String = "photo_unique_default",
-            fileId: Int = 4
-    ): Message {
-        val localFile =
-                mockk<LocalFile> {
-                    every { path } returns ""
-                    every { isDownloadingCompleted } returns false
-                }
-        val remoteFile =
-                mockk<RemoteFile> {
-                    every { id } returns remoteId
-                    every { uniqueId } returns uniqueId
-                }
-        val file =
-                mockk<File> {
-                    every { id } returns fileId
-                    every { size } returns sizeBytes.toInt()
-                    every { local } returns localFile
-                    every { remote } returns remoteFile
-                }
-        val photoSize =
-                mockk<PhotoSize> {
-                    every { width } returns largestWidth
-                    every { height } returns largestHeight
-                    every { photo } returns file
-                }
-        val photo = mockk<Photo> { every { sizes } returns arrayOf(photoSize) }
-        val captionText = mockk<FormattedText> { every { text } returns (caption ?: "") }
-        val content =
-                mockk<MessagePhoto> {
-                    every { this@mockk.photo } returns photo
-                    every { this@mockk.caption } returns captionText
-                }
-        val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-        return mockk<Message> {
-            every { id } returns messageId
-            every { this@mockk.chatId } returns chatId
-            every { this@mockk.content } returns content
-            every { mediaAlbumId } returns 0L
-            every { date } returns 1704067200
-            every { senderId } returns sender
-        }
-    }
-
-    private fun createPhotoMessageWithMultipleSizes(
-            messageId: Long = 1L,
-            chatId: Long = 100L,
-            sizes: List<Pair<Int, Int>>,
-            remoteId: String = "photo_multi_remote",
-            uniqueId: String = "photo_multi_unique"
-    ): Message {
-        val localFile =
-                mockk<LocalFile> {
-                    every { path } returns ""
-                    every { isDownloadingCompleted } returns false
-                }
-        val remoteFile =
-                mockk<RemoteFile> {
-                    every { id } returns remoteId
-                    every { uniqueId } returns uniqueId
-                }
-        val photoSizes =
-                sizes
-                        .mapIndexed { index, (w, h) ->
-                            val file =
-                                    mockk<File> {
-                                        every { id } returns (100 + index)
-                                        every { size } returns (w * h * 3) // rough size estimate
-                                        every { local } returns localFile
-                                        every { remote } returns remoteFile
-                                    }
-                            mockk<PhotoSize> {
-                                every { width } returns w
-                                every { height } returns h
-                                every { photo } returns file
-                            }
-                        }
-                        .toTypedArray()
-
-        val photo = mockk<Photo> { every { this@mockk.sizes } returns photoSizes }
-        val captionText = mockk<FormattedText> { every { text } returns "" }
-        val content =
-                mockk<MessagePhoto> {
-                    every { this@mockk.photo } returns photo
-                    every { caption } returns captionText
-                }
-        val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-        return mockk<Message> {
-            every { id } returns messageId
-            every { this@mockk.chatId } returns chatId
-            every { this@mockk.content } returns content
-            every { mediaAlbumId } returns 0L
-            every { date } returns 1704067200
-            every { senderId } returns sender
-        }
-    }
+    // ========== Helper for MessageText (uses real DTOs) ==========
 
     private fun createTextMessage(text: String): Message {
-        val formattedText = mockk<FormattedText> { every { this@mockk.text } returns text }
-        val content = mockk<MessageText> { every { this@mockk.text } returns formattedText }
-        val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-        return mockk<Message> {
-            every { id } returns 1L
-            every { chatId } returns 100L
-            every { this@mockk.content } returns content
-            every { mediaAlbumId } returns 0L
-            every { date } returns 1704067200
-            every { senderId } returns sender
-        }
+        val formattedText = TdlibTestFixtures.createFormattedText(text)
+        val content = MessageText(formattedText, null, null)
+        return TdlibTestFixtures.createMessage(
+            id = 1L,
+            chatId = 100L,
+            content = content
+        )
     }
 }

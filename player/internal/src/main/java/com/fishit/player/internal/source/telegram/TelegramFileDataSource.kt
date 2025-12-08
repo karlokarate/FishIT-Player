@@ -7,7 +7,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.pipeline.telegram.tdlib.TelegramTdlibClient
+import com.fishit.player.pipeline.telegram.tdlib.TelegramClient
 import com.fishit.player.pipeline.telegram.tdlib.TelegramFileException
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -44,10 +44,10 @@ import java.io.IOException
  * 4. Ensure file is ready via TDLib
  * 5. Delegate to FileDataSource for actual I/O
  * 
- * @param tdlibClient TDLib client for file access
+ * @param telegramClient TDLib client for file access
  */
 class TelegramFileDataSource(
-    private val tdlibClient: TelegramTdlibClient
+    private val telegramClient: TelegramClient
 ) : DataSource {
     
     companion object {
@@ -110,21 +110,25 @@ class TelegramFileDataSource(
                 resolveFileId(fileId, remoteId)
             }
             
-            // Ensure file is ready for playback
+            // Request file download and wait for it to be ready
             val fileLocation = runBlocking {
-                tdlibClient.ensureFileReady(
+                telegramClient.requestFileDownload(
                     fileId = resolvedFileId,
-                    priority = DOWNLOAD_PRIORITY,
-                    offset = 0,
-                    limit = 0 // Download entire file
+                    priority = DOWNLOAD_PRIORITY
                 )
+            }
+            
+            // Wait for download completion if not yet ready
+            if (!fileLocation.isDownloadingCompleted) {
+                throw IOException("File not yet downloaded: fileId=$resolvedFileId, downloaded=${fileLocation.downloadedSize}/${fileLocation.size}")
             }
             
             // Get local path
             val localPath = fileLocation.localPath
                 ?: throw IOException("File not available locally: fileId=$resolvedFileId")
             
-            if (!File(localPath).exists()) {
+            val localFile = File(localPath)
+            if (!localFile.exists()) {
                 throw IOException("File not found at local path: $localPath")
             }
             
@@ -167,7 +171,7 @@ class TelegramFileDataSource(
             }
             remoteId != null && remoteId.isNotEmpty() -> {
                 UnifiedLog.d(TAG, "Resolving fileId via remoteId: $remoteId")
-                tdlibClient.resolveFileByRemoteId(remoteId)
+                telegramClient.resolveFileByRemoteId(remoteId)
             }
             else -> {
                 throw TelegramFileException("No valid fileId or remoteId in URI")
@@ -206,10 +210,10 @@ class TelegramFileDataSource(
  * to handle tg:// URIs.
  */
 class TelegramFileDataSourceFactory(
-    private val tdlibClient: TelegramTdlibClient
+    private val telegramClient: TelegramClient
 ) : DataSource.Factory {
     
     override fun createDataSource(): DataSource {
-        return TelegramFileDataSource(tdlibClient)
+        return TelegramFileDataSource(telegramClient)
     }
 }

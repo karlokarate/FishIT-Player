@@ -1,5 +1,6 @@
 package com.fishit.player.pipeline.telegram.tdlib
 
+import com.fishit.player.pipeline.telegram.mapper.TdlibTestFixtures
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.AuthorizationStateReady
@@ -57,13 +58,36 @@ class DefaultTelegramClientTest {
         client = DefaultTelegramClient(mockProvider)
     }
 
+    // ========== Test Helpers for TdlResult ==========
+    
+    /**
+     * Creates a mocked TdlResult.Success wrapping the given value.
+     * 
+     * Uses mockk because TdlResult.Success has a private constructor.
+     */
+    private inline fun <reified T : Any> successResult(value: T): TdlResult<T> {
+        return mockk<TdlResult.Success<T>> {
+            every { result } returns value
+        }
+    }
+    
+    /**
+     * Creates a mocked TdlResult.Failure with the given error code and message.
+     */
+    private fun failureResult(code: Int, message: String): TdlResult<Nothing> {
+        return mockk<TdlResult.Failure> {
+            every { this@mockk.code } returns code
+            every { this@mockk.message } returns message
+        }
+    }
+
     // ========== Authorization Tests ==========
 
     @Test
     fun `ensureAuthorized succeeds when state is Ready`() = runTest {
         val readyState = mockk<AuthorizationStateReady>()
         coEvery { mockProvider.initialize() } returns Unit
-        coEvery { mockTdlClient.getAuthorizationState() } returns TdlResult.Success(readyState)
+        coEvery { mockTdlClient.getAuthorizationState() } returns successResult(readyState)
 
         client.ensureAuthorized()
 
@@ -76,7 +100,7 @@ class DefaultTelegramClientTest {
     fun `ensureAuthorized throws when waiting for phone`() = runTest {
         val waitPhoneState = mockk<AuthorizationStateWaitPhoneNumber>()
         coEvery { mockProvider.initialize() } returns Unit
-        coEvery { mockTdlClient.getAuthorizationState() } returns TdlResult.Success(waitPhoneState)
+        coEvery { mockTdlClient.getAuthorizationState() } returns successResult(waitPhoneState)
 
         assertFailsWith<TelegramAuthException> { client.ensureAuthorized() }
 
@@ -88,7 +112,7 @@ class DefaultTelegramClientTest {
     fun `ensureAuthorized throws when waiting for code`() = runTest {
         val waitCodeState = mockk<AuthorizationStateWaitCode>()
         coEvery { mockProvider.initialize() } returns Unit
-        coEvery { mockTdlClient.getAuthorizationState() } returns TdlResult.Success(waitCodeState)
+        coEvery { mockTdlClient.getAuthorizationState() } returns successResult(waitCodeState)
 
         assertFailsWith<TelegramAuthException> { client.ensureAuthorized() }
 
@@ -101,7 +125,7 @@ class DefaultTelegramClientTest {
         val waitPasswordState = mockk<AuthorizationStateWaitPassword>()
         coEvery { mockProvider.initialize() } returns Unit
         coEvery { mockTdlClient.getAuthorizationState() } returns
-                TdlResult.Success(waitPasswordState)
+                successResult(waitPasswordState)
 
         assertFailsWith<TelegramAuthException> { client.ensureAuthorized() }
 
@@ -113,7 +137,7 @@ class DefaultTelegramClientTest {
     fun `ensureAuthorized throws on TDLib error`() = runTest {
         coEvery { mockProvider.initialize() } returns Unit
         coEvery { mockTdlClient.getAuthorizationState() } returns
-                TdlResult.Failure(401, "Unauthorized")
+                failureResult(401, "Unauthorized")
 
         assertFailsWith<TelegramAuthException> { client.ensureAuthorized() }
     }
@@ -123,7 +147,7 @@ class DefaultTelegramClientTest {
         every { mockProvider.isInitialized } returns false
         val readyState = mockk<AuthorizationStateReady>()
         coEvery { mockProvider.initialize() } returns Unit
-        coEvery { mockTdlClient.getAuthorizationState() } returns TdlResult.Success(readyState)
+        coEvery { mockTdlClient.getAuthorizationState() } returns successResult(readyState)
 
         client.ensureAuthorized()
 
@@ -137,13 +161,13 @@ class DefaultTelegramClientTest {
         val chatIds = longArrayOf(1001L, 1002L)
         val chatsResult = mockk<Chats> { every { this@mockk.chatIds } returns chatIds }
 
-        val chat1 = createMockChat(1001L, "Chat One", ChatTypePrivate(123L, false))
-        val chat2 = createMockChat(1002L, "Chat Two", ChatTypePrivate(456L, false))
+        val chat1 = createMockChat(1001L, "Chat One", ChatTypePrivate(123L))
+        val chat2 = createMockChat(1002L, "Chat Two", ChatTypePrivate(456L))
 
         coEvery { mockTdlClient.getChats(any<ChatListMain>(), any()) } returns
-                TdlResult.Success(chatsResult)
-        coEvery { mockTdlClient.getChat(1001L) } returns TdlResult.Success(chat1)
-        coEvery { mockTdlClient.getChat(1002L) } returns TdlResult.Success(chat2)
+                successResult(chatsResult)
+        coEvery { mockTdlClient.getChat(1001L) } returns successResult(chat1)
+        coEvery { mockTdlClient.getChat(1002L) } returns successResult(chat2)
 
         val result = client.getChats(limit = 10)
 
@@ -160,12 +184,12 @@ class DefaultTelegramClientTest {
         val chatIds = longArrayOf(1001L, 1002L)
         val chatsResult = mockk<Chats> { every { this@mockk.chatIds } returns chatIds }
 
-        val chat1 = createMockChat(1001L, "Chat One", ChatTypePrivate(123L, false))
+        val chat1 = createMockChat(1001L, "Chat One", ChatTypePrivate(123L))
 
         coEvery { mockTdlClient.getChats(any<ChatListMain>(), any()) } returns
-                TdlResult.Success(chatsResult)
-        coEvery { mockTdlClient.getChat(1001L) } returns TdlResult.Success(chat1)
-        coEvery { mockTdlClient.getChat(1002L) } returns TdlResult.Failure(404, "Not found")
+                successResult(chatsResult)
+        coEvery { mockTdlClient.getChat(1001L) } returns successResult(chat1)
+        coEvery { mockTdlClient.getChat(1002L) } returns failureResult(404, "Not found")
 
         val result = client.getChats(limit = 10)
 
@@ -191,7 +215,7 @@ class DefaultTelegramClientTest {
                     limit = 100,
                     onlyLocal = false
             )
-        } returns TdlResult.Success(messagesResult)
+        } returns successResult(messagesResult)
 
         val result = client.fetchMediaMessages(chatId = 1001L, limit = 100, offsetMessageId = 0)
 
@@ -211,7 +235,7 @@ class DefaultTelegramClientTest {
                     limit = 50,
                     onlyLocal = false
             )
-        } returns TdlResult.Success(emptyMessages)
+        } returns successResult(emptyMessages)
 
         client.fetchMediaMessages(chatId = 1001L, limit = 50, offsetMessageId = 500L)
 
@@ -238,7 +262,7 @@ class DefaultTelegramClientTest {
                     limit = 100, // Should be capped at 100
                     onlyLocal = false
             )
-        } returns TdlResult.Success(emptyMessages)
+        } returns successResult(emptyMessages)
 
         client.fetchMediaMessages(chatId = 1001L, limit = 500, offsetMessageId = 0)
 
@@ -266,9 +290,9 @@ class DefaultTelegramClientTest {
                 mockk<Messages> { every { messages } returns messages2.toTypedArray() }
 
         coEvery { mockTdlClient.getChatHistory(chatId = 1001L, any(), any(), any(), any()) } returns
-                TdlResult.Success(messagesResult1)
+                successResult(messagesResult1)
         coEvery { mockTdlClient.getChatHistory(chatId = 1002L, any(), any(), any(), any()) } returns
-                TdlResult.Success(messagesResult2)
+                successResult(messagesResult2)
 
         val result = client.fetchAllMediaMessages(chatIds = listOf(1001L, 1002L), limit = 100)
 
@@ -282,9 +306,9 @@ class DefaultTelegramClientTest {
                 mockk<Messages> { every { messages } returns messages1.toTypedArray() }
 
         coEvery { mockTdlClient.getChatHistory(chatId = 1001L, any(), any(), any(), any()) } returns
-                TdlResult.Success(messagesResult1)
+                successResult(messagesResult1)
         coEvery { mockTdlClient.getChatHistory(chatId = 1002L, any(), any(), any(), any()) } returns
-                TdlResult.Failure(500, "Server error")
+                failureResult(500, "Server error")
 
         val result = client.fetchAllMediaMessages(chatIds = listOf(1001L, 1002L), limit = 100)
 
@@ -309,7 +333,7 @@ class DefaultTelegramClientTest {
                         localPath = "/storage/telegram/temp"
                 )
 
-        coEvery { mockTdlClient.getFile(999) } returns TdlResult.Success(file)
+        coEvery { mockTdlClient.getFile(999) } returns successResult(file)
 
         val result = client.resolveFileLocation(fileId = 999)
 
@@ -325,7 +349,7 @@ class DefaultTelegramClientTest {
     fun `resolveFileByRemoteId returns file ID`() = runTest {
         val file = createMockFile(fileId = 888)
 
-        coEvery { mockTdlClient.getRemoteFile("remote_abc", null) } returns TdlResult.Success(file)
+        coEvery { mockTdlClient.getRemoteFile("remote_abc", null) } returns successResult(file)
 
         val result = client.resolveFileByRemoteId("remote_abc")
 
@@ -355,7 +379,7 @@ class DefaultTelegramClientTest {
                     limit = 0,
                     synchronous = false
             )
-        } returns TdlResult.Success(file)
+        } returns successResult(file)
 
         val result = client.requestFileDownload(fileId = 777, priority = 16)
 
@@ -371,7 +395,7 @@ class DefaultTelegramClientTest {
         // First set up some state
         val readyState = mockk<AuthorizationStateReady>()
         coEvery { mockProvider.initialize() } returns Unit
-        coEvery { mockTdlClient.getAuthorizationState() } returns TdlResult.Success(readyState)
+        coEvery { mockTdlClient.getAuthorizationState() } returns successResult(readyState)
         client.ensureAuthorized()
 
         // Now close
@@ -399,54 +423,27 @@ class DefaultTelegramClientTest {
         }
     }
 
+    /**
+     * Create real Video Messages using TdlibTestFixtures.
+     * 
+     * Uses real g000sha256 DTOs instead of mocks since they are final data classes.
+     */
     private fun createMockVideoMessages(chatId: Long, messageIds: List<Long>): List<Message> {
         return messageIds.map { msgId ->
-            val localFile =
-                    mockk<LocalFile> {
-                        every { path } returns ""
-                        every { isDownloadingCompleted } returns false
-                    }
-            val remoteFile =
-                    mockk<RemoteFile> {
-                        every { id } returns "remote_$msgId"
-                        every { uniqueId } returns "unique_$msgId"
-                    }
-            val file =
-                    mockk<File> {
-                        every { id } returns msgId.toInt()
-                        every { size } returns 1000000000
-                        every { local } returns localFile
-                        every { remote } returns remoteFile
-                    }
-            val video =
-                    mockk<Video> {
-                        every { this@mockk.video } returns file
-                        every { fileName } returns "video_$msgId.mp4"
-                        every { mimeType } returns "video/mp4"
-                        every { duration } returns 3600
-                        every { width } returns 1920
-                        every { height } returns 1080
-                        every { supportsStreaming } returns true
-                        every { thumbnail } returns null
-                    }
-            val captionText = mockk<FormattedText> { every { text } returns "Caption for $msgId" }
-            val content =
-                    mockk<MessageVideo> {
-                        every { this@mockk.video } returns video
-                        every { caption } returns captionText
-                    }
-            val sender = mockk<MessageSenderUser> { every { userId } returns 123L }
-            mockk<Message> {
-                every { id } returns msgId
-                every { this@mockk.chatId } returns chatId
-                every { this@mockk.content } returns content
-                every { mediaAlbumId } returns 0L
-                every { date } returns 1704067200
-                every { senderId } returns sender
-            }
+            TdlibTestFixtures.createVideoMessage(
+                messageId = msgId,
+                chatId = chatId,
+                fileName = "video_$msgId.mp4",
+                caption = "Caption for $msgId",
+                remoteId = "remote_$msgId",
+                uniqueId = "unique_$msgId"
+            )
         }
     }
 
+    /**
+     * Create a real File DTO using TdlibTestFixtures.
+     */
     private fun createMockFile(
             fileId: Int,
             remoteId: String = "remote_default",
@@ -457,23 +454,22 @@ class DefaultTelegramClientTest {
             isDownloadingCompleted: Boolean = false,
             localPath: String = ""
     ): File {
-        val localFile =
-                mockk<LocalFile> {
-                    every { path } returns localPath
-                    every { this@mockk.downloadedSize } returns downloadedSize.toInt()
-                    every { this@mockk.isDownloadingActive } returns isDownloadingActive
-                    every { this@mockk.isDownloadingCompleted } returns isDownloadingCompleted
-                }
-        val remoteFile =
-                mockk<RemoteFile> {
-                    every { id } returns remoteId
-                    every { this@mockk.uniqueId } returns uniqueId
-                }
-        return mockk {
-            every { id } returns fileId
-            every { this@mockk.size } returns size.toInt()
-            every { local } returns localFile
-            every { remote } returns remoteFile
-        }
+        val localFile = TdlibTestFixtures.createLocalFile(
+            path = localPath,
+            isDownloadingActive = isDownloadingActive,
+            isDownloadingCompleted = isDownloadingCompleted,
+            downloadedSize = downloadedSize
+        )
+        val remoteFile = TdlibTestFixtures.createRemoteFile(
+            id = remoteId,
+            uniqueId = uniqueId
+        )
+        return TdlibTestFixtures.createFile(
+            id = fileId,
+            size = size,
+            expectedSize = size,
+            local = localFile,
+            remote = remoteFile
+        )
     }
 }

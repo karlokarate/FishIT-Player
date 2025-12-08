@@ -8,6 +8,43 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Phase 1.7 – Test Stabilization
+
+**Status: COMPLETED**
+
+- **fix(tests)**: Fixed MockK runtime errors for g000sha256 TDLib DTOs
+  - Root cause: g000sha256 TDLib DTOs are final data classes that MockK cannot mock
+  - Solution: Created `TdlibTestFixtures` with real DTO factory methods
+  - Updated `DefaultTelegramClientTest` to use `TdlibTestFixtures` instead of mocks
+  - All 123 Telegram pipeline tests now passing
+- **docs(agents)**: Added Pipeline Migration Philosophy section to `AGENTS.md`
+  - New Section 12: "Pipeline Migration Philosophy (Telegram & Xtream)"
+  - Documents that v1 pipelines are functionally proven and battle-tested
+  - Establishes migration mindset: port good behavior, don't redesign from scratch
+  - References legacy artifacts (JSON exports, CLI, contracts) as source of truth
+
+### Phase 1.6 – Build Stabilization
+
+**Status: COMPLETED**
+
+- **fix(player)**: Updated `TelegramFileDataSource` to use v2 `TelegramClient` API
+  - Replaced obsolete `TelegramTdlibClient` reference with `TelegramClient`
+  - Updated `ensureFileReady()` → `requestFileDownload()` method call
+  - Fixed all TDLib API property accesses for v2 compatibility
+- **fix(xtream)**: Updated `XtreamUrlBuilder` to modern OkHttp 5.x API
+  - Replaced deprecated `HttpUrl.parse()` with `toHttpUrlOrNull()` extension
+  - Replaced deprecated function calls with property accesses:
+    - `pathSegments()` → `pathSegments`
+    - `host()` → `host`
+    - `port()` → `port`
+    - `scheme()` → `scheme`
+- **fix(tests)**: Fixed TDLib test type mismatches in `DefaultTelegramClientTest`
+  - Added helper functions `successResult()` and `failureResult()` for TdlResult mocking
+  - Fixed `Long` vs `Int` type mismatch for `size` and `downloadedSize` properties
+  - Fixed `ChatTypePrivate` constructor to use single-argument form
+- **fix(tests)**: Fixed `TdlibMessageMapperTest` size property types
+  - Removed `.toInt()` conversions to match TDLib v5.x `Long` types
+
 ### Phase 1 – Feature System (PLANNED)
 
 - Core feature API: `FeatureId`, `FeatureRegistry`, `FeatureProvider`

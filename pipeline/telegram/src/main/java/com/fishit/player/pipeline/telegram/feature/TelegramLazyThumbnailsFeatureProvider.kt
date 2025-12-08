@@ -4,6 +4,7 @@ import com.fishit.player.core.feature.FeatureOwner
 import com.fishit.player.core.feature.FeatureProvider
 import com.fishit.player.core.feature.FeatureScope
 import com.fishit.player.core.feature.TelegramFeatures
+import javax.inject.Inject
 
 /**
  * Feature provider for Telegram lazy thumbnail loading.
@@ -15,7 +16,7 @@ import com.fishit.player.core.feature.TelegramFeatures
  *
  * See: docs/v2/features/telegram/FEATURE_telegram.lazy_thumbnails.md
  */
-class TelegramLazyThumbnailsFeatureProvider : FeatureProvider {
+class TelegramLazyThumbnailsFeatureProvider @Inject constructor() : FeatureProvider {
 
     override val featureId = TelegramFeatures.LAZY_THUMBNAILS
 

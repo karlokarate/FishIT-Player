@@ -3,6 +3,7 @@
 This document defines the rules for ALL automated agents (Copilot, Codex, etc.) working on the **v2 rebuild** of FishIT-Player in this repository.
 
 It applies to:
+
 - The branch `architecture/v2-bootstrap`
 - Any feature / topic branches derived from the v2 rebuild (e.g. `feature/*` based on `architecture/v2-bootstrap`)
 
@@ -374,6 +375,61 @@ After making changes, confirm:
 
 5. **User proposal (if applicable)**
    - [ ] If a new tool, dependency upgrade, or alternative approach is involved, a clear proposal has been written and the user’s confirmation has been obtained before the actual change.
+
+---
+
+## 12. Pipeline Migration Philosophy (Telegram & Xtream)
+
+The existing Telegram and Xtream pipelines in v1 are **functionally proven and battle-tested**.
+
+The goal of v2 is **NOT** to redesign everything from scratch, but to:
+
+- **Port** the good, battle-tested behavior from legacy to the new architecture
+  (RawMediaMetadata → Normalizer/Resolver → SIP).
+- **Remove** architectural debt (singletons, ad-hoc normalization, tight coupling).
+- **Only add** new behavior where it clearly improves quality or correctness.
+
+### 12.1. Rules for Pipeline Work
+
+When working on `pipeline/telegram` or `pipeline/xtream`:
+
+1. **Prefer migration over invention**
+   - Port existing v1 behavior into v2 modules instead of inventing new flows.
+   - Use legacy code and docs under `/legacy/**` as the primary source of truth for how things currently work.
+
+2. **Focus areas**
+   - Clean separation between raw data mapping and normalization.
+   - Proper scoping, DI, logging/telemetry integration.
+   - Removing known pain points (thumbnail floods, cache behavior, etc.).
+
+3. **Do NOT over-test or overcomplicate**
+   - Reuse existing test ideas where possible.
+   - Add focused tests around the new boundaries (Raw → Normalizer, Normalizer → SIP).
+   - Do not try to re-derive entire behavior analytically from scratch.
+
+### 12.2. Reference Artifacts for Pipelines
+
+**Telegram Pipeline:**
+
+- Legacy code: `/legacy/v1-app/.../telegram/**`
+- CLI reference: `/legacy/docs/telegram/cli/**` (working TDLib integration)
+- JSON exports: `/legacy/docs/telegram/exports/**` (real message fixtures)
+- Contracts: `/legacy/docs/telegram/TELEGRAM_PARSER_CONTRACT.md`
+
+**Xtream Pipeline:**
+
+- Legacy code: `/legacy/v1-app/.../xtream/**`
+- URL building, auth, category parsing are all proven patterns.
+
+### 12.3. Migration Mindset
+
+> When in doubt, check the legacy pipeline behavior first and adapt it into the v2 boundaries instead of inventing completely new flows.
+
+This means:
+
+- Legacy is **reference, not garbage**.
+- The user-facing behavior should stay the same or improve.
+- Only the **internal architecture** changes (where responsibilities live).
 
 ---
 
