@@ -35,8 +35,8 @@ dependencies {
     implementation(project(":pipeline:telegram"))
     
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.53.1")
+    ksp("com.google.dagger:hilt-compiler:2.53.1")
     
     // Media3 / ExoPlayer
     implementation("androidx.media3:media3-exoplayer:1.5.1")

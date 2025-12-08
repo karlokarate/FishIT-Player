@@ -2,6 +2,8 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -24,6 +26,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
 
@@ -36,6 +39,10 @@ dependencies {
 
     // Serialization (for JSON parsing)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    
+    // Hilt DI
+    implementation("com.google.dagger:hilt-android:2.53.1")
+    ksp("com.google.dagger:hilt-compiler:2.53.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

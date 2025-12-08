@@ -44,7 +44,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Hilt for DI
-    implementation("com.google.dagger:hilt-android:2.52")
+    implementation("com.google.dagger:hilt-android:2.53.1")
     kapt("com.google.dagger:hilt-android-compiler:2.52")
 
     // Testing
