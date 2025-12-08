@@ -48,6 +48,7 @@ android {
 dependencies {
     // v2 Core Modules
     implementation(project(":core:model"))
+    implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
     implementation(project(":core:firebase"))
     

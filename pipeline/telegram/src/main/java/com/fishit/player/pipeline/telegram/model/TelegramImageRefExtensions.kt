@@ -74,8 +74,9 @@ fun TelegramMediaItem.toThumbnailImageRef(): ImageRef? {
 
     // Priority 2: TelegramThumb reference (video/document thumbnail)
     if (thumbnailFileId != null && thumbnailUniqueId != null) {
+        val fileIdInt = thumbnailFileId.toIntOrNull() ?: return null
         return ImageRef.TelegramThumb(
-                fileId = thumbnailFileId.toIntOrNull() ?: return@let null,
+                fileId = fileIdInt,
                 uniqueId = thumbnailUniqueId,
                 chatId = chatId,
                 messageId = messageId,

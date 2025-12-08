@@ -23,6 +23,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
 

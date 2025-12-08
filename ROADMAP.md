@@ -14,7 +14,7 @@ The v2 rebuild follows a phased approach:
 |-------|------|--------|--------|
 | 0 | Legacy Cage & V2 Surface | ✅ COMPLETED | Dec 2025 |
 | 0.5 | Agents, Portal, Branch Rules | ✅ COMPLETED | Dec 2025 |
-| 1 | Feature System | 🔲 PLANNED | Dec 2025 |
+| 1 | Feature System | 🚧 IN PROGRESS | Dec 2025 |
 | 2 | Pipelines → Canonical Media | 🔲 PLANNED | Jan 2026 |
 | 3 | SIP / Internal Player | 🔲 PLANNED | Jan 2026 |
 | 4 | UI Feature Screens | 🔲 PLANNED | Feb 2026 |
@@ -66,7 +66,7 @@ The v2 rebuild follows a phased approach:
 ---
 
 ## Phase 1 – Feature System
-**Status: 🔲 PLANNED**
+**Status: 🚧 IN PROGRESS**
 
 ### Goals
 - Implement core feature API (`FeatureId`, `FeatureRegistry`, `FeatureProvider`)
@@ -74,20 +74,25 @@ The v2 rebuild follows a phased approach:
 - Wire first features into `app-v2`
 
 ### Tasks
-- [ ] Create `core/feature-api` module
-- [ ] Define `FeatureId` enum with all feature identifiers
-- [ ] Implement `FeatureRegistry` for querying features
-- [ ] Implement `FeatureProvider` interface
-- [ ] Create first feature providers (logging, cache)
-- [ ] Wire feature system into `app-v2` startup
+- [x] Create `core/feature-api` module with API types
+- [x] Define `FeatureId`, `FeatureScope`, `FeatureOwner`, `FeatureProvider`, `FeatureRegistry`
+- [x] Create `Features.kt` with grouped feature IDs
+- [x] Implement `AppFeatureRegistry` in app-v2
+- [x] Create Hilt DI module for feature system
+- [x] Create first feature providers (`TelegramFullHistoryFeatureProvider`, `TelegramLazyThumbnailsFeatureProvider`)
+- [x] Create feature contract documentation template
+- [ ] Add more feature providers across modules
+- [ ] Integrate feature checks in UI screens
 
 ### Modules Affected
 - `core/feature-api` (new)
 - `app-v2`
-- `infra/logging`
-- `infra/cache`
+- `pipeline/telegram`
+- Additional modules as providers are added
 
 ### Docs
+- [docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md](docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md) – Feature system specification
+- [docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md](docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md) – First feature contract
 - [docs/v2/Zielbild.md](docs/v2/Zielbild.md) – Feature catalog vision
 - [docs/v2/ARCHITECTURE_OVERVIEW_V2.md](docs/v2/ARCHITECTURE_OVERVIEW_V2.md) – V2 architecture
 

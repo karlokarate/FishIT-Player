@@ -308,14 +308,8 @@ fun Message.toTelegramMediaItemOrNull(): TelegramMediaItem? = TdlibMessageMapper
 // =============================================================================
 
 /**
- * Convert TDLib Minithumbnail signed byte array to unsigned ByteArray.
+ * Convert TDLib Minithumbnail data to ByteArray.
  *
- * TDLib stores JPEG bytes as signed Byte (-128 to 127). This converts them to unsigned bytes
- * (0-255) for standard JPEG decoding.
- *
- * The resulting ByteArray is a valid JPEG that can be decoded directly by Coil/Glide/etc.
+ * TDLib stores JPEG bytes which can be decoded directly by Coil/Glide/etc.
  */
-private fun Minithumbnail.toByteArray(): ByteArray {
-    // TDLib data is Array<Byte> (signed), convert to ByteArray
-    return data.toByteArray()
-}
+private fun Minithumbnail.toByteArray(): ByteArray = data

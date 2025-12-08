@@ -62,6 +62,20 @@ For detailed rules, see `AGENTS.md`.
 
 ## 3. Architecture – High-level overview
 
+### 3.0 Feature System
+
+v2 uses a centralized Feature System for declaring and discovering capabilities:
+
+- **`core/feature-api`** – Feature API types (FeatureId, FeatureScope, FeatureProvider, FeatureRegistry)
+- **`Features.kt`** – Catalog of all feature IDs grouped by domain
+- **`AppFeatureRegistry`** – Central registry in app-v2, populated via Hilt multibindings
+- **Feature Providers** – Each module contributes providers to declare its features
+
+Key docs:
+
+- `docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md`
+- Feature contracts: `docs/v2/features/<category>/FEATURE_<featureId>.md`
+
 ### 3.1 Core & Canonical Media
 
 - Single canonical representation of media in `core/model` and related modules.

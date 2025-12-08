@@ -590,11 +590,13 @@ constructor(
         }
 
         // Priority 2: Title + Year (+ S/E for episodes)
-        return if (normalized.season != null && normalized.episode != null) {
+        val season = normalized.season
+        val episode = normalized.episode
+        return if (season != null && episode != null) {
             CanonicalKeyGenerator.forEpisode(
                     normalized.canonicalTitle,
-                    normalized.season,
-                    normalized.episode
+                    season,
+                    episode
             )
         } else {
             CanonicalKeyGenerator.forMovie(normalized.canonicalTitle, normalized.year)
