@@ -30,6 +30,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
     implementation(project(":playback:domain"))
     implementation(project(":player:internal"))

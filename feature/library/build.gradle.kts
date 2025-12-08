@@ -2,6 +2,8 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -28,6 +30,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
     implementation(project(":playback:domain"))
     implementation(project(":player:internal"))
@@ -35,6 +38,11 @@ dependencies {
     implementation(project(":pipeline:telegram"))
     implementation(project(":pipeline:io"))
     implementation(project(":infra:logging"))
+    
+    // Hilt DI
+    implementation("com.google.dagger:hilt-android:2.52")
+    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
