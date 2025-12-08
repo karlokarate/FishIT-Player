@@ -5,6 +5,7 @@
 Hinweis
 
 - Der vollständige Verlauf steht in `CHANGELOG.md`. Diese Roadmap listet nur kurzfristige und mittelfristige, umsetzbare Punkte.
+- Maintenance 2025-12-08: Phase 0 Cage – v1 App/Res/Tests in `legacy/v1-app`, v2 Docs unter `docs/v2/`, Legacy-Docs unter `legacy/docs/`, Build-Wrapper nach `scripts/build/`, API-Tests nach `scripts/api-tests/`, Gradle ohne `:app`-Include.
 - Maintenance 2025-12-02: Logging-Analyse erweitert (Prerelease-Booster: Trace/Span-IDs durch die Telegram-Pipeline, strukturierte JSON-Logs, adaptive Sampling/Coalescing, explizites Secret-Logging-Flag für Prerelease-Builds, Rolling-Persistenz + Diagnostics-Bundle).
 - Maintenance 2025-12-02: Telegram Streaming – PlaybackSession liefert eine `currentSourceState`, Thumbnail-Prefetch pausiert während Telegram VOD buffernt, `thumbFullDownload` erzwingt vollständige Thumbnail-Downloads und `InternalPlayerSession` nutzt das runtime `buildTelegramLoadControl()` + `exoExactSeek`-Toggle.
 - Maintenance 2025-11-28: Internal Player SIP – Live-Kanäle behalten (ID/Provider-Filter), EPG-Refresh bei Kanalwechsel + Stale-Refresh im Tick, Kids-Restzeit im UiState, episodeId-Resume-Fallback und gehärteter Telegram/ContainerExt MIME-Resolver.

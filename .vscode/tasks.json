@@ -4,7 +4,7 @@
     {
       "label": "Safe Build Debug",
       "type": "shell",
-      "command": "${workspaceFolder}/safe-build.sh",
+      "command": "${workspaceFolder}/scripts/build/safe-build.sh",
       "args": ["assembleDebug"],
       "group": {
         "kind": "build",
@@ -20,7 +20,7 @@
     {
       "label": "Safe Build Release",
       "type": "shell",
-      "command": "${workspaceFolder}/safe-build.sh",
+      "command": "${workspaceFolder}/scripts/build/safe-build.sh",
       "args": ["assembleRelease"],
       "group": "build",
       "presentation": {
@@ -33,7 +33,7 @@
     {
       "label": "Clean Build",
       "type": "shell",
-      "command": "${workspaceFolder}/safe-build.sh",
+      "command": "${workspaceFolder}/scripts/build/safe-build.sh",
       "args": ["clean", "assembleDebug"],
       "group": "build",
       "presentation": {

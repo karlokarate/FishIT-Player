@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
     kotlin("kapt") // Required for ObjectBox code generation
     id("io.objectbox") version "5.0.1"
     id("com.google.devtools.ksp")
@@ -38,6 +39,9 @@ dependencies {
     // ObjectBox
     implementation("io.objectbox:objectbox-android:5.0.1")
     implementation("io.objectbox:objectbox-kotlin:5.0.1")
+
+    // Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Hilt for DI
     implementation("com.google.dagger:hilt-android:2.52")

@@ -278,6 +278,8 @@ For the complete module-by-module guide, see `ARCHITECTURE_OVERVIEW.md`.
 ---
 
 Recent
+
+- Maintenance 2025-12-08: Phase 0 cage – v1 App/Res/Tests nach `legacy/v1-app`, v2-Dokumente nach `docs/v2/`, Legacy-Dokumente nach `legacy/docs/`, Build-Wrapper nach `scripts/build/`, API-Probe-Skripte nach `scripts/api-tests/`, Gradle ohne `:app`-Include für eine v2-saubere Oberfläche.
 - Maintenance 2025-11-11: Telegram-Import nutzt die gemeinsame
   `tgSelectedChatsCsv`-Quelle für Filme und Serien, erkennt HLS- sowie
   Octet-Stream-Videos sicherer und sendet Sync-Feedback jetzt als Snackbar-

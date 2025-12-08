@@ -1,3 +1,8 @@
+2025-12-08
+
+- **chore(v2/phase0)**: Caged the v1 app/resources/tests under `legacy/v1-app`, removed the `:app` include from Gradle, and kept v2 module includes intact for a clean bootstrap surface.
+- **chore(docs/scripts)**: Relocated build helpers to `scripts/build/` (safe-build, script wrappers), moved API probe scripts to `scripts/api-tests/`, and reshuffled docs (v2 → `docs/v2/`, legacy → `legacy/docs/`). Removed the stale `tools/tdlib neu.zip` archive.
+
 2025-12-05
 
 - **docs(v2)**: Extended all v2 project docs to reference `V1_VS_V2_ANALYSIS_REPORT.md` as central porting resource

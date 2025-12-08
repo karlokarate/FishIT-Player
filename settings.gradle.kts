@@ -39,9 +39,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "FishITPlayer"
 
-// ========== v1 Legacy Modules ==========
-include(":app")
-
 // ========== v2 Modules ==========
 // App Entry
 include(":app-v2")

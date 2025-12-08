@@ -2,6 +2,10 @@
 
 **IMPORTANT**: TDLib integration enhancement is now **Priority 1**. See `.github/tdlibAgent.md` for the single source of truth for all Telegram-related work going forward. Legacy Telegram documentation has been archived.
 
+Deep‑Dive Update: 2025-12-08
+- Phase 0 cage: v1 App/Res/Tests live in `legacy/v1-app`; Gradle includes only v2 modules (no `:app`) to keep the v2 surface clean.
+- Docs/Scripts: v2 docs under `docs/v2/`, legacy docs under `legacy/docs/`; build helpers in `scripts/build/`, API probe scripts in `scripts/api-tests/`.
+
 Deep‑Dive Update: 2025-11-20
 - **TDLib Priority**: `.github/tdlibAgent.md` ist ab sofort die maßgebliche Referenz für die Telegram-Integration
 - **Legacy Cleanup**: b/ directory, old logs, and outdated implementation summaries archived

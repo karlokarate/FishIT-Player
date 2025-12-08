@@ -26,20 +26,20 @@ tail -f /tmp/memory-monitor.log
 
 ### Safe Build Wrapper
 
-Nutze `./safe-build.sh` statt `./gradlew` für garantiert stabile Builds:
+Nutze `./scripts/build/safe-build.sh` statt `./gradlew` für garantiert stabile Builds:
 
 ```bash
 # Debug Build
-./safe-build.sh assembleDebug
+./scripts/build/safe-build.sh assembleDebug
 
 # Release Build
-./safe-build.sh assembleRelease
+./scripts/build/safe-build.sh assembleRelease
 
 # Clean Build
-./safe-build.sh clean assembleDebug
+./scripts/build/safe-build.sh clean assembleDebug
 
 # Mit zusätzlichen Argumenten
-./safe-build.sh assembleDebug --stacktrace
+./scripts/build/safe-build.sh assembleDebug --stacktrace
 ```
 
 **Features:**
@@ -70,7 +70,7 @@ und externe Builds genau die gleiche Konfiguration sehen wie vorher.
 
 Die lokale RAM-Restriktion wird ausschließlich über das Workspace-Setup geregelt:
 
-- `./safe-build.sh` setzt `GRADLE_OPTS`, `--max-workers=2`, `--no-daemon` sowie JVM- und Kotlin-Daemon-Flags.
+- `./scripts/build/safe-build.sh` setzt `GRADLE_OPTS`, `--max-workers=2`, `--no-daemon` sowie JVM- und Kotlin-Daemon-Flags.
 - VS Code-Terminals exportieren dieselben Limits (`terminal.integrated.env.linux.GRADLE_OPTS`).
 - Optional kann man eine persönliche `~/.gradle/gradle.properties` mit den Limits anlegen (ergibt nur lokalen Effekt).
 
@@ -151,7 +151,7 @@ Deaktiviere temporär in VS Code:
 
 ## 📋 Best Practices
 
-1. ✅ **Immer** `safe-build.sh` für große Builds nutzen
+1. ✅ **Immer** `scripts/build/safe-build.sh` für große Builds nutzen
 2. ✅ **Regelmäßig** Tasks "Stop All Daemons" ausführen
 3. ✅ **Vermeiden:** Mehrere simultane Builds
 4. ✅ **Prüfen:** Memory Monitor läuft (`ps aux | grep monitor`)
