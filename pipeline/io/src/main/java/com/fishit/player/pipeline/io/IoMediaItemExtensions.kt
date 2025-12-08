@@ -16,7 +16,7 @@ import com.fishit.player.core.model.PlaybackType
  * the future `RawMediaMetadata` data class that will be defined in `:core:model`.
  *
  * - The Map keys exactly mirror the `RawMediaMetadata` fields defined in
- *   `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md` (Section 1.1).
+ *   `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` (Section 1.1).
  * - Once `RawMediaMetadata` is added to `:core:model`, this function signature will change
  *   from `Map<String, Any?>` to `RawMediaMetadata`.
  * - **DO NOT** define a local `RawMediaMetadata` type in `:pipeline:io`. The shared type
@@ -42,8 +42,8 @@ import com.fishit.player.core.model.PlaybackType
  *
  * @return Map with keys matching RawMediaMetadata structure from MEDIA_NORMALIZATION_CONTRACT.md
  *
- * @see <a href="file:///v2-docs/MEDIA_NORMALIZATION_CONTRACT.md">MEDIA_NORMALIZATION_CONTRACT.md Section 1.1</a>
- * @see <a href="file:///v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md">MEDIA_NORMALIZATION_AND_UNIFICATION.md</a>
+ * @see <a href="file:///docs/v2/MEDIA_NORMALIZATION_CONTRACT.md">MEDIA_NORMALIZATION_CONTRACT.md Section 1.1</a>
+ * @see <a href="file:///docs/v2/MEDIA_NORMALIZATION_AND_UNIFICATION.md">MEDIA_NORMALIZATION_AND_UNIFICATION.md</a>
  */
 fun IoMediaItem.toRawMediaMetadata(): Map<String, Any?> =
     mapOf(

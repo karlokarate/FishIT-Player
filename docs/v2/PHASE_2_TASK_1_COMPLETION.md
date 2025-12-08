@@ -3,7 +3,7 @@
 ## ✅ TASK COMPLETE
 
 **Task:** Phase 2 – Task 1: Core Persistence Implementation (ObjectBox)  
-**Source:** `v2-docs/task (1).md`  
+**Source:** `docs/v2/task (1).md`  
 **Branch:** `copilot/check-v2-docs` (based on `architecture/v2-bootstrap`)  
 **Date:** 2025-12-05  
 **Status:** ✅ **All requirements met and verified**
@@ -29,9 +29,9 @@ Phase 2 Task 1 has been **successfully completed** with zero build artifacts com
 - [x] Clean commit with message following convention
 
 ### Step 2: Read Documentation ✅
-- [x] Read `v2-docs/IMPLEMENTATION_PHASES_V2.md`
-- [x] Read `v2-docs/ARCHITECTURE_OVERVIEW_V2.md`
-- [x] Read `v2-docs/APP_VISION_AND_SCOPE.md`
+- [x] Read `docs/v2/IMPLEMENTATION_PHASES_V2.md`
+- [x] Read `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
+- [x] Read `docs/v2/APP_VISION_AND_SCOPE.md`
 - [x] Understood Phase 2 Task 1 requirements from task document
 
 ### Step 3: ObjectBox Setup in :core:persistence ✅
@@ -266,7 +266,7 @@ cat docs/v2-cleanup/PHASE_2_IMPLEMENTATION_STATUS.md
 
 ## Conclusion
 
-Phase 2 Task 1 (Core Persistence) has been **successfully completed** according to all specifications in `v2-docs/task (1).md`. The implementation:
+Phase 2 Task 1 (Core Persistence) has been **successfully completed** according to all specifications in `docs/v2/task (1).md`. The implementation:
 
 - ✅ Uses the correct branch (`architecture/v2-bootstrap`)
 - ✅ Commits zero build artifacts (verified)

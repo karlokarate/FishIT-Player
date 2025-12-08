@@ -20,10 +20,10 @@
 This document summarizes and consolidates all v2-specific rules and contracts
 from:
 
-- `v2-docs/APP_VISION_AND_SCOPE.md`
-- `v2-docs/ARCHITECTURE_OVERVIEW_V2.md`
-- `v2-docs/IMPLEMENTATION_PHASES_V2.md`
-- `v2-docs/V1_VS_V2_ANALYSIS_REPORT.md` ⭐ **v1 Quality Assessment & Porting Strategy**
+- `docs/v2/APP_VISION_AND_SCOPE.md`
+- `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
+- `docs/v2/IMPLEMENTATION_PHASES_V2.md`
+- `docs/v2/V1_VS_V2_ANALYSIS_REPORT.md` ⭐ **v1 Quality Assessment & Porting Strategy**
 
 It is **mandatory reading** for any v2-related task.
 
@@ -32,7 +32,7 @@ It is **mandatory reading** for any v2-related task.
 ## ⚡ CRITICAL: v1 Porting Reference
 
 **Before implementing any v2 module**, agents MUST consult
-`v2-docs/V1_VS_V2_ANALYSIS_REPORT.md` to:
+`docs/v2/V1_VS_V2_ANALYSIS_REPORT.md` to:
 
 1. **Check Tier 1/2 classification** – Tier 1 components (SIP Player, UnifiedLog,
    FocusKit, Fish* Layout, Xtream Pipeline, AppImageLoader) should be ported
@@ -83,7 +83,7 @@ This analysis report is updated whenever new v1 quality assessments are made.
 3. **If in doubt, STOP and ask the user.**
 
 Violation of these rules requires immediate rollback. See
-`v2-docs/CANONICAL_MEDIA_MIGRATION_STATUS.md` for the current audit status.
+`docs/v2/CANONICAL_MEDIA_MIGRATION_STATUS.md` for the current audit status.
 
 Additional safety rules for this branch:
 
@@ -97,7 +97,7 @@ Additional safety rules for this branch:
   the new v2 structure.
 - All new v2 work **must** happen in:
   - new v2 Gradle modules listed below,
-  - new or existing v2 docs (`v2-docs/`), and
+  - new or existing v2 docs (`docs/v2/`), and
   - the new app entry `:app-v2`.
 - Never "clean up" legacy code as part of a v2 task.
 - When porting behavior from v1:
@@ -347,7 +347,7 @@ case seems to require a forbidden dependency, update this document first.
 ## 6. Implementation Phases & Task Scoping
 
 All v2 work follows the phases defined in
-`v2-docs/IMPLEMENTATION_PHASES_V2.md`. Agents **must respect phase
+`docs/v2/IMPLEMENTATION_PHASES_V2.md`. Agents **must respect phase
 boundaries**.
 
 ### 6.1 Phase Rules
@@ -429,9 +429,9 @@ Before starting any v2-related implementation, agents must:
 
 1. Confirm they are on branch `architecture/v2-bootstrap`.
 2. Read (or re-skim for context):
-   - `v2-docs/APP_VISION_AND_SCOPE.md`
-   - `v2-docs/ARCHITECTURE_OVERVIEW_V2.md`
-   - `v2-docs/IMPLEMENTATION_PHASES_V2.md`
+   - `docs/v2/APP_VISION_AND_SCOPE.md`
+   - `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
+   - `docs/v2/IMPLEMENTATION_PHASES_V2.md`
 3. Identify the **current implementation phase** and ensure the task fits into
    that phase.
 4. List the modules that are allowed to change for this task and restrict

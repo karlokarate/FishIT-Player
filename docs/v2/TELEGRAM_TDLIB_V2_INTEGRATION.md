@@ -216,7 +216,7 @@ To complete the TDLib integration:
 ## References
 
 - v1 TDLib integration: `.github/tdlibAgent.md`
-- v2 Architecture: `v2-docs/ARCHITECTURE_OVERVIEW_V2.md`
-- Media normalization: `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md`
-- Telegram pipeline: `docs/agents/phase2/FOLLOWUP_P2-T3_by-telegram-agent.md`
+- v2 Architecture: `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
+- Media normalization: `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`
+- Telegram pipeline: `legacy/docs/agents/phase2/FOLLOWUP_P2-T3_by-telegram-agent.md`
 - g00sha tdlib-coroutines: https://github.com/G00fY2/tdlib-coroutines

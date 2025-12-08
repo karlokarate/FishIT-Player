@@ -295,8 +295,8 @@ Normalization, cleaning, TMDB lookups and canonical identity **do not** happen i
 Any Copilot Agent working on the Telegram pipeline MUST:
 
 1. Read and understand:
-   - `v2-docs/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
-   - `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md`
+   - `docs/v2/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
+   - `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`
    - This document.
 
 2. Analyze **every** JSON chat under `docs/telegram/exports/exports/*.json`:

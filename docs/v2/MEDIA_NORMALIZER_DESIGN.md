@@ -581,8 +581,8 @@ fun toRawMediaMetadata(): RawMediaMetadata {
 - **oleoo** (JS): https://github.com/thcolin/oleoo
 
 ### Project Documentation
-- `v2-docs/MEDIA_NORMALIZATION_CONTRACT.md`: Authoritative contract
-- `v2-docs/ARCHITECTURE_OVERVIEW_V2.md`: Overall v2 architecture
+- `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`: Authoritative contract
+- `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`: Overall v2 architecture
 - `core/model/src/main/java/com/fishit/player/core/model/RawMediaMetadata.kt`
 - `core/model/src/main/java/com/fishit/player/core/model/NormalizedMediaMetadata.kt`
 

@@ -87,7 +87,7 @@ Per `AGENTS_V2.md` – **NIEMALS ignorieren:**
 ### ✅ ERLAUBT
 - Neue Dateien in: `core/*`, `feature/*`, `pipeline/*`, `playback/*`, `player/*`, `infra/*`, `app-v2/`
 - Package: `com.fishit.player.*`
-- Docs in: `v2-docs/`
+- Docs in: `docs/v2/`
 
 ### ❌ VERBOTEN
 - Neue Dateien in: `app/src/main/java/com/chris/*`

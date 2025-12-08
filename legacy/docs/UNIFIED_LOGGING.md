@@ -4,7 +4,7 @@
 
 The `:infra:logging` module provides a unified logging facade for the entire FishIT-Player application. This facade hides the internal logging backend (currently Timber) and provides a stable API that all modules use for logging.
 
-**For v2 architecture-specific requirements, see [v2-docs/LOGGING_CONTRACT_V2.md](../v2-docs/LOGGING_CONTRACT_V2.md), which is the authoritative contract for all v2 modules.**
+**For v2 architecture-specific requirements, see [docs/v2/LOGGING_CONTRACT_V2.md](../../docs/v2/LOGGING_CONTRACT_V2.md), which is the authoritative contract for all v2 modules.**
 
 ## Design Principles
 
@@ -229,11 +229,11 @@ UnifiedLog.e("TAG", "error", exception)
 **A:** Yes! That's the whole point of the facade. Simply update the internal implementation in `UnifiedLog` and `UnifiedLogInitializer` without touching any call sites.
 
 ### Q: What about v2 modules?
-**A:** V2 modules MUST follow the contract defined in [v2-docs/LOGGING_CONTRACT_V2.md](../v2-docs/LOGGING_CONTRACT_V2.md). All v2 modules use `UnifiedLog`, and static enforcement is enabled via Detekt.
+**A:** V2 modules MUST follow the contract defined in [docs/v2/LOGGING_CONTRACT_V2.md](../../docs/v2/LOGGING_CONTRACT_V2.md). All v2 modules use `UnifiedLog`, and static enforcement is enabled via Detekt.
 
 ## References
 
-- [V2 Logging Contract](../v2-docs/LOGGING_CONTRACT_V2.md) - Authoritative contract for v2 modules
+- [V2 Logging Contract](../../docs/v2/LOGGING_CONTRACT_V2.md) - Authoritative contract for v2 modules
 - [Timber Documentation](https://github.com/JakeWharton/timber)
 - [Android Logging Best Practices](https://developer.android.com/studio/debug/am-logcat)
 - [Firebase Crashlytics](https://firebase.google.com/docs/crashlytics)

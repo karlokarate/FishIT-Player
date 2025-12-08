@@ -216,6 +216,6 @@ Any Copilot Agent working in the `architecture/v2-bootstrap` branch MUST:
    - ensure tags are meaningful,
    - keep messages understandable and concise,
    - do not introduce heavy or noisy logging in hot code paths.
-5. Update `docs/UNIFIED_LOGGING.md` and this contract only when the logging architecture itself changes, not for one-off log statements.
+5. Update `legacy/docs/UNIFIED_LOGGING.md` and this contract only when the logging architecture itself changes, not for one-off log statements.
 
 This contract is the authoritative reference for logging in FishIT-Player v2.
