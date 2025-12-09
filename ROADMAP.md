@@ -15,10 +15,10 @@ The v2 rebuild follows a phased approach:
 | 0 | Legacy Cage & V2 Surface | ✅ COMPLETED | Dec 2025 |
 | 0.5 | Agents, Portal, Branch Rules | ✅ COMPLETED | Dec 2025 |
 | 1 | Feature System | 🚧 IN PROGRESS | Dec 2025 |
-| 2 | Pipelines → Canonical Media | 🔲 PLANNED | Jan 2026 |
-| 3 | SIP / Internal Player | 🔲 PLANNED | Jan 2026 |
-| 4 | UI Feature Screens | 🔲 PLANNED | Feb 2026 |
-| 5 | Quality & Performance | 🔲 PLANNED | Feb 2026 |
+| 2 | Pipelines → Canonical Media | 🟡 PARTIAL (50%) | Jan 2026 |
+| 3 | SIP / Internal Player | 🚧 STARTED (Phase 3 Core Complete) | Jan-Feb 2026 |
+| 4 | UI Feature Screens | 🔲 PLANNED | Feb-Mar 2026 |
+| 5 | Quality & Performance | 🔲 PLANNED | Mar 2026 |
 
 ---
 
@@ -134,7 +134,7 @@ The v2 rebuild follows a phased approach:
 ---
 
 ## Phase 3 – SIP / Internal Player
-**Status: 🔲 PLANNED**
+**Status: 🚧 STARTED (Phase 3 Core Complete - Dec 2025)**
 
 ### Goals
 - Integrate Internal Player (SIP) from v1
@@ -142,20 +142,42 @@ The v2 rebuild follows a phased approach:
 - Support VOD, live, resume, kids-mode
 
 ### Tasks
-- [ ] Port SIP player core from v1 to `player/internal`
-- [ ] Define playback domain contracts in `playback/domain`
-- [ ] Implement VOD playback
-- [ ] Implement live playback
-- [ ] Implement resume functionality
-- [ ] Implement kids-mode time limits
-- [ ] Wire trickplay support
+- [x] **Phase 3 Complete (Dec 2025):** Create `core:player-model` module
+- [x] **Phase 3 Complete:** Implement `PlaybackSourceResolver` with Factory pattern
+- [x] **Phase 3 Complete:** Update `InternalPlayerSession` for new architecture
+- [x] **Phase 3 Complete:** Update `InternalPlayerState` to use new types
+- [x] **Phase 3 Complete:** Update playback domain interfaces (`ResumeManager`, `KidsPlaybackGate`)
+- [x] **Phase 3 Complete:** Remove layer violations (pipeline deps from player)
+- [x] **Phase 3 Complete:** Move `TelegramFileDataSource` to `playback:telegram`
+- [ ] **Phase 4-14 (Remaining):** Port remaining SIP components from v1
+  - [ ] Complete VOD playback implementation
+  - [ ] Complete live playback implementation
+  - [ ] Implement resume functionality (beyond stub)
+  - [ ] Implement kids-mode time limits (beyond stub)
+  - [ ] Wire trickplay support
+  - [ ] Subtitle system integration
+  - [ ] Mini-player and PiP
+  - [ ] TV input handling
+  - [ ] Performance optimizations
 
 ### Modules Affected
-- `player/internal`
-- `playback/domain`
+- `core:player-model` (new - Phase 3)
+- `player/internal` (Phase 3 started)
+- `playback/domain` (Phase 3 updated)
+- `playback/telegram` (Phase 3 updated)
+- `playback/xtream` (future)
+
+### Current Progress
+- **Phase 3 of 14 Complete** (see `docs/v2/player migrationsplan.md`)
+- Player now uses clean `core:player-model` types
+- Factory pattern for source resolution implemented
+- Layer violations fixed
+- **Remaining:** Phases 4-14 (full SIP port, UI chrome, advanced features)
 
 ### Docs
 - [docs/v2/internal-player/](docs/v2/internal-player/) – SIP contracts and checklists
+- [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md) – Phase tracking
+- [docs/v2/player migrationsplan.md](docs/v2/player migrationsplan.md) – 14-phase migration plan
 
 ---
 
@@ -208,6 +230,56 @@ The v2 rebuild follows a phased approach:
 
 ### Docs
 - [docs/v2/LOGGING_CONTRACT_V2.md](docs/v2/LOGGING_CONTRACT_V2.md)
+
+---
+
+## Release Readiness Assessment (Dec 2025)
+
+**Status:** Comprehensive assessment completed (Dec 9, 2025)
+
+### Overall Progress: 25-30% to MVP
+
+| Layer | Progress | Status |
+|-------|----------|--------|
+| Architecture & Docs | 90% | ✅ Excellent |
+| Core | 40% | 🟡 Partial |
+| Pipeline | 55% | 🟡 Good foundation |
+| Playback | 15% | 🔴 Critical blocker |
+| Player | 15% | 🔴 Critical blocker |
+| UI | 10% | 🔴 Critical blocker |
+| Infra | 35% | 🟡 OK |
+
+### Critical Blockers (16-20 weeks remaining to MVP)
+
+1. **Internal Player (SIP)** - 85% remaining (~6-8 weeks)
+   - Phase 3 complete, Phases 4-14 remaining
+   - ~5000 LOC from v1 to port
+2. **UI Feature Screens** - 90% missing (~4-6 weeks)
+   - All feature modules exist but mostly skeletal
+3. **Metadata Normalizer** - 80% missing (~2-3 weeks)
+   - Scene parser, TMDB integration needed
+4. **Playback Domain** - 70% missing (~2 weeks)
+   - Full implementations of managers and gates
+5. **Data Repositories** - 80% missing (~3-4 weeks)
+   - Real implementations connecting to APIs
+
+### Timeline Estimates
+
+- **MVP (Minimal Viable Product):** 16-20 weeks → **May 2026**
+- **Feature-Complete:** +8-12 weeks → **August 2026**
+- **Production-Ready:** +4-6 weeks → **October 2026**
+
+### Code Metrics
+
+- Production files: 261 Kotlin files
+- Test files: 100 files
+- Active modules: 37 v2 modules
+- LOC: ~34,000 actual / ~88,000 target (39% completion)
+
+### Assessment Documents
+
+- [V2_RELEASE_READINESS_ASSESSMENT.md](V2_RELEASE_READINESS_ASSESSMENT.md) - Full analysis (English)
+- [RELEASE_FORTSCHRITT_ZUSAMMENFASSUNG.md](RELEASE_FORTSCHRITT_ZUSAMMENFASSUNG.md) - Summary (German)
 
 ---
 

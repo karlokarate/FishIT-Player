@@ -70,12 +70,14 @@ The v2 rebuild uses the following module structure:
 |----------|---------|
 | [V2_PORTAL.md](V2_PORTAL.md) | V2 entry point, links to all key docs |
 | [AGENTS.md](AGENTS.md) | Agent rules for v2 development |
-| [ROADMAP.md](ROADMAP.md) | V2 implementation phases |
+| [ROADMAP.md](ROADMAP.md) | V2 implementation phases and progress |
 | [CHANGELOG.md](CHANGELOG.md) | V2 changelog |
 | [docs/v2/ARCHITECTURE_OVERVIEW_V2.md](docs/v2/ARCHITECTURE_OVERVIEW_V2.md) | Detailed v2 architecture |
 | [docs/v2/CANONICAL_MEDIA_SYSTEM.md](docs/v2/CANONICAL_MEDIA_SYSTEM.md) | Canonical media model |
 | [docs/v2/MEDIA_NORMALIZATION_CONTRACT.md](docs/v2/MEDIA_NORMALIZATION_CONTRACT.md) | Normalization rules |
 | [docs/v2/LOGGING_CONTRACT_V2.md](docs/v2/LOGGING_CONTRACT_V2.md) | Logging contract |
+| [V2_RELEASE_READINESS_ASSESSMENT.md](V2_RELEASE_READINESS_ASSESSMENT.md) | Release progress analysis (Dec 2025) |
+| [RELEASE_FORTSCHRITT_ZUSAMMENFASSUNG.md](RELEASE_FORTSCHRITT_ZUSAMMENFASSUNG.md) | Release summary (German) |
 
 ---
 
@@ -87,6 +89,22 @@ The v2 rebuild uses the following module structure:
 4. **No Global Mutable Singletons**: Use DI and proper scoping.
 5. **Unified Logging**: All logging through `UnifiedLog` facade.
 6. **Legacy Isolation**: V1 code is read-only reference under `legacy/`.
+7. **Layer Boundaries**: Strict enforcement via hard rules and audit checklists.
+
+## Current Status (Dec 2025)
+
+**Overall Progress: 25-30% to MVP Release**
+
+- ✅ **Phase 0/0.5**: Complete - Architecture & governance (100%)
+- 🚧 **Phase 1**: In Progress - Feature System (60%)
+- 🟡 **Phase 2**: Partial - Pipelines & Metadata (50%)
+- 🚧 **Phase 3**: Started - Internal Player (15%, Phase 3 core complete)
+- 🔲 **Phase 4**: Planned - UI Feature Screens (10%)
+- 🔲 **Phase 5**: Planned - Quality & Performance (5%)
+
+**Critical Path:** Internal Player (SIP) migration - Phases 4-14 remaining (~6-8 weeks)
+
+See [V2_RELEASE_READINESS_ASSESSMENT.md](V2_RELEASE_READINESS_ASSESSMENT.md) for detailed analysis.
 
 ---
 

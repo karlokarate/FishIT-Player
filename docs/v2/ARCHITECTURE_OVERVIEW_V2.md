@@ -5,6 +5,28 @@
 
 ---
 
+## 📊 Current Status (Dec 2025)
+
+**Overall Progress: 25-30% to MVP Release**
+
+| Phase | Status | Progress | Target |
+|-------|--------|----------|--------|
+| Phase 0/0.5 | ✅ Complete | 100% | Dec 2025 |
+| Phase 1 | 🚧 In Progress | 60% | Dec 2025 |
+| Phase 2 | 🟡 Partial | 50% | Jan 2026 |
+| Phase 3 | 🚧 Started | 15% (Phase 3 core done) | Jan-Feb 2026 |
+| Phase 4 | 🔲 Planned | 10% | Feb-Mar 2026 |
+| Phase 5 | 🔲 Planned | 5% | Mar 2026 |
+
+**Latest Milestone:** Phase 3 SIP-Kern Migration completed (Dec 9, 2025)
+- New `core:player-model` module with clean types
+- `PlaybackSourceResolver` with Factory pattern
+- Layer violations fixed
+
+See [V2_RELEASE_READINESS_ASSESSMENT.md](../../V2_RELEASE_READINESS_ASSESSMENT.md) for detailed analysis.
+
+---
+
 ## ⚡ v1 Porting Reference
 
 > **IMPORTANT:** Before implementing any module, consult

@@ -8,6 +8,79 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Phase 3 – SIP-Kern Migration (Player Core)
+
+**Status: COMPLETED**  
+**Date:** 2025-12-09
+
+- **feat(player)**: Created new `core:player-model` module
+  - New types: `SourceType`, `PlaybackContext`, `PlaybackState`, `PlaybackError`
+  - Clean separation of player primitives from core models
+  - Module contains ONLY primitives (per P-HR2 hard rule)
+- **feat(player)**: Implemented `PlaybackSourceResolver` with Factory pattern
+  - `PlaybackSourceFactory` interface for source-specific implementations
+  - `PlaybackSource` sealed interface (Uri, Stream, File)
+  - Hilt DI integration for factory registration
+  - Async source resolution with proper error handling
+- **refactor(player)**: Updated `InternalPlayerSession` for new architecture
+  - Now uses `core:player-model` types
+  - Async source resolution via `PlaybackSourceResolver`
+  - Improved state management and error handling
+- **refactor(player)**: Updated `InternalPlayerState` to use new types
+  - Uses `PlaybackContext` instead of mixed types
+  - Uses `PlaybackError` for error states
+  - Cleaner state transitions
+- **refactor(playback)**: Updated domain interfaces for new types
+  - `ResumeManager` now works with `core:player-model.PlaybackContext`
+  - `KidsPlaybackGate` updated for new context type
+  - `DefaultResumeManager` and `DefaultKidsPlaybackGate` implementations updated
+- **fix(player)**: Removed layer violations
+  - Removed `pipeline:telegram` dependency from `player:internal`
+  - Removed TDLib dependency from `player:internal`
+  - Moved `TelegramFileDataSource` to `playback:telegram` (correct layer)
+  - Removed old `InternalPlaybackSourceResolver` (replaced by new factory pattern)
+- **fix(player)**: Corrected `PlayerSurface` imports
+- **docs(player)**: Updated `PLAYER_MIGRATION_STATUS.md` to Phase 3 Complete
+- **docs(agents)**: Added Section 13 "Player Migration Rules" to `AGENTS.md`
+  - Player Migration Plan is now binding
+  - Hard rules (P-HR1 through P-HR6) documented
+  - Conflict escalation protocol defined
+
+**Build:** All player modules compile successfully  
+**Tests:** Player unit tests passing
+
+### Release Readiness Assessment
+
+**Status: COMPLETED**  
+**Date:** 2025-12-09
+
+- **docs(assessment)**: Created comprehensive v2 release readiness analysis
+  - `V2_RELEASE_READINESS_ASSESSMENT.md` - Full 20K+ character English analysis
+  - `RELEASE_FORTSCHRITT_ZUSAMMENFASSUNG.md` - German executive summary
+- **Key Findings:**
+  - Overall progress: 25-30% to MVP release
+  - Phase 0/0.5: 100% complete (architecture & governance)
+  - Phase 1: 60% complete (feature system)
+  - Phase 2: 50% complete (pipelines)
+  - Phase 3: 15% complete (player - just started with Phase 3 commit)
+  - Phase 4: 10% complete (UI screens)
+  - Phase 5: 5% complete (quality & performance)
+- **Critical Blockers Identified:**
+  1. Internal Player (SIP) - 0% ported from v1 (6-8 weeks)
+  2. UI Feature Screens - 90% missing (4-6 weeks)
+  3. Metadata Normalizer - 80% missing (2-3 weeks)
+  4. Playback Domain - 70% missing implementations (2 weeks)
+  5. Data Repositories - 80% missing (3-4 weeks)
+- **Timeline Estimates:**
+  - MVP: 16-20 weeks → May 2026
+  - Feature-Complete: +8-12 weeks → August 2026
+  - Production: +4-6 weeks → October 2026
+- **Code Metrics:**
+  - 261 production Kotlin files
+  - 100 test files
+  - 37 v2 modules active
+  - ~34,000 LOC actual / ~88,000 LOC target (39% code completion)
+
 ### Phase 1.9 – Xtream Catalog Pipeline
 
 **Status: COMPLETED**
