@@ -37,3 +37,9 @@ Transport ← Pipeline ← Data ← Domain ← UI
 1. ❌ Importing OkHttp directly (belongs in Transport)
 2. ❌ Exporting `XtreamVodItem` to Data/Playback layers
 3. ❌ Storing items to DB (belongs in Data layer)
+4. ❌ Placing Adapter/Source implementations here (→ `transport-xtream`)
+5. ❌ Implementing `XtreamApiClient` inside pipeline
+
+## ⚠️ Guard Flags (AGENTS.md 4.6)
+- **No *Impl classes** except `XtreamCatalogPipelineImpl`
+- **No cross-layer imports** (Transport ⇄ Pipeline ⇄ Data)

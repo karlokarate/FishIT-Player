@@ -223,6 +223,40 @@ Agents MUST:
 
 4. **Zero tolerance:** Any violation found must be fixed before merge.
 
+4.6. Pipeline Module Purity (hard clause)
+
+> **Hard Rule:** Pipeline modules must remain pure catalog producers. No infrastructure code inside pipelines.
+
+**Forbidden in Pipeline Modules:**
+
+| Anti-Pattern | Where It Belongs |
+|--------------|------------------|
+| Adapter implementations (e.g., `TelegramPipelineAdapter` impl) | `infra/transport-*` |
+| Source implementations (e.g., `XtreamCatalogSource` impl) | `infra/transport-*` |
+| Repository implementations | `infra/data-*` |
+| DataSource implementations | `playback/*` |
+| HTTP clients, TDLib clients | `infra/transport-*` |
+| ObjectBox entities | `core/persistence` |
+| Normalization heuristics | `core/metadata-normalizer` |
+
+**What Pipeline Modules MAY Contain:**
+
+- Catalog contract interfaces (`TelegramCatalogPipeline`, `XtreamCatalogPipeline`)
+- Catalog event types (`TelegramCatalogEvent`, `XtreamCatalogEvent`)
+- Internal DTOs (`TelegramMediaItem`, `XtreamVodItem`) – never exported
+- `toRawMediaMetadata()` extension functions
+- DI modules for wiring interfaces
+
+**Verification:**
+
+```bash
+# Ensure no *Impl classes in pipeline except CatalogPipelineImpl
+find pipeline/ -name "*Impl.kt" | grep -v "CatalogPipelineImpl"
+
+# Ensure no OkHttp/TDLib imports in pipeline
+grep -rn "import okhttp3\|import org.drinkless.td\|import dev.g000sha256.tdl" pipeline/
+```
+
 ---
 
 ## 5. Logging, Telemetry & Cache

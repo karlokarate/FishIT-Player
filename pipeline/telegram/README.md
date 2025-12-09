@@ -37,3 +37,9 @@ Transport ← Pipeline ← Data ← Domain ← UI
 1. ❌ Importing `ObxTelegramMessage` (persistence layer)
 2. ❌ Exporting `TelegramMediaItem` to Data layer
 3. ❌ Calling TMDB/IMDB APIs directly
+4. ❌ Placing Adapter/Source implementations here (→ `transport-telegram`)
+5. ❌ Importing OkHttp or TDLib directly
+
+## ⚠️ Guard Flags (AGENTS.md 4.6)
+- **No *Impl classes** except `TelegramCatalogPipelineImpl`
+- **No cross-layer imports** (Transport ⇄ Pipeline ⇄ Data)
