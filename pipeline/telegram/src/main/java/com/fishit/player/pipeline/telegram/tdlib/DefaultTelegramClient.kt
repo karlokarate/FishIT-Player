@@ -228,6 +228,21 @@ class DefaultTelegramClient(
         }
     }
 
+    override suspend fun getMessagesPage(
+            chatId: Long,
+            fromMessageId: Long,
+            limit: Int
+    ): List<Message> {
+        UnifiedLog.d(
+                TAG,
+                "getMessagesPage(chatId=$chatId, fromMessageId=$fromMessageId, limit=$limit)"
+        )
+
+        return withRetry("getMessagesPage") {
+            loadMessageHistory(chatId, fromMessageId, limit)
+        }
+    }
+
     // ========== Lifecycle ==========
 
     override suspend fun close() {

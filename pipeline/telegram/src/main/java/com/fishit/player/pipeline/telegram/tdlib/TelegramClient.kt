@@ -114,6 +114,27 @@ interface TelegramClient {
      */
     suspend fun requestFileDownload(fileId: Int, priority: Int = 16): TelegramFileLocation
 
+    /**
+     * Get a page of messages from a chat (raw TDLib DTOs).
+     *
+     * **Architecture Note:** Added to support catalog scanning which needs raw Message DTOs
+     * for classification and mapping. Returns ALL messages (not just media) for flexible filtering.
+     *
+     * **TDLib Pagination:**
+     * - First page: fromMessageId=0, offset=0 (starts from latest)
+     * - Subsequent pages: fromMessageId=oldest message ID, offset=-1 (avoids duplicates)
+     *
+     * @param chatId Telegram chat ID
+     * @param fromMessageId Starting message ID (0 for latest)
+     * @param limit Maximum messages to fetch (max 100 per TDLib)
+     * @return List of raw TDLib Message DTOs
+     */
+    suspend fun getMessagesPage(
+        chatId: Long,
+        fromMessageId: Long = 0,
+        limit: Int = 100
+    ): List<dev.g000sha256.tdl.dto.Message>
+
     /** Close the client and release resources. */
     suspend fun close()
 }
