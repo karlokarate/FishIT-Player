@@ -103,6 +103,7 @@ This document summarizes the architectural audit and corrections made to the Tel
 #### `infra/data-telegram/TelegramContentRepository.kt` — REFACTORED
 
 **Before (Violation):**
+
 ```kotlin
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
 import com.fishit.player.pipeline.telegram.model.TelegramChatSummary
@@ -114,6 +115,7 @@ interface TelegramContentRepository {
 ```
 
 **After (Compliant):**
+
 ```kotlin
 import com.fishit.player.core.model.RawMediaMetadata
 
@@ -127,6 +129,7 @@ interface TelegramContentRepository {
 #### `infra/data-xtream/XtreamCatalogRepository.kt` — REFACTORED
 
 **Before (Violation):**
+
 ```kotlin
 import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -137,6 +140,7 @@ interface XtreamCatalogRepository {
 ```
 
 **After (Compliant):**
+
 ```kotlin
 import com.fishit.player.core.model.RawMediaMetadata
 
@@ -157,6 +161,7 @@ Same pattern as above. Now uses `RawMediaMetadata` only.
 #### `playback/telegram/TelegramPlaybackSourceFactory.kt` — REFACTORED
 
 **Before (Violation):**
+
 ```kotlin
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
 
@@ -166,6 +171,7 @@ interface TelegramPlaybackSourceFactory {
 ```
 
 **After (Compliant):**
+
 ```kotlin
 import com.fishit.player.core.model.RawMediaMetadata
 
