@@ -8,6 +8,33 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Phase 1.9 – Xtream Catalog Pipeline
+
+**Status: COMPLETED**
+
+- **feat(xtream)**: Implemented event-based catalog pipeline layer (analogous to Telegram)
+  - New `XtreamCatalogPipeline` interface for stateless media scanning
+  - `XtreamCatalogPipelineImpl` with 4-phase scanning (VOD → Series → Episodes → Live)
+  - `XtreamCatalogEvent` sealed interface with:
+    - `ScanStarted`, `ScanProgress`, `ScanCompleted`, `ScanCancelled`, `ScanError`
+    - `ItemDiscovered` emitting `XtreamCatalogItem` with `RawMediaMetadata`
+  - `XtreamCatalogConfig` with presets: `DEFAULT`, `VOD_ONLY`, `SERIES_ONLY`, `LIVE_ONLY`
+  - `XtreamCatalogSource` interface for data source abstraction
+  - `XtreamCatalogMapper` for mapping Xtream models to catalog items
+  - `XtreamItemKind` enum: VOD, SERIES, EPISODE, LIVE
+  - `XtreamScanPhase` enum for progress tracking
+- **feat(di)**: Added Hilt DI support to pipeline/xtream module
+  - `XtreamCatalogModule` binds pipeline and mapper
+  - Added ksp and dagger.hilt.android plugins to build.gradle.kts
+- **fix(xtream)**: Added missing `mediaType` field to `XtreamNormalizationExtensions`
+  - Root cause: Competing extension functions without `mediaType` caused `UNKNOWN` values
+  - Added `MediaType.MOVIE`, `MediaType.SERIES_EPISODE`, `MediaType.LIVE` as appropriate
+  - Harmonized `sourceLabel` values across extension files
+- **test(xtream)**: Added comprehensive catalog pipeline tests
+  - `XtreamCatalogPipelineTest` (7 tests) - event flow, config filtering, error handling
+  - `XtreamCatalogMapperTest` (7 tests) - all media type mappings with ImageRef
+  - All catalog and model tests passing (33 tests)
+
 ### Phase 1.8 – Telegram Catalog Pipeline
 
 **Status: COMPLETED**
