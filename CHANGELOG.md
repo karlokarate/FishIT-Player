@@ -8,6 +8,29 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Phase 1.8 – Telegram Catalog Pipeline
+
+**Status: COMPLETED**
+
+- **feat(telegram)**: Implemented event-based catalog pipeline layer
+  - New `TelegramCatalogPipeline` interface for stateless media scanning
+  - `TelegramCatalogPipelineImpl` with pre-flight auth/connection checks
+  - `TelegramCatalogEvent` sealed interface with:
+    - `ScanStarted`, `ScanProgress`, `ScanCompleted`, `ScanCancelled`, `ScanError`
+    - `ItemDiscovered` emitting `TelegramCatalogItem` with `RawMediaMetadata`
+  - `TelegramCatalogConfig` for scan configuration (limits, filters, chat selection)
+  - `TelegramMessageCursor` for cursor-based pagination with quota enforcement
+- **feat(di)**: Added Hilt modules for catalog layer
+  - `TelegramCatalogModule` binds `TelegramCatalogPipeline`
+  - `TelegramCoreModule` provides `TelegramClient` via `TdlibClientProvider`
+- **test(telegram)**: Added comprehensive catalog pipeline tests
+  - `TelegramCatalogPipelineTest` for event flow verification
+  - `TelegramMessageCursorTest` for pagination and quota tests
+- **arch**: Integrated with existing v2 pipeline structure
+  - Uses existing `TelegramClient` interface (not raw TDLib)
+  - Uses existing `TelegramMediaItem.toRawMediaMetadata()` extension
+  - Follows stateless producer pattern per v2 architecture
+
 ### Phase 1.7 – Test Stabilization
 
 **Status: COMPLETED**
