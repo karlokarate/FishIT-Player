@@ -411,18 +411,34 @@ Before making changes, confirm:
    - [ ] All planned edits are under allowed v2 paths.
    - [ ] No writes planned under `/legacy/**` or `/app/**`.
 
-3. **Docs**
+3. **Module README (MANDATORY)**
+   - [ ] Before modifying any file in a module, **read the module's README.md first**.
+   - [ ] Confirm the change respects the module's "Allowed" and "Forbidden" sections.
+   - [ ] READMEs are located at:
+     - `infra/transport-telegram/README.md`
+     - `infra/transport-xtream/README.md`
+     - `pipeline/telegram/README.md`
+     - `pipeline/xtream/README.md`
+     - `infra/data-telegram/README.md`
+     - `infra/data-xtream/README.md`
+     - `playback/telegram/README.md`
+     - `playback/xtream/README.md`
+     - `playback/domain/README.md`
+     - `core/model/README.md`
+     - `core/metadata-normalizer/README.md`
+
+4. **Docs**
    - [ ] Relevant v2 docs under `docs/v2/**` have been read:
      - Canonical Media / Normalizer (for pipeline/metadata changes),
      - Internal Player docs (for player changes),
      - Logging/Telemetry/Cache docs (for infra changes).
 
-4. **Architecture rules**
+5. **Architecture rules**
    - [ ] No pipeline-local normalization or TMDB lookups.
    - [ ] No new global mutable singletons.
    - [ ] Logging and telemetry integration identified.
 
-5. **Plan**
+6. **Plan**
    - [ ] Intended changes are scoped and incremental.
    - [ ] Large refactors or tool upgrades have been discussed with the user (or will be proposed first).
 
