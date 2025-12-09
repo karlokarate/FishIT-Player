@@ -15,7 +15,6 @@ import dev.g000sha256.tdl.dto.Message
  * @see RawMediaMetadata
  */
 interface TelegramCatalogMessageMapper {
-
     /**
      * Classify the media kind of a TDLib message.
      *
@@ -44,7 +43,7 @@ interface TelegramCatalogMessageMapper {
     fun toRawMediaMetadata(
         message: Message,
         chat: TelegramChatInfo,
-        mediaKind: MediaKind = classifyMediaKind(message)
+        mediaKind: MediaKind = classifyMediaKind(message),
     ): RawMediaMetadata?
 }
 
@@ -67,5 +66,5 @@ enum class MediaKind {
     Document,
 
     /** Unknown or non-media content */
-    Unknown
+    Unknown,
 }

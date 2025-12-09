@@ -3,10 +3,10 @@ package com.fishit.player.pipeline.telegram.mapper
 import com.fishit.player.pipeline.telegram.model.TelegramMediaType
 import dev.g000sha256.tdl.dto.Message
 import dev.g000sha256.tdl.dto.MessageText
+import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import org.junit.Test
 
 /**
  * Unit Tests für TdlibMessageMapper.
@@ -20,26 +20,26 @@ import org.junit.Test
  * - All data RAW, no cleaning/normalization
  */
 class TdlibMessageMapperTest {
-
     // ========== VIDEO Message Tests ==========
 
     @Test
     fun `maps MessageVideo to TelegramMediaItem with VIDEO type`() {
-        val message = TdlibTestFixtures.createVideoMessage(
-            messageId = 12345L,
-            chatId = 67890L,
-            fileName = "Movie.2024.1080p.BluRay.x264.mkv",
-            caption = "Great movie!",
-            mimeType = "video/x-matroska",
-            sizeBytes = 1500000000L,
-            duration = 7200,
-            width = 1920,
-            height = 1080,
-            supportsStreaming = true,
-            remoteId = "remote_file_123",
-            uniqueId = "unique_abc",
-            fileId = 999
-        )
+        val message =
+            TdlibTestFixtures.createVideoMessage(
+                messageId = 12345L,
+                chatId = 67890L,
+                fileName = "Movie.2024.1080p.BluRay.x264.mkv",
+                caption = "Great movie!",
+                mimeType = "video/x-matroska",
+                sizeBytes = 1500000000L,
+                duration = 7200,
+                width = 1920,
+                height = 1080,
+                supportsStreaming = true,
+                remoteId = "remote_file_123",
+                uniqueId = "unique_abc",
+                fileId = 999,
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -95,16 +95,17 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessageDocument to TelegramMediaItem with DOCUMENT type`() {
-        val message = TdlibTestFixtures.createDocumentMessage(
-            messageId = 54321L,
-            chatId = 11111L,
-            fileName = "Game.of.Thrones.S01E01.1080p.mkv",
-            caption = "Episode 1",
-            mimeType = "video/x-matroska",
-            sizeBytes = 2500000000L,
-            remoteId = "doc_remote_456",
-            uniqueId = "doc_unique_xyz"
-        )
+        val message =
+            TdlibTestFixtures.createDocumentMessage(
+                messageId = 54321L,
+                chatId = 11111L,
+                fileName = "Game.of.Thrones.S01E01.1080p.mkv",
+                caption = "Episode 1",
+                mimeType = "video/x-matroska",
+                sizeBytes = 2500000000L,
+                remoteId = "doc_remote_456",
+                uniqueId = "doc_unique_xyz",
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -138,18 +139,19 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessageAudio to TelegramMediaItem with AUDIO type`() {
-        val message = TdlibTestFixtures.createAudioMessage(
-            messageId = 77777L,
-            chatId = 88888L,
-            audioTitle = "Bohemian Rhapsody",
-            performer = "Queen",
-            fileName = "bohemian_rhapsody.mp3",
-            mimeType = "audio/mpeg",
-            sizeBytes = 12000000L,
-            duration = 355,
-            remoteId = "audio_remote_789",
-            uniqueId = "audio_unique_qrs"
-        )
+        val message =
+            TdlibTestFixtures.createAudioMessage(
+                messageId = 77777L,
+                chatId = 88888L,
+                audioTitle = "Bohemian Rhapsody",
+                performer = "Queen",
+                fileName = "bohemian_rhapsody.mp3",
+                mimeType = "audio/mpeg",
+                sizeBytes = 12000000L,
+                duration = 355,
+                remoteId = "audio_remote_789",
+                uniqueId = "audio_unique_qrs",
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -180,16 +182,17 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `maps MessagePhoto to TelegramMediaItem with PHOTO type`() {
-        val message = TdlibTestFixtures.createPhotoMessage(
-            messageId = 99999L,
-            chatId = 11112L,
-            caption = "Beautiful sunset",
-            largestWidth = 2048,
-            largestHeight = 1536,
-            sizeBytes = 5000000L,
-            remoteId = "photo_remote_abc",
-            uniqueId = "photo_unique_def"
-        )
+        val message =
+            TdlibTestFixtures.createPhotoMessage(
+                messageId = 99999L,
+                chatId = 11112L,
+                caption = "Beautiful sunset",
+                largestWidth = 2048,
+                largestHeight = 1536,
+                sizeBytes = 5000000L,
+                remoteId = "photo_remote_abc",
+                uniqueId = "photo_unique_def",
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -220,16 +223,18 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `photo returns largest size`() {
-        val message = TdlibTestFixtures.createPhotoMessageWithMultipleSizes(
-            sizes = listOf(
-                Triple(160, 120, 10000L),     // thumbnail
-                Triple(320, 240, 30000L),     // small
-                Triple(1280, 960, 150000L),   // medium
-                Triple(2560, 1920, 500000L)   // large (should be selected)
-            ),
-            remoteId = "photo_multi",
-            uniqueId = "photo_multi_unique"
-        )
+        val message =
+            TdlibTestFixtures.createPhotoMessageWithMultipleSizes(
+                sizes =
+                    listOf(
+                        Triple(160, 120, 10000L), // thumbnail
+                        Triple(320, 240, 30000L), // small
+                        Triple(1280, 960, 150000L), // medium
+                        Triple(2560, 1920, 500000L), // large (should be selected)
+                    ),
+                remoteId = "photo_multi",
+                uniqueId = "photo_multi_unique",
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -253,13 +258,14 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `toMediaItems filters non-media messages`() {
-        val messages = listOf(
-            TdlibTestFixtures.createVideoMessage(messageId = 1),
-            createTextMessage(text = "Skip me"),
-            TdlibTestFixtures.createDocumentMessage(messageId = 2),
-            createTextMessage(text = "Skip me too"),
-            TdlibTestFixtures.createAudioMessage(messageId = 3)
-        )
+        val messages =
+            listOf(
+                TdlibTestFixtures.createVideoMessage(messageId = 1),
+                createTextMessage(text = "Skip me"),
+                TdlibTestFixtures.createDocumentMessage(messageId = 2),
+                createTextMessage(text = "Skip me too"),
+                TdlibTestFixtures.createAudioMessage(messageId = 3),
+            )
 
         val result = TdlibMessageMapper.toMediaItems(messages)
 
@@ -269,10 +275,11 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `extension function toTelegramMediaItems works`() {
-        val messages = listOf(
-            TdlibTestFixtures.createVideoMessage(messageId = 100),
-            TdlibTestFixtures.createAudioMessage(messageId = 200)
-        )
+        val messages =
+            listOf(
+                TdlibTestFixtures.createVideoMessage(messageId = 100),
+                TdlibTestFixtures.createAudioMessage(messageId = 200),
+            )
 
         val result = messages.toTelegramMediaItems()
 
@@ -327,10 +334,11 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `localPath populated when download completed`() {
-        val message = TdlibTestFixtures.createVideoMessage(
-            localPath = "/storage/telegram/videos/movie.mkv",
-            isDownloadCompleted = true
-        )
+        val message =
+            TdlibTestFixtures.createVideoMessage(
+                localPath = "/storage/telegram/videos/movie.mkv",
+                isDownloadCompleted = true,
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -340,10 +348,11 @@ class TdlibMessageMapperTest {
 
     @Test
     fun `localPath null when download not completed`() {
-        val message = TdlibTestFixtures.createVideoMessage(
-            localPath = "/storage/telegram/videos/movie.mkv",
-            isDownloadCompleted = false
-        )
+        val message =
+            TdlibTestFixtures.createVideoMessage(
+                localPath = "/storage/telegram/videos/movie.mkv",
+                isDownloadCompleted = false,
+            )
 
         val result = TdlibMessageMapper.toMediaItem(message)
 
@@ -359,7 +368,7 @@ class TdlibMessageMapperTest {
         return TdlibTestFixtures.createMessage(
             id = 1L,
             chatId = 100L,
-            content = content
+            content = content,
         )
     }
 }

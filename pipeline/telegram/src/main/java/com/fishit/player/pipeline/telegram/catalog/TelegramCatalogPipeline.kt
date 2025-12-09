@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.Flow
  * @see TelegramCatalogEvent
  */
 interface TelegramCatalogPipeline {
-
     /**
      * Scan Telegram chats for media content and emit catalog events.
      *
@@ -76,27 +75,32 @@ data class TelegramCatalogConfig(
  * Emitted by [TelegramCatalogPipeline.scanCatalog] to report scan progress and discovered items.
  */
 sealed interface TelegramCatalogEvent {
-
     /**
      * A media item was discovered during scanning.
      *
      * @property item The discovered media item with RawMediaMetadata
      */
-    data class ItemDiscovered(val item: TelegramCatalogItem) : TelegramCatalogEvent
+    data class ItemDiscovered(
+        val item: TelegramCatalogItem,
+    ) : TelegramCatalogEvent
 
     /**
      * A media item was updated (kept for future use, initial impl may treat all as discovered).
      *
      * @property item The updated media item
      */
-    data class ItemUpdated(val item: TelegramCatalogItem) : TelegramCatalogEvent
+    data class ItemUpdated(
+        val item: TelegramCatalogItem,
+    ) : TelegramCatalogEvent
 
     /**
      * A media item was deleted.
      *
      * @property stableId Stable identifier of deleted item (sourceId from RawMediaMetadata)
      */
-    data class ItemDeleted(val stableId: String) : TelegramCatalogEvent
+    data class ItemDeleted(
+        val stableId: String,
+    ) : TelegramCatalogEvent
 
     /**
      * Scan is starting.
@@ -108,7 +112,7 @@ sealed interface TelegramCatalogEvent {
      */
     data class ScanningInitial(
         val chatCount: Int,
-        val estimatedTotalMessages: Long? = null
+        val estimatedTotalMessages: Long? = null,
     ) : TelegramCatalogEvent
 
     /**
@@ -125,7 +129,7 @@ sealed interface TelegramCatalogEvent {
         val scannedChats: Int,
         val totalChats: Int,
         val scannedMessages: Long,
-        val totalMessagesEstimate: Long? = null
+        val totalMessagesEstimate: Long? = null,
     ) : TelegramCatalogEvent
 
     /**
@@ -136,7 +140,7 @@ sealed interface TelegramCatalogEvent {
      */
     data class ScanCompleted(
         val scannedChats: Int,
-        val scannedMessages: Long
+        val scannedMessages: Long,
     ) : TelegramCatalogEvent
 
     /**
@@ -149,7 +153,7 @@ sealed interface TelegramCatalogEvent {
      */
     data class ScanError(
         val reason: String,
-        val throwable: Throwable? = null
+        val throwable: Throwable? = null,
     ) : TelegramCatalogEvent
 }
 
@@ -167,5 +171,5 @@ data class TelegramCatalogItem(
     val raw: RawMediaMetadata,
     val chatId: Long,
     val messageId: Long,
-    val chatTitle: String?
+    val chatTitle: String?,
 )

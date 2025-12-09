@@ -26,7 +26,7 @@ internal class TelegramMessageCursor(
     private val chatId: Long,
     private val maxMessages: Long?,
     private val minMessageTimestampMs: Long?,
-    private val pageSize: Int = 100
+    private val pageSize: Int = 100,
 ) {
     companion object {
         private const val TAG = "TelegramMessageCursor"
@@ -76,8 +76,10 @@ internal class TelegramMessageCursor(
         try {
             // Calculate effective page size respecting maxMessages
             val remainingMessages = maxMessages?.let { it - fetchedCount } ?: Long.MAX_VALUE
-            val effectivePageSize = pageSize.coerceAtMost(TDLIB_MAX_PAGE_SIZE)
-                .coerceAtMost(remainingMessages.toInt())
+            val effectivePageSize =
+                pageSize
+                    .coerceAtMost(TDLIB_MAX_PAGE_SIZE)
+                    .coerceAtMost(remainingMessages.toInt())
 
             if (effectivePageSize <= 0) {
                 reachedEnd = true
@@ -87,7 +89,7 @@ internal class TelegramMessageCursor(
             UnifiedLog.d(
                 TAG,
                 "Fetching batch: chatId=$chatId, fromMessageId=$currentMessageId, " +
-                    "pageSize=$effectivePageSize, fetched=$fetchedCount"
+                    "pageSize=$effectivePageSize, fetched=$fetchedCount",
             )
 
             // Fetch via TelegramClient (which calls TDLib getChatHistory internally)
@@ -103,23 +105,24 @@ internal class TelegramMessageCursor(
             }
 
             // Filter by timestamp if specified
-            val filtered = if (minMessageTimestampMs != null) {
-                messages.filter { msg ->
-                    // TDLib message.date is in seconds, convert to ms
-                    val timestampMs = msg.date.toLong() * 1000
-                    val shouldInclude = timestampMs >= minMessageTimestampMs
-                    if (!shouldInclude) {
-                        UnifiedLog.d(
-                            TAG,
-                            "Stopping: message ${msg.id} timestamp $timestampMs < min $minMessageTimestampMs"
-                        )
-                        reachedEnd = true
+            val filtered =
+                if (minMessageTimestampMs != null) {
+                    messages.filter { msg ->
+                        // TDLib message.date is in seconds, convert to ms
+                        val timestampMs = msg.date.toLong() * 1000
+                        val shouldInclude = timestampMs >= minMessageTimestampMs
+                        if (!shouldInclude) {
+                            UnifiedLog.d(
+                                TAG,
+                                "Stopping: message ${msg.id} timestamp $timestampMs < min $minMessageTimestampMs",
+                            )
+                            reachedEnd = true
+                        }
+                        shouldInclude
                     }
-                    shouldInclude
+                } else {
+                    messages
                 }
-            } else {
-                messages
-            }
 
             // Update cursor state
             fetchedCount += filtered.size
@@ -136,7 +139,6 @@ internal class TelegramMessageCursor(
 
             UnifiedLog.d(TAG, "Fetched ${filtered.size} messages (total: $fetchedCount)")
             return filtered
-
         } catch (e: Exception) {
             UnifiedLog.e(TAG, "Failed to fetch messages for chat $chatId", e)
             reachedEnd = true
@@ -149,11 +151,10 @@ internal class TelegramMessageCursor(
      *
      * Uses TelegramClient.getMessagesPage which returns raw TDLib Message DTOs.
      */
-    private suspend fun fetchMessagesPage(limit: Int): List<Message> {
-        return client.getMessagesPage(
+    private suspend fun fetchMessagesPage(limit: Int): List<Message> =
+        client.getMessagesPage(
             chatId = chatId,
             fromMessageId = currentMessageId,
-            limit = limit
+            limit = limit,
         )
-    }
 }

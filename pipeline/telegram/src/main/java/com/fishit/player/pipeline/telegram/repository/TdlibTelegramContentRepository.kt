@@ -29,22 +29,25 @@ import com.fishit.player.pipeline.telegram.tdlib.TelegramClient
  *
  * @param telegramClient TelegramClient for Telegram access
  */
-class TdlibTelegramContentRepository(private val telegramClient: TelegramClient) :
-        TelegramContentRepository {
-
+class TdlibTelegramContentRepository(
+    private val telegramClient: TelegramClient,
+) : TelegramContentRepository {
     companion object {
         private const val TAG = "TdlibTelegramContentRepository"
     }
 
-    override suspend fun getAllMediaItems(limit: Int, offset: Int): List<TelegramMediaItem> {
+    override suspend fun getAllMediaItems(
+        limit: Int,
+        offset: Int,
+    ): List<TelegramMediaItem> {
         UnifiedLog.d(TAG, "getAllMediaItems() - STUB implementation")
         return emptyList()
     }
 
     override suspend fun getMediaItemsByChat(
-            chatId: Long,
-            limit: Int,
-            offset: Int
+        chatId: Long,
+        limit: Int,
+        offset: Int,
     ): List<TelegramMediaItem> {
         UnifiedLog.d(TAG, "getMediaItemsByChat() - STUB implementation")
         return emptyList()
@@ -55,14 +58,17 @@ class TdlibTelegramContentRepository(private val telegramClient: TelegramClient)
         return emptyList()
     }
 
-    override suspend fun searchMediaItems(query: String, limit: Int): List<TelegramMediaItem> {
+    override suspend fun searchMediaItems(
+        query: String,
+        limit: Int,
+    ): List<TelegramMediaItem> {
         UnifiedLog.d(TAG, "searchMediaItems() - STUB implementation")
         return emptyList()
     }
 
     override suspend fun getSeriesMediaItems(
-            seriesName: String,
-            limit: Int
+        seriesName: String,
+        limit: Int,
     ): List<TelegramMediaItem> {
         UnifiedLog.d(TAG, "getSeriesMediaItems() - STUB implementation")
         return emptyList()
