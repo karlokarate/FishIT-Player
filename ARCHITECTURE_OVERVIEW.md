@@ -58,7 +58,8 @@ The v2 rebuild uses the following module structure:
 │   └── api-tests/    # API probe scripts
 └── legacy/           # V1 code and docs (read-only)
     ├── v1-app/       # Full v1 app module
-    └── docs/         # V1 documentation
+    ├── docs/         # V1 documentation
+    └── gold/         # Curated v1 patterns (36 patterns for v2 porting)
 ```
 
 ---

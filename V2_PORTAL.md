@@ -300,6 +300,24 @@ Do **not**:
 - refactor,
 - or “fix” legacy code or docs.
 
+
+### 10.1. Gold Nuggets – Production-Tested v1 Patterns
+
+**`/legacy/gold/`** contains curated patterns extracted from ~12,450 lines of v1 production code:
+
+| Category | Patterns | Document |
+|----------|----------|----------|
+| **Telegram Pipeline** | 8 patterns (unified engine, zero-copy streaming, RemoteId URLs, priority downloads, MP4 validation) | `telegram-pipeline/GOLD_TELEGRAM_CORE.md` |
+| **Xtream Pipeline** | 8 patterns (rate limiting, dual-TTL cache, alias rotation, multi-port discovery, graceful degradation) | `xtream-pipeline/GOLD_XTREAM_CLIENT.md` |
+| **UI/Focus** | 10 patterns (FocusKit, focus zones, tvClickable, DPAD handling, focus memory) | `ui-patterns/GOLD_FOCUS_KIT.md` |
+| **Logging** | 10 patterns (UnifiedLog facade, ring buffer, source categories, structured events, log viewer) | `logging-telemetry/GOLD_LOGGING.md` |
+
+**How to use:**
+
+1. **Before implementing** features in these areas, read the relevant gold document
+2. Each pattern includes v2 target modules, porting checklists, and code review improvements
+3. **Always re-implement** using v2 architecture – never copy/paste
+4. See `GOLD_EXTRACTION_FINAL_REPORT.md` for overview and `legacy/gold/EXTRACTION_SUMMARY.md` for detailed guidance
 ---
 
 ## 11. If you are unsure

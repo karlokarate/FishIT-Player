@@ -74,11 +74,13 @@ When porting behavior from v1 or researching historical decisions:
    - `archive/` – old status and phase reports
    - `agents/` – old agent files
 
-2. Check **[legacy/gold/](legacy/gold/)** – curated valuable patterns:
-   - `telegram-pipeline/` – history scanning, lazy thumbnails, streaming
-   - `xtream-pipeline/` – Xtream API parsing and caching
-   - `ui-patterns/` – focus handling, TV remote patterns
-   - `logging-telemetry/` – unified logging, telemetry
+2. Check **[legacy/gold/](legacy/gold/)** – curated valuable patterns (36 patterns from v1 production):
+   - **`telegram-pipeline/`** – 8 patterns: unified engine, zero-copy streaming, RemoteId URLs, priority downloads, MP4 validation
+   - **`xtream-pipeline/`** – 8 patterns: rate limiting, dual-TTL cache, alias rotation, multi-port discovery, graceful degradation
+   - **`ui-patterns/`** – 10 patterns: FocusKit, focus zones, tvClickable, DPAD handling, focus memory, row navigation
+   - **`logging-telemetry/`** – 10 patterns: UnifiedLog facade, ring buffer, source categories, structured events, log viewer
+
+   > See **[GOLD_EXTRACTION_FINAL_REPORT.md](GOLD_EXTRACTION_FINAL_REPORT.md)** for overview and porting guidance.
 
 > **Note:** All legacy docs are tagged with a LEGACY banner. Do not use them as authoritative references for v2.
 
