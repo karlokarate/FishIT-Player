@@ -95,7 +95,6 @@ It is a **gold source** for behavior and ideas, but not an active codebase.
     3. Re-implement it in v2 using the v2 architecture (canonical media, normalizer, SIP, etc.).
 - Never add new code under `legacy/`. If something is worth keeping, it must be implemented in v2.
 
-
 3.4. **Gold Nuggets** – Curated v1 patterns for v2 implementation
 
 **`/legacy/gold/`** contains production-tested patterns extracted from v1 (36 patterns from ~12,450 lines):
@@ -166,6 +165,63 @@ See **`/legacy/gold/EXTRACTION_SUMMARY.md`** for complete porting guidance and *
     - what its scope and lifecycle are,
     - how it avoids race conditions and memory leaks.
   - This must be highlighted in the PR description and relevant docs.
+
+4.5. Layer Boundary Enforcement (mandatory audit)
+
+> **Hard Rule:** Each layer may only import from layers directly below it in the hierarchy.
+
+**Layer Hierarchy (top to bottom):**
+
+```text
+UI → Domain → Data → Pipeline → Transport → core:model
+```
+
+**Forbidden Cross-Layer Imports:**
+
+| Layer | MUST NOT Import From |
+|-------|---------------------|
+| Pipeline | Persistence (`data/obx/*`), Data layer, Playback, UI |
+| Transport | Pipeline, Data layer, Playback, UI, Persistence |
+| Data | Pipeline DTOs (`TelegramMediaItem`, `XtreamVodItem`, etc.) |
+| Playback | Pipeline DTOs (use `RawMediaMetadata` only) |
+
+**Allowed Flow:**
+
+- **Transport** produces: `TgMessage`, `TgChat`, API responses
+- **Pipeline** produces: `RawMediaMetadata` (via `toRawMediaMetadata()`)
+- **Data** consumes: `RawMediaMetadata` from Pipeline, stores to DB
+- **Playback** receives: `RawMediaMetadata` or `PlaybackContext`
+
+**Mandatory Audit Process:**
+
+After ANY change to modules in:
+
+- `pipeline/**`
+- `infra/transport-*`
+- `infra/data-*`
+- `playback/**`
+
+Agents MUST:
+
+1. **Run the Layer Boundary Audit Checklist:**
+   - `docs/v2/PIPELINE_ARCHITECTURE_AUDIT_CHECKLIST.md`
+
+2. **Execute automated verification:**
+
+   ```bash
+   # Check Pipeline for forbidden imports
+   grep -rn "import.*data\.obx\|import.*ObxTelegram\|import.*ObxXtream" pipeline/
+   
+   # Check Data for forbidden Pipeline DTO imports
+   grep -rn "import.*TelegramMediaItem\|import.*XtreamVodItem\|import.*XtreamSeriesItem\|import.*XtreamChannel" infra/data-*/
+   
+   # Check Playback for forbidden Pipeline DTO imports
+   grep -rn "import.*TelegramMediaItem\|import.*XtreamVodItem\|import.*XtreamChannel" playback/
+   ```
+
+3. **Document any exceptions** with clear justification in the PR description.
+
+4. **Zero tolerance:** Any violation found must be fixed before merge.
 
 ---
 

@@ -53,6 +53,8 @@ include(":core:ui-imaging")
 
 // Playback & Player
 include(":playback:domain")
+include(":playback:telegram")
+include(":playback:xtream")
 include(":player:internal")
 
 // Pipelines (no UI)
@@ -72,3 +74,7 @@ include(":feature:settings")
 // Infrastructure
 include(":infra:logging")
 include(":infra:tooling")
+include(":infra:transport-telegram")
+include(":infra:transport-xtream")
+include(":infra:data-telegram")
+include(":infra:data-xtream")

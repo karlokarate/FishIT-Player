@@ -1,8 +1,8 @@
 package com.fishit.player.pipeline.telegram.catalog
 
+import com.fishit.player.pipeline.telegram.adapter.TelegramChatInfo
+import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
-import com.fishit.player.pipeline.telegram.tdlib.TelegramChatInfo
-import com.fishit.player.pipeline.telegram.tdlib.TelegramClient
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 
@@ -21,21 +21,21 @@ import kotlinx.coroutines.isActive
  *
  * **Usage:**
  * ```kotlin
- * val cursor = TelegramMessageCursor(client, chat, config)
+ * val cursor = TelegramMessageCursor(adapter, chat, config)
  * while (cursor.hasNext()) {
  *     val batch = cursor.nextBatch()
  *     // process batch
  * }
  * ```
  *
- * @property client TelegramClient for message fetching
+ * @property adapter TelegramPipelineAdapter for message fetching
  * @property chat Target chat info
  * @property maxMessages Maximum messages to fetch (null = no limit)
  * @property minMessageTimestampMs Minimum message timestamp filter (null = no filter)
  * @property pageSize Messages per page
  */
 internal class TelegramMessageCursor(
-    private val client: TelegramClient,
+    private val adapter: TelegramPipelineAdapter,
     private val chat: TelegramChatInfo,
     private val maxMessages: Long?,
     private val minMessageTimestampMs: Long?,
@@ -70,8 +70,8 @@ internal class TelegramMessageCursor(
             .coerceAtMost(pageSize.toLong())
             .toInt()
 
-        // Fetch page from TelegramClient
-        val page = client.fetchMediaMessages(
+        // Fetch page from TelegramPipelineAdapter
+        val page = adapter.fetchMediaMessages(
             chatId = chat.chatId,
             limit = remainingForQuota,
             offsetMessageId = fromMessageId,

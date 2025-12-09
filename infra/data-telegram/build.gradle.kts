@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.pipeline.telegram"
+    namespace = "com.fishit.player.infra.data.telegram"
     compileSdk = 35
 
     defaultConfig {
@@ -26,11 +26,10 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:feature-api"))
+    implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
-    
-    // Transport layer (provides TelegramTransportClient)
-    api(project(":infra:transport-telegram"))
+    implementation(project(":infra:transport-telegram"))
+    implementation(project(":pipeline:telegram"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
@@ -45,5 +44,4 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("io.mockk:mockk-agent-jvm:1.13.12")
 }

@@ -1,12 +1,13 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
 
 android {
-    namespace = "com.fishit.player.pipeline.telegram"
+    namespace = "com.fishit.player.infra.transport.xtream"
     compileSdk = 35
 
     defaultConfig {
@@ -26,15 +27,15 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:feature-api"))
     implementation(project(":infra:logging"))
-    
-    // Transport layer (provides TelegramTransportClient)
-    api(project(":infra:transport-telegram"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Networking
+    api("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")
@@ -45,5 +46,5 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("io.mockk:mockk-agent-jvm:1.13.12")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.14")
 }

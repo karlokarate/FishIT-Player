@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.pipeline.telegram"
+    namespace = "com.fishit.player.playback.telegram"
     compileSdk = 35
 
     defaultConfig {
@@ -26,15 +26,17 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:feature-api"))
     implementation(project(":infra:logging"))
-    
-    // Transport layer (provides TelegramTransportClient)
-    api(project(":infra:transport-telegram"))
+    implementation(project(":infra:transport-telegram"))
+    implementation(project(":playback:domain"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Media3/ExoPlayer for DataSource
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-datasource:1.5.1")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")
@@ -45,5 +47,4 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("io.mockk:mockk-agent-jvm:1.13.12")
 }

@@ -1,10 +1,10 @@
 package com.fishit.player.pipeline.telegram.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.TelegramAuthState
+import com.fishit.player.infra.transport.telegram.TelegramConnectionState
+import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.model.toRawMediaMetadata
-import com.fishit.player.pipeline.telegram.tdlib.TelegramAuthState
-import com.fishit.player.pipeline.telegram.tdlib.TelegramClient
-import com.fishit.player.pipeline.telegram.tdlib.TelegramConnectionState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -16,13 +16,13 @@ import javax.inject.Inject
  * Default implementation of [TelegramCatalogPipeline].
  *
  * Stateless producer that:
- * - Reads from TelegramClient (auth state, chats, messages)
+ * - Reads from TelegramPipelineAdapter (auth state, chats, messages)
  * - Converts TelegramMediaItem to RawMediaMetadata via toRawMediaMetadata()
  * - Emits TelegramCatalogEvent via cold Flow
  * - Performs no DB writes, caching, or UI work
  *
  * **Architecture Integration:**
- * - Uses existing TelegramClient interface (not raw TDLib)
+ * - Uses TelegramPipelineAdapter (wraps TelegramTransportClient)
  * - Uses TelegramMediaItem.toRawMediaMetadata() for conversion
  * - Emits standardized catalog events for CatalogSync consumption
  *
@@ -31,10 +31,10 @@ import javax.inject.Inject
  * - Graceful handling of per-chat failures (logs warning, continues)
  * - Cancellation-aware (respects coroutine scope)
  *
- * @param client TelegramClient for chat/message access
+ * @param adapter TelegramPipelineAdapter for chat/message access
  */
 class TelegramCatalogPipelineImpl @Inject constructor(
-    private val client: TelegramClient,
+    private val adapter: TelegramPipelineAdapter,
 ) : TelegramCatalogPipeline {
 
     override fun scanCatalog(
@@ -44,7 +44,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
 
         try {
             // Pre-flight: Check auth state
-            val auth = client.authState.first()
+            val auth = adapter.authState.first()
             if (auth !is TelegramAuthState.Ready) {
                 UnifiedLog.w(TAG, "Cannot scan: auth state is $auth")
                 trySend(
@@ -57,7 +57,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
             }
 
             // Pre-flight: Check connection state
-            val conn = client.connectionState.first()
+            val conn = adapter.connectionState.first()
             if (conn !is TelegramConnectionState.Connected) {
                 UnifiedLog.w(TAG, "Cannot scan: connection state is $conn")
                 trySend(
@@ -70,7 +70,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
             }
 
             // Get chats to scan
-            val allChats = client.getChats(limit = 200)
+            val allChats = adapter.getChats(limit = 200)
             val chatsToScan = if (config.chatIds != null) {
                 allChats.filter { it.chatId in config.chatIds }
             } else {
@@ -107,7 +107,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
 
                 try {
                     val cursor = TelegramMessageCursor(
-                        client = client,
+                        adapter = adapter,
                         chat = chat,
                         maxMessages = config.maxMessagesPerChat,
                         minMessageTimestampMs = config.minMessageTimestampMs,

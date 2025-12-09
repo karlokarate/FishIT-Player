@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.pipeline.telegram"
+    namespace = "com.fishit.player.infra.transport.telegram"
     compileSdk = 35
 
     defaultConfig {
@@ -26,15 +26,14 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:feature-api"))
     implementation(project(":infra:logging"))
-    
-    // Transport layer (provides TelegramTransportClient)
-    api(project(":infra:transport-telegram"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // TDLib integration (g00sha tdlib-coroutines)
+    api("dev.g000sha256:tdl-coroutines-android:5.0.0")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")

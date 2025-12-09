@@ -25,19 +25,16 @@ android {
 }
 
 dependencies {
+    // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
+    
+    // Transport layer (provides XtreamApiClient)
+    api(project(":infra:transport-xtream"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-
-    // HTTP (Xtream API)
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
-
-    // Serialization (for JSON parsing)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")
@@ -47,6 +44,5 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.14")
     testImplementation("io.mockk:mockk:1.13.12")
 }
