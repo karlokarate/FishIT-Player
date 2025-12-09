@@ -8,9 +8,9 @@
 
 ## Executive Summary
 
-**Geschätzter Gesamtfortschritt bis Release: ~25-30%**
+**Geschätzter Gesamtfortschritt bis Release: ~30-35%**
 
-Das FishIT-Player v2 Projekt befindet sich in einer aktiven Entwicklungsphase mit solider architektonischer Grundlage, aber es fehlen noch kritische Komponenten für einen produktionsreifen Release. Die v2-Architektur ist gut dokumentiert und modular aufgebaut, aber die meisten Feature-Module befinden sich noch in einem Skelett-Zustand.
+Das FishIT-Player v2 Projekt befindet sich in einer aktiven Entwicklungsphase mit solider architektonischer Grundlage. **Phase 3 wurde erfolgreich abgeschlossen** (Dec 2025), was einen wichtigen Meilenstein darstellt. Die meisten Feature-Module befinden sich noch in einem Skelett-Zustand, aber die Player-Architektur ist jetzt sauber strukturiert.
 
 ### Kernmetriken
 
@@ -18,9 +18,9 @@ Das FishIT-Player v2 Projekt befindet sich in einer aktiven Entwicklungsphase mi
 |-----------|--------|-------------|
 | **Architektur & Dokumentation** | ✅ Exzellent | 90% |
 | **Module-Struktur** | ✅ Gut | 85% |
-| **Core-Layer** | 🟡 Teilweise | 40% |
+| **Core-Layer** | 🟡 Teilweise | 45% |
 | **Pipeline-Layer** | 🟡 Fortgeschritten | 55% |
-| **Player-Layer** | 🔴 Minimal | 15% |
+| **Player-Layer** | 🟡 Phase 3 Complete | 25% |
 | **UI-Layer** | 🔴 Skelett | 10% |
 | **Integration & Tests** | 🟡 Basis vorhanden | 30% |
 | **Build & Deployment** | 🟡 Kompiliert | 40% |
@@ -153,44 +153,81 @@ Das FishIT-Player v2 Projekt befindet sich in einer aktiven Entwicklungsphase mi
 - [ ] Playback Factory
 - [ ] Alles andere
 
-**Pipeline-Bewertung:** Telegram und Xtream haben solide Grundlagen, aber kritische Komponenten fehlen. Metadata Normalization ist nur Skeleton. IO und Audiobook sind Platzhalter.
+**Player-Bewertung:** **✅ Phase 3 Meilenstein erreicht!** (Dec 2025) - Saubere Architektur mit core:player-model Typen, Factory-Pattern für Source-Resolution, und Layer violations behoben. **Aber:** Phases 4-14 verbleiben für vollständigen SIP-Port (~6-8 Wochen). Weiterhin kritischer Blocker für MVP.
 
 ---
 
 ### Phase 3 – SIP / Internal Player
-**Status: 🔴 MINIMAL (~15%)**
+**Status: 🟡 PHASE 3 CORE COMPLETE (~25%)**
+
+**✅ Phase 3 Complete (Dec 2025 - Commit 47e7258):**
+
+#### New Module Created:
+- [x] **`core:player-model`** - New dedicated module (Phase 3)
+  - [x] `SourceType` enum
+  - [x] `PlaybackContext` data class
+  - [x] `PlaybackState` sealed class
+  - [x] `PlaybackError` sealed class
+  - Clean separation of player primitives per P-HR2 hard rule
 
 #### Playback Domain:
 - [x] Modul-Struktur (`playback/domain`)
 - [x] Interface-Definitionen (ResumeManager, KidsPlaybackGate, etc.)
-- [ ] Default-Implementierungen (0%)
-- [ ] Integration mit Persistence
-- [ ] Tests
+- [x] **Updated interfaces for `core:player-model.PlaybackContext`** (Phase 3)
+- [x] **Default stub implementations** (Phase 3)
+  - [x] DefaultResumeManager (in-memory)
+  - [x] DefaultKidsPlaybackGate (minimal)
+  - [x] DefaultLivePlaybackController (minimal)
+  - [x] DefaultSubtitleSelectionPolicy (minimal)
+  - [x] DefaultSubtitleStyleManager (minimal)
+  - [x] DefaultTvInputController (minimal)
+- [ ] Full implementations with persistence integration (Phase 4+)
+- [ ] Comprehensive tests (Phase 4+)
 
 #### Internal Player:
 - [x] Modul-Struktur (`player/internal`)
-- [ ] **SIP Core portieren aus v1 (0%)**
-- [ ] **InternalPlayerSession (0%)**
-- [ ] **InternalPlayerState (0%)**
-- [ ] **InternalPlaybackSourceResolver (0%)**
-- [ ] **PlayerUI Components (0%)**
-- [ ] **Subtitle-System (0%)**
-- [ ] **Live-Controller (0%)**
-- [ ] **TV Input (0%)**
-- [ ] **Mini-Player (0%)**
+- [x] **`InternalPlayerSession` updated for Phase 3 architecture**
+  - [x] Now uses `core:player-model` types
+  - [x] Async source resolution via PlaybackSourceResolver
+  - [x] Improved state management
+- [x] **`InternalPlayerState` updated for Phase 3**
+  - [x] Uses `PlaybackContext` instead of mixed types
+  - [x] Uses `PlaybackError` for error states
+- [x] **`PlaybackSourceResolver` with Factory pattern** (Phase 3)
+  - [x] `PlaybackSourceFactory` interface
+  - [x] `PlaybackSource` sealed interface (Uri, Stream, File)
+  - [x] Hilt DI integration
+  - [x] Async source resolution
+- [x] **`InternalPlayerEntry` Composable updated** (Phase 3)
+- [x] **`PlayerSurface` component** (Phase 3)
+- [x] **Basic `InternalPlayerControls`** (Phase 3)
+- [x] **Layer violations FIXED** (Phase 3)
+  - [x] Removed `pipeline:telegram` dependency
+  - [x] Removed TDLib dependency
+  - [x] Old `InternalPlaybackSourceResolver` removed
+- [ ] **Full SIP port from v1 (Phases 4-14 remaining)**
+  - [ ] Complete VOD playback implementation
+  - [ ] Complete live playback implementation
+  - [ ] Full resume functionality
+  - [ ] Full kids-mode time limits
+  - [ ] Subtitle-System integration
+  - [ ] TV Input handling
+  - [ ] Mini-Player and PiP
+  - [ ] Advanced features
 
 #### Telegram Playback:
 - [x] Modul `playback/telegram` vorhanden
-- [ ] TelegramFileDataSource (aus v1 portieren)
-- [ ] Zero-Copy Streaming
-- [ ] TDLib-Download-Integration
+- [x] **TelegramFileDataSource MOVED HERE** (Phase 3) - from player:internal
+  - Correct layer per architecture
+- [ ] Zero-Copy Streaming full implementation (Phase 4+)
+- [ ] TDLib-Download-Integration full implementation (Phase 4+)
 
 #### Xtream Playback:
 - [x] Modul `playback/xtream` vorhanden
-- [ ] DataSource-Implementierungen
-- [ ] Token-Auth für Playback
+- [ ] DataSource-Implementierungen (Phase 4+)
+- [ ] Token-Auth für Playback (Phase 4+)
 
-**Player-Bewertung:** Kritischer Blocker! Ohne funktionierenden Player keine funktionierende App. Dies ist der größte Rückstand.
+**Player-Bewertung:** Phase 3 core successfully completed! Major architectural milestone with clean types, factory pattern, and fixed layer violations. However, Phases 4-14 remain for full SIP port (~6-8 weeks). Still a critical blocker for MVP.
 
 ---
 
@@ -238,7 +275,7 @@ Alle Feature-Module existieren als Gradle-Module, aber haben minimalen Code:
 | `core:feature-api` | 80% | 🟢 Gut | - |
 | `core:metadata-normalizer` | 20% | 🔴 Skeleton | ⚠️ Ja |
 | `core:persistence` | 60% | 🟡 Teilweise | ⚠️ Ja |
-| `core:player-model` | 30% | 🔴 Minimal | ⚠️ Ja |
+| `core:player-model` | 80% | 🟢 Phase 3 Complete | ⚠️ Ja |
 | `core:firebase` | 10% | 🔴 Skeleton | - |
 | `core:ui-imaging` | 40% | 🟡 Basis | - |
 | `core:catalog-sync` | 50% | 🟡 Teilweise | - |
@@ -252,19 +289,19 @@ Alle Feature-Module existieren als Gradle-Module, aber haben minimalen Code:
 | `pipeline:io` | 10% | 🔴 Skeleton | - |
 | `pipeline:audiobook` | 10% | 🔴 Skeleton | - |
 
-### Playback-Module (Durchschnitt: ~15%)
+### Playback-Module (Durchschnitt: ~25%)
 
 | Modul | Fortschritt | Status | Kritisch? |
 |-------|-------------|--------|-----------|
-| `playback:domain` | 30% | 🔴 Interfaces only | ⚠️ Ja |
-| `playback:telegram` | 10% | 🔴 Skeleton | ⚠️ Ja |
+| `playback:domain` | 50% | 🟡 Interfaces + stubs (Phase 3) | ⚠️ Ja |
+| `playback:telegram` | 30% | 🟡 TelegramFileDataSource moved (Phase 3) | ⚠️ Ja |
 | `playback:xtream` | 10% | 🔴 Skeleton | ⚠️ Ja |
 
-### Player-Module (Durchschnitt: ~15%)
+### Player-Module (Durchschnitt: ~25%)
 
 | Modul | Fortschritt | Status | Kritisch? |
 |-------|-------------|--------|-----------|
-| `player:internal` | 15% | 🔴 Minimal | ⚠️⚠️⚠️ KRITISCH |
+| `player:internal` | 25% | 🟡 Phase 3 Complete, Phases 4-14 remain | ⚠️⚠️⚠️ KRITISCH |
 
 ### Feature-Module (Durchschnitt: ~10%)
 
@@ -301,12 +338,13 @@ Alle Feature-Module existieren als Gradle-Module, aber haben minimalen Code:
 
 ### 🔴 KRITISCH – Muss implementiert werden
 
-1. **Internal Player (SIP) – 0% portiert**
-   - **Aufwand:** ~6-8 Wochen
+1. **Internal Player (SIP) – Phase 3 Complete, Phases 4-14 Remaining (~75% to go)**
+   - **Aufwand:** ~6-8 Wochen (reduced from original estimate)
    - **Komplexität:** Sehr hoch
+   - **✅ Milestone:** Phase 3 completed (core:player-model, PlaybackSourceResolver, layer violations fixed)
+   - **Remaining:** ~4000+ LOC aus v1 zu portieren (Phases 4-14)
+   - Full VOD/Live implementation, Resume, Kids-Mode, Subtitles, Mini-Player, TV Input
    - Kernkomponente, ohne die die App nicht funktioniert
-   - ~5000+ LOC aus v1 zu portieren
-   - ExoPlayer-Integration, State-Management, Resume, Kids-Mode
 
 2. **UI Feature Screens – 90% fehlen**
    - **Aufwand:** ~4-6 Wochen

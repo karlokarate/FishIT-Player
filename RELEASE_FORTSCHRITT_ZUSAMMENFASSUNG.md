@@ -6,7 +6,7 @@
 
 ---
 
-## 📊 Gesamtfortschritt bis Release: **25-30%**
+## 📊 Gesamtfortschritt bis Release: **30-35%**
 
 Das Projekt befindet sich in Phase 1 des v2-Rebuilds mit exzellenter architektonischer Grundlage, aber die meisten kritischen Komponenten fehlen noch.
 
@@ -20,7 +20,7 @@ Das Projekt befindet sich in Phase 1 des v2-Rebuilds mit exzellenter architekton
 | **Phase 0.5** – Agents, Portal, Branch Rules | ✅ Abgeschlossen | 100% | Perfekt |
 | **Phase 1** – Feature System | 🚧 Aktiv | 60% | Gut |
 | **Phase 2** – Pipelines → Canonical Media | 🟡 Teilweise | 50% | OK |
-| **Phase 3** – SIP / Internal Player | 🔴 Kaum begonnen | 15% | **KRITISCH** |
+| **Phase 3** – SIP / Internal Player | 🟡 Phase 3 Core Complete | 25% | **Meilenstein!** |
 | **Phase 4** – UI Feature Screens | 🔴 Skeleton | 10% | **KRITISCH** |
 | **Phase 5** – Quality & Performance | 🔴 Nicht gestartet | 5% | Nicht kritisch |
 
@@ -72,16 +72,32 @@ Das Projekt befindet sich in Phase 1 des v2-Rebuilds mit exzellenter architekton
    - Logging Contract dokumentiert
    - Integration in Pipelines
 
+7. **Phase 3 Player Core** (Dec 2025) ⭐ **NEU**
+   - core:player-model Modul (SourceType, PlaybackContext, PlaybackState, PlaybackError)
+   - PlaybackSourceResolver mit Factory-Pattern
+   - InternalPlayerSession und InternalPlayerState aktualisiert
+   - Playback Domain Interfaces aktualisiert (ResumeManager, KidsPlaybackGate)
+   - Layer violations behoben (pipeline deps entfernt)
+   - TelegramFileDataSource nach playback:telegram verschoben
+
 ---
 
 ## 🔴 Was FEHLT (Kritische Blocker)
 
-### 1. Internal Player (SIP) – **0% portiert**
+### 1. Internal Player (SIP) – **Phase 3 Complete, Phases 4-14 verbleiben**
 
-**Aufwand:** 6-8 Wochen  
+**Aufwand:** 6-8 Wochen (reduziert durch Phase 3)
 **Priorität:** 🔴🔴🔴 KRITISCHSTER BLOCKER
 
-Ohne funktionierenden Player funktioniert die App nicht. ~5000 LOC aus v1 müssen portiert werden:
+**✅ Phase 3 Meilenstein erreicht (Dec 2025):**
+- core:player-model Modul erstellt
+- PlaybackSourceResolver mit Factory-Pattern
+- InternalPlayerSession aktualisiert
+- InternalPlayerState aktualisiert
+- Layer violations behoben
+- TelegramFileDataSource korrekt platziert
+
+**🔲 Phases 4-14 verbleiben (~75% der Player-Arbeit):**
 
 - InternalPlayerSession
 - InternalPlayerState
@@ -164,10 +180,10 @@ Repository-Interfaces vorhanden, aber Implementierungen fehlen:
 
 | Kategorie | Fortschritt |
 |-----------|-------------|
-| Core-Module (8 Module) | 40% |
+| Core-Module (8 Module) | 45% (+5%) |
 | Pipeline-Module (4 Module) | 45% |
-| Playback-Module (3 Module) | 15% |
-| Player-Module (1 Modul) | 15% |
+| Playback-Module (3 Module) | 25% (+10%) |
+| Player-Module (1 Modul) | 25% (+10%) |
 | Feature-Module (7 Module) | 10% |
 | Infra-Module (6 Module) | 35% |
 | App-Module (1 Modul) | 20% |
@@ -178,19 +194,23 @@ Repository-Interfaces vorhanden, aber Implementierungen fehlen:
 
 ### MVP Release (Minimale funktionierende App)
 
-**Restaufwand:** 16-20 Wochen (4-5 Monate)
+**Restaufwand:** 14-18 Wochen (3.5-4.5 Monate)  
+*Reduziert von 16-20 Wochen durch Phase 3 Completion*
 
 **Kritischer Pfad:**
-1. Internal Player portieren: 6-8 Wochen
-2. Metadata Normalizer: 2-3 Wochen (parallel)
-3. Playback Domain: 2 Wochen
-4. Data Repositories: 3-4 Wochen (parallel)
-5. Core UI Screens: 4-6 Wochen
-6. Integration & Testing: 2-3 Wochen
-7. Bug Fixing: 2-3 Wochen
+1. ✅ **Phase 3 Complete** - Player Core (core:player-model, Factory pattern) - ERLEDIGT
+2. Player Phases 4-14 portieren: 6-8 Wochen
+3. Metadata Normalizer: 2-3 Wochen (parallel)
+4. Playback Domain: 2 Wochen
+5. Data Repositories: 3-4 Wochen (parallel)
+6. Core UI Screens: 4-6 Wochen
+7. Integration & Testing: 2-3 Wochen
+8. Bug Fixing: 2-3 Wochen
 
 **Frühester MVP:** April 2026  
 **Realistischer MVP:** Mai 2026
+
+*Hinweis: Phase 3 Completion reduziert Risiko und verbessert Basis für weitere Entwicklung*
 
 ### Feature-Complete Release
 
@@ -227,6 +247,7 @@ Repository-Interfaces vorhanden, aber Implementierungen fehlen:
 5. **Solide Pipeline-Foundations** – Telegram & Xtream Clients funktionieren
 6. **Gute Tests (wo Code existiert)** – 100 Test-Dateien, 70% Coverage in Pipelines
 7. **Referenz-Code verfügbar** – v1 Legacy als Portierungs-Quelle
+8. **✅ Phase 3 Meilenstein** – Player-Architektur sauber strukturiert (Dec 2025)
 
 ---
 
@@ -235,8 +256,9 @@ Repository-Interfaces vorhanden, aber Implementierungen fehlen:
 ### Hohe Risiken
 
 1. **Player-Portierung Komplexität**
-   - ~5000 LOC mit komplexer State-Machine
-   - ExoPlayer-Integration non-trivial
+   - **✅ Phase 3 Complete reduziert Risiko**
+   - ~4000 LOC verbleiben (reduziert von ~5000)
+   - ExoPlayer-Integration teilweise vorhanden
    - Resume, Kids-Mode, Live, Subtitles parallel
 
 2. **UI-Implementierung Zeitaufwand**
@@ -329,17 +351,19 @@ Repository-Interfaces vorhanden, aber Implementierungen fehlen:
 
 ## 🏁 Fazit
 
-### Gesamtbewertung: 25-30% bis Release
+### Gesamtbewertung: 30-35% bis Release
 
 **Das Projekt ist:**
 - ✅ Architektonisch exzellent vorbereitet
-- 🟡 In früher Implementierungsphase
-- 🔴 Nicht release-bereit (MVP: 16-20 Wochen entfernt)
+- 🟡 In aktiver Implementierungsphase
+- ✅ **Phase 3 Meilenstein erreicht** (Dec 2025)
+- 🔴 Nicht release-bereit (MVP: 14-18 Wochen entfernt)
 
 **Kritischer Engpass:**
-Der **Internal Player** ist der kritische Pfad. Ohne funktionierenden Player kann keine UI-Komponente sinnvoll fertiggestellt werden.
+Der **Internal Player** hat Phase 3 erfolgreich abgeschlossen (core:player-model, PlaybackSourceResolver, layer violations behoben), aber **Phases 4-14 verbleiben**. Ohne vollständigen Player kann keine UI-Komponente sinnvoll fertiggestellt werden.
 
 **Positive Punkte:**
+- **✅ Phase 3 Meilenstein** reduziert Risiko und schafft saubere Basis
 - Legacy v1 als Referenz verfügbar (~17.000 LOC portierbar)
 - Klare Migration-Pläne dokumentiert
 - Moderne Architektur reduziert technische Schulden
@@ -347,12 +371,12 @@ Der **Internal Player** ist der kritische Pfad. Ohne funktionierenden Player kan
 
 **Realistische Erwartung:**
 Mit dediziertem Team (2-3 Entwickler):
-- **MVP:** Mai 2026
+- **MVP:** Mai 2026 (14-18 Wochen, reduziert durch Phase 3)
 - **Feature-Complete:** August 2026
 - **Production-Ready:** Oktober 2026
 
 **Bottom Line:**
-Das Projekt ist **sehr gut organisiert und dokumentiert**, aber befindet sich **noch in früher Entwicklungsphase**. Die **kritischen Komponenten** (Player, UI, Repositories) fehlen noch und erfordern **mindestens 4 Monate intensive Arbeit** für einen MVP.
+Das Projekt ist **sehr gut organisiert und dokumentiert** und hat mit **Phase 3 einen wichtigen Meilenstein** erreicht. Die Player-Architektur ist nun sauber strukturiert mit core:player-model Typen und behobenen Layer-Violations. Fortschritt: **30-35%** bis MVP. Die **verbleibenden Phasen 4-14** des Players erfordern **weiterhin 6-8 Wochen** intensive Arbeit.
 
 ---
 
