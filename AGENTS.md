@@ -95,8 +95,28 @@ It is a **gold source** for behavior and ideas, but not an active codebase.
     3. Re-implement it in v2 using the v2 architecture (canonical media, normalizer, SIP, etc.).
 - Never add new code under `legacy/`. If something is worth keeping, it must be implemented in v2.
 
-3.4. “Gold mines” (particularly valuable v1 areas) will be curated under `legacy/` over time.  
-Until then, treat all of `/legacy/**` as equally read-only; do not guess which parts are gold.
+
+3.4. **Gold Nuggets** – Curated v1 patterns for v2 implementation
+
+**`/legacy/gold/`** contains production-tested patterns extracted from v1 (36 patterns from ~12,450 lines):
+
+- **`telegram-pipeline/`** – Telegram/TDLib integration (8 patterns: unified engine, zero-copy streaming, RemoteId URLs, priority downloads, MP4 validation, lazy thumbnails, auth state machine, cursor pagination)
+- **`xtream-pipeline/`** – Xtream API (8 patterns: rate limiting, dual-TTL cache, alias rotation, multi-port discovery, capability detection, EPG prefetch, category fallback, graceful degradation)
+- **`ui-patterns/`** – TV focus & navigation (10 patterns: FocusKit, focus zones, tvClickable, DPAD handling, focus memory, row navigation, TV forms)
+- **`logging-telemetry/`** – Logging (10 patterns: UnifiedLog facade, ring buffer, source categories, structured events, log viewer, async processing, performance monitor)
+
+**When to use Gold Nuggets:**
+
+- **Before implementing** Telegram, Xtream, TV/focus, or logging features → read the relevant gold document first
+- Each pattern includes:
+  - Code examples with "why preserve" rationale
+  - v2 target module mappings (e.g., `pipeline/telegram/tdlib/`, `core/ui-focus/`)
+  - Implementation phase checklists
+  - v2 improvements from code review
+- **Always re-implement** using v2 architecture – never copy/paste from v1
+- Follow all v2 contracts (MEDIA_NORMALIZATION_CONTRACT, LOGGING_CONTRACT_V2, etc.)
+
+See **`/legacy/gold/EXTRACTION_SUMMARY.md`** for complete porting guidance and **`GOLD_EXTRACTION_FINAL_REPORT.md`** in the root for an overview.
 
 ---
 
