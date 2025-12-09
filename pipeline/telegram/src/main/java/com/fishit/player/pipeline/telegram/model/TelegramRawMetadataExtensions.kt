@@ -35,24 +35,24 @@ import com.fishit.player.core.model.SourceType
  * @return RawMediaMetadata with Telegram-specific fields and ImageRefs
  */
 fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata =
-        RawMediaMetadata(
-                originalTitle = extractRawTitle(),
-                mediaType = mapTelegramMediaType(),
-                year = year,
-                season = seasonNumber,
-                episode = episodeNumber,
-                durationMinutes = durationSecs?.let { it / 60 },
-                externalIds = ExternalIds(), // Telegram doesn't provide external IDs
-                sourceType = SourceType.TELEGRAM,
-                sourceLabel = buildTelegramSourceLabel(),
-                sourceId = remoteId ?: "msg:$chatId:$messageId",
-                // === ImageRef from TelegramImageRefExtensions ===
-                poster = toPosterImageRef(), // Photo or null for video
-                backdrop = null, // Telegram doesn't provide backdrops
-                thumbnail = toThumbnailImageRef(), // Video thumbnail or best photo size
-                // === Minithumbnail for instant blur placeholder (Netflix-style tiered loading) ===
-                placeholderThumbnail = toMinithumbnailImageRef(),
-        )
+    RawMediaMetadata(
+        originalTitle = extractRawTitle(),
+        mediaType = mapTelegramMediaType(),
+        year = year,
+        season = seasonNumber,
+        episode = episodeNumber,
+        durationMinutes = durationSecs?.let { it / 60 },
+        externalIds = ExternalIds(), // Telegram doesn't provide external IDs
+        sourceType = SourceType.TELEGRAM,
+        sourceLabel = buildTelegramSourceLabel(),
+        sourceId = remoteId ?: "msg:$chatId:$messageId",
+        // === ImageRef from TelegramImageRefExtensions ===
+        poster = toPosterImageRef(), // Photo or null for video
+        backdrop = null, // Telegram doesn't provide backdrops
+        thumbnail = toThumbnailImageRef(), // Video thumbnail or best photo size
+        // === Minithumbnail for instant blur placeholder (Netflix-style tiered loading) ===
+        placeholderThumbnail = toMinithumbnailImageRef(),
+    )
 
 /**
  * Extracts the raw title using simple field priority.
@@ -66,23 +66,23 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata =
  * - "[GER] Show Name Episode 5" → returned AS-IS
  */
 private fun TelegramMediaItem.extractRawTitle(): String =
-        when {
-            title.isNotBlank() -> title
-            episodeTitle?.isNotBlank() == true -> episodeTitle
-            caption?.isNotBlank() == true -> caption
-            fileName?.isNotBlank() == true -> fileName
-            else -> "Untitled Media $messageId"
-        }
+    when {
+        title.isNotBlank() -> title
+        episodeTitle?.isNotBlank() == true -> episodeTitle
+        caption?.isNotBlank() == true -> caption
+        fileName?.isNotBlank() == true -> fileName
+        else -> "Untitled Media $messageId"
+    }
 
 /** Maps TelegramMediaType to core MediaType. */
 private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
-        when {
-            isSeries || seasonNumber != null || episodeNumber != null -> MediaType.SERIES_EPISODE
-            mediaType == TelegramMediaType.VIDEO -> MediaType.MOVIE
-            mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
-            mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
-            else -> MediaType.UNKNOWN
-        }
+    when {
+        isSeries || seasonNumber != null || episodeNumber != null -> MediaType.SERIES_EPISODE
+        mediaType == TelegramMediaType.VIDEO -> MediaType.MOVIE
+        mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
+        mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
+        else -> MediaType.UNKNOWN
+    }
 
 /**
  * Builds a human-readable source label.
@@ -92,7 +92,7 @@ private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
  * - "Telegram Chat: 123456789" (fallback)
  */
 private fun TelegramMediaItem.buildTelegramSourceLabel(): String =
-        when {
-            seriesName?.isNotBlank() == true -> "Telegram: $seriesName"
-            else -> "Telegram Chat: $chatId"
-        }
+    when {
+        seriesName?.isNotBlank() == true -> "Telegram: $seriesName"
+        else -> "Telegram Chat: $chatId"
+    }

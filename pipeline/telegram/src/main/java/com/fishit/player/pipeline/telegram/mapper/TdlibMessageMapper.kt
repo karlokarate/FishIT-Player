@@ -42,22 +42,20 @@ import dev.g000sha256.tdl.dto.Thumbnail
  * @see TelegramMediaItem
  */
 object TdlibMessageMapper {
-
     /**
      * Convert a TDLib Message to TelegramMediaItem if it contains media content.
      *
      * @param message TDLib Message DTO
      * @return TelegramMediaItem or null if message has no extractable media
      */
-    fun toMediaItem(message: Message): TelegramMediaItem? {
-        return when (val content = message.content) {
+    fun toMediaItem(message: Message): TelegramMediaItem? =
+        when (val content = message.content) {
             is MessageVideo -> mapVideoMessage(message, content)
             is MessageDocument -> mapDocumentMessage(message, content)
             is MessageAudio -> mapAudioMessage(message, content)
             is MessagePhoto -> mapPhotoMessage(message, content)
             else -> null
         }
-    }
 
     /**
      * Convert a list of TDLib Messages to TelegramMediaItems, filtering non-media.
@@ -65,12 +63,14 @@ object TdlibMessageMapper {
      * @param messages List of TDLib Messages
      * @return List of TelegramMediaItems (only media messages)
      */
-    fun toMediaItems(messages: List<Message>): List<TelegramMediaItem> =
-            messages.mapNotNull { toMediaItem(it) }
+    fun toMediaItems(messages: List<Message>): List<TelegramMediaItem> = messages.mapNotNull { toMediaItem(it) }
 
     // ========== Private Mappers ==========
 
-    private fun mapVideoMessage(message: Message, content: MessageVideo): TelegramMediaItem? {
+    private fun mapVideoMessage(
+        message: Message,
+        content: MessageVideo,
+    ): TelegramMediaItem? {
         val video = content.video
         val videoFile: File = video.video
         val thumbnail: Thumbnail? = video.thumbnail
@@ -86,38 +86,41 @@ object TdlibMessageMapper {
         }
 
         return TelegramMediaItem(
-                id = message.id,
-                chatId = message.chatId,
-                messageId = message.id,
-                mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
-                mediaType = TelegramMediaType.VIDEO,
-                fileId = videoFile.id,
-                fileUniqueId = uniqueId,
-                remoteId = remoteId,
-                title = "", // RAW: title extracted from filename/caption by normalizer
-                fileName = video.fileName,
-                caption = content.caption.safeText(),
-                mimeType = video.mimeType,
-                sizeBytes = videoFile.size.toLong(),
-                durationSecs = video.duration,
-                width = video.width,
-                height = video.height,
-                supportsStreaming = video.supportsStreaming,
-                localPath = local.safeCompletedPath(),
-                thumbnailFileId = thumbnail?.file?.id?.toString(),
-                thumbnailUniqueId = thumbnail?.file?.remote?.safeUniqueId(),
-                thumbnailWidth = thumbnail?.width,
-                thumbnailHeight = thumbnail?.height,
-                thumbnailPath = thumbnail?.file?.local?.safeCompletedPathOrNull(),
-                // === Minithumbnail (inline JPEG for instant blur placeholder) ===
-                minithumbnailBytes = minithumbnail?.toByteArray(),
-                minithumbnailWidth = minithumbnail?.width,
-                minithumbnailHeight = minithumbnail?.height,
-                date = message.date.toLong(),
+            id = message.id,
+            chatId = message.chatId,
+            messageId = message.id,
+            mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
+            mediaType = TelegramMediaType.VIDEO,
+            fileId = videoFile.id,
+            fileUniqueId = uniqueId,
+            remoteId = remoteId,
+            title = "", // RAW: title extracted from filename/caption by normalizer
+            fileName = video.fileName,
+            caption = content.caption.safeText(),
+            mimeType = video.mimeType,
+            sizeBytes = videoFile.size.toLong(),
+            durationSecs = video.duration,
+            width = video.width,
+            height = video.height,
+            supportsStreaming = video.supportsStreaming,
+            localPath = local.safeCompletedPath(),
+            thumbnailFileId = thumbnail?.file?.id?.toString(),
+            thumbnailUniqueId = thumbnail?.file?.remote?.safeUniqueId(),
+            thumbnailWidth = thumbnail?.width,
+            thumbnailHeight = thumbnail?.height,
+            thumbnailPath = thumbnail?.file?.local?.safeCompletedPathOrNull(),
+            // === Minithumbnail (inline JPEG for instant blur placeholder) ===
+            minithumbnailBytes = minithumbnail?.toByteArray(),
+            minithumbnailWidth = minithumbnail?.width,
+            minithumbnailHeight = minithumbnail?.height,
+            date = message.date.toLong(),
         )
     }
 
-    private fun mapDocumentMessage(message: Message, content: MessageDocument): TelegramMediaItem? {
+    private fun mapDocumentMessage(
+        message: Message,
+        content: MessageDocument,
+    ): TelegramMediaItem? {
         val doc = content.document
         val docFile: File = doc.document
         val thumbnail: Thumbnail? = doc.thumbnail
@@ -133,38 +136,41 @@ object TdlibMessageMapper {
         }
 
         return TelegramMediaItem(
-                id = message.id,
-                chatId = message.chatId,
-                messageId = message.id,
-                mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
-                mediaType = TelegramMediaType.DOCUMENT,
-                fileId = docFile.id,
-                fileUniqueId = uniqueId,
-                remoteId = remoteId,
-                title = "", // RAW: determined by normalizer
-                fileName = doc.fileName,
-                caption = content.caption.safeText(),
-                mimeType = doc.mimeType,
-                sizeBytes = docFile.size.toLong(),
-                durationSecs = null, // Documents don't have duration
-                width = null,
-                height = null,
-                supportsStreaming = null,
-                localPath = local.safeCompletedPath(),
-                thumbnailFileId = thumbnail?.file?.id?.toString(),
-                thumbnailUniqueId = thumbnail?.file?.remote?.safeUniqueId(),
-                thumbnailWidth = thumbnail?.width,
-                thumbnailHeight = thumbnail?.height,
-                thumbnailPath = thumbnail?.file?.local?.safeCompletedPathOrNull(),
-                // === Minithumbnail (inline JPEG for instant blur placeholder) ===
-                minithumbnailBytes = minithumbnail?.toByteArray(),
-                minithumbnailWidth = minithumbnail?.width,
-                minithumbnailHeight = minithumbnail?.height,
-                date = message.date.toLong(),
+            id = message.id,
+            chatId = message.chatId,
+            messageId = message.id,
+            mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
+            mediaType = TelegramMediaType.DOCUMENT,
+            fileId = docFile.id,
+            fileUniqueId = uniqueId,
+            remoteId = remoteId,
+            title = "", // RAW: determined by normalizer
+            fileName = doc.fileName,
+            caption = content.caption.safeText(),
+            mimeType = doc.mimeType,
+            sizeBytes = docFile.size.toLong(),
+            durationSecs = null, // Documents don't have duration
+            width = null,
+            height = null,
+            supportsStreaming = null,
+            localPath = local.safeCompletedPath(),
+            thumbnailFileId = thumbnail?.file?.id?.toString(),
+            thumbnailUniqueId = thumbnail?.file?.remote?.safeUniqueId(),
+            thumbnailWidth = thumbnail?.width,
+            thumbnailHeight = thumbnail?.height,
+            thumbnailPath = thumbnail?.file?.local?.safeCompletedPathOrNull(),
+            // === Minithumbnail (inline JPEG for instant blur placeholder) ===
+            minithumbnailBytes = minithumbnail?.toByteArray(),
+            minithumbnailWidth = minithumbnail?.width,
+            minithumbnailHeight = minithumbnail?.height,
+            date = message.date.toLong(),
         )
     }
 
-    private fun mapAudioMessage(message: Message, content: MessageAudio): TelegramMediaItem? {
+    private fun mapAudioMessage(
+        message: Message,
+        content: MessageAudio,
+    ): TelegramMediaItem? {
         val audio = content.audio
         val audioFile: File = audio.audio
         val albumCover: Thumbnail? = audio.albumCoverThumbnail
@@ -180,38 +186,41 @@ object TdlibMessageMapper {
         }
 
         return TelegramMediaItem(
-                id = message.id,
-                chatId = message.chatId,
-                messageId = message.id,
-                mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
-                mediaType = TelegramMediaType.AUDIO,
-                fileId = audioFile.id,
-                fileUniqueId = uniqueId,
-                remoteId = remoteId,
-                title = audio.title, // Audio often has title metadata - RAW
-                fileName = audio.fileName,
-                caption = content.caption.safeText(),
-                mimeType = audio.mimeType,
-                sizeBytes = audioFile.size.toLong(),
-                durationSecs = audio.duration,
-                width = null,
-                height = null,
-                supportsStreaming = null,
-                localPath = local.safeCompletedPath(),
-                thumbnailFileId = albumCover?.file?.id?.toString(),
-                thumbnailUniqueId = albumCover?.file?.remote?.safeUniqueId(),
-                thumbnailWidth = albumCover?.width,
-                thumbnailHeight = albumCover?.height,
-                thumbnailPath = albumCover?.file?.local?.safeCompletedPathOrNull(),
-                // === Minithumbnail (album cover mini for instant blur placeholder) ===
-                minithumbnailBytes = minithumbnail?.toByteArray(),
-                minithumbnailWidth = minithumbnail?.width,
-                minithumbnailHeight = minithumbnail?.height,
-                date = message.date.toLong(),
+            id = message.id,
+            chatId = message.chatId,
+            messageId = message.id,
+            mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
+            mediaType = TelegramMediaType.AUDIO,
+            fileId = audioFile.id,
+            fileUniqueId = uniqueId,
+            remoteId = remoteId,
+            title = audio.title, // Audio often has title metadata - RAW
+            fileName = audio.fileName,
+            caption = content.caption.safeText(),
+            mimeType = audio.mimeType,
+            sizeBytes = audioFile.size.toLong(),
+            durationSecs = audio.duration,
+            width = null,
+            height = null,
+            supportsStreaming = null,
+            localPath = local.safeCompletedPath(),
+            thumbnailFileId = albumCover?.file?.id?.toString(),
+            thumbnailUniqueId = albumCover?.file?.remote?.safeUniqueId(),
+            thumbnailWidth = albumCover?.width,
+            thumbnailHeight = albumCover?.height,
+            thumbnailPath = albumCover?.file?.local?.safeCompletedPathOrNull(),
+            // === Minithumbnail (album cover mini for instant blur placeholder) ===
+            minithumbnailBytes = minithumbnail?.toByteArray(),
+            minithumbnailWidth = minithumbnail?.width,
+            minithumbnailHeight = minithumbnail?.height,
+            date = message.date.toLong(),
         )
     }
 
-    private fun mapPhotoMessage(message: Message, content: MessagePhoto): TelegramMediaItem? {
+    private fun mapPhotoMessage(
+        message: Message,
+        content: MessagePhoto,
+    ): TelegramMediaItem? {
         val photo = content.photo
         val sizes: List<PhotoSize> = photo.sizes.toList()
         val minithumbnail: Minithumbnail? = photo.minithumbnail
@@ -228,35 +237,35 @@ object TdlibMessageMapper {
         }
 
         return TelegramMediaItem(
-                id = message.id,
-                chatId = message.chatId,
-                messageId = message.id,
-                mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
-                mediaType = TelegramMediaType.PHOTO,
-                fileId = largestFile?.id,
-                fileUniqueId = uniqueId,
-                remoteId = remoteId,
-                title = "", // Photos rarely have titles
-                fileName = null, // Photos don't have filenames
-                caption = content.caption.safeText(),
-                mimeType = "image/jpeg", // TDLib photos are always JPEG
-                sizeBytes = largestFile?.size?.toLong(),
-                durationSecs = null,
-                width = largestSize?.width,
-                height = largestSize?.height,
-                supportsStreaming = null,
-                localPath = largestFile?.local?.safeCompletedPathOrNull(),
-                thumbnailFileId = null, // Use smallest size as thumb
-                thumbnailUniqueId = null,
-                thumbnailWidth = null,
-                thumbnailHeight = null,
-                thumbnailPath = null,
-                photoSizes = sizes.mapNotNull { mapPhotoSize(it) },
-                // === Minithumbnail (inline JPEG for instant blur placeholder) ===
-                minithumbnailBytes = minithumbnail?.toByteArray(),
-                minithumbnailWidth = minithumbnail?.width,
-                minithumbnailHeight = minithumbnail?.height,
-                date = message.date.toLong(),
+            id = message.id,
+            chatId = message.chatId,
+            messageId = message.id,
+            mediaAlbumId = message.mediaAlbumId.takeIf { it != 0L },
+            mediaType = TelegramMediaType.PHOTO,
+            fileId = largestFile?.id,
+            fileUniqueId = uniqueId,
+            remoteId = remoteId,
+            title = "", // Photos rarely have titles
+            fileName = null, // Photos don't have filenames
+            caption = content.caption.safeText(),
+            mimeType = "image/jpeg", // TDLib photos are always JPEG
+            sizeBytes = largestFile?.size?.toLong(),
+            durationSecs = null,
+            width = largestSize?.width,
+            height = largestSize?.height,
+            supportsStreaming = null,
+            localPath = largestFile?.local?.safeCompletedPathOrNull(),
+            thumbnailFileId = null, // Use smallest size as thumb
+            thumbnailUniqueId = null,
+            thumbnailWidth = null,
+            thumbnailHeight = null,
+            thumbnailPath = null,
+            photoSizes = sizes.mapNotNull { mapPhotoSize(it) },
+            // === Minithumbnail (inline JPEG for instant blur placeholder) ===
+            minithumbnailBytes = minithumbnail?.toByteArray(),
+            minithumbnailWidth = minithumbnail?.width,
+            minithumbnailHeight = minithumbnail?.height,
+            date = message.date.toLong(),
         )
     }
 
@@ -265,11 +274,11 @@ object TdlibMessageMapper {
         val remote: RemoteFile = file.remote
         val uniqueId = remote.safeUniqueId() ?: return null
         return TelegramPhotoSize(
-                width = size.width,
-                height = size.height,
-                fileId = file.id.toString(),
-                fileUniqueId = uniqueId,
-                sizeBytes = file.size.toLong(),
+            width = size.width,
+            height = size.height,
+            fileId = file.id.toString(),
+            fileUniqueId = uniqueId,
+            sizeBytes = file.size.toLong(),
         )
     } // ========== Safe Access Helpers ==========
     // These mirror v1's defensive pattern for handling TDLib DTOs
@@ -281,24 +290,20 @@ object TdlibMessageMapper {
     private fun RemoteFile.safeUniqueId(): String? = uniqueId.takeIf { it.isNotBlank() }
 
     /** Nullable variant for optional RemoteFile */
-    private fun RemoteFile?.safeUniqueIdOrNull(): String? =
-            this?.uniqueId?.takeIf { it.isNotBlank() }
+    private fun RemoteFile?.safeUniqueIdOrNull(): String? = this?.uniqueId?.takeIf { it.isNotBlank() }
 
     /** Safe access to FormattedText.text */
     private fun FormattedText.safeText(): String? = text.takeIf { it.isNotBlank() }
 
     /** Safe access to completed download path */
-    private fun LocalFile.safeCompletedPath(): String? =
-            path.takeIf { isDownloadingCompleted && it.isNotBlank() }
+    private fun LocalFile.safeCompletedPath(): String? = path.takeIf { isDownloadingCompleted && it.isNotBlank() }
 
     /** Nullable variant for optional LocalFile */
-    private fun LocalFile?.safeCompletedPathOrNull(): String? =
-            this?.path?.takeIf { this.isDownloadingCompleted && it.isNotBlank() }
+    private fun LocalFile?.safeCompletedPathOrNull(): String? = this?.path?.takeIf { this.isDownloadingCompleted && it.isNotBlank() }
 }
 
 /** Extension function for convenient Message list conversion. */
-fun List<Message>.toTelegramMediaItems(): List<TelegramMediaItem> =
-        TdlibMessageMapper.toMediaItems(this)
+fun List<Message>.toTelegramMediaItems(): List<TelegramMediaItem> = TdlibMessageMapper.toMediaItems(this)
 
 /** Extension function for single Message conversion. */
 fun Message.toTelegramMediaItemOrNull(): TelegramMediaItem? = TdlibMessageMapper.toMediaItem(this)

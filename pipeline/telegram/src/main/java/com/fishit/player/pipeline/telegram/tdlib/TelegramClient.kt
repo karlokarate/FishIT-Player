@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.Flow
  * - UI components (belong in `:feature:telegram-media`)
  */
 interface TelegramClient {
-
     /** Current authorization state. Emits updates when auth state changes. */
     val authState: Flow<TelegramAuthState>
 
@@ -56,9 +55,9 @@ interface TelegramClient {
      * @return List of media items from the chat
      */
     suspend fun fetchMediaMessages(
-            chatId: Long,
-            limit: Int = 100,
-            offsetMessageId: Long = 0
+        chatId: Long,
+        limit: Int = 100,
+        offsetMessageId: Long = 0,
     ): List<TelegramMediaItem>
 
     /**
@@ -69,8 +68,8 @@ interface TelegramClient {
      * @return List of all media items across chats
      */
     suspend fun fetchAllMediaMessages(
-            chatIds: List<Long>,
-            limit: Int = 100
+        chatIds: List<Long>,
+        limit: Int = 100,
     ): List<TelegramMediaItem>
 
     /**
@@ -102,6 +101,27 @@ interface TelegramClient {
     suspend fun getChats(limit: Int = 100): List<TelegramChatInfo>
 
     /**
+     * Get raw message history from a chat.
+     *
+     * This is a low-level API that returns raw TDLib Message DTOs for catalog scanning.
+     * Unlike fetchMediaMessages, this does NOT filter or map messages.
+     *
+     * **TDLib Pagination:**
+     * - fromMessageId=0: start from latest message
+     * - fromMessageId=X: continue from message X (going backwards in time)
+     *
+     * @param chatId Chat ID to fetch messages from
+     * @param fromMessageId Starting message ID (0 for latest)
+     * @param limit Maximum number of messages to fetch (max 100)
+     * @return List of raw TDLib messages
+     */
+    suspend fun getMessagesPage(
+        chatId: Long,
+        fromMessageId: Long = 0,
+        limit: Int = 100,
+    ): List<dev.g000sha256.tdl.dto.Message>
+
+    /**
      * Request file download/preparation (metadata only).
      *
      * **ARCHITECTURE NOTE:** This method only REQUESTS the download and returns file metadata.
@@ -112,7 +132,10 @@ interface TelegramClient {
      * @param priority Download priority hint (1-32, higher = more important)
      * @return File location metadata (localPath may be null if not yet downloaded)
      */
-    suspend fun requestFileDownload(fileId: Int, priority: Int = 16): TelegramFileLocation
+    suspend fun requestFileDownload(
+        fileId: Int,
+        priority: Int = 16,
+    ): TelegramFileLocation
 
     /** Close the client and release resources. */
     suspend fun close()
@@ -121,20 +144,33 @@ interface TelegramClient {
 /** Telegram authorization state. */
 sealed class TelegramAuthState {
     object Idle : TelegramAuthState()
+
     object Connecting : TelegramAuthState()
+
     object WaitingForPhone : TelegramAuthState()
+
     object WaitingForCode : TelegramAuthState()
+
     object WaitingForPassword : TelegramAuthState()
+
     object Ready : TelegramAuthState()
-    data class Error(val message: String) : TelegramAuthState()
+
+    data class Error(
+        val message: String,
+    ) : TelegramAuthState()
 }
 
 /** Telegram connection state. */
 sealed class TelegramConnectionState {
     object Disconnected : TelegramConnectionState()
+
     object Connecting : TelegramConnectionState()
+
     object Connected : TelegramConnectionState()
-    data class Error(val message: String) : TelegramConnectionState()
+
+    data class Error(
+        val message: String,
+    ) : TelegramConnectionState()
 }
 
 /**
@@ -143,26 +179,32 @@ sealed class TelegramConnectionState {
  * Provides information needed for streaming/downloading via TDLib.
  */
 data class TelegramFileLocation(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val localPath: String?,
-        val size: Long,
-        val downloadedSize: Long,
-        val isDownloadingActive: Boolean,
-        val isDownloadingCompleted: Boolean
+    val fileId: Int,
+    val remoteId: String,
+    val uniqueId: String,
+    val localPath: String?,
+    val size: Long,
+    val downloadedSize: Long,
+    val isDownloadingActive: Boolean,
+    val isDownloadingCompleted: Boolean,
 )
 
 /** Telegram chat information. */
 data class TelegramChatInfo(
-        val chatId: Long,
-        val title: String,
-        val type: String,
-        val photoPath: String?
+    val chatId: Long,
+    val title: String,
+    val type: String,
+    val photoPath: String?,
 )
 
 /** Exception thrown during Telegram authentication. */
-class TelegramAuthException(message: String, cause: Throwable? = null) : Exception(message, cause)
+class TelegramAuthException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
 
 /** Exception thrown during Telegram file operations. */
-class TelegramFileException(message: String, cause: Throwable? = null) : Exception(message, cause)
+class TelegramFileException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)

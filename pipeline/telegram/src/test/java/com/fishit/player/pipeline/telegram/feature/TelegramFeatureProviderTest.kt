@@ -11,7 +11,6 @@ import org.junit.Test
  * Verifies that each provider correctly declares its featureId, scope, and owner.
  */
 class TelegramFeatureProviderTest {
-
     // -------------------------------------------------------------------------
     // TelegramFullHistoryFeatureProvider Tests
     // -------------------------------------------------------------------------

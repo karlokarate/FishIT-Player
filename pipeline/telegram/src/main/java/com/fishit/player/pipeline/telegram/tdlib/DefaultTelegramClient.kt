@@ -59,10 +59,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * @param scope Coroutine scope for background operations
  */
 class DefaultTelegramClient(
-        private val clientProvider: TdlibClientProvider,
-        private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val clientProvider: TdlibClientProvider,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : TelegramClient {
-
     companion object {
         private const val TAG = "DefaultTelegramClient"
         private const val DEFAULT_RETRIES = 3
@@ -81,7 +80,7 @@ class DefaultTelegramClient(
     override val authState: Flow<TelegramAuthState> = _authState.asStateFlow()
 
     private val _connectionState =
-            MutableStateFlow<TelegramConnectionState>(TelegramConnectionState.Disconnected)
+        MutableStateFlow<TelegramConnectionState>(TelegramConnectionState.Disconnected)
     override val connectionState: Flow<TelegramConnectionState> = _connectionState.asStateFlow()
 
     // ========== Authorization ==========
@@ -135,15 +134,15 @@ class DefaultTelegramClient(
                 try {
                     val chat = tdlClient.getChat(chatId).getOrThrow()
                     result.add(
-                            TelegramChatInfo(
-                                    chatId = chat.id,
-                                    title = chat.title,
-                                    type = mapChatType(chat.type),
-                                    photoPath =
-                                            chat.photo?.small?.local?.let { local ->
-                                                local.path.takeIf { local.isDownloadingCompleted }
-                                            }
-                            )
+                        TelegramChatInfo(
+                            chatId = chat.id,
+                            title = chat.title,
+                            type = mapChatType(chat.type),
+                            photoPath =
+                                chat.photo?.small?.local?.let { local ->
+                                    local.path.takeIf { local.isDownloadingCompleted }
+                                },
+                        ),
                     )
                 } catch (e: Exception) {
                     UnifiedLog.w(TAG, "Failed to load chat $chatId: ${e.message}")
@@ -155,14 +154,31 @@ class DefaultTelegramClient(
 
     // ========== Media Message Operations ==========
 
+    override suspend fun getMessagesPage(
+        chatId: Long,
+        fromMessageId: Long,
+        limit: Int,
+    ): List<Message> {
+        UnifiedLog.d(
+            TAG,
+            "getMessagesPage(chatId=$chatId, fromMessageId=$fromMessageId, limit=$limit)",
+        )
+
+        return withRetry("getMessagesPage") {
+            loadMessageHistory(chatId, fromMessageId, limit).also {
+                UnifiedLog.d(TAG, "Fetched ${it.size} messages from chat $chatId")
+            }
+        }
+    }
+
     override suspend fun fetchMediaMessages(
-            chatId: Long,
-            limit: Int,
-            offsetMessageId: Long
+        chatId: Long,
+        limit: Int,
+        offsetMessageId: Long,
     ): List<TelegramMediaItem> {
         UnifiedLog.d(
-                TAG,
-                "fetchMediaMessages(chatId=$chatId, limit=$limit, offset=$offsetMessageId)"
+            TAG,
+            "fetchMediaMessages(chatId=$chatId, limit=$limit, offset=$offsetMessageId)",
         )
 
         return withRetry("fetchMediaMessages") {
@@ -174,8 +190,8 @@ class DefaultTelegramClient(
     }
 
     override suspend fun fetchAllMediaMessages(
-            chatIds: List<Long>,
-            limit: Int
+        chatIds: List<Long>,
+        limit: Int,
     ): List<TelegramMediaItem> {
         UnifiedLog.d(TAG, "fetchAllMediaMessages(chatIds=${chatIds.size}, limit=$limit)")
 
@@ -210,19 +226,22 @@ class DefaultTelegramClient(
         }
     }
 
-    override suspend fun requestFileDownload(fileId: Int, priority: Int): TelegramFileLocation {
+    override suspend fun requestFileDownload(
+        fileId: Int,
+        priority: Int,
+    ): TelegramFileLocation {
         UnifiedLog.d(TAG, "requestFileDownload(fileId=$fileId, priority=$priority)")
 
         return withRetry("requestFileDownload") {
             // Request download from TDLib (this only starts the download)
             val downloadResult =
-                    tdlClient.downloadFile(
-                            fileId = fileId,
-                            priority = priority,
-                            offset = 0,
-                            limit = 0, // 0 = entire file
-                            synchronous = false
-                    )
+                tdlClient.downloadFile(
+                    fileId = fileId,
+                    priority = priority,
+                    offset = 0,
+                    limit = 0, // 0 = entire file
+                    synchronous = false,
+                )
             val file = downloadResult.getOrThrow()
             mapFileLocation(file)
         }
@@ -247,20 +266,20 @@ class DefaultTelegramClient(
      * - Subsequent pages: fromMessageId=oldest message ID, offset=-1 (to avoid duplicates)
      */
     private suspend fun loadMessageHistory(
-            chatId: Long,
-            fromMessageId: Long,
-            limit: Int
+        chatId: Long,
+        fromMessageId: Long,
+        limit: Int,
     ): List<Message> {
         val offset = if (fromMessageId == 0L) 0 else -1
 
         val historyResult =
-                tdlClient.getChatHistory(
-                        chatId = chatId,
-                        fromMessageId = fromMessageId,
-                        offset = offset,
-                        limit = limit.coerceAtMost(100), // TDLib max is 100
-                        onlyLocal = false
-                )
+            tdlClient.getChatHistory(
+                chatId = chatId,
+                fromMessageId = fromMessageId,
+                offset = offset,
+                limit = limit.coerceAtMost(100), // TDLib max is 100
+                onlyLocal = false,
+            )
 
         return when (historyResult) {
             is TdlResult.Success -> {
@@ -268,7 +287,7 @@ class DefaultTelegramClient(
             }
             is TdlResult.Failure -> {
                 throw TelegramFileException(
-                        "getChatHistory failed: ${historyResult.code} - ${historyResult.message}"
+                    "getChatHistory failed: ${historyResult.code} - ${historyResult.message}",
                 )
             }
         }
@@ -276,9 +295,9 @@ class DefaultTelegramClient(
 
     /** Retry wrapper with exponential backoff. */
     private suspend fun <T> withRetry(
-            operation: String,
-            retries: Int = DEFAULT_RETRIES,
-            block: suspend () -> T
+        operation: String,
+        retries: Int = DEFAULT_RETRIES,
+        block: suspend () -> T,
     ): T {
         var lastError: Exception? = null
 
@@ -288,8 +307,8 @@ class DefaultTelegramClient(
             } catch (e: Exception) {
                 lastError = e
                 UnifiedLog.w(
-                        TAG,
-                        "$operation failed (attempt ${attempt + 1}/$retries): ${e.message}"
+                    TAG,
+                    "$operation failed (attempt ${attempt + 1}/$retries): ${e.message}",
                 )
 
                 if (attempt < retries - 1) {
@@ -303,26 +322,27 @@ class DefaultTelegramClient(
 
     /** Map TDLib AuthorizationState to TelegramAuthState. */
     private fun mapAuthorizationState(state: AuthorizationState): TelegramAuthState =
-            when (state) {
-                is AuthorizationStateReady -> TelegramAuthState.Ready
-                is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitingForPhone
-                is AuthorizationStateWaitCode -> TelegramAuthState.WaitingForCode
-                is AuthorizationStateWaitPassword -> TelegramAuthState.WaitingForPassword
-                is AuthorizationStateClosing,
-                is AuthorizationStateClosed,
-                is AuthorizationStateLoggingOut -> TelegramAuthState.Idle
-                else -> TelegramAuthState.Connecting
-            }
+        when (state) {
+            is AuthorizationStateReady -> TelegramAuthState.Ready
+            is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitingForPhone
+            is AuthorizationStateWaitCode -> TelegramAuthState.WaitingForCode
+            is AuthorizationStateWaitPassword -> TelegramAuthState.WaitingForPassword
+            is AuthorizationStateClosing,
+            is AuthorizationStateClosed,
+            is AuthorizationStateLoggingOut,
+            -> TelegramAuthState.Idle
+            else -> TelegramAuthState.Connecting
+        }
 
     /** Map TDLib ChatType to string label. */
     private fun mapChatType(type: ChatType?): String =
-            when (type) {
-                is ChatTypePrivate -> "private"
-                is ChatTypeBasicGroup -> "group"
-                is ChatTypeSupergroup -> if (type.isChannel) "channel" else "supergroup"
-                is ChatTypeSecret -> "secret"
-                else -> "unknown"
-            }
+        when (type) {
+            is ChatTypePrivate -> "private"
+            is ChatTypeBasicGroup -> "group"
+            is ChatTypeSupergroup -> if (type.isChannel) "channel" else "supergroup"
+            is ChatTypeSecret -> "secret"
+            else -> "unknown"
+        }
 
     /** Map TDLib File to TelegramFileLocation. */
     private fun mapFileLocation(file: File): TelegramFileLocation {
@@ -330,14 +350,14 @@ class DefaultTelegramClient(
         val remote: RemoteFile = file.remote
 
         return TelegramFileLocation(
-                fileId = file.id,
-                remoteId = remote.id,
-                uniqueId = remote.uniqueId,
-                localPath = local.path.takeIf { local.isDownloadingCompleted },
-                size = file.size.toLong(),
-                downloadedSize = local.downloadedSize.toLong(),
-                isDownloadingActive = local.isDownloadingActive,
-                isDownloadingCompleted = local.isDownloadingCompleted
+            fileId = file.id,
+            remoteId = remote.id,
+            uniqueId = remote.uniqueId,
+            localPath = local.path.takeIf { local.isDownloadingCompleted },
+            size = file.size.toLong(),
+            downloadedSize = local.downloadedSize.toLong(),
+            isDownloadingActive = local.isDownloadingActive,
+            isDownloadingCompleted = local.isDownloadingCompleted,
         )
     }
 }
@@ -351,7 +371,7 @@ class DefaultTelegramClient(
  */
 @JvmSynthetic
 private fun <T> TdlResult<T>.getOrThrow(): T =
-        when (this) {
-            is TdlResult.Success -> result
-            is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
-        }
+    when (this) {
+        is TdlResult.Success -> result
+        is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
+    }
