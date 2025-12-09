@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.core.metadata"
+    namespace = "com.fishit.player.core.catalogsync"
     compileSdk = 35
 
     defaultConfig {
@@ -24,7 +24,18 @@ android {
 }
 
 dependencies {
+    // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:metadata-normalizer"))
+    implementation(project(":infra:logging"))
+    
+    // Data layer repositories (for persisting catalog data)
+    implementation(project(":infra:data-telegram"))
+    implementation(project(":infra:data-xtream"))
+    
+    // Pipeline events (for consuming catalog events)
+    implementation(project(":pipeline:telegram"))
+    implementation(project(":pipeline:xtream"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
@@ -34,12 +45,9 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-compiler:2.52")
 
-    // TMDB Java API (no usage in skeleton phase - just dependency)
-    implementation("com.uwetrottmann.tmdb2:tmdb-java:2.11.0")
-
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
 }

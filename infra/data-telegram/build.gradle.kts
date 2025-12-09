@@ -28,8 +28,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
-    implementation(project(":infra:transport-telegram"))
-    implementation(project(":pipeline:telegram"))
+    // NOTE: No pipeline:telegram dependency - Data layer works only with RawMediaMetadata
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

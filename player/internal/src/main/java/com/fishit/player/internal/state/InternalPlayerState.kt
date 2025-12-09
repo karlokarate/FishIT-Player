@@ -1,43 +1,14 @@
 package com.fishit.player.internal.state
 
-import com.fishit.player.core.model.PlaybackContext
-
-/**
- * Represents the internal player's playback state.
- */
-enum class PlaybackState {
-    /** Initial state before playback starts. */
-    IDLE,
-    
-    /** Loading/buffering content. */
-    BUFFERING,
-    
-    /** Actively playing content. */
-    PLAYING,
-    
-    /** Playback is paused. */
-    PAUSED,
-    
-    /** Playback ended (content finished). */
-    ENDED,
-    
-    /** An error occurred. */
-    ERROR
-}
-
-/**
- * Error information for player errors.
- */
-data class PlayerError(
-    val code: Int,
-    val message: String,
-    val cause: Throwable? = null
-)
+import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackError
+import com.fishit.player.core.playermodel.PlaybackState
 
 /**
  * Complete state of the internal player.
  *
  * This is an immutable snapshot of all player state at a given moment.
+ * Uses types from core:player-model for consistency across the player stack.
  */
 data class InternalPlayerState(
     /** Current playback context (what is being played). */
@@ -71,7 +42,7 @@ data class InternalPlayerState(
     val areControlsVisible: Boolean = true,
     
     /** Error information if playbackState is ERROR. */
-    val error: PlayerError? = null,
+    val error: PlaybackError? = null,
     
     /** Elapsed session time for kids gate tracking. */
     val sessionElapsedMs: Long = 0L

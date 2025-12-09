@@ -28,8 +28,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
-    implementation(project(":infra:transport-xtream"))
-    implementation(project(":pipeline:xtream"))
+    // NOTE: No pipeline:xtream dependency - Data layer works only with RawMediaMetadata
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

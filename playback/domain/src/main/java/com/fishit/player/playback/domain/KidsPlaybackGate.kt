@@ -1,12 +1,14 @@
 package com.fishit.player.playback.domain
 
-import com.fishit.player.core.model.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackContext
 
 /**
  * Controls playback access for kids profiles with screen-time limits.
  *
  * The gate tracks elapsed playback time and can block continued viewing
  * when limits are reached.
+ *
+ * Uses [PlaybackContext] from core:player-model.
  */
 interface KidsPlaybackGate {
 

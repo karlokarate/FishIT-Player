@@ -22,6 +22,14 @@ enum class MediaType {
     MOVIE,
 
     /**
+     * TV series container/metadata.
+     * Represents the series itself, not an individual episode.
+     * Examples: "Breaking Bad" (the series), "The Office" (the series).
+     * Used for series cards in UI, not for playback.
+     */
+    SERIES,
+
+    /**
      * TV series episode.
      * Examples: episodic television, web series episodes.
      */

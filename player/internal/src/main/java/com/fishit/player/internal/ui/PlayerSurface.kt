@@ -18,9 +18,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import com.fishit.player.core.playermodel.PlaybackState
 import com.fishit.player.internal.R
 import com.fishit.player.internal.state.InternalPlayerState
-import com.fishit.player.internal.state.PlaybackState
 
 /**
  * The video playback surface using Media3 PlayerView.

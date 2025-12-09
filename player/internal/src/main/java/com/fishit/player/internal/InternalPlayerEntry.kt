@@ -15,9 +15,9 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.ui.PlayerView
-import com.fishit.player.core.model.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.internal.session.InternalPlayerSession
-import com.fishit.player.internal.source.DefaultPlaybackSourceResolver
+import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.internal.ui.InternalPlayerControls
 import com.fishit.player.internal.ui.PlayerSurface
 import com.fishit.player.playback.domain.KidsPlaybackGate
@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
  * - Handles lifecycle
  *
  * @param playbackContext The context defining what to play.
+ * @param sourceResolver Resolver for playback sources (injected via DI).
  * @param resumeManager Manager for resume positions.
  * @param kidsPlaybackGate Gate for kids screen time.
  * @param onBack Callback when user wants to exit the player.
@@ -42,6 +43,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun InternalPlayerEntry(
     playbackContext: PlaybackContext,
+    sourceResolver: PlaybackSourceResolver,
     resumeManager: ResumeManager,
     kidsPlaybackGate: KidsPlaybackGate,
     onBack: () -> Unit = {},
@@ -54,7 +56,7 @@ fun InternalPlayerEntry(
     val session = remember(playbackContext) {
         InternalPlayerSession(
             context = context,
-            sourceResolver = DefaultPlaybackSourceResolver(),
+            sourceResolver = sourceResolver,
             resumeManager = resumeManager,
             kidsPlaybackGate = kidsPlaybackGate
         )

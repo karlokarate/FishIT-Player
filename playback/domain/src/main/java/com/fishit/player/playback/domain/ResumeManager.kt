@@ -1,12 +1,13 @@
 package com.fishit.player.playback.domain
 
-import com.fishit.player.core.model.PlaybackContext
 import com.fishit.player.core.model.ResumePoint
+import com.fishit.player.core.playermodel.PlaybackContext
 
 /**
  * Manages resume positions for playback content.
  *
  * Implementations handle persistence and retrieval of resume points.
+ * Uses [PlaybackContext] from core:player-model.
  */
 interface ResumeManager {
 
@@ -17,6 +18,10 @@ interface ResumeManager {
 
     /**
      * Updates or creates a resume point.
+     *
+     * @param context The playback context (uses canonicalId as content identifier)
+     * @param positionMs Current position in milliseconds
+     * @param durationMs Total duration in milliseconds
      */
     suspend fun saveResumePoint(
         context: PlaybackContext,

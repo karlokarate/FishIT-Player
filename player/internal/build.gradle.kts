@@ -30,9 +30,11 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:player-model"))
     implementation(project(":playback:domain"))
+    implementation(project(":playback:telegram"))
+    implementation(project(":playback:xtream"))
     implementation(project(":infra:logging"))
-    implementation(project(":pipeline:telegram"))
     
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")
@@ -43,9 +45,6 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("androidx.media3:media3-datasource:1.5.1")
-    
-    // TDLib for Telegram DataSource
-    implementation("dev.g000sha256:tdl-coroutines-android:5.0.0")
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

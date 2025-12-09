@@ -45,9 +45,11 @@ include(":app-v2")
 
 // Core
 include(":core:model")
+include(":core:player-model")
 include(":core:feature-api")
 include(":core:persistence")
 include(":core:metadata-normalizer")
+include(":core:catalog-sync")
 include(":core:firebase")
 include(":core:ui-imaging")
 

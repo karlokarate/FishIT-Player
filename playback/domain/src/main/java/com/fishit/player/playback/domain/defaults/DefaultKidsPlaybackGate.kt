@@ -1,13 +1,13 @@
 package com.fishit.player.playback.domain.defaults
 
-import com.fishit.player.core.model.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.playback.domain.KidsPlaybackGate
 
 /**
  * Default KidsPlaybackGate that always allows playback.
  *
  * This is a stub implementation for Phase 1.
- * Real screen-time tracking will be added in Phase 6.
+ * Real screen-time tracking will be added in Phase 9.
  */
 class DefaultKidsPlaybackGate : KidsPlaybackGate {
 

@@ -559,5 +559,108 @@ This means:
 
 ---
 
+## 13. Player Migration (SIP) – Mandatory Rules
+
+The player migration follows a **strict phased plan** documented in `docs/v2/player migrationsplan.md`.
+
+### 13.1. Player Migration Plan Authority
+
+> **Hard Rule:** The Player Migration Plan is binding. Any conflicts with other contracts or architecture rules MUST be escalated to the user for resolution before proceeding.
+
+- Agents MUST follow the migration phases in order (Phase 0 → Phase 14).
+- Agents MUST NOT skip phases or implement features from later phases prematurely.
+- If a conflict arises between this plan and other contracts (e.g., `AGENTS.md` Section 4, `INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`), the agent MUST:
+  1. Stop implementation,
+  2. Document the conflict clearly,
+  3. Ask the user for resolution.
+
+### 13.2. Player Layer Structure (Binding)
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  UI Layer (feature/player-ui, feature/*)                    │
+│    - Player chrome, dialogs, snackbars                      │
+│    - Consumes StateFlows from player/internal               │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Domain Layer (domain/*)                                    │
+│    - UseCases: PlayItemUseCase, KidsGate, SeriesMode        │
+│    - Builds PlaybackContext from DomainMediaItem            │
+│    - Manages profiles, policies, preferences                │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Player Core (player/internal)                              │
+│    - InternalPlayerSession, InternalPlayerState             │
+│    - InternalPlaybackSourceResolver                         │
+│    - Subtitles, Live, MiniPlayer engine                     │
+│    - NO source-specific logic                               │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Player Input (player/input)                                │
+│    - Input contexts (TOUCH, REMOTE)                         │
+│    - PlayerInputHandler → PlayerCommands                    │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Playback Sources (playback/telegram, playback/xtream)      │
+│    - PlaybackSourceFactory implementations                  │
+│    - DataSources (TelegramFileDataSource, etc.)             │
+│    - Uses Transport layer for network/file access           │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Transport Layer (infra/transport-*)                        │
+│    - TelegramTransportClient, XtreamApiClient               │
+│    - Raw TDLib/HTTP access                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 13.3. Player Hard Rules
+
+| Rule | Description |
+|------|-------------|
+| **P-HR1** | Player modules (`player/*`, `playback/*`) MUST NOT import `pipeline/**` or `data/**`. |
+| **P-HR2** | `core/player-model` contains ONLY primitives: `PlaybackContext`, `PlaybackState`, `PlaybackError`, `SourceType`. No source-specific classes. |
+| **P-HR3** | Input handling (Touch, D-Pad) lives in `player/input`, NOT in UI or Transport. |
+| **P-HR4** | Player is stateless regarding profiles/preferences. Domain provides these; player applies them. |
+| **P-HR5** | DataSources for specific sources (Telegram, Xtream) belong in `playback/*`, NOT in `player/internal`. |
+| **P-HR6** | Player does not perform Kids/Guest filtering – Domain does. Player only receives gated `PlaybackContext`. |
+
+### 13.4. Migration Phase Tracking
+
+The migration plan has 15 phases (0-14). Current status is tracked in:
+- `docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md`
+
+Before starting work on any player-related change, agents MUST:
+1. Check current phase status,
+2. Confirm the change fits the current or earlier phase,
+3. Update phase status after completing phase milestones.
+
+### 13.5. SIP Reuse Mandate
+
+> **Hard Rule:** Maximize reuse of battle-tested SIP code from v1.
+
+- Port existing `InternalPlayerSession`, `InternalPlayerState`, `SubtitleSelectionPolicy`, `MiniPlayerManager`, etc.
+- Do NOT reinvent player behavior that already works in v1.
+- Adapt v1 code to v2 architecture (DI, logging, layer boundaries).
+
+### 13.6. Conflict Escalation Protocol
+
+If agent encounters:
+- A migration step that contradicts AGENTS.md Section 4 (Layer Boundaries),
+- A behavior contract that conflicts with migration plan phases,
+- An architectural ambiguity not covered by documentation,
+
+Then agent MUST:
+1. **STOP** implementation immediately,
+2. **Document** the conflict with specific file/line references,
+3. **ASK** the user: "Konflikt gefunden: [description]. Wie soll ich vorgehen?"
+4. **WAIT** for explicit user resolution before proceeding.
+
+---
+
 This `AGENTS.md` is the single entry point for agents in the v2 rebuild.  
 For detailed architecture and feature specifications, always consult `V2_PORTAL.md` and `docs/v2/**` before making changes.

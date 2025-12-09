@@ -1,9 +1,11 @@
 package com.fishit.player.pipeline.xtream.catalog.di
 
+import com.fishit.player.pipeline.xtream.catalog.DefaultXtreamCatalogSource
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogMapper
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogMapperImpl
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogPipeline
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogPipelineImpl
+import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogSource
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -16,9 +18,10 @@ import javax.inject.Singleton
  * Provides:
  * - XtreamCatalogPipeline: Event-based catalog scanning
  * - XtreamCatalogMapper: Model to catalog item conversion
+ * - XtreamCatalogSource: Content loading from transport layer
  *
- * **Dependencies (must be provided elsewhere):**
- * - XtreamCatalogSource: Provided by app module or repository layer
+ * **Dependencies (from transport layer):**
+ * - XtreamApiClient: Provided by XtreamTransportModule
  *
  * **Consumers:**
  * - CatalogSync: Processes catalog events and persists to storage
@@ -39,4 +42,10 @@ abstract class XtreamCatalogModule {
     abstract fun bindXtreamCatalogMapper(
         impl: XtreamCatalogMapperImpl,
     ): XtreamCatalogMapper
+
+    @Binds
+    @Singleton
+    abstract fun bindXtreamCatalogSource(
+        impl: DefaultXtreamCatalogSource,
+    ): XtreamCatalogSource
 }

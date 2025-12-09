@@ -4,11 +4,12 @@ import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.fishit.player.core.model.PlaybackContext
-import com.fishit.player.internal.source.InternalPlaybackSourceResolver
+import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackError
+import com.fishit.player.core.playermodel.PlaybackState
+import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.internal.state.InternalPlayerState
-import com.fishit.player.internal.state.PlaybackState
-import com.fishit.player.internal.state.PlayerError
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 import kotlinx.coroutines.CoroutineScope
@@ -29,22 +30,32 @@ import kotlinx.coroutines.launch
  *
  * Encapsulates:
  * - ExoPlayer lifecycle
- * - State emission
+ * - State emission via StateFlow
  * - Resume position tracking
  * - Kids gate integration
  * - Position updates
+ *
+ * **Phase 3 Architecture:**
+ * - Uses [PlaybackSourceResolver] with factory pattern
+ * - Uses types from core:player-model
+ * - Integrates with playback:domain interfaces
  */
 class InternalPlayerSession(
     private val context: Context,
-    private val sourceResolver: InternalPlaybackSourceResolver,
+    private val sourceResolver: PlaybackSourceResolver,
     private val resumeManager: ResumeManager,
     private val kidsPlaybackGate: KidsPlaybackGate
 ) {
+    companion object {
+        private const val TAG = "InternalPlayerSession"
+    }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var player: ExoPlayer? = null
     private var positionUpdateJob: Job? = null
     private var sessionStartTime: Long = 0L
+    private var currentContext: PlaybackContext? = null
 
     private val _state = MutableStateFlow(InternalPlayerState.INITIAL)
     val state: StateFlow<InternalPlayerState> = _state.asStateFlow()
@@ -74,13 +85,13 @@ class InternalPlayerSession(
         }
 
         override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            UnifiedLog.e(TAG, "Player error: ${error.errorCodeName}", error)
             _state.update {
                 it.copy(
                     playbackState = PlaybackState.ERROR,
-                    error = PlayerError(
-                        code = error.errorCode,
-                        message = error.message ?: "Unknown error",
-                        cause = error
+                    error = PlaybackError.unknown(
+                        message = error.message ?: "Unknown playback error",
+                        code = error.errorCode
                     )
                 )
             }
@@ -89,37 +100,67 @@ class InternalPlayerSession(
 
     /**
      * Initializes the player and starts playback.
+     *
+     * Uses [PlaybackSourceResolver] to resolve the source via factories.
      */
     fun initialize(playbackContext: PlaybackContext) {
         release()
 
+        currentContext = playbackContext
         sessionStartTime = System.currentTimeMillis()
 
-        player = ExoPlayer.Builder(context).build().apply {
-            addListener(playerListener)
-            
-            // Resolve the source URI
-            val sourceUri = sourceResolver.resolveSource(playbackContext)
-            val mediaItem = MediaItem.fromUri(sourceUri)
-            setMediaItem(mediaItem)
+        UnifiedLog.d(TAG, "Initializing playback: ${playbackContext.canonicalId}")
 
-            // Set start position if resuming
-            if (playbackContext.startPositionMs > 0) {
-                seekTo(playbackContext.startPositionMs)
+        // Resolve source asynchronously
+        scope.launch {
+            try {
+                val source = sourceResolver.resolve(playbackContext)
+                UnifiedLog.d(TAG, "Source resolved: ${source.uri}")
+
+                // Build MediaItem
+                val mediaItemBuilder = MediaItem.Builder()
+                    .setUri(source.uri)
+
+                source.mimeType?.let { mediaItemBuilder.setMimeType(it) }
+
+                val mediaItem = mediaItemBuilder.build()
+
+                // Create and configure player on main thread
+                player = ExoPlayer.Builder(context).build().apply {
+                    addListener(playerListener)
+                    setMediaItem(mediaItem)
+
+                    // Set start position if resuming
+                    if (playbackContext.startPositionMs > 0) {
+                        seekTo(playbackContext.startPositionMs)
+                    }
+
+                    prepare()
+                    playWhenReady = true
+                }
+
+                _state.update {
+                    it.copy(
+                        context = playbackContext,
+                        playbackState = PlaybackState.BUFFERING
+                    )
+                }
+
+                startPositionUpdates()
+
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "Failed to resolve source", e)
+                _state.update {
+                    it.copy(
+                        playbackState = PlaybackState.ERROR,
+                        error = PlaybackError.sourceNotFound(
+                            message = "Failed to resolve source: ${e.message}",
+                            sourceType = playbackContext.sourceType
+                        )
+                    )
+                }
             }
-
-            prepare()
-            playWhenReady = true
         }
-
-        _state.update {
-            it.copy(
-                context = playbackContext,
-                playbackState = PlaybackState.BUFFERING
-            )
-        }
-
-        startPositionUpdates()
     }
 
     /**
@@ -212,8 +253,7 @@ class InternalPlayerSession(
             )
         } else if (currentState.remainingMs <= 10_000L) {
             // Clear resume if near end
-            val contentId = ctx.contentId ?: ctx.uri
-            resumeManager.clearResumePoint(contentId)
+            resumeManager.clearResumePoint(ctx.canonicalId)
         }
     }
 

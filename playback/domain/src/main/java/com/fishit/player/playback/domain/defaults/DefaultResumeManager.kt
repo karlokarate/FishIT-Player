@@ -1,7 +1,9 @@
 package com.fishit.player.playback.domain.defaults
 
-import com.fishit.player.core.model.PlaybackContext
+import com.fishit.player.core.model.PlaybackType
 import com.fishit.player.core.model.ResumePoint
+import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.playback.domain.ResumeManager
 
 /**
@@ -23,13 +25,13 @@ class DefaultResumeManager : ResumeManager {
         positionMs: Long,
         durationMs: Long
     ) {
-        val contentId = context.contentId ?: context.uri
+        val contentId = context.canonicalId
         resumePoints[contentId] = ResumePoint(
             contentId = contentId,
-            type = context.type,
+            type = mapSourceTypeToPlaybackType(context.sourceType),
             positionMs = positionMs,
             durationMs = durationMs,
-            profileId = context.profileId
+            profileId = null // TODO: Add profile tracking in Phase 6
         )
     }
 
@@ -39,5 +41,16 @@ class DefaultResumeManager : ResumeManager {
 
     override suspend fun getAllResumePoints(): List<ResumePoint> {
         return resumePoints.values.toList()
+    }
+
+    private fun mapSourceTypeToPlaybackType(sourceType: SourceType): PlaybackType {
+        return when (sourceType) {
+            SourceType.TELEGRAM -> PlaybackType.TELEGRAM
+            SourceType.XTREAM -> PlaybackType.VOD
+            SourceType.FILE -> PlaybackType.IO
+            SourceType.HTTP -> PlaybackType.VOD
+            SourceType.AUDIOBOOK -> PlaybackType.AUDIOBOOK
+            SourceType.UNKNOWN -> PlaybackType.VOD
+        }
     }
 }
