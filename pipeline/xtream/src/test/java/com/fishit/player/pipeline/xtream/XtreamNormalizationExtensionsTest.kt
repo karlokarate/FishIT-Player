@@ -159,7 +159,7 @@ class XtreamNormalizationExtensionsTest {
         
         // Verify source identification
         assertEquals(SourceType.XTREAM, raw.sourceType)
-        assertEquals("Xtream Live Channel", raw.sourceLabel)
+        assertEquals("Xtream Live", raw.sourceLabel)
         assertEquals("xtream:live:666", raw.sourceId)
     }
 

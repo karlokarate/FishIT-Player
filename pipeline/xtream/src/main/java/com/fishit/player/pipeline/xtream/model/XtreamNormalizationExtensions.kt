@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.model
 
 import com.fishit.player.core.model.ExternalIds
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 
@@ -43,6 +44,7 @@ import com.fishit.player.core.model.SourceType
 fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata {
     return RawMediaMetadata(
         originalTitle = name, // NO cleaning - pass through as-is
+        mediaType = MediaType.MOVIE, // VOD items are movies
         year = null, // Xtream stub doesn't provide year yet - will be added in Phase 3
         season = null, // VOD items are not episodes
         episode = null, // VOD items are not episodes
@@ -67,6 +69,7 @@ fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata {
 fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata {
     return RawMediaMetadata(
         originalTitle = title, // NO cleaning - pass through as-is
+        mediaType = MediaType.SERIES_EPISODE, // Episodes are series episodes
         year = null, // Air date not in stub model yet - will be added in Phase 3
         season = seasonNumber,
         episode = episodeNumber,
@@ -92,6 +95,7 @@ fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata {
 fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata {
     return RawMediaMetadata(
         originalTitle = name, // NO cleaning - pass through as-is
+        mediaType = MediaType.SERIES_EPISODE, // Series items marked as episode parent; normalizer may refine
         year = null, // Series start year not in stub model yet - will be added in Phase 3
         season = null, // Series items don't have season/episode
         episode = null, // Series items don't have season/episode
@@ -118,13 +122,14 @@ fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata {
 fun XtreamChannel.toRawMediaMetadata(): RawMediaMetadata {
     return RawMediaMetadata(
         originalTitle = name, // NO cleaning - pass through as-is
+        mediaType = MediaType.LIVE, // Live channels are LIVE type
         year = null, // Not applicable for live channels
         season = null, // Not applicable for live channels
         episode = null, // Not applicable for live channels
         durationMinutes = null, // Live streams have no fixed duration
         externalIds = ExternalIds(),
         sourceType = SourceType.XTREAM,
-        sourceLabel = "Xtream Live Channel",
+        sourceLabel = "Xtream Live",
         sourceId = "xtream:live:$id",
     )
 }
