@@ -50,7 +50,8 @@ class DefaultXtreamCatalogSource @Inject constructor(
             
             for (seriesItem in series) {
                 try {
-                    val episodes = adapter.loadEpisodes(seriesItem.id)
+                    // Pass seriesName for context in RawMediaMetadata
+                    val episodes = adapter.loadEpisodes(seriesItem.id, seriesItem.name)
                     allEpisodes.addAll(episodes)
                 } catch (e: Exception) {
                     // Log and continue - don't fail entire load for one series

@@ -8,6 +8,7 @@ package com.fishit.player.pipeline.xtream.model
  *
  * @property id Unique identifier for this episode
  * @property seriesId The series this episode belongs to
+ * @property seriesName Name of the parent series (for context in RawMediaMetadata)
  * @property seasonNumber Season number
  * @property episodeNumber Episode number within the season
  * @property title Display title of the episode
@@ -21,6 +22,7 @@ package com.fishit.player.pipeline.xtream.model
 data class XtreamEpisode(
     val id: Int,
     val seriesId: Int,
+    val seriesName: String? = null,
     val seasonNumber: Int,
     val episodeNumber: Int,
     val title: String,

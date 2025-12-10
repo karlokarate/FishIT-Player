@@ -74,6 +74,30 @@
         "reveal": "always",
         "panel": "shared"
       }
+    },
+    {
+      "label": "Pipeline: Test Fast",
+      "type": "shell",
+      "command": "${workspaceFolder}/tools/pipeline-test-fast.sh",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": ["$gradle"]
+    },
+    {
+      "label": "Pipeline: Test All",
+      "type": "shell",
+      "command": "${workspaceFolder}/tools/pipeline-test-all.sh",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": ["$gradle"]
     }
   ]
 }

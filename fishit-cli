@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# fishit-cli
+#
+# Wrapper script to run the FishIT Pipeline CLI.
+#
+# Usage:
+#   ./fishit-cli tg status
+#   ./fishit-cli xt list-vod --limit 10
+#   ./fishit-cli meta normalize-sample --source xc
+#
+# Environment Variables:
+#   TG_API_ID, TG_API_HASH: Telegram credentials
+#   XTREAM_BASE_URL, XTREAM_USERNAME, XTREAM_PASSWORD: Xtream credentials
+#
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+
+# Check if we're in the distribution bundle or project root
+if [ -f "$SCRIPT_DIR/gradlew" ]; then
+    # Running from project root
+    cd "$PROJECT_ROOT"
+    
+    # Build if needed
+    if [ ! -d "tools/pipeline-cli/build/classes" ]; then
+        echo "🔨 Building CLI module..."
+        ./gradlew :tools:pipeline-cli:compileDebugKotlin --no-daemon -q
+    fi
+    
+    # Run via Gradle
+    echo "🚀 Starting FishIT CLI..."
+    ./gradlew :tools:pipeline-cli:run --args="$*" --no-daemon -q
+else
+    echo "❌ Cannot find project root. Run from the FishIT-Player directory."
+    exit 1
+fi

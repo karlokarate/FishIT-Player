@@ -52,6 +52,7 @@ include(":core:metadata-normalizer")
 include(":core:catalog-sync")
 include(":core:firebase")
 include(":core:ui-imaging")
+include(":core:app-startup")
 
 // Playback & Player
 include(":playback:domain")
@@ -81,3 +82,6 @@ include(":infra:transport-telegram")
 include(":infra:transport-xtream")
 include(":infra:data-telegram")
 include(":infra:data-xtream")
+
+// Tools (JVM CLI, no Android)
+include(":tools:pipeline-cli")

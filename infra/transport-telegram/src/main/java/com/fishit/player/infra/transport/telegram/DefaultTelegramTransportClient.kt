@@ -37,6 +37,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.mapNotNull
 
 /**
  * Default TelegramTransportClient Implementation.
@@ -74,10 +76,21 @@ class DefaultTelegramTransportClient(
     private val _connectionState = MutableStateFlow<TelegramConnectionState>(TelegramConnectionState.Disconnected)
     override val connectionState: Flow<TelegramConnectionState> = _connectionState.asStateFlow()
 
+    override val mediaUpdates: Flow<TgMessage>
+        get() = clientProvider.getClient()
+            .newMessageUpdates
+            .mapNotNull { update ->
+                val message = update.message ?: return@mapNotNull null
+                if (!message.content.isMediaContent()) return@mapNotNull null
+                mapMessage(message)
+            }
+
     // ========== Authorization ==========
 
     override suspend fun ensureAuthorized() {
         UnifiedLog.d(TAG, "ensureAuthorized()")
+
+        clientProvider.installLogging()
 
         if (!clientProvider.isInitialized) {
             _authState.value = TelegramAuthState.Connecting
@@ -295,6 +308,19 @@ class DefaultTelegramTransportClient(
             }
         )
 
+    private fun dev.g000sha256.tdl.dto.MessageContent.isMediaContent(): Boolean {
+        return when (this) {
+            is MessageVideo,
+            is MessageDocument,
+            is MessageAudio,
+            is MessagePhoto,
+            is MessageAnimation,
+            is MessageVideoNote,
+            is MessageVoiceNote -> true
+            else -> false
+        }
+    }
+
     private fun extractSenderId(msg: Message): Long {
         // MessageSender can be MessageSenderUser or MessageSenderChat
         return when (val sender = msg.senderId) {
@@ -317,7 +343,8 @@ class DefaultTelegramTransportClient(
                 mimeType = content.video.mimeType,
                 fileSize = content.video.video.size.toLong(),
                 caption = content.caption.text.takeIf { it.isNotEmpty() },
-                thumbnail = content.video.thumbnail?.let { mapThumbnail(it) }
+                thumbnail = content.video.thumbnail?.let { mapThumbnail(it) },
+                minithumbnail = mapMinithumbnail(content.video.minithumbnail)
             )
             is MessageDocument -> TgContent.Document(
                 fileId = content.document.document.id,
@@ -327,7 +354,8 @@ class DefaultTelegramTransportClient(
                 mimeType = content.document.mimeType,
                 fileSize = content.document.document.size.toLong(),
                 caption = content.caption.text.takeIf { it.isNotEmpty() },
-                thumbnail = content.document.thumbnail?.let { mapThumbnail(it) }
+                thumbnail = content.document.thumbnail?.let { mapThumbnail(it) },
+                minithumbnail = mapMinithumbnail(content.document.minithumbnail)
             )
             is MessageAudio -> TgContent.Audio(
                 fileId = content.audio.audio.id,
@@ -340,7 +368,8 @@ class DefaultTelegramTransportClient(
                 mimeType = content.audio.mimeType,
                 fileSize = content.audio.audio.size.toLong(),
                 caption = content.caption.text.takeIf { it.isNotEmpty() },
-                albumCoverThumbnail = content.audio.albumCoverThumbnail?.let { mapThumbnail(it) }
+                albumCoverThumbnail = content.audio.albumCoverThumbnail?.let { mapThumbnail(it) },
+                albumCoverMinithumbnail = mapMinithumbnail(content.audio.albumCoverMinithumbnail)
             )
             is MessagePhoto -> TgContent.Photo(
                 sizes = content.photo.sizes.map { size ->
@@ -354,7 +383,8 @@ class DefaultTelegramTransportClient(
                         fileSize = size.photo.size
                     )
                 },
-                caption = content.caption.text.takeIf { it.isNotEmpty() }
+                caption = content.caption.text.takeIf { it.isNotEmpty() },
+                minithumbnail = mapMinithumbnail(content.photo.minithumbnail)
             )
             is MessageAnimation -> TgContent.Animation(
                 fileId = content.animation.animation.id,
@@ -367,7 +397,8 @@ class DefaultTelegramTransportClient(
                 mimeType = content.animation.mimeType,
                 fileSize = content.animation.animation.size.toLong(),
                 caption = content.caption.text.takeIf { it.isNotEmpty() },
-                thumbnail = content.animation.thumbnail?.let { mapThumbnail(it) }
+                thumbnail = content.animation.thumbnail?.let { mapThumbnail(it) },
+                minithumbnail = mapMinithumbnail(content.animation.minithumbnail)
             )
             is MessageVideoNote -> TgContent.VideoNote(
                 fileId = content.videoNote.video.id,
@@ -376,7 +407,8 @@ class DefaultTelegramTransportClient(
                 duration = content.videoNote.duration,
                 length = content.videoNote.length,
                 fileSize = content.videoNote.video.size.toLong(),
-                thumbnail = content.videoNote.thumbnail?.let { mapThumbnail(it) }
+                thumbnail = content.videoNote.thumbnail?.let { mapThumbnail(it) },
+                minithumbnail = mapMinithumbnail(content.videoNote.minithumbnail)
             )
             is MessageVoiceNote -> TgContent.VoiceNote(
                 fileId = content.voiceNote.voice.id,
@@ -404,6 +436,18 @@ class DefaultTelegramTransportClient(
             height = thumb.height,
             fileSize = thumb.file.size
         )
+
+    private fun mapMinithumbnail(mini: dev.g000sha256.tdl.dto.Minithumbnail?): TgMinithumbnail? {
+        if (mini == null) return null
+        val data = mini.data ?: return null
+        if (data.isEmpty()) return null
+
+        return TgMinithumbnail(
+            width = mini.width,
+            height = mini.height,
+            data = data,
+        )
+    }
 
     private fun mapFile(file: File): TgFile {
         val local: LocalFile = file.local

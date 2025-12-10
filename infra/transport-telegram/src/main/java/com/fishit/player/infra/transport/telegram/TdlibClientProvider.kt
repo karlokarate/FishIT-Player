@@ -1,5 +1,7 @@
 package com.fishit.player.infra.transport.telegram
 
+import com.fishit.player.infra.transport.telegram.internal.TdLibLogInstaller
+import com.fishit.player.infra.transport.telegram.TelegramLoggingConfig
 import dev.g000sha256.tdl.TdlClient
 
 /**
@@ -59,4 +61,15 @@ interface TdlibClientProvider {
 
     /** Get the TDLib files directory. Used for downloaded media. */
     fun getFilesDirectory(): String
+
+    /**
+     * Install TDLib logging bridge before client creation.
+     *
+     * Default implementation installs a UnifiedLog-backed handler that maps TDLib log
+     * messages to a single tag (`tdlib`). Implementations should invoke this before
+     * calling `TdlClient.create()` to ensure all TDLib diagnostics are captured.
+     */
+    fun installLogging(config: TelegramLoggingConfig = TelegramLoggingConfig.default()) {
+        TdLibLogInstaller.install(config)
+    }
 }

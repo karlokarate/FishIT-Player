@@ -141,8 +141,8 @@ class XtreamCatalogPipelineImpl @Inject constructor(
                     for (episode in episodes) {
                         if (!currentCoroutineContext().isActive) break
 
-                        // TODO: Ideally we'd have seriesName here for better context
-                        val catalogItem = mapper.fromEpisode(episode, null, headers)
+                        // seriesName is now embedded in episode from DefaultXtreamCatalogSource
+                        val catalogItem = mapper.fromEpisode(episode, episode.seriesName, headers)
                         trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         episodeCount++
 

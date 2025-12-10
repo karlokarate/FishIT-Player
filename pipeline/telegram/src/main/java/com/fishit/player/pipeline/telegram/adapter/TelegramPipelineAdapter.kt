@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.telegram.adapter
 
+import com.fishit.player.core.model.MimeDecider
+import com.fishit.player.core.model.MimeMediaKind
 import com.fishit.player.infra.transport.telegram.TelegramAuthState
 import com.fishit.player.infra.transport.telegram.TelegramConnectionState
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
@@ -9,9 +11,10 @@ import com.fishit.player.infra.transport.telegram.TgMessage
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
 import com.fishit.player.pipeline.telegram.model.TelegramMediaType
 import com.fishit.player.pipeline.telegram.model.TelegramPhotoSize
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 
 /**
  * Pipeline-level adapter that wraps TelegramTransportClient.
@@ -34,6 +37,10 @@ class TelegramPipelineAdapter @Inject constructor(
 
     /** Current connection state from transport layer. */
     val connectionState: Flow<TelegramConnectionState> = transport.connectionState
+
+    /** Live stream of media-only updates mapped into pipeline types. */
+    val mediaUpdates: Flow<TelegramMediaUpdate> = transport.mediaUpdates
+        .mapNotNull { message -> message.toMediaItem()?.let { TelegramMediaUpdate(message, it) } }
 
     /**
      * Get available chats converted to pipeline format.
@@ -61,6 +68,10 @@ class TelegramPipelineAdapter @Inject constructor(
         return messages.mapNotNull { it.toMediaItem() }
     }
 
+    suspend fun fetchMessages(chatId: Long, limit: Int = 100, offsetMessageId: Long = 0): List<TgMessage> {
+        return transport.fetchMessages(chatId, limit, offsetMessageId)
+    }
+
     /**
      * Ensure client is authorized.
      */
@@ -71,6 +82,14 @@ class TelegramPipelineAdapter @Inject constructor(
      */
     suspend fun isAuthorized(): Boolean = transport.isAuthorized()
 }
+
+/**
+ * Media update carrying both the raw transport message and the mapped pipeline item.
+ */
+data class TelegramMediaUpdate(
+    val message: TgMessage,
+    val mediaItem: TelegramMediaItem,
+)
 
 /**
  * Pipeline-level chat info.
@@ -98,6 +117,8 @@ private fun TgChat.toChatInfo(): TelegramChatInfo = TelegramChatInfo(
  * Returns null for non-media messages.
  */
 private fun TgMessage.toMediaItem(): TelegramMediaItem? {
+    val timestampMs = date.toLong() * 1000L
+
     return when (val content = content) {
         is TgContent.Video -> TelegramMediaItem(
             id = id,
@@ -119,24 +140,24 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             thumbnailUniqueId = content.thumbnail?.uniqueId,
             thumbnailWidth = content.thumbnail?.width,
             thumbnailHeight = content.thumbnail?.height,
-            date = date.toLong()
+            minithumbnailBytes = content.minithumbnail?.data,
+            minithumbnailWidth = content.minithumbnail?.width,
+            minithumbnailHeight = content.minithumbnail?.height,
+            date = date.toLong() * 1000L
         )
 
         is TgContent.Document -> {
-            // Only include video/audio documents
-            val mimeType = content.mimeType ?: ""
-            val isMedia = mimeType.startsWith("video/") ||
-                    mimeType.startsWith("audio/") ||
-                    mimeType.endsWith("/x-matroska") ||
-                    mimeType.endsWith("/x-msvideo")
-
-            if (!isMedia) return null
+            val inferredKind = MimeDecider.inferKind(content.mimeType, content.fileName) ?: return null
+            val mediaType = when (inferredKind) {
+                MimeMediaKind.VIDEO -> TelegramMediaType.VIDEO
+                MimeMediaKind.AUDIO -> TelegramMediaType.AUDIO
+            }
 
             TelegramMediaItem(
                 id = id,
                 chatId = chatId,
                 messageId = id,
-                mediaType = TelegramMediaType.DOCUMENT,
+                mediaType = mediaType,
                 fileId = content.fileId,
                 fileUniqueId = content.uniqueId,
                 remoteId = content.remoteId,
@@ -149,7 +170,10 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                 thumbnailUniqueId = content.thumbnail?.uniqueId,
                 thumbnailWidth = content.thumbnail?.width,
                 thumbnailHeight = content.thumbnail?.height,
-                date = date.toLong()
+                minithumbnailBytes = content.minithumbnail?.data,
+                minithumbnailWidth = content.minithumbnail?.width,
+                minithumbnailHeight = content.minithumbnail?.height,
+                date = timestampMs
             )
         }
 
@@ -171,7 +195,10 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             thumbnailUniqueId = content.albumCoverThumbnail?.uniqueId,
             thumbnailWidth = content.albumCoverThumbnail?.width,
             thumbnailHeight = content.albumCoverThumbnail?.height,
-            date = date.toLong()
+            minithumbnailBytes = content.albumCoverMinithumbnail?.data,
+            minithumbnailWidth = content.albumCoverMinithumbnail?.width,
+            minithumbnailHeight = content.albumCoverMinithumbnail?.height,
+            date = timestampMs
         )
 
         is TgContent.Photo -> {
@@ -200,7 +227,10 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                         sizeBytes = size.fileSize
                     )
                 },
-                date = date.toLong()
+                minithumbnailBytes = content.minithumbnail?.data,
+                minithumbnailWidth = content.minithumbnail?.width,
+                minithumbnailHeight = content.minithumbnail?.height,
+                date = timestampMs
             )
         }
 
@@ -224,7 +254,10 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             thumbnailUniqueId = content.thumbnail?.uniqueId,
             thumbnailWidth = content.thumbnail?.width,
             thumbnailHeight = content.thumbnail?.height,
-            date = date.toLong()
+            minithumbnailBytes = content.minithumbnail?.data,
+            minithumbnailWidth = content.minithumbnail?.width,
+            minithumbnailHeight = content.minithumbnail?.height,
+            date = timestampMs
         )
 
         is TgContent.VideoNote -> TelegramMediaItem(
@@ -244,7 +277,10 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             thumbnailUniqueId = content.thumbnail?.uniqueId,
             thumbnailWidth = content.thumbnail?.width,
             thumbnailHeight = content.thumbnail?.height,
-            date = date.toLong()
+            minithumbnailBytes = content.minithumbnail?.data,
+            minithumbnailWidth = content.minithumbnail?.width,
+            minithumbnailHeight = content.minithumbnail?.height,
+            date = timestampMs
         )
 
         is TgContent.VoiceNote -> TelegramMediaItem(
@@ -260,7 +296,10 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             mimeType = content.mimeType,
             sizeBytes = content.fileSize,
             durationSecs = content.duration,
-            date = date.toLong()
+            minithumbnailBytes = null,
+            minithumbnailWidth = null,
+            minithumbnailHeight = null,
+            date = timestampMs
         )
 
         is TgContent.Text, is TgContent.Unsupported -> null

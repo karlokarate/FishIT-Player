@@ -23,6 +23,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:player-model"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
     
