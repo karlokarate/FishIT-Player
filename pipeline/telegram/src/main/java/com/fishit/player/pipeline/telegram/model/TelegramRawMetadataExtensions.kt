@@ -1,7 +1,9 @@
 package com.fishit.player.pipeline.telegram.model
 
 import com.fishit.player.core.model.ExternalIds
+import com.fishit.player.core.model.GlobalIdUtil
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 
@@ -34,11 +36,13 @@ import com.fishit.player.core.model.SourceType
  *
  * @return RawMediaMetadata with Telegram-specific fields and ImageRefs
  */
-fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata =
-        RawMediaMetadata(
-                originalTitle = extractRawTitle(),
+fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
+        val rawTitle = extractRawTitle()
+        val rawYear = year
+        return RawMediaMetadata(
+                originalTitle = rawTitle,
                 mediaType = mapTelegramMediaType(),
-                year = year,
+                year = rawYear,
                 season = seasonNumber,
                 episode = episodeNumber,
                 durationMinutes = durationSecs?.let { it / 60 },
@@ -46,6 +50,9 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata =
                 sourceType = SourceType.TELEGRAM,
                 sourceLabel = buildTelegramSourceLabel(),
                 sourceId = remoteId ?: "msg:$chatId:$messageId",
+                // === Pipeline Identity (v2) ===
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+                globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
                 // === ImageRef from TelegramImageRefExtensions ===
                 poster = toPosterImageRef(), // Photo or null for video
                 backdrop = null, // Telegram doesn't provide backdrops
@@ -53,6 +60,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata =
                 // === Minithumbnail for instant blur placeholder (Netflix-style tiered loading) ===
                 placeholderThumbnail = toMinithumbnailImageRef(),
         )
+}
 
 /**
  * Extracts the raw title using simple field priority.
@@ -67,21 +75,22 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata =
  */
 private fun TelegramMediaItem.extractRawTitle(): String =
         when {
-            title.isNotBlank() -> title
-            episodeTitle?.isNotBlank() == true -> episodeTitle
-            caption?.isNotBlank() == true -> caption
-            fileName?.isNotBlank() == true -> fileName
-            else -> "Untitled Media $messageId"
+                title.isNotBlank() -> title
+                episodeTitle?.isNotBlank() == true -> episodeTitle
+                caption?.isNotBlank() == true -> caption
+                fileName?.isNotBlank() == true -> fileName
+                else -> "Untitled Media $messageId"
         }
 
 /** Maps TelegramMediaType to core MediaType. */
 private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
         when {
-            isSeries || seasonNumber != null || episodeNumber != null -> MediaType.SERIES_EPISODE
-            mediaType == TelegramMediaType.VIDEO -> MediaType.MOVIE
-            mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
-            mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
-            else -> MediaType.UNKNOWN
+                isSeries || seasonNumber != null || episodeNumber != null ->
+                        MediaType.SERIES_EPISODE
+                mediaType == TelegramMediaType.VIDEO -> MediaType.MOVIE
+                mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
+                mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
+                else -> MediaType.UNKNOWN
         }
 
 /**
@@ -93,6 +102,6 @@ private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
  */
 private fun TelegramMediaItem.buildTelegramSourceLabel(): String =
         when {
-            seriesName?.isNotBlank() == true -> "Telegram: $seriesName"
-            else -> "Telegram Chat: $chatId"
+                seriesName?.isNotBlank() == true -> "Telegram: $seriesName"
+                else -> "Telegram Chat: $chatId"
         }

@@ -43,6 +43,15 @@ data class RawMediaMetadata(
         val sourceType: SourceType,
         val sourceLabel: String,
         val sourceId: String,
+        // === Pipeline Identity (v2) ===
+        /** Pipeline that produced this metadata */
+        val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
+        /**
+         * Canonical global ID for cross-pipeline deduplication. Generated via
+         * [GlobalIdUtil.generateCanonicalId] based on normalized title + year. Format:
+         * "cm:<16-char-hex>"
+         */
+        val globalId: String = "",
         // === Imaging Fields (v2) ===
         val poster: ImageRef? = null,
         val backdrop: ImageRef? = null,
@@ -70,24 +79,24 @@ data class ExternalIds(
  * Use OTHER only when the source doesn't fit any specific category.
  */
 enum class SourceType {
-    /** Xtream Codes API provider (IPTV, VOD, Series) */
-    XTREAM,
+        /** Xtream Codes API provider (IPTV, VOD, Series) */
+        XTREAM,
 
-    /** Telegram media integration via TDLib */
-    TELEGRAM,
+        /** Telegram media integration via TDLib */
+        TELEGRAM,
 
-    /** Local file system, SAF, SMB, ContentResolver */
-    IO,
+        /** Local file system, SAF, SMB, ContentResolver */
+        IO,
 
-    /** Audiobook-specific pipeline */
-    AUDIOBOOK,
+        /** Audiobook-specific pipeline */
+        AUDIOBOOK,
 
-    /** Local media library scanner */
-    LOCAL,
+        /** Local media library scanner */
+        LOCAL,
 
-    /** Plex Media Server integration */
-    PLEX,
+        /** Plex Media Server integration */
+        PLEX,
 
-    /** Other/unknown source types */
-    OTHER,
+        /** Other/unknown source types */
+        OTHER,
 }

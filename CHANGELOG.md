@@ -8,9 +8,155 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Pipeline Finalization (Phases 0-7 Complete)
+
+Status: COMPLETED
+
+#### Phase 0 – Global Data Model Extensions
+- **feat(model)**: Added cross-pipeline identification types
+  - `PipelineIdTag` enum: TELEGRAM, XTREAM, IO, AUDIOBOOK, UNKNOWN with short codes
+  - `SourceKey` data class combining PipelineIdTag + sourceId for unique variant identification
+  - `GlobalIdUtil` SHA-256 based canonical ID generator with title normalization
+  - Extended `RawMediaMetadata` with `pipelineIdTag` and `globalId` fields
+
+#### Phase 1 – Variant System
+- **feat(model)**: Implemented variant selection system for cross-pipeline playback
+  - `MediaVariant` data class with sourceKey, qualityTag, resolution, language, OmU flag, availability
+  - `NormalizedMedia` data class for cross-pipeline merged media with variants list
+  - `VariantSelector` score-based sorting algorithm (availability → language → quality → pipeline)
+  - `MimeDecider` MIME/extension-based media type detection with `MimeMediaKind` enum
+
+#### Phase 2 – Normalizer Enhancement
+- **feat(normalizer)**: Enhanced `Normalizer.kt` in core:metadata-normalizer
+  - Groups `RawMediaMetadata` by globalId for cross-pipeline deduplication
+  - Creates `NormalizedMedia` with sorted variants per media item
+  - Handles multi-source content unification
+
+#### Phase 3 – Telegram Pipeline Enhancement
+- **feat(telegram)**: Enhanced Telegram catalog pipeline
+  - Updated `TelegramRawMetadataExtensions.kt` to set `pipelineIdTag = TELEGRAM`
+  - Generates `globalId` via `GlobalIdUtil.generate()` for each item
+  - `TelegramChatMediaProfile` for tracking media density per chat
+  - `TelegramChatMediaClassifier` with Hot/Warm/Cold classification thresholds
+
+#### Phase 4 – Xtream Pipeline Enhancement
+- **feat(xtream)**: Enhanced Xtream catalog pipeline
+  - Updated `XtreamRawMetadataExtensions.kt` for all content types
+  - VOD, Series, Episode, Channel all set `pipelineIdTag = XTREAM`
+  - All types generate `globalId` via `GlobalIdUtil.generate()`
+
+#### Phase 5 – Playback Integration
+- **feat(playback)**: Integrated variant system with playback layer
+  - `TelegramMp4Validator` for MP4 moov atom validation (progressive downloads)
+  - `VariantPlaybackOrchestrator` for variant-based playback with automatic fallback
+  - Uses `VariantSelector.sorted()` for playback priority ordering
+
+#### Phase 6 – Dead Media Detection
+- **feat(model)**: Implemented variant health tracking
+  - `VariantHealthStore` for tracking variant failures
+  - Dead variant detection: ≥3 failures + 24h = permanently dead
+  - `markFailed()`, `isAvailable()`, `isDeadPermanently()` APIs
+
+#### Phase 7 – UI Settings Integration
+- **feat(settings)**: Added playback settings persistence
+  - `PlaybackSettingsRepository` DataStore-based persistence for `VariantPreferences`
+  - Stores preferred language, OmU preference, auto-fallback toggle
+- **feat(detail)**: Added manual variant selection support
+  - `ManualVariantSelectionStore` in-memory store for user's variant choices
+  - Supports per-media manual variant override
+
+### Phase 3 – Player Migration (Phases 0-4 Complete)
+
+Status: IN PROGRESS (Phase 4 Complete, Phases 5-14 Pending)
+
+- **feat(player-model)**: Created `core:player-model` module with source-agnostic types
+  - `SourceType` enum: TELEGRAM, XTREAM, AUDIOBOOK, IO, UNKNOWN
+  - `PlaybackContext` with title, thumbnail, sourceType, extras map
+  - `PlaybackState` enum: IDLE, BUFFERING, READY, PLAYING, PAUSED, ENDED, ERROR
+  - `PlaybackError` sealed class with Playback, Source, Network, Unknown subtypes
+- **feat(playback-domain)**: Enhanced playback contracts in `playback:domain`
+  - `PlaybackSourceFactory` interface with `supports(SourceType)` + `createSource(PlaybackContext)`
+  - `PlaybackSource` data class with URI + `DataSourceType`
+  - `PlaybackSourceException` for factory error handling
+  - Hilt DI module with `@IntoSet` binding pattern
+- **feat(playback-telegram)**: Implemented Telegram playback factory
+  - `TelegramPlaybackSourceFactoryImpl` builds `tg://file/<id>` URIs
+  - `TelegramFileDataSource` for ExoPlayer integration (moved from player:internal)
+  - `TelegramPlaybackModule` Hilt DI binding
+- **feat(playback-xtream)**: Implemented Xtream playback factory
+  - `XtreamPlaybackSourceFactoryImpl` builds authenticated stream URLs
+  - Supports content types: `live`, `vod`, `series`
+  - Uses `XtreamUrlBuilder` from transport layer
+  - `XtreamPlaybackModule` Hilt DI binding
+- **refactor(player-internal)**: Updated SIP core to use new types
+  - `PlaybackSourceResolver` with factory injection via `Set<PlaybackSourceFactory>`
+  - `InternalPlayerSession` uses `core:player-model.PlaybackContext`
+  - `InternalPlayerState` uses `core:player-model.PlaybackState`
+  - Removed layer violations: no more `pipeline:telegram` or TDLib dependencies
+- **fix(layer-violations)**: Cleaned up forbidden cross-layer imports
+  - Player no longer imports Pipeline DTOs
+  - DataSources moved to `playback/*` modules
+  - Transport layer used via interfaces only
+
+### Phase 2.3 – Metadata Normalizer
+
+Status: COMPLETED
+
+- **feat(normalizer)**: Created `core:metadata-normalizer` module
+  - `MediaMetadataNormalizer` interface for RawMediaMetadata → NormalizedMediaMetadata
+  - `DefaultMediaMetadataNormalizer` with regex + TMDB integration
+  - `TmdbMetadataResolver` interface with async lookup
+  - `DefaultTmdbMetadataResolver` stub implementation
+  - `SceneNameParser` / `RegexSceneNameParser` for title parsing
+  - `ParsedSceneInfo` for extracted scene metadata (title, year, season, episode)
+  - `MetadataNormalizerModule` Hilt DI binding
+- **test(normalizer)**: Comprehensive test suite
+  - `RegexMediaMetadataNormalizerTest` - title parsing edge cases
+  - `DefaultTmdbMetadataResolverTest` - resolver integration
+  - `DefaultMediaMetadataNormalizerTest` - end-to-end flow
+  - `NormalizerHardeningTest` - robustness tests
+
+### Phase 2.2 – Data Layer (Telegram & Xtream)
+
+Status: COMPLETED
+
+- **feat(data-telegram)**: Created `infra:data-telegram` module
+  - `TelegramContentRepository` interface for content access
+  - `ObxTelegramContentRepository` ObjectBox implementation
+  - `TdlibTelegramContentRepository` TDLib-backed implementation
+  - `TelegramDataModule` Hilt DI binding
+- **feat(data-xtream)**: Created `infra:data-xtream` module
+  - `XtreamCatalogRepository` interface for VOD/Series access
+  - `ObxXtreamCatalogRepository` ObjectBox implementation
+  - `XtreamLiveRepository` interface for live channels
+  - `ObxXtreamLiveRepository` ObjectBox implementation
+  - `XtreamDataModule` Hilt DI binding
+- **feat(catalog-sync)**: Created `core:catalog-sync` module
+  - `CatalogSyncContract` with `CatalogSyncService` interface
+  - `SyncRequest`, `SyncResult`, `SyncStatus`, `SyncProgress` models
+  - `DefaultCatalogSyncService` orchestrates pipeline → data flow
+  - `CatalogSyncModule` Hilt DI binding
+
+### Phase 2.1 – Transport Layer (Telegram & Xtream)
+
+Status: COMPLETED
+
+- **feat(transport-telegram)**: Created `infra:transport-telegram` module
+  - `TelegramTransportClient` interface for TDLib operations
+  - `DefaultTelegramTransportClient` TDLib adapter implementation
+  - `TdlibClientProvider` for TDLib client lifecycle
+  - `TelegramTransportModule` Hilt DI binding
+- **feat(transport-xtream)**: Created `infra:transport-xtream` module
+  - `XtreamApiClient` interface for Xtream API access
+  - `DefaultXtreamApiClient` OkHttp implementation
+  - `XtreamUrlBuilder` for URL construction with auth
+  - `XtreamDiscovery` for port and capability detection
+  - `XtreamApiModels` for API DTOs (XtreamLiveStream, XtreamVodStream, etc.)
+  - `XtreamTransportModule` Hilt DI binding
+
 ### Phase 1.9 – Xtream Catalog Pipeline
 
-**Status: COMPLETED**
+Status: COMPLETED
 
 - **feat(xtream)**: Implemented event-based catalog pipeline layer (analogous to Telegram)
   - New `XtreamCatalogPipeline` interface for stateless media scanning

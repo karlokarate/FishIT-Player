@@ -1,7 +1,9 @@
 package com.fishit.player.pipeline.xtream.model
 
 import com.fishit.player.core.model.ExternalIds
+import com.fishit.player.core.model.GlobalIdUtil
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 
@@ -19,8 +21,8 @@ import com.fishit.player.core.model.SourceType
  * - Uses XtreamImageRefExtensions for conversion
  * - NO raw URLs passed through - only ImageRef
  *
- * These extensions enable seamless integration with the centralized
- * metadata normalization pipeline.
+ * These extensions enable seamless integration with the centralized metadata normalization
+ * pipeline.
  */
 
 /**
@@ -30,51 +32,65 @@ import com.fishit.player.core.model.SourceType
  * @return RawMediaMetadata with VOD-specific fields
  */
 fun XtreamVodItem.toRawMediaMetadata(
-    authHeaders: Map<String, String> = emptyMap(),
-): RawMediaMetadata = RawMediaMetadata(
-    originalTitle = name,
-    mediaType = MediaType.MOVIE,
-    year = null, // Xtream VOD list doesn't include year; detail fetch required
-    season = null,
-    episode = null,
-    durationMinutes = null, // Xtream VOD list doesn't include duration
-    externalIds = ExternalIds(), // Xtream list doesn't include TMDB; detail fetch required
-    sourceType = SourceType.XTREAM,
-    sourceLabel = "Xtream VOD",
-    sourceId = "xtream:vod:$id",
-    // === ImageRef from XtreamImageRefExtensions ===
-    poster = toPosterImageRef(authHeaders),
-    backdrop = null, // VOD list doesn't provide backdrop
-    thumbnail = null, // Use poster as fallback in UI
-)
+        authHeaders: Map<String, String> = emptyMap(),
+): RawMediaMetadata {
+    val rawTitle = name
+    val rawYear: Int? = null // Xtream VOD list doesn't include year; detail fetch required
+    return RawMediaMetadata(
+            originalTitle = rawTitle,
+            mediaType = MediaType.MOVIE,
+            year = rawYear,
+            season = null,
+            episode = null,
+            durationMinutes = null, // Xtream VOD list doesn't include duration
+            externalIds = ExternalIds(), // Xtream list doesn't include TMDB; detail fetch required
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "Xtream VOD",
+            sourceId = "xtream:vod:$id",
+            // === Pipeline Identity (v2) ===
+            pipelineIdTag = PipelineIdTag.XTREAM,
+            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+            // === ImageRef from XtreamImageRefExtensions ===
+            poster = toPosterImageRef(authHeaders),
+            backdrop = null, // VOD list doesn't provide backdrop
+            thumbnail = null, // Use poster as fallback in UI
+    )
+}
 
 /**
  * Converts an XtreamSeriesItem to RawMediaMetadata.
  *
- * Note: This represents the series as a whole, not individual episodes.
- * Use XtreamEpisode.toRawMediaMetadata() for episode-level metadata.
+ * Note: This represents the series as a whole, not individual episodes. Use
+ * XtreamEpisode.toRawMediaMetadata() for episode-level metadata.
  *
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with series-specific fields
  */
 fun XtreamSeriesItem.toRawMediaMetadata(
-    authHeaders: Map<String, String> = emptyMap(),
-): RawMediaMetadata = RawMediaMetadata(
-    originalTitle = name,
-    mediaType = MediaType.SERIES_EPISODE, // Marked as episode parent; normalizer may refine
-    year = null,
-    season = null,
-    episode = null,
-    durationMinutes = null,
-    externalIds = ExternalIds(),
-    sourceType = SourceType.XTREAM,
-    sourceLabel = "Xtream Series",
-    sourceId = "xtream:series:$id",
-    // === ImageRef from XtreamImageRefExtensions ===
-    poster = toPosterImageRef(authHeaders),
-    backdrop = null, // Series list doesn't provide backdrop
-    thumbnail = null,
-)
+        authHeaders: Map<String, String> = emptyMap(),
+): RawMediaMetadata {
+    val rawTitle = name
+    val rawYear = year?.toIntOrNull()
+    return RawMediaMetadata(
+            originalTitle = rawTitle,
+            mediaType = MediaType.SERIES, // Series container, not episode
+            year = rawYear,
+            season = null,
+            episode = null,
+            durationMinutes = null,
+            externalIds = ExternalIds(),
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "Xtream Series",
+            sourceId = "xtream:series:$id",
+            // === Pipeline Identity (v2) ===
+            pipelineIdTag = PipelineIdTag.XTREAM,
+            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+            // === ImageRef from XtreamImageRefExtensions ===
+            poster = toPosterImageRef(authHeaders),
+            backdrop = null, // Series list doesn't provide backdrop
+            thumbnail = null,
+    )
+}
 
 /**
  * Converts an XtreamEpisode to RawMediaMetadata.
@@ -84,24 +100,31 @@ fun XtreamSeriesItem.toRawMediaMetadata(
  * @return RawMediaMetadata with episode-specific fields
  */
 fun XtreamEpisode.toRawMediaMetadata(
-    seriesName: String? = null,
-    authHeaders: Map<String, String> = emptyMap(),
-): RawMediaMetadata = RawMediaMetadata(
-    originalTitle = title.ifBlank { seriesName ?: "Episode $episodeNumber" },
-    mediaType = MediaType.SERIES_EPISODE,
-    year = null,
-    season = seasonNumber,
-    episode = episodeNumber,
-    durationMinutes = null,
-    externalIds = ExternalIds(),
-    sourceType = SourceType.XTREAM,
-    sourceLabel = seriesName?.let { "Xtream: $it" } ?: "Xtream Series",
-    sourceId = "xtream:episode:$id",
-    // === ImageRef from XtreamImageRefExtensions ===
-    poster = null, // Episodes don't have poster; inherit from series
-    backdrop = null,
-    thumbnail = toThumbnailImageRef(authHeaders),
-)
+        seriesName: String? = null,
+        authHeaders: Map<String, String> = emptyMap(),
+): RawMediaMetadata {
+    val rawTitle = title.ifBlank { seriesName ?: "Episode $episodeNumber" }
+    val rawYear: Int? = null // Episodes typically don't have year; inherit from series
+    return RawMediaMetadata(
+            originalTitle = rawTitle,
+            mediaType = MediaType.SERIES_EPISODE,
+            year = rawYear,
+            season = seasonNumber,
+            episode = episodeNumber,
+            durationMinutes = null,
+            externalIds = ExternalIds(),
+            sourceType = SourceType.XTREAM,
+            sourceLabel = seriesName?.let { "Xtream: $it" } ?: "Xtream Series",
+            sourceId = "xtream:episode:$id",
+            // === Pipeline Identity (v2) ===
+            pipelineIdTag = PipelineIdTag.XTREAM,
+            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+            // === ImageRef from XtreamImageRefExtensions ===
+            poster = null, // Episodes don't have poster; inherit from series
+            backdrop = null,
+            thumbnail = toThumbnailImageRef(authHeaders),
+    )
+}
 
 /**
  * Converts an XtreamChannel to RawMediaMetadata.
@@ -110,20 +133,26 @@ fun XtreamEpisode.toRawMediaMetadata(
  * @return RawMediaMetadata with live channel fields
  */
 fun XtreamChannel.toRawMediaMetadata(
-    authHeaders: Map<String, String> = emptyMap(),
-): RawMediaMetadata = RawMediaMetadata(
-    originalTitle = name,
-    mediaType = MediaType.LIVE,
-    year = null,
-    season = null,
-    episode = null,
-    durationMinutes = null,
-    externalIds = ExternalIds(),
-    sourceType = SourceType.XTREAM,
-    sourceLabel = "Xtream Live",
-    sourceId = "xtream:live:$id",
-    // === ImageRef from XtreamImageRefExtensions ===
-    poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
-    backdrop = null,
-    thumbnail = toLogoImageRef(authHeaders), // Thumbnail same as logo
-)
+        authHeaders: Map<String, String> = emptyMap(),
+): RawMediaMetadata {
+    val rawTitle = name
+    return RawMediaMetadata(
+            originalTitle = rawTitle,
+            mediaType = MediaType.LIVE,
+            year = null,
+            season = null,
+            episode = null,
+            durationMinutes = null,
+            externalIds = ExternalIds(),
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "Xtream Live",
+            sourceId = "xtream:live:$id",
+            // === Pipeline Identity (v2) ===
+            pipelineIdTag = PipelineIdTag.XTREAM,
+            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, null),
+            // === ImageRef from XtreamImageRefExtensions ===
+            poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
+            backdrop = null,
+            thumbnail = toLogoImageRef(authHeaders), // Thumbnail same as logo
+    )
+}

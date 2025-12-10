@@ -1,7 +1,7 @@
-# Player Migration Status – Phase 3 Complete
+# Player Migration Status – Phase 4 Complete
 
-**Status:** Phase 3 – SIP-Kern portiert  
-**Last Updated:** 2025-12-09
+**Status:** Phase 4 – Telegram & Xtream PlaybackFactories  
+**Last Updated:** 2025-12-10
 
 ---
 
@@ -12,11 +12,11 @@
 | Module | Path | Status | Notes |
 |--------|------|--------|-------|
 | `core:model` | `/core/model/` | ✅ EXISTS | Contains `RawMediaMetadata`, `PlaybackType` (legacy) |
-| `core:player-model` | `/core/player-model/` | ✅ NEW | `PlaybackContext`, `PlaybackState`, `PlaybackError`, `SourceType` |
-| `playback:domain` | `/playback/domain/` | ✅ EXISTS | Interfaces + `PlaybackSourceFactory` + `PlaybackSource` |
-| `playback:telegram` | `/playback/telegram/` | ✅ EXISTS | `TelegramFileDataSource` (moved here) |
-| `playback:xtream` | `/playback/xtream/` | ✅ EXISTS | Stub factory only |
-| `player:internal` | `/player/internal/` | ✅ CLEAN | Layer violations fixed |
+| `core:player-model` | `/core/player-model/` | ✅ COMPLETE | `PlaybackContext`, `PlaybackState`, `PlaybackError`, `SourceType` |
+| `playback:domain` | `/playback/domain/` | ✅ COMPLETE | Interfaces + `PlaybackSourceFactory` + `PlaybackSource` |
+| `playback:telegram` | `/playback/telegram/` | ✅ COMPLETE | `TelegramFileDataSource` + `TelegramPlaybackSourceFactoryImpl` |
+| `playback:xtream` | `/playback/xtream/` | ✅ COMPLETE | `XtreamPlaybackSourceFactoryImpl` |
+| `player:internal` | `/player/internal/` | ✅ COMPLETE | `PlaybackSourceResolver` with factory injection |
 | `player:input` | `/player/input/` | ❌ MISSING | Needs creation (Phase 13) |
 | `feature:player-ui` | `/feature/player-ui/` | ❌ MISSING | Future phase |
 
@@ -146,13 +146,21 @@
 | Update `ResumeManager`/`KidsPlaybackGate` to use new types | ✅ DONE | Uses `core:player-model.PlaybackContext` |
 | Clean up v2 logging integration | ✅ DONE | Uses `UnifiedLog` |
 
-### Phase 4: Telegram & Xtream Factories
+### Phase 4: Telegram & Xtream Factories ✅ COMPLETE
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| `TelegramPlaybackSourceFactory` impl | ⏳ PENDING | `playback:telegram` |
+| `TelegramPlaybackSourceFactoryImpl` | ✅ DONE | `playback:telegram` |
 | `TelegramFileDataSource` | ✅ DONE | `playback:telegram` |
-| `XtreamPlaybackSourceFactory` impl | ⏳ PENDING | `playback:xtream` |
+| `TelegramPlaybackModule` (Hilt DI) | ✅ DONE | `playback:telegram/di/` |
+| `XtreamPlaybackSourceFactoryImpl` | ✅ DONE | `playback:xtream` |
+| `XtreamPlaybackModule` (Hilt DI) | ✅ DONE | `playback:xtream/di/` |
+
+**Key Implementation Details:**
+- Both factories implement `PlaybackSourceFactory` from `playback:domain`
+- Factories are bound via `@IntoSet` for injection into `PlaybackSourceResolver`
+- `TelegramPlaybackSourceFactoryImpl` builds `tg://` URIs for `TelegramFileDataSource`
+- `XtreamPlaybackSourceFactoryImpl` uses `XtreamUrlBuilder` for authenticated URLs
 
 ---
 
@@ -182,7 +190,7 @@ From `/legacy/v1-app/.../player/internal/`:
 | 1 | IST-Analyse | ✅ COMPLETE |
 | 2 | Player-Modell finalisieren | ✅ COMPLETE |
 | 3 | SIP-Kern portieren | ✅ COMPLETE |
-| 4 | Telegram & Xtream Factories | ⏳ PENDING |
+| 4 | Telegram & Xtream Factories | ✅ COMPLETE |
 | 5 | MiniPlayer | ⏳ PENDING |
 | 6 | Subtitles/CC | ⏳ PENDING |
 | 7 | Audio-Spur | ⏳ PENDING |

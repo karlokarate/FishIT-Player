@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.feature.settings"
+    namespace = "com.fishit.player.feature.detail"
     compileSdk = 35
 
     defaultConfig {
@@ -28,8 +28,8 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
-    implementation(project(":core:firebase"))
+    implementation(project(":core:player-model"))
+    implementation(project(":core:metadata-normalizer"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
     
@@ -38,6 +38,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
     
     // Navigation
@@ -50,9 +51,6 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    
-    // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.2")
     
     // Hilt
     implementation("com.google.dagger:hilt-android:2.51.1")

@@ -26,6 +26,7 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:player-model"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:transport-telegram"))
     implementation(project(":playback:domain"))
