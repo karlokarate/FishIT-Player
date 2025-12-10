@@ -4,7 +4,22 @@ CLI-Tool zum Testen der Telegram- und Xtream-Pipelines ohne Android-UI.
 
 ## Schnellstart
 
-### 1. Setup-Wizard ausführen
+### Option A: Neue Telegram-Session erstellen (Empfohlen)
+
+```bash
+# 1. API Credentials setzen (von https://my.telegram.org/apps)
+export TG_API_ID="12345678"
+export TG_API_HASH="your_api_hash_here"
+
+# 2. Interaktive Authentifizierung starten
+./fishit-cli tg auth --phone +491234567890
+
+# 3. SMS/Telegram-Code eingeben wenn gefragt
+# 4. Ggf. 2FA-Passwort eingeben
+# 5. Fertig! Session ist in ~/.tdlib-session gespeichert
+```
+
+### Option B: Setup-Wizard (für Xtream oder bestehende Session)
 
 ```bash
 # Setup starten (interaktive Konfiguration)
@@ -12,19 +27,23 @@ source ./tools/fishit-cli-setup.sh
 ```
 
 Der Wizard fragt nach:
+
 - **Telegram**: API ID, API Hash, Session-Pfad
 - **Xtream**: Provider URL, Username, Password
 
 Die Konfiguration wird in `~/.fishit-cli-config` gespeichert.
 
-### 2. CLI verwenden
+### 3. CLI verwenden
 
 ```bash
 # Hilfe anzeigen
 ./fishit-cli --help
 
 # Telegram-Status prüfen
-./fishit-cli telegram status
+./fishit-cli tg status
+
+# Telegram-Chats auflisten
+./fishit-cli tg list-chats
 
 # Xtream VOD-Katalog anzeigen
 ./fishit-cli xtream list-vod --limit 10
@@ -38,7 +57,7 @@ Die Konfiguration wird in `~/.fishit-cli-config` gespeichert.
 
 - **Java 17+** (JDK)
 - **Android SDK** (für Gradle-Build)
-- Optional: Bestehende TDLib-Session für Telegram
+- **TDLib Native Libraries** (für Telegram - im Codespace vorinstalliert)
 
 ### Variante A: Aus dem Projekt-Repository
 
@@ -118,6 +137,9 @@ Diese kann manuell editiert oder mit `source ~/.fishit-cli-config` geladen werde
 ### Telegram-Befehle
 
 ```bash
+# Interaktive TDLib-Authentifizierung (NEU!)
+./fishit-cli telegram auth --session-dir ~/.fishit-cli/telegram
+
 # Verbindungsstatus prüfen
 ./fishit-cli telegram status
 
@@ -126,6 +148,32 @@ Diese kann manuell editiert oder mit `source ~/.fishit-cli-config` geladen werde
 
 # Media-Samples aus einem Chat
 ./fishit-cli telegram sample-media --chat-id <ID> [--limit N]
+```
+
+#### Telegram Auth-Flow
+
+Der `auth`-Befehl führt durch den vollständigen TDLib-Authentifizierungsprozess:
+
+1. **TDLib initialisieren** - Lädt die native Library und erstellt den Client
+2. **Telefonnummer eingeben** - Internationale Nummer mit Ländervorwahl
+3. **Verifizierungscode eingeben** - SMS oder Telegram-App Code
+4. **2FA-Passwort** (falls aktiviert) - Two-Factor Authentication
+
+```bash
+# Beispiel Auth-Session
+$ ./fishit-cli telegram auth --session-dir ~/.fishit-cli/telegram
+
+🔑 Starte Telegram-Authentifizierung...
+📁 Session-Verzeichnis: /home/user/.fishit-cli/telegram
+
+⏳ TDLib initialisiert. Warte auf Auth-State...
+📱 Bitte Telefonnummer eingeben (z.B. +491701234567): +49170...
+📨 Verifizierungscode wurde gesendet. Bitte eingeben: 12345
+✅ Erfolgreich eingeloggt!
+📁 Session gespeichert in: /home/user/.fishit-cli/telegram
+
+# Nach erfolgreichem Login bleiben die Session-Daten gespeichert
+# Weitere Befehle nutzen die existierende Session automatisch
 ```
 
 ### Xtream-Befehle

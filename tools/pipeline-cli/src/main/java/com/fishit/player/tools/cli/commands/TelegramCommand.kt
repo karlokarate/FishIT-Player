@@ -34,6 +34,7 @@ class TelegramCommand(private val pipelines: Pipelines) : CliktCommand(
 
     init {
         subcommands(
+            TgAuthCommand(),
             TgStatusCommand(pipelines),
             TgListChatsCommand(pipelines),
             TgSampleMediaCommand(pipelines),
