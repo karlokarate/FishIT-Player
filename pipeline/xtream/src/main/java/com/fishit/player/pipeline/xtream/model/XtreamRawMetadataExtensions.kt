@@ -35,7 +35,8 @@ fun XtreamVodItem.toRawMediaMetadata(
         authHeaders: Map<String, String> = emptyMap(),
 ): RawMediaMetadata {
     val rawTitle = name
-    val rawYear: Int? = null // Xtream VOD list doesn't include year; detail fetch required
+        val rawYear: Int? = null // Xtream VOD list doesn't include year; detail fetch required
+        val canonicalId = canonicalIdWithFallback(rawTitle, rawYear, "xc:vod:$id")
     return RawMediaMetadata(
             originalTitle = rawTitle,
             mediaType = MediaType.MOVIE,
@@ -49,7 +50,7 @@ fun XtreamVodItem.toRawMediaMetadata(
             sourceId = "xtream:vod:$id",
             // === Pipeline Identity (v2) ===
             pipelineIdTag = PipelineIdTag.XTREAM,
-            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+            globalId = canonicalId,
             // === ImageRef from XtreamImageRefExtensions ===
             poster = toPosterImageRef(authHeaders),
             backdrop = null, // VOD list doesn't provide backdrop
@@ -71,6 +72,7 @@ fun XtreamSeriesItem.toRawMediaMetadata(
 ): RawMediaMetadata {
     val rawTitle = name
     val rawYear = year?.toIntOrNull()
+        val canonicalId = canonicalIdWithFallback(rawTitle, rawYear, "xc:series:$id")
     return RawMediaMetadata(
             originalTitle = rawTitle,
             mediaType = MediaType.SERIES, // Series container, not episode
@@ -84,7 +86,7 @@ fun XtreamSeriesItem.toRawMediaMetadata(
             sourceId = "xtream:series:$id",
             // === Pipeline Identity (v2) ===
             pipelineIdTag = PipelineIdTag.XTREAM,
-            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+            globalId = canonicalId,
             // === ImageRef from XtreamImageRefExtensions ===
             poster = toPosterImageRef(authHeaders),
             backdrop = null, // Series list doesn't provide backdrop
@@ -105,6 +107,7 @@ fun XtreamEpisode.toRawMediaMetadata(
 ): RawMediaMetadata {
     val rawTitle = title.ifBlank { seriesName ?: "Episode $episodeNumber" }
     val rawYear: Int? = null // Episodes typically don't have year; inherit from series
+        val canonicalId = canonicalIdWithFallback(rawTitle, rawYear, "xc:episode:$id")
     return RawMediaMetadata(
             originalTitle = rawTitle,
             mediaType = MediaType.SERIES_EPISODE,
@@ -118,7 +121,7 @@ fun XtreamEpisode.toRawMediaMetadata(
             sourceId = "xtream:episode:$id",
             // === Pipeline Identity (v2) ===
             pipelineIdTag = PipelineIdTag.XTREAM,
-            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+            globalId = canonicalId,
             // === ImageRef from XtreamImageRefExtensions ===
             poster = null, // Episodes don't have poster; inherit from series
             backdrop = null,
@@ -136,6 +139,7 @@ fun XtreamChannel.toRawMediaMetadata(
         authHeaders: Map<String, String> = emptyMap(),
 ): RawMediaMetadata {
     val rawTitle = name
+        val canonicalId = canonicalIdWithFallback(rawTitle, null, "xc:live:$id")
     return RawMediaMetadata(
             originalTitle = rawTitle,
             mediaType = MediaType.LIVE,
@@ -149,10 +153,19 @@ fun XtreamChannel.toRawMediaMetadata(
             sourceId = "xtream:live:$id",
             // === Pipeline Identity (v2) ===
             pipelineIdTag = PipelineIdTag.XTREAM,
-            globalId = GlobalIdUtil.generateCanonicalId(rawTitle, null),
+                        globalId = canonicalId,
             // === ImageRef from XtreamImageRefExtensions ===
             poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
             backdrop = null,
             thumbnail = toLogoImageRef(authHeaders), // Thumbnail same as logo
     )
+}
+
+private fun canonicalIdWithFallback(title: String, year: Int?, disambiguator: String): String {
+        return if (year != null) {
+                GlobalIdUtil.generateCanonicalId(title, year)
+        } else {
+                // Use a disambiguator to avoid merging unrelated titles when year is missing
+                GlobalIdUtil.generateCanonicalId("$title|$disambiguator", year)
+        }
 }

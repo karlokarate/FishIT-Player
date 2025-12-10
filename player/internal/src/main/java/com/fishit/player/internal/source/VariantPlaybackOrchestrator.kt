@@ -3,6 +3,7 @@ package com.fishit.player.internal.source
 import com.fishit.player.core.model.MediaVariant
 import com.fishit.player.core.model.NormalizedMedia
 import com.fishit.player.core.model.PipelineIdTag
+import com.fishit.player.core.model.SourceKey
 import com.fishit.player.core.model.VariantHealthStore
 import com.fishit.player.core.model.VariantPreferences
 import com.fishit.player.core.model.VariantSelector
@@ -64,10 +65,14 @@ class VariantPlaybackOrchestrator(
     suspend fun attemptPlayback(
             media: NormalizedMedia,
             prefs: VariantPreferences = VariantPreferences.default(),
+            manualOverride: SourceKey? = null,
             contextBuilder: suspend (MediaVariant) -> PlaybackContext,
     ): PlaybackResult {
+        // Apply manual override ordering first (if provided), then sort by preference
+        val baseVariants = applyManualOverrideOrdering(media.variants, manualOverride)
+
         // Sort variants by preference
-        val sortedVariants = VariantSelector.sortByPreference(media.variants, prefs)
+        val sortedVariants = VariantSelector.sortByPreference(baseVariants, prefs)
 
         // Filter out dead variants
         val candidateVariants =
@@ -138,6 +143,16 @@ class VariantPlaybackOrchestrator(
 
         UnifiedLog.e(TAG, "All $attemptedCount variants failed for ${media.globalId}")
         return PlaybackResult.AllVariantsFailed(attemptedCount, lastError)
+    }
+
+    private fun applyManualOverrideOrdering(
+            variants: List<MediaVariant>,
+            manualOverride: SourceKey?,
+    ): List<MediaVariant> {
+        if (manualOverride == null) return variants
+
+        val overrideVariant = variants.find { it.sourceKey == manualOverride } ?: return variants
+        return listOf(overrideVariant) + variants.filter { it.sourceKey != manualOverride }
     }
 
     /** Categorize an exception into a PlaybackError. */

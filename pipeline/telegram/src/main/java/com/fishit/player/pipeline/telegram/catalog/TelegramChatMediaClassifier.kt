@@ -23,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class TelegramChatMediaClassifier {
 
+    /** Optional callback fired when a previously COLD chat warms up. */
+    var onChatWarmUp: ((chatId: Long, newClass: ChatMediaClass) -> Unit)? = null
+
     companion object {
         /** Minimum media messages to qualify as HOT (fast path). */
         private const val HOT_MEDIA_COUNT_THRESHOLD = 20
@@ -80,6 +83,8 @@ class TelegramChatMediaClassifier {
      */
     fun recordMessage(message: TgMessage): ChatMediaClass {
         val profile = getProfile(message.chatId)
+        val previousClass = classify(profile)
+
         val isMedia = message.content.isPlayableMedia()
         val timestampMillis = message.date.toLong() * 1000L
 
@@ -87,9 +92,12 @@ class TelegramChatMediaClassifier {
 
         val newClass = classify(profile)
 
-        // If chat was suppressed but is now WARM or HOT, unsuppress it
+        // If chat was suppressed but is now WARM or HOT, unsuppress and trigger ingestion
         if (newClass != ChatMediaClass.MEDIA_COLD && suppressedChats.contains(message.chatId)) {
             suppressedChats.remove(message.chatId)
+            onChatWarmUp?.invoke(message.chatId, newClass)
+        } else if (previousClass == ChatMediaClass.MEDIA_COLD && newClass != previousClass) {
+            onChatWarmUp?.invoke(message.chatId, newClass)
         }
 
         return newClass
@@ -104,6 +112,7 @@ class TelegramChatMediaClassifier {
      */
     fun recordSample(chatId: Long, messages: List<TgMessage>): ChatMediaClass {
         val profile = getProfile(chatId)
+        val previousClass = classify(profile)
 
         messages.forEach { msg ->
             val isMedia = msg.content.isPlayableMedia()
@@ -116,6 +125,11 @@ class TelegramChatMediaClassifier {
         // Suppress COLD chats from initial ingestion
         if (classification == ChatMediaClass.MEDIA_COLD) {
             suppressedChats.add(chatId)
+        }
+
+        // If a COLD chat warms up during sampling, trigger ingestion
+        if (previousClass == ChatMediaClass.MEDIA_COLD && classification != ChatMediaClass.MEDIA_COLD) {
+            onChatWarmUp?.invoke(chatId, classification)
         }
 
         return classification

@@ -10,9 +10,18 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ### Pipeline Finalization (Phases 0-7 Complete)
 
+#### Post-review hardening
+
+- **Telegram chat classification**: added warm-up callback to trigger ingestion when COLD chats become WARM/HOT, unsuppresses suppressed chats.
+- **Xtream globalId disambiguation**: avoid title collisions without year by seeding canonicalId with source identifiers.
+- **Manual variant overrides**: playback orchestrator now honors an explicit SourceKey override before preference sorting.
+- **Dead variant filtering**: Normalizer drops permanently dead variants via VariantHealthStore and skips empty groups.
+- **Language detection**: unknown language now yields null (no device-language bias in VariantSelector).
+
 Status: COMPLETED
 
 #### Phase 0 – Global Data Model Extensions
+
 - **feat(model)**: Added cross-pipeline identification types
   - `PipelineIdTag` enum: TELEGRAM, XTREAM, IO, AUDIOBOOK, UNKNOWN with short codes
   - `SourceKey` data class combining PipelineIdTag + sourceId for unique variant identification
@@ -20,6 +29,7 @@ Status: COMPLETED
   - Extended `RawMediaMetadata` with `pipelineIdTag` and `globalId` fields
 
 #### Phase 1 – Variant System
+
 - **feat(model)**: Implemented variant selection system for cross-pipeline playback
   - `MediaVariant` data class with sourceKey, qualityTag, resolution, language, OmU flag, availability
   - `NormalizedMedia` data class for cross-pipeline merged media with variants list
@@ -27,12 +37,14 @@ Status: COMPLETED
   - `MimeDecider` MIME/extension-based media type detection with `MimeMediaKind` enum
 
 #### Phase 2 – Normalizer Enhancement
+
 - **feat(normalizer)**: Enhanced `Normalizer.kt` in core:metadata-normalizer
   - Groups `RawMediaMetadata` by globalId for cross-pipeline deduplication
   - Creates `NormalizedMedia` with sorted variants per media item
   - Handles multi-source content unification
 
 #### Phase 3 – Telegram Pipeline Enhancement
+
 - **feat(telegram)**: Enhanced Telegram catalog pipeline
   - Updated `TelegramRawMetadataExtensions.kt` to set `pipelineIdTag = TELEGRAM`
   - Generates `globalId` via `GlobalIdUtil.generate()` for each item
@@ -40,24 +52,28 @@ Status: COMPLETED
   - `TelegramChatMediaClassifier` with Hot/Warm/Cold classification thresholds
 
 #### Phase 4 – Xtream Pipeline Enhancement
+
 - **feat(xtream)**: Enhanced Xtream catalog pipeline
   - Updated `XtreamRawMetadataExtensions.kt` for all content types
   - VOD, Series, Episode, Channel all set `pipelineIdTag = XTREAM`
   - All types generate `globalId` via `GlobalIdUtil.generate()`
 
 #### Phase 5 – Playback Integration
+
 - **feat(playback)**: Integrated variant system with playback layer
   - `TelegramMp4Validator` for MP4 moov atom validation (progressive downloads)
   - `VariantPlaybackOrchestrator` for variant-based playback with automatic fallback
   - Uses `VariantSelector.sorted()` for playback priority ordering
 
 #### Phase 6 – Dead Media Detection
+
 - **feat(model)**: Implemented variant health tracking
   - `VariantHealthStore` for tracking variant failures
   - Dead variant detection: ≥3 failures + 24h = permanently dead
   - `markFailed()`, `isAvailable()`, `isDeadPermanently()` APIs
 
 #### Phase 7 – UI Settings Integration
+
 - **feat(settings)**: Added playback settings persistence
   - `PlaybackSettingsRepository` DataStore-based persistence for `VariantPreferences`
   - Stores preferred language, OmU preference, auto-fallback toggle
@@ -183,7 +199,7 @@ Status: COMPLETED
 
 ### Phase 1.8 – Telegram Catalog Pipeline
 
-**Status: COMPLETED**
+Status: COMPLETED
 
 - **feat(telegram)**: Implemented event-based catalog pipeline layer
   - New `TelegramCatalogPipeline` interface for stateless media scanning
@@ -206,7 +222,7 @@ Status: COMPLETED
 
 ### Phase 1.7 – Test Stabilization
 
-**Status: COMPLETED**
+Status: COMPLETED
 
 - **fix(tests)**: Fixed MockK runtime errors for g000sha256 TDLib DTOs
   - Root cause: g000sha256 TDLib DTOs are final data classes that MockK cannot mock
@@ -221,7 +237,7 @@ Status: COMPLETED
 
 ### Phase 1.6 – Build Stabilization
 
-**Status: COMPLETED**
+Status: COMPLETED
 
 - **fix(player)**: Updated `TelegramFileDataSource` to use v2 `TelegramClient` API
   - Replaced obsolete `TelegramTdlibClient` reference with `TelegramClient`
@@ -277,7 +293,7 @@ Status: COMPLETED
 
 ### Phase 0.5 – Agents, V2 Portal, Branch Rules
 
-**Status: COMPLETED**
+Status: COMPLETED
 
 - **docs(agents)**: Created unified `AGENTS.md` as single v2 agents ruleset
   - Defines allowed vs forbidden paths for all agents

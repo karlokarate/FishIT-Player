@@ -7,9 +7,9 @@ import com.fishit.player.core.model.QualityTags
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceKey
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.VariantHealthStore
 import com.fishit.player.core.model.VariantPreferences
 import com.fishit.player.core.model.VariantSelector
-import java.util.Locale
 
 /**
  * Cross-pipeline normalizer that merges RawMediaMetadata from multiple sources into deduplicated
@@ -57,7 +57,11 @@ object Normalizer {
             val reference = group.first()
 
             // Create variants from all raw items
-            val variants = group.map { raw -> raw.toMediaVariant() }.toMutableList()
+            val variants = group.mapNotNull { raw -> raw.toMediaVariant() }.toMutableList()
+
+            if (variants.isEmpty()) {
+                return@mapNotNull null // All variants are dead or invalid
+            }
 
             // Sort by preference
             val sortedVariants = VariantSelector.sortByPreference(variants, prefs)
@@ -80,9 +84,16 @@ object Normalizer {
     }
 
     /** Convert a RawMediaMetadata to a MediaVariant. */
-    private fun RawMediaMetadata.toMediaVariant(): MediaVariant {
+    private fun RawMediaMetadata.toMediaVariant(): MediaVariant? {
+        val sourceKey = SourceKey(pipelineIdTag, sourceId)
+
+        // Skip permanently dead variants to avoid resurfacing bad sources
+        if (VariantHealthStore.isPermanentlyDead(sourceKey)) {
+            return null
+        }
+
         return MediaVariant(
-                sourceKey = SourceKey(pipelineIdTag, sourceId),
+                sourceKey = sourceKey,
                 qualityTag = deriveQualityTag(),
                 resolutionHeight = deriveResolutionHeight(),
                 language = deriveLanguage(),
@@ -127,7 +138,7 @@ object Normalizer {
      *
      * Full language detection can be enhanced later.
      */
-    private fun RawMediaMetadata.deriveLanguage(): String {
+    private fun RawMediaMetadata.deriveLanguage(): String? {
         val titleUpper = originalTitle.uppercase()
         val labelUpper = sourceLabel.uppercase()
 
@@ -140,7 +151,7 @@ object Normalizer {
             titleUpper.contains("[FR]") || titleUpper.contains("FRENCH") -> "fr"
             titleUpper.contains("[ES]") || titleUpper.contains("SPANISH") -> "es"
             titleUpper.contains("[IT]") || titleUpper.contains("ITALIAN") -> "it"
-            else -> Locale.getDefault().language // Fallback to system language
+            else -> null // Unknown language; avoid biasing selection
         }
     }
 
