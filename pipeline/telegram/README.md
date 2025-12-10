@@ -1,6 +1,6 @@
 # pipeline-telegram
 
-**Purpose:** Transforms `TgMessage` from Transport into `RawMediaMetadata` for Data layer consumption.
+**Purpose:** Transforms `TgMessage` from Transport into `RawMediaMetadata` for Data layer consumption and streams live media updates (with warm-up ingestion when chats heat up).
 
 ## ✅ Allowed
 - Receiving `TgMessage`, `TgContent` from Transport

@@ -90,6 +90,7 @@ All 8 phases (0-7) from `pipeline_finalization.md` have been fully implemented a
 - **File:** `core/model/src/main/java/com/fishit/player/core/model/MimeDecider.kt`
   - MIME/extension-based media type detection
   - `MimeMediaKind` enum (VIDEO, AUDIO, OTHER)
+  - Live media updates seed the classifier with chat samples and suppress cold chats until a warm-up ingestion is triggered by `mediaUpdates`.
 
 ---
 

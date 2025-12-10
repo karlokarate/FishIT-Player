@@ -34,6 +34,12 @@ interface TelegramTransportClient {
     val connectionState: Flow<TelegramConnectionState>
 
     /**
+     * Stream of incoming messages (media-only) for live ingestion/warm-up.
+     * Implementations should emit only playable media messages.
+     */
+    val mediaUpdates: Flow<TgMessage>
+
+    /**
      * Ensure the client is authorized and ready to use.
      *
      * If not authorized, this will initiate the auth flow. Callers should observe [authState]
@@ -162,7 +168,8 @@ sealed class TgContent {
         val mimeType: String?,
         val fileSize: Long,
         val caption: String?,
-        val thumbnail: TgThumbnail?
+        val thumbnail: TgThumbnail?,
+        val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Document (file) message content */
@@ -174,7 +181,8 @@ sealed class TgContent {
         val mimeType: String?,
         val fileSize: Long,
         val caption: String?,
-        val thumbnail: TgThumbnail?
+        val thumbnail: TgThumbnail?,
+        val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Audio message content */
@@ -189,13 +197,15 @@ sealed class TgContent {
         val mimeType: String?,
         val fileSize: Long,
         val caption: String?,
-        val albumCoverThumbnail: TgThumbnail?
+        val albumCoverThumbnail: TgThumbnail?,
+        val albumCoverMinithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Photo message content */
     data class Photo(
         val sizes: List<TgPhotoSize>,
-        val caption: String?
+        val caption: String?,
+        val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Animation (GIF) message content */
@@ -210,7 +220,8 @@ sealed class TgContent {
         val mimeType: String?,
         val fileSize: Long,
         val caption: String?,
-        val thumbnail: TgThumbnail?
+        val thumbnail: TgThumbnail?,
+        val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Video note (round video) message content */
@@ -221,7 +232,8 @@ sealed class TgContent {
         val duration: Int,
         val length: Int,
         val fileSize: Long,
-        val thumbnail: TgThumbnail?
+        val thumbnail: TgThumbnail?,
+        val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Voice note message content */
@@ -269,6 +281,13 @@ data class TgThumbnail(
     val width: Int,
     val height: Int,
     val fileSize: Long
+)
+
+/** Inline minithumbnail (~40px JPEG) used for instant placeholders. */
+data class TgMinithumbnail(
+    val width: Int,
+    val height: Int,
+    val data: ByteArray,
 )
 
 /**

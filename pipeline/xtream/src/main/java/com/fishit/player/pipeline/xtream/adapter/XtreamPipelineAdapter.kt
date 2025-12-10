@@ -69,11 +69,14 @@ class XtreamPipelineAdapter @Inject constructor(
      * Load episodes for a specific series.
      *
      * @param seriesId The series ID
+     * @param seriesName Optional series name for context (passed to episodes)
      * @return List of XtreamEpisode
      */
-    suspend fun loadEpisodes(seriesId: Int): List<XtreamEpisode> {
+    suspend fun loadEpisodes(seriesId: Int, seriesName: String? = null): List<XtreamEpisode> {
         val seriesInfo = apiClient.getSeriesInfo(seriesId) ?: return emptyList()
-        return seriesInfo.toEpisodes(seriesId)
+        // Use provided name or try to get it from seriesInfo
+        val resolvedSeriesName = seriesName ?: seriesInfo.info?.name
+        return seriesInfo.toEpisodes(seriesId, resolvedSeriesName)
     }
 
     /**
@@ -154,7 +157,7 @@ private fun XtreamLiveStream.toPipelineItem(): XtreamChannel = XtreamChannel(
     categoryId = categoryId
 )
 
-private fun XtreamSeriesInfo.toEpisodes(seriesId: Int): List<XtreamEpisode> {
+private fun XtreamSeriesInfo.toEpisodes(seriesId: Int, seriesName: String?): List<XtreamEpisode> {
     val result = mutableListOf<XtreamEpisode>()
     
     episodes?.forEach { (seasonNumber, episodeList) ->
@@ -165,6 +168,7 @@ private fun XtreamSeriesInfo.toEpisodes(seriesId: Int): List<XtreamEpisode> {
                 XtreamEpisode(
                     id = ep.resolvedEpisodeId ?: 0,
                     seriesId = seriesId,
+                    seriesName = seriesName,
                     seasonNumber = seasonNum,
                     episodeNumber = ep.episodeNum ?: 0,
                     title = ep.title.orEmpty(),

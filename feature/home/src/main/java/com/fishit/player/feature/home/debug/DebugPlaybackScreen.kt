@@ -4,9 +4,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.fishit.player.core.model.PlaybackContext
-import com.fishit.player.core.model.PlaybackType
+import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.internal.InternalPlayerEntry
+import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 
@@ -20,23 +21,22 @@ import com.fishit.player.playback.domain.ResumeManager
  */
 @Composable
 fun DebugPlaybackScreen(
+    sourceResolver: PlaybackSourceResolver,
     resumeManager: ResumeManager,
     kidsPlaybackGate: KidsPlaybackGate,
     onBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Create a simple test context
-    val testContext = PlaybackContext(
-        type = PlaybackType.VOD,
-        uri = "", // Empty - will use hardcoded test URL
-        title = "Big Buck Bunny",
-        subtitle = "Test Video - Phase 1",
-        contentId = "test_video_001"
+    // Create a simple test context using HTTP source type
+    val testContext = PlaybackContext.testVod(
+        url = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        title = "Big Buck Bunny"
     )
 
     Box(modifier = modifier.fillMaxSize()) {
         InternalPlayerEntry(
             playbackContext = testContext,
+            sourceResolver = sourceResolver,
             resumeManager = resumeManager,
             kidsPlaybackGate = kidsPlaybackGate,
             onBack = onBack,

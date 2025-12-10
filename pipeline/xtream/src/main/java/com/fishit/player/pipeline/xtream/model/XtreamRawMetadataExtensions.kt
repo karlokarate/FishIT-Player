@@ -97,17 +97,22 @@ fun XtreamSeriesItem.toRawMediaMetadata(
 /**
  * Converts an XtreamEpisode to RawMediaMetadata.
  *
- * @param seriesName The parent series name (required for full context)
+ * Uses the embedded seriesName property (set during loadEpisodes) for context.
+ * Falls back to external parameter if provided.
+ *
+ * @param seriesNameOverride Optional override for parent series name
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with episode-specific fields
  */
 fun XtreamEpisode.toRawMediaMetadata(
-        seriesName: String? = null,
+        seriesNameOverride: String? = null,
         authHeaders: Map<String, String> = emptyMap(),
 ): RawMediaMetadata {
-    val rawTitle = title.ifBlank { seriesName ?: "Episode $episodeNumber" }
+    // Prefer embedded seriesName from data class, fall back to override parameter
+    val effectiveSeriesName = seriesName ?: seriesNameOverride
+    val rawTitle = title.ifBlank { effectiveSeriesName ?: "Episode $episodeNumber" }
     val rawYear: Int? = null // Episodes typically don't have year; inherit from series
-        val canonicalId = canonicalIdWithFallback(rawTitle, rawYear, "xc:episode:$id")
+    val canonicalId = canonicalIdWithFallback(rawTitle, rawYear, "xc:episode:$id")
     return RawMediaMetadata(
             originalTitle = rawTitle,
             mediaType = MediaType.SERIES_EPISODE,
@@ -117,7 +122,7 @@ fun XtreamEpisode.toRawMediaMetadata(
             durationMinutes = null,
             externalIds = ExternalIds(),
             sourceType = SourceType.XTREAM,
-            sourceLabel = seriesName?.let { "Xtream: $it" } ?: "Xtream Series",
+            sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
             sourceId = "xtream:episode:$id",
             // === Pipeline Identity (v2) ===
             pipelineIdTag = PipelineIdTag.XTREAM,

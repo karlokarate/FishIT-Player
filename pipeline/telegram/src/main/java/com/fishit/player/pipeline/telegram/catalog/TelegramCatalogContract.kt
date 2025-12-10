@@ -37,6 +37,16 @@ interface TelegramCatalogPipeline {
      * @return Cold Flow of catalog events
      */
     fun scanCatalog(config: TelegramCatalogConfig): Flow<TelegramCatalogEvent>
+
+    /**
+     * Listen for live media-only updates and emit catalog events.
+     *
+     * Implementations must:
+     * - Emit ItemDiscovered for each playable media update
+     * - Trigger a one-shot warm-up ingestion when a chat transitions from COLD → WARM/HOT
+     * - Respect coroutine cancellation
+     */
+    fun liveMediaUpdates(config: TelegramLiveUpdatesConfig = TelegramLiveUpdatesConfig()): Flow<TelegramCatalogEvent>
 }
 
 /**
@@ -66,6 +76,21 @@ data class TelegramCatalogConfig(
         )
     }
 }
+
+/**
+ * Configuration for live media update stream.
+ *
+ * @property warmUpIngestMessages Number of history messages to ingest when a chat warms up
+ * @property minMessageTimestampMs Optional lower bound for history ingestion
+ * @property pageSize Page size used during warm-up ingestion
+ * @property chatLookupLimit Limit when resolving chat titles for warm-up ingestion
+ */
+data class TelegramLiveUpdatesConfig(
+    val warmUpIngestMessages: Long = 50,
+    val minMessageTimestampMs: Long? = null,
+    val pageSize: Int = TelegramCatalogConfig.DEFAULT_PAGE_SIZE,
+    val chatLookupLimit: Int = 200,
+)
 
 /**
  * Events produced by the catalog pipeline.

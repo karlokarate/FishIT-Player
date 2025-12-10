@@ -1,7 +1,7 @@
 package com.fishit.player.pipeline.io
 
-import com.fishit.player.core.model.PlaybackContext
-import com.fishit.player.core.model.PlaybackType
+import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.SourceType
 
 /**
  * Extension functions for converting IO pipeline models to core models.
@@ -78,26 +78,20 @@ fun IoMediaItem.toRawMediaMetadata(): Map<String, Any?> =
  * // Navigate to InternalPlayerEntry(context)
  * ```
  *
- * @param profileId Current profile ID for tracking (optional).
  * @param startPositionMs Starting position for resume (optional).
- * @param isKidsContent Whether to treat as kids content (optional).
  * @return PlaybackContext suitable for InternalPlayerEntry.
  */
 fun IoMediaItem.toPlaybackContext(
-    profileId: Long? = null,
     startPositionMs: Long = 0L,
-    isKidsContent: Boolean = false,
 ): PlaybackContext =
     PlaybackContext(
-        type = PlaybackType.IO,
+        canonicalId = "io:${toContentId()}",
+        sourceType = SourceType.FILE,
         uri = source.toUriString(),
         title = title,
         subtitle = fileName,
         posterUrl = thumbnailPath,
-        contentId = toContentId(),
         startPositionMs = startPositionMs,
-        isKidsContent = isKidsContent,
-        profileId = profileId,
         extras =
             buildMap {
                 mimeType?.let { put("mimeType", it) }

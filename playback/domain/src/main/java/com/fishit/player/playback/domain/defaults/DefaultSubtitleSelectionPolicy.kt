@@ -1,6 +1,6 @@
 package com.fishit.player.playback.domain.defaults
 
-import com.fishit.player.core.model.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.playback.domain.MediaTrack
 import com.fishit.player.playback.domain.SubtitleSelectionPolicy
 

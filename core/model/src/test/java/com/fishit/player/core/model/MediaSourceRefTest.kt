@@ -64,7 +64,7 @@ class MediaSourceRefTest {
     }
 
     @Test
-    fun `parses Multi/DL language from filename`() {
+    fun `parses Multi-DL language from filename`() {
         val lang = LanguageInfo.fromFilename("Movie.2020.German.DL.1080p.BluRay")
         assertNotNull(lang)
         assertTrue(lang!!.isMulti)

@@ -1,6 +1,6 @@
 package com.fishit.player.playback.domain
 
-import com.fishit.player.core.model.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackContext
 
 /**
  * Represents a selectable subtitle/audio track.
