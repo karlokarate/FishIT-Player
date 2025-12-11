@@ -2,11 +2,8 @@ package com.fishit.player.v2.di
 
 import android.content.Context
 import coil3.ImageLoader
-import coil3.PlatformContext
-import coil3.SingletonImageLoader
 import com.fishit.player.core.imaging.GlobalImageLoader
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,6 +24,14 @@ import okhttp3.OkHttpClient
  * - core:ui-imaging defines GlobalImageLoader and TelegramThumbFetcher interface
  * - app-v2 wires the implementation via DI
  * - Transport layer resolves TDLib files, UI layer displays images
+ *
+ * **Coil Integration Best Practice:**
+ * - ImageLoader is created via DI with dynamic cache sizing
+ * - Application implements [coil3.SingletonImageLoader.Factory]
+ * - Application delegates to this DI-provided ImageLoader
+ * - This ensures proper lifecycle and testability
+ *
+ * @see FishItV2Application for the SingletonImageLoader.Factory implementation
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -35,47 +40,63 @@ object ImagingModule {
     /**
      * Provides the shared OkHttpClient for image loading.
      * Uses GlobalImageLoader defaults optimized for TV/mobile.
+     *
+     * Qualified with [@ImageOkHttpClient] to avoid conflicts with other
+     * OkHttpClient bindings (e.g., XtreamTransportModule).
      */
     @Provides
     @Singleton
+    @ImageOkHttpClient
     fun provideImageOkHttpClient(): OkHttpClient {
         return GlobalImageLoader.createDefaultOkHttpClient()
     }
 
     /**
      * Provides the TelegramThumbFetcher.Factory implementation.
-     * Delegates to TelegramTransportClient for TDLib file resolution.
+     *
+     * Returns null since TelegramTransportClient requires TdlibClientProvider
+     * which is not yet wired in v2. When Telegram integration is needed,
+     * this should be updated to inject TelegramTransportClient.
+     *
+     * GlobalImageLoader handles null TelegramThumbFetcher.Factory gracefully
+     * by not registering the Telegram fetcher (HTTP and LocalFile still work).
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcherFactory(
-        telegramClient: TelegramTransportClient
-    ): TelegramThumbFetcher.Factory {
-        return TelegramThumbFetcherImpl.Factory(telegramClient)
+    fun provideTelegramThumbFetcherFactory(): TelegramThumbFetcher.Factory? {
+        // TODO: Wire TelegramTransportClient when TdlibClientProvider is available
+        // return TelegramThumbFetcherImpl.Factory(telegramClient)
+        return null
     }
 
     /**
      * Provides the configured ImageLoader singleton.
-     * Also registers as Coil's SingletonImageLoader for global access.
+     *
+     * Uses dynamic cache sizing based on device capabilities (ported from v1):
+     * - 64-bit devices: 512-768 MB disk cache
+     * - 32-bit devices: 256-384 MB disk cache
+     * - Scales with available storage (2% of available space)
+     *
+     * **Note:** This ImageLoader is accessed via:
+     * 1. Direct injection (@Inject lateinit var imageLoader: ImageLoader)
+     * 2. Coil's SingletonImageLoader (via Application.newImageLoader())
+     *
+     * The Application implements SingletonImageLoader.Factory and delegates
+     * to this DI-provided instance for proper initialization order.
      */
     @Provides
     @Singleton
     fun provideImageLoader(
         @ApplicationContext context: Context,
-        okHttpClient: OkHttpClient,
-        telegramThumbFetcherFactory: TelegramThumbFetcher.Factory
+        @ImageOkHttpClient okHttpClient: OkHttpClient,
+        telegramThumbFetcherFactory: TelegramThumbFetcher.Factory?
     ): ImageLoader {
-        val imageLoader = GlobalImageLoader.create(
+        return GlobalImageLoader.createWithDynamicCache(
             context = context,
             okHttpClient = okHttpClient,
             telegramThumbFetcher = telegramThumbFetcherFactory,
             enableCrossfade = true,
             crossfadeDurationMs = 200
         )
-
-        // Register as Coil singleton for CompositionLocal fallback
-        SingletonImageLoader.setSafe { imageLoader }
-
-        return imageLoader
     }
 }
