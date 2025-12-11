@@ -1,19 +1,20 @@
 ---
-description: 'This agent ensures that all work in the repository follows the defined architecture, conventions, and contracts. It enforces structural correctness, maintains separation of responsibilities, and keeps documentation aligned with the actual state of the system. Regardless of how instructions are phrased, the agent must always adhere to the project design rules as defined in AGENTS.md and /contracts/.'
-tools: ['runCommands', 'runTasks', 'edit', 'runNotebooks', 'search', 'new', 'Copilot Container Tools/*', 'extensions', 'todos', 'runSubagent', 'cweijan.vscode-database-client2/dbclient-getDatabases', 'cweijan.vscode-database-client2/dbclient-getTables', 'cweijan.vscode-database-client2/dbclient-executeQuery', 'usages', 'vscodeAPI', 'problems', 'changes', 'testFailure', 'openSimpleBrowser', 'githubRepo', 'github.vscode-pull-request-github/copilotCodingAgent', 'github.vscode-pull-request-github/issue_fetch', 'github.vscode-pull-request-github/suggest-fix', 'github.vscode-pull-request-github/searchSyntax', 'github.vscode-pull-request-github/doSearch', 'github.vscode-pull-request-github/renderIssues', 'github.vscode-pull-request-github/activePullRequest', 'github.vscode-pull-request-github/openPullRequest']
+description: "This agent ensures that all work in the repository follows the defined architecture, conventions, and contracts. It enforces structural correctness, maintains separation of responsibilities, and keeps documentation aligned with the actual state of the system. Regardless of how instructions are phrased, the agent must always adhere to the project design rules as defined in AGENTS.md and /contracts/."
+tools: []
 ---
 
 # ⚠️ MANDATORY: Primary Authority Documents
 
 **Before ANY code or documentation change, this agent MUST read and comply with:**
 
-| Document | Location | Scope |
-|----------|----------|-------|
-| **AGENTS.md** | `/AGENTS.md` | **PRIMARY AUTHORITY** - All architecture rules, checklists, layer boundaries |
-| **Contracts Folder** | `/contracts/` | **ALL BINDING CONTRACTS** - Naming, normalization, logging, player |
-| **Copilot Instructions** | `/.github/copilot-instructions.md` | Repository-wide coding conventions |
+| Document                 | Location                           | Scope                                                                        |
+| ------------------------ | ---------------------------------- | ---------------------------------------------------------------------------- |
+| **AGENTS.md**            | `/AGENTS.md`                       | **PRIMARY AUTHORITY** - All architecture rules, checklists, layer boundaries |
+| **Contracts Folder**     | `/contracts/`                      | **ALL BINDING CONTRACTS** - Naming, normalization, logging, player           |
+| **Copilot Instructions** | `/.github/copilot-instructions.md` | Repository-wide coding conventions                                           |
 
 **Hard Rules:**
+
 1. `AGENTS.md` is the single source of truth. This agent file provides quick reference only.
 2. ALL contracts in `/contracts/` must be read before modifying related code areas.
 3. Pre-/Post-Change Checklists from `AGENTS.md` Section 11 are MANDATORY.
@@ -23,13 +24,13 @@ tools: ['runCommands', 'runTasks', 'edit', 'runNotebooks', 'search', 'new', 'Cop
 
 # Contract Reading Requirements (from AGENTS.md Section 15)
 
-| Modification Area | Required Contracts |
-|-------------------|-------------------|
-| Any code change | `/contracts/GLOSSARY_v2_naming_and_modules.md` |
-| Pipeline modules | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` |
-| Logging code | `/contracts/LOGGING_CONTRACT_V2.md` |
-| Player/Playback | All `/contracts/INTERNAL_PLAYER_*` files |
-| Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md` |
+| Modification Area | Required Contracts                             |
+| ----------------- | ---------------------------------------------- |
+| Any code change   | `/contracts/GLOSSARY_v2_naming_and_modules.md` |
+| Pipeline modules  | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md`   |
+| Logging code      | `/contracts/LOGGING_CONTRACT_V2.md`            |
+| Player/Playback   | All `/contracts/INTERNAL_PLAYER_*` files       |
+| Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md`       |
 
 ---
 
@@ -71,6 +72,7 @@ The agent must always adhere to the following principles:
 > **Full version:** See `AGENTS.md` Section 11.1
 
 Before making changes:
+
 - [ ] Read `/contracts/GLOSSARY_v2_naming_and_modules.md`
 - [ ] Read relevant contracts for the change area
 - [ ] Confirm working on `architecture/v2-bootstrap` or derived branch
@@ -82,6 +84,7 @@ Before making changes:
 > **Full version:** See `AGENTS.md` Section 11.2
 
 After making changes:
+
 - [ ] No accidental edits in `/legacy/**` or `/app/**`
 - [ ] No new `com.chris.m3usuite` references outside `legacy/`
 - [ ] All new classes follow Glossary naming patterns
@@ -102,12 +105,12 @@ UI → Domain → Data → Pipeline → Transport → core:model
 
 **Forbidden Cross-Layer Imports:**
 
-| Layer | MUST NOT Import From |
-|-------|---------------------|
-| Pipeline | Persistence (`data/obx/*`), Data layer, Playback, UI |
-| Transport | Pipeline, Data layer, Playback, UI, Persistence |
-| Data | Pipeline DTOs (`TelegramMediaItem`, `XtreamVodItem`, etc.) |
-| Playback | Pipeline DTOs (use `RawMediaMetadata` only) |
+| Layer     | MUST NOT Import From                                       |
+| --------- | ---------------------------------------------------------- |
+| Pipeline  | Persistence (`data/obx/*`), Data layer, Playback, UI       |
+| Transport | Pipeline, Data layer, Playback, UI, Persistence            |
+| Data      | Pipeline DTOs (`TelegramMediaItem`, `XtreamVodItem`, etc.) |
+| Playback  | Pipeline DTOs (use `RawMediaMetadata` only)                |
 
 ---
 
@@ -118,6 +121,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 1. Core Layer (`core:model`)
 
 **Responsibilities:**
+
 - Central, source-agnostic models: `RawMediaMetadata`, `MediaType`, `SourceType`, `ImageRef`, `ExternalIds`
 - Simple value types (IDs, Timestamps, Enums)
 
@@ -126,6 +130,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 2. Transport Layer (`infra/transport-*`)
 
 **Responsibilities:**
+
 - TDLib/Xtream API integration
 - Auth state machine, connection state
 - Mapping raw DTOs to wrappers: `TdApi.*` → `TgMessage`, `TgContent`
@@ -135,6 +140,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 3. Pipeline Layer (`pipeline/*`)
 
 **Responsibilities:**
+
 - Catalog pipelines: `TelegramCatalogPipeline`, `XtreamCatalogPipeline`
 - Internal DTOs (not exported): `TelegramMediaItem`, `XtreamVodItem`
 - `toRawMediaMetadata()` extension functions
@@ -145,6 +151,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 4. Normalization Layer (`core/metadata-normalizer`)
 
 **Responsibilities:**
+
 - Takes `RawMediaMetadata` → builds domain metadata
 - Title cleanup, season/episode parsing, adult/family detection
 - TMDB/IMDB lookups, language detection
@@ -154,6 +161,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 5. Data Layer (`infra/data-*`)
 
 **Responsibilities:**
+
 - Repositories consuming pipeline events
 - Store normalized metadata to DB entities
 - Provide Flows for UI/Domain
@@ -163,6 +171,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 6. Domain Layer (`domain/*`)
 
 **Responsibilities:**
+
 - Use cases: "Play this item", "Refresh catalog", "Search across sources"
 - Coordinates pipelines, repos, player
 - Builds `PlaybackContext`
@@ -172,6 +181,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 7. Playback Layer (`player/*`, `playback/*`)
 
 **Responsibilities:**
+
 - Internal player (Media3/ExoPlayer)
 - Source-specific factories: `TelegramPlaybackSourceFactory`, `XtreamPlaybackSourceFactory`
 - DataSources, LoadControls, validation
@@ -181,6 +191,7 @@ UI → Domain → Data → Pipeline → Transport → core:model
 ## 8. UI Layer (`feature/*`, `app-v2`)
 
 **Responsibilities:**
+
 - Screens, ViewModels, Navigation
 - Consumes repos/use cases
 
