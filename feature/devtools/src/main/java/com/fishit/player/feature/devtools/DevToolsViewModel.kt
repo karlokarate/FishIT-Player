@@ -35,7 +35,6 @@ class DevToolsViewModel
     @Inject
     constructor(
         private val telegramTransport: TelegramTransportClient,
-        private val tdlibProvider: TdlibClientProvider,
         private val xtreamClient: XtreamApiClient,
         private val xtreamDiscovery: XtreamDiscovery,
     ) : ViewModel() {
@@ -101,6 +100,10 @@ class DevToolsViewModel
 
         /**
          * Start Telegram authorization flow.
+     *
+     * Note: Interactive auth submission (phone/code/password) is not currently supported
+     * through TelegramTransportClient. The UI observes authState to display required steps,
+     * but actual credential submission would require extending TelegramTransportClient interface.
          */
         fun startTelegramAuth() {
             UnifiedLog.i(TAG, "startTelegramAuth()")
@@ -116,93 +119,6 @@ class DevToolsViewModel
             }
         }
 
-        /**
-         * Submit phone number for Telegram auth.
-         */
-        fun submitPhoneNumber(phoneNumber: String) {
-            UnifiedLog.i(TAG, "submitPhoneNumber()")
-            viewModelScope.launch {
-                try {
-                    _telegramError.value = null
-                    val tdlClient = tdlibProvider.getClient()
-                    val result = tdlClient.setAuthenticationPhoneNumber(phoneNumber, null)
-                    when (result) {
-                        is TdlResult.Success -> {
-                            UnifiedLog.d(TAG, "Phone number submitted successfully")
-                        }
-                        is TdlResult.Failure -> {
-                            val message = "Phone submission failed: ${result.code} - ${result.message}"
-                            UnifiedLog.e(TAG, message)
-                            _telegramError.value = message
-                        }
-                    }
-                } catch (e: Exception) {
-                    val message = "Phone submission error: ${e.message}"
-                    UnifiedLog.e(TAG, message, e)
-                    _telegramError.value = message
-                }
-            }
-        }
-
-        /**
-         * Submit verification code for Telegram auth.
-         */
-        fun submitCode(code: String) {
-            UnifiedLog.i(TAG, "submitCode()")
-            viewModelScope.launch {
-                try {
-                    _telegramError.value = null
-                    val tdlClient = tdlibProvider.getClient()
-                    val result = tdlClient.checkAuthenticationCode(code)
-                    when (result) {
-                        is TdlResult.Success -> {
-                            UnifiedLog.d(TAG, "Code submitted successfully")
-                        }
-                        is TdlResult.Failure -> {
-                            val message = "Code verification failed: ${result.code} - ${result.message}"
-                            UnifiedLog.e(TAG, message)
-                            _telegramError.value = message
-                        }
-                    }
-                } catch (e: Exception) {
-                    val message = "Code submission error: ${e.message}"
-                    UnifiedLog.e(TAG, message, e)
-                    _telegramError.value = message
-                }
-            }
-        }
-
-        /**
-         * Submit password for Telegram auth.
-         */
-        fun submitPassword(password: String) {
-            UnifiedLog.i(TAG, "submitPassword()")
-            viewModelScope.launch {
-                try {
-                    _telegramError.value = null
-                    val tdlClient = tdlibProvider.getClient()
-                    val result = tdlClient.checkAuthenticationPassword(password)
-                    when (result) {
-                        is TdlResult.Success -> {
-                            UnifiedLog.d(TAG, "Password submitted successfully")
-                        }
-                        is TdlResult.Failure -> {
-                            val message = "Password verification failed: ${result.code} - ${result.message}"
-                            UnifiedLog.e(TAG, message)
-                            _telegramError.value = message
-                        }
-                    }
-                } catch (e: Exception) {
-                    val message = "Password submission error: ${e.message}"
-                    UnifiedLog.e(TAG, message, e)
-                    _telegramError.value = message
-                }
-            }
-        }
-
-        /**
-         * Clear Telegram error.
-         */
         fun clearTelegramError() {
             _telegramError.value = null
         }

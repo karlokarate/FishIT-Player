@@ -43,7 +43,7 @@ import com.fishit.player.infra.transport.telegram.TelegramAuthState
  * - Xtream configuration
  */
 @Composable
-fun devToolsScreen(viewModel: DevToolsViewModel = hiltViewModel()) {
+fun DevToolsScreen(viewModel: DevToolsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
@@ -72,9 +72,6 @@ fun devToolsScreen(viewModel: DevToolsViewModel = hiltViewModel()) {
             authState = uiState.telegramAuthState,
             error = uiState.telegramError,
             onStartAuth = viewModel::startTelegramAuth,
-            onSubmitPhone = viewModel::submitPhoneNumber,
-            onSubmitCode = viewModel::submitCode,
-            onSubmitPassword = viewModel::submitPassword,
             onClearError = viewModel::clearTelegramError,
         )
 
@@ -97,9 +94,6 @@ private fun telegramAuthSection(
     authState: TelegramAuthState,
     error: String?,
     onStartAuth: () -> Unit,
-    onSubmitPhone: (String) -> Unit,
-    onSubmitCode: (String) -> Unit,
-    onSubmitPassword: (String) -> Unit,
     onClearError: () -> Unit,
 ) {
     Card(
@@ -172,14 +166,21 @@ private fun telegramAuthSection(
                         Text("Start Telegram Auth")
                     }
                 }
-                TelegramAuthState.WaitingForPhone -> {
-                    phoneInputForm(onSubmit = onSubmitPhone)
-                }
-                TelegramAuthState.WaitingForCode -> {
-                    codeInputForm(onSubmit = onSubmitCode)
-                }
+                TelegramAuthState.WaitingForPhone,
+                TelegramAuthState.WaitingForCode,
                 TelegramAuthState.WaitingForPassword -> {
-                    passwordInputForm(onSubmit = onSubmitPassword)
+                    Text(
+                        text = "⚠️ Interactive auth input not currently supported",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        text =
+                            "TelegramTransportClient needs to be extended to support " +
+                                "credential submission.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 TelegramAuthState.Ready -> {
                     Text(
@@ -203,102 +204,6 @@ private fun telegramAuthSection(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun phoneInputForm(onSubmit: (String) -> Unit) {
-    var phoneNumber by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            value = phoneNumber,
-            onValueChange = { phoneNumber = it },
-            label = { Text("Phone Number") },
-            placeholder = { Text("+1234567890") },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Phone,
-                    imeAction = ImeAction.Done,
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = { if (phoneNumber.isNotBlank()) onSubmit(phoneNumber) },
-                ),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        Button(
-            onClick = { onSubmit(phoneNumber) },
-            enabled = phoneNumber.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Submit Phone")
-        }
-    }
-}
-
-@Composable
-private fun codeInputForm(onSubmit: (String) -> Unit) {
-    var code by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            value = code,
-            onValueChange = { code = it },
-            label = { Text("Verification Code") },
-            placeholder = { Text("12345") },
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done,
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = { if (code.isNotBlank()) onSubmit(code) },
-                ),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        Button(
-            onClick = { onSubmit(code) },
-            enabled = code.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Submit Code")
-        }
-    }
-}
-
-@Composable
-private fun passwordInputForm(onSubmit: (String) -> Unit) {
-    var password by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = { if (password.isNotBlank()) onSubmit(password) },
-                ),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-        Button(
-            onClick = { onSubmit(password) },
-            enabled = password.isNotBlank(),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Submit Password")
         }
     }
 }

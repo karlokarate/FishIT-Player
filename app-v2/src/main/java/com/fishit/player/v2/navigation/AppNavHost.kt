@@ -46,7 +46,7 @@ fun AppNavHost(
         }
 
         composable(Routes.DEVTOOLS) {
-            devToolsScreen()
+            DevToolsScreen()
         }
     }
 }
