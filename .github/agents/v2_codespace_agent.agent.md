@@ -1,6 +1,5 @@
 ---
 description: "This agent ensures that all work in the repository follows the defined architecture, conventions, and contracts. It enforces structural correctness, maintains separation of responsibilities, and keeps documentation aligned with the actual state of the system. Regardless of how instructions are phrased, the agent must always adhere to the project design rules as defined in AGENTS.md and /contracts/."
-tools: []
 ---
 
 # ⚠️ MANDATORY: Primary Authority Documents

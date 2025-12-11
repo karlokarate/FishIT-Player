@@ -18,7 +18,7 @@
 |----------|---------|-------|-------------|
 | [GLOSSARY_v2_naming_and_modules.md](GLOSSARY_v2_naming_and_modules.md) | 2.0 | **Global** | Authoritative vocabulary and naming conventions for all v2 code |
 | [MEDIA_NORMALIZATION_CONTRACT.md](MEDIA_NORMALIZATION_CONTRACT.md) | 1.0 | Pipelines, Normalizer | Rules for `RawMediaMetadata` → `NormalizedMediaMetadata` |
-| [LOGGING_CONTRACT_V2.md](LOGGING_CONTRACT_V2.md) | 1.0 | All Modules | Unified logging rules, allowed/forbidden APIs |
+| [LOGGING_CONTRACT_V2.md](LOGGING_CONTRACT_V2.md) | 1.1 | All Modules | Unified logging rules, lambda-based lazy logging, allowed/forbidden APIs |
 
 ### Player Contracts
 

@@ -1,13 +1,7 @@
 {
   "name": "FishIT-Player Android Development",
   "image": "mcr.microsoft.com/devcontainers/java:21",
-  "features": {
-    "ghcr.io/devcontainers/features/android-sdk:1": {
-      "version": "latest",
-      "cmdlineToolsVersion": "latest",
-      "sdkRoot": "/home/codespace/.android-sdk"
-    }
-  },
+  "features": {},
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/post-start.sh && bash .devcontainer/postStartImportTdlibSession.sh",
   "customizations": {

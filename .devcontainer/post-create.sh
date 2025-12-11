@@ -17,13 +17,33 @@ export ANDROID_HOME="$SDK_DIR"
 export ANDROID_SDK_ROOT="$SDK_DIR"
 export PATH="$SDK_DIR/cmdline-tools/latest/bin:$SDK_DIR/platform-tools:$PATH"
 
-# Install required SDK packages if not present
+# Install Android SDK cmdline-tools if not present
+if [ ! -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
+    echo "=== Installing Android SDK Command Line Tools ==="
+    mkdir -p "$SDK_DIR/cmdline-tools"
+    
+    # Download command line tools
+    CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+    TEMP_ZIP="/tmp/cmdline-tools.zip"
+    
+    echo "Downloading Android Command Line Tools..."
+    curl -L -o "$TEMP_ZIP" "$CMDLINE_TOOLS_URL"
+    
+    echo "Extracting..."
+    unzip -q "$TEMP_ZIP" -d "$SDK_DIR/cmdline-tools"
+    mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
+    rm "$TEMP_ZIP"
+    
+    echo "✓ Android cmdline-tools installed"
+fi
+
+# Install required SDK packages if cmdline-tools are present
 if [ -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
     echo "=== Installing Android SDK packages ==="
-    yes | sdkmanager --licenses 2>/dev/null || true
+    yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
     
     # Install packages matching Releasebuildsafe.yml workflow
-    sdkmanager --install \
+    "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --install \
         "platform-tools" \
         "platforms;android-35" \
         "build-tools;35.0.0" \
@@ -31,7 +51,7 @@ if [ -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
     
     echo "✓ SDK packages installed"
 else
-    echo "⚠️ SDK cmdline-tools not found - rebuild container to install"
+    echo "⚠️ SDK cmdline-tools installation failed"
 fi
 
 # Start memory monitor in background

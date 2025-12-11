@@ -20,15 +20,15 @@
   "java.configuration.runtimes": [
     {
       "name": "JavaSE-21",
-      "path": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+      "path": "/usr/lib/jvm/msopenjdk-current",
       "default": true
     }
   ],
-  "java.jdt.ls.java.home": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+  "java.jdt.ls.java.home": "/usr/lib/jvm/msopenjdk-current",
   
   // Java Language Server Memory Limits (optimized for 8GB Codespaces)
   "java.jdt.ls.vmargs": "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms256m -Xmx1024m -XX:MaxMetaspaceSize=256m -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Djava.awt.headless=true -Djava.util.concurrent.ForkJoinPool.common.parallelism=2",
-  "java.import.gradle.java.home": "/usr/local/sdkman/candidates/java/21.0.9-ms",
+  "java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
   "java.import.gradle.wrapper.enabled": true,
   "java.import.gradle.offline.enabled": false,
   "java.autobuild.enabled": false,
