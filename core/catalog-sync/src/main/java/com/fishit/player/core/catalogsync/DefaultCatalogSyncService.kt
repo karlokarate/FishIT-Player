@@ -1,7 +1,9 @@
 package com.fishit.player.core.catalogsync
 
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
+import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.RawMediaMetadata
+import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
@@ -22,16 +24,28 @@ import javax.inject.Singleton
 /**
  * Default implementation of [CatalogSyncService].
  *
- * Orchestrates catalog synchronization between pipelines and data repositories.
+ * Orchestrates catalog synchronization between pipelines and data repositories,
+ * with full canonical media unification per MEDIA_NORMALIZATION_CONTRACT.md.
  *
  * **Architecture Compliance:**
  * - Consumes catalog events from pipelines
- * - Extracts RawMediaMetadata and persists via repositories
+ * - Normalizes RawMediaMetadata via MediaMetadataNormalizer
+ * - Persists to pipeline-specific repos (for fast pipeline-local queries)
+ * - Creates canonical entries in CanonicalMediaRepository (for cross-pipeline unification)
+ * - Links sources to canonical entries via MediaSourceRef
  * - Emits SyncStatus events for progress tracking
  * - Uses batching for efficient persistence
  *
  * **Layer Position:**
- * Transport → Pipeline → **CatalogSync** → Data → Domain → UI
+ * Transport → Pipeline → **CatalogSync** → Normalizer → Data → Domain → UI
+ *
+ * **Cross-Pipeline Flow:**
+ * 1. Pipeline produces RawMediaMetadata
+ * 2. CatalogSync stores raw in pipeline-specific repo (fast local queries)
+ * 3. CatalogSync normalizes via MediaMetadataNormalizer
+ * 4. CatalogSync upserts to CanonicalMediaRepository (cross-pipeline identity)
+ * 5. CatalogSync links source via addOrUpdateSourceRef
+ * 6. Resume positions work across all sources via percentage-based positioning
  */
 @Singleton
 class DefaultCatalogSyncService @Inject constructor(
@@ -41,6 +55,7 @@ class DefaultCatalogSyncService @Inject constructor(
     private val xtreamCatalogRepository: XtreamCatalogRepository,
     private val xtreamLiveRepository: XtreamLiveRepository,
     private val normalizer: MediaMetadataNormalizer,
+    private val canonicalMediaRepository: CanonicalMediaRepository,
 ) : CatalogSyncService {
 
     companion object {
@@ -319,21 +334,116 @@ class DefaultCatalogSyncService @Inject constructor(
     }
 
     // ========================================================================
-    // Private Helpers
+    // Private Helpers - Persistence with Canonical Unification
     // ========================================================================
 
+    /**
+     * Persist Telegram batch with canonical media unification.
+     *
+     * Per MEDIA_NORMALIZATION_CONTRACT.md:
+     * 1. Store raw in pipeline-specific repo (fast local queries)
+     * 2. Normalize via MediaMetadataNormalizer
+     * 3. Upsert to CanonicalMediaRepository (cross-pipeline identity)
+     * 4. Link source via MediaSourceRef (enables unified resume)
+     */
     private suspend fun persistTelegramBatch(items: List<RawMediaMetadata>) {
-        UnifiedLog.d(TAG, "Persisting Telegram batch: ${items.size} items")
+        UnifiedLog.d(TAG) { "Persisting Telegram batch: ${items.size} items" }
+        
+        // Step 1: Store raw in pipeline-specific repo (for fast Telegram-only queries)
         telegramRepository.upsertAll(items)
+        
+        // Step 2-4: Normalize and link to canonical (for cross-pipeline unification)
+        items.forEach { raw ->
+            try {
+                // Step 2: Normalize metadata
+                val normalized = normalizer.normalize(raw)
+                
+                // Step 3: Upsert to canonical repository
+                val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
+                
+                // Step 4: Link this source to the canonical entry
+                val sourceRef = raw.toMediaSourceRef()
+                canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
+                
+            } catch (e: Exception) {
+                // Log but don't fail the batch - canonical linking is best-effort
+                UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
+            }
+        }
     }
 
+    /**
+     * Persist Xtream catalog batch with canonical media unification.
+     *
+     * Same flow as Telegram: raw storage + normalize + canonical link.
+     */
     private suspend fun persistXtreamCatalogBatch(items: List<RawMediaMetadata>) {
-        UnifiedLog.d(TAG, "Persisting Xtream catalog batch: ${items.size} items")
+        UnifiedLog.d(TAG) { "Persisting Xtream catalog batch: ${items.size} items" }
+        
+        // Step 1: Store raw in pipeline-specific repo
         xtreamCatalogRepository.upsertAll(items)
+        
+        // Step 2-4: Normalize and link to canonical
+        items.forEach { raw ->
+            try {
+                val normalized = normalizer.normalize(raw)
+                val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
+                val sourceRef = raw.toMediaSourceRef()
+                canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
+            }
+        }
     }
 
+    /**
+     * Persist Xtream live batch.
+     *
+     * Live channels are NOT linked to canonical media (they're ephemeral streams,
+     * not on-demand content that benefits from cross-pipeline unification).
+     */
     private suspend fun persistXtreamLiveBatch(items: List<RawMediaMetadata>) {
-        UnifiedLog.d(TAG, "Persisting Xtream live batch: ${items.size} items")
+        UnifiedLog.d(TAG) { "Persisting Xtream live batch: ${items.size} items" }
         xtreamLiveRepository.upsertAll(items)
+        // Note: Live channels don't get canonical entries - they're ephemeral streams
+    }
+
+    // ========================================================================
+    // Extension: RawMediaMetadata → MediaSourceRef
+    // ========================================================================
+
+    /**
+     * Convert RawMediaMetadata to MediaSourceRef for canonical linking.
+     *
+     * This creates the source reference that links a pipeline item to its
+     * canonical media identity, enabling:
+     * - Cross-pipeline resume (percentage-based positioning)
+     * - Source selection in unified detail screen
+     * - Quality/language comparison across sources
+     */
+    private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef = MediaSourceRef(
+        sourceType = sourceType,
+        sourceId = sourceId,
+        sourceLabel = sourceLabel,
+        quality = null, // TODO: Extract from RawMediaMetadata.quality when available
+        languages = null, // TODO: Extract from RawMediaMetadata.languages when available
+        format = null, // TODO: Extract from RawMediaMetadata.format when available
+        sizeBytes = null, // TODO: Add to RawMediaMetadata
+        durationMs = durationMinutes?.let { it * 60_000L },
+        priority = calculateSourcePriority(),
+    )
+
+    /**
+     * Calculate source priority for ordering in source selection.
+     *
+     * Higher values = preferred source. Xtream typically gets higher priority
+     * because it provides more structured metadata.
+     */
+    private fun RawMediaMetadata.calculateSourcePriority(): Int = when (sourceType) {
+        com.fishit.player.core.model.SourceType.XTREAM -> 100
+        com.fishit.player.core.model.SourceType.TELEGRAM -> 50
+        com.fishit.player.core.model.SourceType.IO -> 75
+        com.fishit.player.core.model.SourceType.AUDIOBOOK -> 25
+        else -> 0
     }
 }
