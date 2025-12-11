@@ -37,6 +37,9 @@ dependencies {
     implementation(project(":infra:logging"))
     implementation(project(":infra:transport-telegram"))
     
+    // NextLib FFmpeg codecs integration
+    implementation(project(":player:nextlib-codecs"))
+    
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-compiler:2.52")

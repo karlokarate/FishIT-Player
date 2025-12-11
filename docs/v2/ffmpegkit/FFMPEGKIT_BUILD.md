@@ -38,6 +38,7 @@ The workflow is manually triggered via GitHub Actions:
 ### Build Configuration Examples
 
 #### Minimal Build (LGPL, ARM64 only)
+
 ```
 ffmpeg_kit_version: main
 enable_gpl: false
@@ -49,6 +50,7 @@ enable_external_libs: false
 **Result**: Smallest AAR, suitable for streaming HLS/DASH content with basic codecs.
 
 #### Standard Build (LGPL, ARM64 + ARM v7a)
+
 ```
 ffmpeg_kit_version: main
 enable_gpl: false
@@ -60,6 +62,7 @@ enable_external_libs: true
 **Result**: Includes modern codecs (VP9, AV1, Opus) and HTTPS support via OpenSSL.
 
 #### Full Build (GPL, all features)
+
 ```
 ffmpeg_kit_version: main
 enable_gpl: true
@@ -105,6 +108,7 @@ enable_external_libs: true
 The workflow uses the following FFmpegKit build flags:
 
 **Always Applied:**
+
 - `--disable-x86`: Skip x86 architecture
 - `--disable-x86-64`: Skip x86_64 architecture
 - `--enable-android-zlib`: Use built-in Android zlib
@@ -112,6 +116,7 @@ The workflow uses the following FFmpegKit build flags:
 - `--speed`: Optimize for speed over size
 
 **Conditional:**
+
 - `--disable-arm-v7a`: Skip 32-bit ARM (if disabled)
 - `--disable-arm-v7a-neon`: Skip ARM NEON (if disabled)
 - `--disable-arm64-v8a`: Skip 64-bit ARM (if disabled)
@@ -197,6 +202,7 @@ The built AAR contains:
 ### Check AAR Size
 
 A minimal build should be:
+
 - ARM64 only: ~15-25 MB
 - ARM64 + ARM v7a: ~30-40 MB
 
@@ -225,6 +231,7 @@ sha256sum ffmpeg-kit-custom.aar
 **Problem**: NDK version mismatch or missing.
 
 **Solution**: The workflow uses NDK 22.1.7171670 (r22b), which is recommended by the FFmpegKit community for v6.0 compatibility. If build fails, check:
+
 1. FFmpegKit v6.0 requires NDK r22b for successful builds
 2. Note: NDK r25 and newer are NOT compatible with FFmpegKit v6.0 due to cpu-features library deprecation
 3. Update `ANDROID_NDK_VERSION` in workflow only if using a different FFmpegKit version
@@ -234,6 +241,7 @@ sha256sum ffmpeg-kit-custom.aar
 **Problem**: `android.sh` completed but no AAR in `prebuilt/`.
 
 **Solution**: Check build logs for errors. The script may have:
+
 1. Skipped AAR creation due to errors
 2. Changed output location in newer versions
 
@@ -242,6 +250,7 @@ sha256sum ffmpeg-kit-custom.aar
 **Problem**: Full builds can exceed timeout.
 
 **Solution**:
+
 1. Disable unnecessary external libraries
 2. Build only one ABI (ARM64 recommended)
 3. Use `--lts` flag for faster builds (API 16+ support)
@@ -251,6 +260,7 @@ sha256sum ffmpeg-kit-custom.aar
 **Problem**: Unsure about GPL implications.
 
 **Solution**:
+
 - Without `--enable-gpl`: LGPL 2.1+ applies
 - With `--enable-gpl`: GPL 3.0+ applies to entire app
 - **Recommendation**: Start with LGPL build; add GPL only if x264/x265 encoding is required
@@ -259,10 +269,10 @@ sha256sum ffmpeg-kit-custom.aar
 
 For detailed FFmpegKit documentation, see:
 
-- **Main Repository**: https://github.com/arthenica/ffmpeg-kit
-- **Wiki**: https://github.com/arthenica/ffmpeg-kit/wiki
-- **Building Guide**: https://github.com/arthenica/ffmpeg-kit/wiki/Building
-- **Android Guide**: https://github.com/arthenica/ffmpeg-kit/wiki/Android
+- **Main Repository**: <https://github.com/arthenica/ffmpeg-kit>
+- **Wiki**: <https://github.com/arthenica/ffmpeg-kit/wiki>
+- **Building Guide**: <https://github.com/arthenica/ffmpeg-kit/wiki/Building>
+- **Android Guide**: <https://github.com/arthenica/ffmpeg-kit/wiki/Android>
 
 ## Maintenance
 
@@ -270,7 +280,7 @@ For detailed FFmpegKit documentation, see:
 
 To use a newer FFmpegKit release:
 
-1. Check available tags: https://github.com/arthenica/ffmpeg-kit/tags
+1. Check available tags: <https://github.com/arthenica/ffmpeg-kit/tags>
 2. Run workflow with desired tag (e.g., `v6.0`)
 3. Test the built AAR in a development build
 4. Update documentation if API changes

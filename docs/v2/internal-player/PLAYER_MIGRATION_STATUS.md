@@ -294,6 +294,36 @@ Code Review entdeckte und behob folgende Issues:
 
 ---
 
+## 5.9 FFmpeg / NextLib Integration ✅ COMPLETE
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| `player:nextlib-codecs` module | ✅ DONE | New module for FFmpeg codec abstraction |
+| `NextlibCodecConfigurator` interface | ✅ DONE | `player:nextlib-codecs` |
+| `DefaultNextlibCodecConfigurator` | ✅ DONE | `player:nextlib-codecs` |
+| `NextlibCodecsModule` (Hilt DI) | ✅ DONE | `player:nextlib-codecs/di/` |
+| InternalPlayerSession integration | ✅ DONE | Uses `NextRenderersFactory` |
+| Track logging on STATE_READY | ✅ DONE | Logs available tracks via UnifiedLog |
+
+**Key Implementation Details:**
+- FFmpeg codec support enabled via **NextLib** (`io.github.anilbeesetti:nextlib-media3ext:1.8.0-0.9.0`)
+- `NextRenderersFactory` replaces default renderers in ExoPlayer.Builder
+- Supports software decoding for:
+  - **Audio:** Vorbis, Opus, FLAC, ALAC, MP3, AAC, AC3, EAC3, DTS, TrueHD
+  - **Video:** H.264, HEVC, VP8, VP9
+- Integration isolated in `player:nextlib-codecs` module (no pipeline dependencies)
+- `NextlibCodecConfigurator` interface allows future codec configurator implementations
+- UnifiedLog logs when NextLib is active and available tracks on STATE_READY
+
+**License Note:**
+- NextLib is GPL-3.0 licensed due to FFmpeg. This applies to the entire app when using this library.
+
+**Contract Compliance:**
+- ✅ LOGGING_CONTRACT_V2.md (UnifiedLog for all logging)
+- ✅ Layer boundaries: NextLib only in player layer, not in pipeline or transport
+
+---
+
 ## 6. v1 SIP Components for Porting
 
 From `/legacy/v1-app/.../player/internal/`:

@@ -20,6 +20,7 @@ import com.fishit.player.internal.audio.AudioTrackManager
 import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.internal.state.InternalPlayerState
 import com.fishit.player.internal.subtitle.SubtitleTrackManager
+import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
@@ -58,6 +59,7 @@ class InternalPlayerSession(
         private val sourceResolver: PlaybackSourceResolver,
         private val resumeManager: ResumeManager,
         private val kidsPlaybackGate: KidsPlaybackGate,
+        private val codecConfigurator: NextlibCodecConfigurator,
         private val dataSourceFactories: Map<DataSourceType, DataSource.Factory> = emptyMap()
 ) {
     companion object {
@@ -114,9 +116,13 @@ class InternalPlayerSession(
                             when (playbackState) {
                                 Player.STATE_IDLE -> PlaybackState.IDLE
                                 Player.STATE_BUFFERING -> PlaybackState.BUFFERING
-                                Player.STATE_READY ->
-                                        if (player?.isPlaying == true) PlaybackState.PLAYING
-                                        else PlaybackState.PAUSED
+                                Player.STATE_READY -> {
+                                    // Log available tracks when player is ready (NextLib
+                                    // integration)
+                                    logCurrentTracks()
+                                    if (player?.isPlaying == true) PlaybackState.PLAYING
+                                    else PlaybackState.PAUSED
+                                }
                                 Player.STATE_ENDED -> PlaybackState.ENDED
                                 else -> PlaybackState.IDLE
                             }
@@ -199,9 +205,14 @@ class InternalPlayerSession(
                 val mediaSourceFactory =
                         DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory)
 
+                // Create RenderersFactory with NextLib FFmpeg codecs
+                val renderersFactory = codecConfigurator.createRenderersFactory(context)
+                UnifiedLog.i(TAG, "SIP using NextLib NextRenderersFactory for FFmpeg codecs")
+
                 // Create and configure player on main thread
                 player =
                         ExoPlayer.Builder(context)
+                                .setRenderersFactory(renderersFactory)
                                 .setMediaSourceFactory(mediaSourceFactory)
                                 .build()
                                 .apply {
@@ -475,5 +486,46 @@ class InternalPlayerSession(
                 // Continue playing
             }
         }
+    }
+
+    /**
+     * Logs the current tracks when player reaches STATE_READY. This helps verify NextLib FFmpeg
+     * codec integration.
+     */
+    private fun logCurrentTracks() {
+        val exoPlayer = player ?: return
+        val tracks = exoPlayer.currentTracks
+
+        if (tracks.isEmpty) {
+            UnifiedLog.d(TAG, "No tracks available in media")
+            return
+        }
+
+        val trackInfo = buildString {
+            appendLine("Available tracks (NextLib FFmpeg enabled):")
+
+            tracks.groups.forEachIndexed { groupIndex, group ->
+                val trackType =
+                        when (group.type) {
+                            androidx.media3.common.C.TRACK_TYPE_VIDEO -> "Video"
+                            androidx.media3.common.C.TRACK_TYPE_AUDIO -> "Audio"
+                            androidx.media3.common.C.TRACK_TYPE_TEXT -> "Subtitle"
+                            else -> "Other"
+                        }
+
+                for (trackIndex in 0 until group.length) {
+                    val format = group.getTrackFormat(trackIndex)
+                    val isSelected = group.isTrackSelected(trackIndex)
+                    val marker = if (isSelected) "▶" else " "
+
+                    appendLine(
+                            "  $marker [$trackType] ${format.sampleMimeType ?: "unknown"} " +
+                                    "(${format.language ?: "und"}, ${format.label ?: "no label"})"
+                    )
+                }
+            }
+        }
+
+        UnifiedLog.d(TAG, trackInfo)
     }
 }

@@ -8,6 +8,21 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### FFmpeg / NextLib Integration (2025-12-11)
+
+- **feat(player)**: Added FFmpeg-based software decoders via NextLib
+  - New module `player:nextlib-codecs` for FFmpeg codec integration
+  - Uses `io.github.anilbeesetti:nextlib-media3ext:1.8.0-0.9.0`
+  - `NextlibCodecConfigurator` interface for RenderersFactory abstraction
+  - `DefaultNextlibCodecConfigurator` creates `NextRenderersFactory` for ExoPlayer
+  - Hilt DI module `NextlibCodecsModule` for dependency injection
+- **feat(player)**: Integrated NextLib into SIP (Internal Player)
+  - `InternalPlayerSession` now uses `NextRenderersFactory` via codecConfigurator
+  - Extended codec support: Vorbis, Opus, FLAC, ALAC, AAC, AC3, EAC3, DTS, TrueHD (audio), H.264, HEVC, VP8, VP9 (video)
+  - Added track logging on STATE_READY to verify codec integration
+- **docs**: Updated PLAYER_MIGRATION_STATUS.md with FFmpeg/NextLib section
+- **note**: NextLib is GPL-3.0 licensed
+
 ### Phase 7 – Audio Track Selection (2025-12-11)
 
 - **feat(player-model)**: Created `AudioTrack.kt` with source-agnostic audio models

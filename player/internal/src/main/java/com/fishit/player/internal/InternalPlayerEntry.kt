@@ -20,6 +20,7 @@ import com.fishit.player.internal.session.InternalPlayerSession
 import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.internal.ui.InternalPlayerControls
 import com.fishit.player.internal.ui.PlayerSurface
+import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 import kotlinx.coroutines.delay
@@ -37,6 +38,7 @@ import kotlinx.coroutines.delay
  * @param sourceResolver Resolver for playback sources (injected via DI).
  * @param resumeManager Manager for resume positions.
  * @param kidsPlaybackGate Gate for kids screen time.
+ * @param codecConfigurator Configurator for FFmpeg codecs via NextLib.
  * @param onBack Callback when user wants to exit the player.
  * @param modifier Modifier for the player container.
  */
@@ -46,6 +48,7 @@ fun InternalPlayerEntry(
     sourceResolver: PlaybackSourceResolver,
     resumeManager: ResumeManager,
     kidsPlaybackGate: KidsPlaybackGate,
+    codecConfigurator: NextlibCodecConfigurator,
     onBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -58,7 +61,8 @@ fun InternalPlayerEntry(
             context = context,
             sourceResolver = sourceResolver,
             resumeManager = resumeManager,
-            kidsPlaybackGate = kidsPlaybackGate
+            kidsPlaybackGate = kidsPlaybackGate,
+            codecConfigurator = codecConfigurator
         )
     }
 
