@@ -69,6 +69,7 @@ dependencies {
     implementation(project(":feature:telegram-media"))
     implementation(project(":feature:audiobooks"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:devtools"))
     
     // v2 Infrastructure
     implementation(project(":infra:logging"))

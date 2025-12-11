@@ -76,6 +76,7 @@ include(":feature:detail")
 include(":feature:telegram-media")
 include(":feature:audiobooks")
 include(":feature:settings")
+include(":feature:devtools")
 
 // Infrastructure
 include(":infra:logging")

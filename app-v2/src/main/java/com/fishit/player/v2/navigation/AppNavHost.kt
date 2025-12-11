@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.fishit.player.feature.devtools.DevToolsScreen
 import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
@@ -30,7 +31,7 @@ fun AppNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.DEBUG_PLAYBACK
+        startDestination = Routes.DEVTOOLS
     ) {
         composable(Routes.DEBUG_SKELETON) {
             DebugSkeletonScreen()
@@ -43,6 +44,10 @@ fun AppNavHost(
                 onBack = { navController.popBackStack() }
             )
         }
+        
+        composable(Routes.DEVTOOLS) {
+            DevToolsScreen()
+        }
     }
 }
 
@@ -52,6 +57,7 @@ fun AppNavHost(
 object Routes {
     const val DEBUG_SKELETON = "debug_skeleton"
     const val DEBUG_PLAYBACK = "debug_playback"
+    const val DEVTOOLS = "devtools"
     
     // Future routes (Phase 2+)
     // const val HOME = "home"

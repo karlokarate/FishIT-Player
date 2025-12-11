@@ -1,0 +1,97 @@
+# GitHub Actions - Build Debug APK for v2
+# 
+# Builds a debug APK from the v2 app module on:
+# - Pull requests to main/architecture/v2-bootstrap
+# - Pushes to architecture/v2-bootstrap
+#
+# Uploads the debug APK as an artifact for testing
+
+name: Build Debug APK
+
+on:
+  pull_request:
+    branches:
+      - main
+      - architecture/v2-bootstrap
+    paths:
+      - 'app-v2/**'
+      - 'core/**'
+      - 'feature/**'
+      - 'infra/**'
+      - 'pipeline/**'
+      - 'player/**'
+      - 'playback/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - '.github/workflows/build-debug-apk.yml'
+  push:
+    branches:
+      - architecture/v2-bootstrap
+    paths:
+      - 'app-v2/**'
+      - 'core/**'
+      - 'feature/**'
+      - 'infra/**'
+      - 'pipeline/**'
+      - 'player/**'
+      - 'playback/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - '.github/workflows/build-debug-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-debug-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew :app-v2:assembleDebug --no-daemon --stacktrace
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fishit-v2-debug
+          path: app-v2/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Upload Build Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-reports-debug
+          path: |
+            app-v2/build/reports/
+            build/reports/
+          retention-days: 7
