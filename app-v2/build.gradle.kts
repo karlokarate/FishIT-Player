@@ -6,6 +6,24 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+/**
+ * Keystore configuration for release signing.
+ * Reads from Gradle properties or environment variables (set by CI workflow).
+ */
+val keystorePath: String? =
+    (project.findProperty("MYAPP_UPLOAD_STORE_FILE") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_STORE_FILE")
+val keystoreStorePassword: String? =
+    (project.findProperty("MYAPP_UPLOAD_STORE_PASSWORD") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_STORE_PASSWORD")
+val keystoreKeyAlias: String? =
+    (project.findProperty("MYAPP_UPLOAD_KEY_ALIAS") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_KEY_ALIAS")
+val keystoreKeyPassword: String? =
+    (project.findProperty("MYAPP_UPLOAD_KEY_PASSWORD") as String?)
+        ?: System.getenv("MYAPP_UPLOAD_KEY_PASSWORD")
+val hasKeystore = !keystorePath.isNullOrBlank()
+
 android {
     namespace = "com.fishit.player.v2"
     compileSdk = 35
@@ -66,6 +84,17 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasKeystore) {
+                storeFile = file(keystorePath!!)
+                storePassword = keystoreStorePassword
+                keyAlias = keystoreKeyAlias
+                keyPassword = keystoreKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -74,6 +103,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                println("⚠️  V2 Release will be UNSIGNED (no keystore found).")
+            }
         }
         debug {
             isMinifyEnabled = false
