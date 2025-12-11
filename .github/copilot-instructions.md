@@ -2,6 +2,28 @@
 
 This document provides repository-specific instructions for GitHub Copilot to help you work more effectively in this Android TV/mobile streaming application codebase.
 
+> ⚠️ **CRITICAL:** This file works in conjunction with `AGENTS.md`. All agents (Copilot, Codex, etc.) MUST follow both documents. In case of conflict, `AGENTS.md` takes precedence.
+
+---
+
+## ⚠️ MANDATORY: Contracts Folder
+
+**Before making ANY code changes, you MUST read the relevant contracts from `/contracts/`:**
+
+| Contract | Scope | When to Read |
+|----------|-------|--------------|
+| `GLOSSARY_v2_naming_and_modules.md` | Global naming | **ALWAYS** - before any change |
+| `MEDIA_NORMALIZATION_CONTRACT.md` | Pipelines → Normalizer | Pipeline/metadata changes |
+| `LOGGING_CONTRACT_V2.md` | All modules | Logging code changes |
+| `INTERNAL_PLAYER_*.md` | Player phases | Player/playback changes |
+| `TELEGRAM_PARSER_CONTRACT.md` | Telegram pipeline | Telegram features |
+
+**Hard Rule:** Violations of contracts are bugs and must be fixed immediately.
+
+See `AGENTS.md` Section 15 for full contract compliance requirements.
+
+---
+
 ## Project Overview
 
 FishIT-Player is a Kotlin-based Android application for streaming media content with support for:
@@ -33,7 +55,7 @@ The `docs/` folder contains current project specifications and implementation gu
 
 ### Playback System
 - **`docs/playback_launcher.md`** - PlaybackLauncher v1: centralized playback orchestration
-- **`docs/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`** - Resume and kids/screen-time behavior contract
+- **`/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`** - Resume and kids/screen-time behavior contract
 - **`docs/INTERNAL_PLAYER_REFACTOR_STATUS.md`** - Internal player modular refactor progress (Phase 1-3)
 - **`docs/INTERNAL_PLAYER_REFACTOR_ROADMAP.md`** - Player refactor roadmap and phases
 
@@ -120,12 +142,14 @@ The `docs/` folder contains current project specifications and implementation gu
 
 ## Important Files to Reference
 
-- **`AGENTS.md`:** Single source of truth for architecture and workflow rules
+- **`AGENTS.md`:** ⚠️ **PRIMARY AUTHORITY** - Single source of truth for architecture and workflow rules
+- **`/contracts/`:** ⚠️ **MANDATORY** - All binding contracts (read before any changes)
+- **`V2_PORTAL.md`:** Entry point for v2 architecture documentation
 - **`ARCHITECTURE_OVERVIEW.md`:** Detailed module documentation
 - **`DEVELOPER_GUIDE.md`:** Build, test, and quality tool documentation
 - **`.github/tdlibAgent.md`:** Telegram integration specifications (Single Source of Truth for TDLib)
 - **`docs/fish_layout.md`:** Fish* UI component specifications
-- **`docs/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`:** Player resume/kids behavior contract
+- **`/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`:** Player resume/kids behavior contract
 
 ## What NOT to Do
 
@@ -135,6 +159,9 @@ The `docs/` folder contains current project specifications and implementation gu
 - Don't use raw Material3 buttons in TV paths (use TvButton variants)
 - Don't create new Room entities (use ObjectBox)
 - Don't access TDLib/TdlClient directly outside `telegram.core` package
+- **Don't make changes without reading the relevant `/contracts/` first**
+- **Don't introduce naming that violates `/contracts/GLOSSARY_v2_naming_and_modules.md`**
+- **Don't bypass layer boundaries defined in `AGENTS.md` Section 4**
 
 ## Feature Flags (BuildConfig)
 
