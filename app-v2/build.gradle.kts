@@ -14,10 +14,47 @@ android {
         applicationId = "com.fishit.player.v2"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "2.0.0-alpha01"
+        
+        // Version from Gradle properties (CI can override)
+        val versionCodeProp = project.findProperty("versionCode")?.toString()?.toIntOrNull() ?: 1
+        val versionNameProp = project.findProperty("versionName")?.toString() ?: "2.0.0-alpha01"
+        versionCode = versionCodeProp
+        versionName = versionNameProp
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Telegram API credentials (from environment or local.properties)
+        val tgApiIdEnv = System.getenv("TG_API_ID")
+        val tgApiHashEnv = System.getenv("TG_API_HASH")
+        
+        val tgApiIdValue = tgApiIdEnv?.toIntOrNull() ?: 0
+        val tgApiHashValue = tgApiHashEnv ?: ""
+        
+        buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
+        buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
+        
+        // ABI splits configuration (CI can override)
+        val abiFilters = project.findProperty("abiFilters")?.toString()
+        if (abiFilters != null) {
+            ndk {
+                abiFilters.split(",").forEach { abi ->
+                    this.abiFilters.add(abi.trim())
+                }
+            }
+        }
+    }
+    
+    // ABI Splits for smaller APKs (enabled via -PuseSplits=true)
+    val useSplits = project.findProperty("useSplits")?.toString()?.toBoolean() ?: false
+    if (useSplits) {
+        splits {
+            abi {
+                isEnable = true
+                reset()
+                include("arm64-v8a", "armeabi-v7a")
+                isUniversalApk = project.findProperty("universalApk")?.toString()?.toBoolean() ?: false
+            }
+        }
     }
 
     buildTypes {
