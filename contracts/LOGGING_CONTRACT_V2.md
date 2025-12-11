@@ -1,5 +1,8 @@
 # V2 Logging Contract
 
+**Version:** 1.1  
+**Last Updated:** 2025-12-11
+
 This contract defines how **logging must be done in the v2 architecture**, which modules may use which APIs, and what all Copilot agents must respect when adding or modifying log statements.
 
 It is **binding** for:
@@ -21,12 +24,21 @@ It is **binding** for:
 - All other modules must use the logical logging façade:
 
   ```kotlin
-  UnifiedLog.d(tag, message)
-  UnifiedLog.i(tag, message)
-  UnifiedLog.w(tag, message)
-  UnifiedLog.e(tag, message)
-  UnifiedLog.v(tag, message)
+  // Primary, lazy API (RECOMMENDED)
+  UnifiedLog.d(tag) { "debug message $value" }
+  UnifiedLog.i(tag) { "info message" }
+  UnifiedLog.w(tag) { "warn message" }
+  UnifiedLog.e(tag, throwable) { "error message" }
+  UnifiedLog.v(tag) { "verbose message" }
+
+  // Convenience overloads (allowed, but not preferred in hot paths)
+  UnifiedLog.d(tag, "debug message")
+  UnifiedLog.e(tag, "error message", throwable)
   ```
+
+> **Important:** The **lambda-based overloads** are the **primary** logging API in v2.
+> String-based overloads exist for convenience but **MUST NOT** be used for logs that
+> involve string interpolation, expensive computations, or large payloads.
 
 ### 1.2 Application Initialization
 
@@ -46,17 +58,23 @@ It is **binding** for:
 
 In all v2 code (except `:infra:logging`):
 
-- ✅ `UnifiedLog.d(tag, msg)`
-- ✅ `UnifiedLog.i(tag, msg)`
-- ✅ `UnifiedLog.w(tag, msg)`
-- ✅ `UnifiedLog.e(tag, msg)`
-- ✅ `UnifiedLog.v(tag, msg)`
+**Primary API (lazy, preferred):**
+- ✅ `UnifiedLog.d(tag) { "message $value" }`  — **preferred (lazy)**
+- ✅ `UnifiedLog.i(tag) { "message" }`
+- ✅ `UnifiedLog.w(tag) { "message" }`
+- ✅ `UnifiedLog.e(tag, throwable) { "message" }`
+- ✅ `UnifiedLog.v(tag) { "message" }`
 
-With optional `Throwable` parameter where appropriate:
+**Convenience API (allowed for constant messages):**
+- ✅ `UnifiedLog.d(tag, "constant message")`
+- ✅ `UnifiedLog.i(tag, "constant message")`
+- ✅ `UnifiedLog.w(tag, "constant message")`
+- ✅ `UnifiedLog.e(tag, "constant message", throwable)`
+- ✅ `UnifiedLog.v(tag, "constant message")`
 
-```kotlin
-UnifiedLog.e(TAG, "Failed to load stream", throwable)
-```
+**Agents MUST:**
+- Prefer lambda-based overloads (`UnifiedLog.x(tag) { ... }`) whenever the log message uses string templates, heavy `toString()` calls, or any non-trivial computation.
+- Only use string-based overloads for constant messages or non-critical code paths.
 
 ### 2.2 Forbidden in v2 Modules
 
@@ -84,10 +102,12 @@ Use log levels consistently:
 - `VERBOSE`:
   - Very detailed logs, used only for temporary debugging during development.
   - MUST NOT remain in long-term v2 code unless clearly justified and documented.
+  - **VERBOSE logs in hot paths MUST use the lambda-based API** to avoid unnecessary allocations when the log level is disabled.
 
 - `DEBUG`:
   - Development-time diagnostics (state changes, non-critical flows).
   - Safe to keep in debug builds, but consider gating behind `minLevel`.
+  - **DEBUG logs in hot paths MUST use the lambda-based API** to avoid unnecessary allocations when the log level is disabled.
 
 - `INFO`:
   - High-level application events:
@@ -116,7 +136,7 @@ Use log levels consistently:
 
 ```kotlin
 // Good:
-UnifiedLog.w(TAG, "Token expired, will re-authenticate")
+UnifiedLog.w(TAG) { "Token expired, will re-authenticate" }
 
 // Bad:
 UnifiedLog.e(TAG, "User clicked button") // No error here
@@ -155,7 +175,13 @@ UnifiedLog.e(TAG, "User clicked button") // No error here
 Example (OK):
 
 ```kotlin
-UnifiedLog.e(TAG, "Failed to fetch Telegram media for chatId=$chatId", throwable)
+UnifiedLog.e(TAG) { "Failed to fetch Telegram media for chatId=$chatId" }
+```
+
+With throwable:
+
+```kotlin
+UnifiedLog.e(TAG, throwable) { "Failed to fetch Telegram media for chatId=$chatId" }
 ```
 
 Not OK:
@@ -167,6 +193,31 @@ UnifiedLog.e(TAG, "Failed with token=$authToken and password=$password", throwab
 ---
 
 ## 5. Performance and Noise Control
+
+### 5.1 Lazy Logging (Lambda-based)
+
+Agents **MUST** use the lambda-based `UnifiedLog` APIs in code paths that:
+- are performance sensitive (player, transport, pipelines),
+- involve string interpolation or expensive computations.
+
+**Example (GOOD):**
+
+```kotlin
+UnifiedLog.d(TAG) { "loading item $id took ${measureMs()} ms" }
+```
+
+**Example (BAD in hot paths):**
+
+```kotlin
+UnifiedLog.d(TAG, "loading item $id took ${measureMs()} ms")
+// measureMs() is evaluated even if DEBUG logs are disabled!
+```
+
+> **Why it matters:** Lambda-based logging defers message construction until after the log level check.
+> This means expensive `toString()` calls, string interpolation, and computation only happen
+> when the log will actually be emitted.
+
+### 5.2 General Performance Rules
 
 **Agents MUST:**
 
@@ -212,10 +263,23 @@ Any Copilot Agent working in the `architecture/v2-bootstrap` branch MUST:
 1. Use only `UnifiedLog` for logging in v2 modules (except when modifying `:infra:logging` itself).
 2. Never introduce `android.util.Log` or `Timber` imports outside `infra/logging`.
 3. Respect log levels and avoid logging secrets/PII.
-4. When migrating or adding logs:
-   - ensure tags are meaningful,
-   - keep messages understandable and concise,
-   - do not introduce heavy or noisy logging in hot code paths.
-5. Update `legacy/docs/UNIFIED_LOGGING.md` and this contract only when the logging architecture itself changes, not for one-off log statements.
+4. When adding or migrating logs in v2 modules:
+   - **Prefer the lambda-based UnifiedLog API** (`UnifiedLog.x(tag) { ... }`) in hot paths (player, transport, pipelines).
+   - Only use string-based overloads for constant messages or non-critical code paths.
+   - Ensure tags are meaningful.
+   - Keep messages understandable and concise.
+   - Do not introduce heavy or noisy logging in hot code paths.
+5. Update this contract only when the logging architecture itself changes, not for one-off log statements.
+
+---
+
+## 8. Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-01 | Initial contract: UnifiedLog façade, allowed/forbidden APIs, log levels |
+| 1.1 | 2025-12-11 | Introduced lambda-based lazy logging API as primary; clarified performance rules |
+
+---
 
 This contract is the authoritative reference for logging in FishIT-Player v2.

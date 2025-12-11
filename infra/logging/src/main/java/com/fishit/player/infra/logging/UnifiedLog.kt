@@ -15,6 +15,22 @@ import timber.log.Timber
  * - The facade API is stable and independent of the backend implementation
  * - Call sites should never depend on backend-specific types (Timber, android.util.Log, etc.)
  *
+ * **Primary API (Lazy, Lambda-based):**
+ * The recommended API uses inline lambdas to defer message construction until after the log
+ * level check. This is especially important in hot paths (player, transport, pipelines).
+ *
+ * ```kotlin
+ * UnifiedLog.d(TAG) { "loading item $id took ${measureMs()} ms" }
+ * UnifiedLog.e(TAG, throwable) { "error message" }
+ * ```
+ *
+ * **Convenience API (String-based):**
+ * For constant messages or non-critical paths, string-based overloads are available:
+ *
+ * ```kotlin
+ * UnifiedLog.d(TAG, "constant message")
+ * ```
+ *
  * **Current Backend:** Timber 5.0.1
  * **Future Options:** Kermit (for Kotlin Multiplatform), custom implementations
  *
@@ -64,9 +80,119 @@ object UnifiedLog {
     }
 
     /**
-     * Log a verbose message.
+     * Check if a specific log level is currently enabled.
+     *
+     * Useful for expensive log preparations that should be skipped entirely.
+     *
+     * @param level the level to check
+     * @return true if logs at this level would be emitted
+     */
+    fun isEnabled(level: Level): Boolean = level.ordinal >= minLevel.ordinal
+
+    // ========== PRIMARY API: Lambda-based (Lazy) ==========
+
+    /**
+     * Log a verbose message (lazy).
      *
      * Use for detailed diagnostic information that is rarely needed.
+     * The message lambda is only evaluated if VERBOSE logging is enabled.
+     *
+     * @param tag source identifier (e.g., class name or component name)
+     * @param throwable optional exception to log
+     * @param message lazy message provider
+     */
+    inline fun v(
+        tag: String,
+        throwable: Throwable? = null,
+        message: () -> String,
+    ) {
+        if (!isEnabled(Level.VERBOSE)) return
+        log(Level.VERBOSE, tag, message(), throwable)
+    }
+
+    /**
+     * Log a debug message (lazy).
+     *
+     * Use for diagnostic information useful during development.
+     * The message lambda is only evaluated if DEBUG logging is enabled.
+     *
+     * @param tag source identifier (e.g., class name or component name)
+     * @param throwable optional exception to log
+     * @param message lazy message provider
+     */
+    inline fun d(
+        tag: String,
+        throwable: Throwable? = null,
+        message: () -> String,
+    ) {
+        if (!isEnabled(Level.DEBUG)) return
+        log(Level.DEBUG, tag, message(), throwable)
+    }
+
+    /**
+     * Log an info message (lazy).
+     *
+     * Use for general informational messages about app flow.
+     * The message lambda is only evaluated if INFO logging is enabled.
+     *
+     * @param tag source identifier (e.g., class name or component name)
+     * @param throwable optional exception to log
+     * @param message lazy message provider
+     */
+    inline fun i(
+        tag: String,
+        throwable: Throwable? = null,
+        message: () -> String,
+    ) {
+        if (!isEnabled(Level.INFO)) return
+        log(Level.INFO, tag, message(), throwable)
+    }
+
+    /**
+     * Log a warning message (lazy).
+     *
+     * Use for recoverable errors or unexpected situations.
+     * The message lambda is only evaluated if WARN logging is enabled.
+     *
+     * @param tag source identifier (e.g., class name or component name)
+     * @param throwable optional exception to log
+     * @param message lazy message provider
+     */
+    inline fun w(
+        tag: String,
+        throwable: Throwable? = null,
+        message: () -> String,
+    ) {
+        if (!isEnabled(Level.WARN)) return
+        log(Level.WARN, tag, message(), throwable)
+    }
+
+    /**
+     * Log an error message (lazy).
+     *
+     * Use for serious errors that require attention.
+     * The message lambda is only evaluated if ERROR logging is enabled.
+     *
+     * @param tag source identifier (e.g., class name or component name)
+     * @param throwable optional exception to log
+     * @param message lazy message provider
+     */
+    inline fun e(
+        tag: String,
+        throwable: Throwable? = null,
+        message: () -> String,
+    ) {
+        if (!isEnabled(Level.ERROR)) return
+        log(Level.ERROR, tag, message(), throwable)
+    }
+
+    // ========== CONVENIENCE API: String-based ==========
+
+    /**
+     * Log a verbose message (convenience).
+     *
+     * For constant messages or non-critical paths. For string interpolation
+     * or expensive computations, prefer the lambda-based overload.
      *
      * @param tag source identifier (e.g., class name or component name)
      * @param message log message
@@ -81,9 +207,10 @@ object UnifiedLog {
     }
 
     /**
-     * Log a debug message.
+     * Log a debug message (convenience).
      *
-     * Use for diagnostic information useful during development.
+     * For constant messages or non-critical paths. For string interpolation
+     * or expensive computations, prefer the lambda-based overload.
      *
      * @param tag source identifier (e.g., class name or component name)
      * @param message log message
@@ -98,9 +225,10 @@ object UnifiedLog {
     }
 
     /**
-     * Log an info message.
+     * Log an info message (convenience).
      *
-     * Use for general informational messages about app flow.
+     * For constant messages or non-critical paths. For string interpolation
+     * or expensive computations, prefer the lambda-based overload.
      *
      * @param tag source identifier (e.g., class name or component name)
      * @param message log message
@@ -115,9 +243,10 @@ object UnifiedLog {
     }
 
     /**
-     * Log a warning message.
+     * Log a warning message (convenience).
      *
-     * Use for recoverable errors or unexpected situations.
+     * For constant messages or non-critical paths. For string interpolation
+     * or expensive computations, prefer the lambda-based overload.
      *
      * @param tag source identifier (e.g., class name or component name)
      * @param message log message
@@ -132,9 +261,10 @@ object UnifiedLog {
     }
 
     /**
-     * Log an error message.
+     * Log an error message (convenience).
      *
-     * Use for serious errors that require attention.
+     * For constant messages or non-critical paths. For string interpolation
+     * or expensive computations, prefer the lambda-based overload.
      *
      * @param tag source identifier (e.g., class name or component name)
      * @param message log message
@@ -148,7 +278,7 @@ object UnifiedLog {
         log(Level.ERROR, tag, message, throwable)
     }
 
-    // Legacy method names for backward compatibility with v1 code
+    // ========== DEPRECATED LEGACY API ==========
 
     /**
      * @deprecated Use [d] instead for consistency with standard logging conventions
@@ -202,8 +332,11 @@ object UnifiedLog {
      *
      * Checks minLevel and forwards to Timber backend.
      * This is the only place where Timber is accessed directly.
+     *
+     * Note: @PublishedApi is required for inline functions to call this method.
      */
-    private fun log(
+    @PublishedApi
+    internal fun log(
         level: Level,
         tag: String,
         message: String,

@@ -8,6 +8,26 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Logging System Update (2025-12-11)
+
+- **feat(logging)**: Lambda-based lazy logging as primary API
+  - `UnifiedLog` now supports inline lambda-based overloads: `UnifiedLog.d(TAG) { "message" }`
+  - Lambda message is only evaluated if the log level is enabled (lazy evaluation)
+  - String-based overloads remain for convenience with constant messages
+  - Added `isEnabled(level)` method for expensive log preparations
+- **docs(contracts)**: Bumped LOGGING_CONTRACT_V2 to version 1.1
+  - Lambda-based API is now the **primary** logging API for v2
+  - Added Section 5.1 "Lazy Logging" with performance rules
+  - Updated all code examples to use lambda-based syntax
+  - Added agent-specific rules for hot paths (player, transport, pipelines)
+- **docs(logging)**: Created `docs/v2/logging/UNIFIED_LOGGING.md`
+  - Comprehensive logging guide with API examples
+  - Performance guidelines for hot paths
+  - Log level usage and tag conventions
+- **test(logging)**: Added 10 new unit tests for lazy logging behavior
+  - Tests verify lambda is not evaluated when log level is filtered
+  - Tests verify `isEnabled()` correctness
+
 ### FFmpeg / NextLib Integration (2025-12-11)
 
 - **feat(player)**: Added FFmpeg-based software decoders via NextLib
