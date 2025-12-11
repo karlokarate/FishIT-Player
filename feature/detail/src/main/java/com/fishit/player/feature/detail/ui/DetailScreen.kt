@@ -46,7 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImage
+import com.fishit.player.core.imaging.compose.FishImage
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.SourceType
@@ -149,8 +149,8 @@ private fun DetailContent(
                 .aspectRatio(16f / 9f)
         ) {
             // Backdrop image
-            AsyncImage(
-                model = media.backdropUrl ?: media.posterUrl,
+            FishImage(
+                imageRef = media.backdrop ?: media.poster,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

@@ -122,6 +122,15 @@ dependencies {
     // v2 Infrastructure
     implementation(project(":infra:logging"))
     implementation(project(":infra:tooling"))
+    implementation(project(":infra:transport-telegram"))
+    implementation(project(":infra:transport-xtream"))
+    
+    // Coil for ImageLoader singleton
+    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
+    
+    // OkHttp (for shared image loading client)
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")

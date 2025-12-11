@@ -678,7 +678,7 @@ constructor(
                 val kind = if (canonical.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
                 val sources = canonical.sources.map { toMediaSourceRef(it) }
 
-                return CanonicalMediaWithSources(
+                        return CanonicalMediaWithSources(
                         canonicalId = CanonicalMediaId(kind, canonical.canonicalKey),
                         canonicalTitle = canonical.canonicalTitle,
                         year = canonical.year,
@@ -686,8 +686,9 @@ constructor(
                         episode = canonical.episode,
                         tmdbId = canonical.tmdbId,
                         imdbId = canonical.imdbId,
-                        posterUrl = canonical.posterUrl,
-                        backdropUrl = canonical.backdropUrl,
+                        poster = canonical.poster,
+                        backdrop = canonical.backdrop,
+                        thumbnail = canonical.thumbnail,
                         plot = canonical.plot,
                         rating = canonical.rating,
                         durationMinutes = canonical.durationMinutes,

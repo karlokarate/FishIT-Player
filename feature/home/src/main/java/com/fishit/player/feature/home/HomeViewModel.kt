@@ -2,6 +2,7 @@ package com.fishit.player.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,8 +36,8 @@ data class HomeState(
 data class HomeMediaItem(
     val id: String,
     val title: String,
-    val posterUrl: String?,
-    val backdropUrl: String?,
+    val poster: ImageRef?,
+    val backdrop: ImageRef?,
     val mediaType: MediaType,
     val sourceType: SourceType,
     val resumePosition: Long = 0L,
@@ -168,8 +169,8 @@ class HomeViewModel @Inject constructor(
             HomeMediaItem(
                 id = "${sourceType.name.lowercase()}_${mediaType.name.lowercase()}_$index",
                 title = "$typeLabel $index",
-                posterUrl = "https://picsum.photos/seed/${sourceType.name}$index/200/300",
-                backdropUrl = "https://picsum.photos/seed/${sourceType.name}${index}bg/800/450",
+                poster = ImageRef.Http("https://picsum.photos/seed/${sourceType.name}$index/200/300"),
+                backdrop = ImageRef.Http("https://picsum.photos/seed/${sourceType.name}${index}bg/800/450"),
                 mediaType = mediaType,
                 sourceType = when (sourceType) {
                     SourceType.UNKNOWN -> listOf(

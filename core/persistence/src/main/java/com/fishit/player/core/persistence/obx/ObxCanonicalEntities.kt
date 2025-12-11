@@ -1,6 +1,9 @@
 package com.fishit.player.core.persistence.obx
 
+import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.persistence.obx.converter.ImageRefConverter
 import io.objectbox.annotation.Backlink
+import io.objectbox.annotation.Convert
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.annotation.Index
@@ -27,8 +30,9 @@ import io.objectbox.relation.ToMany
  * @property tmdbId TMDB ID if available (primary identity)
  * @property imdbId IMDB ID if available
  * @property tvdbId TVDB ID if available
- * @property posterUrl Best available poster URL
- * @property backdropUrl Best available backdrop URL
+ * @property poster Best available poster ImageRef
+ * @property backdrop Best available backdrop ImageRef
+ * @property thumbnail Thumbnail ImageRef for list views
  * @property plot Description/plot text
  * @property rating Rating (0-10 scale)
  * @property durationMinutes Runtime in minutes
@@ -64,10 +68,25 @@ data class ObxCanonicalMedia(
         /** TVDB ID (for series) */
         @Index var tvdbId: String? = null,
         // === Display metadata (aggregated from best source) ===
-        /** Best available poster URL */
-        var posterUrl: String? = null,
-        /** Best available backdrop URL */
-        var backdropUrl: String? = null,
+        /**
+         * Best available poster ImageRef.
+         * Stored as JSON via [ImageRefConverter] to preserve type information
+         * (Http, TelegramThumb, LocalFile, InlineBytes).
+         */
+        @Convert(converter = ImageRefConverter::class, dbType = String::class)
+        var poster: ImageRef? = null,
+        /**
+         * Best available backdrop ImageRef.
+         * Stored as JSON via [ImageRefConverter].
+         */
+        @Convert(converter = ImageRefConverter::class, dbType = String::class)
+        var backdrop: ImageRef? = null,
+        /**
+         * Thumbnail ImageRef for list views.
+         * Stored as JSON via [ImageRefConverter].
+         */
+        @Convert(converter = ImageRefConverter::class, dbType = String::class)
+        var thumbnail: ImageRef? = null,
         /** Plot/description text */
         var plot: String? = null,
         /** Rating (0-10 scale) */

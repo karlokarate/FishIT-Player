@@ -1,6 +1,7 @@
 package com.fishit.player.core.model.repository
 
 import com.fishit.player.core.model.CanonicalMediaId
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.NormalizedMediaMetadata
@@ -225,8 +226,9 @@ data class CanonicalMediaWithSources(
         val episode: Int?,
         val tmdbId: String?,
         val imdbId: String?,
-        val posterUrl: String?,
-        val backdropUrl: String?,
+        val poster: ImageRef?,
+        val backdrop: ImageRef?,
+        val thumbnail: ImageRef?,
         val plot: String?,
         val rating: Double?,
         val durationMinutes: Int?,

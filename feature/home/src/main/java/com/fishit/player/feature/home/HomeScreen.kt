@@ -339,7 +339,7 @@ private fun MediaRow(
             ) { item ->
                 FishTile(
                     title = item.title,
-                    poster = item.posterUrl,
+                    poster = item.poster,
                     sourceColors = getSourceColors(item.sourceType),
                     resumeFraction = item.resumeFraction,
                     isNew = item.isNew,

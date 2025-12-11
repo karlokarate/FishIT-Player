@@ -35,7 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import com.fishit.player.core.imaging.compose.FishImage
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
 import com.fishit.player.core.ui.theme.FishTheme
@@ -51,7 +52,7 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
  * - Focus scaling and glow effects
  *
  * @param title Media title
- * @param poster Poster URL or ImageRef
+ * @param poster ImageRef for poster image
  * @param sourceColors List of source colors for multi-source frame
  * @param resumeFraction Progress 0.0-1.0 for resume bar
  * @param onClick Click handler
@@ -66,7 +67,7 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
 @Composable
 fun FishTile(
     title: String?,
-    poster: Any?,
+    poster: ImageRef?,
     modifier: Modifier = Modifier,
     sourceColors: List<Color> = emptyList(),
     resumeFraction: Float? = null,
@@ -142,8 +143,8 @@ fun FishTile(
             .tvClickable(onClick = onClick)
     ) {
         // Poster Image
-        AsyncImage(
-            model = poster,
+        FishImage(
+            imageRef = poster,
             contentDescription = title,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

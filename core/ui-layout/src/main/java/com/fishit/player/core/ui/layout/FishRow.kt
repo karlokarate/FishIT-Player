@@ -25,6 +25,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.ui.theme.FishTheme
 import com.fishit.player.core.ui.theme.LocalFishDimens
 
@@ -120,7 +121,7 @@ fun <T> FishRowSimple(
     modifier: Modifier = Modifier,
     itemKey: ((T) -> Any)? = null,
     getTitle: (T) -> String?,
-    getPoster: (T) -> Any?,
+    getPoster: (T) -> ImageRef?,
     getSourceColors: (T) -> List<Color> = { emptyList() },
     getResumeFraction: (T) -> Float? = { null },
     isNew: (T) -> Boolean = { false },
