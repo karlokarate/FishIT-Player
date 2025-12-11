@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -168,7 +167,8 @@ private fun telegramAuthSection(
                 }
                 TelegramAuthState.WaitingForPhone,
                 TelegramAuthState.WaitingForCode,
-                TelegramAuthState.WaitingForPassword -> {
+                TelegramAuthState.WaitingForPassword,
+                -> {
                     Text(
                         text = "⚠️ Interactive auth input not currently supported",
                         style = MaterialTheme.typography.bodyMedium,

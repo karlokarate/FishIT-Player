@@ -3,14 +3,12 @@ package com.fishit.player.feature.devtools
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TdlibClientProvider
 import com.fishit.player.infra.transport.telegram.TelegramAuthState
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.g000sha256.tdl.TdlResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -100,10 +98,10 @@ class DevToolsViewModel
 
         /**
          * Start Telegram authorization flow.
-     *
-     * Note: Interactive auth submission (phone/code/password) is not currently supported
-     * through TelegramTransportClient. The UI observes authState to display required steps,
-     * but actual credential submission would require extending TelegramTransportClient interface.
+         *
+         * Note: Interactive auth submission (phone/code/password) is not currently supported
+         * through TelegramTransportClient. The UI observes authState to display required steps,
+         * but actual credential submission would require extending TelegramTransportClient interface.
          */
         fun startTelegramAuth() {
             UnifiedLog.i(TAG, "startTelegramAuth()")
