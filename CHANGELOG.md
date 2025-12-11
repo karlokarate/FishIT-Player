@@ -8,6 +8,50 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Phase 7 – Audio Track Selection (2025-12-11)
+
+- **feat(player-model)**: Created `AudioTrack.kt` with source-agnostic audio models
+  - `AudioTrackId` value class for stable track identification
+  - `AudioChannelLayout` enum: MONO, STEREO, SURROUND_5_1, SURROUND_7_1, ATMOS, UNKNOWN
+  - `AudioCodecType` enum: AAC, AC3, EAC3, DTS, TRUEHD, FLAC, OPUS, VORBIS, MP3, PCM, UNKNOWN
+  - `AudioSourceType` enum: EMBEDDED, EXTERNAL, MANIFEST
+  - `AudioTrack` data class with `fromMedia3()` factory method and `buildLabel()` helper
+- **feat(player-model)**: Created `AudioSelectionState.kt` with selection policy
+  - Observable state with `availableTracks`, `selectedTrackId`, `preferredLanguage`, `preferSurroundSound`
+  - `selectBestTrack()` deterministic selection: language preference → surround preference → first available
+  - `tracksForLanguage()` filtering helper
+  - `hasMultipleTracks`, `trackCount` computed properties
+- **feat(player)**: Created `AudioTrackManager` in `player:internal/audio/`
+  - Media3 track discovery and mapping via `Player.Listener`
+  - Selection API: `selectTrack()`, `selectTrackByLanguage()`, `selectNextTrack()`
+  - Preference updates: `updatePreferences()` for language and surround preferences
+  - Track cycling for TV remote quick switching
+  - Logging via UnifiedLog per LOGGING_CONTRACT_V2
+- **feat(player)**: Extended `InternalPlayerSession` with audio APIs
+  - `audioState: StateFlow<AudioSelectionState>` for UI observation
+  - `selectAudioTrack(trackId)`, `selectAudioByLanguage(languageCode)` selection methods
+  - `cycleAudioTrack()` for TV remote quick switching
+  - `updateAudioPreferences()` for preference management
+  - AudioTrackManager attach/detach in initialize/release lifecycle
+- **test(player)**: Created `AudioModelsTest.kt` with 31 unit tests
+  - Tests for AudioTrack, AudioChannelLayout, AudioCodecType, AudioSourceType
+  - Tests for AudioSelectionState and selection policy behavior
+- **fix(player-model)**: Fixed EAC3/AC3 MIME type detection order
+  - EAC3 must be checked before AC3 since "eac3" contains "ac3"
+- **docs**: Updated PLAYER_MIGRATION_STATUS.md to Phase 7 Complete
+
+### Phase 6 – Subtitles/CC (2025-12-11)
+
+- **feat(player-model)**: Created `SubtitleTrack.kt` with subtitle models
+  - `SubtitleTrackId` value class, `SubtitleSourceType` enum
+  - `SubtitleTrack` data class with `fromMedia3()` factory
+- **feat(player-model)**: Created `SubtitleSelectionState.kt`
+- **feat(player)**: Created `SubtitleTrackManager` in `player:internal/subtitle/`
+- **feat(player)**: Extended `InternalPlayerSession` with subtitle APIs
+  - `subtitleState`, `selectSubtitleTrack()`, `disableSubtitles()`, `selectSubtitleByLanguage()`
+- **test(player)**: Created `SubtitleModelsTest.kt` with unit tests
+- **docs**: Updated PLAYER_MIGRATION_STATUS.md to Phase 6 Complete
+
 ### Documentation Sync (2025-12-11)
 
 - **docs**: Synchronized all Phase 1-6 documentation with actual IST-Zustand

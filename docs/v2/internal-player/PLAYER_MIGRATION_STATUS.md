@@ -1,6 +1,6 @@
-# Player Migration Status – Phase 5 Complete + Review Fixes
+# Player Migration Status – Phase 7 Complete (Audio Tracks)
 
-**Status:** Phase 5 – MiniPlayer Migration + Review Fixes  
+**Status:** Phase 7 – Audio Track Selection Complete  
 **Last Updated:** 2025-12-11
 
 ---
@@ -223,6 +223,77 @@ Code Review entdeckte und behob folgende Issues:
 
 ---
 
+## 5.7 Phase 6: Subtitles/CC ✅ COMPLETE
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| `SubtitleTrack` model | ✅ DONE | `core:player-model` |
+| `SubtitleTrackId` value class | ✅ DONE | `core:player-model` |
+| `SubtitleSelectionState` | ✅ DONE | `core:player-model` |
+| `SubtitleSourceType` enum | ✅ DONE | `core:player-model` |
+| `SubtitleTrackManager` | ✅ DONE | `player:internal/subtitle/` |
+| InternalPlayerSession subtitle APIs | ✅ DONE | `player:internal/session/` |
+| Unit Tests | ✅ DONE | `player:internal/test/` |
+
+**Key Implementation Details:**
+- Source-agnostic subtitle types in `core:player-model` (no pipeline imports)
+- `SubtitleTrackManager` handles Media3 track discovery and mapping
+- Automatic default/forced track selection per contract
+- Kid mode integration: subtitles disabled when `KidsPlaybackGate.isActive()`
+- Full StateFlow exposure for UI layer consumption
+- Logging via UnifiedLog per LOGGING_CONTRACT_V2
+
+**Contract Compliance:**
+- ✅ INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md
+- ✅ LOGGING_CONTRACT_V2.md
+- ✅ Layer boundaries: no pipeline or data imports in player/internal
+
+---
+
+## 5.8 Phase 7: Audio Track Selection ✅ COMPLETE
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| `AudioTrack` model | ✅ DONE | `core:player-model` |
+| `AudioTrackId` value class | ✅ DONE | `core:player-model` |
+| `AudioChannelLayout` enum | ✅ DONE | `core:player-model` |
+| `AudioCodecType` enum | ✅ DONE | `core:player-model` |
+| `AudioSourceType` enum | ✅ DONE | `core:player-model` |
+| `AudioSelectionState` | ✅ DONE | `core:player-model` |
+| `AudioTrackManager` | ✅ DONE | `player:internal/audio/` |
+| InternalPlayerSession audio APIs | ✅ DONE | `player:internal/session/` |
+| Unit Tests | ✅ DONE | `player:internal/test/` (31 tests) |
+
+**Key Implementation Details:**
+- Source-agnostic audio types in `core:player-model` (no pipeline imports)
+- `AudioTrackManager` handles Media3 track discovery and mapping via `Player.Listener`
+- Deterministic default selection policy with language preference and surround sound preference
+- Track cycling support for TV remote quick switching
+- `AudioChannelLayout` enum: MONO, STEREO, SURROUND_5_1, SURROUND_7_1, ATMOS, UNKNOWN
+- `AudioCodecType` enum: AAC, AC3, EAC3, DTS, TRUEHD, FLAC, OPUS, VORBIS, MP3, PCM, UNKNOWN
+- Full StateFlow exposure for UI layer consumption
+- Logging via UnifiedLog per LOGGING_CONTRACT_V2
+
+**Audio Selection Policy:**
+1. Prefer tracks matching `preferredLanguage` if set
+2. Among matching tracks, prefer surround layouts (5.1+) if `preferSurroundSound` is true
+3. Fall back to first available track if no preferences match
+4. Support for track cycling (prev/next) for quick remote control access
+
+**APIs Added to InternalPlayerSession:**
+- `audioState: StateFlow<AudioSelectionState>` - observable state for UI
+- `selectAudioTrack(trackId: AudioTrackId): Boolean` - select specific track
+- `selectAudioByLanguage(languageCode: String): Boolean` - select by language
+- `cycleAudioTrack(): AudioTrack?` - cycle to next track (for TV remote)
+- `updateAudioPreferences(preferredLanguage, preferSurroundSound)` - update preferences
+
+**Contract Compliance:**
+- ✅ INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md
+- ✅ LOGGING_CONTRACT_V2.md
+- ✅ Layer boundaries: no pipeline or data imports in player/internal
+
+---
+
 ## 6. v1 SIP Components for Porting
 
 From `/legacy/v1-app/.../player/internal/`:
@@ -234,7 +305,7 @@ From `/legacy/v1-app/.../player/internal/`:
 | `InternalPlayerState` | Battle-tested | ✅ Ported to `core:player-model` types |
 | `PlaybackSourceResolver` | NEW | ✅ Created (replaces v1 `InternalPlaybackSourceResolver`) |
 | `TelegramFileDataSource` | Battle-tested | ✅ Moved to playback:telegram |
-| `SubtitleSelectionPolicy` | Battle-tested | Interface exists, impl stub |
+| `SubtitleSelectionPolicy` | Battle-tested | ✅ Ported - SubtitleTrackManager in player:internal |
 | `LivePlaybackController` | Battle-tested | Interface exists, impl stub |
 | `MiniPlayerManager` | Battle-tested | ✅ Ported to player:miniplayer |
 | `MiniPlayerState` | Battle-tested | ✅ Ported to player:miniplayer |
@@ -251,8 +322,8 @@ From `/legacy/v1-app/.../player/internal/`:
 | 3 | SIP-Kern portieren | ✅ COMPLETE |
 | 4 | Telegram & Xtream Factories | ✅ COMPLETE |
 | 5 | MiniPlayer | ✅ COMPLETE |
-| 6 | Subtitles/CC | ⏳ PENDING |
-| 7 | Audio-Spur | ⏳ PENDING |
+| 6 | Subtitles/CC | ✅ COMPLETE |
+| 7 | Audio-Spur | ✅ COMPLETE |
 | 8 | Serienmodus & TMDB | ⏳ PENDING |
 | 9 | Kids/Guest Policy | ⏳ PENDING |
 | 10 | Fehler-Handling | ⏳ PENDING |

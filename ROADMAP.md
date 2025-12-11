@@ -198,8 +198,8 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 | Phase 3 | ✅ COMPLETE | SIP-Kern portieren (`player:internal` refactor) |
 | Phase 4 | ✅ COMPLETE | Telegram & Xtream PlaybackFactories |
 | Phase 5 | ✅ COMPLETE | MiniPlayer (`player:miniplayer` module) |
-| Phase 6 | ⏳ PENDING | Subtitles/CC |
-| Phase 7 | ⏳ PENDING | Audio-Spur |
+| Phase 6 | ✅ COMPLETE | Subtitles/CC (`SubtitleTrackManager`) |
+| Phase 7 | ✅ COMPLETE | Audio-Spur (`AudioTrackManager`) |
 | Phase 8 | ⏳ PENDING | Serienmodus & TMDB |
 | Phase 9 | ⏳ PENDING | Kids/Guest Policy |
 | Phase 10 | ⏳ PENDING | Fehler-Handling |
@@ -219,11 +219,10 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 - [x] Clean layer violations (remove pipeline deps from player)
 - [x] Move `TelegramFileDataSource` to `playback:telegram`
 - [x] Implement `player:miniplayer` module with MiniPlayerManager, MiniPlayerState, MiniPlayerOverlay
+- [x] Implement `SubtitleTrack` model and `SubtitleTrackManager` (Phase 6)
+- [x] Implement `AudioTrack` model and `AudioTrackManager` (Phase 7)
 
 ### Pending Tasks
-
-- [ ] Subtitle selection and styling (Phase 6)
-- [ ] Audio track selection (Phase 7)
 - [ ] Series mode / binge watching (Phase 8)
 - [ ] Kids-mode time limits & Guest restrictions (Phase 9)
 - [ ] Enhanced error handling and recovery (Phase 10)
