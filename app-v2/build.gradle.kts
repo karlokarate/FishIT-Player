@@ -33,26 +33,35 @@ android {
         buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
         buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
         
-        // ABI splits configuration (CI can override)
-        val abiFilters = project.findProperty("abiFilters")?.toString()
-        if (abiFilters != null) {
-            ndk {
-                abiFilters.split(",").forEach { abi ->
-                    this.abiFilters.add(abi.trim())
-                }
-            }
-        }
+        // ABI configuration is handled via splits when useSplits=true
+        // Otherwise, use NDK abiFilters for single-ABI builds
     }
     
     // ABI Splits for smaller APKs (enabled via -PuseSplits=true)
     val useSplits = project.findProperty("useSplits")?.toString()?.toBoolean() ?: false
+    val abiFilters = project.findProperty("abiFilters")?.toString()
+    
     if (useSplits) {
         splits {
             abi {
                 isEnable = true
                 reset()
-                include("arm64-v8a", "armeabi-v7a")
+                // If abiFilters is specified, use it; otherwise use all ABIs
+                if (abiFilters != null) {
+                    abiFilters.split(",").forEach { abi ->
+                        include(abi.trim())
+                    }
+                } else {
+                    include("arm64-v8a", "armeabi-v7a")
+                }
                 isUniversalApk = project.findProperty("universalApk")?.toString()?.toBoolean() ?: false
+            }
+        }
+    } else if (abiFilters != null) {
+        // Only use NDK abiFilters when splits are NOT enabled
+        defaultConfig.ndk {
+            abiFilters.split(",").forEach { abi ->
+                this.abiFilters.add(abi.trim())
             }
         }
     }
