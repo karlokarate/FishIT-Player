@@ -32,19 +32,23 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:player-model"))
     implementation(project(":core:persistence"))
+    implementation(project(":core:ui-theme"))
+    implementation(project(":core:ui-layout"))
+    implementation(project(":core:ui-imaging"))
     implementation(project(":playback:domain"))
     implementation(project(":player:internal"))
     implementation(project(":infra:logging"))
     
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
     

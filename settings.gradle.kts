@@ -52,6 +52,8 @@ include(":core:metadata-normalizer")
 include(":core:catalog-sync")
 include(":core:firebase")
 include(":core:ui-imaging")
+include(":core:ui-theme")
+include(":core:ui-layout")
 include(":core:app-startup")
 
 // Playback & Player
@@ -76,6 +78,7 @@ include(":feature:detail")
 include(":feature:telegram-media")
 include(":feature:audiobooks")
 include(":feature:settings")
+include(":feature:onboarding")
 
 // Infrastructure
 include(":infra:logging")

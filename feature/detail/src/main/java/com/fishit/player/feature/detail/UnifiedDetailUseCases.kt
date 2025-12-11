@@ -238,5 +238,6 @@ data class SourceGroup(
                     SourceType.PLEX -> "Plex"
                     SourceType.LOCAL -> "Local"
                     SourceType.OTHER -> "Other"
+                    SourceType.UNKNOWN -> "Unknown"
                 }
 }

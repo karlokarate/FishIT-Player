@@ -66,17 +66,24 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":feature:library"))
     implementation(project(":feature:live"))
+    implementation(project(":feature:detail"))
     implementation(project(":feature:telegram-media"))
     implementation(project(":feature:audiobooks"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:onboarding"))
+    
+    // v2 UI Core
+    implementation(project(":core:ui-theme"))
+    implementation(project(":core:ui-layout"))
+    implementation(project(":core:ui-imaging"))
     
     // v2 Infrastructure
     implementation(project(":infra:logging"))
     implementation(project(":infra:tooling"))
     
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     
     // Compose

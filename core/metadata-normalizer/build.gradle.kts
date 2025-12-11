@@ -31,8 +31,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
 
     // TMDB Java API (no usage in skeleton phase - just dependency)
     implementation("com.uwetrottmann.tmdb2:tmdb-java:2.11.0")

@@ -99,4 +99,7 @@ enum class SourceType {
 
         /** Other/unknown source types */
         OTHER,
+
+        /** Unknown source type */
+        UNKNOWN,
 }

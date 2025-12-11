@@ -3,7 +3,6 @@
   "kotlin.languageServer.enabled": true,
   "kotlin.compiler.jvm.target": "17",
   "kotlin.debugAdapter.enabled": true,
-  
   // Kotlin Language Server Memory Limits (prevent OOM crashes)
   "kotlin.languageServer.jvmOptions": [
     "-Xmx768m",
@@ -15,7 +14,6 @@
   ],
   "kotlin.compiler.noStdlib": false,
   "kotlin.compiler.noReflect": false,
-  
   // ===== Java =====
   "java.configuration.runtimes": [
     {
@@ -25,7 +23,6 @@
     }
   ],
   "java.jdt.ls.java.home": "/usr/lib/jvm/msopenjdk-current",
-  
   // Java Language Server Memory Limits (optimized for 8GB Codespaces)
   "java.jdt.ls.vmargs": "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms256m -Xmx1024m -XX:MaxMetaspaceSize=256m -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Djava.awt.headless=true -Djava.util.concurrent.ForkJoinPool.common.parallelism=2",
   "java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
@@ -36,12 +33,10 @@
   "java.completion.guessMethodArguments": false,
   "java.refactor.renameFromFileExplorer": "never",
   "java.codeGeneration.hashCodeEquals.useJava7Objects": true,
-  
   // ===== Android =====
   "android.sdk": "${workspaceFolder}/.wsl-android-sdk",
   "android.gradle.path": "${workspaceFolder}/gradlew",
   "android.emulator.path": "${workspaceFolder}/.wsl-android-sdk/emulator/emulator",
-  
   // ===== Code Formatting =====
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
@@ -68,20 +63,17 @@
   "[gradle]": {
     "editor.tabSize": 4
   },
-  
   // ===== Linting & Quality =====
   "ktlint.enable": true,
   "ktlint.autoFormat": true,
   "ktlint.lintAfterCreate": true,
   "detekt.enable": true,
   "detekt.configPath": "${workspaceFolder}/detekt-config.yml",
-  
   // ===== Git =====
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
   "git.autofetch": true,
   "git.pruneOnFetch": true,
-  
   // ===== Files =====
   "files.exclude": {
     "**/.gradle": true,
@@ -103,7 +95,6 @@
     "**/build": true,
     "**/.wsl-*": true
   },
-  
   // ===== Terminal =====
   "terminal.integrated.defaultProfile.linux": "bash",
   "terminal.integrated.env.linux": {
@@ -115,19 +106,18 @@
     "_JAVA_OPTIONS": "-Xmx1536m -Xms256m",
     "PATH": "${workspaceFolder}/.wsl-cmake/bin:${workspaceFolder}/.wsl-gperf:/usr/local/sdkman/candidates/java/21.0.9-ms/bin:${workspaceFolder}/.wsl-android-sdk/cmdline-tools/latest/bin:${workspaceFolder}/.wsl-android-sdk/platform-tools:${workspaceFolder}/.wsl-android-sdk/emulator:${env:PATH}"
   },
-  
   // ===== Editor =====
   "editor.minimap.enabled": false,
-  "editor.rulers": [120],
+  "editor.rulers": [
+    120
+  ],
   "editor.wordWrap": "off",
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
   "editor.suggestSelection": "first",
   "editor.inlineSuggest.enabled": true,
-  
   // ===== Compose =====
   "compose.preview.enabled": true,
-  
   // ===== Performance & Memory Optimization =====
   "files.maxMemoryForLargeFilesMB": 4096,
   "search.maxResults": 10000,
@@ -135,7 +125,6 @@
   "search.smartCase": true,
   "typescript.tsserver.maxTsServerMemory": 1024,
   "typescript.disableAutomaticTypeAcquisition": true,
-  
   // Disable memory-intensive features
   "editor.occurrencesHighlight": "off",
   "editor.selectionHighlight": false,
@@ -144,21 +133,17 @@
   "editor.gotoLocation.multipleDefinitions": "goto",
   "editor.gotoLocation.multipleImplementations": "goto",
   "problems.decorations.enabled": true,
-  
   // Git performance
   "git.decorations.enabled": true,
   "git.untrackedChanges": "hidden",
   "git.ignoreLimitWarning": true,
-  
   // Extension host limits
   "extensions.autoUpdate": false,
   "extensions.autoCheckUpdates": false,
   "update.mode": "none",
-  
   // ===== Tasks =====
   "task.autoDetect": "on",
   "task.problemMatchers": [],
-  
   // ===== Extensions =====
   "extensions.ignoreRecommendations": false,
   "java.configuration.updateBuildConfiguration": "automatic"

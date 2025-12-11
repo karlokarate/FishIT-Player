@@ -41,8 +41,8 @@ dependencies {
     implementation(project(":player:nextlib-codecs"))
     
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
     
     // Media3 / ExoPlayer
     val media3Version = "1.8.0"

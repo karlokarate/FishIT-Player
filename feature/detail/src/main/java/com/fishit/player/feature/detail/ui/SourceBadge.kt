@@ -79,6 +79,7 @@ object SourceBadgeColors {
                 SourceType.AUDIOBOOK -> Audiobook
                 SourceType.PLEX -> Plex
                 SourceType.OTHER -> Other
+                SourceType.UNKNOWN -> Other
             }
 
     fun forBadge(badge: SourceBadge): Color =

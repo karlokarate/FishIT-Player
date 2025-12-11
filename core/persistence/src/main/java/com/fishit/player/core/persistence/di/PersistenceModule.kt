@@ -1,9 +1,11 @@
 package com.fishit.player.core.persistence.di
 
+import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.ContentRepository
 import com.fishit.player.core.model.repository.ProfileRepository
 import com.fishit.player.core.model.repository.ResumeRepository
 import com.fishit.player.core.model.repository.ScreenTimeRepository
+import com.fishit.player.core.persistence.repository.ObxCanonicalMediaRepository
 import com.fishit.player.core.persistence.repository.ObxContentRepository
 import com.fishit.player.core.persistence.repository.ObxProfileRepository
 import com.fishit.player.core.persistence.repository.ObxResumeRepository
@@ -16,6 +18,12 @@ import javax.inject.Singleton
 
 /**
  * Hilt module for binding repository implementations.
+ *
+ * Per MEDIA_NORMALIZATION_CONTRACT.md:
+ * - CanonicalMediaRepository provides cross-pipeline media unification
+ * - Single canonical entry per unique media work
+ * - Multiple source references linked to each canonical entry
+ * - Unified resume across all sources
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -35,4 +43,8 @@ abstract class PersistenceModule {
     @Binds
     @Singleton
     abstract fun bindScreenTimeRepository(impl: ObxScreenTimeRepository): ScreenTimeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCanonicalMediaRepository(impl: ObxCanonicalMediaRepository): CanonicalMediaRepository
 }

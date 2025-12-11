@@ -35,8 +35,8 @@ dependencies {
     implementation(project(":infra:logging"))
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
 
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

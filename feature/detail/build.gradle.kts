@@ -2,6 +2,8 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -29,6 +31,9 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:player-model"))
+    implementation(project(":core:ui-theme"))
+    implementation(project(":core:ui-layout"))
+    implementation(project(":core:ui-imaging"))
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
@@ -53,5 +58,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    
+    // Coil for images
+    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
 }

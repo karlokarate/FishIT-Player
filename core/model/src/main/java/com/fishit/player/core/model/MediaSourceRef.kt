@@ -434,6 +434,7 @@ enum class SourceBadge(
                     SourceType.LOCAL -> IO
                     SourceType.PLEX -> PLEX
                     SourceType.OTHER -> OTHER
+                    SourceType.UNKNOWN -> OTHER
                 }
     }
 }
