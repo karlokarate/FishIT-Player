@@ -18,13 +18,15 @@ The TDLib integration has been ported from v1 to v2 with adaptations to respect 
 | `T_TelegramFileDownloader` | `TelegramTdlibClient.ensureFileReady()` | Phase 2 Stub | File download management simplified |
 | `TelegramContentRepository` | `TdlibTelegramContentRepository` | Phase 2 Stub | Repository implementation using TDLib client |
 
-### Streaming & Player (`:player:internal`)
+### Streaming & Player (`:playback:telegram` + `:player:internal`)
 
 | v1 Component | v2 Component | Status | Notes |
 |--------------|--------------|--------|-------|
-| `TelegramFileDataSource` | `TelegramFileDataSource` | Implemented | Zero-copy streaming via FileDataSource delegation |
+| `TelegramFileDataSource` | `TelegramFileDataSource` | ✅ Implemented | Zero-copy streaming via FileDataSource delegation, lives in `playback:telegram` |
+| `TelegramFileDataSourceFactory` | `TelegramFileDataSourceFactory` | ✅ Implemented | Factory for ExoPlayer integration, lives in `playback:telegram` |
+| `TelegramPlaybackSourceFactory` | `TelegramPlaybackSourceFactoryImpl` | ✅ Implemented | Implements `PlaybackSourceFactory`, builds `tg://` URIs |
+| Integration with ExoPlayer | `PlaybackSourceResolver` | ✅ Updated | Resolves sources via `@IntoSet` injected factories |
 | `TelegramStreamingSettingsProvider` | Not yet ported | Deferred | Settings provider to be added in later phase |
-| Integration with ExoPlayer | `InternalPlaybackSourceResolver` | Updated | Recognizes `tg://` URIs for Telegram content |
 
 ### Persistence (`:core:persistence`)
 
@@ -37,15 +39,20 @@ The TDLib integration has been ported from v1 to v2 with adaptations to respect 
 
 ### 1. Module Boundaries
 
-- **`:pipeline:telegram`**: TDLib client abstraction, repository interfaces, domain models
-  - NO player logic (DataSource belongs in player)
+- **`:pipeline:telegram`**: TDLib client abstraction, catalog pipeline, domain models
+  - NO player logic (DataSource belongs in playback modules)
   - NO UI components (belong in feature modules)
   - NO resume/caching business logic (delegated to domain/persistence)
 
-- **`:player:internal`**: Telegram DataSource for streaming
-  - Uses TDLib client via abstraction
-  - Delegates to FileDataSource for zero-copy streaming
-  - Integrated with InternalPlaybackSourceResolver
+- **`:playback:telegram`**: Telegram DataSource and PlaybackSourceFactory
+  - `TelegramFileDataSource` for zero-copy streaming
+  - `TelegramPlaybackSourceFactoryImpl` for source resolution
+  - Uses TDLib client via `TelegramTransportClient` abstraction
+
+- **`:player:internal`**: Player core engine
+  - `PlaybackSourceResolver` with factory injection
+  - `PlayerDataSourceModule` provides DataSource.Factory map
+  - Selects appropriate DataSource based on `PlaybackSource.dataSourceType`
 
 - **`:core:persistence`**: ObjectBox entities and persistence
   - Reuses v1 `ObxTelegramMessage`
@@ -98,9 +105,11 @@ The streaming architecture avoids unnecessary data copying:
    - Structure ready for TDLib integration
 
 3. **Player Integration**
-   - `TelegramFileDataSource` implemented for zero-copy streaming
+   - `TelegramFileDataSource` implemented in `playback:telegram` for zero-copy streaming
    - `TelegramFileDataSourceFactory` for DataSource creation
-   - `InternalPlaybackSourceResolver` updated to recognize `tg://` URIs
+   - `TelegramPlaybackSourceFactoryImpl` implements `PlaybackSourceFactory`
+   - `PlaybackSourceResolver` resolves sources via injected factories
+   - `PlayerDataSourceModule` provides DataSource.Factory map to ExoPlayer
 
 4. **Dependencies**
    - `tdlib-coroutines-android:5.0.0` added to `:pipeline:telegram`

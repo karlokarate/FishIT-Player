@@ -43,11 +43,15 @@ This document defines the authoritative architecture for the FishIT Player v2 (S
 │    - InternalPlayerEntry (Composable entry point)           │
 │    - InternalPlayerSession (ExoPlayer wrapper)              │
 │    - InternalPlayerState (StateFlow)                        │
-│    - InternalPlaybackSourceResolver                         │
+│    - PlaybackSourceResolver (factory injection)             │
 │    - Subtitle engine (SubtitleSelectionPolicy, StyleMgr)    │
 │    - Live engine (LivePlaybackController)                   │
-│    - MiniPlayer engine (MiniPlayerManager)                  │
 │    - System integration (MediaSession, SystemUi)            │
+└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  player/miniplayer                                          │
+│    - MiniPlayerState, MiniPlayerManager                     │
+│    - MiniPlayerCoordinator, MiniPlayerOverlay               │
 └─────────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -185,7 +189,7 @@ data class PlaybackSource(
 )
 ```
 
-`InternalPlaybackSourceResolver` holds a list of `PlaybackSourceFactory` implementations (injected via Hilt) and selects based on `sourceType`.
+`PlaybackSourceResolver` holds a list of `PlaybackSourceFactory` implementations (injected via Hilt `@IntoSet`) and selects based on `sourceType`.
 
 ---
 
@@ -196,9 +200,9 @@ data class PlaybackSource(
 | 0 | Guardrails & Architecture | ✅ COMPLETE |
 | 1 | IST-Analyse v2-Player & SIP-Bestand | ✅ COMPLETE |
 | 2 | Player-Modell finalisieren (`core/player-model`) | ✅ COMPLETE |
-| 3 | SIP-Kern portieren (`player/internal`) | ⏳ PENDING |
-| 4 | Telegram & Xtream Factories portieren | ⏳ PENDING |
-| 5 | MiniPlayer portieren | ⏳ PENDING |
+| 3 | SIP-Kern portieren (`player/internal`) | ✅ COMPLETE |
+| 4 | Telegram & Xtream Factories portieren | ✅ COMPLETE |
+| 5 | MiniPlayer portieren (`player/miniplayer`) | ✅ COMPLETE |
 | 6 | Subtitles/CC portieren | ⏳ PENDING |
 | 7 | Audio-Spur & Profilpräferenzen | ⏳ PENDING |
 | 8 | Serienmodus & TMDB | ⏳ PENDING |

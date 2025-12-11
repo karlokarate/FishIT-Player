@@ -1,6 +1,10 @@
-package com.fishit.player.pipeline.xtream.model
+package com.fishit.player.pipeline.xtream.mapper
 
 import com.fishit.player.core.model.ImageRef
+import com.fishit.player.pipeline.xtream.model.XtreamChannel
+import com.fishit.player.pipeline.xtream.model.XtreamEpisode
+import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
+import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 
 /**
  * Extensions for extracting ImageRef from Xtream pipeline models.
@@ -32,10 +36,10 @@ import com.fishit.player.core.model.ImageRef
 fun XtreamVodItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMap()): ImageRef? {
     val url = streamIcon?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
-        url = url,
-        headers = authHeaders,
-        preferredWidth = 300,  // Poster width hint
-        preferredHeight = 450, // Poster height hint (2:3 aspect)
+            url = url,
+            headers = authHeaders,
+            preferredWidth = 300, // Poster width hint
+            preferredHeight = 450, // Poster height hint (2:3 aspect)
     )
 }
 
@@ -52,10 +56,10 @@ fun XtreamVodItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMap()
 fun XtreamSeriesItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMap()): ImageRef? {
     val url = cover?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
-        url = url,
-        headers = authHeaders,
-        preferredWidth = 300,
-        preferredHeight = 450,
+            url = url,
+            headers = authHeaders,
+            preferredWidth = 300,
+            preferredHeight = 450,
     )
 }
 
@@ -72,10 +76,10 @@ fun XtreamSeriesItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMa
 fun XtreamEpisode.toThumbnailImageRef(authHeaders: Map<String, String> = emptyMap()): ImageRef? {
     val url = thumbnail?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
-        url = url,
-        headers = authHeaders,
-        preferredWidth = 320,  // Thumbnail width hint
-        preferredHeight = 180, // Thumbnail height hint (16:9 aspect)
+            url = url,
+            headers = authHeaders,
+            preferredWidth = 320, // Thumbnail width hint
+            preferredHeight = 180, // Thumbnail height hint (16:9 aspect)
     )
 }
 
@@ -92,10 +96,10 @@ fun XtreamEpisode.toThumbnailImageRef(authHeaders: Map<String, String> = emptyMa
 fun XtreamChannel.toLogoImageRef(authHeaders: Map<String, String> = emptyMap()): ImageRef? {
     val url = streamIcon?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
-        url = url,
-        headers = authHeaders,
-        preferredWidth = 120, // Logo width hint
-        preferredHeight = 120, // Logo height hint (square)
+            url = url,
+            headers = authHeaders,
+            preferredWidth = 120, // Logo width hint
+            preferredHeight = 120, // Logo height hint (square)
     )
 }
 
@@ -120,12 +124,13 @@ private fun String.isValidImageUrl(): Boolean {
 
     // Filter out placeholder images
     if (lower.contains("placeholder") ||
-        lower.contains("no-image") ||
-        lower.contains("noimage") ||
-        lower.contains("default.") ||
-        lower.contains("/null") ||
-        lower.endsWith("/null")
-    ) return false
+                    lower.contains("no-image") ||
+                    lower.contains("noimage") ||
+                    lower.contains("default.") ||
+                    lower.contains("/null") ||
+                    lower.endsWith("/null")
+    )
+            return false
 
     // Valid if has image extension OR is from known CDN
     val hasImageExtension = IMAGE_EXTENSIONS.any { lower.endsWith(it) || lower.contains("$it?") }
@@ -134,20 +139,20 @@ private fun String.isValidImageUrl(): Boolean {
     return hasImageExtension || isKnownImageHost
 }
 
-private val IMAGE_EXTENSIONS = listOf(
-    ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg", ".avif", ".heic"
-)
+private val IMAGE_EXTENSIONS =
+        listOf(".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg", ".avif", ".heic")
 
-private val KNOWN_IMAGE_HOSTS = listOf(
-    "image.tmdb.org",
-    "images.unsplash.com",
-    "i.imgur.com",
-    "cloudfront.net",
-    "akamaized.net",
-    "/images/",
-    "/img/",
-    "/poster/",
-    "/cover/",
-    "/thumb/",
-    "/logo/",
-)
+private val KNOWN_IMAGE_HOSTS =
+        listOf(
+                "image.tmdb.org",
+                "images.unsplash.com",
+                "i.imgur.com",
+                "cloudfront.net",
+                "akamaized.net",
+                "/images/",
+                "/img/",
+                "/poster/",
+                "/cover/",
+                "/thumb/",
+                "/logo/",
+        )

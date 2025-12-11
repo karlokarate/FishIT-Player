@@ -3,13 +3,17 @@ package com.fishit.player.internal.session
 import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.PlaybackError
 import com.fishit.player.core.playermodel.PlaybackState
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.internal.state.InternalPlayerState
+import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 import kotlinx.coroutines.CoroutineScope
@@ -34,17 +38,20 @@ import kotlinx.coroutines.launch
  * - Resume position tracking
  * - Kids gate integration
  * - Position updates
+ * - Custom DataSource factories for Telegram/Xtream
  *
  * **Phase 3 Architecture:**
  * - Uses [PlaybackSourceResolver] with factory pattern
  * - Uses types from core:player-model
  * - Integrates with playback:domain interfaces
+ * - Supports custom DataSource.Factory for source-specific streaming
  */
 class InternalPlayerSession(
     private val context: Context,
     private val sourceResolver: PlaybackSourceResolver,
     private val resumeManager: ResumeManager,
-    private val kidsPlaybackGate: KidsPlaybackGate
+    private val kidsPlaybackGate: KidsPlaybackGate,
+    private val dataSourceFactories: Map<DataSourceType, DataSource.Factory> = emptyMap()
 ) {
     companion object {
         private const val TAG = "InternalPlayerSession"
@@ -59,6 +66,16 @@ class InternalPlayerSession(
 
     private val _state = MutableStateFlow(InternalPlayerState.INITIAL)
     val state: StateFlow<InternalPlayerState> = _state.asStateFlow()
+
+    /**
+     * Returns the underlying ExoPlayer instance.
+     *
+     * Use this to attach the player to a PlayerView for video rendering.
+     * May return null if the session is not initialized or has been released.
+     *
+     * **Thread Safety:** This must only be called from the main thread.
+     */
+    fun getPlayer(): Player? = player
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -115,7 +132,7 @@ class InternalPlayerSession(
         scope.launch {
             try {
                 val source = sourceResolver.resolve(playbackContext)
-                UnifiedLog.d(TAG, "Source resolved: ${source.uri}")
+                UnifiedLog.d(TAG, "Source resolved: ${source.uri}, dataSourceType: ${source.dataSourceType}")
 
                 // Build MediaItem
                 val mediaItemBuilder = MediaItem.Builder()
@@ -125,8 +142,18 @@ class InternalPlayerSession(
 
                 val mediaItem = mediaItemBuilder.build()
 
+                // Determine appropriate DataSource.Factory based on source type
+                val dataSourceFactory = dataSourceFactories[source.dataSourceType]
+                    ?: DefaultDataSource.Factory(context)
+
+                // Create MediaSource.Factory with appropriate DataSource
+                val mediaSourceFactory = DefaultMediaSourceFactory(context)
+                    .setDataSourceFactory(dataSourceFactory)
+
                 // Create and configure player on main thread
-                player = ExoPlayer.Builder(context).build().apply {
+                player = ExoPlayer.Builder(context)
+                    .setMediaSourceFactory(mediaSourceFactory)
+                    .build().apply {
                     addListener(playerListener)
                     setMediaItem(mediaItem)
 

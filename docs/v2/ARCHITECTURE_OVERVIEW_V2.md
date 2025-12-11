@@ -132,6 +132,8 @@ All v2 modules live in the existing repo but are separate from the legacy app.
     - `SubtitleSelectionPolicy`
     - `LivePlaybackController`
     - `TvInputController`
+    - `PlaybackSourceFactory` interface
+    - `PlaybackSource` data class with `DataSourceType`
   - May depend on:
     - `:core:model`
     - `:core:persistence`
@@ -142,6 +144,32 @@ All v2 modules live in the existing repo but are separate from the legacy app.
     - ExoPlayer / Media3 directly
   - Pipelines integrate into this layer via:
     - Repositories or data providers that implement interfaces defined in `core:model` or `playback:domain`.
+
+- `:playback:telegram`
+  - Telegram-specific playback components (Phase 4 complete).
+  - Contains:
+    - `TelegramPlaybackSourceFactoryImpl` - Implements `PlaybackSourceFactory` for Telegram sources
+    - `TelegramFileDataSource` - Zero-copy Media3 DataSource for `tg://` URIs
+    - `TelegramFileDataSourceFactory` - Factory for ExoPlayer integration
+  - Depends on:
+    - `:core:player-model`
+    - `:playback:domain`
+    - `:infra:transport-telegram`
+  - Must **not** depend on:
+    - `:pipeline:*` modules
+    - `:player:internal`
+
+- `:playback:xtream`
+  - Xtream-specific playback components (Phase 4 complete).
+  - Contains:
+    - `XtreamPlaybackSourceFactoryImpl` - Implements `PlaybackSourceFactory` for Xtream sources
+  - Depends on:
+    - `:core:player-model`
+    - `:playback:domain`
+    - `:infra:transport-xtream`
+  - Must **not** depend on:
+    - `:pipeline:*` modules
+    - `:player:internal`
 
 - `:player:internal`
   - The v2 **Structured Internal Player** (SIP).
@@ -159,24 +187,24 @@ All v2 modules live in the existing repo but are separate from the legacy app.
         - `LivePlaybackController`
         - `TvInputController`
     - `internal.source`
-      - `InternalPlaybackSourceResolver`
+      - `PlaybackSourceResolver` (resolves `PlaybackContext` → `PlaybackSource` via injected factories)
       - MediaItem and DataSource factory logic for each pipeline type via pipeline-agnostic `PlaybackContext`.
     - `internal.ui`
       - `InternalPlayerControls` (Compose)
       - `PlayerSurface`
       - Error overlays, minimal HUD, CC menu dialog
-    - `internal.subtitles`
+    - `internal.di`
+      - `PlayerDataSourceModule` - Hilt DI for DataSource.Factory injection
+    - `internal.subtitles` (planned)
       - Subtitle view integration
       - Application of `SubtitleStyleManager` and `SubtitleSelectionPolicy`
-    - `internal.live`
+    - `internal.live` (planned)
       - Live-TV in-player controls and EPG overlay state (using `LivePlaybackController` from `playback:domain`)
-    - `internal.tv`
+    - `internal.tv` (planned)
       - `TvInputController` integration with focus & DPAD actions
-    - `internal.mini`
-      - Mini-player and PiP orchestration
-    - `internal.system`
+    - `internal.system` (planned)
       - System UI behavior, rotation, audio focus
-    - `internal.debug`
+    - `internal.debug` (planned)
       - `PlayerDiagnostics`
       - Player debug overlay & debug screen
 
@@ -185,7 +213,25 @@ All v2 modules live in the existing repo but are separate from the legacy app.
   - Must **not** depend on:
     - `:feature:*` modules
     - `:pipeline:*` modules directly  
-    Instead, it resolves media via `InternalPlaybackSourceResolver` configured with pipeline-provided factories.
+    Instead, it resolves media via `PlaybackSourceResolver` configured with pipeline-provided factories.
+
+- `:player:miniplayer`
+  - Separate module for MiniPlayer functionality (Phase 5 complete)
+  - Contains:
+    - `MiniPlayerState` - Immutable state model (visibility, mode, anchor, size, position)
+    - `MiniPlayerMode` - NORMAL, RESIZE modes
+    - `MiniPlayerAnchor` - 6 anchor positions (corners + center top/bottom)
+    - `MiniPlayerManager` - Interface for state transitions
+    - `DefaultMiniPlayerManager` - StateFlow-based implementation
+    - `MiniPlayerCoordinator` - High-level fullscreen ↔ MiniPlayer orchestration
+    - `PlayerWithMiniPlayerState` - Combined state for UI consumption
+    - `MiniPlayerOverlay` - Compose UI with drag/resize
+  - Public entrypoint:
+    - `MiniPlayerOverlay(...)` Composable
+  - Depends on:
+    - `:core:player-model`
+    - `:player:internal` (for player state)
+    - Media3 UI for PlayerView integration
 
 ---
 
@@ -193,29 +239,22 @@ All v2 modules live in the existing repo but are separate from the legacy app.
 
 Each pipeline module is responsible for **one content source** and contains **no UI**.
 
+> **Note:** Playback-specific components (DataSources, PlaybackSourceFactory implementations) 
+> have been moved to the `:playback:*` modules as per v2 layer boundaries.
+> See Section 2.2 for playback layer details.
+
 - `:pipeline:telegram`
-  - Responsible for Telegram media integration.
+  - Responsible for Telegram catalog/metadata integration.
   - Contains:
     - Telegram domain models (e.g. `TelegramMediaItem`, `TelegramChatId`)
-    - `TelegramContentRepository` interface + implementation
-    - `TelegramDownloadManager` interface + implementation
+    - `TelegramCatalogPipeline` - Catalog events and chat scanning
     - `TelegramStreamingSettingsProvider`
-    - `TelegramPlaybackSourceFactory`:
-      - Converts a `TelegramMediaItem` + `PlaybackContext` into a data structure the `InternalPlaybackSourceResolver` can use (e.g. wrapping `TelegramFileDataSource`).
-    - tdlib-coroutines integration:
-      - `T_TelegramServiceClient`
-      - `T_TelegramFileDownloader`
-      - `TelegramFileDataSource`
-  - **Ported from v1** (MUST reuse):
-    - `T_TelegramServiceClient` - Core TDLib integration (auth, connection, sync states)
-    - `T_TelegramFileDownloader` - Download queue with priority system
-    - `TelegramFileDataSource` - Zero-copy Media3 DataSource for `tg://` URLs
-    - `TelegramStreamingSettingsProvider` - Streaming configuration
-    - `Mp4HeaderParser` - MP4 validation before playback
-    - `RarDataSource` + `RarEntryRandomAccessSource` - RAR archive entry streaming
   - Contains helper extensions like:
-    - `fun TelegramMediaItem.toPlaybackContext(...): PlaybackContext`
     - `fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata` (for normalization - see `MEDIA_NORMALIZATION_CONTRACT.md`)
+  - **Playback components moved to** `:playback:telegram`:
+    - `TelegramPlaybackSourceFactoryImpl` - Builds `tg://` URIs for playback
+    - `TelegramFileDataSource` - Zero-copy Media3 DataSource for `tg://` URLs
+    - `TelegramFileDataSourceFactory` - Factory for ExoPlayer integration
   - Must **not**:
     - Use Compose or any UI elements.
     - Depend on `:feature:*` modules.
@@ -223,23 +262,17 @@ Each pipeline module is responsible for **one content source** and contains **no
     - Perform title normalization or TMDB lookups (handled by `:core:metadata-normalizer`)
 
 - `:pipeline:xtream`
-  - Xtream / IPTV integration.
+  - Xtream / IPTV catalog integration.
   - Contains:
     - Xtream domain models (VOD, Series, LiveChannel, EPG entries).
-    - `XtreamCatalogRepository` (VOD/Series)
-    - `XtreamLiveRepository` (channels + EPG)
-    - `XtreamPlaybackSourceFactory`
-    - HTTP/URL-building code
-    - DataSource implementations reused from v1:
-      - `DelegatingDataSourceFactory`
-      - `RarDataSource`
-  - **Ported from v1** (MUST reuse):
-    - `DelegatingDataSourceFactory` - Routes URLs to correct DataSource by scheme
-    - `XtreamObxRepository` - ObjectBox-backed content queries (adapted to v2 interfaces)
+    - `XtreamCatalogPipeline` - Catalog events
+    - HTTP/URL-building code via `:infra:transport-xtream`
   - Contains helper extensions:
     - `fun XtreamVodItem.toRawMediaMetadata(): RawMediaMetadata` (for normalization)
     - `fun XtreamSeriesItem.toRawMediaMetadata(): RawMediaMetadata`
     - `fun XtreamEpisode.toRawMediaMetadata(): RawMediaMetadata`
+  - **Playback components moved to** `:playback:xtream`:
+    - `XtreamPlaybackSourceFactoryImpl` - Builds authenticated URLs for playback
   - Must **not**:
     - Contain UI.
     - Depend on `:feature:*` or `:player:internal`.

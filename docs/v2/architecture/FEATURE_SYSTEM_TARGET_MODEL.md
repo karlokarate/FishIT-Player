@@ -120,17 +120,17 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 | `AppFeatureRegistry` | `app-v2` | ✅ Done |
 | `FeatureModule` (Hilt DI) | `app-v2` | ✅ Done |
 
-### Registered Feature Providers
+### Registered Capability Providers (Pipeline)
 
 | Provider | FeatureId | Module | Status |
 |----------|-----------|--------|--------|
-| `TelegramFullHistoryFeatureProvider` | `telegram.full_history_streaming` | `pipeline:telegram` | ✅ Done |
-| `TelegramLazyThumbnailsFeatureProvider` | `telegram.lazy_thumbnails` | `pipeline:telegram` | ✅ Done |
+| `TelegramFullHistoryCapabilityProvider` | `telegram.full_history_streaming` | `pipeline:telegram` | ✅ Done |
+| `TelegramLazyThumbnailsCapabilityProvider` | `telegram.lazy_thumbnails` | `pipeline:telegram` | ✅ Done |
 
 ### DI Integration
 
 - **Hilt multibindings**: FeatureProviders are collected via `@IntoSet` bindings
-- **TelegramFeatureModule**: Binds Telegram providers into the global `Set<FeatureProvider>`
+- **TelegramCapabilityModule**: Binds Telegram capability providers into the global `Set<FeatureProvider>`
 - **TelegramMediaViewModel**: First ViewModel to inject and use `FeatureRegistry`
 
 ### Unit Tests
@@ -138,7 +138,7 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 | Test Class | Location | Coverage |
 |------------|----------|----------|
 | `AppFeatureRegistryTest` | `app-v2/src/test/` | `isSupported`, `providersFor`, `ownerOf`, `featureCount`, `allFeatureIds` |
-| `TelegramFeatureProviderTest` | `pipeline/telegram/src/test/` | Provider properties (featureId, scope, owner) |
+| `TelegramCapabilityProviderTest` | `pipeline/telegram/src/test/` | Provider properties (featureId, scope, owner) |
 
 ### Next Steps
 
@@ -252,26 +252,29 @@ The `AppFeatureRegistry` implementation collects all `FeatureProvider` instances
 
 ### 5.1 Directory Structure
 
-Each module exposes its feature providers in a `feature/` package:
+Each pipeline module exposes its capability providers in a `capability/` package:
 
 ```
-<module>/src/main/kotlin/com/fishit/player/<module-path>/feature/
-    └── <FeatureName>FeatureProvider.kt
+<module>/src/main/kotlin/com/fishit/player/<module-path>/capability/
+    └── <CapabilityName>CapabilityProvider.kt
 ```
 
 ### 5.2 Examples
 
 ```
-pipeline/telegram/src/main/kotlin/com/fishit/player/pipeline/telegram/feature/
-    ├── TelegramFullHistoryFeatureProvider.kt
-    └── TelegramLazyThumbnailsFeatureProvider.kt
+pipeline/telegram/src/main/kotlin/com/fishit/player/pipeline/telegram/capability/
+    ├── TelegramFullHistoryCapabilityProvider.kt
+    └── TelegramLazyThumbnailsCapabilityProvider.kt
 
-infra/cache/src/main/kotlin/com/fishit/player/infra/cache/feature/
-    └── AppCacheManagementFeatureProvider.kt
+infra/cache/src/main/kotlin/com/fishit/player/infra/cache/capability/
+    └── AppCacheManagementCapabilityProvider.kt
 
 feature/home/src/main/kotlin/com/fishit/player/feature/home/feature/
     └── HomeScreenFeatureProvider.kt
 ```
+
+> **Note:** Feature modules (`feature/*`) use `feature/` package for App Feature providers.
+> Pipeline modules (`pipeline/*`) use `capability/` package for pipeline capabilities.
 
 ### 5.3 DI Binding
 

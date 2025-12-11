@@ -59,6 +59,7 @@ include(":playback:domain")
 include(":playback:telegram")
 include(":playback:xtream")
 include(":player:internal")
+include(":player:miniplayer")
 
 // Pipelines (no UI)
 include(":pipeline:telegram")

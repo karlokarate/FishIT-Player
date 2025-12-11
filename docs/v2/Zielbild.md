@@ -255,17 +255,17 @@ core/feature-api/
       └─ FeatureCatalogGenerator.kt (optional, für Tools)
 ```
 
-### 3.2 Beispiel: Telegram-Feature-Provider
+### 3.2 Beispiel: Telegram-Capability-Provider
 
 ```text
 pipeline/telegram/
 └─ src/main/kotlin/com/fishit/player/pipeline/telegram/
-   ├─ feature/
-   │  ├─ TelegramFullHistoryFeatureProvider.kt
-   │  ├─ TelegramLazyThumbnailsFeatureProvider.kt
-   │  ├─ TelegramVodPlaybackFeatureProvider.kt
-   │  ├─ TelegramClipPlaybackFeatureProvider.kt
-   │  └─ TelegramChatMetadataExportFeatureProvider.kt
+   ├─ capability/
+   │  ├─ TelegramFullHistoryCapabilityProvider.kt
+   │  ├─ TelegramLazyThumbnailsCapabilityProvider.kt
+   │  ├─ TelegramVodPlaybackCapabilityProvider.kt
+   │  ├─ TelegramClipPlaybackCapabilityProvider.kt
+   │  └─ TelegramChatMetadataExportCapabilityProvider.kt
    ├─ history/
    │  ├─ TelegramHistoryScanner.kt
    │  └─ TelegramHistoryRepository.kt
@@ -274,6 +274,9 @@ pipeline/telegram/
       ├─ TelegramThumbFetcher.kt
       └─ TelegramThumbCachePolicy.kt
 ```
+
+> **Note:** Pipeline modules use `capability/` for pipeline-specific capabilities.
+> App feature modules (`feature/*`) use `feature/` for user-facing features.
 
 ### 3.3 Beispiel: Xtream-Feature-Provider
 

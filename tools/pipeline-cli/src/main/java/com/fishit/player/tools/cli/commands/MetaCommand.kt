@@ -3,9 +3,7 @@ package com.fishit.player.tools.cli.commands
 import com.fishit.player.core.appstartup.Pipelines
 import com.fishit.player.pipeline.telegram.catalog.TelegramChatMediaClassifier
 import com.fishit.player.pipeline.telegram.debug.TelegramDebugServiceImpl
-import com.fishit.player.pipeline.telegram.model.toRawMediaMetadata
 import com.fishit.player.pipeline.xtream.debug.XtreamDebugServiceImpl
-import com.fishit.player.pipeline.xtream.model.toRawMediaMetadata
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.default
@@ -21,29 +19,25 @@ import kotlinx.coroutines.runBlocking
  * Subcommands:
  * - meta normalize-sample: Sample and show normalized metadata
  */
-class MetaCommand(private val pipelines: Pipelines) : CliktCommand(
-    name = "meta",
-    help = "Metadata normalization commands"
-) {
+class MetaCommand(private val pipelines: Pipelines) :
+        CliktCommand(name = "meta", help = "Metadata normalization commands") {
     override fun run() = Unit
 
     init {
         subcommands(
-            NormalizeSampleCommand(pipelines),
+                NormalizeSampleCommand(pipelines),
         )
     }
 }
 
-class NormalizeSampleCommand(private val pipelines: Pipelines) : CliktCommand(
-    name = "normalize-sample",
-    help = "Sample and show normalized metadata from a pipeline"
-) {
-    private val source by option("--source", help = "Source pipeline (tg or xc)")
-        .choice("tg", "xc")
-        .default("tg")
-    private val limit by option("--limit", help = "Maximum items to sample")
-        .int()
-        .default(20)
+class NormalizeSampleCommand(private val pipelines: Pipelines) :
+        CliktCommand(
+                name = "normalize-sample",
+                help = "Sample and show normalized metadata from a pipeline"
+        ) {
+    private val source by
+            option("--source", help = "Source pipeline (tg or xc)").choice("tg", "xc").default("tg")
+    private val limit by option("--limit", help = "Maximum items to sample").int().default(20)
     private val json by option("--json", help = "Output as JSON").flag()
 
     override fun run() = runBlocking {
@@ -63,9 +57,20 @@ class NormalizeSampleCommand(private val pipelines: Pipelines) : CliktCommand(
         val service = TelegramDebugServiceImpl(adapter, TelegramChatMediaClassifier())
 
         // Get first hot or warm chat
-        val chats = service.listChats(com.fishit.player.pipeline.telegram.debug.ChatFilter.HOT, 1)
-            .ifEmpty { service.listChats(com.fishit.player.pipeline.telegram.debug.ChatFilter.WARM, 1) }
-            .ifEmpty { service.listChats(com.fishit.player.pipeline.telegram.debug.ChatFilter.ALL, 1) }
+        val chats =
+                service.listChats(com.fishit.player.pipeline.telegram.debug.ChatFilter.HOT, 1)
+                        .ifEmpty {
+                            service.listChats(
+                                    com.fishit.player.pipeline.telegram.debug.ChatFilter.WARM,
+                                    1
+                            )
+                        }
+                        .ifEmpty {
+                            service.listChats(
+                                    com.fishit.player.pipeline.telegram.debug.ChatFilter.ALL,
+                                    1
+                            )
+                        }
 
         if (chats.isEmpty()) {
             echo("❌ No chats available for sampling")
@@ -79,7 +84,9 @@ class NormalizeSampleCommand(private val pipelines: Pipelines) : CliktCommand(
             echo("[")
             media.forEachIndexed { index, item ->
                 val comma = if (index < media.size - 1) "," else ""
-                echo("""  {"title": "${(item.normalizedTitle ?: "").replace("\"", "\\\"")}", "type": "${item.normalizedMediaType}", "mime": "${item.mimeType ?: ""}"}$comma""")
+                echo(
+                        """  {"title": "${(item.normalizedTitle ?: "").replace("\"", "\\\"")}", "type": "${item.normalizedMediaType}", "mime": "${item.mimeType ?: ""}"}$comma"""
+                )
             }
             echo("]")
         } else {
@@ -113,7 +120,9 @@ class NormalizeSampleCommand(private val pipelines: Pipelines) : CliktCommand(
             echo("[")
             items.forEachIndexed { index, item ->
                 val comma = if (index < items.size - 1) "," else ""
-                echo("""  {"title": "${item.title.replace("\"", "\\\"")}", "type": "${item.normalizedMediaType}", "year": ${item.year ?: "null"}}$comma""")
+                echo(
+                        """  {"title": "${item.title.replace("\"", "\\\"")}", "type": "${item.normalizedMediaType}", "year": ${item.year ?: "null"}}$comma"""
+                )
             }
             echo("]")
         } else {

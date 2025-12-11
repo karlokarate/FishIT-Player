@@ -1,7 +1,20 @@
-# Player Migration Status – Phase 4 Complete
+# Player Migration Status – Phase 5 Complete + Review Fixes
 
-**Status:** Phase 4 – Telegram & Xtream PlaybackFactories  
-**Last Updated:** 2025-12-10
+**Status:** Phase 5 – MiniPlayer Migration + Review Fixes  
+**Last Updated:** 2025-12-11
+
+---
+
+> ⚠️ **Note on Document Hierarchy:**
+> 
+> This document tracks the **v2 Player Migration** (Phases 0-14) as defined in `player migrationsplan.md`.
+> 
+> The following documents are **Legacy v1 Refactoring** documents and describe earlier work on the v1 codebase:
+> - `INTERNAL_PLAYER_REFACTOR_ROADMAP.md` (v1 Phases 1-9)
+> - `INTERNAL_PLAYER_REFACTOR_STATUS.md` (v1 integration status)
+> - `INTERNAL_PLAYER_REFACTOR_SSOT.md` (v1 consolidated knowledge)
+> 
+> For v2 work, use this document and `PLAYER_ARCHITECTURE_V2.md` as primary references.
 
 ---
 
@@ -17,6 +30,7 @@
 | `playback:telegram` | `/playback/telegram/` | ✅ COMPLETE | `TelegramFileDataSource` + `TelegramPlaybackSourceFactoryImpl` |
 | `playback:xtream` | `/playback/xtream/` | ✅ COMPLETE | `XtreamPlaybackSourceFactoryImpl` |
 | `player:internal` | `/player/internal/` | ✅ COMPLETE | `PlaybackSourceResolver` with factory injection |
+| `player:miniplayer` | `/player/miniplayer/` | ✅ COMPLETE | MiniPlayer state, manager, overlay (Phase 5) |
 | `player:input` | `/player/input/` | ❌ MISSING | Needs creation (Phase 13) |
 | `feature:player-ui` | `/feature/player-ui/` | ❌ MISSING | Future phase |
 
@@ -164,6 +178,51 @@
 
 ---
 
+## 5.5 Phase 5: MiniPlayer ✅ COMPLETE
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| `MiniPlayerState` | ✅ DONE | `player:miniplayer` |
+| `MiniPlayerMode` enum | ✅ DONE | `player:miniplayer` |
+| `MiniPlayerAnchor` enum | ✅ DONE | `player:miniplayer` |
+| `MiniPlayerManager` interface | ✅ DONE | `player:miniplayer` |
+| `DefaultMiniPlayerManager` | ✅ DONE | `player:miniplayer` |
+| `MiniPlayerCoordinator` | ✅ DONE | `player:miniplayer` |
+| `PlayerWithMiniPlayerState` | ✅ DONE | `player:miniplayer` |
+| `MiniPlayerOverlay` | ✅ DONE | `player:miniplayer/ui/` |
+| `MiniPlayerModule` (Hilt DI) | ✅ DONE | `player:miniplayer/di/` |
+| Unit Tests | ✅ DONE | `player:miniplayer/test/` |
+
+**Key Implementation Details:**
+- Battle-tested v1 MiniPlayer logic ported to v2 architecture
+- State machine for Fullscreen ↔ MiniPlayer transitions
+- Resize mode with DPAD controls (move, resize, confirm, cancel)
+- Anchor snapping (corners + center top/bottom)
+- Hilt DI integration with `@Singleton` scope
+- Combined `PlayerWithMiniPlayerState` for UI layer consumption
+- `MiniPlayerCoordinator` for high-level transition orchestration
+
+---
+
+## 5.6 Phase 1-6 Review Fixes (2025-12-11)
+
+Code Review entdeckte und behob folgende Issues:
+
+| Issue | Fix | Status |
+|-------|-----|--------|
+| Media3 Version 1.9.0 (nicht existent) | Korrigiert auf 1.8.0 | ✅ FIXED |
+| `getPlayer()` fehlt in InternalPlayerSession | Methode hinzugefügt für UI-Attachment | ✅ FIXED |
+| TelegramFileDataSource nicht in ExoPlayer integriert | DataSource.Factory-Map + DI-Modul erstellt | ✅ FIXED |
+| PlayerDataSourceModule.kt | Neues Hilt-Modul für DataSource-Factories | ✅ CREATED |
+
+**Key Changes:**
+- `InternalPlayerSession` akzeptiert jetzt `Map<DataSourceType, DataSource.Factory>` via Konstruktor
+- ExoPlayer wird mit korrekter `MediaSourceFactory` konfiguriert basierend auf `PlaybackSource.dataSourceType`
+- `TelegramFileDataSourceFactory` wird via Hilt injiziert für `tg://` URIs
+- Alle Module nutzen jetzt konsistent Media3 1.8.0
+
+---
+
 ## 6. v1 SIP Components for Porting
 
 From `/legacy/v1-app/.../player/internal/`:
@@ -177,8 +236,8 @@ From `/legacy/v1-app/.../player/internal/`:
 | `TelegramFileDataSource` | Battle-tested | ✅ Moved to playback:telegram |
 | `SubtitleSelectionPolicy` | Battle-tested | Interface exists, impl stub |
 | `LivePlaybackController` | Battle-tested | Interface exists, impl stub |
-| `MiniPlayerManager` | Battle-tested | ⏳ Phase 5 |
-| `MiniPlayerState` | Battle-tested | ⏳ Phase 5 |
+| `MiniPlayerManager` | Battle-tested | ✅ Ported to player:miniplayer |
+| `MiniPlayerState` | Battle-tested | ✅ Ported to player:miniplayer |
 
 ---
 
@@ -191,7 +250,7 @@ From `/legacy/v1-app/.../player/internal/`:
 | 2 | Player-Modell finalisieren | ✅ COMPLETE |
 | 3 | SIP-Kern portieren | ✅ COMPLETE |
 | 4 | Telegram & Xtream Factories | ✅ COMPLETE |
-| 5 | MiniPlayer | ⏳ PENDING |
+| 5 | MiniPlayer | ✅ COMPLETE |
 | 6 | Subtitles/CC | ⏳ PENDING |
 | 7 | Audio-Spur | ⏳ PENDING |
 | 8 | Serienmodus & TMDB | ⏳ PENDING |

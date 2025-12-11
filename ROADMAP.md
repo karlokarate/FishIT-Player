@@ -22,7 +22,7 @@ The v2 rebuild follows a phased approach:
 | 2.1 | Transport Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.2 | Data Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.3 | Metadata Normalizer | ✅ COMPLETED | Dec 2025 |
-| 3 | SIP / Internal Player (Phase 0-4) | 🚧 IN PROGRESS | Dec 2025 |
+| 3 | SIP / Internal Player (Phase 0-5) | 🚧 IN PROGRESS | Dec 2025 |
 | 4 | UI Feature Screens | 🔲 PLANNED | Jan 2026 |
 | 5 | Quality & Performance | 🔲 PLANNED | Jan 2026 |
 
@@ -96,7 +96,7 @@ Status: ✅ COMPLETED
 - [x] Create `Features.kt` with grouped feature IDs
 - [x] Implement `AppFeatureRegistry` in app-v2
 - [x] Create Hilt DI module for feature system
-- [x] Create first feature providers (`TelegramFullHistoryFeatureProvider`, `TelegramLazyThumbnailsFeatureProvider`)
+- [x] Create first capability providers (`TelegramFullHistoryCapabilityProvider`, `TelegramLazyThumbnailsCapabilityProvider`)
 - [x] Create feature contract documentation template
 - [x] **Phase 1.5:** Wire FeatureRegistry into real code (`TelegramMediaViewModel`)
 - [x] **Phase 1.5:** Add Hilt DI to `pipeline/telegram` and `feature/telegram-media`
@@ -178,7 +178,7 @@ Status: ✅ COMPLETED
 
 ## Phase 3 – SIP / Internal Player
 
-Status: 🚧 IN PROGRESS (Player Migration Phase 4 of 14 Complete)
+Status: 🚧 IN PROGRESS (Player Migration Phase 5 of 14 Complete)
 
 ### Goals
 
@@ -197,7 +197,7 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 | Phase 2 | ✅ COMPLETE | Player-Modell finalisieren (`core:player-model`) |
 | Phase 3 | ✅ COMPLETE | SIP-Kern portieren (`player:internal` refactor) |
 | Phase 4 | ✅ COMPLETE | Telegram & Xtream PlaybackFactories |
-| Phase 5 | ⏳ PENDING | MiniPlayer |
+| Phase 5 | ✅ COMPLETE | MiniPlayer (`player:miniplayer` module) |
 | Phase 6 | ⏳ PENDING | Subtitles/CC |
 | Phase 7 | ⏳ PENDING | Audio-Spur |
 | Phase 8 | ⏳ PENDING | Serienmodus & TMDB |
@@ -218,10 +218,10 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 - [x] Create `PlaybackSourceResolver` with factory injection pattern
 - [x] Clean layer violations (remove pipeline deps from player)
 - [x] Move `TelegramFileDataSource` to `playback:telegram`
+- [x] Implement `player:miniplayer` module with MiniPlayerManager, MiniPlayerState, MiniPlayerOverlay
 
 ### Pending Tasks
 
-- [ ] Implement MiniPlayer support (Phase 5)
 - [ ] Subtitle selection and styling (Phase 6)
 - [ ] Audio track selection (Phase 7)
 - [ ] Series mode / binge watching (Phase 8)
@@ -245,73 +245,6 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 - [docs/v2/internal-player/](docs/v2/internal-player/) – SIP contracts and checklists
 - [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md) – Detailed migration status
 - [docs/v2/ARCHITECTURE_OVERVIEW_V2.md](docs/v2/ARCHITECTURE_OVERVIEW_V2.md) – V2 architecture
-
----
-
-## Phase 2 – Pipelines → Canonical Media
-
-Status: 🔲 PLANNED
-
-### Goals
-
-- Finalize canonical media model in `core/model`
-- Implement pipeline stubs for all sources
-- Wire central metadata normalizer
-
-### Tasks
-
-- [ ] Finalize `RawMediaMetadata` and `NormalizedMediaMetadata` in `core/model`
-- [ ] Implement `MediaMetadataNormalizer` in `core/metadata-normalizer`
-- [ ] Create pipeline stubs:
-  - [ ] `pipeline/telegram`
-  - [ ] `pipeline/xtream`
-  - [ ] `pipeline/audiobook`
-  - [ ] `pipeline/io`
-- [ ] Wire pipelines to normalizer
-- [ ] Add TMDB resolver integration point
-
-### Modules Affected
-
-- `core/model`
-- `core/metadata-normalizer`
-- `pipeline/*`
-
-### Docs
-
-- [docs/v2/CANONICAL_MEDIA_SYSTEM.md](docs/v2/CANONICAL_MEDIA_SYSTEM.md)
-- [docs/v2/MEDIA_NORMALIZATION_CONTRACT.md](docs/v2/MEDIA_NORMALIZATION_CONTRACT.md)
-- [docs/v2/MEDIA_NORMALIZER_DESIGN.md](docs/v2/MEDIA_NORMALIZER_DESIGN.md)
-
----
-
-## Phase 3 – SIP / Internal Player
-
-Status: 🔲 PLANNED
-
-### Goals
-
-- Integrate Internal Player (SIP) from v1
-- Implement playback domain contracts
-- Support VOD, live, resume, kids-mode
-
-### Tasks
-
-- [ ] Port SIP player core from v1 to `player/internal`
-- [ ] Define playback domain contracts in `playback/domain`
-- [ ] Implement VOD playback
-- [ ] Implement live playback
-- [ ] Implement resume functionality
-- [ ] Implement kids-mode time limits
-- [ ] Wire trickplay support
-
-### Modules Affected
-
-- `player/internal`
-- `playback/domain`
-
-### Docs
-
-- [docs/v2/internal-player/](docs/v2/internal-player/) – SIP contracts and checklists
 
 ---
 

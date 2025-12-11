@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.internal"
+    namespace = "com.fishit.player.miniplayer"
     compileSdk = 35
 
     defaultConfig {
@@ -29,37 +29,37 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:model"))
+    // Player modules
     implementation(project(":core:player-model"))
-    implementation(project(":playback:domain"))
-    implementation(project(":playback:telegram"))
-    implementation(project(":playback:xtream"))
+    implementation(project(":player:internal"))
     implementation(project(":infra:logging"))
-    implementation(project(":infra:transport-telegram"))
-    
+
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-compiler:2.52")
-    
-    // Media3 / ExoPlayer
-    val media3Version = "1.8.0"
-    implementation("androidx.media3:media3-exoplayer:$media3Version")
-    implementation("androidx.media3:media3-ui:$media3Version")
-    implementation("androidx.media3:media3-session:$media3Version")
-    implementation("androidx.media3:media3-datasource:$media3Version")
-    
+
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.animation:animation")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    
+
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Media3 for PlayerView
+    implementation("androidx.media3:media3-ui:1.8.0")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("io.mockk:mockk:1.13.13")
 }

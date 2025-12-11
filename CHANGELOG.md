@@ -8,6 +8,51 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Documentation Sync (2025-12-11)
+
+- **docs**: Synchronized all Phase 1-6 documentation with actual IST-Zustand
+  - **ROADMAP.md**: Phase 5 MiniPlayer marked COMPLETE, removed duplicate Phase 2/3 sections
+  - **ARCHITECTURE_OVERVIEW_V2.md**: 
+    - Added `playback:telegram` and `playback:xtream` module documentation
+    - Updated `player:internal` to reference `PlaybackSourceResolver` (not legacy `InternalPlaybackSourceResolver`)
+    - Added `player:miniplayer` as separate module (not `internal.mini` package)
+    - Added `PlayerDataSourceModule` DI documentation
+    - Corrected pipeline documentation (playback components moved to `:playback:*`)
+  - **PLAYER_ARCHITECTURE_V2.md**: Updated Phase 3-5 status to COMPLETE
+  - **PLAYER_MIGRATION_STATUS.md**: Added note distinguishing v2 migration docs from v1 refactoring docs
+
+### Phase 1-6 Review Fixes (2025-12-11)
+
+- **fix(player)**: Media3/ExoPlayer version corrected from 1.9.0 to 1.8.0 (stable)
+- **feat(player)**: Added `getPlayer(): Player?` method to `InternalPlayerSession` for UI attachment
+- **feat(player)**: DataSource.Factory integration for custom sources
+  - `InternalPlayerSession` now accepts `Map<DataSourceType, DataSource.Factory>` via constructor
+  - ExoPlayer configured with appropriate `MediaSourceFactory` based on `PlaybackSource.dataSourceType`
+  - `TelegramFileDataSource` now properly integrated for `tg://` URIs
+- **feat(player)**: Created `PlayerDataSourceModule.kt` Hilt DI module
+  - Provides `TelegramFileDataSourceFactory` for Telegram streaming
+  - Provides `DefaultDataSource.Factory` for standard HTTP/file sources
+- **deps**: Added `infra:transport-telegram` dependency to `player:internal` for Hilt wiring
+- **docs**: Updated `PLAYER_MIGRATION_STATUS.md` with review fixes section
+
+### Phase 5 – MiniPlayer Migration (2025-12-11)
+
+- **feat(player)**: Created `player:miniplayer` module
+  - `MiniPlayerState` immutable state model (visibility, mode, anchor, size, position)
+  - `MiniPlayerMode` enum (NORMAL, RESIZE)
+  - `MiniPlayerAnchor` enum (6 positions including center variants)
+  - `MiniPlayerManager` interface for state transitions
+  - `DefaultMiniPlayerManager` thread-safe implementation with StateFlow
+  - `MiniPlayerCoordinator` for high-level fullscreen ↔ MiniPlayer orchestration
+  - `PlayerWithMiniPlayerState` combined state for UI consumption
+  - `MiniPlayerOverlay` Compose UI component with drag, resize, animations
+  - Hilt DI module with `@Singleton` scoped manager
+  - Unit tests for state machine logic
+
+- **docs**: Updated PLAYER_MIGRATION_STATUS.md to Phase 5 Complete
+
+---
+
 ### Pipeline Finalization (Phases 0-7 Complete)
 
 #### Post-review hardening

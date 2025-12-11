@@ -251,8 +251,32 @@ detekt:
           reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
         - value: 'timber.log.Timber'
           reason: 'Use UnifiedLog from :infra:logging instead. Direct Timber usage is forbidden outside the logging module.'
+        # v2 Naming Convention: Forbid legacy namespace in v2 modules
+        - value: 'com.chris.m3usuite.*'
+          reason: 'v1 namespace forbidden in v2 modules. See AGENTS.md Section 3.2 and 14.4.'
       excludes:
         - '**/infra/logging/**'
+        - '**/legacy/**'
+
+  # =========================================================================
+  # v2 NAMING CONTRACT ENFORCEMENT
+  # =========================================================================
+  # Binding rules from AGENTS.md Section 14 and GLOSSARY_v2_naming_and_modules.md
+  #
+  # HARD RULES (enforced via code review + agent audit):
+  # 1. Pipeline modules (pipeline/*) must use 'capability/' package, NOT 'feature/'
+  # 2. Pipeline capability providers must be named *CapabilityProvider, NOT *FeatureProvider
+  # 3. Only feature/* modules may use *FeatureProvider naming
+  # 4. Mapping extensions live in pipeline/<name>/mapper/, NOT model/
+  #
+  # AUTHORITATIVE SOURCES:
+  # - AGENTS.md Section 14 (Binding Naming Contract)
+  # - docs/v2/GLOSSARY_v2_naming_and_modules.md (vocabulary definitions)
+  # - docs/v2/NAMING_INVENTORY_v2.md (file-to-vocabulary mapping)
+  #
+  # Automated enforcement for custom patterns requires detekt-rule-authors plugin.
+  # Current enforcement: Agent audit (AGENTS.md 14.5) + Code review
+  # =========================================================================
     ForbiddenMethodCall:
       active: false
     ForbiddenPublicDataClass:

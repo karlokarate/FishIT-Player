@@ -1,12 +1,13 @@
 package com.fishit.player.pipeline.xtream.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.pipeline.xtream.mapper.XtreamCatalogMapper
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.isActive
-import javax.inject.Inject
 
 /**
  * Default implementation of [XtreamCatalogPipeline].
@@ -30,31 +31,33 @@ import javax.inject.Inject
  * @param source Data source for Xtream catalog items
  * @param mapper Mapper for converting models to catalog items
  */
-class XtreamCatalogPipelineImpl @Inject constructor(
-    private val source: XtreamCatalogSource,
-    private val mapper: XtreamCatalogMapper,
+class XtreamCatalogPipelineImpl
+@Inject
+constructor(
+        private val source: XtreamCatalogSource,
+        private val mapper: XtreamCatalogMapper,
 ) : XtreamCatalogPipeline {
 
     override fun scanCatalog(
-        config: XtreamCatalogConfig,
+            config: XtreamCatalogConfig,
     ): Flow<XtreamCatalogEvent> = channelFlow {
         val startTime = System.currentTimeMillis()
 
         try {
             UnifiedLog.i(
-                TAG,
-                "Starting Xtream catalog scan: vod=${config.includeVod}, " +
-                    "series=${config.includeSeries}, episodes=${config.includeEpisodes}, " +
-                    "live=${config.includeLive}",
+                    TAG,
+                    "Starting Xtream catalog scan: vod=${config.includeVod}, " +
+                            "series=${config.includeSeries}, episodes=${config.includeEpisodes}, " +
+                            "live=${config.includeLive}",
             )
 
             trySend(
-                XtreamCatalogEvent.ScanStarted(
-                    includesVod = config.includeVod,
-                    includesSeries = config.includeSeries,
-                    includesEpisodes = config.includeEpisodes,
-                    includesLive = config.includeLive,
-                ),
+                    XtreamCatalogEvent.ScanStarted(
+                            includesVod = config.includeVod,
+                            includesSeries = config.includeSeries,
+                            includesEpisodes = config.includeEpisodes,
+                            includesLive = config.includeLive,
+                    ),
             )
 
             var vodCount = 0
@@ -80,13 +83,13 @@ class XtreamCatalogPipelineImpl @Inject constructor(
 
                         if (vodCount % PROGRESS_LOG_INTERVAL == 0) {
                             trySend(
-                                XtreamCatalogEvent.ScanProgress(
-                                    vodCount = vodCount,
-                                    seriesCount = seriesCount,
-                                    episodeCount = episodeCount,
-                                    liveCount = liveCount,
-                                    currentPhase = XtreamScanPhase.VOD,
-                                ),
+                                    XtreamCatalogEvent.ScanProgress(
+                                            vodCount = vodCount,
+                                            seriesCount = seriesCount,
+                                            episodeCount = episodeCount,
+                                            liveCount = liveCount,
+                                            currentPhase = XtreamScanPhase.VOD,
+                                    ),
                             )
                         }
                     }
@@ -114,13 +117,13 @@ class XtreamCatalogPipelineImpl @Inject constructor(
 
                         if (seriesCount % PROGRESS_LOG_INTERVAL == 0) {
                             trySend(
-                                XtreamCatalogEvent.ScanProgress(
-                                    vodCount = vodCount,
-                                    seriesCount = seriesCount,
-                                    episodeCount = episodeCount,
-                                    liveCount = liveCount,
-                                    currentPhase = XtreamScanPhase.SERIES,
-                                ),
+                                    XtreamCatalogEvent.ScanProgress(
+                                            vodCount = vodCount,
+                                            seriesCount = seriesCount,
+                                            episodeCount = episodeCount,
+                                            liveCount = liveCount,
+                                            currentPhase = XtreamScanPhase.SERIES,
+                                    ),
                             )
                         }
                     }
@@ -148,13 +151,13 @@ class XtreamCatalogPipelineImpl @Inject constructor(
 
                         if (episodeCount % PROGRESS_LOG_INTERVAL == 0) {
                             trySend(
-                                XtreamCatalogEvent.ScanProgress(
-                                    vodCount = vodCount,
-                                    seriesCount = seriesCount,
-                                    episodeCount = episodeCount,
-                                    liveCount = liveCount,
-                                    currentPhase = XtreamScanPhase.EPISODES,
-                                ),
+                                    XtreamCatalogEvent.ScanProgress(
+                                            vodCount = vodCount,
+                                            seriesCount = seriesCount,
+                                            episodeCount = episodeCount,
+                                            liveCount = liveCount,
+                                            currentPhase = XtreamScanPhase.EPISODES,
+                                    ),
                             )
                         }
                     }
@@ -181,13 +184,13 @@ class XtreamCatalogPipelineImpl @Inject constructor(
 
                         if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
                             trySend(
-                                XtreamCatalogEvent.ScanProgress(
-                                    vodCount = vodCount,
-                                    seriesCount = seriesCount,
-                                    episodeCount = episodeCount,
-                                    liveCount = liveCount,
-                                    currentPhase = XtreamScanPhase.LIVE,
-                                ),
+                                    XtreamCatalogEvent.ScanProgress(
+                                            vodCount = vodCount,
+                                            seriesCount = seriesCount,
+                                            episodeCount = episodeCount,
+                                            liveCount = liveCount,
+                                            currentPhase = XtreamScanPhase.LIVE,
+                                    ),
                             )
                         }
                     }
@@ -202,12 +205,12 @@ class XtreamCatalogPipelineImpl @Inject constructor(
             if (!currentCoroutineContext().isActive) {
                 UnifiedLog.i(TAG, "Scan cancelled")
                 trySend(
-                    XtreamCatalogEvent.ScanCancelled(
-                        vodCount = vodCount,
-                        seriesCount = seriesCount,
-                        episodeCount = episodeCount,
-                        liveCount = liveCount,
-                    ),
+                        XtreamCatalogEvent.ScanCancelled(
+                                vodCount = vodCount,
+                                seriesCount = seriesCount,
+                                episodeCount = episodeCount,
+                                liveCount = liveCount,
+                        ),
                 )
                 return@channelFlow
             }
@@ -216,20 +219,20 @@ class XtreamCatalogPipelineImpl @Inject constructor(
             val totalItems = vodCount + seriesCount + episodeCount + liveCount
 
             UnifiedLog.i(
-                TAG,
-                "Xtream catalog scan completed: $totalItems items " +
-                    "(vod=$vodCount, series=$seriesCount, episodes=$episodeCount, live=$liveCount) " +
-                    "in ${durationMs}ms",
+                    TAG,
+                    "Xtream catalog scan completed: $totalItems items " +
+                            "(vod=$vodCount, series=$seriesCount, episodes=$episodeCount, live=$liveCount) " +
+                            "in ${durationMs}ms",
             )
 
             trySend(
-                XtreamCatalogEvent.ScanCompleted(
-                    vodCount = vodCount,
-                    seriesCount = seriesCount,
-                    episodeCount = episodeCount,
-                    liveCount = liveCount,
-                    durationMs = durationMs,
-                ),
+                    XtreamCatalogEvent.ScanCompleted(
+                            vodCount = vodCount,
+                            seriesCount = seriesCount,
+                            episodeCount = episodeCount,
+                            liveCount = liveCount,
+                            durationMs = durationMs,
+                    ),
             )
         } catch (ce: CancellationException) {
             UnifiedLog.i(TAG, "Scan cancelled by coroutine cancellation")
@@ -237,11 +240,11 @@ class XtreamCatalogPipelineImpl @Inject constructor(
         } catch (t: Throwable) {
             UnifiedLog.e(TAG, "Xtream catalog scan failed", t)
             trySend(
-                XtreamCatalogEvent.ScanError(
-                    reason = "unexpected_error",
-                    message = t.message ?: "Unknown error",
-                    throwable = t,
-                ),
+                    XtreamCatalogEvent.ScanError(
+                            reason = "unexpected_error",
+                            message = t.message ?: "Unknown error",
+                            throwable = t,
+                    ),
             )
         }
     }

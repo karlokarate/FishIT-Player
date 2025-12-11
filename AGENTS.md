@@ -461,7 +461,14 @@ Before making changes, confirm:
      - `core/model/README.md`
      - `core/metadata-normalizer/README.md`
 
-4. **Docs**
+4. **Naming Contract (MANDATORY)**
+   - [ ] Read `docs/v2/GLOSSARY_v2_naming_and_modules.md` before creating new classes/packages.
+   - [ ] All new classes follow naming patterns in Glossary Section 5.2.
+   - [ ] All new packages follow patterns in Glossary Section 5.1.
+   - [ ] No forbidden patterns from Glossary Section 5.3 are introduced.
+   - [ ] Terminology in comments/docs matches Glossary Section 1.
+
+5. **Docs**
    - [ ] Relevant v2 docs under `docs/v2/**` have been read:
      - Canonical Media / Normalizer (for pipeline/metadata changes),
      - Internal Player docs (for player changes),
@@ -485,7 +492,13 @@ After making changes, confirm:
    - [ ] No new `com.chris.m3usuite` references outside `legacy/`.
    - [ ] New modules (if any) are wired into `settings.gradle.kts` correctly.
 
-2. **Quality**
+2. **Naming Contract Compliance**
+   - [ ] All new classes follow Glossary naming patterns (Section 5.2).
+   - [ ] No `*FeatureProvider` in `pipeline/*` modules (use `*CapabilityProvider`).
+   - [ ] No `feature/` package in `pipeline/*` modules (use `capability/`).
+   - [ ] All vocabulary in code/comments matches Glossary definitions.
+
+3. **Quality**
    - [ ] Code compiles.
    - [ ] Relevant tests added/updated and passing (at least locally).
    - [ ] No new obvious Lint/Detekt violations introduced, or exceptions are documented.
@@ -659,6 +672,103 @@ Then agent MUST:
 2. **Document** the conflict with specific file/line references,
 3. **ASK** the user: "Konflikt gefunden: [description]. Wie soll ich vorgehen?"
 4. **WAIT** for explicit user resolution before proceeding.
+
+---
+
+## 14. v2 Naming Contract (BINDING)
+
+This section establishes a **binding naming contract** for all v2 development. Violations must be flagged and corrected immediately.
+
+### 14.1. Authoritative Source
+
+> **Hard Rule:** The document `docs/v2/GLOSSARY_v2_naming_and_modules.md` is the single authoritative source for all naming conventions, vocabulary definitions, and module taxonomy in v2.
+
+All agents, code, documentation, and discussions MUST conform to the vocabulary and naming conventions defined in the Glossary. This contract is **global and binding** for the entire v2 app development.
+
+### 14.2. Mandatory Vocabulary Compliance
+
+Agents MUST use ONLY the vocabulary defined in the Glossary. Key terms include:
+
+| Term | Definition | Where Used |
+|------|------------|------------|
+| **AppFeature** | User-visible product capability in `feature/*` modules | UI/Feature modules only |
+| **AppShell** | Application entry point, main activity, navigation host in `app-v2` | app-v2 infrastructure only |
+| **PipelineCapability** | Technical capability in `pipeline/*/capability/` | Pipeline modules only |
+| **FeatureId** | Unique identifier for both AppFeatures and PipelineCapabilities | core/feature-api |
+| **RawMediaMetadata** | Canonical data class produced by all pipelines | core/model |
+| **NormalizedMedia** | Aggregated normalized media after enrichment | core/model |
+
+The complete vocabulary is defined in `docs/v2/GLOSSARY_v2_naming_and_modules.md` Section 1.
+
+### 14.3. Module Naming Rules
+
+All new modules MUST follow the established naming schema:
+
+| Module Type | Package Pattern | Class Naming |
+|-------------|-----------------|--------------|
+| Pipeline Capability | `pipeline.<name>.capability` | `*CapabilityProvider` |
+| App Feature | `feature.<name>` | `*FeatureProvider` |
+| Pipeline Mapper | `pipeline.<name>.mapper` | `*Mapper`, `*Extensions` |
+| Transport | `infra.transport.<name>` | `*Client`, `*Adapter` |
+| Data | `infra.data.<name>` | `*Repository`, `Obx*Entity` |
+
+### 14.4. Forbidden Naming Patterns (Hard Rules)
+
+| Pattern | Forbidden In | Correct Alternative |
+|---------|--------------|---------------------|
+| `*FeatureProvider` | `pipeline/*` | Use `*CapabilityProvider` |
+| `feature/` package | `pipeline/*` | Use `capability/` package |
+| `com.chris.m3usuite` | anywhere except `legacy/` | Use `com.fishit.player.*` |
+| Ad-hoc capability names | anywhere | Use Glossary-defined terms |
+
+### 14.5. Violation Detection and Alerting
+
+> **Hard Rule:** Agents MUST proactively detect and alert users to naming violations.
+
+When an agent detects code or modules that violate these naming conventions:
+
+1. **Immediate Alert:** The agent MUST immediately inform the user:
+   > "⚠️ Naming Violation detected: [specific violation]. This conflicts with the binding naming contract in AGENTS.md Section 14 and GLOSSARY_v2_naming_and_modules.md."
+
+2. **No Silent Violations:** Agents MUST NOT:
+   - Proceed with changes that introduce naming violations
+   - Ignore existing violations in files they are modifying
+   - Use deprecated or non-standard terminology
+
+3. **Mandatory Fix Proposal:** The agent MUST propose a fix aligned with the Glossary:
+   > "Proposed fix: Rename `*FeatureProvider` to `*CapabilityProvider` per Glossary Section 5.2."
+
+### 14.6. Pre-Change Naming Audit
+
+Before any code modification, agents MUST verify:
+
+- [ ] All new classes follow the naming patterns in Glossary Section 5.2
+- [ ] All new packages follow the patterns in Glossary Section 5.1
+- [ ] No forbidden patterns from Glossary Section 5.3 are introduced
+- [ ] Terminology used in comments/docs matches Glossary Section 1
+
+### 14.7. Automated Enforcement
+
+Naming conventions are enforced via:
+
+| Tool | Rule | Configuration |
+|------|------|---------------|
+| **Detekt** | `ForbiddenImport` for v1 namespace | `detekt-config.yml` |
+| **Code Review** | Pattern checks for `*CapabilityProvider` vs `*FeatureProvider` | PR process |
+| **Agent Audit** | This section (14.5) | Mandatory for all changes |
+
+Automated checks in `detekt-config.yml`:
+```yaml
+ForbiddenImport:
+  - value: 'com.chris.m3usuite.*'
+    reason: 'v1 namespace forbidden in v2 modules. See AGENTS.md Section 3.2 and 14.4.'
+```
+
+### 14.8. Reference Documents
+
+- **Primary:** `docs/v2/GLOSSARY_v2_naming_and_modules.md` (authoritative)
+- **Inventory:** `docs/v2/NAMING_INVENTORY_v2.md` (file-to-vocabulary mapping)
+- **Feature System:** `docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md`
 
 ---
 

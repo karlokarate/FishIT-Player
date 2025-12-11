@@ -1,11 +1,11 @@
 package com.fishit.player.pipeline.xtream.catalog.di
 
 import com.fishit.player.pipeline.xtream.catalog.DefaultXtreamCatalogSource
-import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogMapper
-import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogMapperImpl
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogPipeline
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogPipelineImpl
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogSource
+import com.fishit.player.pipeline.xtream.mapper.XtreamCatalogMapper
+import com.fishit.player.pipeline.xtream.mapper.XtreamCatalogMapperImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -34,18 +34,18 @@ abstract class XtreamCatalogModule {
     @Binds
     @Singleton
     abstract fun bindXtreamCatalogPipeline(
-        impl: XtreamCatalogPipelineImpl,
+            impl: XtreamCatalogPipelineImpl,
     ): XtreamCatalogPipeline
 
     @Binds
     @Singleton
     abstract fun bindXtreamCatalogMapper(
-        impl: XtreamCatalogMapperImpl,
+            impl: XtreamCatalogMapperImpl,
     ): XtreamCatalogMapper
 
     @Binds
     @Singleton
     abstract fun bindXtreamCatalogSource(
-        impl: DefaultXtreamCatalogSource,
+            impl: DefaultXtreamCatalogSource,
     ): XtreamCatalogSource
 }
