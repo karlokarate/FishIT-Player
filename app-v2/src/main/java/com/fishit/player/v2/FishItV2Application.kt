@@ -12,14 +12,13 @@ import dagger.hilt.android.HiltAndroidApp
  */
 @HiltAndroidApp
 class FishItV2Application : Application() {
-
     override fun onCreate() {
         super.onCreate()
-        
+
         // Initialize unified logging system FIRST
         // This ensures all subsequent logging works correctly
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
-        
+
         // Initialization logic will be added in later phases:
         // - DeviceProfile detection
         // - Local profile loading

@@ -31,7 +31,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class FeatureModule {
-
     /**
      * Declares the multibinding set for FeatureProviders.
      * This allows the set to be empty if no providers are bound yet.
@@ -48,8 +47,6 @@ abstract class FeatureModule {
          */
         @Provides
         @Singleton
-        fun provideFeatureRegistry(
-            providers: Set<@JvmSuppressWildcards FeatureProvider>,
-        ): FeatureRegistry = AppFeatureRegistry(providers)
+        fun provideFeatureRegistry(providers: Set<@JvmSuppressWildcards FeatureProvider>): FeatureRegistry = AppFeatureRegistry(providers)
     }
 }

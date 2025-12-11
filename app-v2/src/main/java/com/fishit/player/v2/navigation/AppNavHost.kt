@@ -25,28 +25,28 @@ import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
 @Composable
 fun AppNavHost(
     resumeManager: ResumeManager,
-    kidsPlaybackGate: KidsPlaybackGate
+    kidsPlaybackGate: KidsPlaybackGate,
 ) {
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Routes.DEVTOOLS
+        startDestination = Routes.DEVTOOLS,
     ) {
         composable(Routes.DEBUG_SKELETON) {
             DebugSkeletonScreen()
         }
-        
+
         composable(Routes.DEBUG_PLAYBACK) {
             DebugPlaybackScreen(
                 resumeManager = resumeManager,
                 kidsPlaybackGate = kidsPlaybackGate,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
             )
         }
-        
+
         composable(Routes.DEVTOOLS) {
-            DevToolsScreen()
+            devToolsScreen()
         }
     }
 }
@@ -58,7 +58,7 @@ object Routes {
     const val DEBUG_SKELETON = "debug_skeleton"
     const val DEBUG_PLAYBACK = "debug_playback"
     const val DEVTOOLS = "devtools"
-    
+
     // Future routes (Phase 2+)
     // const val HOME = "home"
     // const val LIBRARY = "library"

@@ -16,10 +16,7 @@ import dagger.multibindings.IntoSet
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DevToolsModule {
-
     @Binds
     @IntoSet
-    abstract fun bindDevToolsFeatureProvider(
-        impl: DevToolsFeatureProvider
-    ): FeatureProvider
+    abstract fun bindDevToolsFeatureProvider(impl: DevToolsFeatureProvider): FeatureProvider
 }

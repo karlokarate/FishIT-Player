@@ -17,8 +17,10 @@ import javax.inject.Singleton
  * This feature is debug-only and not intended for production use.
  */
 @Singleton
-class DevToolsFeatureProvider @Inject constructor() : FeatureProvider {
-    override val featureId: FeatureId = FeatureId("ui.screen.devtools")
-    override val scope: FeatureScope = FeatureScope.UI_SCREEN
-    override val owner: FeatureOwner = FeatureOwner(moduleName = "feature:devtools")
-}
+class DevToolsFeatureProvider
+    @Inject
+    constructor() : FeatureProvider {
+        override val featureId: FeatureId = FeatureId("ui.screen.devtools")
+        override val scope: FeatureScope = FeatureScope.UI_SCREEN
+        override val owner: FeatureOwner = FeatureOwner(moduleName = "feature:devtools")
+    }

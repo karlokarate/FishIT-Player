@@ -17,7 +17,6 @@ import org.junit.Test
  * Tests the core registry behavior: registration, lookup, and edge cases.
  */
 class AppFeatureRegistryTest {
-
     // -------------------------------------------------------------------------
     // Test Feature IDs
     // -------------------------------------------------------------------------
@@ -34,11 +33,12 @@ class AppFeatureRegistryTest {
         featureId: FeatureId,
         scope: FeatureScope = FeatureScope.APP,
         moduleName: String = "test:module",
-    ): FeatureProvider = object : FeatureProvider {
-        override val featureId: FeatureId = featureId
-        override val scope: FeatureScope = scope
-        override val owner: FeatureOwner = FeatureOwner(moduleName = moduleName)
-    }
+    ): FeatureProvider =
+        object : FeatureProvider {
+            override val featureId: FeatureId = featureId
+            override val scope: FeatureScope = scope
+            override val owner: FeatureOwner = FeatureOwner(moduleName = moduleName)
+        }
 
     // -------------------------------------------------------------------------
     // isSupported() Tests
@@ -67,12 +67,13 @@ class AppFeatureRegistryTest {
 
     @Test
     fun `isSupported works with multiple registered features`() {
-        val registry = AppFeatureRegistry(
-            setOf(
-                createProvider(featureA),
-                createProvider(featureB),
+        val registry =
+            AppFeatureRegistry(
+                setOf(
+                    createProvider(featureA),
+                    createProvider(featureB),
+                ),
             )
-        )
 
         assertTrue(registry.isSupported(featureA))
         assertTrue(registry.isSupported(featureB))
@@ -120,9 +121,10 @@ class AppFeatureRegistryTest {
 
     @Test
     fun `ownerOf returns owner for registered feature`() {
-        val registry = AppFeatureRegistry(
-            setOf(createProvider(featureA, moduleName = "pipeline:telegram"))
-        )
+        val registry =
+            AppFeatureRegistry(
+                setOf(createProvider(featureA, moduleName = "pipeline:telegram")),
+            )
 
         val owner = registry.ownerOf(featureA)
 
@@ -152,12 +154,13 @@ class AppFeatureRegistryTest {
 
     @Test
     fun `featureCount returns correct count for registry with features`() {
-        val registry = AppFeatureRegistry(
-            setOf(
-                createProvider(featureA),
-                createProvider(featureB),
+        val registry =
+            AppFeatureRegistry(
+                setOf(
+                    createProvider(featureA),
+                    createProvider(featureB),
+                ),
             )
-        )
 
         assertEquals(2, registry.featureCount)
     }
@@ -165,24 +168,26 @@ class AppFeatureRegistryTest {
     @Test
     fun `featureCount counts unique featureIds not providers`() {
         // Two providers for the same feature
-        val registry = AppFeatureRegistry(
-            setOf(
-                createProvider(featureA, moduleName = "module:one"),
-                createProvider(featureA, moduleName = "module:two"),
+        val registry =
+            AppFeatureRegistry(
+                setOf(
+                    createProvider(featureA, moduleName = "module:one"),
+                    createProvider(featureA, moduleName = "module:two"),
+                ),
             )
-        )
 
         assertEquals(1, registry.featureCount)
     }
 
     @Test
     fun `allFeatureIds returns all registered feature IDs`() {
-        val registry = AppFeatureRegistry(
-            setOf(
-                createProvider(featureA),
-                createProvider(featureB),
+        val registry =
+            AppFeatureRegistry(
+                setOf(
+                    createProvider(featureA),
+                    createProvider(featureB),
+                ),
             )
-        )
 
         val ids = registry.allFeatureIds
 
@@ -204,9 +209,10 @@ class AppFeatureRegistryTest {
 
     @Test
     fun `provider scope is preserved in registry`() {
-        val registry = AppFeatureRegistry(
-            setOf(createProvider(featureA, scope = FeatureScope.PIPELINE))
-        )
+        val registry =
+            AppFeatureRegistry(
+                setOf(createProvider(featureA, scope = FeatureScope.PIPELINE)),
+            )
 
         val providers = registry.providersFor(featureA)
 

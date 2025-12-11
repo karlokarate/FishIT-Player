@@ -20,7 +20,6 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var resumeManager: ResumeManager
 
@@ -35,11 +34,11 @@ class MainActivity : ComponentActivity() {
             FishItV2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     AppNavHost(
                         resumeManager = resumeManager,
-                        kidsPlaybackGate = kidsPlaybackGate
+                        kidsPlaybackGate = kidsPlaybackGate,
                     )
                 }
             }
