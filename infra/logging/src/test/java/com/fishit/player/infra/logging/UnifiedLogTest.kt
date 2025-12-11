@@ -263,4 +263,139 @@ class UnifiedLogTest {
         assertEquals("Tag2", capturedLogs[1].tag)
         assertEquals("Tag3", capturedLogs[2].tag)
     }
+
+    // ========== LAZY LOGGING TESTS ==========
+
+    @Test
+    fun `lambda-based logging does not evaluate message when level is filtered`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.INFO)
+        var messageEvaluated = false
+
+        UnifiedLog.d("TestTag") {
+            messageEvaluated = true
+            "debug message"
+        }
+
+        // Message lambda should NOT be evaluated since DEBUG is filtered
+        assertEquals(false, messageEvaluated)
+        assertEquals(0, capturedLogs.size)
+    }
+
+    @Test
+    fun `lambda-based logging evaluates message when level is enabled`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.DEBUG)
+        var messageEvaluated = false
+
+        UnifiedLog.d("TestTag") {
+            messageEvaluated = true
+            "debug message"
+        }
+
+        // Message lambda SHOULD be evaluated since DEBUG is enabled
+        assertEquals(true, messageEvaluated)
+        assertEquals(1, capturedLogs.size)
+        assertEquals("debug message", capturedLogs[0].message)
+    }
+
+    @Test
+    fun `lambda-based verbose logging is lazy when verbose is disabled`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.DEBUG) // VERBOSE is filtered
+        var counter = 0
+
+        UnifiedLog.v("TestTag") { 
+            counter++
+            "verbose message"
+        }
+
+        // Counter should NOT increment since VERBOSE is filtered
+        assertEquals(0, counter)
+        assertEquals(0, capturedLogs.size)
+    }
+
+    @Test
+    fun `lambda-based verbose logging evaluates when verbose is enabled`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.VERBOSE)
+        var counter = 0
+
+        UnifiedLog.v("TestTag") {
+            counter++
+            "verbose message"
+        }
+
+        // Counter SHOULD increment exactly once
+        assertEquals(1, counter)
+        assertEquals(1, capturedLogs.size)
+        assertEquals("verbose message", capturedLogs[0].message)
+    }
+
+    @Test
+    fun `lambda-based info logging with throwable works correctly`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.DEBUG)
+        val exception = RuntimeException("test")
+        var evaluated = false
+
+        UnifiedLog.i("TestTag", exception) {
+            evaluated = true
+            "info with exception"
+        }
+
+        assertEquals(true, evaluated)
+        assertEquals(1, capturedLogs.size)
+        // Message may include stack trace from Timber, so check it starts with our message
+        assert(capturedLogs[0].message.startsWith("info with exception"))
+        assertEquals(exception, capturedLogs[0].throwable)
+    }
+
+    @Test
+    fun `lambda-based error logging with throwable is lazy`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.ERROR)
+        val exception = RuntimeException("test")
+        var evaluated = false
+
+        // WARN is filtered, so lambda should not be evaluated
+        UnifiedLog.w("TestTag", exception) {
+            evaluated = true
+            "warn message"
+        }
+
+        assertEquals(false, evaluated)
+        assertEquals(0, capturedLogs.size)
+    }
+
+    @Test
+    fun `lambda-based error logging evaluates when enabled`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.ERROR)
+        val exception = RuntimeException("test")
+        var evaluated = false
+
+        UnifiedLog.e("TestTag", exception) {
+            evaluated = true
+            "error message"
+        }
+
+        assertEquals(true, evaluated)
+        assertEquals(1, capturedLogs.size)
+        assertEquals(exception, capturedLogs[0].throwable)
+    }
+
+    @Test
+    fun `isEnabled returns correct values for different levels`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.INFO)
+
+        assertEquals(false, UnifiedLog.isEnabled(UnifiedLog.Level.VERBOSE))
+        assertEquals(false, UnifiedLog.isEnabled(UnifiedLog.Level.DEBUG))
+        assertEquals(true, UnifiedLog.isEnabled(UnifiedLog.Level.INFO))
+        assertEquals(true, UnifiedLog.isEnabled(UnifiedLog.Level.WARN))
+        assertEquals(true, UnifiedLog.isEnabled(UnifiedLog.Level.ERROR))
+    }
+
+    @Test
+    fun `string-based overload still works for convenience`() {
+        UnifiedLog.setMinLevel(UnifiedLog.Level.DEBUG)
+
+        UnifiedLog.d("TestTag", "constant message")
+
+        assertEquals(1, capturedLogs.size)
+        assertEquals("constant message", capturedLogs[0].message)
+    }
 }
