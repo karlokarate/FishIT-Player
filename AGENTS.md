@@ -462,24 +462,30 @@ Before making changes, confirm:
      - `core/metadata-normalizer/README.md`
 
 4. **Naming Contract (MANDATORY)**
-   - [ ] Read `docs/v2/GLOSSARY_v2_naming_and_modules.md` before creating new classes/packages.
+   - [ ] Read `/contracts/GLOSSARY_v2_naming_and_modules.md` before creating new classes/packages.
    - [ ] All new classes follow naming patterns in Glossary Section 5.2.
    - [ ] All new packages follow patterns in Glossary Section 5.1.
    - [ ] No forbidden patterns from Glossary Section 5.3 are introduced.
    - [ ] Terminology in comments/docs matches Glossary Section 1.
 
-5. **Docs**
+5. **Contracts (MANDATORY)**
+   - [ ] All relevant contracts from `/contracts/` have been read (see Section 15.2).
+   - [ ] For pipeline changes: Read `MEDIA_NORMALIZATION_CONTRACT.md`.
+   - [ ] For player changes: Read all `INTERNAL_PLAYER_*` contracts.
+   - [ ] For logging changes: Read `LOGGING_CONTRACT_V2.md`.
+
+6. **Docs**
    - [ ] Relevant v2 docs under `docs/v2/**` have been read:
      - Canonical Media / Normalizer (for pipeline/metadata changes),
      - Internal Player docs (for player changes),
      - Logging/Telemetry/Cache docs (for infra changes).
 
-5. **Architecture rules**
+7. **Architecture rules**
    - [ ] No pipeline-local normalization or TMDB lookups.
    - [ ] No new global mutable singletons.
    - [ ] Logging and telemetry integration identified.
 
-6. **Plan**
+8. **Plan**
    - [ ] Intended changes are scoped and incremental.
    - [ ] Large refactors or tool upgrades have been discussed with the user (or will be proposed first).
 
@@ -503,16 +509,16 @@ After making changes, confirm:
    - [ ] Relevant tests added/updated and passing (at least locally).
    - [ ] No new obvious Lint/Detekt violations introduced, or exceptions are documented.
 
-3. **Logging & Telemetry**
+4. **Logging & Telemetry**
    - [ ] New feature paths emit appropriate logs.
    - [ ] Telemetry events are integrated where sensible.
 
-4. **Docs & Changelog**
+5. **Docs & Changelog**
    - [ ] Any behavioral change is reflected in `docs/v2/**` where needed.
    - [ ] Significant changes are recorded in the v2 changelog (`CHANGELOG.md` or `CHANGELOG_V2.md`).
    - [ ] If the change affects roadmap items, the roadmap has been updated or a note has been added.
 
-5. **User proposal (if applicable)**
+6. **User proposal (if applicable)**
    - [ ] If a new tool, dependency upgrade, or alternative approach is involved, a clear proposal has been written and the user’s confirmation has been obtained before the actual change.
 
 ---
@@ -766,11 +772,66 @@ ForbiddenImport:
 
 ### 14.8. Reference Documents
 
-- **Primary:** `docs/v2/GLOSSARY_v2_naming_and_modules.md` (authoritative)
+- **Primary:** `/contracts/GLOSSARY_v2_naming_and_modules.md` (authoritative)
 - **Inventory:** `docs/v2/NAMING_INVENTORY_v2.md` (file-to-vocabulary mapping)
 - **Feature System:** `docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md`
 
 ---
 
+## 15. Contracts Folder (MANDATORY READING)
+
+### 15.1. Contract Authority
+
+> **Hard Rule:** The `/contracts` folder contains all binding contracts for the v2 rebuild.
+> 
+> Agents **MUST** read ALL relevant contracts before modifying code in related areas.
+
+The contracts folder is the **single source of truth** for:
+- Naming conventions and vocabulary (`GLOSSARY_v2_naming_and_modules.md`)
+- Media normalization rules (`MEDIA_NORMALIZATION_CONTRACT.md`)
+- Logging standards (`LOGGING_CONTRACT_V2.md`)
+- Player behavior specifications (`INTERNAL_PLAYER_*_CONTRACT_*.md`)
+- Pipeline-specific contracts (`TELEGRAM_PARSER_CONTRACT.md`)
+
+### 15.2. Reading Requirements
+
+Before any code modification, agents MUST verify they have read:
+
+| Modification Area | Required Contracts |
+|-------------------|-------------------|
+| Any code change | `/contracts/GLOSSARY_v2_naming_and_modules.md` |
+| Pipeline modules | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` |
+| Logging code | `/contracts/LOGGING_CONTRACT_V2.md` |
+| Player/Playback | All `/contracts/INTERNAL_PLAYER_*` files |
+| Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md` |
+
+### 15.3. Contract Inventory
+
+| Contract | Scope | Status |
+|----------|-------|--------|
+| `GLOSSARY_v2_naming_and_modules.md` | Global naming | Binding |
+| `MEDIA_NORMALIZATION_CONTRACT.md` | Pipelines → Normalizer | Binding |
+| `LOGGING_CONTRACT_V2.md` | All modules | Binding |
+| `INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` | Resume, Kids | Binding |
+| `INTERNAL_PLAYER_*_CONTRACT_*.md` | Player phases | Binding |
+| `TELEGRAM_PARSER_CONTRACT.md` | Telegram pipeline | Draft |
+
+### 15.4. Conflict Resolution
+
+If an agent encounters a conflict between:
+- A contract and existing code → The contract is authoritative
+- Two contracts → Escalate to user for resolution
+- A user request and a contract → Inform user and request clarification
+
+### 15.5. Pre-Change Contract Audit
+
+Before making changes, agents MUST confirm:
+
+- [ ] All relevant contracts from `/contracts/` have been read
+- [ ] Proposed changes do not violate any contract
+- [ ] If contracts conflict with requirements, user has been informed
+
+---
+
 This `AGENTS.md` is the single entry point for agents in the v2 rebuild.  
-For detailed architecture and feature specifications, always consult `V2_PORTAL.md` and `docs/v2/**` before making changes.
+For detailed architecture and feature specifications, always consult `V2_PORTAL.md`, `/contracts/`, and `docs/v2/**` before making changes.

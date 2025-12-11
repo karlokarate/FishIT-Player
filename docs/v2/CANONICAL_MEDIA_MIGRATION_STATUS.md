@@ -1,7 +1,7 @@
 # v2 Migration Tracker – Canonical Media System
 
-> **Letzte Prüfung:** <!-- AUDIT_DATE -->
-> **Status:** ✅ Alle v2-Dateien korrekt platziert (1 Legacy-Datei muss gelöscht werden)
+> **Letzte Prüfung:** 2025-12-11
+> **Status:** ✅ Alle v2-Dateien korrekt platziert – Migration abgeschlossen
 
 ## Übersicht
 
@@ -52,18 +52,15 @@ Diese Datei dokumentiert den Status der Migration des Canonical Media Systems in
 
 ---
 
-## ⚠️ AKTION ERFORDERLICH
+## ~~AKTION ERFORDERLICH~~ ✅ ERLEDIGT
 
-Die folgende Datei wurde **fälschlicherweise im Legacy-Pfad erstellt** und muss **sofort gelöscht** werden:
+Die folgend erwähnte Datei existiert **nicht mehr** – sie wurde bereits gelöscht oder nie erstellt:
 
-| Legacy-Pfad (LÖSCHEN!) | v2-Ersatz (KORREKT) |
-|------------------------|---------------------|
-| `app/src/main/java/com/chris/m3usuite/ui/layout/SourceBadge.kt` | `feature/detail/src/main/java/com/fishit/player/feature/detail/ui/SourceBadge.kt` |
+| Status | Legacy-Pfad | v2-Ersatz (KORREKT) |
+|--------|-------------|---------------------|
+| ✅ GELÖSCHT | ~~`app/src/main/java/com/chris/m3usuite/ui/layout/SourceBadge.kt`~~ | `feature/detail/src/main/java/com/fishit/player/feature/detail/ui/SourceBadge.kt` |
 
-**Befehl zum Löschen:**
-```bash
-rm /workspaces/FishIT-Player/app/src/main/java/com/chris/m3usuite/ui/layout/SourceBadge.kt
-```
+**Hinweis:** Die v2-Version in `feature/detail` ist die einzige gültige Implementierung.
 
 ---
 
@@ -101,5 +98,6 @@ Per `AGENTS_V2.md` – **NIEMALS ignorieren:**
 
 | Datum | Aktion | Ergebnis |
 |-------|--------|----------|
-| (heute) | Vollständiger v2-Pfad-Audit | 1 Legacy-Verletzung gefunden: `SourceBadge.kt` |
-| (heute) | v2-Module geprüft | Alle 6 Module korrekt mit `com.fishit.player.*` |
+| 2025-12-11 | Dokumenten-Audit | Legacy-Datei war bereits gelöscht, Status aktualisiert |
+| (original) | Vollständiger v2-Pfad-Audit | 1 Legacy-Verletzung gefunden: `SourceBadge.kt` |
+| (original) | v2-Module geprüft | Alle 6 Module korrekt mit `com.fishit.player.*` |

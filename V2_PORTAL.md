@@ -87,7 +87,7 @@ Key docs:
 - `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
 - `docs/v2/APP_VISION_AND_SCOPE.md`
 - `docs/v2/CANONICAL_MEDIA_SYSTEM.md`
-- `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`
+- `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` ⚠️ **Binding Contract**
 - `docs/v2/MEDIA_NORMALIZER_DESIGN.md`
 - `docs/v2/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
 - `docs/v2/MEDIA_PARSER_DELIVERY_SUMMARY.md`
@@ -112,7 +112,7 @@ Key docs:
 - Telegram:
   - `docs/v2/telegram/TDLIB_FINAL_REVIEW_UPDATED.md`
   - `docs/v2/telegram/TELEGRAM_TDLIB_V2_INTEGRATION.md`
-  - `docs/v2/telegram/TELEGRAM_PARSER_CONTRACT.md`
+  - `/contracts/TELEGRAM_PARSER_CONTRACT.md` ⚠️ **Binding Contract (Draft)**
   - `docs/v2/telegram/TELEGRAM_PLAYBACK_PIPELINE_AUDIT.md`
   - `docs/v2/telegram/TDLIB_STREAMING_THUMBNAILS_SSOT.md`
   - `docs/v2/telegram/TDLIB_STREAMING_WITH_HEADER_VALIDATION.md`
@@ -130,17 +130,17 @@ Key docs:
 
 Key docs:
 
-- `docs/v2/internal-player/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_BEHAVIOR_CONTRACT_FULL.md`
+- `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` ⚠️ **Binding Contract**
+- `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT_FULL.md` ⚠️ **Binding Contract**
 - `docs/v2/internal-player/INTERNAL_PLAYER_REFACTOR_ROADMAP.md`
 - `docs/v2/internal-player/INTERNAL_PLAYER_REFACTOR_SSOT.md`
 - `docs/v2/internal-player/INTERNAL_PLAYER_REFACTOR_STATUS.md`
 - `docs/v2/internal-player/INTERNAL_PLAYER_PHASE*_CHECKLIST.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
+- `/contracts/INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md` ⚠️ **Binding Contract**
+- `/contracts/INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md` ⚠️ **Binding Contract**
+- `/contracts/INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md` ⚠️ **Binding Contract**
+- `/contracts/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` ⚠️ **Binding Contract**
+- `/contracts/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` ⚠️ **Binding Contract**
 - `docs/v2/internal-player/TRICKPLAY_INTEGRATION.md`
 
 ---
@@ -157,7 +157,7 @@ v2 has a unified logging and telemetry story:
 
 Key docs:
 
-- `docs/v2/LOGGING_CONTRACT_V2.md`
+- `/contracts/LOGGING_CONTRACT_V2.md` ⚠️ **Binding Contract**
 - `docs/v2/logging/LOGGING_SYSTEM_ANALYSIS.md`
 - `docs/v2/logging/UNIFIED_LOGGING.md`
 - `docs/v2/logging/LOG_VIEWER.md`
