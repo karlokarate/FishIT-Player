@@ -8,8 +8,8 @@ import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
 /**
  * Interface for configuring codec support in the internal player.
  *
- * This abstraction allows the player layer to use FFmpeg-based decoders
- * without directly depending on NextLib implementation details.
+ * This abstraction allows the player layer to use FFmpeg-based decoders without directly depending
+ * on NextLib implementation details.
  */
 interface NextlibCodecConfigurator {
     /**
@@ -31,22 +31,23 @@ interface NextlibCodecConfigurator {
  * NextLib is GPL-3.0 licensed due to FFmpeg.
  */
 class DefaultNextlibCodecConfigurator : NextlibCodecConfigurator {
-    
+
     companion object {
         private const val TAG = "NextlibCodecs"
     }
-    
+
     override fun createRenderersFactory(context: Context): RenderersFactory {
         UnifiedLog.i(TAG, "Creating NextLib FFmpeg renderers factory")
-        
+
         val factory = NextRenderersFactory(context)
-        
-        UnifiedLog.d(TAG,
-            "NextRenderersFactory configured with FFmpeg decoders for: " +
-            "Audio(Vorbis, Opus, FLAC, ALAC, MP3, AAC, AC3, EAC3, DTS, TrueHD), " +
-            "Video(H.264, HEVC, VP8, VP9)"
+
+        UnifiedLog.d(
+                TAG,
+                "NextRenderersFactory configured with FFmpeg decoders for: " +
+                        "Audio(Vorbis, Opus, FLAC, ALAC, MP3, AAC, AC3, EAC3, DTS, TrueHD), " +
+                        "Video(H.264, HEVC, VP8, VP9)"
         )
-        
+
         return factory
     }
 }

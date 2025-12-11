@@ -44,35 +44,37 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun InternalPlayerEntry(
-    playbackContext: PlaybackContext,
-    sourceResolver: PlaybackSourceResolver,
-    resumeManager: ResumeManager,
-    kidsPlaybackGate: KidsPlaybackGate,
-    codecConfigurator: NextlibCodecConfigurator,
-    onBack: () -> Unit = {},
-    modifier: Modifier = Modifier
+        playbackContext: PlaybackContext,
+        sourceResolver: PlaybackSourceResolver,
+        resumeManager: ResumeManager,
+        kidsPlaybackGate: KidsPlaybackGate,
+        codecConfigurator: NextlibCodecConfigurator,
+        onBack: () -> Unit = {},
+        modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Create the session
-    val session = remember(playbackContext) {
-        InternalPlayerSession(
-            context = context,
-            sourceResolver = sourceResolver,
-            resumeManager = resumeManager,
-            kidsPlaybackGate = kidsPlaybackGate,
-            codecConfigurator = codecConfigurator
-        )
-    }
+    val session =
+            remember(playbackContext) {
+                InternalPlayerSession(
+                        context = context,
+                        sourceResolver = sourceResolver,
+                        resumeManager = resumeManager,
+                        kidsPlaybackGate = kidsPlaybackGate,
+                        codecConfigurator = codecConfigurator
+                )
+            }
 
     // Create PlayerView
     val playerView = remember {
         PlayerView(context).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            layoutParams =
+                    FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                    )
             useController = false
         }
     }
@@ -80,9 +82,7 @@ fun InternalPlayerEntry(
     val state by session.state.collectAsState()
 
     // Initialize playback
-    LaunchedEffect(playbackContext) {
-        session.initialize(playbackContext)
-    }
+    LaunchedEffect(playbackContext) { session.initialize(playbackContext) }
 
     // Auto-hide controls
     LaunchedEffect(state.areControlsVisible, state.isPlaying) {
@@ -98,9 +98,7 @@ fun InternalPlayerEntry(
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
                     // Save resume position when backgrounding
-                    kotlinx.coroutines.runBlocking {
-                        session.saveResumePosition()
-                    }
+                    kotlinx.coroutines.runBlocking { session.saveResumePosition() }
                 }
                 Lifecycle.Event.ON_DESTROY -> {
                     session.destroy()
@@ -116,24 +114,22 @@ fun InternalPlayerEntry(
     }
 
     // UI
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier.fillMaxSize()
-    ) {
+    androidx.compose.foundation.layout.Box(modifier = modifier.fillMaxSize()) {
         PlayerSurface(
-            state = state,
-            playerViewProvider = { playerView },
-            modifier = Modifier.fillMaxSize()
+                state = state,
+                playerViewProvider = { playerView },
+                modifier = Modifier.fillMaxSize()
         )
 
         InternalPlayerControls(
-            state = state,
-            onTogglePlayPause = { session.togglePlayPause() },
-            onSeekForward = { session.seekForward() },
-            onSeekBackward = { session.seekBackward() },
-            onSeekTo = { session.seekTo(it) },
-            onToggleMute = { session.toggleMute() },
-            onTapSurface = { session.toggleControls() },
-            modifier = Modifier.fillMaxSize()
+                state = state,
+                onTogglePlayPause = { session.togglePlayPause() },
+                onSeekForward = { session.seekForward() },
+                onSeekBackward = { session.seekBackward() },
+                onSeekTo = { session.seekTo(it) },
+                onToggleMute = { session.toggleMute() },
+                onTapSurface = { session.toggleControls() },
+                modifier = Modifier.fillMaxSize()
         )
     }
 }
