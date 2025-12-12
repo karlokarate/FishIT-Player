@@ -37,24 +37,46 @@ It does **not** define behavior for other repositories or for the historic v1 co
 | Any `*Impl` from transport | Player only consumes interfaces |
 | TDLib types (`TdApi.*`) | Raw TDLib – never exposed outside transport |
 
-### Binding Rule for Playback Modules
+### Binding Rule for Playback Modules (ALL Sources)
+
+> **HARD RULE:** Every playback source (Telegram, Xtream, Local, Audiobook, future) MUST use `@Multibinds` + `@IntoSet` pattern.
+> This is the canonical way to add playback capabilities without changing the player.
+
+**Pattern:**
 
 ```kotlin
 // playback/domain/di/PlaybackDomainModule.kt
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class PlaybackDomainModule {
-    // Empty set when no sources are available
+    // Empty set when no sources are available – player works with fallback stream
     @Multibinds abstract fun bindPlaybackSourceFactories(): Set<PlaybackSourceFactory>
 }
 
-// playback/telegram/di/TelegramPlaybackModule.kt (DISABLED until transport ready)
-// @Module
-// @InstallIn(SingletonComponent::class)
-// abstract class TelegramPlaybackModule {
-//     @Binds @IntoSet abstract fun bindTelegramFactory(impl: ...): PlaybackSourceFactory
-// }
+// Each source contributes its factory via @IntoSet:
+
+// playback/telegram/di/TelegramPlaybackModule.kt
+@Binds @IntoSet abstract fun bindTelegramFactory(impl: TelegramPlaybackSourceFactoryImpl): PlaybackSourceFactory
+
+// playback/xtream/di/XtreamPlaybackModule.kt  
+@Binds @IntoSet abstract fun bindXtreamFactory(impl: XtreamPlaybackSourceFactoryImpl): PlaybackSourceFactory
+
+// playback/local/di/LocalPlaybackModule.kt (future)
+@Binds @IntoSet abstract fun bindLocalFactory(impl: LocalPlaybackSourceFactoryImpl): PlaybackSourceFactory
+
+// playback/audiobook/di/AudiobookPlaybackModule.kt (future)
+@Binds @IntoSet abstract fun bindAudiobookFactory(impl: AudiobookPlaybackSourceFactoryImpl): PlaybackSourceFactory
 ```
+
+**Expected Playback Modules:**
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| `playback/domain` | ✅ Ready | Base contracts + `@Multibinds` declaration |
+| `playback/telegram` | ⏸️ Disabled | Waiting for `transport-telegram` typed interfaces |
+| `playback/xtream` | ✅ Ready | Can be enabled when needed |
+| `playback/local` | 🔮 Future | For `pipeline/io` local files |
+| `playback/audiobook` | 🔮 Future | For `pipeline/audiobook` |
 
 ### Agent Instructions
 
@@ -64,6 +86,8 @@ abstract class PlaybackDomainModule {
 4. **DO NOT** reintroduce `TdlibClientProvider` anywhere – it is a v1 legacy pattern.
 5. **DO** use `@Multibinds` to allow empty factory sets.
 6. **DO** use fallback streams (e.g., Big Buck Bunny) for testing when no factories are available.
+7. **DO** create new `playback/*` modules using the `@IntoSet` pattern for new sources.
+8. **DO** ensure each `PlaybackSourceFactory` declares which `SourceType` values it handles.
 
 > **Test First:** The player must work with zero `PlaybackSourceFactory` entries. If it doesn't compile without transport, the architecture is broken.
 

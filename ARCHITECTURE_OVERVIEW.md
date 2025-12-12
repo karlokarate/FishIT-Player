@@ -168,6 +168,7 @@ The v2 architecture follows a strict layer hierarchy:
 6. **Legacy Isolation**: V1 code is read-only reference under `legacy/`.
 7. **Layer Boundaries**: Strict separation - Pipeline may not import Data, Player may not import Pipeline or Transport.
 8. **Transport Encapsulation**: Transport internals (TDLib, HTTP clients) are hidden behind typed interfaces; upper layers never import transport implementation details.
+9. **Universal `@Multibinds` Pattern**: ALL playback sources use `@Multibinds` + `@IntoSet` for player integration.
 
 ---
 
@@ -177,8 +178,18 @@ The internal player (SIP) is **test-ready**:
 
 - Debug playback available via `DebugPlaybackScreen` using Big Buck Bunny test stream
 - Player uses `PlaybackSourceResolver` + `Set<PlaybackSourceFactory>` (injected via `@Multibinds`)
-- Telegram/Xtream `PlaybackSourceFactory` implementations can be added later without changing player code
+- **ALL sources** (Telegram, Xtream, Local, Audiobook, future) must use the `@Multibinds` + `@IntoSet` pattern
 - Player does NOT depend on `TdlibClientProvider`, `TelegramTransportClient`, or any transport-layer types
+
+**Playback Module Status:**
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| `playback/domain` | ✅ Ready | Base contracts + `@Multibinds` declaration |
+| `playback/telegram` | ⏸️ Disabled | Waiting for `transport-telegram` typed interfaces |
+| `playback/xtream` | ✅ Ready | Can be enabled when needed |
+| `playback/local` | 🔮 Future | For `pipeline/io` local files |
+| `playback/audiobook` | 🔮 Future | For `pipeline/audiobook` |
 
 ---
 
@@ -191,5 +202,4 @@ See [AGENTS.md](AGENTS.md) for the complete v2 agent ruleset.
 - Modify only v2 paths (`app-v2/`, `core/`, `infra/`, `feature/`, `player/`, `playback/`, `pipeline/`, `docs/v2/`, `docs/meta/`, `scripts/`)
 - Treat `legacy/**` as read-only
 - No `com.chris.m3usuite` references outside `legacy/`
-- Read module README.md before modifying any module
 - Read module README.md before modifying any module

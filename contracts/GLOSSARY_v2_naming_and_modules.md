@@ -60,9 +60,20 @@ This section defines the canonical terms used in the v2 codebase. Use these defi
 | **Player** | The internal player engine (SIP). Lives in `player/*`. **Source-agnostic** – knows only `PlaybackContext` and `PlaybackSourceFactory` sets. Does NOT depend on transport or pipeline. | Player | `InternalPlayerSession`, `InternalPlayerState` |
 | **Playback** | Playback domain logic and source factories. Lives in `playback/*`. Bridges transport layer to player via `PlaybackSourceFactory` implementations. | Playback | `PlaybackSourceFactory`, `TelegramFileDataSource` |
 | **PlaybackContext** | The data class passed to the player containing all playback information. Source-agnostic. | Player | Defined in `core/player-model` |
-| **PlaybackSourceFactory** | Interface that creates `MediaSource` for ExoPlayer from `PlaybackContext`. Telegram/Xtream implementations are optional extensions. | Playback | `TelegramPlaybackSourceFactoryImpl`, `XtreamPlaybackSourceFactoryImpl` |
+| **PlaybackSourceFactory** | Interface that creates `MediaSource` for ExoPlayer from `PlaybackContext`. **ALL sources** (Telegram, Xtream, Local, Audiobook, future) use `@Multibinds` + `@IntoSet` to contribute their factory. | Playback | `TelegramPlaybackSourceFactoryImpl`, `XtreamPlaybackSourceFactoryImpl`, `LocalPlaybackSourceFactoryImpl` (future) |
 | **PlaybackSourceResolver** | Resolves `PlaybackContext` to `MediaSource` using injected `Set<PlaybackSourceFactory>`. Falls back to test stream if no factory matches. | Player | Lives in `player/internal` |
-| **DebugPlaybackSourceFactory** | Test factory providing Big Buck Bunny stream for debug/testing. Allows player testing without Telegram/Xtream. | Player | Used in `DebugPlaybackScreen` |
+| **DebugPlaybackSourceFactory** | Test factory providing Big Buck Bunny stream for debug/testing. Allows player testing without any transport. | Player | Used in `DebugPlaybackScreen` |
+| **@Multibinds Pattern** | Canonical DI pattern for playback sources. `playback/domain` declares empty set; each source module contributes via `@IntoSet`. Player works with zero factories. | Playback | See `AGENTS.md` Section "Binding Rule for Playback Modules (ALL Sources)" |
+
+**Expected Playback Modules (ALL use @Multibinds):**
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| `playback/domain` | ✅ Ready | Base contracts + `@Multibinds` declaration |
+| `playback/telegram` | ⏸️ Disabled | Waiting for `transport-telegram` typed interfaces |
+| `playback/xtream` | ✅ Ready | Can be enabled when needed |
+| `playback/local` | 🔮 Future | For `pipeline/io` local files |
+| `playback/audiobook` | 🔮 Future | For `pipeline/audiobook` |
 
 ### 1.6 Telegram Transport Interfaces
 

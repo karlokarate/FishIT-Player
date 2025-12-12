@@ -26,28 +26,53 @@ import javax.inject.Singleton
  * Phase 1: All implementations are stubs that don't crash but don't persist data.
  * Phase 6+: Real implementations will replace these bindings.
  *
- * **PlaybackSourceFactory Set:**
- * Declares an empty set for PlaybackSourceFactory contributions.
- * Source-specific modules (TelegramPlaybackModule, XtreamPlaybackModule) can
- * contribute factories via @Binds @IntoSet when their transports are available.
- * When no factories are contributed, PlaybackSourceResolver uses its fallback
+ * ## PlaybackSourceFactory Set (MANDATORY PATTERN)
+ *
+ * This module declares an empty set for [PlaybackSourceFactory] contributions via [@Multibinds].
+ * **ALL playback sources** must use the `@Binds @IntoSet` pattern to contribute their factory:
+ *
+ * | Module | Status | Notes |
+ * |--------|--------|-------|
+ * | `playback/domain` | ✅ Ready | Base contracts + `@Multibinds` declaration |
+ * | `playback/telegram` | ⏸️ Disabled | Waiting for `transport-telegram` typed interfaces |
+ * | `playback/xtream` | ✅ Ready | Can be enabled when needed |
+ * | `playback/local` | 🔮 Future | For `pipeline/io` local files |
+ * | `playback/audiobook` | 🔮 Future | For `pipeline/audiobook` |
+ *
+ * When no factories are contributed, [PlaybackSourceResolver] uses its fallback
  * (Big Buck Bunny test stream).
+ *
+ * **Pattern for new sources:**
+ * ```kotlin
+ * // playback/<source>/di/<Source>PlaybackModule.kt
+ * @Module
+ * @InstallIn(SingletonComponent::class)
+ * abstract class <Source>PlaybackModule {
+ *     @Binds @IntoSet
+ *     abstract fun bind<Source>Factory(impl: <Source>PlaybackSourceFactoryImpl): PlaybackSourceFactory
+ * }
+ * ```
+ *
+ * @see PlaybackSourceFactory
+ * @see AGENTS.md Section "Binding Rule for Playback Modules (ALL Sources)"
  */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class PlaybackDomainModule {
 
     /**
-     * Declares an empty set for PlaybackSourceFactory contributions.
+     * Declares an empty set for [PlaybackSourceFactory] contributions.
      *
-     * Modules like TelegramPlaybackModule and XtreamPlaybackModule can contribute
-     * their factories via @Binds @IntoSet. When no modules contribute, the set
-     * is empty (but not null), and PlaybackSourceResolver uses its fallback.
+     * All playback source modules (Telegram, Xtream, Local, Audiobook, future)
+     * contribute their factories via `@Binds @IntoSet`. When no modules contribute,
+     * the set is empty (but not null), and [PlaybackSourceResolver] uses its fallback.
      *
      * **Current state:**
-     * - TelegramPlaybackModule: disabled (no TdlibClientProvider)
+     * - TelegramPlaybackModule: disabled (waiting for transport-telegram)
      * - XtreamPlaybackModule: can be enabled when needed
-     * - Result: empty set → fallback to test stream
+     * - LocalPlaybackModule: not yet created (future)
+     * - AudiobookPlaybackModule: not yet created (future)
+     * - Result: empty set → fallback to Big Buck Bunny test stream
      */
     @Multibinds
     abstract fun bindPlaybackSourceFactories(): Set<PlaybackSourceFactory>
