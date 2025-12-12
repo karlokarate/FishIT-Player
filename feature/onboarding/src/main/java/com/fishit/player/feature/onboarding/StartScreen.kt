@@ -34,7 +34,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -140,6 +139,7 @@ fun StartScreen(
             ) {
                 Button(
                     onClick = onContinue,
+                    enabled = state.canContinue,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = FishColors.Primary
                     ),
@@ -151,17 +151,6 @@ fun StartScreen(
                         text = "Continue to Home",
                         style = MaterialTheme.typography.titleMedium
                     )
-                }
-            }
-
-            // Skip option
-            if (!state.canContinue) {
-                Spacer(modifier = Modifier.height(24.dp))
-                OutlinedButton(
-                    onClick = onContinue,
-                    modifier = Modifier.width(280.dp)
-                ) {
-                    Text("Skip for now")
                 }
             }
         }
