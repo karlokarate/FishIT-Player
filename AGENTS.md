@@ -11,6 +11,60 @@ It does **not** define behavior for other repositories or for the historic v1 co
 
 ---
 
+## ⚠️ CRITICAL: Player Layer Isolation (MUST READ FIRST)
+
+> **HARD RULE:** The Player layer (`player/**`, `playback/**`) is **source-agnostic**.
+> It does NOT know about Telegram, Xtream, or any specific transport implementation.
+
+### What the Player Layer Knows:
+
+| Allowed | Description |
+|---------|-------------|
+| `PlaybackSourceResolver` | Resolves `PlaybackContext` → `MediaSource` |
+| `Set<PlaybackSourceFactory>` | Injected via `@Multibinds` (can be empty) |
+| `PlaybackContext` | Source-agnostic playback descriptor |
+| `RawMediaMetadata` | Canonical media from normalizer |
+
+### What the Player Layer MUST NOT Know:
+
+| Forbidden | Why |
+|-----------|-----|
+| `TdlibClientProvider` | Transport layer – belongs in `infra/transport-telegram` |
+| `TelegramTransportClient` | Transport layer – belongs in `infra/transport-telegram` |
+| `XtreamApiClient` | Transport layer – belongs in `infra/transport-xtream` |
+| Any `*Impl` from transport | Player only consumes interfaces |
+
+### Binding Rule for Playback Modules:
+
+```kotlin
+// playback/domain/di/PlaybackDomainModule.kt
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class PlaybackDomainModule {
+    // Empty set when no sources are available
+    @Multibinds abstract fun bindPlaybackSourceFactories(): Set<PlaybackSourceFactory>
+}
+
+// playback/telegram/di/TelegramPlaybackModule.kt (DISABLED until transport ready)
+// @Module
+// @InstallIn(SingletonComponent::class)
+// abstract class TelegramPlaybackModule {
+//     @Binds @IntoSet abstract fun bindTelegramFactory(impl: ...): PlaybackSourceFactory
+// }
+```
+
+### Agent Instructions:
+
+1. **DO NOT** re-enable `TelegramPlaybackModule` or similar until the transport layer (`TdlibClientProvider`) is fully implemented.
+2. **DO NOT** add imports from `infra/transport-*` into `player/**` modules.
+3. **DO NOT** "fix" DI errors by making the player depend on transport implementations.
+4. **DO** use `@Multibinds` to allow empty factory sets.
+5. **DO** use fallback streams (e.g., Big Buck Bunny) for testing when no factories are available.
+
+> **Test First:** The player must work with zero `PlaybackSourceFactory` entries. If it doesn't compile without transport, the architecture is broken.
+
+---
+
 ## 1. Scope & Branch Policy
 
 1.1. This repository is currently in **v2 rebuild mode**.  
