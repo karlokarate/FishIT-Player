@@ -9,6 +9,7 @@ import com.fishit.player.core.model.SourceType
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,6 +124,8 @@ class HomeViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
+            // Clears UI error state only.
+            // Data reload is handled by background CatalogSync, not by Home.
             errorState.emit(null)
         }
     }
@@ -141,6 +144,7 @@ class HomeViewModel @Inject constructor(
         .distinctUntilChanged()
         .onStart { emit(emptyList()) }
         .catch { throwable ->
+            UnifiedLog.e(TAG, throwable) { "Error loading home content" }
             errorState.emit(throwable.message ?: "Unknown error loading content")
             emit(emptyList())
         }
@@ -163,6 +167,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "HomeViewModel"
         const val HOME_ROW_LIMIT = 20
     }
 }
