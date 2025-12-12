@@ -191,7 +191,6 @@ class OnboardingViewModel @Inject constructor(
                     UnifiedLog.e(TAG, error) { "Logout failed" }
                     _state.update { it.copy(telegramError = error.message) }
                 }
-            lastTelegramAuthState = TransportTelegramAuthState.LoggedOut
             _state.update {
                 it.copy(
                     telegramState = TelegramAuthState.Disconnected,
@@ -244,7 +243,12 @@ class OnboardingViewModel @Inject constructor(
             if (result.isFailure) {
                 val message = result.exceptionOrNull()?.message ?: "Failed to connect"
                 UnifiedLog.e(TAG) { "Xtream initialization failed: $message" }
-                _state.update { it.copy(xtreamError = message) }
+                _state.update {
+                    it.copy(
+                        xtreamState = XtreamConnectionState.Error(message),
+                        xtreamError = message,
+                    )
+                }
             }
         }
     }
@@ -256,7 +260,6 @@ class OnboardingViewModel @Inject constructor(
                 xtreamUrl = "",
             )
         }
-        lastXtreamConnectionState = TransportXtreamConnectionState.Disconnected
         viewModelScope.launch {
             UnifiedLog.i(TAG) { "Closing Xtream client" }
             runCatching { xtreamApiClient.close() }
@@ -344,7 +347,7 @@ class OnboardingViewModel @Inject constructor(
 
                     TransportTelegramAuthState.Connecting,
                     TransportTelegramAuthState.WaitTdlibParameters,
-                    TransportTelegramAuthState.WaitEncryptionKey -> TelegramAuthState.SendingPhone
+                    TransportTelegramAuthState.WaitEncryptionKey -> TelegramAuthState.Disconnected
 
                     is TransportTelegramAuthState.WaitPhoneNumber ->
                         TelegramAuthState.WaitingForPhoneNumber
@@ -365,9 +368,10 @@ class OnboardingViewModel @Inject constructor(
                 }
 
                 _state.update {
+                    val errorMessage = (mappedState as? TelegramAuthState.Error)?.message
                     it.copy(
                         telegramState = mappedState,
-                        telegramError = (authState as? TransportTelegramAuthState.Error)?.message
+                        telegramError = errorMessage,
                     )
                 }
 
