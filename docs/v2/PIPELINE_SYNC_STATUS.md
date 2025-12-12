@@ -35,7 +35,7 @@ Telegram Pipeline hat jetzt einen vollständigen TDLib-Client:
 - `DefaultTelegramClient.kt` (358 LOC) – Real TDLib implementation using g00sha AAR
 - `TdlibMessageMapper.kt` (284 LOC) – Message → TelegramMediaItem conversion
 - `TelegramClient.kt` (169 LOC) – Clean interface with Flow-based state
-- `TdlibClientProvider.kt` (60 LOC) – Context-free provider abstraction
+- `TdlibClientProvider.kt` (60 LOC) – Internal provider (⚠️ not exposed to upper layers)
 
 **Features:**
 - ✅ `ensureAuthorized()` – Auth state flow with retry
@@ -105,7 +105,7 @@ pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/
 │   ├── StubTelegramContentRepository.kt   ✅ Test-Stub
 │   └── StubTelegramPlaybackSourceFactory.kt ✅ Test-Stub
 └── tdlib/
-    ├── TdlibClientProvider.kt          ✅ Context-freie Abstraktion
+    ├── TdlibClientProvider.kt          ✅ Internal provider (not exported)
     ├── TelegramClient.kt               ✅ ⭐ NEU: Clean Interface + DTOs
     └── DefaultTelegramClient.kt        ✅ ⭐ NEU: Real TDLib Implementation (358 LOC)
 
@@ -205,7 +205,7 @@ pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/
 | Message Mapper | TdlibMessageMapper ✅ (284 LOC) | – (in Extensions) |
 | Auth State Flow | ✅ TelegramAuthState sealed class | ✅ Definiert |
 | Connection State Flow | ✅ TelegramConnectionState sealed class | ✅ Definiert |
-| Provider Abstraction | TdlibClientProvider ✅ | – (stateless) |
+| Provider Abstraction | TdlibClientProvider ✅ (internal only) | – (stateless) |
 | URL Builder | – (in TDLib) | XtreamUrlBuilder ✅ |
 | Discovery/Port Resolution | – (in TDLib) | XtreamDiscovery ✅ |
 | Rate Limiting | ✅ (in TDLib) | ✅ (120ms per-host) |

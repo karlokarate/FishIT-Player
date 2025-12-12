@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.fishit.player.internal.source.PlaybackSourceResolver
+import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 import com.fishit.player.v2.navigation.AppNavHost
@@ -27,6 +29,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var kidsPlaybackGate: KidsPlaybackGate
 
+    @Inject
+    lateinit var sourceResolver: PlaybackSourceResolver
+
+    @Inject
+    lateinit var codecConfigurator: NextlibCodecConfigurator
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,7 +47,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     AppNavHost(
                         resumeManager = resumeManager,
-                        kidsPlaybackGate = kidsPlaybackGate
+                        kidsPlaybackGate = kidsPlaybackGate,
+                        sourceResolver = sourceResolver,
+                        codecConfigurator = codecConfigurator
                     )
                 }
             }

@@ -1,15 +1,15 @@
 # transport-telegram
 
-**Purpose:** Wraps TDLib SDK, provides raw Telegram DTOs (`TgMessage`, `TgChat`, `TgContent`) to higher layers.
+**Purpose:** Wraps TDLib SDK, provides typed Telegram interfaces and wrapper DTOs (`TgMessage`, `TgChat`, `TgContent`) to higher layers.
 
 ## ✅ Allowed
 
-- TDLib client lifecycle & calls
+- TDLib client lifecycle & calls (internal to `DefaultTelegramClient`)
 - Mapping `TdApi.*` → `TgMessage`, `TgChat`, `TgContent`, `TgThumbnail`
 - Auth state machine (login, code, password, ready)
 - Connection state handling
 - File resolution & download primitives
-- TDLib logging bridge via `TdlibClientProvider.installLogging()` (UnifiedLog)
+- TDLib logging bridge via internal configuration (UnifiedLog)
 
 ## ❌ Forbidden
 
@@ -19,12 +19,29 @@
 - Playback logic
 - UI imports
 - Normalization / TMDB / heuristics
+- Exposing `TdlibClientProvider` to upper layers (v1 legacy pattern)
 
-## Public Surface
+## Public Surface (v2 Typed Interfaces)
 
-- `TelegramTransportClient` interface
-- `TgMessage`, `TgChat`, `TgContent`, `TgThumbnail` DTOs
-- `TdlibClientProvider` for client access
+The following typed interfaces are exported for consumption by pipeline and imaging layers:
+
+| Interface | Purpose |
+|-----------|---------|
+| `TelegramAuthClient` | Authentication operations (login, logout, auth state) |
+| `TelegramHistoryClient` | Chat history, message fetching → returns `TgMessage` |
+| `TelegramFileClient` | File download operations → returns `TgFile` |
+| `TelegramThumbFetcher` | Thumbnail fetching for Coil integration |
+
+**Internal (not exported):**
+- `DefaultTelegramClient` – implements all interfaces, owns TDLib state
+- `TdlibClientProvider` – ⚠️ **v1 legacy pattern**, internal use only, must NOT be exposed to upper layers
+
+## Wrapper DTOs
+
+- `TgMessage` – Transport-level message wrapper
+- `TgChat` – Transport-level chat wrapper
+- `TgContent` – Media content wrapper (video, audio, document)
+- `TgThumbnail` – Thumbnail wrapper
 
 ## Dependencies
 
@@ -43,3 +60,4 @@ Transport ← Pipeline ← Data ← Domain ← UI
 1. ❌ Returning `RawMediaMetadata` instead of `TgMessage`
 2. ❌ Importing `TelegramMediaItem` from pipeline
 3. ❌ Calling repositories directly from transport
+4. ❌ Exposing `TdlibClientProvider` or TDLib types to upper layers

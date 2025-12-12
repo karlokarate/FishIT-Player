@@ -11,8 +11,11 @@ import com.fishit.player.core.ui.theme.FishTheme
 import com.fishit.player.feature.detail.UnifiedDetailEvent
 import com.fishit.player.feature.detail.ui.DetailScreen
 import com.fishit.player.feature.home.HomeScreen
+import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
+import com.fishit.player.internal.source.PlaybackSourceResolver
+import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
@@ -22,13 +25,15 @@ import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
  *
  * Navigation flow:
  * Start -> Home -> Detail -> Player
- *               -> Debug
+ *               -> Debug -> DebugPlayback (test player)
  *               -> Settings
  */
 @Composable
 fun AppNavHost(
     resumeManager: ResumeManager,
-    kidsPlaybackGate: KidsPlaybackGate
+    kidsPlaybackGate: KidsPlaybackGate,
+    sourceResolver: PlaybackSourceResolver,
+    codecConfigurator: NextlibCodecConfigurator
 ) {
     val navController = rememberNavController()
 
@@ -95,9 +100,21 @@ fun AppNavHost(
                 )
             }
 
-            // Debug Screen
+            // Debug Screen (settings/diagnostics)
             composable(Routes.DEBUG) {
                 DebugScreen(
+                    onBack = { navController.popBackStack() },
+                    onDebugPlayback = { navController.navigate(Routes.DEBUG_PLAYBACK) }
+                )
+            }
+
+            // Debug Playback Screen (test player with Big Buck Bunny)
+            composable(Routes.DEBUG_PLAYBACK) {
+                DebugPlaybackScreen(
+                    sourceResolver = sourceResolver,
+                    resumeManager = resumeManager,
+                    kidsPlaybackGate = kidsPlaybackGate,
+                    codecConfigurator = codecConfigurator,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -118,6 +135,7 @@ object Routes {
     const val START = "start"
     const val HOME = "home"
     const val DEBUG = "debug"
+    const val DEBUG_PLAYBACK = "debug_playback"
     const val DEBUG_SKELETON = "debug_skeleton"
 
     // Detail route with arguments

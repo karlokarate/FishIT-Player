@@ -105,7 +105,29 @@ Pipelines:
 
 - do *not* normalize metadata or call TMDB directly,
 - do *not* implement player logic,
+- do *not* depend on TDLib types or `TdlibClientProvider` (use adapters that consume `TgMessage` wrapper types),
 - are scoped and testable.
+
+#### Telegram Transport Status
+
+The v2 Telegram transport architecture uses typed interfaces instead of exposing TDLib directly:
+
+| Interface | Purpose | Status |
+|-----------|---------|--------|
+| `TelegramAuthClient` | Authentication operations | 🚧 Interface defined |
+| `TelegramHistoryClient` | Chat history, message fetching | 🚧 Interface defined |
+| `TelegramFileClient` | File download operations | 🚧 Interface defined |
+| `TelegramThumbFetcher` | Thumbnail fetching for Coil | ✅ Implemented |
+
+**Implementation:**
+- `DefaultTelegramClient` in `transport-telegram` owns TDLib state
+- Maps TDLib DTOs to `TgMessage`/`TgContent`/`TgThumbnail` wrapper types
+- v1 gold patterns (`T_TelegramServiceClient`, `T_TelegramSession`, `T_ChatBrowser`) extracted to `/legacy/gold/`
+
+**NOT exposed to upper layers:**
+- TDLib types (`TdApi.*`)
+- `TdlibClientProvider` (v1 legacy pattern – must NOT be reintroduced)
+- g00sha TDLib internals
 
 Key docs:
 
@@ -127,6 +149,25 @@ Key docs:
 - Central Internal Player lives under `/player/internal` and related `/playback` modules.
 - All playback (VOD, live, trickplay, subtitles/CC, TV input) must go through SIP contracts.
 - No pipeline or UI should duplicate player logic.
+- **The player is source-agnostic**: It knows only `PlaybackContext` and `PlaybackSourceFactory` sets.
+
+#### Current Player Status
+
+> ✅ **The player is test-ready without Telegram/Xtream transport.**
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| `core:player-model` | ✅ Complete | `PlaybackContext`, `PlaybackState`, `SourceType` |
+| `player:internal` | ✅ Test-ready | `InternalPlayerSession`, `PlaybackSourceResolver`, `InternalPlayerEntry` |
+| `player:nextlib-codecs` | ✅ Integrated | FFmpeg codecs via `NextlibCodecConfigurator` |
+| Debug Playback | ✅ Working | `DebugPlaybackScreen` with Big Buck Bunny test stream |
+| `TelegramPlaybackSourceFactoryImpl` | ⏸️ Disabled | Awaiting `DefaultTelegramClient` in transport layer |
+| `XtreamPlaybackSourceFactoryImpl` | ⏸️ Disabled | Can be enabled when Xtream transport is wired |
+
+**Architecture:**
+- Player uses `PlaybackSourceResolver` with injected `Set<PlaybackSourceFactory>` via `@Multibinds`
+- Empty factory set is valid – player falls back to test stream
+- Telegram/Xtream factories are optional extensions that plug in via DI
 
 Key docs:
 

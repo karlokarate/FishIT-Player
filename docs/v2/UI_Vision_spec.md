@@ -558,7 +558,37 @@ Focus outlines, tile scaling, and overlay behavior should be consistent and pred
 
 ---
 
-## 12. Future-Proof Expansion
+## 12. Technical Foundation (v2 Architecture)
+
+The UI is built on the v2 architecture with strict layer separation:
+
+### 12.1 Data Flow
+
+```text
+Transport → Pipeline → Normalizer → Repository → ViewModel → Composable
+```
+
+- **UI consumes domain-level models** from repositories, never pipeline or transport types
+- **UI does not depend on Telegram or Xtream transport** directly
+- **Tiles, Rows, and Overlays** receive `NormalizedMedia` or domain models, not `TelegramMediaItem` or `XtreamVodItem`
+
+### 12.2 Player Integration
+
+- The internal player (SIP) is **source-agnostic**
+- UI triggers playback via `PlaybackContext`, not source-specific APIs
+- **Player is test-ready**: Debug playback available via Big Buck Bunny stream
+- Telegram/Xtream playback factories are optional extensions
+
+### 12.3 What UI Must NOT Do
+
+- Import transport layer types (`TelegramAuthClient`, `XtreamApiClient`, etc.)
+- Import pipeline DTOs (`TelegramMediaItem`, `XtreamVodItem`, etc.)
+- Depend on `TdlibClientProvider` or TDLib types
+- Implement business logic that belongs in pipelines or normalizer
+
+---
+
+## 13. Future-Proof Expansion
 
 The design must remain stable while supporting:
 

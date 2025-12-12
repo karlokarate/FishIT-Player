@@ -46,7 +46,9 @@ This section defines the canonical terms used in the v2 codebase. Use these defi
 
 | Term | Definition | Scope | Examples |
 |------|------------|-------|----------|
-| **Transport** | Network/file access layer. Lives in `infra/transport-*`. | InfraTransport | `TelegramTransportClient`, `XtreamApiClient` |
+| **Transport** | Network/file access layer. Lives in `infra/transport-*`. Exposes typed interfaces, hides implementation details (TDLib, HTTP clients). | InfraTransport | `TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`, `XtreamApiClient` |
+| **DefaultTelegramClient** | The v2 Telegram transport client in `transport-telegram`. Owns TDLib state, maps TDLib DTOs to `TgMessage`/`TgContent`/`TgThumbnail`, implements `TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`, `TelegramThumbFetcher`. Internal to transport layer – never exposed to UI, pipeline, or player. | InfraTransport | Lives in `infra/transport-telegram/internal/` |
+| **TdlibClientProvider** | ⚠️ **DEPRECATED/LEGACY** – v1 pattern that exposed TDLib client directly. Must NOT be reintroduced in v2. Use typed interfaces (`TelegramAuthClient`, etc.) instead. | Legacy | Was in v1; do not use in v2 |
 | **Data** | Persistence and repository layer. Lives in `infra/data-*`. | InfraData | `TelegramContentRepository`, `XtreamCatalogRepository` |
 | **Tooling** | Development and debugging utilities. Lives in `infra/tooling`. | Tooling | Debug services, test utilities |
 | **Logging** | Unified logging infrastructure. Lives in `infra/logging`. | Logging | `UnifiedLog`, `UnifiedLogInitializer` |
@@ -55,9 +57,22 @@ This section defines the canonical terms used in the v2 codebase. Use these defi
 
 | Term | Definition | Scope | Examples |
 |------|------------|-------|----------|
-| **Player** | The internal player engine (SIP). Lives in `player/*`. | Player | `InternalPlayerSession`, `InternalPlayerState` |
-| **Playback** | Playback domain logic and source factories. Lives in `playback/*`. | Playback | `PlaybackSourceFactory`, `TelegramFileDataSource` |
-| **PlaybackContext** | The data class passed to the player containing all playback information. | Player | Defined in `core/player-model` |
+| **Player** | The internal player engine (SIP). Lives in `player/*`. **Source-agnostic** – knows only `PlaybackContext` and `PlaybackSourceFactory` sets. Does NOT depend on transport or pipeline. | Player | `InternalPlayerSession`, `InternalPlayerState` |
+| **Playback** | Playback domain logic and source factories. Lives in `playback/*`. Bridges transport layer to player via `PlaybackSourceFactory` implementations. | Playback | `PlaybackSourceFactory`, `TelegramFileDataSource` |
+| **PlaybackContext** | The data class passed to the player containing all playback information. Source-agnostic. | Player | Defined in `core/player-model` |
+| **PlaybackSourceFactory** | Interface that creates `MediaSource` for ExoPlayer from `PlaybackContext`. Telegram/Xtream implementations are optional extensions. | Playback | `TelegramPlaybackSourceFactoryImpl`, `XtreamPlaybackSourceFactoryImpl` |
+| **PlaybackSourceResolver** | Resolves `PlaybackContext` to `MediaSource` using injected `Set<PlaybackSourceFactory>`. Falls back to test stream if no factory matches. | Player | Lives in `player/internal` |
+| **DebugPlaybackSourceFactory** | Test factory providing Big Buck Bunny stream for debug/testing. Allows player testing without Telegram/Xtream. | Player | Used in `DebugPlaybackScreen` |
+
+### 1.6 Telegram Transport Interfaces
+
+| Term | Definition | Scope | Examples |
+|------|------------|-------|----------|
+| **TelegramAuthClient** | Interface for Telegram authentication operations (login, logout, auth state). | InfraTransport | Implemented by `DefaultTelegramClient` |
+| **TelegramHistoryClient** | Interface for fetching chat history and messages. Returns `TgMessage` wrapper types. | InfraTransport | Implemented by `DefaultTelegramClient` |
+| **TelegramFileClient** | Interface for file download operations. Returns `TgFile` wrapper types. | InfraTransport | Implemented by `DefaultTelegramClient` |
+| **TelegramThumbFetcher** | Interface for thumbnail fetching, integrated with Coil imaging. | InfraTransport | `TelegramThumbFetcherImpl` |
+| **TgMessage** | Transport-layer wrapper for TDLib messages. Used by pipeline adapters. | InfraTransport | `TgMessage`, `TgContent`, `TgThumbnail` |
 
 ---
 

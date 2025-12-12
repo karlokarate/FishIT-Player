@@ -146,7 +146,7 @@ Status: ✅ COMPLETED
 - [x] Wire pipelines to normalizer
 - [x] Add TMDB resolver integration point
 - [x] **Phase 2.1:** Transport Layer
-  - [x] `infra/transport-telegram` - TelegramTransportClient, TdlibClientProvider
+  - [x] `infra/transport-telegram` - Typed interfaces (TelegramAuthClient, TelegramHistoryClient, TelegramFileClient, TelegramThumbFetcher)
   - [x] `infra/transport-xtream` - XtreamApiClient, XtreamUrlBuilder, XtreamDiscovery
 - [x] **Phase 2.2:** Data Layer
   - [x] `infra/data-telegram` - TelegramContentRepository, ObxTelegramContentRepository
@@ -221,8 +221,19 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 - [x] Implement `player:miniplayer` module with MiniPlayerManager, MiniPlayerState, MiniPlayerOverlay
 - [x] Implement `SubtitleTrack` model and `SubtitleTrackManager` (Phase 6)
 - [x] Implement `AudioTrack` model and `AudioTrackManager` (Phase 7)
+- [x] **Player is test-ready**: Debug playback via Big Buck Bunny stream in `DebugPlaybackScreen`
+
+### Player Test Status
+
+> ✅ **The player is test-ready without Telegram/Xtream transport.**
+>
+> - Debug playback available via `DebugPlaybackScreen` using Big Buck Bunny test stream
+> - Player uses `PlaybackSourceResolver` + `Set<PlaybackSourceFactory>` (injected via `@Multibinds`)
+> - Empty factory set is valid – player falls back to test stream
+> - Telegram/Xtream `PlaybackSourceFactory` implementations can be enabled later without changing player code
 
 ### Pending Tasks
+
 - [ ] Series mode / binge watching (Phase 8)
 - [ ] Kids-mode time limits & Guest restrictions (Phase 9)
 - [ ] Enhanced error handling and recovery (Phase 10)
@@ -230,6 +241,18 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 - [ ] Live TV with EPG (Phase 12)
 - [ ] Input handling & Casting (Phase 13)
 - [ ] Tests and documentation (Phase 14)
+
+### Telegram Transport Status
+
+The next step for real Telegram content is implementing `DefaultTelegramClient` in `transport-telegram`:
+
+| Task | Priority | Description |
+|------|----------|-------------|
+| `DefaultTelegramClient` | P0 | Wrap g00sha TDLib, implement `TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient` |
+| `TelegramThumbFetcherImpl` | P1 | Provide `TelegramThumbFetcher` to imaging layer |
+| Reactivate `TelegramPlaybackModule` | P1 | Bind `TelegramPlaybackSourceFactoryImpl` into factory set after transport is stable |
+
+**Note:** `TdlibClientProvider` is a v1 pattern and must NOT be reintroduced. Use typed interfaces instead.
 
 ### Modules Affected
 

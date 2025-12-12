@@ -63,10 +63,12 @@ import java.util.Locale
  * - Cache sizes and clear actions
  * - Pipeline statistics
  * - Recent logs
+ * - Debug playback (test player)
  */
 @Composable
 fun DebugScreen(
     onBack: () -> Unit,
+    onDebugPlayback: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DebugViewModel = hiltViewModel()
 ) {
@@ -92,6 +94,30 @@ fun DebugScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item { Spacer(modifier = Modifier.height(8.dp)) }
+
+                // Debug Playback Section (test player)
+                item {
+                    DebugSection(title = "Playback Test", icon = Icons.Default.BugReport) {
+                        Text(
+                            text = "Test the internal player with a sample video stream (Big Buck Bunny).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = onDebugPlayback,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BugReport,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Open Debug Player")
+                        }
+                    }
+                }
 
                 // System Info Section
                 item {

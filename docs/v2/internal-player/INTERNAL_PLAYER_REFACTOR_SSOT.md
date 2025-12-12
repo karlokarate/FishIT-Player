@@ -163,6 +163,26 @@ Jede Phase wird durch ein **Behavior Contract** definiert, das die exakte Funkti
 | **Phase 7** | `INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` |
 | **Phase 8** | `INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` |
 
+### Current Player Status
+
+> ✅ **The player is test-ready without Telegram/Xtream transport.**
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| `core:player-model` | ✅ Complete | `PlaybackContext`, `PlaybackState`, `SourceType` |
+| `player:internal` | ✅ Test-ready | `InternalPlayerSession`, `PlaybackSourceResolver`, `InternalPlayerEntry` |
+| `player:nextlib-codecs` | ✅ Integrated | FFmpeg codecs via `NextlibCodecConfigurator` |
+| Debug Playback | ✅ Working | `DebugPlaybackScreen` with Big Buck Bunny test stream |
+| `TelegramPlaybackSourceFactoryImpl` | ⏸️ Disabled | Awaiting `DefaultTelegramClient` in transport layer |
+| `XtreamPlaybackSourceFactoryImpl` | ⏸️ Disabled | Can be enabled when Xtream transport is wired |
+
+**Architecture:**
+- Player uses `PlaybackSourceResolver` with injected `Set<PlaybackSourceFactory>` via `@Multibinds`
+- Empty factory set is valid – player falls back to test stream
+- Telegram/Xtream factories are optional extensions that plug in via DI
+- **Player is source-agnostic**: It knows only `PlaybackContext` and `PlaybackSourceFactory` sets
+- **Player does NOT depend on**: `TdlibClientProvider`, `TelegramTransportClient`, or any transport-layer types
+
 ---
 
 ## Phase 1 – PlaybackContext & Entry Point

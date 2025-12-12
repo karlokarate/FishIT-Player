@@ -34,7 +34,7 @@ The v2 rebuild uses the following module structure:
 ├── infra/
 │   ├── logging/              # UnifiedLog facade
 │   ├── tooling/              # Build tooling and utilities
-│   ├── transport-telegram/   # TelegramTransportClient, TdlibClientProvider
+│   ├── transport-telegram/   # Telegram transport: TelegramAuthClient, TelegramHistoryClient, TelegramFileClient, TelegramThumbFetcher
 │   ├── transport-xtream/     # XtreamApiClient, XtreamUrlBuilder, XtreamDiscovery
 │   ├── data-telegram/        # TelegramContentRepository, ObxTelegramContentRepository
 │   └── data-xtream/          # XtreamCatalogRepository, XtreamLiveRepository
@@ -101,8 +101,10 @@ The v2 architecture follows a strict layer hierarchy:
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  Transport Layer (infra/transport-*)                        │
-│    - TelegramTransportClient, XtreamApiClient              │
-│    - Raw TDLib/HTTP access                                  │
+│    - Telegram: TelegramAuthClient, TelegramHistoryClient,   │
+│      TelegramFileClient, TelegramThumbFetcher               │
+│    - Xtream: XtreamApiClient                                │
+│    - Internals (TDLib, HTTP) hidden from upper layers       │
 └─────────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -160,11 +162,23 @@ The v2 architecture follows a strict layer hierarchy:
 
 1. **Canonical Media**: All pipelines produce `RawMediaMetadata`; normalization happens centrally.
 2. **Feature System**: UI relies on `FeatureId` and `FeatureRegistry`, not hardcoded behavior.
-3. **Internal Player (SIP)**: All playback goes through centralized player contracts.
+3. **Internal Player (SIP)**: All playback goes through centralized player contracts. The player is **source-agnostic** and testable with a debug stream.
 4. **No Global Mutable Singletons**: Use DI and proper scoping.
 5. **Unified Logging**: All logging through `UnifiedLog` facade.
 6. **Legacy Isolation**: V1 code is read-only reference under `legacy/`.
-7. **Layer Boundaries**: Strict separation - Pipeline may not import Data, Player may not import Pipeline.
+7. **Layer Boundaries**: Strict separation - Pipeline may not import Data, Player may not import Pipeline or Transport.
+8. **Transport Encapsulation**: Transport internals (TDLib, HTTP clients) are hidden behind typed interfaces; upper layers never import transport implementation details.
+
+---
+
+## Player Status
+
+The internal player (SIP) is **test-ready**:
+
+- Debug playback available via `DebugPlaybackScreen` using Big Buck Bunny test stream
+- Player uses `PlaybackSourceResolver` + `Set<PlaybackSourceFactory>` (injected via `@Multibinds`)
+- Telegram/Xtream `PlaybackSourceFactory` implementations can be added later without changing player code
+- Player does NOT depend on `TdlibClientProvider`, `TelegramTransportClient`, or any transport-layer types
 
 ---
 
@@ -173,12 +187,9 @@ The v2 architecture follows a strict layer hierarchy:
 See [AGENTS.md](AGENTS.md) for the complete v2 agent ruleset.
 
 **Quick rules:**
-- Modify only v2 paths (`app-v2/`, `core/`, `infra/`, `feature/`, `player/`, `playback/`, `pipeline/`, `docs/v2/`, `docs/meta/`, `scripts/`)
-- Treat `legacy/**` as read-only
-- No `com.chris.m3usuite` references outside `legacy/`
-- Read module README.md before modifying any module
 
 - Modify only v2 paths (`app-v2/`, `core/`, `infra/`, `feature/`, `player/`, `playback/`, `pipeline/`, `docs/v2/`, `docs/meta/`, `scripts/`)
 - Treat `legacy/**` as read-only
 - No `com.chris.m3usuite` references outside `legacy/`
+- Read module README.md before modifying any module
 - Read module README.md before modifying any module

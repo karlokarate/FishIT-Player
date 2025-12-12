@@ -16,7 +16,7 @@ It does **not** define behavior for other repositories or for the historic v1 co
 > **HARD RULE:** The Player layer (`player/**`, `playback/**`) is **source-agnostic**.
 > It does NOT know about Telegram, Xtream, or any specific transport implementation.
 
-### What the Player Layer Knows:
+### What the Player Layer Knows
 
 | Allowed | Description |
 |---------|-------------|
@@ -25,16 +25,19 @@ It does **not** define behavior for other repositories or for the historic v1 co
 | `PlaybackContext` | Source-agnostic playback descriptor |
 | `RawMediaMetadata` | Canonical media from normalizer |
 
-### What the Player Layer MUST NOT Know:
+### What the Player Layer MUST NOT Know
 
 | Forbidden | Why |
 |-----------|-----|
-| `TdlibClientProvider` | Transport layer – belongs in `infra/transport-telegram` |
+| `TdlibClientProvider` | ⚠️ **v1 legacy pattern** – must NOT be reintroduced in v2 |
+| `DefaultTelegramClient` | Internal to `transport-telegram` – not exposed |
 | `TelegramTransportClient` | Transport layer – belongs in `infra/transport-telegram` |
+| `TelegramAuthClient` etc. | Transport interfaces – only `playback/telegram` may use these |
 | `XtreamApiClient` | Transport layer – belongs in `infra/transport-xtream` |
 | Any `*Impl` from transport | Player only consumes interfaces |
+| TDLib types (`TdApi.*`) | Raw TDLib – never exposed outside transport |
 
-### Binding Rule for Playback Modules:
+### Binding Rule for Playback Modules
 
 ```kotlin
 // playback/domain/di/PlaybackDomainModule.kt
@@ -53,15 +56,21 @@ abstract class PlaybackDomainModule {
 // }
 ```
 
-### Agent Instructions:
+### Agent Instructions
 
-1. **DO NOT** re-enable `TelegramPlaybackModule` or similar until the transport layer (`TdlibClientProvider`) is fully implemented.
+1. **DO NOT** re-enable `TelegramPlaybackModule` until `DefaultTelegramClient` implements all typed interfaces in `transport-telegram`.
 2. **DO NOT** add imports from `infra/transport-*` into `player/**` modules.
 3. **DO NOT** "fix" DI errors by making the player depend on transport implementations.
-4. **DO** use `@Multibinds` to allow empty factory sets.
-5. **DO** use fallback streams (e.g., Big Buck Bunny) for testing when no factories are available.
+4. **DO NOT** reintroduce `TdlibClientProvider` anywhere – it is a v1 legacy pattern.
+5. **DO** use `@Multibinds` to allow empty factory sets.
+6. **DO** use fallback streams (e.g., Big Buck Bunny) for testing when no factories are available.
 
 > **Test First:** The player must work with zero `PlaybackSourceFactory` entries. If it doesn't compile without transport, the architecture is broken.
+
+### Player Test Status
+
+> ✅ **The player is currently test-ready** via `DebugPlaybackScreen` with Big Buck Bunny stream.
+> No Telegram or Xtream transport is required to test player functionality.
 
 ---
 
@@ -195,17 +204,43 @@ See **`/legacy/gold/EXTRACTION_SUMMARY.md`** for complete porting guidance and *
   - never perform UI logic,
   - never embed player logic,
   - never own global caches,
-  - never call TMDB or external metadata services directly (always via normalizer/resolver).
+  - never call TMDB or external metadata services directly (always via normalizer/resolver),
+  - never depend on TDLib types or `TdlibClientProvider` (use adapters that consume `TgMessage` wrapper types).
 
 4.3. Internal Player (SIP) & Playback
 
 - Playback logic is centralised in the Internal Player (SIP) under `/player/internal` and related `playback/domain` modules.
+- **The player is source-agnostic**: It knows only `PlaybackContext` and `PlaybackSourceFactory` sets.
+- **The player is test-ready**: Debug playback via `DebugPlaybackScreen` with Big Buck Bunny stream.
 - Agents MUST NOT implement player behavior in:
   - pipelines,
   - feature modules,
   - random helpers.
 - Instead, follow:
   - `docs/v2/internal-player/**`
+
+4.3.1. Transport vs Pipeline vs Player (binding rule)
+
+> **Hard Rule:** These layers have distinct responsibilities and must not leak abstractions.
+
+| Layer | Responsibility | What It Knows |
+|-------|----------------|---------------|
+| **Transport** | Talks to external APIs (TDLib, HTTP) | Raw TDLib DTOs, HTTP responses |
+| **Pipeline** | Consumes transport-level wrapper types, produces `RawMediaMetadata` | `TgMessage`, `TgContent`, transport interfaces |
+| **Player** | Consumes `PlaybackContext` and `PlaybackSourceFactory` sets only | Source-agnostic; no transport or pipeline types |
+| **UI** | Consumes domain-level UI models from repositories | Never imports pipeline, transport, or player internals |
+
+**What Transport Exposes (Telegram):**
+- `TelegramAuthClient` – authentication operations
+- `TelegramHistoryClient` – chat history, message fetching
+- `TelegramFileClient` – file download operations
+- `TelegramThumbFetcher` – thumbnail fetching for imaging
+
+**What Transport Hides:**
+- TDLib types (`TdApi.*`)
+- `TdlibClientProvider` (v1 legacy pattern – must NOT be reintroduced)
+- g00sha TDLib internals
+- `DefaultTelegramClient` implementation details
 
 4.4. No global mutable Singletons (hard clause)
 

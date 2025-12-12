@@ -133,14 +133,15 @@
 - `DefaultTelegramClient.kt` (358 LOC)
 - `TdlibMessageMapper.kt` (284 LOC)
 - `TelegramClient.kt` (169 LOC)
-- `TdlibClientProvider.kt` (60 LOC)
+- `TdlibClientProvider.kt` (60 LOC) – ⚠️ internal only, not exposed to upper layers
 - `TdlibMessageMapperTest.kt` (580 LOC)
 - `DefaultTelegramClientTest.kt` (450 LOC)
 
 ### Section 1: Scope & Architecture ✅
 - [x] Pipeline enthält nur source-spezifische Logik
 - [x] Kein UI-Code (keine Views, Composables, Activities, Fragments)
-- [x] Kein Android `Context` innerhalb Domain/Pipeline-Logik (via TdlibClientProvider)
+- [x] Kein Android `Context` innerhalb Domain/Pipeline-Logik (via typed interfaces)
+- [x] TdlibClientProvider internal – not exposed to upper layers (v1 legacy pattern)
 - [x] Keine ExoPlayer/Media3-Nutzung in Pipelines
 - [x] Keine TMDB-Lookups in Pipelines
 - [x] Keine HTTP-Clients außer Source-Protocol-Clients (TDLib only)
