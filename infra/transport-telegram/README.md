@@ -2,6 +2,8 @@
 
 **Purpose:** Wraps TDLib SDK, provides typed Telegram interfaces and wrapper DTOs (`TgMessage`, `TgChat`, `TgContent`) to higher layers.
 
+**Migration Status:** 🔄 Phase B1 (Typed Interface Contracts) - Interfaces created, implementation pending
+
 ## ✅ Allowed
 
 - TDLib client lifecycle & calls (internal to `DefaultTelegramClient`)
