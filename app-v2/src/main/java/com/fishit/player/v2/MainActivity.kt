@@ -8,13 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
-import com.fishit.player.infra.transport.telegram.TelegramAuthClient
-import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.v2.navigation.AppNavHost
 import com.fishit.player.v2.ui.theme.FishItV2Theme
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,13 +36,7 @@ class MainActivity : ComponentActivity() {
     lateinit var codecConfigurator: NextlibCodecConfigurator
 
     @Inject
-    lateinit var catalogSyncService: CatalogSyncService
-
-    @Inject
-    lateinit var telegramAuthClient: TelegramAuthClient
-
-    @Inject
-    lateinit var xtreamApiClient: XtreamApiClient
+    lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,11 +53,7 @@ class MainActivity : ComponentActivity() {
                         kidsPlaybackGate = kidsPlaybackGate,
                         sourceResolver = sourceResolver,
                         codecConfigurator = codecConfigurator,
-                        catalogSyncBootstrap = CatalogSyncBootstrap(
-                            catalogSyncService = catalogSyncService,
-                            telegramAuthClient = telegramAuthClient,
-                            xtreamApiClient = xtreamApiClient
-                        )
+                        catalogSyncBootstrap = catalogSyncBootstrap,
                     )
                 }
             }

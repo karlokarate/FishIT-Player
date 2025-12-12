@@ -2,7 +2,6 @@ package com.fishit.player.v2.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -41,13 +40,12 @@ fun AppNavHost(
     catalogSyncBootstrap: CatalogSyncBootstrap,
 ) {
     val navController = rememberNavController()
-    val coroutineScope = rememberCoroutineScope()
 
     FishTheme {
         LaunchedEffect(navController, catalogSyncBootstrap) {
             navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
                 if (backStackEntry.destination.route == Routes.HOME) {
-                    catalogSyncBootstrap.start(coroutineScope)
+                    catalogSyncBootstrap.start()
                 }
             }
         }
