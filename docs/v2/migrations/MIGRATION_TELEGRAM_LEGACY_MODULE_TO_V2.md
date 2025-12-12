@@ -59,25 +59,25 @@ This migration ports the **battle-tested behaviors** from the legacy Telegram mo
 
 Source files (legacy/v1 module extract):
 
-* `StreamingConfig.kt` 
-* `StreamingConfigRefactor.kt` 
-* `T_ChatBrowser.kt` 
-* `T_TelegramFileDownloader.kt` 
-* `T_TelegramFileDownloaderRefactor.kt` 
-* `TelegramFileLoader.kt` 
-* `T_TelegramSession.kt` 
-* `T_TelegramServiceClient.kt` 
+* `StreamingConfig.kt`
+* `StreamingConfigRefactor.kt`
+* `T_ChatBrowser.kt`
+* `T_TelegramFileDownloader.kt`
+* `T_TelegramFileDownloaderRefactor.kt`
+* `TelegramFileLoader.kt`
+* `T_TelegramSession.kt`
+* `T_TelegramServiceClient.kt`
 
 ## 1. Non-negotiable v2 rules to obey
 
 ### 1.1 Binding docs / contracts (must be complied with)
 
-* Naming & modules glossary (authoritative) 
-* Contract inventory / “binding contracts” rule 
-* Media normalization contract: pipelines emit Raw only, never normalize / never TMDB inside pipeline 
-* Logging contract: only `UnifiedLog.*`, no `println`, no `android.util.Log`, no Timber outside infra/logging 
-* Agent rules: forbidden imports, layer boundaries, “no global mutable singletons” policy 
-* Target module structure overview 
+* Naming & modules glossary (authoritative)
+* Contract inventory / “binding contracts” rule
+* Media normalization contract: pipelines emit Raw only, never normalize / never TMDB inside pipeline
+* Logging contract: only `UnifiedLog.*`, no `println`, no `android.util.Log`, no Timber outside infra/logging
+* Agent rules: forbidden imports, layer boundaries, “no global mutable singletons” policy
+* Target module structure overview
 
 ### 1.2 Accepted runtime/product decisions (FINAL)
 
@@ -118,8 +118,8 @@ Source files (legacy/v1 module extract):
 
 Legacy currently mixes:
 
-* transport download control + queueing + storage maintenance 
-* playback-specific “file-ready + MP4 moov validation” logic 
+* transport download control + queueing + storage maintenance
+* playback-specific “file-ready + MP4 moov validation” logic
 
 **In v2 these must be separated:**
 
@@ -142,15 +142,15 @@ This matches the “Playback lives in playback/*, transport stays raw” boundar
 
 ## Phase A — Pre-flight (quality + safety)
 
-* [ ] Confirm working on `architecture/v2-bootstrap` (or v2-derived feature branch); never target `main`. 
-* [ ] Read module READMEs for all touched modules (transport-telegram, playback/telegram, pipeline/telegram). 
+* [ ] Confirm working on `architecture/v2-bootstrap` (or v2-derived feature branch); never target `main`.
+* [ ] Read module READMEs for all touched modules (transport-telegram, playback/telegram, pipeline/telegram).
 * [ ] Run naming guard:
 
   * [ ] grep: forbid `com.chris.m3usuite` outside legacy
-  * [ ] ensure packages follow Glossary patterns 
+  * [ ] ensure packages follow Glossary patterns
 * [ ] Logging guard:
 
-  * [ ] grep: forbid `println`, `printStackTrace`, `android.util.Log`, `Timber` outside `infra/logging` 
+  * [ ] grep: forbid `println`, `printStackTrace`, `android.util.Log`, `Timber` outside `infra/logging`
 
 ## Phase B — Transport: replace legacy “service client” with DI-scoped v2 transport
 
@@ -159,33 +159,33 @@ This matches the “Playback lives in playback/*, transport stays raw” boundar
 * [ ] Ensure there is exactly one **DI-scoped** TDLib client provider in `infra/transport-telegram`.
 * [ ] Port behaviors from legacy:
 
-  * idempotent start (`ensureStarted`) pattern 
-  * safe scope recreation after shutdown 
-  * update distribution (`newMessageUpdates`, `fileUpdates`) stays transport-side, emitted as Flows 
+  * idempotent start (`ensureStarted`) pattern
+  * safe scope recreation after shutdown
+  * update distribution (`newMessageUpdates`, `fileUpdates`) stays transport-side, emitted as Flows
 * [ ] Remove **all** UI references from transport:
 
-  * legacy calls a UI snackbar on reauth 
+  * legacy calls a UI snackbar on reauth
   * replace with: `TelegramAuthEvent.ReauthRequired` flow event (domain/UI decides presentation)
 
 ### B2) Migrate `T_TelegramSession` → `TdlibAuthSession`
 
-* [ ] Port auth state collector + mapping to events 
-* [ ] Keep `setTdlibParameters` logic here (transport responsibility) 
+* [ ] Port auth state collector + mapping to events
+* [ ] Keep `setTdlibParameters` logic here (transport responsibility)
 * [ ] Enforce “resume first” behavior:
 
-  * if already authorized on boot → Ready without UI involvement (legacy already tries to query initial auth state) 
+  * if already authorized on boot → Ready without UI involvement (legacy already tries to query initial auth state)
 * [ ] Implement the accepted auth policy:
 
   * offline → pause retries
   * on reconnection → resume
-  * if TDLib state transitions from Ready back to WaitPhone/WaitCode/WaitPassword → emit `ReauthRequired` 
+  * if TDLib state transitions from Ready back to WaitPhone/WaitCode/WaitPassword → emit `ReauthRequired`
 
 ### B3) Migrate `T_ChatBrowser` → `TelegramChatBrowser`
 
 * [ ] Preserve TDLib paging rule used in `loadAllMessages()`:
 
   * first page: `fromMessageId=0`, `offset=0`
-  * next pages: anchor on oldest msg id, `offset=-1` to avoid duplicates 
+  * next pages: anchor on oldest msg id, `offset=-1` to avoid duplicates
 * [ ] Replace “limit=100 top chats” with **pager-based enumeration**:
 
   * keep TDLib list loading incremental, but never enforce an arbitrary app-level cap
@@ -199,26 +199,26 @@ This matches the “Playback lives in playback/*, transport stays raw” boundar
 
 ### C1) Migrate download queueing + concurrency enforcement
 
-Legacy implements FIFO queues + counters + two categories (VIDEO/THUMB) 
+Legacy implements FIFO queues + counters + two categories (VIDEO/THUMB)
 
 * [ ] Port to `TelegramFileDownloadManager` in `infra/transport-telegram/file/`
-* [ ] Replace “settingsProvider runtime sliders” (legacy) 
+* [ ] Replace “settingsProvider runtime sliders” (legacy)
   with **fixed constants** (no user overrides) + optional debug-only override hook.
-* [ ] Keep remoteId→fileId resolution API (required for stale fileId recovery) 
+* [ ] Keep remoteId→fileId resolution API (required for stale fileId recovery)
 * [ ] Keep storage maintenance hooks:
 
   * `getStorageStatisticsFast` → check size
-  * `optimizeStorage` on threshold 
+  * `optimizeStorage` on threshold
 
 ### C2) Remove legacy-only windowing/ringbuffer remnants (do not reintroduce)
 
-* [ ] Do **not** port deprecated windowing APIs/structures 
-* [ ] Do **not** port ringbuffer constants 
+* [ ] Do **not** port deprecated windowing APIs/structures
+* [ ] Do **not** port ringbuffer constants
 
 ### C3) Logging compliance fixes
 
 * [ ] Remove any `println` usage (exists in legacy downloader)  
-* [ ] Standardize to `UnifiedLog.d/i/w/e` per logging contract 
+* [ ] Standardize to `UnifiedLog.d/i/w/e` per logging contract
 
 ## Phase D — Playback: streaming readiness + MP4 validation
 
@@ -230,12 +230,12 @@ Legacy implements FIFO queues + counters + two categories (VIDEO/THUMB)
   * prefix thresholds
   * polling intervals
   * ensure-ready timeouts
-  * priorities 32/16 
-* [ ] Explicitly delete/avoid legacy “window config” constants 
+  * priorities 32/16
+* [ ] Explicitly delete/avoid legacy “window config” constants
 
 ### D2) Move MP4 moov validation into playback
 
-Legacy validates moov atom before playback start 
+Legacy validates moov atom before playback start
 
 * [ ] Implement `TelegramMp4Validator` (or reuse existing) in `playback/telegram`
 * [ ] Implement `TelegramFileReadyEnsurer` in `playback/telegram`:
@@ -248,26 +248,26 @@ Legacy validates moov atom before playback start
 ### D3) RemoteId-first playback support
 
 * [ ] Ensure playback URI / context always contains `remoteId` as stable identity
-* [ ] On “file not found / stale fileId” → resolve via remoteId and retry (legacy already does this) 
+* [ ] On “file not found / stale fileId” → resolve via remoteId and retry (legacy already does this)
 
 ## Phase E — Imaging: Coil3 + Telegram thumb resolution without UI → TDLib calls
 
 ### E1) Replace `TelegramFileLoader` with resolver + Coil integration
 
-Legacy `TelegramFileLoader` performs thumb downloads + prefetch, with service readiness checks 
+Legacy `TelegramFileLoader` performs thumb downloads + prefetch, with service readiness checks
 
 * [ ] Create `TelegramImageFileResolver` in `infra/transport-telegram/imaging/`
 
   * input: `TelegramImageRef` (remoteId-first)
   * output: local cache path or null
-  * uses transport download manager + remoteId fallback 
+  * uses transport download manager + remoteId fallback
 * [ ] Wire it into Coil3 via ImageLoader component registration (app-v2 startup builds global ImageLoader)
-* [ ] Keep “don’t spam logs on repeated 404 remoteIds” behavior (bounded LRU set) 
+* [ ] Keep “don’t spam logs on repeated 404 remoteIds” behavior (bounded LRU set)
 
 ## Phase F — Pipeline/catalog integration (verification only, no layer violations)
 
-* [ ] Confirm `pipeline/telegram` imports **no** TDLib classes (`dev.g000sha256.tdl.*`) per agent rules 
-* [ ] Confirm pipeline still produces only `RawMediaMetadata` and does not normalize titles 
+* [ ] Confirm `pipeline/telegram` imports **no** TDLib classes (`dev.g000sha256.tdl.*`) per agent rules
+* [ ] Confirm pipeline still produces only `RawMediaMetadata` and does not normalize titles
 * [ ] Confirm chat selection logic implements:
 
   * no bot chats
@@ -289,16 +289,16 @@ Legacy `TelegramFileLoader` performs thumb downloads + prefetch, with service re
 
 ### Transport tests
 
-* [ ] Auth state mapping tests (Ready → WaitCode triggers `ReauthRequired`) 
+* [ ] Auth state mapping tests (Ready → WaitCode triggers `ReauthRequired`)
 * [ ] Chat history pagination tests:
 
-  * offset handling (0 then -1) 
+  * offset handling (0 then -1)
 * [ ] Retry/backoff tests (exponential delay schedule, max attempts)
 * [ ] Download manager tests:
 
-  * queue fairness (FIFO) 
-  * concurrency caps (global/video/thumb) 
-  * remoteId resolution fallback path 
+  * queue fairness (FIFO)
+  * concurrency caps (global/video/thumb)
+  * remoteId resolution fallback path
 
 ### Playback tests
 
@@ -309,14 +309,14 @@ Legacy `TelegramFileLoader` performs thumb downloads + prefetch, with service re
 
 * [ ] remoteId-first thumb resolution:
 
-  * cached fileId fails → remoteId resolves → download succeeds 
-* [ ] bounded “logged 404 remoteIds” does not grow unbounded 
+  * cached fileId fails → remoteId resolves → download succeeds
+* [ ] bounded “logged 404 remoteIds” does not grow unbounded
 
 ---
 
 ## 5. Mandatory verification commands (CI-style)
 
-* [ ] **Layer boundary audit** (must be clean) 
+* [ ] **Layer boundary audit** (must be clean)
 
   * pipeline must not import transport internals directly unless through the transport API module boundary.
 * [ ] Forbidden imports:
@@ -344,13 +344,11 @@ These are the **current upstream states** worth knowing:
 
 ## 7. Recommended external tools (high leverage for best quality)
 
-* **Detekt + ktlint** as hard gates (already aligned with your glossary enforcement plan). 
+* **Detekt + ktlint** as hard gates (already aligned with your glossary enforcement plan).
 * **Gradle Doctor** + **Gradle Build Scan** to catch misconfiguration + dependency bloat early.
 * **LeakCanary** (TDLib + player + WorkManager = classic leak trap).
 * **Perfetto / Android Studio System Trace** for backfill-vs-playback contention.
-* **Macrobenchmark + Baseline Profiles** once feature screens go live (Phase 4/5 area). 
-
-
+* **Macrobenchmark + Baseline Profiles** once feature screens go live (Phase 4/5 area).
 
 [1]: https://developer.android.com/jetpack/androidx/releases/media3?utm_source=chatgpt.com "Media3 | Jetpack - Android Developers"
 [2]: https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp?utm_source=chatgpt.com "com.squareup.okhttp3 » okhttp"

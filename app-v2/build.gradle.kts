@@ -140,6 +140,7 @@ dependencies {
     // v2 Playback & Player
     implementation(project(":playback:domain"))
     implementation(project(":player:internal"))
+    implementation(project(":player:nextlib-codecs"))
     
     // v2 Pipelines
     implementation(project(":pipeline:telegram"))

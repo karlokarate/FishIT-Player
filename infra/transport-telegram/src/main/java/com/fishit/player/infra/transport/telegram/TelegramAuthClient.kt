@@ -1,5 +1,7 @@
 package com.fishit.player.infra.transport.telegram
 
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthState
 import kotlinx.coroutines.flow.Flow
 
 /**

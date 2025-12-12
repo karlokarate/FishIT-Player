@@ -1,5 +1,6 @@
 package com.fishit.player.infra.transport.telegram
 
+import com.fishit.player.infra.transport.telegram.api.TgFile
 import kotlinx.coroutines.flow.Flow
 
 /**

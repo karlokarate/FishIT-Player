@@ -7,26 +7,32 @@ import kotlinx.coroutines.delay
 /**
  * MP4 header validation for Telegram file playback.
  *
- * **Purpose:** Telegram files download progressively. Before starting playback, we must ensure the
- * MP4's `moov` atom is present in the downloaded prefix, otherwise ExoPlayer will fail to parse the
- * container.
+ * @deprecated Use [com.fishit.player.playback.domain.mp4.Mp4MoovAtomValidator] instead. This class
+ * is retained for backward compatibility but will be removed in a future release.
  *
- * **Algorithm:**
- * 1. Parse MP4 atoms from file start
- * 2. Look for `moov` atom (contains media metadata needed for playback)
- * 3. If not found within timeout, throw exception
+ * **Migration Guide:**
+ * ```kotlin
+ * // Old:
+ * TelegramMp4Validator.ensureFileReadyWithMp4Validation(file, timeout)
  *
- * **When to use:**
- * - ONLY during Telegram playback initiation
- * - NOT during catalog scanning or thumbnail loading
- * - NOT for Xtream (direct streaming URLs)
- *
- * **MP4 Atom Structure:**
+ * // New:
+ * val result = Mp4MoovAtomValidator.checkMoovAtom(file.absolutePath, file.length())
+ * if (!result.isReadyForPlayback) {
+ *     throw Mp4ValidationException("Moov not ready")
+ * }
  * ```
- * [4 bytes: size][4 bytes: type][payload...]
- * ```
- * Common atoms: ftyp, moov, mdat, moof, sidx
+ *
+ * @see com.fishit.player.playback.domain.mp4.Mp4MoovAtomValidator
+ * @see com.fishit.player.playback.domain.mp4.Mp4MoovValidationConfig
  */
+@Deprecated(
+        message = "Use Mp4MoovAtomValidator from playback.domain.mp4 package instead",
+        replaceWith =
+                ReplaceWith(
+                        "Mp4MoovAtomValidator.checkMoovAtom(file.absolutePath, file.length())",
+                        "com.fishit.player.playback.domain.mp4.Mp4MoovAtomValidator"
+                )
+)
 object TelegramMp4Validator {
 
     /** Minimum bytes needed to check for atoms. */
@@ -46,6 +52,7 @@ object TelegramMp4Validator {
      * @throws Mp4ValidationException if moov not found within timeout
      * @throws Mp4ValidationException if file is not a valid MP4
      */
+    @Deprecated("Use Mp4MoovAtomValidator.checkMoovAtom() instead")
     suspend fun ensureFileReadyWithMp4Validation(
             file: File,
             timeoutMillis: Long = 30_000L,

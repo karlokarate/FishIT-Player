@@ -289,3 +289,52 @@ To understand dependency relationships:
 3. Update documentation
 
 For complete documentation, see `tools/README.md`.
+
+---
+
+## Licensing Considerations
+
+### NextLib / FFmpeg (GPL-3.0)
+
+**Component:** `io.github.anilbeesetti:nextlib-media3ext:1.8.0-0.9.0`
+
+**License:** GPL-3.0 (via FFmpeg)
+
+**Module:** `player:nextlib-codecs`
+
+**Impact:** NextLib wraps FFmpeg to provide additional codec support (AV1, HEVC, etc.) for Media3/ExoPlayer. Because FFmpeg is licensed under GPL-3.0, shipping NextLib in our APK means the entire app distribution is subject to GPL-3.0 copyleft requirements.
+
+**Current Status:** NextLib is integrated via Hilt DI and exposed through the `NextlibCodecConfigurator` interface in the player layer.
+
+**TODO: Build Flavor for GPL-Free Distribution**
+
+To distribute the app through channels that require non-copyleft licensing (e.g., certain enterprise deployments or Play Store compliance for closed-source apps), we need to create a build flavor that excludes NextLib:
+
+```kotlin
+// Proposed flavor configuration (not yet implemented)
+android {
+    flavorDimensions += "codecs"
+    productFlavors {
+        create("withFFmpeg") {
+            dimension = "codecs"
+            // Includes NextLib, full codec support, GPL-3.0 applies
+        }
+        create("stock") {
+            dimension = "codecs"
+            // Uses only Media3 built-in codecs, no GPL
+        }
+    }
+}
+```
+
+**Action Items:**
+1. [ ] Create `withFFmpeg` and `stock` product flavors
+2. [ ] Conditionally include `:player:nextlib-codecs` only in `withFFmpeg`
+3. [ ] Provide no-op `NextlibCodecConfigurator` implementation for `stock` flavor
+4. [ ] Document codec limitations in `stock` flavor
+5. [ ] Add GPL-3.0 license notice to app settings/about screen when `withFFmpeg` is used
+
+**References:**
+- FFmpeg License: https://ffmpeg.org/legal.html
+- NextLib Repository: https://github.com/anilbeesetti/nextlib
+- GPL-3.0 Text: https://www.gnu.org/licenses/gpl-3.0.html

@@ -1,72 +1,74 @@
 package com.fishit.player.playback.telegram.config
 
+import com.fishit.player.playback.domain.mp4.Mp4MoovValidationConfig
+
 /**
  * TDLib-Optimized Streaming Configuration for Video Playback (v2 Architecture).
  *
- * This is the **single source of truth** for Telegram streaming constants.
- * Ported from legacy `StreamingConfigRefactor` with v2 compliance.
+ * This is the **single source of truth** for **Telegram-specific** streaming constants. Ported from
+ * legacy `StreamingConfigRefactor` with v2 compliance.
+ *
+ * **Note:** MP4 moov atom validation constants are defined in [Mp4MoovValidationConfig] (shared
+ * across all playback sources).
  *
  * **TDLib Streaming Architecture (Official Best Practices):**
  *
  * 1. **Progressive Download with isStreamable=true:**
+ * ```
  *    - TDLib manages internal buffering and prefix caching
  *    - App calls `downloadFile(fileId, priority=32, offset=0, limit=0)` for full progressive download
  *    - TDLib automatically detects streamable MP4/MOV files (moov atom at start)
  *    - No manual windowing or chunk management needed
- *
+ * ```
  * 2. **Prefix Size Management:**
+ * ```
  *    - TDLib downloads in chunks and updates `file.local.downloaded_prefix_size`
  *    - App polls this value to determine when playback can start
  *    - Minimum prefix must contain complete MP4 moov atom (metadata)
- *
+ * ```
  * 3. **Header Validation (Critical):**
- *    - Use Mp4HeaderParser.validateMoovAtom() before starting playback
+ * ```
+ *    - Use [Mp4MoovAtomValidator.checkMoovAtom] before starting playback
  *    - Wait until: downloaded_prefix_size >= MIN_PREFIX_BYTES AND moov atom complete
  *    - This prevents ExoPlayer initialization errors with incomplete metadata
- *
+ * ```
  * 4. **Priority Levels (TDLib Standard):**
+ * ```
  *    - Priority 32: Active streaming (high priority, prevents interruption)
  *    - Priority 16: Background prefetch (medium priority)
  *    - Priority 1-8: Low priority background downloads
- *
+ * ```
  * 5. **Zero-Copy Streaming:**
+ * ```
  *    - TDLib caches files on disk (unavoidable but efficient)
  *    - App uses FileDataSource to read directly from TDLib cache
  *    - No in-memory buffers or additional copies
  *    - ExoPlayer handles all seek/scrub operations via FileDataSource
  *
- * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
+ * @see contracts
+ * ```
+ * /TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
  * @see TelegramFileReadyEnsurer for playback readiness logic
+ * @see Mp4MoovValidationConfig for shared MP4 validation constants
  */
+@Suppress("unused") // Constants referenced by TelegramFileReadyEnsurer
 object TelegramStreamingConfig {
 
-    // ========== MP4 Header Validation ==========
+    // ========== MP4 Header Validation (delegated to shared config) ==========
 
     /**
      * Minimum prefix size before attempting header validation (64 KB).
-     *
-     * Most MP4 files have ftyp+moov within the first 64-512 KB.
-     * This is a soft threshold - we check moov completeness, not just byte count.
-     *
-     * **TDLib Behavior:**
-     * - Downloads in chunks (TDLib internal chunk size varies)
-     * - Updates downloaded_prefix_size incrementally
-     * - App should wait for this minimum + complete moov atom
+     * @see Mp4MoovValidationConfig.MIN_PREFIX_FOR_VALIDATION_BYTES
      */
-    const val MIN_PREFIX_FOR_VALIDATION_BYTES: Long = 64 * 1024 // 64 KiB
+    val MIN_PREFIX_FOR_VALIDATION_BYTES: Long
+        get() = Mp4MoovValidationConfig.MIN_PREFIX_FOR_VALIDATION_BYTES
 
     /**
-     * Maximum prefix size to wait for if moov not found (2 MB).
-     *
-     * If moov atom not found after 2MB, file is likely:
-     * - Not optimized for streaming (moov at end)
-     * - Corrupted or invalid MP4
-     * - Requires full download before playback
-     *
-     * TDLib's `supportsStreaming` flag should already filter these,
-     * but this provides a safety timeout.
+     * Maximum prefix size to scan for moov atom (2 MB).
+     * @see Mp4MoovValidationConfig.MAX_PREFIX_SCAN_BYTES
      */
-    const val MAX_PREFIX_SCAN_BYTES: Long = 2 * 1024 * 1024 // 2 MiB
+    val MAX_PREFIX_SCAN_BYTES: Long
+        get() = Mp4MoovValidationConfig.MAX_PREFIX_SCAN_BYTES
 
     // ========== Download Strategy ==========
 
@@ -82,14 +84,10 @@ object TelegramStreamingConfig {
      */
     const val DOWNLOAD_PRIORITY_STREAMING: Int = 32
 
-    /**
-     * Download priority for background prefetch (TDLib standard: 16).
-     */
+    /** Download priority for background prefetch (TDLib standard: 16). */
     const val DOWNLOAD_PRIORITY_BACKGROUND: Int = 16
 
-    /**
-     * Download priority for thumbnail prefetch.
-     */
+    /** Download priority for thumbnail prefetch. */
     const val DOWNLOAD_PRIORITY_THUMBNAIL: Int = 16
 
     /**
@@ -117,8 +115,8 @@ object TelegramStreamingConfig {
     /**
      * Polling interval for checking downloaded_prefix_size (100ms).
      *
-     * Balance between responsiveness and CPU usage.
-     * TDLib updates prefix size incrementally as chunks arrive.
+     * Balance between responsiveness and CPU usage. TDLib updates prefix size incrementally as
+     * chunks arrive.
      */
     const val PREFIX_POLL_INTERVAL_MS: Long = 100L
 
@@ -137,13 +135,11 @@ object TelegramStreamingConfig {
     const val ENSURE_READY_TIMEOUT_MS: Long = 30_000L
 
     /**
-     * Timeout for moov atom completeness check (5 seconds).
-     *
-     * Once we have MIN_PREFIX_FOR_VALIDATION_BYTES, we check moov status.
-     * If moov is started but incomplete, wait up to this timeout.
-     * If still incomplete, likely indicates non-streamable file.
+     * Timeout for moov atom completeness check.
+     * @see Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
      */
-    const val MOOV_VALIDATION_TIMEOUT_MS: Long = 5_000L
+    val MOOV_VALIDATION_TIMEOUT_MS: Long
+        get() = Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
 
     // ========== Read-Ahead (for Seek Operations) ==========
 
@@ -162,8 +158,8 @@ object TelegramStreamingConfig {
     /**
      * Debounce interval for progress logging (250ms).
      *
-     * Reduces log spam during active downloads.
-     * Progress updates still occur via Flow but logs are throttled.
+     * Reduces log spam during active downloads. Progress updates still occur via Flow but logs are
+     * throttled.
      */
     const val PROGRESS_DEBOUNCE_MS: Long = 250L
 

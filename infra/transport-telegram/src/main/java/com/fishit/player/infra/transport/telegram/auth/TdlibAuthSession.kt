@@ -2,9 +2,11 @@ package com.fishit.player.infra.transport.telegram.auth
 
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
-import com.fishit.player.infra.transport.telegram.TelegramAuthException
-import com.fishit.player.infra.transport.telegram.TelegramAuthState
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthState
+import com.fishit.player.infra.transport.telegram.util.RetryConfig
+import com.fishit.player.infra.transport.telegram.util.TelegramRetry
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.AuthorizationState
@@ -17,6 +19,7 @@ import dev.g000sha256.tdl.dto.AuthorizationStateWaitPassword
 import dev.g000sha256.tdl.dto.AuthorizationStateWaitPhoneNumber
 import dev.g000sha256.tdl.dto.AuthorizationStateWaitTdlibParameters
 import dev.g000sha256.tdl.dto.PhoneNumberAuthenticationSettings
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -26,13 +29,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * TDLib Authorization Session Manager (v2 Architecture).
  *
- * Manages TDLib authentication state machine with Flow-based events.
- * Ported from legacy `T_TelegramSession` with v2 architecture compliance.
+ * Manages TDLib authentication state machine with Flow-based events. Ported from legacy
+ * `T_TelegramSession` with v2 architecture compliance.
  *
  * **Key Behaviors (from legacy):**
  * - Resume-first: If already authorized on boot → Ready without UI involvement
@@ -54,22 +56,19 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
  */
 class TdlibAuthSession(
-    private val client: TdlClient,
-    private val config: TelegramSessionConfig,
-    private val scope: CoroutineScope
+        private val client: TdlClient,
+        private val config: TelegramSessionConfig,
+        private val scope: CoroutineScope
 ) : TelegramAuthClient {
 
     companion object {
         private const val TAG = "TdlibAuthSession"
         private const val LOGIN_TIMEOUT_MS = 300_000L // 5 minutes
-        private const val DEFAULT_RETRIES = 3
     }
 
-    @Volatile
-    private var currentState: AuthorizationState? = null
+    @Volatile private var currentState: AuthorizationState? = null
 
-    @Volatile
-    private var previousState: AuthorizationState? = null
+    @Volatile private var previousState: AuthorizationState? = null
 
     private val collectorStarted = AtomicBoolean(false)
     private val tdParamsSet = AtomicBoolean(false)
@@ -80,8 +79,8 @@ class TdlibAuthSession(
     private val _authEvents = MutableSharedFlow<AuthEvent>(replay = 1)
 
     /**
-     * Internal auth events for detailed state tracking.
-     * Domain/UI can observe these for interactive auth handling.
+     * Internal auth events for detailed state tracking. Domain/UI can observe these for interactive
+     * auth handling.
      */
     val authEvents: Flow<AuthEvent> = _authEvents.asSharedFlow()
 
@@ -131,16 +130,20 @@ class TdlibAuthSession(
 
     override suspend fun sendPhoneNumber(phoneNumber: String) {
         UnifiedLog.d(TAG, "Sending phone number...")
-        executeWithRetry("sendPhoneNumber", DEFAULT_RETRIES) {
-            val settings = PhoneNumberAuthenticationSettings(
-                allowFlashCall = false,
-                allowMissedCall = false,
-                allowSmsRetrieverApi = false,
-                hasUnknownPhoneNumber = false,
-                isCurrentPhoneNumber = false,
-                firebaseAuthenticationSettings = null,
-                authenticationTokens = emptyArray()
-            )
+        TelegramRetry.executeWithRetry(
+                config = RetryConfig.AUTH,
+                operationName = "sendPhoneNumber",
+        ) {
+            val settings =
+                    PhoneNumberAuthenticationSettings(
+                            allowFlashCall = false,
+                            allowMissedCall = false,
+                            allowSmsRetrieverApi = false,
+                            hasUnknownPhoneNumber = false,
+                            isCurrentPhoneNumber = false,
+                            firebaseAuthenticationSettings = null,
+                            authenticationTokens = emptyArray(),
+                    )
             client.setAuthenticationPhoneNumber(phoneNumber, settings).getOrThrow()
             UnifiedLog.d(TAG, "Phone number submitted successfully")
         }
@@ -148,7 +151,10 @@ class TdlibAuthSession(
 
     override suspend fun sendCode(code: String) {
         UnifiedLog.d(TAG, "Sending verification code...")
-        executeWithRetry("sendCode", 2) {
+        TelegramRetry.executeWithRetry(
+                config = RetryConfig.QUICK,
+                operationName = "sendCode",
+        ) {
             client.checkAuthenticationCode(code).getOrThrow()
             UnifiedLog.d(TAG, "Code submitted successfully")
         }
@@ -156,7 +162,10 @@ class TdlibAuthSession(
 
     override suspend fun sendPassword(password: String) {
         UnifiedLog.d(TAG, "Sending 2FA password...")
-        executeWithRetry("sendPassword", 2) {
+        TelegramRetry.executeWithRetry(
+                config = RetryConfig.QUICK,
+                operationName = "sendPassword",
+        ) {
             client.checkAuthenticationPassword(password).getOrThrow()
             UnifiedLog.d(TAG, "Password submitted successfully")
         }
@@ -244,8 +253,8 @@ class TdlibAuthSession(
 
     private fun needsReauth(state: AuthorizationState): Boolean {
         return state is AuthorizationStateWaitPhoneNumber ||
-            state is AuthorizationStateWaitCode ||
-            state is AuthorizationStateWaitPassword
+                state is AuthorizationStateWaitCode ||
+                state is AuthorizationStateWaitPassword
     }
 
     private suspend fun handleAuthState(state: AuthorizationState) {
@@ -269,15 +278,18 @@ class TdlibAuthSession(
                     }
                 }
             }
-            else -> { /* No automatic handling */ }
+            else -> {
+                /* No automatic handling */
+            }
         }
     }
 
     private suspend fun setTdlibParameters() {
-        val params = dev.g000sha256.tdl.dto.SetTdlibParameters(
+        val result = client.setTdlibParameters(
             useTestDc = false,
             databaseDirectory = config.databasePath,
             filesDirectory = config.filesPath,
+            databaseEncryptionKey = ByteArray(0),
             useFileDatabase = true,
             useChatInfoDatabase = true,
             useMessageDatabase = true,
@@ -288,10 +300,8 @@ class TdlibAuthSession(
             deviceModel = config.deviceModel,
             systemVersion = config.systemVersion,
             applicationVersion = config.appVersion,
-            databaseEncryptionKey = null
         )
 
-        val result = client.setTdlibParameters(params)
         when (result) {
             is TdlResult.Success -> UnifiedLog.d(TAG, "TDLib parameters set successfully")
             is TdlResult.Failure -> {
@@ -303,52 +313,37 @@ class TdlibAuthSession(
     }
 
     private fun updateAuthState(state: AuthorizationState) {
-        _authState.value = when (state) {
-            is AuthorizationStateWaitTdlibParameters -> TelegramAuthState.Connecting
-            is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitPhoneNumber
-            is AuthorizationStateWaitCode -> TelegramAuthState.WaitCode
-            is AuthorizationStateWaitPassword -> TelegramAuthState.WaitPassword
-            is AuthorizationStateReady -> TelegramAuthState.Ready
-            is AuthorizationStateLoggingOut -> TelegramAuthState.LoggingOut
-            is AuthorizationStateClosed -> TelegramAuthState.Closed
-            else -> TelegramAuthState.Idle
-        }
-    }
-
-    private suspend inline fun <T> executeWithRetry(
-        operation: String,
-        retries: Int,
-        block: () -> T
-    ): T {
-        var lastError: Exception? = null
-        repeat(retries) { attempt ->
-            try {
-                return block()
-            } catch (e: Exception) {
-                lastError = e
-                UnifiedLog.w(TAG, "$operation failed (attempt ${attempt + 1}/$retries): ${e.message}")
-                if (attempt < retries - 1) {
-                    delay(500L * (attempt + 1)) // Exponential backoff
+        _authState.value =
+                when (state) {
+                    is AuthorizationStateWaitTdlibParameters -> TelegramAuthState.Connecting
+                    is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitPhoneNumber()
+                    is AuthorizationStateWaitCode -> {
+                        // Note: codeInfo.type doesn't directly expose length in g00sha256 wrapper
+                        // We use null and let UI request code without length hint
+                        TelegramAuthState.WaitCode(codeLength = null)
+                    }
+                    is AuthorizationStateWaitPassword -> {
+                        TelegramAuthState.WaitPassword(
+                            passwordHint = state.passwordHint,
+                            hasRecoveryEmail = state.hasRecoveryEmailAddress
+                        )
+                    }
+                    is AuthorizationStateReady -> TelegramAuthState.Ready
+                    is AuthorizationStateLoggingOut -> TelegramAuthState.LoggingOut
+                    is AuthorizationStateClosed -> TelegramAuthState.Closed
+                    else -> TelegramAuthState.Idle
                 }
-            }
-        }
-        val errorMsg = "$operation failed after $retries attempts: ${lastError?.message}"
-        _authEvents.emit(AuthEvent.Error(errorMsg))
-        throw lastError ?: TelegramAuthException(errorMsg)
     }
 }
 
-/**
- * Extension function to convert TdlResult to value or throw exception.
- */
-private fun <T> TdlResult<T>.getOrThrow(): T = when (this) {
-    is TdlResult.Success -> result
-    is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
-}
+/** Extension function to convert TdlResult to value or throw exception. */
+private fun <T> TdlResult<T>.getOrThrow(): T =
+        when (this) {
+            is TdlResult.Success -> result
+            is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
+        }
 
-/**
- * Authentication state events emitted during login flow.
- */
+/** Authentication state events emitted during login flow. */
 sealed class AuthEvent {
     /** Auth state changed to a new TDLib state */
     data class StateChanged(val state: AuthorizationState) : AuthEvent()
