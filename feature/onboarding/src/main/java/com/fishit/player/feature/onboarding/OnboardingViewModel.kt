@@ -420,7 +420,6 @@ class OnboardingViewModel @Inject constructor(
             is XtreamError.ParseError -> error.message
             is XtreamError.Unsupported -> "Unsupported action ${error.action}"
             is XtreamError.RateLimited -> "Rate limited"
-            is XtreamError.Server -> error.message
             is XtreamError.Unknown -> error.message
         }
     }
