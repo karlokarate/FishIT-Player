@@ -408,8 +408,19 @@ class OnboardingViewModel @Inject constructor(
     private fun observeXtreamAuth() {
         viewModelScope.launch {
             xtreamApiClient.authState.collectLatest { authState ->
-                if (authState is XtreamAuthState.Failed) {
-                    _state.update { it.copy(xtreamError = formatXtreamError(authState.error)) }
+                when (authState) {
+                    is XtreamAuthState.Failed -> {
+                        _state.update { it.copy(xtreamError = formatXtreamError(authState.error)) }
+                    }
+
+                    is XtreamAuthState.Expired -> {
+                        val message = authState.expDate?.let { expDate ->
+                            "Account expired (expires $expDate)"
+                        } ?: "Account expired"
+                        _state.update { it.copy(xtreamError = message) }
+                    }
+
+                    else -> Unit
                 }
             }
         }
