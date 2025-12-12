@@ -4,12 +4,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.infra.data.telegram.TelegramContentRepository
+import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
+import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -66,80 +77,57 @@ data class HomeMediaItem(
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    // TODO: Inject repositories when available
-    // private val telegramCatalogRepository: TelegramCatalogRepository,
-    // private val xtreamCatalogRepository: XtreamCatalogRepository,
-    // private val watchHistoryRepository: WatchHistoryRepository
+    private val telegramContentRepository: TelegramContentRepository,
+    private val xtreamCatalogRepository: XtreamCatalogRepository,
+    private val xtreamLiveRepository: XtreamLiveRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(HomeState())
-    val state: StateFlow<HomeState> = _state.asStateFlow()
+    private val errorState = MutableStateFlow<String?>(null)
 
-    init {
-        loadHomeContent()
+    private val telegramItems: Flow<List<HomeMediaItem>> =
+        telegramContentRepository.observeAll().toHomeItems()
+
+    private val xtreamLiveItems: Flow<List<HomeMediaItem>> =
+        xtreamLiveRepository.observeChannels().toHomeItems()
+
+    private val xtreamVodItems: Flow<List<HomeMediaItem>> =
+        xtreamCatalogRepository.observeVod().toHomeItems()
+
+    private val xtreamSeriesItems: Flow<List<HomeMediaItem>> =
+        xtreamCatalogRepository.observeSeries().toHomeItems()
+
+    val state: StateFlow<HomeState> = combine(
+        telegramItems,
+        xtreamLiveItems,
+        xtreamVodItems,
+        xtreamSeriesItems,
+        errorState
+    ) { telegram, live, vod, series, error ->
+        HomeState(
+            isLoading = false,
+            continueWatchingItems = emptyList(),
+            recentlyAddedItems = emptyList(),
+            telegramMediaItems = telegram,
+            xtreamLiveItems = live,
+            xtreamVodItems = vod,
+            xtreamSeriesItems = series,
+            error = error,
+            hasTelegramSource = telegram.isNotEmpty(),
+            hasXtreamSource = listOf(live, vod, series).any { it.isNotEmpty() }
+        )
     }
-
-    private fun loadHomeContent() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            try {
-                // TODO: Load from actual repositories
-                // For now, create demo content to validate UI
-
-                // Simulate loading delay
-                kotlinx.coroutines.delay(500)
-
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        continueWatchingItems = generateDemoItems(
-                            count = 5,
-                            mediaType = MediaType.MOVIE,
-                            withResume = true
-                        ),
-                        recentlyAddedItems = generateDemoItems(
-                            count = 10,
-                            mediaType = MediaType.MOVIE,
-                            isNew = true
-                        ),
-                        telegramMediaItems = generateDemoItems(
-                            count = 8,
-                            mediaType = MediaType.MOVIE,
-                            sourceType = SourceType.TELEGRAM
-                        ),
-                        xtreamVodItems = generateDemoItems(
-                            count = 12,
-                            mediaType = MediaType.MOVIE,
-                            sourceType = SourceType.XTREAM
-                        ),
-                        xtreamSeriesItems = generateDemoItems(
-                            count = 6,
-                            mediaType = MediaType.SERIES,
-                            sourceType = SourceType.XTREAM
-                        ),
-                        xtreamLiveItems = generateDemoItems(
-                            count = 15,
-                            mediaType = MediaType.LIVE,
-                            sourceType = SourceType.XTREAM
-                        ),
-                        hasTelegramSource = true,
-                        hasXtreamSource = true
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Unknown error loading content"
-                    )
-                }
-            }
-        }
-    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = HomeState()
+        )
 
     fun refresh() {
-        loadHomeContent()
+        viewModelScope.launch {
+            // Clears UI error state only.
+            // Data reload is handled by background CatalogSync, not by Home.
+            errorState.emit(null)
+        }
     }
 
     fun onItemClicked(item: HomeMediaItem) {
@@ -147,46 +135,39 @@ class HomeViewModel @Inject constructor(
         // Will be handled by navigation callback from UI
     }
 
-    /**
-     * Generate demo items for UI validation
-     * Will be replaced with real data from repositories
-     */
-    private fun generateDemoItems(
-        count: Int,
-        mediaType: MediaType,
-        sourceType: SourceType = SourceType.UNKNOWN,
-        withResume: Boolean = false,
-        isNew: Boolean = false
-    ): List<HomeMediaItem> {
-        val typeLabel = when (mediaType) {
-            MediaType.MOVIE -> "Movie"
-            MediaType.SERIES -> "Series"
-            MediaType.LIVE -> "Channel"
-            else -> "Media"
+    private fun Flow<List<RawMediaMetadata>>.toHomeItems(): Flow<List<HomeMediaItem>> = this
+        .map { items ->
+            items
+                .take(HOME_ROW_LIMIT)
+                .map { raw -> raw.toHomeMediaItem() }
+        }
+        .distinctUntilChanged()
+        .onStart { emit(emptyList()) }
+        .catch { throwable ->
+            UnifiedLog.e(TAG, throwable) { "Error loading home content" }
+            errorState.emit(throwable.message ?: "Unknown error loading content")
+            emit(emptyList())
         }
 
-        return (1..count).map { index ->
-            HomeMediaItem(
-                id = "${sourceType.name.lowercase()}_${mediaType.name.lowercase()}_$index",
-                title = "$typeLabel $index",
-                poster = ImageRef.Http("https://picsum.photos/seed/${sourceType.name}$index/200/300"),
-                backdrop = ImageRef.Http("https://picsum.photos/seed/${sourceType.name}${index}bg/800/450"),
-                mediaType = mediaType,
-                sourceType = when (sourceType) {
-                    SourceType.UNKNOWN -> listOf(
-                        SourceType.TELEGRAM,
-                        SourceType.XTREAM
-                    ).random()
-                    else -> sourceType
-                },
-                resumePosition = if (withResume) (1000L..50000L).random() else 0L,
-                duration = if (withResume) 100000L else 0L,
-                isNew = isNew,
-                year = (2020..2024).random(),
-                rating = (5..9).random() + (0..9).random() / 10f,
-                navigationId = "${sourceType.name.lowercase()}_${mediaType.name.lowercase()}_$index",
-                navigationSource = sourceType
-            )
-        }
+    private fun RawMediaMetadata.toHomeMediaItem(): HomeMediaItem {
+        val bestPoster = poster ?: thumbnail
+        val bestBackdrop = backdrop ?: thumbnail
+        return HomeMediaItem(
+            id = sourceId,
+            title = originalTitle.ifBlank { sourceLabel },
+            poster = bestPoster,
+            backdrop = bestBackdrop,
+            mediaType = mediaType,
+            sourceType = sourceType,
+            duration = durationMinutes?.let { it * 60_000L } ?: 0L,
+            year = year,
+            navigationId = sourceId,
+            navigationSource = sourceType
+        )
+    }
+
+    private companion object {
+        const val TAG = "HomeViewModel"
+        const val HOME_ROW_LIMIT = 20
     }
 }
