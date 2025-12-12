@@ -1,6 +1,7 @@
 package com.fishit.player.v2.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,7 +19,9 @@ import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
+import com.fishit.player.v2.CatalogSyncBootstrap
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * Top-level navigation host for FishIT Player v2.
@@ -33,11 +36,20 @@ fun AppNavHost(
     resumeManager: ResumeManager,
     kidsPlaybackGate: KidsPlaybackGate,
     sourceResolver: PlaybackSourceResolver,
-    codecConfigurator: NextlibCodecConfigurator
+    codecConfigurator: NextlibCodecConfigurator,
+    catalogSyncBootstrap: CatalogSyncBootstrap,
 ) {
     val navController = rememberNavController()
 
     FishTheme {
+        LaunchedEffect(navController, catalogSyncBootstrap) {
+            navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
+                if (backStackEntry.destination.route == Routes.HOME) {
+                    catalogSyncBootstrap.start()
+                }
+            }
+        }
+
         NavHost(
             navController = navController,
             startDestination = Routes.START

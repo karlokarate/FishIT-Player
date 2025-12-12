@@ -35,6 +35,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var codecConfigurator: NextlibCodecConfigurator
 
+    @Inject
+    lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -49,7 +52,8 @@ class MainActivity : ComponentActivity() {
                         resumeManager = resumeManager,
                         kidsPlaybackGate = kidsPlaybackGate,
                         sourceResolver = sourceResolver,
-                        codecConfigurator = codecConfigurator
+                        codecConfigurator = codecConfigurator,
+                        catalogSyncBootstrap = catalogSyncBootstrap,
                     )
                 }
             }
