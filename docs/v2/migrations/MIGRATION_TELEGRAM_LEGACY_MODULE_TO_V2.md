@@ -1,8 +1,8 @@
 # Telegram Legacy Module → v2 Migration
 
-**Status:** 🔄 In Progress  
-**Last Updated:** 2024-12-12  
-**Current Phase:** B1 (Typed Interface Contracts) ✅ → B2 (Auth Session)
+**Status:** ✅ Complete (Phases A-F)  
+**Last Updated:** 2025-01-16  
+**Current Phase:** All implementation phases complete. Phase G (Backfill Orchestration) deferred to `core/catalog-sync`.
 
 ---
 
@@ -12,13 +12,13 @@
 |-------|------|--------|-------|
 | **A** | Pre-flight checks | ✅ Complete | Branch verified, naming/logging guards passed |
 | **B1** | Typed Interface Contracts | ✅ Complete | Created `TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`, `TelegramThumbFetcher` |
-| **B2** | TdlibAuthSession migration | 🔄 Next | Auth state machine from `T_TelegramSession` |
-| **B3** | TelegramChatBrowser migration | ⏸️ Pending | Chat browsing with offset -1 paging rule |
-| **C** | TelegramFileDownloadManager | ⏸️ Pending | Transport-only download manager |
-| **D** | TelegramStreamingConfig | ⏸️ Pending | Playback layer streaming config |
-| **E** | TelegramImageFileResolver | ⏸️ Pending | Coil3 integration for thumbnails |
-| **F** | Pipeline verification | ⏸️ Pending | Layer boundary audit |
-| **G** | Backfill orchestration | ⏸️ Pending | Global coordination compliance |
+| **B2** | TdlibAuthSession migration | ✅ Complete | Auth state machine in `auth/TdlibAuthSession.kt` |
+| **B3** | TelegramChatBrowser migration | ✅ Complete | Chat browsing with offset -1 paging rule in `chat/TelegramChatBrowser.kt` |
+| **C** | TelegramFileDownloadManager | ✅ Complete | Transport-only download manager in `file/TelegramFileDownloadManager.kt` |
+| **D** | TelegramStreamingConfig | ✅ Complete | `TelegramStreamingConfig` + `TelegramFileReadyEnsurer` in `playback/telegram/config/` |
+| **E** | TelegramThumbFetcherImpl | ✅ Complete | Coil integration in `imaging/TelegramThumbFetcherImpl.kt` |
+| **F** | Pipeline verification | ✅ Complete | Layer boundary audit passed (no violations) |
+| **G** | Backfill orchestration | ⏸️ Deferred | Requires `core/catalog-sync` module (cross-pipeline) |
 
 ### Phase B1 Deliverables (Completed)
 
@@ -31,6 +31,25 @@
 | `TgFileUpdate` | `TelegramFileClient.kt` | Sealed class: Progress/Completed/Failed events |
 | `TgStorageStats` | `TelegramFileClient.kt` | Storage statistics data class |
 | `TgThumbnailRef` | `TelegramThumbFetcher.kt` | Thumbnail reference (fileId, remoteId, dimensions) |
+
+### Phases B2-E Deliverables (Completed)
+
+| Class | Module | Package | Description |
+|-------|--------|---------|-------------|
+| `TdlibAuthSession` | `infra/transport-telegram` | `.auth` | Full auth state machine with resume-first, reauth flow |
+| `TelegramChatBrowser` | `infra/transport-telegram` | `.chat` | Chat/message browser with TDLib offset -1 paging |
+| `TelegramFileDownloadManager` | `infra/transport-telegram` | `.file` | Transport-only download control (no playback logic) |
+| `TelegramStreamingConfig` | `playback/telegram` | `.config` | SSOT for streaming constants (priorities, prefixes) |
+| `TelegramFileReadyEnsurer` | `playback/telegram` | `.config` | MP4 moov validation for playback readiness |
+| `TelegramThumbFetcherImpl` | `infra/transport-telegram` | `.imaging` | Coil thumbnail fetcher with bounded failed cache |
+
+### Phase F Layer Boundary Audit (Passed ✅)
+
+| Check | Command | Result |
+|-------|---------|--------|
+| No TDLib in pipeline main | `grep "dev.g000sha256.tdl" pipeline/telegram/src/main/` | ✅ No matches |
+| No pipeline imports in transport | `grep "com.fishit.player.pipeline" transport-telegram/src/main/` | ✅ No matches |
+| No forbidden logging | `grep "println\|printStackTrace\|android.util.Log\|Timber" transport-telegram/src/main/` | ✅ No matches |
 
 ---
 
