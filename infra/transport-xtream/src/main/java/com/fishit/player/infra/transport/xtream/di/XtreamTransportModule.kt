@@ -1,9 +1,12 @@
 package com.fishit.player.infra.transport.xtream.di
 
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
+import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
+import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -61,4 +64,18 @@ object XtreamTransportModule {
     ): XtreamApiClient {
         return DefaultXtreamApiClient(okHttpClient, json)
     }
+}
+
+/**
+ * Hilt module for Xtream credentials storage.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class XtreamCredentialsModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindCredentialsStore(
+        impl: EncryptedXtreamCredentialsStore
+    ): XtreamCredentialsStore
 }

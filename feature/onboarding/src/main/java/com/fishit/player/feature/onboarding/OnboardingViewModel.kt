@@ -9,7 +9,9 @@ import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
 import com.fishit.player.infra.transport.xtream.XtreamConnectionState as TransportXtreamConnectionState
+import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamError
+import com.fishit.player.infra.transport.xtream.XtreamStoredConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,6 +81,7 @@ data class XtreamCredentials(
 class OnboardingViewModel @Inject constructor(
     private val telegramAuthClient: TelegramAuthClient,
     private val xtreamApiClient: XtreamApiClient,
+    private val xtreamCredentialsStore: XtreamCredentialsStore,
 ) : ViewModel() {
 
     private companion object {
@@ -249,6 +252,18 @@ class OnboardingViewModel @Inject constructor(
                         xtreamError = message,
                     )
                 }
+            } else {
+                // Success - persist credentials for auto-rehydration
+                val storedConfig = XtreamStoredConfig(
+                    scheme = config.scheme,
+                    host = config.host,
+                    port = config.port,
+                    username = config.username,
+                    password = config.password,
+                )
+                runCatching { xtreamCredentialsStore.write(storedConfig) }
+                    .onSuccess { UnifiedLog.i(TAG) { "Xtream credentials persisted" } }
+                    .onFailure { error -> UnifiedLog.e(TAG, error) { "Failed to persist credentials" } }
             }
         }
     }
@@ -261,9 +276,14 @@ class OnboardingViewModel @Inject constructor(
             )
         }
         viewModelScope.launch {
-            UnifiedLog.i(TAG) { "Closing Xtream client" }
+            UnifiedLog.i(TAG) { "Closing Xtream client and clearing credentials" }
             runCatching { xtreamApiClient.close() }
                 .onFailure { error -> UnifiedLog.e(TAG, error) { "Error closing Xtream" } }
+            
+            // Clear stored credentials
+            runCatching { xtreamCredentialsStore.clear() }
+                .onSuccess { UnifiedLog.i(TAG) { "Xtream credentials cleared" } }
+                .onFailure { error -> UnifiedLog.e(TAG, error) { "Failed to clear credentials" } }
         }
         updateCanContinue()
     }
