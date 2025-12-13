@@ -41,7 +41,7 @@ class HomeContentRepositoryAdapter @Inject constructor(
     override fun observeTelegramMedia(): Flow<List<RawMediaMetadata>> {
         return telegramContentRepository.observeAll()
             .catch { throwable ->
-                UnifiedLog.e(TAG, throwable) { "Error observing Telegram media" }
+                UnifiedLog.e(TAG, throwable) { "Failed to observe Telegram media content" }
                 emit(emptyList())
             }
     }
@@ -49,7 +49,7 @@ class HomeContentRepositoryAdapter @Inject constructor(
     override fun observeXtreamLive(): Flow<List<RawMediaMetadata>> {
         return xtreamLiveRepository.observeChannels()
             .catch { throwable ->
-                UnifiedLog.e(TAG, throwable) { "Error observing Xtream live channels" }
+                UnifiedLog.e(TAG, throwable) { "Failed to observe Xtream live TV channels" }
                 emit(emptyList())
             }
     }
@@ -57,7 +57,7 @@ class HomeContentRepositoryAdapter @Inject constructor(
     override fun observeXtreamVod(): Flow<List<RawMediaMetadata>> {
         return xtreamCatalogRepository.observeVod()
             .catch { throwable ->
-                UnifiedLog.e(TAG, throwable) { "Error observing Xtream VOD" }
+                UnifiedLog.e(TAG, throwable) { "Failed to observe Xtream VOD content" }
                 emit(emptyList())
             }
     }
@@ -65,7 +65,7 @@ class HomeContentRepositoryAdapter @Inject constructor(
     override fun observeXtreamSeries(): Flow<List<RawMediaMetadata>> {
         return xtreamCatalogRepository.observeSeries()
             .catch { throwable ->
-                UnifiedLog.e(TAG, throwable) { "Error observing Xtream series" }
+                UnifiedLog.e(TAG, throwable) { "Failed to observe Xtream series content" }
                 emit(emptyList())
             }
     }
