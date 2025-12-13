@@ -3,7 +3,7 @@ package com.fishit.player.feature.telegram
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.internal.session.InternalPlayerSession
+import com.fishit.player.playback.domain.PlayerEntryPoint
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,23 +11,24 @@ import javax.inject.Singleton
  * Use case for initiating playback of Telegram media items.
  *
  * This use case converts a [TelegramMediaItem] (domain model)
- * into a [PlaybackContext] and delegates to the Internal Player (SIP) for playback.
+ * into a [PlaybackContext] and delegates to the player for playback.
  *
  * **Architecture Compliance (v2):**
  * - UI layer calls this use case with domain model (TelegramMediaItem)
  * - Use case builds PlaybackContext (source-agnostic)
- * - Delegates to InternalPlayerSession for playback
+ * - Delegates to PlayerEntryPoint (abstraction, NOT concrete player)
  * - Never constructs tg:// URIs (that's playback/telegram's job)
  * - NO RawMediaMetadata in feature layer (pipeline concern)
+ * - NO direct dependency on player:internal
  *
  * **Layer Boundaries:**
- * - Feature → Use Case → Player → PlaybackSourceFactory
- * - UI does NOT import pipeline, data-telegram, or transport
+ * - Feature → Use Case → PlayerEntryPoint (interface) → Player (impl)
+ * - UI does NOT import pipeline, data-telegram, transport, or player.internal
  * - Telegram-specific URI building happens in TelegramPlaybackSourceFactoryImpl
  */
 @Singleton
 class TelegramTapToPlayUseCase @Inject constructor(
-    private val playerSession: InternalPlayerSession,
+    private val playerEntry: PlayerEntryPoint,
 ) {
 
     /**
@@ -46,8 +47,8 @@ class TelegramTapToPlayUseCase @Inject constructor(
 
             UnifiedLog.d(TAG) { "telegram.tap_to_play.started: canonicalId=${context.canonicalId}" }
 
-            // Delegate to player session
-            playerSession.initialize(context)
+            // Delegate to player entry point (abstraction)
+            playerEntry.start(context)
 
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "telegram.tap_to_play.failed: ${e.message}" }

@@ -34,7 +34,6 @@ dependencies {
     implementation(project(":core:persistence"))
     implementation(project(":core:player-model"))
     implementation(project(":playback:domain"))
-    implementation(project(":player:internal"))
     implementation(project(":infra:logging"))
     
     // Compose
