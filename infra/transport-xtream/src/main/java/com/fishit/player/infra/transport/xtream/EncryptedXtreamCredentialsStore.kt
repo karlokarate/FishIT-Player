@@ -61,11 +61,12 @@ class EncryptedXtreamCredentialsStore @Inject constructor(
         try {
             val scheme = prefs.getString(KEY_SCHEME, null)
             val host = prefs.getString(KEY_HOST, null)
-            val port = prefs.getInt(KEY_PORT, -1)
+            val portInt = prefs.getInt(KEY_PORT, -1)
+            val port = if (portInt == -1) null else portInt
             val username = prefs.getString(KEY_USERNAME, null)
             val password = prefs.getString(KEY_PASSWORD, null)
 
-            if (scheme != null && host != null && port != -1 && username != null && password != null) {
+            if (scheme != null && host != null && username != null && password != null) {
                 UnifiedLog.i(TAG) { "Read stored config: scheme=$scheme, host=$host, port=$port" }
                 XtreamStoredConfig(
                     scheme = scheme,
@@ -86,13 +87,20 @@ class EncryptedXtreamCredentialsStore @Inject constructor(
 
     override suspend fun write(config: XtreamStoredConfig): Unit = withContext(Dispatchers.IO) {
         try {
-            prefs.edit()
+            val editor = prefs.edit()
                 .putString(KEY_SCHEME, config.scheme)
                 .putString(KEY_HOST, config.host)
-                .putInt(KEY_PORT, config.port)
                 .putString(KEY_USERNAME, config.username)
                 .putString(KEY_PASSWORD, config.password)
-                .apply()
+            
+            // Store port as -1 if null (for auto-discovery)
+            if (config.port != null) {
+                editor.putInt(KEY_PORT, config.port)
+            } else {
+                editor.putInt(KEY_PORT, -1)
+            }
+            
+            editor.apply()
             UnifiedLog.i(TAG) { "Stored credentials: scheme=${config.scheme}, host=${config.host}, port=${config.port}" }
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to write credentials" }

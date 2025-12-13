@@ -41,14 +41,14 @@ interface XtreamCredentialsStore {
  *
  * @property scheme URL scheme ("http" or "https")
  * @property host Server hostname or IP
- * @property port Server port
+ * @property port Server port (null if auto-discovery should be used)
  * @property username Xtream API username
  * @property password Xtream API password
  */
 data class XtreamStoredConfig(
     val scheme: String,
     val host: String,
-    val port: Int,
+    val port: Int?,
     val username: String,
     val password: String,
 ) {
