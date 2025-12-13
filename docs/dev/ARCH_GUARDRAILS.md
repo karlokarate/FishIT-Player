@@ -99,41 +99,51 @@ UnifiedLog.d(TAG) { "User: ${user.id}" }  // Lazy evaluation
 
 ## Detekt Configuration
 
-**Status:** ⚠️ Detekt configuration currently has a pre-existing validation error that prevents rules from running.
+**Status:** ✅ Detekt configuration is valid and runs successfully.
 
-**TODO:** Fix `detekt-config.yml` validation issue, then add:
+**Implemented:** The forbidden import and method call rules have been added to `detekt-config.yml`:
 
 ```yaml
 style:
   ForbiddenImport:
     active: true
     imports:
-      # Layer boundary rules
-      - value: '*.pipeline.*'
-        reason: 'Features must use domain models. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: '*.transport.*'
-        reason: 'Features must use repository interfaces. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: '*.player.internal.*'
-        reason: 'Features must use PlayerEntryPoint. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: '*.infra.data.*'
-        reason: 'Features must define repository interfaces. See docs/dev/ARCH_GUARDRAILS.md'
-      
-      # Logging rules
+      - value: 'com.fishit.player.pipeline.*'
+        reason: 'Features must use domain models, not pipeline DTOs.'
+      - value: 'com.fishit.player.infra.transport.*'
+        reason: 'Features must use repository interfaces, not transport clients.'
+      - value: 'com.fishit.player.player.internal.*'
+        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain.'
+      - value: 'com.fishit.player.internal.*'
+        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain.'
+      - value: 'com.fishit.player.infra.data.*'
+        reason: 'Features must define repository interfaces in their domain package.'
+      - value: 'com.fishit.player.infra.network.*'
+        reason: 'Features must use repository abstractions, not network layer.'
+      - value: 'com.fishit.player.infra.persistence.*'
+        reason: 'Features must use repository abstractions, not persistence layer.'
       - value: 'android.util.Log'
-        reason: 'Use UnifiedLog. See LOGGING_CONTRACT_V2.md'
+        reason: 'Use UnifiedLog from :infra:logging instead.'
+      - value: 'timber.log.Timber'
+        reason: 'Use UnifiedLog from :infra:logging instead.'
     
     excludes:
-      - '**/infra/logging/**'
-      - '**/legacy/**'
-      - '**/infra/data-*/**'  # Data adapters may import transport
+      - '**/infra/**'
       - '**/pipeline/**'
       - '**/playback/**'
-      - '**/player/internal/**'
+      - '**/player/**'
+      - '**/tools/**'
+      - '**/core/**'
+      - '**/legacy/**'
+      - '**/src/test/**'
+      - '**/src/androidTest/**'
 
   ForbiddenMethodCall:
     active: true
     methods:
       - value: 'kotlin.io.println'
+        reason: 'Use UnifiedLog. See LOGGING_CONTRACT_V2.md'
+      - value: 'kotlin.io.print'
         reason: 'Use UnifiedLog. See LOGGING_CONTRACT_V2.md'
       - value: 'java.lang.Throwable#printStackTrace'
         reason: 'Use UnifiedLog.e(TAG, throwable). See LOGGING_CONTRACT_V2.md'
@@ -141,16 +151,21 @@ style:
     excludes:
       - '**/infra/logging/**'
       - '**/legacy/**'
-      - '**/test/**'
+      - '**/src/test/**'
+      - '**/src/androidTest/**'
 ```
+
+**Note:** The ForbiddenImport rules detect SOURCE-level import violations. However, if a module has a BUILD-level dependency (in `build.gradle.kts`), the imports are considered valid by Detekt. For comprehensive layer boundary enforcement, consider adding `dependency-analysis-gradle-plugin` to detect build-level violations.
 
 ## CI Enforcement
 
-Once Detekt is fixed, add to CI pipeline (`.github/workflows/*.yml`):
+Detekt is now enforced in the PR CI pipeline (`.github/workflows/pr-ci.yml`):
 
 ```yaml
-- name: Run Detekt
-  run: ./gradlew detekt
+- name: Run Detekt with Report
+  run: ./gradlew detekt --no-daemon --stacktrace
+  env:
+    GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
 ```
 
 This will block PRs that violate architecture rules.
@@ -165,15 +180,12 @@ This will block PRs that violate architecture rules.
 
 | Rule | Status | Enforced By |
 |------|--------|-------------|
-| No pipeline imports in features | ✅ Implemented | Code review + this PR |
-| No transport imports in features | ✅ Implemented | Code review + this PR |
-| No player.internal in features | ✅ Implemented | Code review + this PR |
-| No infra.data in features | ✅ Implemented | Code review + this PR |
-| UnifiedLog only | ⚠️ Manual | Code review (Detekt blocked) |
-| No println/printStackTrace | ⚠️ Manual | Code review (Detekt blocked) |
-| Detekt in CI | ❌ Blocked | Pre-existing Detekt config error |
+| No pipeline imports in features | ✅ Active | Detekt ForbiddenImport |
+| No transport imports in features | ✅ Active | Detekt ForbiddenImport |
+| No player.internal in features | ✅ Active | Detekt ForbiddenImport |
+| No infra.data in features | ✅ Active | Detekt ForbiddenImport |
+| UnifiedLog only | ✅ Active | Detekt ForbiddenImport + ForbiddenMethodCall |
+| No println/printStackTrace | ✅ Active | Detekt ForbiddenMethodCall |
+| Detekt in CI | ✅ Active | PR CI pipeline |
 
-**Next Steps:**
-1. Fix `detekt-config.yml` validation error
-2. Add forbidden import/method rules
-3. Add Detekt to CI as required check
+**Status:** ✅ All B5 architecture guardrails are now active and enforced in CI.
