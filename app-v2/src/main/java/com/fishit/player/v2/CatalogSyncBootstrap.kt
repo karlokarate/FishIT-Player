@@ -6,11 +6,9 @@ import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.api.TelegramAuthState
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamConnectionState
-import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.v2.di.AppScopeModule
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
@@ -26,6 +24,11 @@ import javax.inject.Singleton
 
 /**
  * Bootstraps catalog synchronization once per app session after authentication succeeds.
+ *
+ * Responsibilities:
+ * - Observe auth/connection state from Telegram and Xtream clients
+ * - Trigger catalog sync when authentication is ready
+ * - Does NOT handle session initialization (that's XtreamSessionBootstrap's job)
  */
 @Singleton
 class CatalogSyncBootstrap
@@ -34,21 +37,16 @@ class CatalogSyncBootstrap
         private val catalogSyncService: CatalogSyncService,
         private val telegramAuthClient: TelegramAuthClient,
         private val xtreamApiClient: XtreamApiClient,
-        private val xtreamCredentialsStore: XtreamCredentialsStore,
         @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
         private val appScope: CoroutineScope,
     ) {
         private val hasStarted = AtomicBoolean(false)
         private val hasTriggered = AtomicBoolean(false)
-        private val hasAutoInitXtream = AtomicBoolean(false)
 
         fun start() {
             if (!hasStarted.compareAndSet(false, true)) return
 
             UnifiedLog.i(TAG) { "Catalog sync bootstrap collection started" }
-
-            // Try to auto-initialize Xtream from stored credentials
-            autoInitializeXtream()
 
             appScope.launch {
                 try {
@@ -79,35 +77,6 @@ class CatalogSyncBootstrap
                     throw cancellation
                 } catch (t: Throwable) {
                     UnifiedLog.e(TAG, t) { "Catalog sync bootstrap failed to start" }
-                }
-            }
-        }
-
-        private fun autoInitializeXtream() {
-            if (!hasAutoInitXtream.compareAndSet(false, true)) return
-
-            appScope.launch(Dispatchers.IO) {
-                try {
-                    val storedConfig = xtreamCredentialsStore.read()
-                    if (storedConfig != null) {
-                        UnifiedLog.i(TAG) {
-                            "Auto-initializing Xtream from stored config: scheme=${storedConfig.scheme}, " +
-                                "host=${storedConfig.host}, port=${storedConfig.port}"
-                        }
-                        val result = xtreamApiClient.initialize(storedConfig.toApiConfig())
-                        if (result.isSuccess) {
-                            UnifiedLog.i(TAG) { "Xtream auto-initialization succeeded" }
-                        } else {
-                            val error = result.exceptionOrNull()
-                            UnifiedLog.w(TAG, error) {
-                                "Xtream auto-initialization failed (credentials may be stale)"
-                            }
-                        }
-                    } else {
-                        UnifiedLog.d(TAG) { "No stored Xtream credentials found" }
-                    }
-                } catch (t: Throwable) {
-                    UnifiedLog.e(TAG, t) { "Xtream auto-initialization error" }
                 }
             }
         }

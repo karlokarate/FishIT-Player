@@ -21,6 +21,7 @@ import javax.inject.Singleton
  * - All credential fields encrypted at rest
  * - Master key protected by Android Keystore (hardware-backed on supported devices)
  * - No plaintext credentials in logs (only host/port/scheme logged)
+ * - If encryption is unavailable, storage is disabled (no plaintext fallback)
  */
 @Singleton
 class EncryptedXtreamCredentialsStore
@@ -38,7 +39,7 @@ class EncryptedXtreamCredentialsStore
             private const val KEY_PASSWORD = "password"
         }
 
-        private val prefs: SharedPreferences by lazy {
+        private val prefs: SharedPreferences? by lazy {
             try {
                 val masterKey =
                     MasterKey
@@ -54,21 +55,29 @@ class EncryptedXtreamCredentialsStore
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
                 )
             } catch (e: Exception) {
-                // Fallback to unencrypted if encryption setup fails (e.g., on emulators without keystore)
-                UnifiedLog.w(TAG, e) { "Failed to create encrypted prefs, using fallback" }
-                context.getSharedPreferences(PREFS_FILE_NAME + "_fallback", Context.MODE_PRIVATE)
+                // Storage disabled if encryption unavailable - no plaintext fallback
+                UnifiedLog.w(TAG, e) { 
+                    "Encrypted storage unavailable (keystore issue) - credential persistence disabled"
+                }
+                null
             }
         }
 
         override suspend fun read(): XtreamStoredConfig? =
             withContext(Dispatchers.IO) {
+                val prefsInstance = prefs
+                if (prefsInstance == null) {
+                    // Storage disabled - no credentials available
+                    return@withContext null
+                }
+
                 try {
-                    val scheme = prefs.getString(KEY_SCHEME, null)
-                    val host = prefs.getString(KEY_HOST, null)
-                    val portInt = prefs.getInt(KEY_PORT, -1)
+                    val scheme = prefsInstance.getString(KEY_SCHEME, null)
+                    val host = prefsInstance.getString(KEY_HOST, null)
+                    val portInt = prefsInstance.getInt(KEY_PORT, -1)
                     val port = if (portInt == -1) null else portInt
-                    val username = prefs.getString(KEY_USERNAME, null)
-                    val password = prefs.getString(KEY_PASSWORD, null)
+                    val username = prefsInstance.getString(KEY_USERNAME, null)
+                    val password = prefsInstance.getString(KEY_PASSWORD, null)
 
                     if (scheme != null && host != null && username != null && password != null) {
                         UnifiedLog.i(TAG) { "Read stored config: scheme=$scheme, host=$host, port=$port" }
@@ -91,9 +100,16 @@ class EncryptedXtreamCredentialsStore
 
         override suspend fun write(config: XtreamStoredConfig): Unit =
             withContext(Dispatchers.IO) {
+                val prefsInstance = prefs
+                if (prefsInstance == null) {
+                    // Storage disabled - cannot persist credentials
+                    UnifiedLog.w(TAG) { "Cannot persist credentials - encrypted storage unavailable" }
+                    return@withContext
+                }
+
                 try {
                     val editor =
-                        prefs
+                        prefsInstance
                             .edit()
                             .putString(KEY_SCHEME, config.scheme)
                             .putString(KEY_HOST, config.host)
@@ -116,8 +132,14 @@ class EncryptedXtreamCredentialsStore
 
         override suspend fun clear(): Unit =
             withContext(Dispatchers.IO) {
+                val prefsInstance = prefs
+                if (prefsInstance == null) {
+                    // Storage disabled - nothing to clear
+                    return@withContext
+                }
+
                 try {
-                    prefs.edit().clear().apply()
+                    prefsInstance.edit().clear().apply()
                     UnifiedLog.i(TAG) { "Cleared stored credentials" }
                 } catch (e: Exception) {
                     UnifiedLog.e(TAG, e) { "Failed to clear credentials" }

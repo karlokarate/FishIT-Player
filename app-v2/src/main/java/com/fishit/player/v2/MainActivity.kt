@@ -37,9 +37,15 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
 
+    @Inject
+    lateinit var xtreamSessionBootstrap: XtreamSessionBootstrap
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize Xtream session before catalog sync
+        xtreamSessionBootstrap.start()
 
         setContent {
             FishItV2Theme {
