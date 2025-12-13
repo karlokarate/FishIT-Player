@@ -133,12 +133,15 @@ android {
 dependencies {
     // v2 Core Modules
     implementation(project(":core:model"))
+    implementation(project(":core:player-model"))
     implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
+    implementation(project(":core:catalog-sync"))
     implementation(project(":core:firebase"))
 
     // v2 Playback & Player
     implementation(project(":playback:domain"))
+    implementation(project(":playback:xtream"))
     implementation(project(":player:internal"))
     implementation(project(":player:nextlib-codecs"))
 
