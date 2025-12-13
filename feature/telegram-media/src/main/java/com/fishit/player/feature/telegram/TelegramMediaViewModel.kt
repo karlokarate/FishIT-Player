@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.feature.FeatureRegistry
 import com.fishit.player.core.feature.TelegramFeatures
-import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.infra.data.telegram.TelegramContentRepository
+import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -32,7 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TelegramMediaViewModel @Inject constructor(
     private val featureRegistry: FeatureRegistry,
-    private val telegramRepository: TelegramContentRepository,
+    private val telegramRepository: TelegramMediaRepository,
     private val tapToPlayUseCase: TelegramTapToPlayUseCase,
 ) : ViewModel() {
 
@@ -44,7 +43,7 @@ class TelegramMediaViewModel @Inject constructor(
      *
      * Observes all Telegram content and updates UI state.
      */
-    val mediaItems: StateFlow<List<RawMediaMetadata>> = telegramRepository
+    val mediaItems: StateFlow<List<TelegramMediaItem>> = telegramRepository
         .observeAll()
         .catch { e ->
             UnifiedLog.e(TAG, e) { "Failed to load Telegram media: ${e.message}" }
@@ -79,7 +78,7 @@ class TelegramMediaViewModel @Inject constructor(
      *
      * Converts the item to a PlaybackContext and starts playback via the player.
      */
-    fun onItemTap(item: RawMediaMetadata) {
+    fun onItemTap(item: TelegramMediaItem) {
         viewModelScope.launch {
             _uiState.update { it.copy(isPlaybackStarting = true, errorMessage = null) }
 

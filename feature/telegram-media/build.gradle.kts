@@ -35,9 +35,7 @@ dependencies {
     implementation(project(":core:player-model"))
     implementation(project(":playback:domain"))
     implementation(project(":player:internal"))
-    implementation(project(":pipeline:telegram"))
     implementation(project(":infra:logging"))
-    implementation(project(":infra:data-telegram"))
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

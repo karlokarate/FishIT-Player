@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.fishit.player.core.model.RawMediaMetadata
+import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 
 /**
  * Telegram Media screen - displays all Telegram media items.
@@ -47,7 +47,7 @@ import com.fishit.player.core.model.RawMediaMetadata
  * **Architecture:**
  * - UI → ViewModel → UseCase → Player
  * - No pipeline or transport imports
- * - Uses RawMediaMetadata from data layer
+ * - Uses TelegramMediaItem (domain model), NOT RawMediaMetadata
  */
 @Composable
 fun TelegramMediaScreen(
@@ -127,8 +127,8 @@ private fun EmptyState() {
 
 @Composable
 private fun MediaItemsList(
-    items: List<RawMediaMetadata>,
-    onItemClick: (RawMediaMetadata) -> Unit,
+    items: List<TelegramMediaItem>,
+    onItemClick: (TelegramMediaItem) -> Unit,
     isPlaybackStarting: Boolean,
 ) {
     LazyColumn(
@@ -136,7 +136,7 @@ private fun MediaItemsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(items = items, key = { it.sourceId }) { item ->
+        items(items = items, key = { it.mediaId }) { item ->
             MediaItemCard(
                 item = item,
                 onClick = { onItemClick(item) },
@@ -148,7 +148,7 @@ private fun MediaItemsList(
 
 @Composable
 private fun MediaItemCard(
-    item: RawMediaMetadata,
+    item: TelegramMediaItem,
     onClick: () -> Unit,
     enabled: Boolean,
 ) {
@@ -182,7 +182,7 @@ private fun MediaItemCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = item.originalTitle,
+                    text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis

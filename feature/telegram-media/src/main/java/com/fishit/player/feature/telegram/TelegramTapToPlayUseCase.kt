@@ -1,9 +1,7 @@
 package com.fishit.player.feature.telegram
 
-import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.internal.session.InternalPlayerSession
 import javax.inject.Inject
@@ -12,19 +10,19 @@ import javax.inject.Singleton
 /**
  * Use case for initiating playback of Telegram media items.
  *
- * This use case converts a [RawMediaMetadata] from the Telegram pipeline
- * into a [PlaybackContext] with [SourceType.TELEGRAM] and delegates to
- * the Internal Player (SIP) for playback.
+ * This use case converts a [TelegramMediaItem] (domain model)
+ * into a [PlaybackContext] and delegates to the Internal Player (SIP) for playback.
  *
- * **Architecture Compliance:**
- * - UI layer calls this use case with a selected item
+ * **Architecture Compliance (v2):**
+ * - UI layer calls this use case with domain model (TelegramMediaItem)
  * - Use case builds PlaybackContext (source-agnostic)
  * - Delegates to InternalPlayerSession for playback
  * - Never constructs tg:// URIs (that's playback/telegram's job)
+ * - NO RawMediaMetadata in feature layer (pipeline concern)
  *
  * **Layer Boundaries:**
  * - Feature → Use Case → Player → PlaybackSourceFactory
- * - UI does NOT import playback/telegram or transport
+ * - UI does NOT import pipeline, data-telegram, or transport
  * - Telegram-specific URI building happens in TelegramPlaybackSourceFactoryImpl
  */
 @Singleton
@@ -35,20 +33,12 @@ class TelegramTapToPlayUseCase @Inject constructor(
     /**
      * Initiates playback for a Telegram media item.
      *
-     * Converts [RawMediaMetadata] to [PlaybackContext] and starts playback.
+     * Converts [TelegramMediaItem] to [PlaybackContext] and starts playback.
      *
-     * @param item The Telegram media item to play
-     * @throws IllegalArgumentException if item is not from Telegram source
+     * @param item The Telegram media item to play (domain model)
      */
-    suspend fun play(item: RawMediaMetadata) {
-        UnifiedLog.d(TAG) { "telegram.tap_to_play.requested: ${item.sourceId}" }
-
-        // Validate source type
-        if (item.sourceType != SourceType.TELEGRAM) {
-            val error = "Item is not from Telegram source: ${item.sourceType}"
-            UnifiedLog.e(TAG) { "telegram.tap_to_play.failed: $error" }
-            throw IllegalArgumentException(error)
-        }
+    suspend fun play(item: TelegramMediaItem) {
+        UnifiedLog.d(TAG) { "telegram.tap_to_play.requested: ${item.mediaId}" }
 
         try {
             // Build PlaybackContext with SourceType.TELEGRAM
@@ -66,46 +56,25 @@ class TelegramTapToPlayUseCase @Inject constructor(
     }
 
     /**
-     * Builds a [PlaybackContext] from Telegram [RawMediaMetadata].
+     * Builds a [PlaybackContext] from Telegram [TelegramMediaItem].
      *
      * The context contains only non-secret identifiers.
      * Actual tg:// URI construction happens in TelegramPlaybackSourceFactoryImpl.
-     *
-     * **Important:** We extract sourceKey from sourceId.
-     * Expected sourceId format: "msg:chatId:messageId" or "msg:chatId:messageId:fileId"
      */
-    private fun buildPlaybackContext(item: RawMediaMetadata): PlaybackContext {
-        // Extract identifiers from sourceId
-        // sourceId format: "msg:chatId:messageId" or similar
-        val parts = item.sourceId.split(":")
-        val chatId = parts.getOrNull(1)?.toLongOrNull()
-        val messageId = parts.getOrNull(2)?.toLongOrNull()
-        val fileId = parts.getOrNull(3)?.toIntOrNull()
-
+    private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
         // Build extras map with non-secret identifiers
         val extras = buildMap<String, String> {
-            chatId?.let { put("chatId", it.toString()) }
-            messageId?.let { put("messageId", it.toString()) }
-            fileId?.let { put("fileId", it.toString()) }
-        }
-
-        // Extract posterUrl from ImageRef
-        val posterUrl = item.poster?.let { imageRef ->
-            when (imageRef) {
-                is ImageRef.Http -> imageRef.url
-                is ImageRef.TelegramThumb -> "tg://thumb/${imageRef.fileId}/${imageRef.uniqueId}"
-                is ImageRef.LocalFile -> "file://${imageRef.path}"
-                else -> null
-            }
+            item.chatId?.let { put("chatId", it.toString()) }
+            item.messageId?.let { put("messageId", it.toString()) }
         }
 
         return PlaybackContext(
-            canonicalId = item.sourceId,
+            canonicalId = item.mediaId,
             sourceType = com.fishit.player.core.playermodel.SourceType.TELEGRAM,
-            sourceKey = item.sourceId, // Pass full sourceId for factory resolution
-            title = item.originalTitle,
+            sourceKey = item.mediaId, // Pass mediaId for factory resolution
+            title = item.title,
             subtitle = item.sourceLabel,
-            posterUrl = posterUrl,
+            posterUrl = item.posterUrl,
             startPositionMs = 0L, // TODO: Add resume support later
             isLive = false, // Telegram media is not live
             isSeekable = true,

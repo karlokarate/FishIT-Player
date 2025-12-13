@@ -1,10 +1,8 @@
 package com.fishit.player.feature.telegram
 
 import com.fishit.player.core.model.MediaType
-import com.fishit.player.core.model.PipelineIdTag
-import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -13,7 +11,7 @@ import org.junit.Test
  * Unit tests for [TelegramTapToPlayUseCase].
  *
  * Tests that the use case builds PlaybackContext correctly:
- * - Converts RawMediaMetadata to PlaybackContext
+ * - Converts TelegramMediaItem (domain model) to PlaybackContext
  * - Sets SourceType.TELEGRAM
  * - Extracts identifiers without secrets
  *
@@ -37,7 +35,7 @@ class TelegramTapToPlayUseCaseTest {
         )
         assertEquals("msg:123:456", context.canonicalId)
         assertEquals("Test Video", context.title)
-        assertEquals("Telegram", context.subtitle)
+        assertEquals("Telegram Chat", context.subtitle)
     }
 
     @Test
@@ -86,46 +84,47 @@ class TelegramTapToPlayUseCaseTest {
     }
 
     @Test
-    fun `buildPlaybackContext extracts chatId and messageId from sourceId`() {
+    fun `buildPlaybackContext extracts chatId and messageId`() {
         // Given
         val telegramItem = createTestTelegramItem().copy(
-            sourceId = "msg:9876:5432"
+            chatId = 9876L,
+            messageId = 5432L
         )
 
         // When
         val context = buildPlaybackContext(telegramItem)
 
         // Then
-        assertEquals("msg:9876:5432", context.canonicalId)
         assertEquals("9876", context.extras["chatId"])
         assertEquals("5432", context.extras["messageId"])
     }
 
     @Test
-    fun `buildPlaybackContext handles sourceId with fileId`() {
+    fun `buildPlaybackContext handles null chatId and messageId`() {
         // Given
         val telegramItem = createTestTelegramItem().copy(
-            sourceId = "msg:123:456:789"
+            chatId = null,
+            messageId = null
         )
 
         // When
         val context = buildPlaybackContext(telegramItem)
 
         // Then
-        assertEquals("123", context.extras["chatId"])
-        assertEquals("456", context.extras["messageId"])
-        assertEquals("789", context.extras["fileId"])
+        assertEquals(false, context.extras.containsKey("chatId"))
+        assertEquals(false, context.extras.containsKey("messageId"))
     }
 
-    private fun createTestTelegramItem(): RawMediaMetadata {
-        return RawMediaMetadata(
-            originalTitle = "Test Video",
+    private fun createTestTelegramItem(): TelegramMediaItem {
+        return TelegramMediaItem(
+            mediaId = "msg:123:456",
+            title = "Test Video",
+            sourceLabel = "Telegram Chat",
             mediaType = MediaType.MOVIE,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram",
-            sourceId = "msg:123:456",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
             durationMinutes = 120,
+            posterUrl = null,
+            chatId = 123L,
+            messageId = 456L,
         )
     }
 
@@ -133,25 +132,19 @@ class TelegramTapToPlayUseCaseTest {
      * Helper to build PlaybackContext for testing.
      * Mirrors the logic in TelegramTapToPlayUseCase.buildPlaybackContext.
      */
-    private fun buildPlaybackContext(item: RawMediaMetadata): PlaybackContext {
-        val parts = item.sourceId.split(":")
-        val chatId = parts.getOrNull(1)?.toLongOrNull()
-        val messageId = parts.getOrNull(2)?.toLongOrNull()
-        val fileId = parts.getOrNull(3)?.toIntOrNull()
-
+    private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
         val extras = buildMap<String, String> {
-            chatId?.let { put("chatId", it.toString()) }
-            messageId?.let { put("messageId", it.toString()) }
-            fileId?.let { put("fileId", it.toString()) }
+            item.chatId?.let { put("chatId", it.toString()) }
+            item.messageId?.let { put("messageId", it.toString()) }
         }
 
         return PlaybackContext(
-            canonicalId = item.sourceId,
+            canonicalId = item.mediaId,
             sourceType = com.fishit.player.core.playermodel.SourceType.TELEGRAM,
-            sourceKey = item.sourceId,
-            title = item.originalTitle,
+            sourceKey = item.mediaId,
+            title = item.title,
             subtitle = item.sourceLabel,
-            posterUrl = null,
+            posterUrl = item.posterUrl,
             startPositionMs = 0L,
             isLive = false,
             isSeekable = true,
