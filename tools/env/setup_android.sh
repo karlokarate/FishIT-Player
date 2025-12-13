@@ -2,7 +2,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-REPO_ROOT="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || cd "${SCRIPT_DIR}/../.." && pwd)"
+if command -v git >/dev/null 2>&1 && git -C "${SCRIPT_DIR}" rev-parse --show-toplevel >/dev/null 2>&1; then
+  REPO_ROOT="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null)"
+else
+  REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+fi
 CACHE_DIR="${REPO_ROOT}/.cache/android-sdk"
 SDK_VERSION_ZIP="commandlinetools-linux-10406996_latest.zip"
 CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/${SDK_VERSION_ZIP}"
