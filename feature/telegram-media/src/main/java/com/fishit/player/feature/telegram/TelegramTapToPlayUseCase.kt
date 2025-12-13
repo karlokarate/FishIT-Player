@@ -72,7 +72,7 @@ class TelegramTapToPlayUseCase @Inject constructor(
      * Actual tg:// URI construction happens in TelegramPlaybackSourceFactoryImpl.
      *
      * **Important:** We extract sourceKey from sourceId.
-     * Expected sourceId format: "msg:chatId:messageId" or "tg:chatId:messageId:fileId"
+     * Expected sourceId format: "msg:chatId:messageId" or "msg:chatId:messageId:fileId"
      */
     private fun buildPlaybackContext(item: RawMediaMetadata): PlaybackContext {
         // Extract identifiers from sourceId
