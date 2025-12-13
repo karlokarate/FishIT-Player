@@ -28,6 +28,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
+    implementation(project(":feature:telegram-media"))  // For TelegramMediaRepository interface
     // NOTE: No pipeline:telegram dependency - Data layer works only with RawMediaMetadata
 
     // Coroutines
