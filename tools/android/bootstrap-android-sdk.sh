@@ -24,7 +24,7 @@ mkdir -p "${SDK_ROOT}"
 if [ ! -x "${SDKMANAGER}" ]; then
   echo "Installing Android cmdline-tools into ${CMDLINE_DIR}" >&2
   temp_dir="$(mktemp -d)"
-  curl -fo "${temp_dir}/cmdline-tools.zip" "${CMDLINE_TOOLS_ZIP}"
+  curl -fLo "${temp_dir}/cmdline-tools.zip" "${CMDLINE_TOOLS_ZIP}"
   unzip -q "${temp_dir}/cmdline-tools.zip" -d "${temp_dir}"
 
   rm -rf "${CMDLINE_DIR}/latest"
