@@ -1,5 +1,6 @@
 package com.fishit.player.feature.telegram
 
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
@@ -56,7 +57,7 @@ class TelegramTapToPlayUseCase @Inject constructor(
             UnifiedLog.d(TAG) { "telegram.tap_to_play.started: canonicalId=${context.canonicalId}" }
 
             // Delegate to player session
-            playerSession.play(context)
+            playerSession.initialize(context)
 
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "telegram.tap_to_play.failed: ${e.message}" }
@@ -86,9 +87,16 @@ class TelegramTapToPlayUseCase @Inject constructor(
             chatId?.let { put("chatId", it.toString()) }
             messageId?.let { put("messageId", it.toString()) }
             fileId?.let { put("fileId", it.toString()) }
-            
-            // Add mime type if available from metadata
-            item.thumbnail?.mimeType?.let { put("mimeType", it) }
+        }
+
+        // Extract posterUrl from ImageRef
+        val posterUrl = item.poster?.let { imageRef ->
+            when (imageRef) {
+                is ImageRef.Http -> imageRef.url
+                is ImageRef.TelegramThumb -> "tg://thumb/${imageRef.fileId}/${imageRef.uniqueId}"
+                is ImageRef.LocalFile -> "file://${imageRef.path}"
+                else -> null
+            }
         }
 
         return PlaybackContext(
@@ -97,7 +105,7 @@ class TelegramTapToPlayUseCase @Inject constructor(
             sourceKey = item.sourceId, // Pass full sourceId for factory resolution
             title = item.originalTitle,
             subtitle = item.sourceLabel,
-            posterUrl = item.poster?.uri,
+            posterUrl = posterUrl,
             startPositionMs = 0L, // TODO: Add resume support later
             isLive = false, // Telegram media is not live
             isSeekable = true,
