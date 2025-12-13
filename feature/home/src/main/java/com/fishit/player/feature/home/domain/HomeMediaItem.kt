@@ -26,7 +26,7 @@ import com.fishit.player.core.model.SourceType
  * @property duration Total duration in milliseconds
  * @property isNew Whether this is newly added content
  * @property year Release year if available
- * @property rating Content rating if available
+ * @property rating Content rating if available (scale 0.0-10.0, e.g., TMDB rating)
  * @property navigationId Identifier used for navigation to detail screen
  * @property navigationSource Source type for navigation
  */
