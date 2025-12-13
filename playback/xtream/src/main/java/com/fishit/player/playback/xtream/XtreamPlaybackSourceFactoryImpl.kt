@@ -22,10 +22,20 @@ import javax.inject.Singleton
  * - VOD (MP4/MKV/etc.)
  * - Series Episodes (MP4/MKV/etc.)
  *
- * **URL Building:**
+ * **URL Building (Two Paths):**
+ *
+ * **Primary Path (Session-Derived, Recommended):**
+ * - PlaybackContext.uri == null
  * - Derives credentials from active Xtream session (XtreamApiClient)
- * - Uses [XtreamUrlBuilder] from transport layer to construct authenticated URLs
+ * - Delegates URL construction to [XtreamApiClient] methods (buildLiveUrl, buildVodUrl, buildSeriesEpisodeUrl)
  * - Does NOT accept credentials via PlaybackContext.extras (security)
+ * - Requires non-secret extras: contentType, streamId/vodId
+ *
+ * **Secondary Path (Backward Compatibility, Guarded):**
+ * - PlaybackContext.uri may contain a prebuilt HTTP/HTTPS URL
+ * - URL is validated for safety (must NOT contain credentials)
+ * - Credential-bearing URIs are rejected by design (security)
+ * - Safe URIs (e.g., CDN streams) are allowed for backward compatibility
  *
  * **Expected PlaybackContext.extras keys:**
  * - `contentType`: "live" | "vod" | "series"
@@ -72,6 +82,24 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
     override suspend fun createSource(context: PlaybackContext): PlaybackSource {
         UnifiedLog.d(TAG) { "Creating source for: ${context.canonicalId}" }
 
+        // Secondary Path: Safe prebuilt URI support (backward compatibility)
+        val existingUri = context.uri
+        if (existingUri != null && (existingUri.startsWith("http://") || existingUri.startsWith("https://"))) {
+            if (isSafePrebuiltXtreamUri(existingUri)) {
+                UnifiedLog.d(TAG) { "Using safe prebuilt URI for playback" }
+                return PlaybackSource(
+                    uri = existingUri,
+                    mimeType = determineMimeType(context),
+                    headers = buildHeaders(),
+                    dataSourceType = DataSourceType.DEFAULT
+                )
+            } else {
+                UnifiedLog.w(TAG) { "Rejected unsafe prebuilt Xtream URI (credentials detected)" }
+                // Continue to session-derived path or fail
+            }
+        }
+
+        // Primary Path: Session-derived URL building
         // Verify session is initialized
         if (xtreamApiClient.capabilities == null) {
             throw PlaybackSourceException(
@@ -99,6 +127,81 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
             headers = buildHeaders(),
             dataSourceType = DataSourceType.DEFAULT
         )
+    }
+
+    /**
+     * Validates that a prebuilt Xtream URI does NOT contain credentials.
+     *
+     * This function conservatively rejects URIs that match common credential patterns:
+     * - Userinfo in authority (user:pass@host)
+     * - Query params containing username= or password=
+     * - Xtream-style credential paths: /live/{user}/{pass}/, /movie/{user}/{pass}/, /series/{user}/{pass}/
+     * - Any obvious credential indicators
+     *
+     * Conservative false-positives are acceptable. Security > compatibility.
+     *
+     * @param uri The URI to validate
+     * @return true if the URI appears safe (no credentials detected), false otherwise
+     */
+    private fun isSafePrebuiltXtreamUri(uri: String): Boolean {
+        val lowerUri = uri.lowercase()
+
+        // Check for userinfo in authority (user:pass@host)
+        if (lowerUri.contains("@")) {
+            // Check if @ appears before the first / after ://
+            val schemeEnd = lowerUri.indexOf("://")
+            if (schemeEnd != -1) {
+                val pathStart = lowerUri.indexOf("/", schemeEnd + 3)
+                val atIndex = lowerUri.indexOf("@", schemeEnd + 3)
+                if (atIndex != -1 && (pathStart == -1 || atIndex < pathStart)) {
+                    return false // Contains userinfo
+                }
+            }
+        }
+
+        // Check for query parameters with credentials
+        if (lowerUri.contains("username=") || lowerUri.contains("password=")) {
+            return false
+        }
+
+        // Check for Xtream-style credential paths
+        // Patterns: /live/{user}/{pass}/, /movie/{user}/{pass}/, /series/{user}/{pass}/
+        // We look for /live/x/y/ or /movie/x/y/ or /series/x/y/ where x and y are non-empty segments
+        val credentialPathPatterns = listOf(
+            Regex("""/live/[^/]+/[^/]+/"""),
+            Regex("""/movie/[^/]+/[^/]+/"""),
+            Regex("""/series/[^/]+/[^/]+/"""),
+            Regex("""/vod/[^/]+/[^/]+/""")
+        )
+
+        for (pattern in credentialPathPatterns) {
+            if (pattern.containsMatchIn(lowerUri)) {
+                return false
+            }
+        }
+
+        // Additional safety: reject if both ":" and "@" appear in suspicious proximity
+        if (lowerUri.contains(":") && lowerUri.contains("@")) {
+            val colonIndices = lowerUri.indices.filter { lowerUri[it] == ':' }
+            val atIndices = lowerUri.indices.filter { lowerUri[it] == '@' }
+            
+            // Skip scheme colon (http:// or https://)
+            val filteredColonIndices = colonIndices.filter { 
+                it > 6 && !lowerUri.substring(maxOf(0, it - 6), it + 1).matches(Regex("https?:"))
+            }
+            
+            // If there's a colon followed by @ within 50 chars, it's likely user:pass@
+            for (colonIdx in filteredColonIndices) {
+                for (atIdx in atIndices) {
+                    if (atIdx > colonIdx && atIdx - colonIdx < 50) {
+                        return false
+                    }
+                }
+            }
+        }
+
+        // Passed all checks - appears safe
+        return true
     }
 
     /**
