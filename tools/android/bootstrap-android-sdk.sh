@@ -12,11 +12,27 @@ REQUIRED_PACKAGES=(
   "build-tools;35.0.0"
 )
 
-for dependency in curl unzip; do
-  if ! command -v "${dependency}" >/dev/null 2>&1; then
-    echo "Missing required dependency: ${dependency}" >&2
-    exit 1
+ensure_dependency() {
+  local dep="$1"
+  if ! command -v "${dep}" >/dev/null 2>&1; then
+    echo "Missing required dependency: ${dep}" >&2
+    if command -v apt-get >/dev/null 2>&1; then
+      echo "Attempting to install ${dep} via apt-get..." >&2
+      sudo apt-get update && sudo apt-get install -y "${dep}"
+    else
+      echo "Could not install ${dep} automatically (apt-get not found). Please install it manually." >&2
+      exit 1
+    fi
+    # Re-check after install
+    if ! command -v "${dep}" >/dev/null 2>&1; then
+      echo "Failed to install ${dep}. Please install it manually." >&2
+      exit 1
+    fi
   fi
+}
+
+for dependency in curl unzip; do
+  ensure_dependency "${dependency}"
 done
 
 mkdir -p "${SDK_ROOT}"
