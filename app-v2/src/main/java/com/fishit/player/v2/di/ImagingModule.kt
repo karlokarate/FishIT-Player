@@ -5,11 +5,13 @@ import coil3.ImageLoader
 import com.fishit.player.core.imaging.GlobalImageLoader
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
+import com.fishit.player.v2.di.TelegramThumbFetcherImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
 
@@ -58,9 +60,11 @@ object ImagingModule {
     @Provides
     @Singleton
     fun provideTelegramThumbFetcherFactory(
-        telegramClient: TelegramTransportClient
-    ): TelegramThumbFetcher.Factory {
-        return TelegramThumbFetcherImpl.Factory(telegramClient)
+        telegramClientProvider: Provider<TelegramTransportClient>
+    ): TelegramThumbFetcher.Factory? {
+        return runCatching {
+            TelegramThumbFetcherImpl.Factory(telegramClientProvider.get())
+        }.getOrNull()
     }
 
     /**
@@ -83,7 +87,7 @@ object ImagingModule {
     fun provideImageLoader(
         @ApplicationContext context: Context,
         @ImageOkHttpClient okHttpClient: OkHttpClient,
-        telegramThumbFetcherFactory: TelegramThumbFetcher.Factory
+        telegramThumbFetcherFactory: TelegramThumbFetcher.Factory?
     ): ImageLoader {
         return GlobalImageLoader.createWithDynamicCache(
             context = context,
