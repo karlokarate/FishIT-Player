@@ -55,11 +55,12 @@ data class XtreamStoredConfig(
     /**
      * Convert to XtreamApiConfig for initializing the client.
      */
-    fun toApiConfig(): XtreamApiConfig = XtreamApiConfig(
-        scheme = scheme,
-        host = host,
-        port = port,
-        username = username,
-        password = password,
-    )
+    fun toApiConfig(): XtreamApiConfig =
+        XtreamApiConfig(
+            scheme = scheme,
+            host = host,
+            port = port,
+            username = username,
+            password = password,
+        )
 }

@@ -36,7 +36,6 @@ import kotlinx.coroutines.flow.StateFlow
  * @see XtreamAuthState for authentication state
  */
 interface XtreamApiClient {
-
     // =========================================================================
     // State & Lifecycle
     // =========================================================================
@@ -66,8 +65,8 @@ interface XtreamApiClient {
      * @return Result with resolved capabilities or error
      */
     suspend fun initialize(
-            config: XtreamApiConfig,
-            forceDiscovery: Boolean = false,
+        config: XtreamApiConfig,
+        forceDiscovery: Boolean = false,
     ): Result<XtreamCapabilities>
 
     /**
@@ -146,9 +145,9 @@ interface XtreamApiClient {
      * @return List of live streams
      */
     suspend fun getLiveStreams(
-            categoryId: String? = null,
-            limit: Int = 500,
-            offset: Int = 0,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamLiveStream>
 
     /**
@@ -162,9 +161,9 @@ interface XtreamApiClient {
      * @return List of VOD items
      */
     suspend fun getVodStreams(
-            categoryId: String? = null,
-            limit: Int = 500,
-            offset: Int = 0,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamVodStream>
 
     /**
@@ -176,9 +175,9 @@ interface XtreamApiClient {
      * @return List of series items
      */
     suspend fun getSeries(
-            categoryId: String? = null,
-            limit: Int = 500,
-            offset: Int = 0,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamSeriesStream>
 
     // =========================================================================
@@ -215,8 +214,8 @@ interface XtreamApiClient {
      * @return List of EPG entries
      */
     suspend fun getShortEpg(
-            streamId: Int,
-            limit: Int = 20,
+        streamId: Int,
+        limit: Int = 20,
     ): List<XtreamEpgProgramme>
 
     /**
@@ -235,8 +234,8 @@ interface XtreamApiClient {
      * @param perStreamLimit Limit per stream
      */
     suspend fun prefetchEpg(
-            streamIds: List<Int>,
-            perStreamLimit: Int = 10,
+        streamIds: List<Int>,
+        perStreamLimit: Int = 10,
     )
 
     // =========================================================================
@@ -253,8 +252,8 @@ interface XtreamApiClient {
      * @return Playback URL string
      */
     fun buildLiveUrl(
-            streamId: Int,
-            extension: String? = null,
+        streamId: Int,
+        extension: String? = null,
     ): String
 
     /**
@@ -267,8 +266,8 @@ interface XtreamApiClient {
      * @return Playback URL string
      */
     fun buildVodUrl(
-            vodId: Int,
-            containerExtension: String?,
+        vodId: Int,
+        containerExtension: String?,
     ): String
 
     /**
@@ -286,11 +285,11 @@ interface XtreamApiClient {
      * @return Playback URL string
      */
     fun buildSeriesEpisodeUrl(
-            seriesId: Int,
-            seasonNumber: Int,
-            episodeNumber: Int,
-            episodeId: Int? = null,
-            containerExtension: String? = null,
+        seriesId: Int,
+        seasonNumber: Int,
+        episodeNumber: Int,
+        episodeId: Int? = null,
+        containerExtension: String? = null,
     ): String
 
     // =========================================================================
@@ -307,9 +306,9 @@ interface XtreamApiClient {
      * @return Combined search results
      */
     suspend fun search(
-            query: String,
-            types: Set<XtreamContentType> = XtreamContentType.entries.toSet(),
-            limit: Int = 50,
+        query: String,
+        types: Set<XtreamContentType> = XtreamContentType.entries.toSet(),
+        limit: Int = 50,
     ): XtreamSearchResults
 
     // =========================================================================
@@ -326,9 +325,9 @@ interface XtreamApiClient {
      * @return Catchup URL or null if not supported
      */
     fun buildCatchupUrl(
-            streamId: Int,
-            start: Long,
-            duration: Int,
+        streamId: Int,
+        start: Long,
+        duration: Int,
     ): String?
 
     // =========================================================================
@@ -343,8 +342,8 @@ interface XtreamApiClient {
      * @return Raw JSON response string or null on error
      */
     suspend fun rawApiCall(
-            action: String,
-            params: Map<String, String> = emptyMap(),
+        action: String,
+        params: Map<String, String> = emptyMap(),
     ): String?
 }
 
@@ -362,17 +361,17 @@ sealed interface XtreamAuthState {
 
     /** Successfully authenticated */
     data class Authenticated(
-            val userInfo: XtreamUserInfo,
+        val userInfo: XtreamUserInfo,
     ) : XtreamAuthState
 
     /** Authentication failed */
     data class Failed(
-            val error: XtreamError,
+        val error: XtreamError,
     ) : XtreamAuthState
 
     /** Account expired or disabled */
     data class Expired(
-            val expDate: Long?,
+        val expDate: Long?,
     ) : XtreamAuthState
 }
 
@@ -386,42 +385,58 @@ sealed interface XtreamConnectionState {
 
     /** Connected and ready */
     data class Connected(
-            val baseUrl: String,
-            val latencyMs: Long,
+        val baseUrl: String,
+        val latencyMs: Long,
     ) : XtreamConnectionState
 
     /** Connection error */
     data class Error(
-            val error: XtreamError,
-            val retryable: Boolean,
+        val error: XtreamError,
+        val retryable: Boolean,
     ) : XtreamConnectionState
 }
 
 /** Error types for Xtream API operations. */
 sealed interface XtreamError {
     /** Network error (timeout, DNS, etc.) */
-    data class Network(val message: String, val cause: Throwable? = null) : XtreamError
+    data class Network(
+        val message: String,
+        val cause: Throwable? = null,
+    ) : XtreamError
 
     /** HTTP error (4xx, 5xx) */
-    data class Http(val code: Int, val message: String) : XtreamError
+    data class Http(
+        val code: Int,
+        val message: String,
+    ) : XtreamError
 
     /** Invalid credentials (401/403 or user_info.status != "Active") */
     data object InvalidCredentials : XtreamError
 
     /** Account expired */
-    data class AccountExpired(val expDate: Long?) : XtreamError
+    data class AccountExpired(
+        val expDate: Long?,
+    ) : XtreamError
 
     /** JSON parsing error */
-    data class ParseError(val message: String) : XtreamError
+    data class ParseError(
+        val message: String,
+    ) : XtreamError
 
     /** API action not supported by panel */
-    data class Unsupported(val action: String) : XtreamError
+    data class Unsupported(
+        val action: String,
+    ) : XtreamError
 
     /** Rate limited by panel */
-    data class RateLimited(val retryAfterMs: Long?) : XtreamError
+    data class RateLimited(
+        val retryAfterMs: Long?,
+    ) : XtreamError
 
     /** Unknown error */
-    data class Unknown(val message: String) : XtreamError
+    data class Unknown(
+        val message: String,
+    ) : XtreamError
 }
 
 /** Content type enumeration. */
