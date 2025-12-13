@@ -73,7 +73,7 @@ class PlayerNavViewModel
             return PlaybackContext(
                 canonicalId = "xtream:live:$streamId",
                 sourceType = SourceType.XTREAM,
-                uri = null, // Factory will build URL from session
+                uri = null, // Factory builds URL from XtreamApiClient session
                 title = title,
                 isLive = true,
                 isSeekable = false,
@@ -93,7 +93,7 @@ class PlayerNavViewModel
             return PlaybackContext(
                 canonicalId = "xtream:vod:$vodId",
                 sourceType = SourceType.XTREAM,
-                uri = null, // Factory will build URL from session
+                uri = null, // Factory builds URL from XtreamApiClient session
                 title = title,
                 extras =
                     mapOf(
