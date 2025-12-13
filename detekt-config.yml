@@ -231,16 +231,58 @@ style:
   ForbiddenImport:
     active: true
     imports:
+      # =====================================================================
+      # B5 ARCHITECTURE GUARDRAILS - Layer Boundary Enforcement
+      # =====================================================================
+      # Prevent feature layer from directly importing lower layers
+      # See docs/dev/ARCH_GUARDRAILS.md for full details
+      
+      # Layer boundary rules - Features must NOT import:
+      - value: 'com.fishit.player.pipeline.*'
+        reason: 'Features must use domain models, not pipeline DTOs. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.transport.*'
+        reason: 'Features must use repository interfaces, not transport clients. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.player.internal.*'
+        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.internal.*'
+        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.data.*'
+        reason: 'Features must define repository interfaces in their domain package. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.network.*'
+        reason: 'Features must use repository abstractions, not network layer. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.persistence.*'
+        reason: 'Features must use repository abstractions, not persistence layer. See docs/dev/ARCH_GUARDRAILS.md'
+      
+      # Logging rules
       - value: 'android.util.Log'
         reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
       - value: 'timber.log.Timber'
         reason: 'Use UnifiedLog from :infra:logging instead. Direct Timber usage is forbidden outside the logging module.'
+      
       # v2 Naming Convention: Forbid legacy namespace in v2 modules
       - value: 'com.chris.m3usuite.*'
         reason: 'v1 namespace forbidden in v2 modules. See AGENTS.md Section 3.2 and 14.4.'
+    
     excludes:
+      # infra/logging can use any logging implementation
       - '**/infra/logging/**'
+      # legacy modules are exempt from new rules
       - '**/legacy/**'
+      # All infra modules can import from each other (data, transport, network, persistence)
+      - '**/infra/**'
+      # Pipeline layer may import anything (it's a lower layer)
+      - '**/pipeline/**'
+      # Playback modules may import transport and player internals
+      - '**/playback/**'
+      # Player modules can import anything
+      - '**/player/**'
+      # Tools (CLI) can import anything
+      - '**/tools/**'
+      # Core modules can import what they need
+      - '**/core/**'
+      # Test files are exempt from layer rules
+      - '**/test/**'
+      - '**/androidTest/**'
 
 # =========================================================================
 # v2 NAMING CONTRACT ENFORCEMENT
@@ -262,7 +304,29 @@ style:
 # Current enforcement: Agent audit (AGENTS.md 14.5) + Code review
 # =========================================================================
   ForbiddenMethodCall:
-    active: false
+    active: true
+    methods:
+      # =====================================================================
+      # B5 ARCHITECTURE GUARDRAILS - Logging Contract Enforcement
+      # =====================================================================
+      # Prevent direct logging outside infra/logging
+      # See LOGGING_CONTRACT_V2.md and docs/dev/ARCH_GUARDRAILS.md
+      
+      - value: 'kotlin.io.println'
+        reason: 'Use UnifiedLog from :infra:logging. See LOGGING_CONTRACT_V2.md'
+      - value: 'kotlin.io.print'
+        reason: 'Use UnifiedLog from :infra:logging. See LOGGING_CONTRACT_V2.md'
+      - value: 'java.lang.Throwable#printStackTrace'
+        reason: 'Use UnifiedLog.e(TAG, throwable). See LOGGING_CONTRACT_V2.md'
+    
+    excludes:
+      # infra/logging can use any logging implementation
+      - '**/infra/logging/**'
+      # legacy modules are exempt
+      - '**/legacy/**'
+      # Test files may use println for debugging
+      - '**/test/**'
+      - '**/androidTest/**'
   FunctionOnlyReturningConstant:
     active: false
   LoopWithTooManyJumpStatements:
