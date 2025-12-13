@@ -11,9 +11,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
 import javax.inject.Provider
 import javax.inject.Singleton
-import okhttp3.OkHttpClient
 
 /**
  * Hilt module for image loading configuration.
@@ -39,7 +39,6 @@ import okhttp3.OkHttpClient
 @Module
 @InstallIn(SingletonComponent::class)
 object ImagingModule {
-
     /**
      * Provides the shared OkHttpClient for image loading.
      * Uses GlobalImageLoader defaults optimized for TV/mobile.
@@ -50,22 +49,17 @@ object ImagingModule {
     @Provides
     @Singleton
     @ImageOkHttpClient
-    fun provideImageOkHttpClient(): OkHttpClient {
-        return GlobalImageLoader.createDefaultOkHttpClient()
-    }
+    fun provideImageOkHttpClient(): OkHttpClient = GlobalImageLoader.createDefaultOkHttpClient()
 
     /**
      * Provides the TelegramThumbFetcher.Factory implementation.
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcherFactory(
-        telegramClientProvider: Provider<TelegramTransportClient>
-    ): TelegramThumbFetcher.Factory? {
-        return runCatching {
+    fun provideTelegramThumbFetcherFactory(telegramClientProvider: Provider<TelegramTransportClient>): TelegramThumbFetcher.Factory? =
+        runCatching {
             TelegramThumbFetcherImpl.Factory(telegramClientProvider.get())
         }.getOrNull()
-    }
 
     /**
      * Provides the configured ImageLoader singleton.
@@ -87,14 +81,13 @@ object ImagingModule {
     fun provideImageLoader(
         @ApplicationContext context: Context,
         @ImageOkHttpClient okHttpClient: OkHttpClient,
-        telegramThumbFetcherFactory: TelegramThumbFetcher.Factory?
-    ): ImageLoader {
-        return GlobalImageLoader.createWithDynamicCache(
+        telegramThumbFetcherFactory: TelegramThumbFetcher.Factory?,
+    ): ImageLoader =
+        GlobalImageLoader.createWithDynamicCache(
             context = context,
             okHttpClient = okHttpClient,
             telegramThumbFetcher = telegramThumbFetcherFactory,
             enableCrossfade = true,
-            crossfadeDurationMs = 200
+            crossfadeDurationMs = 200,
         )
-    }
 }

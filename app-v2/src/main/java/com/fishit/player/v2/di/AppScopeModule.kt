@@ -4,22 +4,19 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Named
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import javax.inject.Named
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppScopeModule {
-
     const val APP_LIFECYCLE_SCOPE = "AppLifecycleScope"
 
     @Provides
     @Singleton
     @Named(APP_LIFECYCLE_SCOPE)
-    fun provideAppLifecycleScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    }
+    fun provideAppLifecycleScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

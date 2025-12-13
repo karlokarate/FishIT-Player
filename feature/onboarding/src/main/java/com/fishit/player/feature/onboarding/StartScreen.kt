@@ -65,22 +65,24 @@ import com.fishit.player.core.ui.theme.FishShapes
 fun StartScreen(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: OnboardingViewModel = hiltViewModel()
+    viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 48.dp, vertical = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 48.dp, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Header
             StartScreenHeader()
@@ -90,7 +92,7 @@ fun StartScreen(
             // Source Cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
             ) {
                 // Telegram Card
                 SourceCard(
@@ -98,7 +100,7 @@ fun StartScreen(
                     icon = Icons.Default.Send,
                     iconTint = FishColors.SourceTelegram,
                     isConnected = state.telegramState == TelegramAuthState.Connected,
-                    modifier = Modifier.weight(1f, fill = false).width(360.dp)
+                    modifier = Modifier.weight(1f, fill = false).width(360.dp),
                 ) {
                     TelegramLoginContent(
                         state = state,
@@ -109,7 +111,7 @@ fun StartScreen(
                         onSubmitCode = viewModel::submitCode,
                         onPasswordChange = viewModel::updatePassword,
                         onSubmitPassword = viewModel::submitPassword,
-                        onDisconnect = viewModel::disconnectTelegram
+                        onDisconnect = viewModel::disconnectTelegram,
                     )
                 }
 
@@ -119,13 +121,13 @@ fun StartScreen(
                     icon = Icons.Default.Tv,
                     iconTint = FishColors.SourceXtream,
                     isConnected = state.xtreamState == XtreamConnectionState.Connected,
-                    modifier = Modifier.weight(1f, fill = false).width(360.dp)
+                    modifier = Modifier.weight(1f, fill = false).width(360.dp),
                 ) {
                     XtreamLoginContent(
                         state = state,
                         onUrlChange = viewModel::updateXtreamUrl,
                         onConnect = viewModel::connectXtream,
-                        onDisconnect = viewModel::disconnectXtream
+                        onDisconnect = viewModel::disconnectXtream,
                     )
                 }
             }
@@ -136,21 +138,23 @@ fun StartScreen(
             AnimatedVisibility(
                 visible = state.canContinue,
                 enter = fadeIn(),
-                exit = fadeOut()
+                exit = fadeOut(),
             ) {
                 Button(
                     onClick = onContinue,
                     enabled = state.canContinue,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = FishColors.Primary
-                    ),
-                    modifier = Modifier
-                        .width(280.dp)
-                        .height(56.dp)
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = FishColors.Primary,
+                        ),
+                    modifier =
+                        Modifier
+                            .width(280.dp)
+                            .height(56.dp),
                 ) {
                     Text(
                         text = "Continue to Home",
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 }
             }
@@ -161,24 +165,24 @@ fun StartScreen(
 @Composable
 private fun StartScreenHeader() {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "🐟",
-            style = MaterialTheme.typography.displayLarge
+            style = MaterialTheme.typography.displayLarge,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "FishIT Player",
             style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Connect your media sources",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -190,34 +194,35 @@ private fun SourceCard(
     iconTint: Color,
     isConnected: Boolean,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = FishColors.Surface
-        ),
-        shape = FishShapes.Large
+        colors =
+            CardDefaults.cardColors(
+                containerColor = FishColors.Surface,
+            ),
+        shape = FishShapes.Large,
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(24.dp),
         ) {
             // Header with icon and status
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = iconTint,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 if (isConnected) {
@@ -225,7 +230,7 @@ private fun SourceCard(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Connected",
                         tint = FishColors.Primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -247,16 +252,17 @@ private fun TelegramLoginContent(
     onSubmitCode: () -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmitPassword: () -> Unit,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
 ) {
     when (state.telegramState) {
         TelegramAuthState.Disconnected -> {
             Button(
                 onClick = onStartLogin,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = FishColors.SourceTelegram
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = FishColors.SourceTelegram,
+                    ),
             ) {
                 Icon(Icons.Default.PhoneAndroid, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -269,7 +275,7 @@ private fun TelegramLoginContent(
                 phone = state.telegramPhoneNumber,
                 onPhoneChange = onPhoneChange,
                 onSubmit = onSubmitPhone,
-                error = state.telegramError
+                error = state.telegramError,
             )
         }
 
@@ -282,7 +288,7 @@ private fun TelegramLoginContent(
                 code = state.telegramCode,
                 onCodeChange = onCodeChange,
                 onSubmit = onSubmitCode,
-                error = state.telegramError
+                error = state.telegramError,
             )
         }
 
@@ -295,7 +301,7 @@ private fun TelegramLoginContent(
                 password = state.telegramPassword,
                 onPasswordChange = onPasswordChange,
                 onSubmit = onSubmitPassword,
-                error = state.telegramError
+                error = state.telegramError,
             )
         }
 
@@ -306,14 +312,14 @@ private fun TelegramLoginContent(
         TelegramAuthState.Connected -> {
             ConnectedState(
                 message = "Telegram connected",
-                onDisconnect = onDisconnect
+                onDisconnect = onDisconnect,
             )
         }
 
         is TelegramAuthState.Error -> {
             ErrorState(
                 message = (state.telegramState as TelegramAuthState.Error).message,
-                onRetry = onStartLogin
+                onRetry = onStartLogin,
             )
         }
     }
@@ -324,7 +330,7 @@ private fun XtreamLoginContent(
     state: OnboardingState,
     onUrlChange: (String) -> Unit,
     onConnect: () -> Unit,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
 ) {
     when (state.xtreamState) {
         XtreamConnectionState.Disconnected -> {
@@ -335,14 +341,15 @@ private fun XtreamLoginContent(
                     label = { Text("Xtream URL or M3U Link") },
                     placeholder = { Text("http://host:port/get.php?username=X&password=Y") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Uri,
-                        imeAction = ImeAction.Done
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Uri,
+                            imeAction = ImeAction.Done,
+                        ),
                     keyboardActions = KeyboardActions(onDone = { onConnect() }),
                     isError = state.xtreamError != null,
                     supportingText = state.xtreamError?.let { { Text(it, color = FishColors.Error) } },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -351,9 +358,10 @@ private fun XtreamLoginContent(
                     onClick = onConnect,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = state.xtreamUrl.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = FishColors.SourceXtream
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = FishColors.SourceXtream,
+                        ),
                 ) {
                     Icon(Icons.Default.CloudQueue, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -369,14 +377,14 @@ private fun XtreamLoginContent(
         XtreamConnectionState.Connected -> {
             ConnectedState(
                 message = "Xtream connected",
-                onDisconnect = onDisconnect
+                onDisconnect = onDisconnect,
             )
         }
 
         is XtreamConnectionState.Error -> {
             ErrorState(
                 message = (state.xtreamState as XtreamConnectionState.Error).message,
-                onRetry = onConnect
+                onRetry = onConnect,
             )
         }
     }
@@ -387,7 +395,7 @@ private fun PhoneInputField(
     phone: String,
     onPhoneChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    error: String?
+    error: String?,
 ) {
     Column {
         OutlinedTextField(
@@ -396,14 +404,15 @@ private fun PhoneInputField(
             label = { Text("Phone Number") },
             placeholder = { Text("+49 123 456789") },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Phone,
-                imeAction = ImeAction.Done
-            ),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Done,
+                ),
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
             isError = error != null,
             supportingText = error?.let { { Text(it, color = FishColors.Error) } },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -411,7 +420,7 @@ private fun PhoneInputField(
         Button(
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth(),
-            enabled = phone.isNotBlank()
+            enabled = phone.isNotBlank(),
         ) {
             Text("Send Code")
         }
@@ -423,13 +432,13 @@ private fun CodeInputField(
     code: String,
     onCodeChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    error: String?
+    error: String?,
 ) {
     Column {
         Text(
             text = "Enter the code sent to your phone",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -439,14 +448,15 @@ private fun CodeInputField(
             onValueChange = onCodeChange,
             label = { Text("Verification Code") },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done,
+                ),
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
             isError = error != null,
             supportingText = error?.let { { Text(it, color = FishColors.Error) } },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -454,7 +464,7 @@ private fun CodeInputField(
         Button(
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth(),
-            enabled = code.isNotBlank()
+            enabled = code.isNotBlank(),
         ) {
             Text("Verify")
         }
@@ -466,13 +476,13 @@ private fun PasswordInputField(
     password: String,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    error: String?
+    error: String?,
 ) {
     Column {
         Text(
             text = "Enter your 2FA password",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -483,14 +493,15 @@ private fun PasswordInputField(
             label = { Text("2FA Password") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
             isError = error != null,
             supportingText = error?.let { { Text(it, color = FishColors.Error) } },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -498,7 +509,7 @@ private fun PasswordInputField(
         Button(
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth(),
-            enabled = password.isNotBlank()
+            enabled = password.isNotBlank(),
         ) {
             Text("Submit")
         }
@@ -510,19 +521,20 @@ private fun LoadingState(message: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(24.dp),
-            strokeWidth = 2.dp
+            strokeWidth = 2.dp,
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -530,30 +542,30 @@ private fun LoadingState(message: String) {
 @Composable
 private fun ConnectedState(
     message: String,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Icon(
             imageVector = Icons.Default.Check,
             contentDescription = null,
             tint = FishColors.Primary,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = FishColors.Primary,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         IconButton(onClick = onDisconnect) {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Disconnect",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -562,18 +574,18 @@ private fun ConnectedState(
 @Composable
 private fun ErrorState(
     message: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Column {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = FishColors.Error
+            color = FishColors.Error,
         )
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
             onClick = onRetry,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Retry")
         }
