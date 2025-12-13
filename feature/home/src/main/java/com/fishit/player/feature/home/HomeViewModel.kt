@@ -2,11 +2,10 @@ package com.fishit.player.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
-import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.feature.home.domain.HomeContentRepository
+import com.fishit.player.feature.home.domain.HomeMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -37,33 +36,6 @@ data class HomeState(
     val hasTelegramSource: Boolean = false,
     val hasXtreamSource: Boolean = false
 )
-
-/**
- * Simplified media item for Home display
- * Maps from RawMediaMetadata for UI consumption
- */
-data class HomeMediaItem(
-    val id: String,
-    val title: String,
-    val poster: ImageRef?,
-    val placeholderThumbnail: ImageRef? = null,
-    val backdrop: ImageRef?,
-    val mediaType: MediaType,
-    val sourceType: SourceType,
-    val resumePosition: Long = 0L,
-    val duration: Long = 0L,
-    val isNew: Boolean = false,
-    val year: Int? = null,
-    val rating: Float? = null,
-    // Navigation data
-    val navigationId: String,
-    val navigationSource: SourceType
-) {
-    val resumeFraction: Float?
-        get() = if (duration > 0 && resumePosition > 0) {
-            (resumePosition.toFloat() / duration).coerceIn(0f, 1f)
-        } else null
-}
 
 /**
  * HomeViewModel - Manages Home screen state
@@ -132,12 +104,8 @@ class HomeViewModel @Inject constructor(
         // Will be handled by navigation callback from UI
     }
 
-    private fun Flow<List<RawMediaMetadata>>.toHomeItems(): Flow<List<HomeMediaItem>> = this
-        .map { items ->
-            items
-                .take(HOME_ROW_LIMIT)
-                .map { raw -> raw.toHomeMediaItem() }
-        }
+    private fun Flow<List<HomeMediaItem>>.toHomeItems(): Flow<List<HomeMediaItem>> = this
+        .map { items -> items.take(HOME_ROW_LIMIT) }
         .distinctUntilChanged()
         .onStart { emit(emptyList()) }
         .catch { throwable ->
@@ -145,24 +113,6 @@ class HomeViewModel @Inject constructor(
             errorState.emit(throwable.message ?: "Unknown error loading content")
             emit(emptyList())
         }
-
-    private fun RawMediaMetadata.toHomeMediaItem(): HomeMediaItem {
-        val bestPoster = poster ?: thumbnail
-        val bestBackdrop = backdrop ?: thumbnail
-        return HomeMediaItem(
-            id = sourceId,
-            title = originalTitle.ifBlank { sourceLabel },
-            poster = bestPoster,
-            placeholderThumbnail = placeholderThumbnail,
-            backdrop = bestBackdrop,
-            mediaType = mediaType,
-            sourceType = sourceType,
-            duration = durationMinutes?.let { it * 60_000L } ?: 0L,
-            year = year,
-            navigationId = sourceId,
-            navigationSource = sourceType
-        )
-    }
 
     private companion object {
         const val TAG = "HomeViewModel"
