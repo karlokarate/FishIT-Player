@@ -6,9 +6,7 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.infra.data.telegram.TelegramContentRepository
-import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
-import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.feature.home.domain.HomeContentRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -78,24 +76,22 @@ data class HomeMediaItem(
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val telegramContentRepository: TelegramContentRepository,
-    private val xtreamCatalogRepository: XtreamCatalogRepository,
-    private val xtreamLiveRepository: XtreamLiveRepository
+    private val homeContentRepository: HomeContentRepository
 ) : ViewModel() {
 
     private val errorState = MutableStateFlow<String?>(null)
 
     private val telegramItems: Flow<List<HomeMediaItem>> =
-        telegramContentRepository.observeAll().toHomeItems()
+        homeContentRepository.observeTelegramMedia().toHomeItems()
 
     private val xtreamLiveItems: Flow<List<HomeMediaItem>> =
-        xtreamLiveRepository.observeChannels().toHomeItems()
+        homeContentRepository.observeXtreamLive().toHomeItems()
 
     private val xtreamVodItems: Flow<List<HomeMediaItem>> =
-        xtreamCatalogRepository.observeVod().toHomeItems()
+        homeContentRepository.observeXtreamVod().toHomeItems()
 
     private val xtreamSeriesItems: Flow<List<HomeMediaItem>> =
-        xtreamCatalogRepository.observeSeries().toHomeItems()
+        homeContentRepository.observeXtreamSeries().toHomeItems()
 
     val state: StateFlow<HomeState> = combine(
         telegramItems,
