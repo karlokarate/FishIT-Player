@@ -38,4 +38,15 @@ export ANDROID_HOME="${SDK_ROOT}"
 export PATH="${CMDLINE_BIN}:${SDK_ROOT}/platform-tools:${PATH}"
 
 yes | "${SDKMANAGER}" --licenses >/dev/null
-"${SDKMANAGER}" --install "${REQUIRED_PACKAGES[@]}"
+
+# Only install missing packages for idempotency (see tools/env/setup_android.sh lines 63-79)
+missing_packages=()
+installed_packages="$("${SDKMANAGER}" --list | awk '/Installed packages:/,0' | tail -n +2 | awk '{$1=$1};1')"
+for pkg in "${REQUIRED_PACKAGES[@]}"; do
+  if ! grep -Fxq "$pkg" <<< "$installed_packages"; then
+    missing_packages+=("$pkg")
+  fi
+done
+if [ "${#missing_packages[@]}" -gt 0 ]; then
+  "${SDKMANAGER}" --install "${missing_packages[@]}"
+fi
