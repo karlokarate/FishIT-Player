@@ -82,9 +82,8 @@ class ImageRefFetcher(
     private suspend fun fetchTelegramThumb(ref: ImageRef.TelegramThumb): FetchResult {
         val factory =
                 telegramThumbFetcher
-                        ?: throw IllegalStateException(
-                                "TelegramThumbFetcher.Factory not configured. " +
-                                        "Pass it to GlobalImageLoader.create() to enable Telegram thumbnail support."
+                        ?: throw IOException(
+                                "TelegramThumbFetcher.Factory not configured; Telegram thumbnails disabled"
                         )
 
         val fetcher = factory.create(ref, options)

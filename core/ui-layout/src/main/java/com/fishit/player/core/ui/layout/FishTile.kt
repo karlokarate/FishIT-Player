@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fishit.player.core.imaging.compose.FishImage
+import com.fishit.player.core.imaging.compose.FishImageTiered
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
@@ -53,6 +54,7 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
  *
  * @param title Media title
  * @param poster ImageRef for poster image
+ * @param placeholder Inline placeholder (minithumbnail) for progressive loading
  * @param sourceColors List of source colors for multi-source frame
  * @param resumeFraction Progress 0.0-1.0 for resume bar
  * @param onClick Click handler
@@ -68,6 +70,7 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
 fun FishTile(
     title: String?,
     poster: ImageRef?,
+    placeholder: ImageRef? = null,
     modifier: Modifier = Modifier,
     sourceColors: List<Color> = emptyList(),
     resumeFraction: Float? = null,
@@ -143,12 +146,22 @@ fun FishTile(
             .tvClickable(onClick = onClick)
     ) {
         // Poster Image
-        FishImage(
-            imageRef = poster,
-            contentDescription = title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (placeholder != null) {
+            FishImageTiered(
+                placeholderRef = placeholder,
+                imageRef = poster,
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            FishImage(
+                imageRef = poster,
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Gradient scrim for title readability
         if (showTitle && title != null) {

@@ -4,11 +4,14 @@ import android.content.Context
 import coil3.ImageLoader
 import com.fishit.player.core.imaging.GlobalImageLoader
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
+import com.fishit.player.infra.transport.telegram.TelegramTransportClient
+import com.fishit.player.v2.di.TelegramThumbFetcherImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
 
@@ -53,20 +56,15 @@ object ImagingModule {
 
     /**
      * Provides the TelegramThumbFetcher.Factory implementation.
-     *
-     * Returns null since TelegramTransportClient requires TdlibClientProvider
-     * which is not yet wired in v2. When Telegram integration is needed,
-     * this should be updated to inject TelegramTransportClient.
-     *
-     * GlobalImageLoader handles null TelegramThumbFetcher.Factory gracefully
-     * by not registering the Telegram fetcher (HTTP and LocalFile still work).
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcherFactory(): TelegramThumbFetcher.Factory? {
-        // TODO: Wire TelegramTransportClient when TdlibClientProvider is available
-        // return TelegramThumbFetcherImpl.Factory(telegramClient)
-        return null
+    fun provideTelegramThumbFetcherFactory(
+        telegramClientProvider: Provider<TelegramTransportClient>
+    ): TelegramThumbFetcher.Factory? {
+        return runCatching {
+            TelegramThumbFetcherImpl.Factory(telegramClientProvider.get())
+        }.getOrNull()
     }
 
     /**

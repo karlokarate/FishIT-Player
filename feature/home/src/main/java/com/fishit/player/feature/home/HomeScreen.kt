@@ -340,6 +340,7 @@ private fun MediaRow(
                 FishTile(
                     title = item.title,
                     poster = item.poster,
+                    placeholder = item.placeholderThumbnail,
                     sourceColors = getSourceColors(item.sourceType),
                     resumeFraction = item.resumeFraction,
                     isNew = item.isNew,
