@@ -56,6 +56,17 @@ class TelegramTapToPlayUseCaseTest {
         // Should NOT contain secrets like auth tokens
         assertEquals(false, extras.containsKey("authToken"))
         assertEquals(false, extras.containsKey("apiHash"))
+        assertEquals(false, extras.containsKey("apiId"))
+        assertEquals(false, extras.containsKey("phoneNumber"))
+        
+        // Should NOT contain URI-like strings
+        extras.values.forEach { value ->
+            assertEquals(
+                "Extras should not contain URI-like strings",
+                false,
+                value.startsWith("http://") || value.startsWith("https://") || value.startsWith("tg://")
+            )
+        }
     }
 
     @Test
@@ -113,6 +124,39 @@ class TelegramTapToPlayUseCaseTest {
         // Then
         assertEquals(false, context.extras.containsKey("chatId"))
         assertEquals(false, context.extras.containsKey("messageId"))
+    }
+
+    @Test
+    fun `buildPlaybackContext uses stable mediaId for canonicalId and sourceKey`() {
+        // Given
+        val telegramItem = createTestTelegramItem()
+
+        // When
+        val context = buildPlaybackContext(telegramItem)
+
+        // Then - canonicalId and sourceKey should use stable mediaId
+        assertEquals("msg:123:456", context.canonicalId)
+        assertEquals("msg:123:456", context.sourceKey ?: "")
+        
+        // Should NOT be URI-like strings
+        assertEquals(false, context.canonicalId.startsWith("http://"))
+        assertEquals(false, context.canonicalId.startsWith("https://"))
+        assertEquals(false, context.sourceKey?.startsWith("tg://") == true)
+    }
+
+    @Test
+    fun `buildPlaybackContext sets correct SourceType TELEGRAM`() {
+        // Given
+        val telegramItem = createTestTelegramItem()
+
+        // When
+        val context = buildPlaybackContext(telegramItem)
+
+        // Then - must use SourceType.TELEGRAM
+        assertEquals(
+            com.fishit.player.core.playermodel.SourceType.TELEGRAM,
+            context.sourceType
+        )
     }
 
     private fun createTestTelegramItem(): TelegramMediaItem {
