@@ -101,6 +101,12 @@ When porting behavior from v1 or researching historical decisions:
 
 For detailed build instructions, see **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)**.
 
+### Android build environment (CI & local)
+
+- **CI:** `.github/workflows/android-ci.yml` installs the Android SDK via `tools/android/bootstrap-android-sdk.sh` and runs `./gradlew :app-v2:assembleDebug test detekt lintDebug`.
+- **Local:** Run `tools/android/bootstrap-android-sdk.sh` once (requires `curl` and `unzip`) to install the SDK to `~/.android-sdk`, then run the same Gradle tasks locally.
+- **Dev Container (optional):** Open the repo with VS Code Dev Containers to auto-provision Java 17 and the Android SDK via `tools/android/bootstrap-android-sdk.sh`.
+
 ---
 
 ## Technology Stack
