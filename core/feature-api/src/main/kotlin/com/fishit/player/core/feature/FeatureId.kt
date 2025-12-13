@@ -11,6 +11,8 @@ package com.fishit.player.core.feature
  * - `ui.screen.home`
  */
 @JvmInline
-value class FeatureId(val value: String) {
+value class FeatureId(
+    val value: String,
+) {
     override fun toString(): String = value
 }

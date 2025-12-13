@@ -9,13 +9,11 @@ import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.playback.xtream.XtreamPlaybackSourceFactoryImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.net.URI
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,7 +22,6 @@ class PlayerNavViewModel
     constructor(
         private val xtreamCatalogRepository: XtreamCatalogRepository,
         private val xtreamLiveRepository: XtreamLiveRepository,
-        private val xtreamApiClient: XtreamApiClient,
     ) : ViewModel() {
         private val _state = MutableStateFlow(PlayerNavState())
         val state: StateFlow<PlayerNavState> = _state
@@ -58,64 +55,70 @@ class PlayerNavViewModel
                 when (raw.mediaType) {
                     MediaType.LIVE -> buildLiveContext(sourceId, raw.originalTitle)
                     MediaType.MOVIE -> buildVodContext(sourceId, raw.originalTitle)
-                    else -> null
+                    else -> {
+                        UnifiedLog.w(TAG) { "Unsupported media type for autoplay: ${raw.mediaType}" }
+                        _state.value = PlayerNavState(error = "Playback not supported")
+                        return
+                    }
                 }
 
-            if (context == null) {
-                _state.value = PlayerNavState(error = "Playback not supported")
-            } else {
-                _state.value = PlayerNavState(context = context)
-            }
+            _state.value = PlayerNavState(context = context)
         }
 
         private fun buildLiveContext(
             sourceId: String,
             title: String,
-        ): PlaybackContext? {
-            val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull() ?: return null
-            return runCatching {
-                val uri = xtreamApiClient.buildLiveUrl(streamId)
-                PlaybackContext(
-                    canonicalId = "xtream:live:$streamId",
-                    sourceType = SourceType.XTREAM,
-                    uri = uri,
-                    title = title,
-                    isLive = true,
-                    isSeekable = false,
-                    extras =
-                        buildXtreamExtras(
-                            contentType = XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_LIVE,
-                            streamId = streamId.toString(),
-                        ),
-                )
-            }.getOrElse { error ->
-                UnifiedLog.w(TAG, error) { "Failed to build live context for $sourceId" }
-                null
-            }
+        ): PlaybackContext {
+            val streamId =
+                sourceId.removePrefix("xtream:live:").toIntOrNull()
+                    ?: return PlaybackContext(
+                        canonicalId = sourceId,
+                        sourceType = SourceType.XTREAM,
+                        title = title,
+                        isLive = true,
+                        isSeekable = false,
+                        extras = emptyMap(),
+                    )
+
+            return PlaybackContext(
+                canonicalId = "xtream:live:$streamId",
+                sourceType = SourceType.XTREAM,
+                uri = null, // Factory will build URL from session
+                title = title,
+                isLive = true,
+                isSeekable = false,
+                extras =
+                    buildXtreamExtras(
+                        contentType = XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_LIVE,
+                        streamId = streamId.toString(),
+                    ),
+            )
         }
 
         private fun buildVodContext(
             sourceId: String,
             title: String,
-        ): PlaybackContext? {
-            val vodId = parseXtreamVodId(sourceId) ?: return null
-            return runCatching {
-                val uri = xtreamApiClient.buildVodUrl(vodId, null)
-                PlaybackContext(
-                    canonicalId = "xtream:vod:$vodId",
-                    sourceType = SourceType.XTREAM,
-                    uri = uri,
-                    title = title,
-                    extras =
-                        buildXtreamExtras(
-                            contentType = XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD,
-                            vodId = vodId.toString(),
-                        ),
-                )
-            }.getOrElse { error ->
-                UnifiedLog.w(TAG, error) { "Failed to build VOD context for $sourceId" }
-                null
-            }
+        ): PlaybackContext {
+            val vodId =
+                parseXtreamVodId(sourceId)
+                    ?: return PlaybackContext(
+                        canonicalId = sourceId,
+                        sourceType = SourceType.XTREAM,
+                        title = title,
+                        extras = emptyMap(),
+                    )
+
+            return PlaybackContext(
+                canonicalId = "xtream:vod:$vodId",
+                sourceType = SourceType.XTREAM,
+                uri = null, // Factory will build URL from session
+                title = title,
+                extras =
+                    buildXtreamExtras(
+                        contentType = XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD,
+                        vodId = vodId.toString(),
+                    ),
+            )
         }
 
         private fun buildXtreamExtras(
@@ -127,15 +130,6 @@ class PlayerNavViewModel
             extras[XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE] = contentType
             streamId?.let { extras[XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID] = it }
             vodId?.let { extras[XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID] = it }
-
-            xtreamApiClient.capabilities?.let { caps ->
-                val uri = runCatching { URI(caps.baseUrl) }.getOrNull()
-                uri?.host?.let { extras[XtreamPlaybackSourceFactoryImpl.EXTRA_SERVER_HOST] = it }
-                uri?.port?.takeIf { it > 0 }?.let { extras[XtreamPlaybackSourceFactoryImpl.EXTRA_SERVER_PORT] = it.toString() }
-                uri?.scheme?.let { extras[XtreamPlaybackSourceFactoryImpl.EXTRA_SERVER_SCHEME] = it }
-                extras[XtreamPlaybackSourceFactoryImpl.EXTRA_USERNAME] = caps.username
-            }
-
             return extras
         }
 

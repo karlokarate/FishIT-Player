@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit
 class AppStartupImpl(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : AppStartup {
-
     companion object {
         private const val TAG = "AppStartup"
     }
@@ -41,17 +40,19 @@ class AppStartupImpl(
     override suspend fun startPipelines(config: AppStartupConfig): Pipelines {
         UnifiedLog.i(TAG, "Starting pipelines...")
 
-        val telegramAdapter = config.telegram?.let { telegramConfig ->
-            initTelegramPipeline(telegramConfig)
-        }
+        val telegramAdapter =
+            config.telegram?.let { telegramConfig ->
+                initTelegramPipeline(telegramConfig)
+            }
 
-        val xtreamAdapter = config.xtream?.let { xtreamConfig ->
-            initXtreamPipeline(xtreamConfig)
-        }
+        val xtreamAdapter =
+            config.xtream?.let { xtreamConfig ->
+                initXtreamPipeline(xtreamConfig)
+            }
 
         UnifiedLog.i(
             TAG,
-            "Pipelines started: telegram=${telegramAdapter != null}, xtream=${xtreamAdapter != null}"
+            "Pipelines started: telegram=${telegramAdapter != null}, xtream=${xtreamAdapter != null}",
         )
 
         return Pipelines(
@@ -60,17 +61,16 @@ class AppStartupImpl(
         )
     }
 
-    private suspend fun initTelegramPipeline(
-        config: TelegramPipelineConfig,
-    ): TelegramPipelineAdapter? {
-        return try {
+    private suspend fun initTelegramPipeline(config: TelegramPipelineConfig): TelegramPipelineAdapter? =
+        try {
             UnifiedLog.d(TAG, "Initializing Telegram pipeline...")
 
             // Create transport client from existing session
-            val transportClient = TelegramClientFactory.fromExistingSession(
-                config = config.sessionConfig,
-                scope = scope,
-            )
+            val transportClient =
+                TelegramClientFactory.fromExistingSession(
+                    config = config.sessionConfig,
+                    scope = scope,
+                )
             telegramClient = transportClient
 
             // Create pipeline adapter
@@ -82,20 +82,19 @@ class AppStartupImpl(
             UnifiedLog.e(TAG, "Failed to initialize Telegram pipeline", e)
             null
         }
-    }
 
-    private suspend fun initXtreamPipeline(
-        config: XtreamPipelineConfig,
-    ): XtreamPipelineAdapter? {
+    private suspend fun initXtreamPipeline(config: XtreamPipelineConfig): XtreamPipelineAdapter? {
         return try {
             UnifiedLog.d(TAG, "Initializing Xtream pipeline: ${config.baseUrl}")
 
             // Create HTTP client with reasonable timeouts
-            val httpClient = OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build()
+            val httpClient =
+                OkHttpClient
+                    .Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(60, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build()
 
             // Create API client
             val apiConfig = config.toApiConfig()

@@ -26,7 +26,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamPlaybackModule {
-
     /**
      * Binds the Xtream factory into the set of PlaybackSourceFactory.
      *
@@ -36,7 +35,5 @@ abstract class XtreamPlaybackModule {
     @Binds
     @IntoSet
     @Singleton
-    abstract fun bindXtreamPlaybackSourceFactory(
-        impl: XtreamPlaybackSourceFactoryImpl
-    ): PlaybackSourceFactory
+    abstract fun bindXtreamPlaybackSourceFactory(impl: XtreamPlaybackSourceFactoryImpl): PlaybackSourceFactory
 }
