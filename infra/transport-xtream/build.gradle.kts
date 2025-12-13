@@ -37,6 +37,9 @@ dependencies {
     api("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // Security for credential storage
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")

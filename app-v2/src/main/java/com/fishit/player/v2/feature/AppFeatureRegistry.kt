@@ -25,32 +25,30 @@ import javax.inject.Singleton
  * Note: This class is managed entirely through DI - no global mutable singleton.
  */
 @Singleton
-class AppFeatureRegistry @Inject constructor(
-    providers: Set<@JvmSuppressWildcards FeatureProvider>,
-) : FeatureRegistry {
+class AppFeatureRegistry
+    @Inject
+    constructor(
+        providers: Set<@JvmSuppressWildcards FeatureProvider>,
+    ) : FeatureRegistry {
+        private val providersById: Map<FeatureId, List<FeatureProvider>> =
+            providers.groupBy { it.featureId }
 
-    private val providersById: Map<FeatureId, List<FeatureProvider>> =
-        providers.groupBy { it.featureId }
+        private val ownersById: Map<FeatureId, FeatureOwner> =
+            providers.associate { it.featureId to it.owner }
 
-    private val ownersById: Map<FeatureId, FeatureOwner> =
-        providers.associate { it.featureId to it.owner }
+        /**
+         * Returns the total number of registered features.
+         */
+        val featureCount: Int get() = providersById.size
 
-    /**
-     * Returns the total number of registered features.
-     */
-    val featureCount: Int get() = providersById.size
+        /**
+         * Returns all registered feature IDs.
+         */
+        val allFeatureIds: Set<FeatureId> get() = providersById.keys
 
-    /**
-     * Returns all registered feature IDs.
-     */
-    val allFeatureIds: Set<FeatureId> get() = providersById.keys
+        override fun isSupported(featureId: FeatureId): Boolean = providersById.containsKey(featureId)
 
-    override fun isSupported(featureId: FeatureId): Boolean =
-        providersById.containsKey(featureId)
+        override fun providersFor(featureId: FeatureId): List<FeatureProvider> = providersById[featureId].orEmpty()
 
-    override fun providersFor(featureId: FeatureId): List<FeatureProvider> =
-        providersById[featureId].orEmpty()
-
-    override fun ownerOf(featureId: FeatureId): FeatureOwner? =
-        ownersById[featureId]
-}
+        override fun ownerOf(featureId: FeatureId): FeatureOwner? = ownersById[featureId]
+    }

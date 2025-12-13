@@ -22,7 +22,6 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var resumeManager: ResumeManager
 
@@ -38,15 +37,21 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
 
+    @Inject
+    lateinit var xtreamSessionBootstrap: XtreamSessionBootstrap
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize Xtream session before catalog sync
+        xtreamSessionBootstrap.start()
 
         setContent {
             FishItV2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     AppNavHost(
                         resumeManager = resumeManager,

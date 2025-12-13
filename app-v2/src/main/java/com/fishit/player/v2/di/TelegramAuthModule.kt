@@ -13,17 +13,16 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.g000sha256.tdl.TdlClient
-import java.io.File
-import javax.inject.Named
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import java.io.File
+import javax.inject.Named
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object TelegramAuthModule {
-
     private const val TAG = "TelegramAuthModule"
     private const val TELEGRAM_AUTH_SCOPE = "TelegramAuthScope"
 
@@ -54,9 +53,7 @@ object TelegramAuthModule {
     @Provides
     @Singleton
     @Named(TELEGRAM_AUTH_SCOPE)
-    fun provideTelegramAuthScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    }
+    fun provideTelegramAuthScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Provides
     @Singleton

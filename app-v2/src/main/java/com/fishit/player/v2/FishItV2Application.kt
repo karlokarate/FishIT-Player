@@ -26,8 +26,9 @@ import javax.inject.Provider
  * @see com.fishit.player.v2.di.ImagingModule for ImageLoader configuration
  */
 @HiltAndroidApp
-class FishItV2Application : Application(), SingletonImageLoader.Factory {
-
+class FishItV2Application :
+    Application(),
+    SingletonImageLoader.Factory {
     /**
      * Lazy provider for ImageLoader to avoid DI initialization order issues.
      * Hilt ensures this is initialized before newImageLoader() is called.
@@ -37,11 +38,11 @@ class FishItV2Application : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
-        
+
         // Initialize unified logging system FIRST
         // This ensures all subsequent logging works correctly
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
-        
+
         // Initialization logic will be added in later phases:
         // - DeviceProfile detection
         // - Local profile loading
@@ -63,7 +64,5 @@ class FishItV2Application : Application(), SingletonImageLoader.Factory {
      * @param context Platform context (unused, we use DI)
      * @return The DI-configured ImageLoader singleton
      */
-    override fun newImageLoader(context: PlatformContext): ImageLoader {
-        return imageLoaderProvider.get()
-    }
+    override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoaderProvider.get()
 }
