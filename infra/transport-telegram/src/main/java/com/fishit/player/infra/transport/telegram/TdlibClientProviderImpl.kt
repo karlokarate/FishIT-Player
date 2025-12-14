@@ -1,22 +1,18 @@
-package com.fishit.player.v2.di
+package com.fishit.player.infra.transport.telegram
 
 import android.content.Context
-import com.fishit.player.infra.transport.telegram.TdlibClientProvider
-import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.g000sha256.tdl.TdlClient
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * App-level implementation of TdlibClientProvider.
+ * Infra-level implementation of TdlibClientProvider.
  *
  * This provides the TdlClient instance for the transport layer.
  * The client is created lazily when first accessed.
  *
- * **Note:** This is a temporary adapter while TelegramTransportModule
- * is migrated to use typed interfaces (TelegramAuthClient, etc.)
- * instead of TdlibClientProvider.
+ * Lives in infra/transport-telegram to keep app-v2 clean of transport dependencies.
  */
 @Singleton
 class TdlibClientProviderImpl @Inject constructor(
