@@ -190,10 +190,12 @@ private fun PlayerNavScreen(
 
     when {
         state.context != null ->
-            PlayerScreen(
-                context = state.context!!,
-                onExit = onBack,
-            )
+            state.context?.let { context ->
+                PlayerScreen(
+                    context = context,
+                    onExit = onBack,
+                )
+            }
 
         state.error != null -> {
             LaunchedEffect(state.error) {
