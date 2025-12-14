@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:HomeScreen.kt$state.continueWatchingItems.isEmpty() &amp;&amp; state.recentlyAddedItems.isEmpty() &amp;&amp; state.telegramMediaItems.isEmpty() &amp;&amp; state.xtreamVodItems.isEmpty()</ID>
+    <ID>CyclomaticComplexMethod:HomeScreen.kt$@Composable private fun HomeContent( state: HomeState, onItemClick: (HomeMediaItem) -&gt; Unit )</ID>
+    <ID>LongMethod:HomeScreen.kt$@Composable private fun HomeContent( state: HomeState, onItemClick: (HomeMediaItem) -&gt; Unit )</ID>
+    <ID>LongMethod:HomeScreen.kt$@Composable private fun MediaRow( title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, items: List&lt;HomeMediaItem&gt;, onItemClick: (HomeMediaItem) -&gt; Unit, modifier: Modifier = Modifier, iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant )</ID>
+    <ID>UnusedParameter:HomeViewModel.kt$HomeViewModel$item: HomeMediaItem</ID>
+  </CurrentIssues>
+</SmellBaseline>

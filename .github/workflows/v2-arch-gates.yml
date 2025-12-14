@@ -63,6 +63,9 @@ jobs:
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
 
+      - name: Run Grep-based Architecture Checks
+        run: ./scripts/ci/check-arch-guardrails.sh
+
       - name: Upload Detekt Reports
         uses: actions/upload-artifact@v4
         if: always()
