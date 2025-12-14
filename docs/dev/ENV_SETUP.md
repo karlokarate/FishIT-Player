@@ -5,7 +5,7 @@ This repository includes an idempotent helper to provision the Android SDK witho
 ## Prerequisites
 - Bash
 - `curl` and `unzip` (installed automatically via `apt-get` when available)
-- JDK 17 or newer on the host
+- JDK 21 (minimum 17) on the host (JDK 21 recommended for full compatibility)
 
 ## Setup Script
 Run from the repository root:
