@@ -398,6 +398,50 @@ if [[ -n "$violations" ]]; then
 fi
 
 # ======================================================================
+# PLAYER UI LAYER: Check for forbidden Hilt EntryPoints and engine wiring
+# ======================================================================
+echo "Checking player UI layer for forbidden patterns..."
+
+# NO ALLOWLIST FILTERING for these checks - they are hard boundaries
+
+# Check for Hilt EntryPoint usage (anti-pattern that bypasses constructor injection)
+violations=$(grep -rn "dagger\.hilt\.EntryPoint\|@EntryPoint\|EntryPointAccessors" player/ --include="*.kt" 2>/dev/null | grep -E "player/[^/]+/src/.*/ui/" || true)
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: Hilt EntryPoint usage forbidden in player:ui (use @HiltViewModel + constructor injection)"
+    echo "   EntryPoints are an anti-pattern that bypass proper dependency injection"
+    echo "   Use @HiltViewModel with constructor-injected dependencies instead"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# Check for engine wiring class references (internal implementation details)
+violations=$(grep -rn "\bPlaybackSourceResolver\b\|\bResumeManager\b\|\bKidsPlaybackGate\b\|\bNextlibCodecConfigurator\b" player/ --include="*.kt" 2>/dev/null | grep -E "player/[^/]+/src/.*/ui/" || true)
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: Engine wiring classes forbidden in player:ui"
+    echo "   player:ui must not reference internal engine components:"
+    echo "   - PlaybackSourceResolver (internal wiring)"
+    echo "   - ResumeManager (internal engine logic)"
+    echo "   - KidsPlaybackGate (internal engine logic)"
+    echo "   - NextlibCodecConfigurator (internal engine logic)"
+    echo "   UI should interact through high-level interfaces only"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# Check for com.fishit.player.internal.* imports from player:ui
+# UI should only use public player APIs, not internal implementation
+# Exception: player/internal/ui can import from player/internal (same module)
+violations=$(grep -rn "import com\.fishit\.player\.internal\." player/ --include="*.kt" 2>/dev/null | grep -E "player/[^/]+/src/.*/ui/" | grep -v "player/internal/src" | grep -v "import com\.fishit\.player\.internal\.ui\." || true)
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: player:ui importing internal package from other modules"
+    echo "   player:ui modules must not import com.fishit.player.internal.*"
+    echo "   Exception: player/internal/ui can use player/internal.* (same module)"
+    echo "   This violates layer isolation and creates tight coupling"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
 # SUMMARY
 # ======================================================================
 echo ""
