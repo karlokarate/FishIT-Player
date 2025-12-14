@@ -77,9 +77,10 @@ app-v2/**/di/**/*.kt # Pattern-based exception with reason
   - `:feature:home:compileReleaseKotlin`
   - `:feature:telegram-media:compileReleaseKotlin`
   - `:playback:domain:compileReleaseKotlin`
-- KSP wiring gates (Phase A1.2):
+- KSP wiring gates (hard-fail, no continue-on-error):
   - `:feature:home:kspReleaseKotlin`
   - `:app-v2:kspReleaseKotlin`
+- Fork-safe: Steps requiring secrets check for fork status and skip secrets for forks
 
 **Job C: Gate Summary** (`gate_summary`)
 - Aggregates results from both jobs
@@ -99,6 +100,30 @@ app-v2/**/di/**/*.kt # Pattern-based exception with reason
 
 **IMPORTANT**: The CI gates must be configured as required checks in GitHub settings. Code cannot enforce this - it must be done manually.
 
+### Branch Protection Activation
+
+**Prerequisites:**
+- The `V2 Architecture Gates` workflow must run at least once on a PR to the target branch
+- Check names only appear in GitHub's search after the first workflow run
+
+**Required Checks:**
+
+To make the architecture gates merge-blocking, configure these **exact check names** as required status checks in GitHub branch protection settings:
+
+```
+V2 Architecture Gates / Arch Guardrails
+V2 Architecture Gates / Release Wiring Gates
+```
+
+**Alternative (Recommended):** Require only the summary job:
+```
+V2 Architecture Gates / Gate Summary
+```
+
+The `Gate Summary` job depends on both upstream jobs (`arch_guardrails` and `release_wiring_gates`) and fails if either fails, making it a single source of truth for branch protection.
+
+**⚠️ Critical:** Check names follow the format `<workflow_name> / <job_name>`. Any change to the workflow name (line 5) or job names (lines 36, 79, 149) will break branch protection silently.
+
 ### Steps to Configure Required Checks
 
 1. **Navigate to Repository Settings**
@@ -117,10 +142,14 @@ app-v2/**/di/**/*.kt # Pattern-based exception with reason
    
    Search for and add these **exact check names**:
    
+   **Option 1 (Recommended) - Single summary check:**
+   - ✅ `V2 Architecture Gates / Gate Summary`
+   
+   **Option 2 - Individual checks:**
    - ✅ `V2 Architecture Gates / Arch Guardrails`
    - ✅ `V2 Architecture Gates / Release Wiring Gates`
    
-   **Note**: The format is `<workflow_name> / <job_name>`
+   **Note**: The format is `<workflow_name> / <job_name>`. Option 1 is simpler and sufficient because `Gate Summary` fails if either upstream job fails.
 
 5. **Save Changes**
    - Click "Save changes" at the bottom of the page
@@ -158,6 +187,10 @@ To verify the required checks are configured:
 **Issue**: Can merge PR despite failing checks
 - **Cause**: Required checks not configured or wrong check names
 - **Fix**: Verify exact check names in branch protection settings
+
+**Issue**: Fork PR fails with "Error: Secrets are not available" or similar
+- **Cause**: Workflow tries to access secrets that forks don't have
+- **Fix**: This has been addressed - app-v2 compilation now has fork-safe fallback (uses default TG_API_ID=0, TG_API_HASH="")
 
 **Triggers:** PRs to `main` and `architecture/v2-bootstrap` branches
 
