@@ -19,11 +19,83 @@ echo ""
 VIOLATIONS=0
 
 # ======================================================================
-# ALLOWLIST MECHANISM
+# ALLOWLIST MECHANISM (Phase A1.4: TEMP + expiry enforcement)
 # ======================================================================
 
 # Load allowlist patterns from file
 declare -a ALLOWLIST_PATTERNS=()
+ALLOWLIST_MAX_ENTRIES=10
+
+# Validate allowlist entry format (Phase A1.4)
+# Each entry must contain TEMP + (issue OR expiry date)
+# Usage: validate_allowlist_entry "line_number" "full_line"
+# Returns: 0 if valid, 1 if invalid
+validate_allowlist_entry() {
+    local line_num="$1"
+    local full_line="$2"
+    
+    # Extract comment part (after #)
+    if [[ ! "$full_line" =~ "#" ]]; then
+        echo "❌ ALLOWLIST ERROR (line $line_num): Missing # comment separator"
+        echo "   Line: $full_line"
+        return 1
+    fi
+    
+    local comment=$(echo "$full_line" | cut -d'#' -f2-)
+    
+    # Check for TEMP marker (case-insensitive)
+    if [[ ! "$comment" =~ [Tt][Ee][Mm][Pp] ]]; then
+        echo "❌ ALLOWLIST ERROR (line $line_num): Missing TEMP marker"
+        echo "   Every allowlist entry must be temporary and contain 'TEMP'"
+        echo "   Line: $full_line"
+        echo "   💡 Add 'TEMP' to indicate this is a temporary exception"
+        return 1
+    fi
+    
+    # Check for issue reference (#123) OR expiry date (YYYY-MM-DD)
+    local has_issue=false
+    local has_expiry=false
+    
+    # Check for issue reference (format: #<digits>)
+    if [[ "$comment" =~ \#[0-9]+ ]]; then
+        has_issue=true
+    fi
+    
+    # Check for expiry date (format: YYYY-MM-DD)
+    if [[ "$comment" =~ [0-9]{4}-[0-9]{2}-[0-9]{2} ]]; then
+        has_expiry=true
+        # Extract the date and validate it's not in the past
+        local expiry_date=$(echo "$comment" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | head -1)
+        local expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null || echo "0")
+        local today_epoch=$(date +%s)
+        
+        if [[ "$expiry_epoch" -eq 0 ]]; then
+            echo "❌ ALLOWLIST ERROR (line $line_num): Invalid date format: $expiry_date"
+            echo "   Use YYYY-MM-DD format (e.g., 2026-01-15)"
+            echo "   Line: $full_line"
+            return 1
+        fi
+        
+        if [[ "$expiry_epoch" -lt "$today_epoch" ]]; then
+            echo "❌ ALLOWLIST ERROR (line $line_num): Expiry date is in the past: $expiry_date"
+            echo "   This entry has expired and must be removed or the code must be refactored"
+            echo "   Line: $full_line"
+            return 1
+        fi
+    fi
+    
+    if [[ "$has_issue" == false && "$has_expiry" == false ]]; then
+        echo "❌ ALLOWLIST ERROR (line $line_num): Missing issue reference or expiry date"
+        echo "   Every entry must contain either:"
+        echo "   - Issue reference: #123"
+        echo "   - Expiry date: YYYY-MM-DD (e.g., 2026-01-15)"
+        echo "   Line: $full_line"
+        echo "   💡 Example: path/file.kt # TEMP until 2026-06-01: reason here"
+        return 1
+    fi
+    
+    return 0
+}
 
 load_allowlist() {
     if [[ ! -f "$ALLOWLIST_FILE" ]]; then
@@ -31,20 +103,66 @@ load_allowlist() {
         return
     fi
     
+    local line_num=0
+    local entry_count=0
+    local validation_failed=false
+    
     while IFS= read -r line || [[ -n "$line" ]]; do
+        line_num=$((line_num + 1))
+        
         # Skip comments and empty lines
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
         [[ -z "${line// }" ]] && continue
+        
+        # Validate entry format (Phase A1.4)
+        if ! validate_allowlist_entry "$line_num" "$line"; then
+            validation_failed=true
+            continue
+        fi
         
         # Extract path pattern (before # comment)
         pattern=$(echo "$line" | cut -d'#' -f1 | xargs)
         [[ -z "$pattern" ]] && continue
         
         ALLOWLIST_PATTERNS+=("$pattern")
+        entry_count=$((entry_count + 1))
     done < "$ALLOWLIST_FILE"
     
+    # Check for validation failures
+    if [[ "$validation_failed" == true ]]; then
+        echo ""
+        echo "========================================="
+        echo "❌ ALLOWLIST VALIDATION FAILED"
+        echo "========================================="
+        echo ""
+        echo "The allowlist contains invalid entries. See errors above."
+        echo "Each entry must contain:"
+        echo "  1. TEMP marker (indicating it's temporary)"
+        echo "  2. Issue reference (#123) OR expiry date (YYYY-MM-DD)"
+        echo "  3. Clear reason explaining the exception"
+        echo ""
+        echo "See scripts/ci/ALLOWLIST_README.md for guidance."
+        exit 1
+    fi
+    
+    # Check entry count cap (Phase A1.4)
+    if [[ $entry_count -gt $ALLOWLIST_MAX_ENTRIES ]]; then
+        echo "❌ ALLOWLIST ERROR: Too many entries ($entry_count > $ALLOWLIST_MAX_ENTRIES)"
+        echo ""
+        echo "The allowlist is capped at $ALLOWLIST_MAX_ENTRIES entries to prevent abuse."
+        echo "Current entries: $entry_count"
+        echo ""
+        echo "To add more entries, you must:"
+        echo "  1. Remove or refactor existing entries"
+        echo "  2. Get architecture review approval"
+        echo "  3. Consider if you're bypassing proper architecture"
+        echo ""
+        echo "Remember: Each allowlist entry is technical debt."
+        exit 1
+    fi
+    
     if [[ ${#ALLOWLIST_PATTERNS[@]} -gt 0 ]]; then
-        echo "📋 Loaded ${#ALLOWLIST_PATTERNS[@]} allowlist pattern(s)"
+        echo "📋 Loaded ${#ALLOWLIST_PATTERNS[@]} allowlist pattern(s) (max: $ALLOWLIST_MAX_ENTRIES)"
         echo ""
     fi
 }
@@ -295,6 +413,21 @@ else
     echo "See AGENTS.md Section 4.5 for layer hierarchy rules"
     echo "See LOGGING_CONTRACT_V2.md for logging requirements"
     echo ""
-    echo "💡 If a violation is intentional, add it to scripts/ci/arch-guardrails-allowlist.txt"
+    echo "⚠️  IMPORTANT: Fix the code, don't bypass with allowlist"
+    echo ""
+    echo "The allowlist is for TEMPORARY exceptions only (e.g., DI wiring)."
+    echo "Each entry must have TEMP marker + issue/expiry date."
+    echo ""
+    echo "Before adding to allowlist:"
+    echo "  1. ✅ Try to fix the violation by refactoring the code"
+    echo "  2. ✅ Create proper domain interfaces in the feature layer"
+    echo "  3. ✅ Move adapters to infra layer, not app-v2"
+    echo ""
+    echo "Only if architecturally necessary:"
+    echo "  - Add to scripts/ci/arch-guardrails-allowlist.txt"
+    echo "  - Include TEMP + expiry date or issue reference"
+    echo "  - Document clear reason and migration plan"
+    echo ""
+    echo "See scripts/ci/ALLOWLIST_README.md for guidance."
     exit 1
 fi
