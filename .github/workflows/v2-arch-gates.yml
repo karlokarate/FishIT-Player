@@ -103,10 +103,20 @@ jobs:
 
       - name: Compile app-v2 (Release)
         run: ./gradlew :app-v2:compileReleaseKotlin --no-daemon --stacktrace
+        # Only use secrets if not from a fork (forks don't have access to secrets)
+        # Build defaults to safe values (0 and "") when secrets are missing
+        if: github.event.pull_request.head.repo.fork == false
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
           TG_API_ID: ${{ secrets.TG_API_ID }}
           TG_API_HASH: ${{ secrets.TG_API_HASH }}
+
+      - name: Compile app-v2 (Release, Fork-Safe)
+        run: ./gradlew :app-v2:compileReleaseKotlin --no-daemon --stacktrace
+        # For forks, run without secrets (build.gradle.kts provides safe defaults)
+        if: github.event.pull_request.head.repo.fork == true
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
       - name: Compile feature:home (Release)
         run: ./gradlew :feature:home:compileReleaseKotlin --no-daemon --stacktrace
@@ -125,13 +135,23 @@ jobs:
 
       - name: KSP Wiring Gates - feature:home
         run: ./gradlew :feature:home:kspReleaseKotlin --no-daemon --stacktrace
-        continue-on-error: true
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
 
       - name: KSP Wiring Gates - app-v2
         run: ./gradlew :app-v2:kspReleaseKotlin --no-daemon --stacktrace
-        continue-on-error: true
+        # Only use secrets if not from a fork (forks don't have access to secrets)
+        # Build defaults to safe values (0 and "") when secrets are missing
+        if: github.event.pull_request.head.repo.fork == false
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+
+      - name: KSP Wiring Gates - app-v2 (Fork-Safe)
+        run: ./gradlew :app-v2:kspReleaseKotlin --no-daemon --stacktrace
+        # For forks, run without secrets (build.gradle.kts provides safe defaults)
+        if: github.event.pull_request.head.repo.fork == true
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
 
