@@ -208,19 +208,16 @@ private fun PlayerNavScreen(
         viewModel.load(mediaId, sourceType)
     }
 
-    when {
-        state.context != null -> {
-            val context = state.context!!
-            InternalPlayerEntry(
-                playbackContext = context,
-                sourceResolver = sourceResolver,
-                resumeManager = resumeManager,
-                kidsPlaybackGate = kidsPlaybackGate,
-                codecConfigurator = codecConfigurator,
-                onBack = onBack,
-            )
-        }
-
+    state.context?.let { context ->
+        InternalPlayerEntry(
+            playbackContext = context,
+            sourceResolver = sourceResolver,
+            resumeManager = resumeManager,
+            kidsPlaybackGate = kidsPlaybackGate,
+            codecConfigurator = codecConfigurator,
+            onBack = onBack,
+        )
+    } ?: when {
         state.error != null -> {
             LaunchedEffect(state.error) {
                 onBack()
