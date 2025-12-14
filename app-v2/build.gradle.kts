@@ -142,7 +142,7 @@ dependencies {
     // v2 Playback & Player
     implementation(project(":playback:domain"))
     implementation(project(":playback:xtream"))
-    implementation(project(":player:internal"))
+    implementation(project(":player:ui"))
     implementation(project(":player:nextlib-codecs"))
 
     // v2 Pipelines

@@ -19,11 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
-import com.fishit.player.internal.InternalPlayerEntry
-import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
+import com.fishit.player.player.ui.PlayerScreen
 
 /**
  * Debug screen for Phase 1 playback testing.
@@ -37,13 +36,12 @@ import com.fishit.player.playback.domain.ResumeManager
  * 3. Test player controls (play/pause, seek, mute)
  *
  * **Requirements:**
- * - PlaybackSourceResolver with empty factory set (uses fallback)
+ * - PlayerScreen with PlayerEntryPoint (uses player:ui public API)
  * - NextlibCodecConfigurator for FFmpeg codecs
  * - ResumeManager and KidsPlaybackGate (stubs are fine)
  */
 @Composable
 fun DebugPlaybackScreen(
-    sourceResolver: PlaybackSourceResolver,
     resumeManager: ResumeManager,
     kidsPlaybackGate: KidsPlaybackGate,
     codecConfigurator: NextlibCodecConfigurator,
@@ -59,17 +57,13 @@ fun DebugPlaybackScreen(
                 canonicalId = "debug-test-stream",
                 title = "Big Buck Bunny (Test)",
                 sourceType = SourceType.HTTP,
-                uri = PlaybackSourceResolver.TEST_STREAM_URL
+                uri = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
             )
         }
 
-        InternalPlayerEntry(
-            playbackContext = testContext,
-            sourceResolver = sourceResolver,
-            resumeManager = resumeManager,
-            kidsPlaybackGate = kidsPlaybackGate,
-            codecConfigurator = codecConfigurator,
-            onBack = {
+        PlayerScreen(
+            context = testContext,
+            onExit = {
                 showPlayer = false
                 onBack()
             },

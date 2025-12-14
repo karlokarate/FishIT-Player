@@ -2,10 +2,12 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
-    namespace = "com.fishit.player.feature.audiobooks"
+    namespace = "com.fishit.player.player.ui"
     compileSdk = 35
 
     defaultConfig {
@@ -27,12 +29,25 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
+    // Playback domain for PlayerEntryPoint abstraction
     implementation(project(":playback:domain"))
-    implementation(project(":player:ui"))
-    implementation(project(":pipeline:audiobook"))
+    
+    // Core player model for PlaybackContext
+    implementation(project(":core:player-model"))
+    
+    // Logging
     implementation(project(":infra:logging"))
+    
+    // Player internal for actual rendering (internal to this module only)
+    implementation(project(":player:internal"))
+    
+    // NextLib codecs for player configuration
+    implementation(project(":player:nextlib-codecs"))
+    
+    // Hilt DI
+    implementation("com.google.dagger:hilt-android:2.56.1")
+    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
@@ -40,9 +55,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    
-    // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.4")
     
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")

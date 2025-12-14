@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
@@ -27,9 +26,6 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var kidsPlaybackGate: KidsPlaybackGate
-
-    @Inject
-    lateinit var sourceResolver: PlaybackSourceResolver
 
     @Inject
     lateinit var codecConfigurator: NextlibCodecConfigurator
@@ -56,7 +52,6 @@ class MainActivity : ComponentActivity() {
                     AppNavHost(
                         resumeManager = resumeManager,
                         kidsPlaybackGate = kidsPlaybackGate,
-                        sourceResolver = sourceResolver,
                         codecConfigurator = codecConfigurator,
                         catalogSyncBootstrap = catalogSyncBootstrap,
                     )

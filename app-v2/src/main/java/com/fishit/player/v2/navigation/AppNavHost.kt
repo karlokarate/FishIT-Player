@@ -24,9 +24,8 @@ import com.fishit.player.feature.home.HomeScreen
 import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
-import com.fishit.player.internal.source.PlaybackSourceResolver
-import com.fishit.player.internal.ui.InternalPlayerEntry
 import com.fishit.player.nextlib.NextlibCodecConfigurator
+import com.fishit.player.player.ui.PlayerScreen
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
 import com.fishit.player.v2.CatalogSyncBootstrap
@@ -46,7 +45,6 @@ import kotlinx.coroutines.flow.collectLatest
 fun AppNavHost(
     resumeManager: ResumeManager,
     kidsPlaybackGate: KidsPlaybackGate,
-    sourceResolver: PlaybackSourceResolver,
     codecConfigurator: NextlibCodecConfigurator,
     catalogSyncBootstrap: CatalogSyncBootstrap,
 ) {
@@ -156,10 +154,6 @@ fun AppNavHost(
                 PlayerNavScreen(
                     mediaId = mediaId,
                     sourceType = sourceType,
-                    resumeManager = resumeManager,
-                    kidsPlaybackGate = kidsPlaybackGate,
-                    sourceResolver = sourceResolver,
-                    codecConfigurator = codecConfigurator,
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -175,7 +169,6 @@ fun AppNavHost(
             // Debug Playback Screen (test player with Big Buck Bunny)
             composable(Routes.DEBUG_PLAYBACK) {
                 DebugPlaybackScreen(
-                    sourceResolver = sourceResolver,
                     resumeManager = resumeManager,
                     kidsPlaybackGate = kidsPlaybackGate,
                     codecConfigurator = codecConfigurator,
@@ -195,10 +188,6 @@ fun AppNavHost(
 private fun PlayerNavScreen(
     mediaId: String,
     sourceType: SourceType,
-    resumeManager: ResumeManager,
-    kidsPlaybackGate: KidsPlaybackGate,
-    sourceResolver: PlaybackSourceResolver,
-    codecConfigurator: NextlibCodecConfigurator,
     onBack: () -> Unit,
     viewModel: PlayerNavViewModel = hiltViewModel(),
 ) {
@@ -209,15 +198,12 @@ private fun PlayerNavScreen(
     }
 
     when {
-        state.context != null ->
-            InternalPlayerEntry(
-                playbackContext = state.context,
-                sourceResolver = sourceResolver,
-                resumeManager = resumeManager,
-                kidsPlaybackGate = kidsPlaybackGate,
-                codecConfigurator = codecConfigurator,
-                onBack = onBack,
+        state.context != null -> {
+            PlayerScreen(
+                context = state.context!!,
+                onExit = onBack,
             )
+        }
 
         state.error != null -> {
             LaunchedEffect(state.error) {

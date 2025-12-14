@@ -36,7 +36,7 @@ dependencies {
     implementation(project(":core:ui-layout"))
     implementation(project(":core:ui-imaging"))
     implementation(project(":playback:domain"))
-    implementation(project(":player:internal"))
+    implementation(project(":player:ui"))
     implementation(project(":player:nextlib-codecs"))
     implementation(project(":infra:logging"))
     

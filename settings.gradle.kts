@@ -63,6 +63,7 @@ include(":playback:xtream")
 include(":player:internal")
 include(":player:miniplayer")
 include(":player:nextlib-codecs")
+include(":player:ui")
 
 // Pipelines (no UI)
 include(":pipeline:telegram")

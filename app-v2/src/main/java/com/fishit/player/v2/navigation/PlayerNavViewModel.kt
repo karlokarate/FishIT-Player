@@ -3,9 +3,9 @@ package com.fishit.player.v2.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.MediaType
-import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.extensions.MediaSourceRefExtensions.parseXtreamVodId
+import com.fishit.player.core.model.SourceIdParser.parseXtreamVodId
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -28,11 +28,11 @@ class PlayerNavViewModel
 
         fun load(
             sourceId: String,
-            sourceType: SourceType,
+            sourceType: com.fishit.player.core.model.SourceType,
         ) {
             viewModelScope.launch {
                 when (sourceType) {
-                    SourceType.XTREAM -> loadXtreamContext(sourceId)
+                    com.fishit.player.core.model.SourceType.XTREAM -> loadXtreamContext(sourceId)
                     else -> _state.value = PlayerNavState(error = "Unsupported source: $sourceType")
                 }
             }
