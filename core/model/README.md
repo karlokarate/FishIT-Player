@@ -38,3 +38,7 @@ Transport    Pipeline    Data    Playback
 1. ❌ Adding Telegram/Xtream specific fields
 2. ❌ Importing TDLib or OkHttp types
 3. ❌ Adding normalization logic here
+
+## Testing Notes
+- This module should be pure Kotlin with no Android/platform dependencies
+- All types should be serializable for cross-layer communication
