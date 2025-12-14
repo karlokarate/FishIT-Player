@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.fishit.player.core.catalogsync.bootstrap.CatalogSyncStarter
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.ui.theme.FishTheme
@@ -25,7 +26,6 @@ import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.ui.PlayerScreen
-import com.fishit.player.v2.CatalogSyncBootstrap
 import com.fishit.player.v2.navigation.PlayerNavViewModel
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
 import kotlinx.coroutines.flow.collectLatest
@@ -40,15 +40,15 @@ import kotlinx.coroutines.flow.collectLatest
  */
 @Composable
 fun AppNavHost(
-    catalogSyncBootstrap: CatalogSyncBootstrap,
+    catalogSyncStarter: CatalogSyncStarter,
 ) {
     val navController = rememberNavController()
 
     FishTheme {
-        LaunchedEffect(navController, catalogSyncBootstrap) {
+        LaunchedEffect(navController, catalogSyncStarter) {
             navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
                 if (backStackEntry.destination.route == Routes.HOME) {
-                    catalogSyncBootstrap.start()
+                    catalogSyncStarter.start()
                 }
             }
         }

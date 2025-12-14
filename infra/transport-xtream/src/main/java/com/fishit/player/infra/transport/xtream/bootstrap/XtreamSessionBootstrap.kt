@@ -1,9 +1,8 @@
-package com.fishit.player.v2
+package com.fishit.player.infra.transport.xtream.bootstrap
 
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
-import com.fishit.player.v2.di.AppScopeModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,11 +14,16 @@ import javax.inject.Singleton
 /**
  * Bootstraps Xtream session initialization from stored credentials on app start.
  *
- * Responsibilities:
+ * **Purpose:**
  * - Read stored Xtream credentials on app start
  * - Auto-initialize XtreamApiClient if credentials exist
  * - Does NOT trigger catalog sync (that's CatalogSyncBootstrap's job)
  * - Runs once per app process
+ *
+ * **Architecture (Phase B2):**
+ * - Migrated from app-v2 to infra/transport-xtream
+ * - Transport layer owns session initialization
+ * - Exposes XtreamBootstrapper interface to app layer
  */
 @Singleton
 class XtreamSessionBootstrap
@@ -27,12 +31,12 @@ class XtreamSessionBootstrap
     constructor(
         private val xtreamApiClient: XtreamApiClient,
         private val xtreamCredentialsStore: XtreamCredentialsStore,
-        @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
+        @Named("AppLifecycleScope")
         private val appScope: CoroutineScope,
-    ) {
+    ) : XtreamBootstrapper {
         private val hasAutoInitialized = AtomicBoolean(false)
 
-        fun start() {
+        override fun start() {
             if (!hasAutoInitialized.compareAndSet(false, true)) return
 
             appScope.launch(Dispatchers.IO) {
@@ -65,3 +69,18 @@ class XtreamSessionBootstrap
             private const val TAG = "XtreamSessionBootstrap"
         }
     }
+
+/**
+ * Safe interface for triggering Xtream session bootstrap.
+ *
+ * Exposed to app-v2 layer for startup integration without exposing
+ * transport implementation details.
+ */
+interface XtreamBootstrapper {
+    /**
+     * Start the Xtream session bootstrap process.
+     *
+     * Idempotent - safe to call multiple times.
+     */
+    fun start()
+}

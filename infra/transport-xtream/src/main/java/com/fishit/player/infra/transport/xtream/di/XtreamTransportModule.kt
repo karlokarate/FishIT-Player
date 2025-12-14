@@ -5,6 +5,8 @@ import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
+import com.fishit.player.infra.transport.xtream.bootstrap.XtreamBootstrapper
+import com.fishit.player.infra.transport.xtream.bootstrap.XtreamSessionBootstrap
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -68,4 +70,19 @@ abstract class XtreamCredentialsModule {
     @Binds
     @Singleton
     abstract fun bindCredentialsStore(impl: EncryptedXtreamCredentialsStore): XtreamCredentialsStore
+}
+
+/**
+ * Hilt module for Xtream session bootstrap.
+ *
+ * **Architecture (Phase B2):**
+ * - Migrated from app-v2 to infra/transport-xtream
+ * - Binds XtreamBootstrapper interface to implementation
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class XtreamBootstrapModule {
+    @Binds
+    @Singleton
+    abstract fun bindXtreamBootstrapper(impl: XtreamSessionBootstrap): XtreamBootstrapper
 }

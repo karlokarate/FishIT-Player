@@ -1,4 +1,4 @@
-package com.fishit.player.v2.di
+package com.fishit.player.infra.transport.telegram.imaging.coil
 
 import coil3.decode.DataSource
 import coil3.decode.ImageSource
@@ -15,17 +15,19 @@ import java.io.File
 import java.io.IOException
 
 /**
- * TelegramThumbFetcher implementation using TelegramTransportClient.
+ * Coil TelegramThumbFetcher implementation using TelegramTransportClient.
  *
  * **Purpose:**
- * - Resolves [ImageRef.TelegramThumb] references via TDLib
+ * - Bridges Coil 3 image loading with Telegram transport layer
+ * - Resolves ImageRef.TelegramThumb references via TDLib
  * - Downloads thumbnail files if not cached locally
  * - Returns local file path for Coil to decode
  *
- * **Architecture:**
- * - core:ui-imaging defines the [TelegramThumbFetcher] interface
- * - This implementation lives in app-v2 (the only module with both dependencies)
- * - Wired via [ImagingModule] DI
+ * **Architecture (Phase B2):**
+ * - Migrated from app-v2 to infra/transport-telegram
+ * - Implements core:ui-imaging TelegramThumbFetcher interface
+ * - Uses infra/transport-telegram TelegramTransportClient
+ * - Wired via DI in TelegramImagingModule
  *
  * **Download Strategy:**
  * 1. Check if file is already downloaded (localPath available)
@@ -33,7 +35,7 @@ import java.io.IOException
  * 3. Wait for download completion (with timeout)
  * 4. Return SourceFetchResult with local file
  */
-class TelegramThumbFetcherImpl(
+class CoilTelegramThumbFetcher(
     private val telegramClient: TelegramTransportClient,
     private val ref: ImageRef.TelegramThumb,
     private val options: Options,
@@ -127,7 +129,9 @@ class TelegramThumbFetcherImpl(
     }
 
     /**
-     * Factory for creating [TelegramThumbFetcherImpl] instances.
+     * Factory for creating CoilTelegramThumbFetcher instances.
+     *
+     * Implements the core:ui-imaging TelegramThumbFetcher.Factory interface.
      */
     class Factory(
         private val telegramClient: TelegramTransportClient,
@@ -135,6 +139,6 @@ class TelegramThumbFetcherImpl(
         override fun create(
             ref: ImageRef.TelegramThumb,
             options: Options,
-        ): TelegramThumbFetcher = TelegramThumbFetcherImpl(telegramClient, ref, options)
+        ): TelegramThumbFetcher = CoilTelegramThumbFetcher(telegramClient, ref, options)
     }
 }

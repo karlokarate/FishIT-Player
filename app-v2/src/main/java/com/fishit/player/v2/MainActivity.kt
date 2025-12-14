@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.fishit.player.core.catalogsync.bootstrap.CatalogSyncStarter
+import com.fishit.player.infra.transport.xtream.bootstrap.XtreamBootstrapper
 import com.fishit.player.v2.navigation.AppNavHost
 import com.fishit.player.v2.ui.theme.FishItV2Theme
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,17 +21,17 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject
-    lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
+    lateinit var catalogSyncStarter: CatalogSyncStarter
 
     @Inject
-    lateinit var xtreamSessionBootstrap: XtreamSessionBootstrap
+    lateinit var xtreamBootstrapper: XtreamBootstrapper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         // Initialize Xtream session before catalog sync
-        xtreamSessionBootstrap.start()
+        xtreamBootstrapper.start()
 
         setContent {
             FishItV2Theme {
@@ -38,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     AppNavHost(
-                        catalogSyncBootstrap = catalogSyncBootstrap,
+                        catalogSyncStarter = catalogSyncStarter,
                     )
                 }
             }

@@ -22,21 +22,19 @@
 # 7. Expiry dates in the past will cause CI failure
 
 # ======================================================================
-# App-v2 DI Wiring Exceptions (Phase A1.4)
+# App-v2 DI Wiring Exceptions (Phase B2: COMPLETE)
 # ======================================================================
-# These files require transport layer access for Hilt dependency injection wiring.
-# They act as adapters between transport implementations and domain interfaces.
-# TODO: Create proper infra adapter layer to eliminate these exceptions.
-
-app-v2/src/main/java/com/fishit/player/v2/di/TelegramAuthModule.kt # TEMP until 2026-06-01: Binds TelegramAuthClient to feature repositories - needs infra/data-telegram adapter
-app-v2/src/main/java/com/fishit/player/v2/di/ImagingModule.kt # TEMP until 2026-06-01: Coil ImageLoader with TelegramThumbFetcher - needs infra/imaging module
-app-v2/src/main/java/com/fishit/player/v2/di/TelegramThumbFetcherImpl.kt # TEMP until 2026-06-01: Adapter for Coil Fetcher interface - move to infra/imaging
-app-v2/src/main/java/com/fishit/player/v2/XtreamSessionBootstrap.kt # TEMP until 2026-06-01: Bootstrap observing XtreamApiClient - refactor to domain event
-app-v2/src/main/java/com/fishit/player/v2/CatalogSyncBootstrap.kt # TEMP until 2026-06-01: Bootstrap observing transport state - refactor to domain event
+# All entries removed - migration to infra modules complete!
+# - TelegramAuthModule → infra/transport-telegram/di/TelegramTransportModule
+# - ImagingModule → core/ui-imaging/di/ImagingModule
+# - TelegramThumbFetcherImpl → infra/transport-telegram/imaging/coil/CoilTelegramThumbFetcher
+# - XtreamSessionBootstrap → infra/transport-xtream/bootstrap/XtreamSessionBootstrap
+# - CatalogSyncBootstrap → core/catalog-sync/bootstrap/CatalogSyncBootstrap
 
 # ======================================================================
 # Growth Cap: Maximum 10 entries allowed
 # ======================================================================
+# Current count: 0
 # If you need to add more, you must:
 # 1. Remove/refactor existing entries first
 # 2. Get architecture review approval

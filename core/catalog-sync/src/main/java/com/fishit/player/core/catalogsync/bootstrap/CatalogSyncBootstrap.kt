@@ -1,4 +1,4 @@
-package com.fishit.player.v2
+package com.fishit.player.core.catalogsync.bootstrap
 
 import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.infra.logging.UnifiedLog
@@ -6,7 +6,6 @@ import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.api.TelegramAuthState
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamConnectionState
-import com.fishit.player.v2.di.AppScopeModule
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
@@ -25,10 +24,15 @@ import javax.inject.Singleton
 /**
  * Bootstraps catalog synchronization once per app session after authentication succeeds.
  *
- * Responsibilities:
+ * **Purpose:**
  * - Observe auth/connection state from Telegram and Xtream clients
  * - Trigger catalog sync when authentication is ready
  * - Does NOT handle session initialization (that's XtreamSessionBootstrap's job)
+ *
+ * **Architecture (Phase B2):**
+ * - Migrated from app-v2 to core/catalog-sync
+ * - Orchestrates sync triggers based on transport state
+ * - Exposes CatalogSyncStarter interface to app layer
  */
 @Singleton
 class CatalogSyncBootstrap
@@ -37,13 +41,13 @@ class CatalogSyncBootstrap
         private val catalogSyncService: CatalogSyncService,
         private val telegramAuthClient: TelegramAuthClient,
         private val xtreamApiClient: XtreamApiClient,
-        @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
+        @Named("AppLifecycleScope")
         private val appScope: CoroutineScope,
-    ) {
+    ) : CatalogSyncStarter {
         private val hasStarted = AtomicBoolean(false)
         private val hasTriggered = AtomicBoolean(false)
 
-        fun start() {
+        override fun start() {
             if (!hasStarted.compareAndSet(false, true)) return
 
             UnifiedLog.i(TAG) { "Catalog sync bootstrap collection started" }
@@ -114,3 +118,18 @@ class CatalogSyncBootstrap
             private const val TAG = "CatalogSyncBootstrap"
         }
     }
+
+/**
+ * Safe interface for triggering catalog sync bootstrap.
+ *
+ * Exposed to app-v2 layer for startup integration without exposing
+ * sync implementation details.
+ */
+interface CatalogSyncStarter {
+    /**
+     * Start observing transport state and trigger sync when ready.
+     *
+     * Idempotent - safe to call multiple times.
+     */
+    fun start()
+}

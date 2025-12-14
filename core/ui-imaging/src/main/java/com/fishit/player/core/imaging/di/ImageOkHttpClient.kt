@@ -1,4 +1,4 @@
-package com.fishit.player.v2.di
+package com.fishit.player.core.imaging.di
 
 import javax.inject.Qualifier
 
