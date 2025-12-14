@@ -28,12 +28,12 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: v2-arch-gates-${{ github.event.pull_request.number }}
+  group: v2-arch-gates-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  architecture-gates:
-    name: Architecture Guardrails (Detekt)
+  arch_guardrails:
+    name: Arch Guardrails
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -75,8 +75,8 @@ jobs:
             **/build/reports/detekt/
           retention-days: 7
 
-  wiring-compile-gates:
-    name: Release Compilation Gates
+  release_wiring_gates:
+    name: Release Wiring Gates
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -144,10 +144,10 @@ jobs:
             **/build/reports/
           retention-days: 7
 
-  summary:
+  gate_summary:
     name: Gate Summary
     runs-on: ubuntu-latest
-    needs: [architecture-gates, wiring-compile-gates]
+    needs: [arch_guardrails, release_wiring_gates]
     if: always()
 
     steps:
@@ -156,17 +156,17 @@ jobs:
           echo "==================================="
           echo "V2 Architecture Gate Results"
           echo "==================================="
-          echo "Architecture Gates (Detekt): ${{ needs.architecture-gates.result }}"
-          echo "Wiring Compile Gates: ${{ needs.wiring-compile-gates.result }}"
+          echo "Architecture Gates (Detekt): ${{ needs.arch_guardrails.result }}"
+          echo "Wiring Compile Gates: ${{ needs.release_wiring_gates.result }}"
           echo ""
           
-          if [ "${{ needs.architecture-gates.result }}" != "success" ]; then
+          if [ "${{ needs.arch_guardrails.result }}" != "success" ]; then
             echo "❌ Architecture gates failed - layer boundary violations detected"
             echo "   See AGENTS.md Section 4.5 for layer hierarchy rules"
             exit 1
           fi
           
-          if [ "${{ needs.wiring-compile-gates.result }}" != "success" ]; then
+          if [ "${{ needs.release_wiring_gates.result }}" != "success" ]; then
             echo "❌ Wiring compile gates failed - illegal module dependencies"
             echo "   Check build reports for details"
             exit 1

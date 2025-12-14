@@ -66,17 +66,98 @@ app-v2/**/di/**/*.kt # Pattern-based exception with reason
 
 **Two-stage enforcement:**
 
-**Job A: Architecture Gates**
+**Job A: Arch Guardrails** (`arch_guardrails`)
 - Runs Detekt with layer boundary rules
-- Runs grep-based architecture checks
+- Runs grep-based architecture checks with allowlist validation
 - Uploads Detekt reports for analysis
 
-**Job B: Wiring Compile Gates**
+**Job B: Release Wiring Gates** (`release_wiring_gates`)
 - Compiles critical modules in Release mode:
   - `:app-v2:compileReleaseKotlin`
   - `:feature:home:compileReleaseKotlin`
   - `:feature:telegram-media:compileReleaseKotlin`
   - `:playback:domain:compileReleaseKotlin`
+- KSP wiring gates (Phase A1.2):
+  - `:feature:home:kspReleaseKotlin`
+  - `:app-v2:kspReleaseKotlin`
+
+**Job C: Gate Summary** (`gate_summary`)
+- Aggregates results from both jobs
+- Fails if either job fails
+
+**Concurrency Control** (Phase A1.5):
+- New pushes to a PR cancel in-progress runs
+- Prevents wasted CI minutes on duplicate runs
+- Uses `cancel-in-progress: true` with PR number grouping
+
+**Stable Job Names** (Phase A1.5):
+- Job IDs: `arch_guardrails`, `release_wiring_gates`, `gate_summary`
+- Names: "Arch Guardrails", "Release Wiring Gates", "Gate Summary"
+- ⚠️ **DO NOT rename** - GitHub branch protection requires exact job names
+
+## Required GitHub Branch Protection Setup (Phase A1.5)
+
+**IMPORTANT**: The CI gates must be configured as required checks in GitHub settings. Code cannot enforce this - it must be done manually.
+
+### Steps to Configure Required Checks
+
+1. **Navigate to Repository Settings**
+   - Go to: `https://github.com/karlokarate/FishIT-Player/settings/branches`
+   - Or: Settings → Branches → Branch protection rules
+
+2. **Edit Protection Rule for `main` Branch**
+   - Click "Edit" on the `main` branch protection rule
+   - Or create a new rule if none exists
+
+3. **Enable Status Check Requirements**
+   - ✅ Check "Require status checks to pass before merging"
+   - ✅ Check "Require branches to be up to date before merging" (recommended)
+
+4. **Add Required Status Checks**
+   
+   Search for and add these **exact check names**:
+   
+   - ✅ `V2 Architecture Gates / Arch Guardrails`
+   - ✅ `V2 Architecture Gates / Release Wiring Gates`
+   
+   **Note**: The format is `<workflow_name> / <job_name>`
+
+5. **Save Changes**
+   - Click "Save changes" at the bottom of the page
+
+### Verification
+
+To verify the required checks are configured:
+
+1. Open any PR to the `main` branch
+2. Scroll to the bottom - you should see the checks listed
+3. The PR should show "Merging is blocked" until checks pass
+
+### ⚠️ Important Warnings
+
+**DO NOT rename workflow or job names** without updating branch protection rules:
+
+- Workflow name: `V2 Architecture Gates` (line 5 in workflow file)
+- Job ID: `arch_guardrails` (line 35)
+- Job name: `Arch Guardrails` (line 36)
+- Job ID: `release_wiring_gates` (line 77)
+- Job name: `Release Wiring Gates` (line 78)
+
+**If you rename any of these**, the required checks will silently break and PRs can be merged without passing the gates!
+
+### Troubleshooting
+
+**Issue**: Required checks don't appear in the search
+- **Cause**: Workflow hasn't run yet on a PR
+- **Fix**: Create a test PR to trigger the workflow, then add the checks
+
+**Issue**: PR shows "Expected — Waiting for status to be reported"
+- **Cause**: Workflow file has errors or didn't trigger
+- **Fix**: Check Actions tab for workflow run errors
+
+**Issue**: Can merge PR despite failing checks
+- **Cause**: Required checks not configured or wrong check names
+- **Fix**: Verify exact check names in branch protection settings
 
 **Triggers:** PRs to `main` and `architecture/v2-bootstrap` branches
 
