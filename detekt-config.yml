@@ -232,63 +232,88 @@ style:
     active: true
     imports:
       # =====================================================================
-      # B5 ARCHITECTURE GUARDRAILS - Layer Boundary Enforcement
+      # PHASE A1 ARCHITECTURE GUARDRAILS - Layer Boundary Enforcement
       # =====================================================================
-      # Prevent feature layer from directly importing lower layers
-      # See docs/dev/ARCH_GUARDRAILS.md for full details
+      # Enforces strict layer boundaries per AGENTS.md Section 4.5
+      # Layer hierarchy: UI → Domain → Data → Pipeline → Transport → core:model
+      #
+      # NOTE: Detekt's ForbiddenImport rule has rule-level excludes, not per-import excludes.
+      # This means we enforce the most restrictive rules and exempt modules that need flexibility.
       
-      # Layer boundary rules - Features must NOT import:
+      # ======================================================================
+      # FEATURE + APP LAYERS: Cannot import pipeline DTOs
+      # ======================================================================
       - value: 'com.fishit.player.pipeline.*'
-        reason: 'Features must use domain models, not pipeline DTOs. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: 'com.fishit.player.infra.transport.*'
-        reason: 'Features must use repository interfaces, not transport clients. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: 'com.fishit.player.player.internal.*'
-        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: 'com.fishit.player.internal.*'
-        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain. See docs/dev/ARCH_GUARDRAILS.md'
+        reason: '[FEATURE/APP] Must use domain models, not pipeline DTOs (AGENTS.md §4.5)'
+      
+      # ======================================================================
+      # FEATURE LAYER: Cannot import data implementations
+      # ======================================================================
       - value: 'com.fishit.player.infra.data.*'
-        reason: 'Features must define repository interfaces in their domain package. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: 'com.fishit.player.infra.network.*'
-        reason: 'Features must use repository abstractions, not network layer. See docs/dev/ARCH_GUARDRAILS.md'
-      - value: 'com.fishit.player.infra.persistence.*'
-        reason: 'Features must use repository abstractions, not persistence layer. See docs/dev/ARCH_GUARDRAILS.md'
+        reason: '[FEATURE] Must define repository interfaces in domain package (AGENTS.md §4.5)'
       
-      # Logging rules
+      # ======================================================================
+      # FEATURE + APP LAYERS: Cannot import transport implementations
+      # ======================================================================
+      - value: 'com.fishit.player.infra.transport.*'
+        reason: '[FEATURE/APP] Must use repository/domain interfaces, not transport clients (AGENTS.md §4.5)'
+      
+      # ======================================================================
+      # FEATURE LAYER: Cannot import player internals
+      # ======================================================================
+      - value: 'com.fishit.player.player.internal.*'
+        reason: '[FEATURE] Must use PlayerEntryPoint from playback/domain (AGENTS.md §4.5)'
+      
+      # ======================================================================
+      # LOGGING CONTRACT: All modules must use UnifiedLog
+      # ======================================================================
       - value: 'android.util.Log'
-        reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
-      - value: 'timber.log.Timber'
-        reason: 'Use UnifiedLog from :infra:logging instead. Direct Timber usage is forbidden outside the logging module.'
+        reason: '[LOGGING] Use UnifiedLog from :infra:logging (LOGGING_CONTRACT_V2.md)'
       
-      # v2 Naming Convention: Forbid legacy namespace in v2 modules
+      - value: 'timber.log.Timber'
+        reason: '[LOGGING] Use UnifiedLog from :infra:logging (LOGGING_CONTRACT_V2.md)'
+      
+      # ======================================================================
+      # v2 NAMESPACE: No v1 com.chris.m3usuite imports in v2 modules
+      # ======================================================================
       - value: 'com.chris.m3usuite.*'
-        reason: 'v1 namespace forbidden in v2 modules. See AGENTS.md Section 3.2 and 14.4.'
+        reason: '[NAMESPACE] v1 namespace forbidden in v2 modules (AGENTS.md §3.2)'
     
     excludes:
-      # infra/logging can use any logging implementation
+      # Rule-level excludes: these paths are exempt from ALL ForbiddenImport checks above
+      #
+      # Logging module can use android.util.Log and Timber
       - '**/infra/logging/**'
-      # legacy modules are exempt from new rules
+      
+      # Legacy v1 code is exempt from v2 rules
       - '**/legacy/**'
-      # Specific infra modules can import from each other
+      
+      # Infrastructure modules can import from each other (data can import transport, etc.)
       - '**/infra/data-*/**'
       - '**/infra/transport-*/**'
       - '**/infra/network/**'
       - '**/infra/persistence/**'
       - '**/infra/tooling/**'
-      # Pipeline layer may import anything (it's a lower layer)
+      
+      # Core modules are foundational and may import as needed
+      - '**/core/**'
+      
+      # Pipeline modules need to import transport interfaces
       - '**/pipeline/**'
-      # Playback modules may import transport and player internals
+      
+      # Playback modules need to import transport for DataSource implementations
       - '**/playback/**'
-      # Player modules can import anything
+      
+      # Player internal can import what it needs
       - '**/player/**'
-      # Tools (CLI) can import anything
-      - '**/tools/**'
-      # Core modules - specify which ones need exemption
-      - '**/core/app-startup/**'
-      - '**/core/feature-api/**'
-      - '**/core/catalog-sync/**'
-      # App wiring module
+      
+      # App wiring module needs to wire everything together
       - '**/app-v2/**'
-      # Test source sets are exempt from layer rules
+      
+      # Tools/CLI can access everything for debugging
+      - '**/tools/**'
+      
+      # Test code is exempt from production layer rules
       - '**/src/test/**'
       - '**/src/androidTest/**'
       - '**/src/testFixtures/**'

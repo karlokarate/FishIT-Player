@@ -2,14 +2,13 @@ package com.fishit.player.feature.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.feature.onboarding.domain.TelegramAuthRepository
+import com.fishit.player.feature.onboarding.domain.TelegramAuthState as DomainTelegramAuthState
+import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
+import com.fishit.player.feature.onboarding.domain.XtreamConfig
+import com.fishit.player.feature.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramAuthClient
-import com.fishit.player.infra.transport.xtream.XtreamApiClient
-import com.fishit.player.infra.transport.xtream.XtreamApiConfig
-import com.fishit.player.infra.transport.xtream.XtreamAuthState
-import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
-import com.fishit.player.infra.transport.xtream.XtreamError
-import com.fishit.player.infra.transport.xtream.XtreamStoredConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,8 +17,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.fishit.player.infra.transport.telegram.api.TelegramAuthState as TransportTelegramAuthState
-import com.fishit.player.infra.transport.xtream.XtreamConnectionState as TransportXtreamConnectionState
 
 /**
  * State for the onboarding/start screen
@@ -40,7 +37,7 @@ data class OnboardingState(
 )
 
 /**
- * Telegram authentication states
+ * Telegram authentication states (UI model)
  */
 sealed class TelegramAuthState {
     data object Disconnected : TelegramAuthState()
@@ -65,7 +62,7 @@ sealed class TelegramAuthState {
 }
 
 /**
- * Xtream connection states
+ * Xtream connection states (UI model)
  */
 sealed class XtreamConnectionState {
     data object Disconnected : XtreamConnectionState()
@@ -94,9 +91,8 @@ data class XtreamCredentials(
 class OnboardingViewModel
     @Inject
     constructor(
-        private val telegramAuthClient: TelegramAuthClient,
-        private val xtreamApiClient: XtreamApiClient,
-        private val xtreamCredentialsStore: XtreamCredentialsStore,
+        private val telegramAuthRepository: TelegramAuthRepository,
+        private val xtreamAuthRepository: XtreamAuthRepository,
     ) : ViewModel() {
         private companion object {
             private const val TAG = "OnboardingVM"
@@ -105,9 +101,9 @@ class OnboardingViewModel
         private val _state = MutableStateFlow(OnboardingState())
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
 
-        private var lastTelegramAuthState: TransportTelegramAuthState = TransportTelegramAuthState.Idle
-        private var lastXtreamConnectionState: TransportXtreamConnectionState =
-            TransportXtreamConnectionState.Disconnected
+        private var lastTelegramAuthState: DomainTelegramAuthState = DomainTelegramAuthState.Idle
+        private var lastXtreamConnectionState: DomainXtreamConnectionState =
+            DomainXtreamConnectionState.Disconnected
 
         init {
             observeTelegramAuth()
@@ -123,7 +119,7 @@ class OnboardingViewModel
             _state.update { it.copy(telegramError = null) }
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Starting Telegram auth" }
-                runCatching { telegramAuthClient.ensureAuthorized() }
+                runCatching { telegramAuthRepository.ensureAuthorized() }
                     .onFailure { error ->
                         UnifiedLog.e(TAG, error) { "Telegram ensureAuthorized failed" }
                         _state.update { it.copy(telegramError = error.message) }
@@ -146,7 +142,7 @@ class OnboardingViewModel
 
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Submitting phone number" }
-                runCatching { telegramAuthClient.sendPhoneNumber(phone) }
+                runCatching { telegramAuthRepository.sendPhoneNumber(phone) }
                     .onFailure { error ->
                         UnifiedLog.e(TAG, error) { "Failed to submit phone" }
                         _state.update { it.copy(telegramError = error.message) }
@@ -169,7 +165,7 @@ class OnboardingViewModel
 
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Submitting verification code" }
-                runCatching { telegramAuthClient.sendCode(code) }
+                runCatching { telegramAuthRepository.sendCode(code) }
                     .onFailure { error ->
                         UnifiedLog.e(TAG, error) { "Failed to submit code" }
                         _state.update { it.copy(telegramError = error.message) }
@@ -192,7 +188,7 @@ class OnboardingViewModel
 
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Submitting 2FA password" }
-                runCatching { telegramAuthClient.sendPassword(password) }
+                runCatching { telegramAuthRepository.sendPassword(password) }
                     .onFailure { error ->
                         UnifiedLog.e(TAG, error) { "Failed to submit password" }
                         _state.update { it.copy(telegramError = error.message) }
@@ -203,7 +199,7 @@ class OnboardingViewModel
         fun disconnectTelegram() {
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Logging out of Telegram" }
-                runCatching { telegramAuthClient.logout() }
+                runCatching { telegramAuthRepository.logout() }
                     .onFailure { error ->
                         UnifiedLog.e(TAG, error) { "Logout failed" }
                         _state.update { it.copy(telegramError = error.message) }
@@ -249,7 +245,7 @@ class OnboardingViewModel
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Connecting to Xtream host=${credentials.host}" }
                 val config =
-                    XtreamApiConfig(
+                    XtreamConfig(
                         scheme = if (credentials.useHttps) "https" else "http",
                         host = credentials.host,
                         port = credentials.port,
@@ -257,7 +253,7 @@ class OnboardingViewModel
                         password = credentials.password,
                     )
 
-                val result = xtreamApiClient.initialize(config)
+                val result = xtreamAuthRepository.initialize(config)
                 if (result.isFailure) {
                     val message = result.exceptionOrNull()?.message ?: "Failed to connect"
                     UnifiedLog.e(TAG) { "Xtream initialization failed: $message" }
@@ -269,15 +265,7 @@ class OnboardingViewModel
                     }
                 } else {
                     // Success - persist credentials for auto-rehydration
-                    val storedConfig =
-                        XtreamStoredConfig(
-                            scheme = config.scheme,
-                            host = config.host,
-                            port = config.port,
-                            username = config.username,
-                            password = config.password,
-                        )
-                    runCatching { xtreamCredentialsStore.write(storedConfig) }
+                    runCatching { xtreamAuthRepository.saveCredentials(config) }
                         .onSuccess { UnifiedLog.i(TAG) { "Xtream credentials persisted" } }
                         .onFailure { error -> UnifiedLog.e(TAG, error) { "Failed to persist credentials" } }
                 }
@@ -293,11 +281,11 @@ class OnboardingViewModel
             }
             viewModelScope.launch {
                 UnifiedLog.i(TAG) { "Closing Xtream client and clearing credentials" }
-                runCatching { xtreamApiClient.close() }
+                runCatching { xtreamAuthRepository.close() }
                     .onFailure { error -> UnifiedLog.e(TAG, error) { "Error closing Xtream" } }
 
                 // Clear stored credentials
-                runCatching { xtreamCredentialsStore.clear() }
+                runCatching { xtreamAuthRepository.clearCredentials() }
                     .onSuccess { UnifiedLog.i(TAG) { "Xtream credentials cleared" } }
                     .onFailure { error -> UnifiedLog.e(TAG, error) { "Failed to clear credentials" } }
             }
@@ -373,47 +361,34 @@ class OnboardingViewModel
 
         private fun updateCanContinue() {
             _state.update { state ->
-                val telegramConnected = lastTelegramAuthState is TransportTelegramAuthState.Ready
-                val xtreamConnected = lastXtreamConnectionState is TransportXtreamConnectionState.Connected
+                val telegramConnected = lastTelegramAuthState is DomainTelegramAuthState.Connected
+                val xtreamConnected = lastXtreamConnectionState is DomainXtreamConnectionState.Connected
                 state.copy(canContinue = telegramConnected || xtreamConnected)
             }
         }
 
         private fun observeTelegramAuth() {
             viewModelScope.launch {
-                telegramAuthClient.authState.collectLatest { authState ->
+                telegramAuthRepository.authState.collectLatest { authState ->
                     lastTelegramAuthState = authState
                     val mappedState =
                         when (authState) {
-                            TransportTelegramAuthState.Idle,
-                            TransportTelegramAuthState.LoggedOut,
-                            TransportTelegramAuthState.Closed,
-                            TransportTelegramAuthState.LoggingOut,
+                            DomainTelegramAuthState.Idle,
+                            DomainTelegramAuthState.Disconnected,
                             -> TelegramAuthState.Disconnected
 
-                            TransportTelegramAuthState.Connecting,
-                            TransportTelegramAuthState.WaitTdlibParameters,
-                            TransportTelegramAuthState.WaitEncryptionKey,
-                            -> TelegramAuthState.Disconnected
-
-                            is TransportTelegramAuthState.WaitPhoneNumber ->
+                            DomainTelegramAuthState.WaitingForPhone ->
                                 TelegramAuthState.WaitingForPhoneNumber
 
-                            is TransportTelegramAuthState.WaitCode -> TelegramAuthState.WaitingForCode
+                            DomainTelegramAuthState.WaitingForCode -> TelegramAuthState.WaitingForCode
 
-                            is TransportTelegramAuthState.WaitPassword ->
+                            DomainTelegramAuthState.WaitingForPassword ->
                                 TelegramAuthState.WaitingForPassword
 
-                            TransportTelegramAuthState.Ready -> TelegramAuthState.Connected
+                            DomainTelegramAuthState.Connected -> TelegramAuthState.Connected
 
-                            is TransportTelegramAuthState.Error,
-                            is TransportTelegramAuthState.Unknown,
-                            ->
-                                TelegramAuthState.Error(
-                                    (authState as? TransportTelegramAuthState.Error)?.message
-                                        ?: (authState as? TransportTelegramAuthState.Unknown)?.raw
-                                        ?: "Unknown error",
-                                )
+                            is DomainTelegramAuthState.Error ->
+                                TelegramAuthState.Error(authState.message)
                         }
 
                     _state.update {
@@ -431,17 +406,15 @@ class OnboardingViewModel
 
         private fun observeXtreamConnection() {
             viewModelScope.launch {
-                xtreamApiClient.connectionState.collectLatest { connectionState ->
+                xtreamAuthRepository.connectionState.collectLatest { connectionState ->
                     lastXtreamConnectionState = connectionState
                     val mappedState =
                         when (connectionState) {
-                            TransportXtreamConnectionState.Disconnected -> XtreamConnectionState.Disconnected
-                            TransportXtreamConnectionState.Connecting -> XtreamConnectionState.Connecting
-                            is TransportXtreamConnectionState.Connected -> XtreamConnectionState.Connected
-                            is TransportXtreamConnectionState.Error ->
-                                XtreamConnectionState.Error(
-                                    formatXtreamError(connectionState.error),
-                                )
+                            DomainXtreamConnectionState.Disconnected -> XtreamConnectionState.Disconnected
+                            DomainXtreamConnectionState.Connecting -> XtreamConnectionState.Connecting
+                            DomainXtreamConnectionState.Connected -> XtreamConnectionState.Connected
+                            is DomainXtreamConnectionState.Error ->
+                                XtreamConnectionState.Error(connectionState.message)
                         }
 
                     _state.update {
@@ -458,13 +431,13 @@ class OnboardingViewModel
 
         private fun observeXtreamAuth() {
             viewModelScope.launch {
-                xtreamApiClient.authState.collectLatest { authState ->
+                xtreamAuthRepository.authState.collectLatest { authState ->
                     when (authState) {
-                        is XtreamAuthState.Failed -> {
-                            _state.update { it.copy(xtreamError = formatXtreamError(authState.error)) }
+                        is DomainXtreamAuthState.Failed -> {
+                            _state.update { it.copy(xtreamError = authState.message) }
                         }
 
-                        is XtreamAuthState.Expired -> {
+                        is DomainXtreamAuthState.Expired -> {
                             val message =
                                 authState.expDate?.let { expDate ->
                                     "Account expired (expires $expDate)"
@@ -477,16 +450,5 @@ class OnboardingViewModel
                 }
             }
         }
-
-        private fun formatXtreamError(error: XtreamError): String =
-            when (error) {
-                is XtreamError.Network -> error.message
-                is XtreamError.Http -> "HTTP ${error.code}: ${error.message}"
-                XtreamError.InvalidCredentials -> "Invalid credentials"
-                is XtreamError.AccountExpired -> "Account expired"
-                is XtreamError.ParseError -> error.message
-                is XtreamError.Unsupported -> "Unsupported action ${error.action}"
-                is XtreamError.RateLimited -> "Rate limited"
-                is XtreamError.Unknown -> error.message
-            }
     }
+

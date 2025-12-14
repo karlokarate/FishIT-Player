@@ -1,0 +1,44 @@
+# Architecture Guardrails Allowlist
+# 
+# This file contains path-based exceptions for the architecture guardrail checks.
+# Use this sparingly - each exception must have a clear justification.
+#
+# Format: <file_path_or_pattern> # TEMP: <reason> - <issue_or_expiry>
+#
+# Examples:
+# app-v2/src/main/java/com/fishit/player/v2/di/TelegramAuthModule.kt # TEMP: DI wiring until #1234 - migrate to infra adapter
+# app-v2/src/main/java/com/fishit/player/v2/di/ImagingModule.kt # TEMP until 2026-01-15: Coil integration needs refactor
+#
+# Rules (Phase A1.4):
+# 1. Paths must be relative to repository root
+# 2. Supports glob patterns (*, **)
+# 3. Lines starting with # are comments
+# 4. Empty lines are ignored
+# 5. Each allowlist entry MUST contain:
+#    - The word "TEMP" (case-insensitive)
+#    - Either an issue reference (#123) OR an expiry date (YYYY-MM-DD)
+#    - A clear reason explaining why this exception is needed
+# 6. Maximum 10 entries allowed (enforced by script)
+# 7. Expiry dates in the past will cause CI failure
+
+# ======================================================================
+# App-v2 DI Wiring Exceptions (Phase A1.4)
+# ======================================================================
+# These files require transport layer access for Hilt dependency injection wiring.
+# They act as adapters between transport implementations and domain interfaces.
+# TODO: Create proper infra adapter layer to eliminate these exceptions.
+
+app-v2/src/main/java/com/fishit/player/v2/di/TelegramAuthModule.kt # TEMP until 2026-06-01: Binds TelegramAuthClient to feature repositories - needs infra/data-telegram adapter
+app-v2/src/main/java/com/fishit/player/v2/di/ImagingModule.kt # TEMP until 2026-06-01: Coil ImageLoader with TelegramThumbFetcher - needs infra/imaging module
+app-v2/src/main/java/com/fishit/player/v2/di/TelegramThumbFetcherImpl.kt # TEMP until 2026-06-01: Adapter for Coil Fetcher interface - move to infra/imaging
+app-v2/src/main/java/com/fishit/player/v2/XtreamSessionBootstrap.kt # TEMP until 2026-06-01: Bootstrap observing XtreamApiClient - refactor to domain event
+app-v2/src/main/java/com/fishit/player/v2/CatalogSyncBootstrap.kt # TEMP until 2026-06-01: Bootstrap observing transport state - refactor to domain event
+
+# ======================================================================
+# Growth Cap: Maximum 10 entries allowed
+# ======================================================================
+# If you need to add more, you must:
+# 1. Remove/refactor existing entries first
+# 2. Get architecture review approval
+# 3. Update this comment with justification
+
