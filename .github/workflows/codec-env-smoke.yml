@@ -1,0 +1,40 @@
+name: Codec Env Smoke
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Prepare Android SDK
+        env:
+          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+        run: |
+          tools/env/setup_android.sh
+
+      - name: Gradle assemble
+        env:
+          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+        run: ./gradlew :app-v2:assembleDebug
+
+      - name: Upload APK artifact
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-v2-debug-apk
+          path: app-v2/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
