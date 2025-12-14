@@ -1,6 +1,6 @@
 package com.fishit.player.infra.transport.xtream.bootstrap
 
-import com.fishit.player.core.appstartup.bootstrap.XtreamBootstrapper
+import com.fishit.player.core.bootstrap.XtreamBootstrapper
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore

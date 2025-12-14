@@ -1,4 +1,4 @@
-package com.fishit.player.core.appstartup.bootstrap
+package com.fishit.player.core.bootstrap
 
 /**
  * Safe interface for triggering Xtream session bootstrap.
@@ -9,7 +9,7 @@ package com.fishit.player.core.appstartup.bootstrap
  * - Allows app to trigger bootstrap without transport dependencies
  *
  * **Architecture (Phase B2):**
- * - Interface defined in core:app-startup (safe for app-v2)
+ * - Interface defined in core:bootstrap (pure interface, no dependencies)
  * - Implementation in infra/transport-xtream (XtreamSessionBootstrap)
  * - Bound via Hilt DI
  */
@@ -32,7 +32,7 @@ interface XtreamBootstrapper {
  * - Allows app to trigger sync without catalog-sync dependencies
  *
  * **Architecture (Phase B2):**
- * - Interface defined in core:app-startup (safe for app-v2)
+ * - Interface defined in core:bootstrap (pure interface, no dependencies)
  * - Implementation in core/catalog-sync (CatalogSyncBootstrap)
  * - Bound via Hilt DI
  */

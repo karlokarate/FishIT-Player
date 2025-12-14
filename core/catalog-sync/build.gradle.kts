@@ -29,7 +29,7 @@ dependencies {
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":core:persistence")) // For CanonicalMediaRepository
     implementation(project(":infra:logging"))
-    implementation(project(":core:app-startup"))
+    implementation(project(":core:bootstrap"))
     
     // Data layer repositories (for persisting catalog data)
     implementation(project(":infra:data-telegram"))

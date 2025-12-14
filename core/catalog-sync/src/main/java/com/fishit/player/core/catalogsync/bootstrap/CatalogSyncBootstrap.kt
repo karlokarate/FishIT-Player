@@ -1,6 +1,6 @@
 package com.fishit.player.core.catalogsync.bootstrap
 
-import com.fishit.player.core.appstartup.bootstrap.CatalogSyncStarter
+import com.fishit.player.core.bootstrap.CatalogSyncStarter
 import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient

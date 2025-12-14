@@ -55,6 +55,7 @@ include(":core:ui-imaging")
 include(":core:ui-theme")
 include(":core:ui-layout")
 include(":core:app-startup")
+include(":core:bootstrap")
 
 // Playback & Player
 include(":playback:domain")

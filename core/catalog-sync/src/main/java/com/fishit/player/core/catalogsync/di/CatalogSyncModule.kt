@@ -1,6 +1,6 @@
 package com.fishit.player.core.catalogsync.di
 
-import com.fishit.player.core.appstartup.bootstrap.CatalogSyncStarter
+import com.fishit.player.core.bootstrap.CatalogSyncStarter
 import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.core.catalogsync.DefaultCatalogSyncService
 import com.fishit.player.core.catalogsync.bootstrap.CatalogSyncBootstrap
