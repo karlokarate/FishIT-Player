@@ -1,383 +1,430 @@
-detekt:
-  # Build optimization
-  build:
-    maxIssues: 100
-    excludeCorrectable: false
-    weights:
-      complexity: 2
-      LongParameterList: 1
-      style: 1
-      comments: 1
+# Build optimization
+build:
+  maxIssues: 100
+  excludeCorrectable: false
+  weights:
+    complexity: 2
+    LongParameterList: 1
+    style: 1
+    comments: 1
 
-  # Test patterns
-  test-pattern:
+processors:
+  active: true
+
+console-reports:
+  active: true
+
+output-reports:
+  active: true
+  exclude:
+    - 'TxtOutputReport'
+    - 'HtmlOutputReport'
+
+# TV-specific rules
+complexity:
+  active: true
+  ComplexCondition:
     active: true
-    patterns:
-      - '.*/test/.*'
-      - '.*/androidTest/.*'
-      - '.*Test.kt'
-      - '.*Spec.kt'
+    threshold: 4
+  ComplexInterface:
+    active: false
+  ComplexMethod:
+    active: true
+    threshold: 15
+    ignoreSingleWhenExpression: true
+    ignoreSimpleWhenEntries: true
+  LabeledExpression:
+    active: false
+  LargeClass:
+    active: true
+    threshold: 600
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 8
+    ignoreDefaultParameters: true
+  MethodOverloading:
+    active: false
+  NestedBlockDepth:
+    active: true
+    threshold: 5
+  StringLiteralDuplication:
+    active: false
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    thresholdInInterfaces: 15
+    thresholdInObjects: 15
+    thresholdInEnums: 11
+    ignoreDeprecated: true
+    ignorePrivate: true
+    ignoreOverridden: true
 
-  processors:
+# Code smells relevant for TV apps
+coroutines:
+  active: true
+  GlobalCoroutineUsage:
+    active: false # We use structured concurrency
+  RedundantSuspendModifier:
+    active: true
+  SuspendFunWithFlowReturnType:
+    active: false
+
+empty-blocks:
+  active: true
+
+exceptions:
+  active: true
+  ExceptionRaisedInUnexpectedLocation:
+    active: true
+  InstanceOfCheckForException:
+    active: true
+  NotImplementedDeclaration:
+    active: false
+  PrintStackTrace:
+    active: true
+  RethrowCaughtException:
+    active: true
+  ReturnFromFinally:
+    active: true
+  SwallowedException:
+    active: false
+  ThrowingExceptionFromFinally:
+    active: true
+  ThrowingExceptionInMain:
+    active: false
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: true
+  ThrowingNewInstanceOfSameException:
+    active: true
+  TooGenericExceptionCaught:
+    active: false
+  TooGenericExceptionThrown:
+    active: false
+
+naming:
+  active: true
+  ClassNaming:
+    active: true
+    classPattern: '[A-Z][a-zA-Z0-9]*'
+  ConstructorParameterNaming:
+    active: true
+    parameterPattern: '[a-z][A-Za-z0-9]*'
+  EnumNaming:
+    active: true
+    enumEntryPattern: '[A-Z][_a-zA-Z0-9]*'
+  FunctionNaming:
+    active: true
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    excludeClassPattern: '$^'
+    ignoreAnnotated: ['Composable']
+  FunctionParameterNaming:
+    active: true
+    parameterPattern: '[a-z][A-Za-z0-9]*'
+  InvalidPackageDeclaration:
+    active: false
+  MatchingDeclarationName:
+    active: false
+  MemberNameEqualsClassName:
+    active: true
+  ObjectPropertyNaming:
+    active: true
+    constantPattern: '[A-Za-z][_A-Za-z0-9]*'
+  PackageNaming:
+    active: true
+    packagePattern: '[a-z]+(\.[a-z][A-Za-z0-9]*)*'
+  TopLevelPropertyNaming:
+    active: true
+    constantPattern: '[A-Z][_A-Z0-9]*'
+  VariableMaxLength:
+    active: false
+  VariableMinLength:
+    active: false
+  VariableNaming:
+    active: true
+    variablePattern: '[a-z][A-Za-z0-9]*'
+
+performance:
+  active: true
+  ArrayPrimitive:
+    active: true
+  ForEachOnRange:
+    active: true
+  SpreadOperator:
+    active: false
+  UnnecessaryTemporaryInstantiation:
     active: true
 
-  console-reports:
+potential-bugs:
+  active: true
+  CastToNullableType:
+    active: false
+  Deprecation:
+    active: false
+  DontDowncastCollectionTypes:
+    active: false
+  DoubleMutabilityForCollection:
+    active: true
+  EqualsAlwaysReturnsTrueOrFalse:
+    active: true
+  EqualsWithHashCodeExist:
+    active: true
+  ExplicitGarbageCollectionCall:
+    active: true
+  HasPlatformType:
+    active: false
+  ImplicitDefaultLocale:
+    active: false
+  InvalidRange:
+    active: true
+  IteratorHasNextCallsNextMethod:
+    active: true
+  IteratorNotThrowingNoSuchElementException:
+    active: true
+  LateinitUsage:
+    active: false
+  MapGetWithNotNullAssertionOperator:
+    active: false
+  NullableToStringCall:
+    active: false
+  UnconditionalJumpStatementInLoop:
+    active: true
+  UnnecessaryNotNullOperator:
+    active: true
+  UnnecessarySafeCall:
+    active: true
+  UnreachableCode:
+    active: true
+  UnsafeCallOnNullableType:
+    active: false
+  UnsafeCast:
+    active: false
+  UselessPostfixExpression:
+    active: true
+  WrongEqualsTypeParameter:
     active: true
 
-  output-reports:
+style:
+  active: true
+  CollapsibleIfStatements:
+    active: false
+  DataClassContainsFunctions:
+    active: false
+  DataClassShouldBeImmutable:
+    active: false
+  EqualsNullCall:
     active: true
-    exclude:
-      - 'TxtOutputReport'
-      - 'HtmlOutputReport'
-
-  # TV-specific rules
-  complexity:
+  EqualsOnSignatureLine:
+    active: false
+  ExplicitCollectionElementAccessMethod:
+    active: false
+  ExplicitItLambdaParameter:
+    active: false
+  ExpressionBodySyntax:
+    active: false
+  ForbiddenComment:
+    active: false
+  ForbiddenImport:
     active: true
-    ComplexCondition:
-      active: true
-      threshold: 4
-    ComplexInterface:
-      active: false
-    ComplexMethod:
-      active: true
-      threshold: 15
-      ignoreSingleWhenExpression: true
-      ignoreSimpleWhenEntries: true
-    LabeledExpression:
-      active: false
-    LargeClass:
-      active: true
-      threshold: 600
-    LongMethod:
-      active: true
-      threshold: 60
-    LongParameterList:
-      active: true
-      functionThreshold: 6
-      constructorThreshold: 8
-      ignoreDefaultParameters: true
-    MethodOverloading:
-      active: false
-    NestedBlockDepth:
-      active: true
-      threshold: 5
-    StringLiteralDuplication:
-      active: false
-    TooManyFunctions:
-      active: true
-      thresholdInFiles: 20
-      thresholdInClasses: 20
-      thresholdInInterfaces: 15
-      thresholdInObjects: 15
-      thresholdInEnums: 11
-      ignoreDeprecated: true
-      ignorePrivate: true
-      ignoreOverridden: true
+    imports:
+      # =====================================================================
+      # B5 ARCHITECTURE GUARDRAILS - Layer Boundary Enforcement
+      # =====================================================================
+      # Prevent feature layer from directly importing lower layers
+      # See docs/dev/ARCH_GUARDRAILS.md for full details
+      
+      # Layer boundary rules - Features must NOT import:
+      - value: 'com.fishit.player.pipeline.*'
+        reason: 'Features must use domain models, not pipeline DTOs. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.transport.*'
+        reason: 'Features must use repository interfaces, not transport clients. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.player.internal.*'
+        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.internal.*'
+        reason: 'Features must use PlayerEntryPoint abstraction from playback/domain. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.data.*'
+        reason: 'Features must define repository interfaces in their domain package. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.network.*'
+        reason: 'Features must use repository abstractions, not network layer. See docs/dev/ARCH_GUARDRAILS.md'
+      - value: 'com.fishit.player.infra.persistence.*'
+        reason: 'Features must use repository abstractions, not persistence layer. See docs/dev/ARCH_GUARDRAILS.md'
+      
+      # Logging rules
+      - value: 'android.util.Log'
+        reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
+      - value: 'timber.log.Timber'
+        reason: 'Use UnifiedLog from :infra:logging instead. Direct Timber usage is forbidden outside the logging module.'
+      
+      # v2 Naming Convention: Forbid legacy namespace in v2 modules
+      - value: 'com.chris.m3usuite.*'
+        reason: 'v1 namespace forbidden in v2 modules. See AGENTS.md Section 3.2 and 14.4.'
+    
+    excludes:
+      # infra/logging can use any logging implementation
+      - '**/infra/logging/**'
+      # legacy modules are exempt from new rules
+      - '**/legacy/**'
+      # Specific infra modules can import from each other
+      - '**/infra/data-*/**'
+      - '**/infra/transport-*/**'
+      - '**/infra/network/**'
+      - '**/infra/persistence/**'
+      - '**/infra/tooling/**'
+      # Pipeline layer may import anything (it's a lower layer)
+      - '**/pipeline/**'
+      # Playback modules may import transport and player internals
+      - '**/playback/**'
+      # Player modules can import anything
+      - '**/player/**'
+      # Tools (CLI) can import anything
+      - '**/tools/**'
+      # Core modules - specify which ones need exemption
+      - '**/core/app-startup/**'
+      - '**/core/feature-api/**'
+      - '**/core/catalog-sync/**'
+      # App wiring module
+      - '**/app-v2/**'
+      # Test source sets are exempt from layer rules
+      - '**/src/test/**'
+      - '**/src/androidTest/**'
+      - '**/src/testFixtures/**'
 
-  # Code smells relevant for TV apps
-  coroutines:
+# =========================================================================
+# v2 NAMING CONTRACT ENFORCEMENT
+# =========================================================================
+# Binding rules from AGENTS.md Section 14 and GLOSSARY_v2_naming_and_modules.md
+#
+# HARD RULES (enforced via code review + agent audit):
+# 1. Pipeline modules (pipeline/*) must use 'capability/' package, NOT 'feature/'
+# 2. Pipeline capability providers must be named *CapabilityProvider, NOT *FeatureProvider
+# 3. Only feature/* modules may use *FeatureProvider naming
+# 4. Mapping extensions live in pipeline/<name>/mapper/, NOT model/
+#
+# AUTHORITATIVE SOURCES:
+# - AGENTS.md Section 14 (Binding Naming Contract)
+# - docs/v2/GLOSSARY_v2_naming_and_modules.md (vocabulary definitions)
+# - docs/v2/NAMING_INVENTORY_v2.md (file-to-vocabulary mapping)
+#
+# Automated enforcement for custom patterns requires detekt-rule-authors plugin.
+# Current enforcement: Agent audit (AGENTS.md 14.5) + Code review
+# =========================================================================
+  ForbiddenMethodCall:
     active: true
-    GlobalCoroutineUsage:
-      active: false # We use structured concurrency
-    RedundantSuspendModifier:
-      active: true
-    SuspendFunWithFlowReturnType:
-      active: false
-
-  empty-blocks:
+    methods:
+      # =====================================================================
+      # B5 ARCHITECTURE GUARDRAILS - Logging Contract Enforcement
+      # =====================================================================
+      # Prevent direct logging outside infra/logging
+      # See LOGGING_CONTRACT_V2.md and docs/dev/ARCH_GUARDRAILS.md
+      
+      - value: 'kotlin.io.println'
+        reason: 'Use UnifiedLog from :infra:logging. See LOGGING_CONTRACT_V2.md'
+      - value: 'kotlin.io.print'
+        reason: 'Use UnifiedLog from :infra:logging. See LOGGING_CONTRACT_V2.md'
+      - value: 'java.lang.Throwable#printStackTrace'
+        reason: 'Use UnifiedLog.e(TAG, throwable). See LOGGING_CONTRACT_V2.md'
+    
+    excludes:
+      # infra/logging can use any logging implementation
+      - '**/infra/logging/**'
+      # legacy modules are exempt
+      - '**/legacy/**'
+      # Test files may use println for debugging
+      - '**/test/**'
+      - '**/androidTest/**'
+  FunctionOnlyReturningConstant:
+    active: false
+  LoopWithTooManyJumpStatements:
+    active: false
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    active: false
+  MayBeConst:
+    active: false
+  ModifierOrder:
     active: true
-
-  exceptions:
+  NestedClassesVisibility:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  NoTabs:
+    active: false
+  OptionalAbstractKeyword:
     active: true
-    ExceptionRaisedInUnexpectedLocation:
-      active: true
-    InstanceOfCheckForException:
-      active: true
-    NotImplementedDeclaration:
-      active: false
-    PrintStackTrace:
-      active: true
-    RethrowCaughtException:
-      active: true
-    ReturnFromFinally:
-      active: true
-    SwallowedException:
-      active: false
-    ThrowingExceptionFromFinally:
-      active: true
-    ThrowingExceptionInMain:
-      active: false
-    ThrowingExceptionsWithoutMessageOrCause:
-      active: true
-    ThrowingNewInstanceOfSameException:
-      active: true
-    TooGenericExceptionCaught:
-      active: false
-    TooGenericExceptionThrown:
-      active: false
-
-  naming:
+  OptionalUnit:
+    active: false
+  PreferToOverPairSyntax:
+    active: false
+  ProtectedMemberInFinalClass:
     active: true
-    ClassNaming:
-      active: true
-      classPattern: '[A-Z][a-zA-Z0-9]*'
-    ConstructorParameterNaming:
-      active: true
-      parameterPattern: '[a-z][A-Za-z0-9]*'
-    EnumNaming:
-      active: true
-      enumEntryPattern: '[A-Z][_a-zA-Z0-9]*'
-    FunctionNaming:
-      active: true
-      functionPattern: '[a-z][a-zA-Z0-9]*'
-      excludeClassPattern: '$^'
-      ignoreAnnotated: ['Composable']
-    FunctionParameterNaming:
-      active: true
-      parameterPattern: '[a-z][A-Za-z0-9]*'
-    InvalidPackageDeclaration:
-      active: false
-    MatchingDeclarationName:
-      active: false
-    MemberNameEqualsClassName:
-      active: true
-    ObjectPropertyNaming:
-      active: true
-      constantPattern: '[A-Za-z][_A-Za-z0-9]*'
-    PackageNaming:
-      active: true
-      packagePattern: '[a-z]+(\.[a-z][A-Za-z0-9]*)*'
-    TopLevelPropertyNaming:
-      active: true
-      constantPattern: '[A-Z][_A-Z0-9]*'
-    VariableMaxLength:
-      active: false
-    VariableMinLength:
-      active: false
-    VariableNaming:
-      active: true
-      variablePattern: '[a-z][A-Za-z0-9]*'
-
-  performance:
+  RedundantExplicitType:
+    active: false
+  RedundantVisibilityModifierRule:
+    active: false
+  ReturnCount:
+    active: false
+  SafeCast:
+    active: false
+  SerialVersionUIDInSerializableClass:
+    active: false
+  SpacingBetweenPackageAndImports:
+    active: false
+  ThrowsCount:
+    active: false
+  TrailingWhitespace:
+    active: false
+  UnderscoresInNumericLiterals:
+    active: false
+  UnnecessaryAbstractClass:
+    active: false
+  UnnecessaryAnnotationUseSiteTarget:
+    active: false
+  UnnecessaryApply:
+    active: false
+  UnnecessaryInheritance:
     active: true
-    ArrayPrimitive:
-      active: true
-    ForEachOnRange:
-      active: true
-    SpreadOperator:
-      active: false
-    UnnecessaryTemporaryInstantiation:
-      active: true
-
-  potential-bugs:
+  UnnecessaryLet:
+    active: false
+  UnnecessaryParentheses:
+    active: false
+  UntilInsteadOfRangeTo:
+    active: false
+  UnusedImports:
+    active: false
+  UnusedPrivateClass:
+    active: false
+  UnusedPrivateMember:
+    active: false
+  UseArrayLiteralsInAnnotations:
     active: true
-    CastToNullableType:
-      active: false
-    Deprecation:
-      active: false
-    DontDowncastCollectionTypes:
-      active: false
-    DoubleMutabilityForCollection:
-      active: true
-    DuplicateCaseInWhenExpression:
-      active: true
-    EqualsAlwaysReturnsTrueOrFalse:
-      active: true
-    EqualsWithHashCodeExist:
-      active: true
-    ExplicitGarbageCollectionCall:
-      active: true
-    HasPlatformType:
-      active: false
-    ImplicitDefaultLocale:
-      active: false
-    InvalidRange:
-      active: true
-    IteratorHasNextCallsNextMethod:
-      active: true
-    IteratorNotThrowingNoSuchElementException:
-      active: true
-    LateinitUsage:
-      active: false
-    MapGetWithNotNullAssertionOperator:
-      active: false
-    MissingWhenCase:
-      active: true
-    NullableToStringCall:
-      active: false
-    RedundantElseInWhen:
-      active: true
-    UnconditionalJumpStatementInLoop:
-      active: true
-    UnnecessaryNotNullOperator:
-      active: true
-    UnnecessarySafeCall:
-      active: true
-    UnreachableCode:
-      active: true
-    UnsafeCallOnNullableType:
-      active: false
-    UnsafeCast:
-      active: false
-    UselessPostfixExpression:
-      active: true
-    WrongEqualsTypeParameter:
-      active: true
-
-  style:
+  UseCheckOrError:
+    active: false
+  UseDataClass:
+    active: false
+  UseEmptyCounterpart:
+    active: false
+  UseIfEmptyOrIfBlank:
+    active: false
+  UseIfInsteadOfWhen:
+    active: false
+  UseIsNullOrEmpty:
+    active: false
+  UseOrEmpty:
+    active: false
+  UseRequire:
+    active: false
+  UseRequireNotNull:
+    active: false
+  UselessCallOnNotNull:
     active: true
-    CollapsibleIfStatements:
-      active: false
-    DataClassContainsFunctions:
-      active: false
-    DataClassShouldBeImmutable:
-      active: false
-    EqualsNullCall:
-      active: true
-    EqualsOnSignatureLine:
-      active: false
-    ExplicitCollectionElementAccessMethod:
-      active: false
-    ExplicitItLambdaParameter:
-      active: false
-    ExpressionBodySyntax:
-      active: false
-    ForbiddenComment:
-      active: false
-    ForbiddenImport:
-      active: true
-      imports:
-        - value: 'android.util.Log'
-          reason: 'Use UnifiedLog from :infra:logging instead. Direct android.util.Log usage is forbidden outside the logging module.'
-        - value: 'timber.log.Timber'
-          reason: 'Use UnifiedLog from :infra:logging instead. Direct Timber usage is forbidden outside the logging module.'
-        # v2 Naming Convention: Forbid legacy namespace in v2 modules
-        - value: 'com.chris.m3usuite.*'
-          reason: 'v1 namespace forbidden in v2 modules. See AGENTS.md Section 3.2 and 14.4.'
-      excludes:
-        - '**/infra/logging/**'
-        - '**/legacy/**'
-
-  # =========================================================================
-  # v2 NAMING CONTRACT ENFORCEMENT
-  # =========================================================================
-  # Binding rules from AGENTS.md Section 14 and GLOSSARY_v2_naming_and_modules.md
-  #
-  # HARD RULES (enforced via code review + agent audit):
-  # 1. Pipeline modules (pipeline/*) must use 'capability/' package, NOT 'feature/'
-  # 2. Pipeline capability providers must be named *CapabilityProvider, NOT *FeatureProvider
-  # 3. Only feature/* modules may use *FeatureProvider naming
-  # 4. Mapping extensions live in pipeline/<name>/mapper/, NOT model/
-  #
-  # AUTHORITATIVE SOURCES:
-  # - AGENTS.md Section 14 (Binding Naming Contract)
-  # - docs/v2/GLOSSARY_v2_naming_and_modules.md (vocabulary definitions)
-  # - docs/v2/NAMING_INVENTORY_v2.md (file-to-vocabulary mapping)
-  #
-  # Automated enforcement for custom patterns requires detekt-rule-authors plugin.
-  # Current enforcement: Agent audit (AGENTS.md 14.5) + Code review
-  # =========================================================================
-    ForbiddenMethodCall:
-      active: false
-    ForbiddenPublicDataClass:
-      active: false
-    FunctionOnlyReturningConstant:
-      active: false
-    LibraryCodeMustSpecifyReturnType:
-      active: false
-    LoopWithTooManyJumpStatements:
-      active: false
-    MagicNumber:
-      active: false
-    MandatoryBracesIfStatements:
-      active: false
-    MandatoryBracesLoops:
-      active: false
-    MaxLineLength:
-      active: false
-    MayBeConst:
-      active: false
-    ModifierOrder:
-      active: true
-    NestedClassesVisibility:
-      active: false
-    NewLineAtEndOfFile:
-      active: false
-    NoTabs:
-      active: false
-    OptionalAbstractKeyword:
-      active: true
-    OptionalUnit:
-      active: false
-    OptionalWhenBraces:
-      active: false
-    PreferToOverPairSyntax:
-      active: false
-    ProtectedMemberInFinalClass:
-      active: true
-    RedundantExplicitType:
-      active: false
-    RedundantVisibilityModifierRule:
-      active: false
-    ReturnCount:
-      active: false
-    SafeCast:
-      active: false
-    SerialVersionUIDInSerializableClass:
-      active: false
-    SpacingBetweenPackageAndImports:
-      active: false
-    ThrowsCount:
-      active: false
-    TrailingWhitespace:
-      active: false
-    UnderscoresInNumericLiterals:
-      active: false
-    UnnecessaryAbstractClass:
-      active: false
-    UnnecessaryAnnotationUseSiteTarget:
-      active: false
-    UnnecessaryApply:
-      active: false
-    UnnecessaryInheritance:
-      active: true
-    UnnecessaryLet:
-      active: false
-    UnnecessaryParentheses:
-      active: false
-    UntilInsteadOfRangeTo:
-      active: false
-    UnusedImports:
-      active: false
-    UnusedPrivateClass:
-      active: false
-    UnusedPrivateMember:
-      active: false
-    UseArrayLiteralsInAnnotations:
-      active: true
-    UseCheckOrError:
-      active: false
-    UseDataClass:
-      active: false
-    UseEmptyCounterpart:
-      active: false
-    UseIfEmptyOrIfBlank:
-      active: false
-    UseIfInsteadOfWhen:
-      active: false
-    UseIsNullOrEmpty:
-      active: false
-    UseOrEmpty:
-      active: false
-    UseRequire:
-      active: false
-    UseRequireNotNull:
-      active: false
-    UselessCallOnNotNull:
-      active: true
-    UtilityClassWithPublicConstructor:
-      active: false
-    VarCouldBeVal:
-      active: false
-    WildcardImport:
-      active: false
+  UtilityClassWithPublicConstructor:
+    active: false
+  VarCouldBeVal:
+    active: false
+  WildcardImport:
+    active: false

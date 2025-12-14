@@ -32,9 +32,8 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
+    implementation(project(":core:player-model"))
     implementation(project(":playback:domain"))
-    implementation(project(":player:internal"))
-    implementation(project(":pipeline:telegram"))
     implementation(project(":infra:logging"))
     
     // Compose
@@ -59,4 +58,9 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("app.cash.turbine:turbine:1.1.0")
 }

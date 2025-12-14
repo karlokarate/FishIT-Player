@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.infra.data.telegram"
+    namespace = "com.fishit.player.infra.data.home"
     compileSdk = 35
 
     defaultConfig {
@@ -26,10 +26,12 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
-    implementation(project(":feature:telegram-media"))  // For TelegramMediaRepository interface
-    // NOTE: No pipeline:telegram dependency - Data layer works only with RawMediaMetadata
+    implementation(project(":feature:home"))  // For HomeContentRepository interface
+    
+    // Data layer dependencies
+    implementation(project(":infra:data-telegram"))
+    implementation(project(":infra:data-xtream"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

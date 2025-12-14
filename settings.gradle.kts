@@ -87,6 +87,7 @@ include(":infra:transport-telegram")
 include(":infra:transport-xtream")
 include(":infra:data-telegram")
 include(":infra:data-xtream")
+include(":infra:data-home")
 
 // Tools (JVM CLI, no Android)
 include(":tools:pipeline-cli")
