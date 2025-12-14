@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fishit.player.feature.home"
+    namespace = "com.fishit.player.ui"
     compileSdk = 35
 
     defaultConfig {
@@ -29,15 +29,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:model"))
+    // Core dependencies (source-agnostic models)
     implementation(project(":core:player-model"))
-    implementation(project(":core:persistence"))
-    implementation(project(":core:ui-theme"))
-    implementation(project(":core:ui-layout"))
-    implementation(project(":core:ui-imaging"))
-    implementation(project(":playback:domain"))
-    implementation(project(":player:ui"))
     implementation(project(":infra:logging"))
+    
+    // Playback domain layer (clean abstraction - PlayerEntryPoint interface)
+    implementation(project(":playback:domain"))
     
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
@@ -51,9 +48,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    
-    // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.4")
     
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")

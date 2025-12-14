@@ -19,16 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
-import com.fishit.player.internal.InternalPlayerEntry
-import com.fishit.player.internal.source.PlaybackSourceResolver
-import com.fishit.player.nextlib.NextlibCodecConfigurator
-import com.fishit.player.playback.domain.KidsPlaybackGate
-import com.fishit.player.playback.domain.ResumeManager
+import com.fishit.player.ui.PlayerScreen
 
 /**
  * Debug screen for Phase 1 playback testing.
  *
- * This screen provides a simple way to test the internal player
+ * This screen provides a simple way to test the player
  * without needing Telegram or Xtream sources configured.
  *
  * **Test Flow:**
@@ -36,17 +32,13 @@ import com.fishit.player.playback.domain.ResumeManager
  * 2. Player loads Big Buck Bunny (or any available test stream)
  * 3. Test player controls (play/pause, seek, mute)
  *
- * **Requirements:**
- * - PlaybackSourceResolver with empty factory set (uses fallback)
- * - NextlibCodecConfigurator for FFmpeg codecs
- * - ResumeManager and KidsPlaybackGate (stubs are fine)
+ * **Architecture:**
+ * - Uses PlayerScreen from player:ui (clean API)
+ * - No direct dependencies on player:internal
+ * - PlayerScreen handles all playback wiring internally
  */
 @Composable
 fun DebugPlaybackScreen(
-    sourceResolver: PlaybackSourceResolver,
-    resumeManager: ResumeManager,
-    kidsPlaybackGate: KidsPlaybackGate,
-    codecConfigurator: NextlibCodecConfigurator,
     onBack: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -59,17 +51,13 @@ fun DebugPlaybackScreen(
                 canonicalId = "debug-test-stream",
                 title = "Big Buck Bunny (Test)",
                 sourceType = SourceType.HTTP,
-                uri = PlaybackSourceResolver.TEST_STREAM_URL
+                uri = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
             )
         }
 
-        InternalPlayerEntry(
-            playbackContext = testContext,
-            sourceResolver = sourceResolver,
-            resumeManager = resumeManager,
-            kidsPlaybackGate = kidsPlaybackGate,
-            codecConfigurator = codecConfigurator,
-            onBack = {
+        PlayerScreen(
+            context = testContext,
+            onExit = {
                 showPlayer = false
                 onBack()
             },
@@ -110,7 +98,7 @@ private fun DebugPlaybackMenu(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Test the internal player with a sample video stream.",
+                text = "Test the player with a sample video stream.",
                 style = MaterialTheme.typography.bodyMedium
             )
 
