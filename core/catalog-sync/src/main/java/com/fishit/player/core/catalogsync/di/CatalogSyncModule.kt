@@ -1,9 +1,9 @@
 package com.fishit.player.core.catalogsync.di
 
+import com.fishit.player.core.appstartup.bootstrap.CatalogSyncStarter
 import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.core.catalogsync.DefaultCatalogSyncService
 import com.fishit.player.core.catalogsync.bootstrap.CatalogSyncBootstrap
-import com.fishit.player.core.catalogsync.bootstrap.CatalogSyncStarter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -39,7 +39,7 @@ abstract class CatalogSyncModule {
      *
      * **Architecture (Phase B2):**
      * - Migrated from app-v2 to core/catalog-sync
-     * - Exposes safe bootstrap interface to app layer
+     * - Binds core:app-startup CatalogSyncStarter interface to implementation
      */
     @Binds
     @Singleton

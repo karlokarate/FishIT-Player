@@ -28,6 +28,7 @@ dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":infra:logging"))
+    implementation(project(":core:app-startup"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

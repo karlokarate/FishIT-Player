@@ -1,5 +1,6 @@
 package com.fishit.player.core.catalogsync.bootstrap
 
+import com.fishit.player.core.appstartup.bootstrap.CatalogSyncStarter
 import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
@@ -32,7 +33,7 @@ import javax.inject.Singleton
  * **Architecture (Phase B2):**
  * - Migrated from app-v2 to core/catalog-sync
  * - Orchestrates sync triggers based on transport state
- * - Exposes CatalogSyncStarter interface to app layer
+ * - Implements CatalogSyncStarter interface from core:app-startup
  */
 @Singleton
 class CatalogSyncBootstrap
@@ -118,18 +119,3 @@ class CatalogSyncBootstrap
             private const val TAG = "CatalogSyncBootstrap"
         }
     }
-
-/**
- * Safe interface for triggering catalog sync bootstrap.
- *
- * Exposed to app-v2 layer for startup integration without exposing
- * sync implementation details.
- */
-interface CatalogSyncStarter {
-    /**
-     * Start observing transport state and trigger sync when ready.
-     *
-     * Idempotent - safe to call multiple times.
-     */
-    fun start()
-}

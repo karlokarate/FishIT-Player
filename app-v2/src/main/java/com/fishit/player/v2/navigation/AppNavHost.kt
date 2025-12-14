@@ -16,7 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.fishit.player.core.catalogsync.bootstrap.CatalogSyncStarter
+import com.fishit.player.core.appstartup.bootstrap.CatalogSyncStarter
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.ui.theme.FishTheme

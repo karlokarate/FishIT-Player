@@ -1,11 +1,11 @@
 package com.fishit.player.infra.transport.xtream.di
 
+import com.fishit.player.core.appstartup.bootstrap.XtreamBootstrapper
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
-import com.fishit.player.infra.transport.xtream.bootstrap.XtreamBootstrapper
 import com.fishit.player.infra.transport.xtream.bootstrap.XtreamSessionBootstrap
 import dagger.Binds
 import dagger.Module
@@ -77,7 +77,7 @@ abstract class XtreamCredentialsModule {
  *
  * **Architecture (Phase B2):**
  * - Migrated from app-v2 to infra/transport-xtream
- * - Binds XtreamBootstrapper interface to implementation
+ * - Binds core:app-startup XtreamBootstrapper interface to implementation
  */
 @Module
 @InstallIn(SingletonComponent::class)

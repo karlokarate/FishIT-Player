@@ -1,5 +1,6 @@
 package com.fishit.player.infra.transport.xtream.bootstrap
 
+import com.fishit.player.core.appstartup.bootstrap.XtreamBootstrapper
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
@@ -23,7 +24,7 @@ import javax.inject.Singleton
  * **Architecture (Phase B2):**
  * - Migrated from app-v2 to infra/transport-xtream
  * - Transport layer owns session initialization
- * - Exposes XtreamBootstrapper interface to app layer
+ * - Implements XtreamBootstrapper interface from core:app-startup
  */
 @Singleton
 class XtreamSessionBootstrap
@@ -69,18 +70,3 @@ class XtreamSessionBootstrap
             private const val TAG = "XtreamSessionBootstrap"
         }
     }
-
-/**
- * Safe interface for triggering Xtream session bootstrap.
- *
- * Exposed to app-v2 layer for startup integration without exposing
- * transport implementation details.
- */
-interface XtreamBootstrapper {
-    /**
-     * Start the Xtream session bootstrap process.
-     *
-     * Idempotent - safe to call multiple times.
-     */
-    fun start()
-}
