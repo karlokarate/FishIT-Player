@@ -3,10 +3,12 @@ package com.fishit.player.v2.di
 import android.content.Context
 import android.os.Build
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.TdlibClientProvider
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.auth.TdlibAuthSession
 import com.fishit.player.v2.BuildConfig
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -65,3 +67,14 @@ object TelegramAuthModule {
         return TdlibAuthSession(client, sessionConfig, scope)
     }
 }
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class TelegramAuthBindsModule {
+    @Binds
+    @Singleton
+    abstract fun bindTdlibClientProvider(
+        impl: TdlibClientProviderImpl
+    ): TdlibClientProvider
+}
+
