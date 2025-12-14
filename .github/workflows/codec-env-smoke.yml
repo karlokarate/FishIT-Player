@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+  ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -21,22 +25,22 @@ jobs:
       - name: Cache Android SDK
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.android-sdk
+          path: ${{ env.ANDROID_SDK_ROOT }}
           key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/build.gradle*', '**/settings.gradle*', 'gradle.properties') }}
           restore-keys: |
             ${{ runner.os }}-android-sdk-
 
       - name: Prepare Android SDK
         env:
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
-          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
         run: |
           tools/env/setup_android.sh
 
       - name: Gradle assemble
         env:
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
-          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
         run: ./gradlew :app-v2:assembleDebug
 
       - name: Upload APK artifact
