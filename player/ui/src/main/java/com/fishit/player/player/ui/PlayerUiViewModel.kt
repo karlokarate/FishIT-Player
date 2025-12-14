@@ -17,12 +17,13 @@ import javax.inject.Inject
  *
  * Manages player lifecycle via PlayerEntryPoint abstraction.
  * This ensures app-v2 doesn't depend on player:internal directly.
+ * All engine wiring is fully encapsulated in PlayerEntryPoint.
  *
- * @param playerEntryPoint Abstraction for starting playback (from playback:domain)
+ * @param playerEntryPoint Abstraction for starting playback and rendering UI (from playback:domain)
  */
 @HiltViewModel
 class PlayerUiViewModel @Inject constructor(
-    private val playerEntryPoint: PlayerEntryPoint
+    val playerEntryPoint: PlayerEntryPoint
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PlayerUiState())
@@ -30,6 +31,13 @@ class PlayerUiViewModel @Inject constructor(
 
     /**
      * Starts playback with the given context.
+     *
+     * PlayerEntryPoint handles all engine wiring:
+     * - Kids playback gate check
+     * - Codec configuration
+     * - Playback source resolution
+     * - Resume position application
+     * - Player engine initialization
      *
      * Uses LaunchedEffect key to prevent repeated starts for the same context.
      */

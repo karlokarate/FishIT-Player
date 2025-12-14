@@ -1,5 +1,7 @@
 package com.fishit.player.playback.domain
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.fishit.player.core.playermodel.PlaybackContext
 
 /**
@@ -12,6 +14,7 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * - Interface lives in playback/domain (abstraction layer)
  * - Implementation lives in player/internal (concrete player)
  * - Feature modules depend ONLY on this interface, NOT on player:internal
+ * - All engine wiring (resolver, resume, kids gate, codec) lives behind this abstraction
  */
 interface PlayerEntryPoint {
 
@@ -19,7 +22,10 @@ interface PlayerEntryPoint {
      * Initiates playback with the given context.
      *
      * This method:
+     * - Checks kids playback gate
+     * - Configures codecs if needed
      * - Resolves the playback source via PlaybackSourceResolver
+     * - Applies resume position if available
      * - Initializes the player engine
      * - Starts playback
      *
@@ -32,6 +38,21 @@ interface PlayerEntryPoint {
      * Stops current playback and releases resources.
      */
     suspend fun stop()
+
+    /**
+     * Renders the player UI for the current playback session.
+     *
+     * Must be called after [start] has completed successfully.
+     * Renders video surface, controls, and handles lifecycle.
+     *
+     * @param onExit Callback when user wants to exit the player
+     * @param modifier Modifier for the player container
+     */
+    @Composable
+    fun RenderPlayerUi(
+        onExit: () -> Unit,
+        modifier: Modifier = Modifier
+    )
 }
 
 /**

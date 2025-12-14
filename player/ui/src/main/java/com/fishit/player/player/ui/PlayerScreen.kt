@@ -22,7 +22,7 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * Architecture:
  * - Lives in player:ui (public API module)
  * - Uses PlayerEntryPoint abstraction from playback:domain
- * - Injects all dependencies via Hilt internally
+ * - All engine wiring (resolver, resume, kids gate, codec) encapsulated in PlayerEntryPoint
  * - app-v2 has zero imports from player:internal
  *
  * @param context Source-agnostic playback descriptor
@@ -60,10 +60,10 @@ fun PlayerScreen(
         }
 
         state.isReady -> {
-            // Delegate to internal player entry for actual rendering
-            // Note: player:ui may import player:internal, but app-v2 must not
-            PlayerSurfaceRenderer(
-                context = context,
+            // Render player UI via PlayerEntryPoint
+            // All engine dependencies (resolver, resume, kids, codec) are
+            // encapsulated in the PlayerEntryPoint implementation
+            viewModel.playerEntryPoint.RenderPlayerUi(
                 onExit = onExit,
                 modifier = modifier
             )
