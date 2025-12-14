@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.internal.InternalPlayerEntryImpl
+import com.fishit.player.internal.session.InternalPlayerSession
 import com.fishit.player.playback.domain.PlayerEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,11 +21,11 @@ import javax.inject.Inject
  * This ensures app-v2 doesn't depend on player:internal directly.
  * All engine wiring is fully encapsulated in PlayerEntryPoint.
  *
- * @param playerEntryPoint Abstraction for starting playback and rendering UI (from playback:domain)
+ * @param playerEntryPoint Abstraction for starting playback (from playback:domain)
  */
 @HiltViewModel
 class PlayerUiViewModel @Inject constructor(
-    val playerEntryPoint: PlayerEntryPoint
+    private val playerEntryPoint: PlayerEntryPoint
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PlayerUiState())
@@ -56,6 +58,14 @@ class PlayerUiViewModel @Inject constructor(
                 _state.value = PlayerUiState(error = e.message ?: "Playback failed")
             }
         }
+    }
+
+    /**
+     * Get the current player session for UI rendering.
+     * Internal to player:ui - not exposed to app-v2.
+     */
+    internal fun getCurrentSession(): InternalPlayerSession? {
+        return (playerEntryPoint as? InternalPlayerEntryImpl)?.getCurrentSession()
     }
 
     override fun onCleared() {

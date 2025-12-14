@@ -44,6 +44,9 @@ dependencies {
     // NextLib codecs for player configuration
     implementation(project(":player:nextlib-codecs"))
     
+    // Media3 for PlayerView
+    implementation("androidx.media3:media3-ui:1.5.0")
+    
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")

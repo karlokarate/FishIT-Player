@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.player.ui.internal.InternalPlayerSurface
 
 /**
  * Public Player UI API for FishIT Player v2.
@@ -23,7 +24,7 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * - Lives in player:ui (public API module)
  * - Uses PlayerEntryPoint abstraction from playback:domain
  * - All engine wiring (resolver, resume, kids gate, codec) encapsulated in PlayerEntryPoint
- * - app-v2 has zero imports from player:internal
+ * - app-v2 has zero imports from player:internal or player:ui internals
  *
  * @param context Source-agnostic playback descriptor
  * @param onExit Callback when user wants to exit the player
@@ -60,13 +61,17 @@ fun PlayerScreen(
         }
 
         state.isReady -> {
-            // Render player UI via PlayerEntryPoint
-            // All engine dependencies (resolver, resume, kids, codec) are
-            // encapsulated in the PlayerEntryPoint implementation
-            viewModel.playerEntryPoint.RenderPlayerUi(
-                onExit = onExit,
-                modifier = modifier
-            )
+            // Render player UI via InternalPlayerSurface
+            // This is internal to player:ui and uses the session from PlayerEntryPoint
+            // All engine dependencies are encapsulated in PlayerEntryPoint.start()
+            val session = viewModel.getCurrentSession()
+            if (session != null) {
+                InternalPlayerSurface(
+                    session = session,
+                    onExit = onExit,
+                    modifier = modifier
+                )
+            }
         }
     }
 }

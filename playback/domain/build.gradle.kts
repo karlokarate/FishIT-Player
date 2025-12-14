@@ -29,11 +29,6 @@ dependencies {
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
     
-    // Compose for @Composable annotation in PlayerEntryPoint
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
-    implementation("androidx.compose.runtime:runtime")
-    implementation("androidx.compose.ui:ui")
-    
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
