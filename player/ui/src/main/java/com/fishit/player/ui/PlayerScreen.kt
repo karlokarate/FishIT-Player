@@ -53,9 +53,14 @@ fun PlayerScreen(
     val viewModel: PlayerUiViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
 
-    // Start playback when context changes
-    LaunchedEffect(context.canonicalId) {
-        viewModel.start(context)
+    // Start playback only when canonicalId actually changes
+    androidx.compose.runtime.LaunchedEffect(context.canonicalId) {
+        // Use a remembered variable to avoid unnecessary restarts
+        val lastStartedId = androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+        if (lastStartedId.value != context.canonicalId) {
+            viewModel.start(context)
+            lastStartedId.value = context.canonicalId
+        }
     }
 
     Box(
