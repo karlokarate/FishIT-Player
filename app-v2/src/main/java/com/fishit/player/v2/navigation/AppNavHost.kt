@@ -24,8 +24,8 @@ import com.fishit.player.feature.home.HomeScreen
 import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
+import com.fishit.player.internal.InternalPlayerEntry
 import com.fishit.player.internal.source.PlaybackSourceResolver
-import com.fishit.player.internal.ui.InternalPlayerEntry
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
@@ -208,17 +208,16 @@ private fun PlayerNavScreen(
         viewModel.load(mediaId, sourceType)
     }
 
-    when {
-        state.context != null ->
-            InternalPlayerEntry(
-                playbackContext = state.context,
-                sourceResolver = sourceResolver,
-                resumeManager = resumeManager,
-                kidsPlaybackGate = kidsPlaybackGate,
-                codecConfigurator = codecConfigurator,
-                onBack = onBack,
-            )
-
+    state.context?.let { context ->
+        InternalPlayerEntry(
+            playbackContext = context,
+            sourceResolver = sourceResolver,
+            resumeManager = resumeManager,
+            kidsPlaybackGate = kidsPlaybackGate,
+            codecConfigurator = codecConfigurator,
+            onBack = onBack,
+        )
+    } ?: when {
         state.error != null -> {
             LaunchedEffect(state.error) {
                 onBack()
