@@ -1,7 +1,7 @@
 package com.fishit.player.playback.telegram
 
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.playback.domain.DataSourceType

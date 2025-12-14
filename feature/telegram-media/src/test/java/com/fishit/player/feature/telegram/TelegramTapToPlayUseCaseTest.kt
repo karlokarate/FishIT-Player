@@ -30,7 +30,7 @@ class TelegramTapToPlayUseCaseTest {
 
         // Then
         assertEquals(
-            com.fishit.player.core.playermodel.SourceType.TELEGRAM,
+            com.fishit.player.core.model.SourceType.TELEGRAM,
             context.sourceType
         )
         assertEquals("msg:123:456", context.canonicalId)
@@ -154,7 +154,7 @@ class TelegramTapToPlayUseCaseTest {
 
         // Then - must use SourceType.TELEGRAM
         assertEquals(
-            com.fishit.player.core.playermodel.SourceType.TELEGRAM,
+            com.fishit.player.core.model.SourceType.TELEGRAM,
             context.sourceType
         )
     }
@@ -184,7 +184,7 @@ class TelegramTapToPlayUseCaseTest {
 
         return PlaybackContext(
             canonicalId = item.mediaId,
-            sourceType = com.fishit.player.core.playermodel.SourceType.TELEGRAM,
+            sourceType = com.fishit.player.core.model.SourceType.TELEGRAM,
             sourceKey = item.mediaId,
             title = item.title,
             subtitle = item.sourceLabel,

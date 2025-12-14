@@ -2,8 +2,8 @@ package com.fishit.player.playback.domain.defaults
 
 import com.fishit.player.core.model.PlaybackType
 import com.fishit.player.core.model.ResumePoint
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.playback.domain.ResumeManager
 
 /**
@@ -47,10 +47,11 @@ class DefaultResumeManager : ResumeManager {
         return when (sourceType) {
             SourceType.TELEGRAM -> PlaybackType.TELEGRAM
             SourceType.XTREAM -> PlaybackType.VOD
-            SourceType.FILE -> PlaybackType.IO
-            SourceType.HTTP -> PlaybackType.VOD
+            SourceType.IO -> PlaybackType.IO
             SourceType.AUDIOBOOK -> PlaybackType.AUDIOBOOK
-            SourceType.UNKNOWN -> PlaybackType.VOD
+            SourceType.LOCAL -> PlaybackType.IO
+            SourceType.PLEX -> PlaybackType.VOD
+            SourceType.OTHER, SourceType.UNKNOWN -> PlaybackType.VOD
         }
     }
 }

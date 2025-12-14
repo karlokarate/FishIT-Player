@@ -24,5 +24,6 @@ android {
 // NOTE: This module has NO dependencies except Kotlin stdlib.
 // This is intentional - it contains only primitive player types.
 dependencies {
-    // No dependencies - pure Kotlin types only
+    // Core model for SourceType
+    implementation(project(":core:model"))
 }

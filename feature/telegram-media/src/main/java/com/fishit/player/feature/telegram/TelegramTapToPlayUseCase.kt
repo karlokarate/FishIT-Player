@@ -71,7 +71,7 @@ class TelegramTapToPlayUseCase @Inject constructor(
 
         return PlaybackContext(
             canonicalId = item.mediaId,
-            sourceType = com.fishit.player.core.playermodel.SourceType.TELEGRAM,
+            sourceType = com.fishit.player.core.model.SourceType.TELEGRAM,
             sourceKey = item.mediaId, // Pass mediaId for factory resolution
             title = item.title,
             subtitle = item.sourceLabel,

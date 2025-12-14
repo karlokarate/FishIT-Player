@@ -1,5 +1,7 @@
 package com.fishit.player.core.playermodel
 
+import com.fishit.player.core.model.SourceType
+
 /**
  * Context for initiating playback in FishIT Player v2.
  *
@@ -48,7 +50,7 @@ data class PlaybackContext(
             title: String = "Test Video",
         ): PlaybackContext = PlaybackContext(
             canonicalId = "test:${url.hashCode()}",
-            sourceType = SourceType.HTTP,
+            sourceType = SourceType.OTHER,
             uri = url,
             title = title,
         )

@@ -17,8 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.internal.InternalPlayerEntry
 import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.nextlib.NextlibCodecConfigurator
@@ -58,7 +58,7 @@ fun DebugPlaybackScreen(
             PlaybackContext(
                 canonicalId = "debug-test-stream",
                 title = "Big Buck Bunny (Test)",
-                sourceType = SourceType.HTTP,
+                sourceType = SourceType.OTHER,
                 uri = PlaybackSourceResolver.TEST_STREAM_URL
             )
         }

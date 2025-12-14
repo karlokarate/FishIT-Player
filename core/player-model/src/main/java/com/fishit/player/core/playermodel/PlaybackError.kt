@@ -1,5 +1,7 @@
 package com.fishit.player.core.playermodel
 
+import com.fishit.player.core.model.SourceType
+
 /**
  * Represents a playback error with categorization.
  *

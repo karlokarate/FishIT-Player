@@ -1,7 +1,7 @@
 package com.fishit.player.playback.domain
 
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.core.playermodel.SourceType
 
 /**
  * Factory interface for creating playback sources.

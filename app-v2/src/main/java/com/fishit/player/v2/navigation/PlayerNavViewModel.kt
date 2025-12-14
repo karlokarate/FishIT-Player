@@ -6,7 +6,6 @@ import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceIdParser
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.core.playermodel.SourceType as PlayerSourceType
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -73,7 +72,7 @@ class PlayerNavViewModel
             val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull() ?: return null
             return PlaybackContext(
                 canonicalId = "xtream:live:$streamId",
-                sourceType = PlayerSourceType.XTREAM,
+                sourceType = SourceType.XTREAM,
                 uri = null, // Factory builds URL from XtreamApiClient session
                 title = title,
                 isLive = true,
@@ -93,7 +92,7 @@ class PlayerNavViewModel
             val vodId = SourceIdParser.parseXtreamVodId(sourceId) ?: return null
             return PlaybackContext(
                 canonicalId = "xtream:vod:$vodId",
-                sourceType = PlayerSourceType.XTREAM,
+                sourceType = SourceType.XTREAM,
                 uri = null, // Factory builds URL from XtreamApiClient session
                 title = title,
                 extras =

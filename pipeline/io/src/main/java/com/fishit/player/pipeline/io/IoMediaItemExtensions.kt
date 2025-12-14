@@ -1,7 +1,7 @@
 package com.fishit.player.pipeline.io
 
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.core.playermodel.SourceType
+import com.fishit.player.core.model.SourceType
 
 /**
  * Extension functions for converting IO pipeline models to core models.
@@ -86,7 +86,7 @@ fun IoMediaItem.toPlaybackContext(
 ): PlaybackContext =
     PlaybackContext(
         canonicalId = "io:${toContentId()}",
-        sourceType = SourceType.FILE,
+        sourceType = SourceType.IO,
         uri = source.toUriString(),
         title = title,
         subtitle = fileName,
