@@ -123,6 +123,18 @@ jobs:
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
 
+      - name: KSP Wiring Gates - feature:home
+        run: ./gradlew :feature:home:kspReleaseKotlin --no-daemon --stacktrace
+        continue-on-error: true
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
+
+      - name: KSP Wiring Gates - app-v2
+        run: ./gradlew :app-v2:kspReleaseKotlin --no-daemon --stacktrace
+        continue-on-error: true
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
+
       - name: Upload Build Reports
         uses: actions/upload-artifact@v4
         if: failure()

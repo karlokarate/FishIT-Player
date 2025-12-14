@@ -78,6 +78,68 @@ if grep -rn "import com\.fishit\.player\.player\." pipeline/ --include="*.kt" 2>
 fi
 
 # ======================================================================
+# APP-V2 LAYER: Check for forbidden imports (Phase A1.2)
+# ======================================================================
+echo "Checking app-v2 layer for forbidden imports..."
+
+# App-v2 allowed: core.*, feature.*, playback.domain.*, infra.logging.*
+# App-v2 forbidden: player.internal.*, infra.transport.*, pipeline.*
+
+if grep -rn "import com\.fishit\.player\.player\.internal\." app-v2/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: App-v2 imports player internals (must use playback.domain)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+if grep -rn "import com\.fishit\.player\.infra\.transport\." app-v2/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: App-v2 imports transport layer (must use domain interfaces)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+if grep -rn "import com\.fishit\.player\.pipeline\." app-v2/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: App-v2 imports pipeline layer (must use domain/feature APIs)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
+# BRIDGE/STOPGAP SYMBOL BLOCKERS: Prevent workaround patterns (Phase A1.2)
+# ======================================================================
+echo "Checking for forbidden bridge/stopgap patterns..."
+
+# Check for legacy v1 bridge patterns
+if grep -rn "TdlibClientProvider" app-v2/ feature/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: TdlibClientProvider is a v1 legacy pattern (forbidden in v2)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# Check for transport provider workarounds
+if grep -rn "TransportProvider" app-v2/ feature/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: *TransportProvider patterns are forbidden (use domain interfaces)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# Check for bridge/stopgap naming
+if grep -rn "class.*Bridge\|interface.*Bridge" app-v2/ feature/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: *Bridge classes are forbidden workarounds"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+if grep -rn "class.*Stopgap\|interface.*Stopgap" app-v2/ feature/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: *Stopgap classes are forbidden workarounds"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+if grep -rn "class.*Temporary\|interface.*Temporary" app-v2/ feature/ --include="*.kt" 2>/dev/null; then
+    echo "❌ VIOLATION: *Temporary classes indicate technical debt"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# Check for adapter pattern in app-v2 (should be in infra layer)
+if grep -rn "class.*Adapter" app-v2/ --include="*.kt" 2>/dev/null | grep -v "RecyclerView\.Adapter" 2>/dev/null; then
+    echo "❌ VIOLATION: *Adapter implementations belong in infra layer, not app-v2"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
 # LOGGING CONTRACT: Check for forbidden logging
 # ======================================================================
 echo "Checking logging contract compliance..."
