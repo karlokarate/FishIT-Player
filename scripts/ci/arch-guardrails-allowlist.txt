@@ -1,0 +1,35 @@
+# Architecture Guardrails Allowlist
+# 
+# This file contains path-based exceptions for the architecture guardrail checks.
+# Use this sparingly - each exception must have a clear justification.
+#
+# Format: <file_path_or_pattern> # <reason>
+#
+# Examples:
+# app-v2/src/main/java/com/fishit/player/v2/di/TelegramAuthModule.kt # DI wiring - requires transport for Hilt binding
+# app-v2/**/di/**/*.kt # DI modules need transport access for dependency injection
+#
+# Rules:
+# 1. Paths must be relative to repository root
+# 2. Supports glob patterns (*, **)
+# 3. Lines starting with # are comments
+# 4. Empty lines are ignored
+# 5. Each allowlist entry MUST have a reason after # character
+
+# ======================================================================
+# App-v2 DI Wiring Exceptions
+# ======================================================================
+# These files require transport layer access for Hilt dependency injection wiring.
+# They act as adapters between transport implementations and domain interfaces.
+
+app-v2/src/main/java/com/fishit/player/v2/di/TelegramAuthModule.kt # Binds TelegramAuthClient to feature domain repositories
+app-v2/src/main/java/com/fishit/player/v2/di/ImagingModule.kt # Provides Coil ImageLoader with TelegramThumbFetcher integration
+app-v2/src/main/java/com/fishit/player/v2/di/TelegramThumbFetcherImpl.kt # Adapter implementing Coil Fetcher interface for Telegram
+app-v2/src/main/java/com/fishit/player/v2/XtreamSessionBootstrap.kt # Bootstrap logic for Xtream session initialization
+app-v2/src/main/java/com/fishit/player/v2/CatalogSyncBootstrap.kt # Bootstrap logic observing transport state for sync triggers
+
+# ======================================================================
+# Future Exceptions (Template - Remove if not needed)
+# ======================================================================
+# Add new exceptions here with clear justification
+# path/to/file.kt # Reason for exception

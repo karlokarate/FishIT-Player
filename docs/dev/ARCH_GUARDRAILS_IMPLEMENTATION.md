@@ -1,4 +1,4 @@
-# Architecture Guardrails Implementation - Phase A1
+# Architecture Guardrails Implementation - Phase A1 + A1.2 + A1.3
 
 ## Overview
 
@@ -30,15 +30,39 @@ This document describes the architecture guardrails implementation that enforces
 **Provides comprehensive layer boundary checking:**
 
 - **Feature Layer:** Blocks pipeline/data/transport/player.internal imports
+- **App-v2 Layer:** Blocks player.internal/transport/pipeline imports (Phase A1.2)
 - **Playback Layer:** Blocks pipeline DTOs and data layer imports
 - **Pipeline Layer:** Blocks data/playback/player imports
+- **Bridge/Stopgap Blockers:** Blocks TdlibClientProvider, *Bridge, *Stopgap, *Temporary, *Adapter patterns
 - **Logging Contract:** Detects direct Log/Timber usage
 - **v2 Namespace:** Detects v1 imports in v2 modules
 
-**Successfully detects real violations:**
-- Example: Onboarding feature importing transport layer
+### 3. Allowlist Mechanism (`scripts/ci/arch-guardrails-allowlist.txt`) - Phase A1.3
 
-### 3. CI Workflow (`.github/workflows/v2-arch-gates.yml`)
+**Strict file-based exception system:**
+
+- **Path-based allowlisting** - Uses exact file paths or glob patterns
+- **Mandatory reasons** - Each entry must include a comment explaining why
+- **Minimal by design** - Only legitimate exceptions (e.g., DI wiring modules)
+- **Transparent reporting** - Shows which files are allowlisted during checks
+
+**Format:**
+```
+path/to/file.kt # Reason for exception
+app-v2/**/di/**/*.kt # Pattern-based exception with reason
+```
+
+**Current Allowlist Entries:**
+- App-v2 DI modules that wire transport implementations to domain interfaces
+- Bootstrap classes that observe transport state for initialization logic
+
+**Anti-pattern Prevention:**
+- ❌ No global rule disabling
+- ❌ No blanket exclusions
+- ✅ Each file must be explicitly allowlisted
+- ✅ Allowlist is version controlled and reviewed
+
+### 4. CI Workflow (`.github/workflows/v2-arch-gates.yml`)
 
 **Two-stage enforcement:**
 
@@ -96,7 +120,28 @@ Both run in CI to maximize violation detection.
 # Test compilation gates
 ./gradlew :app-v2:compileReleaseKotlin
 ./gradlew :feature:home:compileReleaseKotlin
+
+# Test KSP gates (Phase A1.2)
+./gradlew :feature:home:kspReleaseKotlin
+./gradlew :app-v2:kspReleaseKotlin
 ```
+
+### Adding Allowlist Exceptions (Phase A1.3)
+
+**When to add an allowlist entry:**
+- Only for legitimate architectural exceptions (e.g., DI wiring modules)
+- Never to bypass violations that should be fixed
+- Each entry requires code review approval
+
+**How to add an entry:**
+
+1. Edit `scripts/ci/arch-guardrails-allowlist.txt`
+2. Add the file path with a clear reason:
+   ```
+   app-v2/src/main/java/com/fishit/player/v2/di/MyModule.kt # Hilt DI wiring for XYZ
+   ```
+3. Test locally: `./scripts/ci/check-arch-guardrails.sh`
+4. Commit and include justification in PR description
 
 ### CI Behavior
 
