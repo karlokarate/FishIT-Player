@@ -3,7 +3,6 @@ package com.fishit.player.v2.navigation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.MediaType
-import com.fishit.player.core.model.MediaSourceRefExtensions
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
@@ -89,7 +88,7 @@ class PlayerNavViewModel
             sourceId: String,
             title: String,
         ): PlaybackContext? {
-            val vodId = MediaSourceRefExtensions.parseXtreamVodId(sourceId) ?: return null
+            val vodId = parseXtreamVodId(sourceId) ?: return null
             return PlaybackContext(
                 canonicalId = "xtream:vod:$vodId",
                 sourceType = SourceType.XTREAM,
@@ -101,6 +100,15 @@ class PlayerNavViewModel
                         XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID to vodId.toString(),
                     ),
             )
+        }
+
+        private fun parseXtreamVodId(sourceId: String): Int? {
+            val prefix = "xtream:vod:"
+            return if (sourceId.startsWith(prefix)) {
+                sourceId.removePrefix(prefix).toIntOrNull()
+            } else {
+                null
+            }
         }
 
         private companion object {
