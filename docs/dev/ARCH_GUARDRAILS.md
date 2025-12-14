@@ -4,10 +4,15 @@ This document defines the static analysis rules that enforce v2 architecture bou
 
 ## Overview
 
-To prevent architecture violations from being merged, we use Detekt static analysis to enforce:
+To prevent architecture violations from being merged, we use dual enforcement:
+1. **Detekt static analysis** - Import rules, method call rules
+2. **Grep-based checks** - Pattern-based checks for layer boundaries
+
+**Enforced Rules:**
 1. **Layer boundary rules** - Features cannot import pipeline/transport/player-internal
 2. **Logging contract** - Only UnifiedLog allowed outside infra/logging
 3. **Secret safety** - No credentials or tokens in logs
+4. **Player UI isolation** - Player UI cannot use Hilt EntryPoints or engine wiring (NEW)
 
 ## Feature Layer Import Rules
 
@@ -48,6 +53,26 @@ Per `LOGGING_CONTRACT_V2.md`:
 - Structured logging with tagging
 - Secret redaction in one place
 - Performance (lambda-based API avoids string concat in production)
+
+## Player UI Layer Rules (NEW)
+
+**Player UI (`player/**/ui/**`) MUST NOT:**
+- ❌ Use Hilt `@EntryPoint` or `EntryPointAccessors` (DI anti-pattern)
+- ❌ Reference engine wiring classes:
+  - `PlaybackSourceResolver`
+  - `ResumeManager`
+  - `KidsPlaybackGate`
+  - `NextlibCodecConfigurator`
+- ❌ Import `com.fishit.player.internal.*` from other player modules
+  - Exception: `player/internal/ui` can import from `player/internal` (same module)
+
+**Why these rules exist:**
+- **Prevents DI window climbing**: EntryPoints bypass constructor injection and create hidden dependencies
+- **Enforces proper DI**: UI components must use `@HiltViewModel` with constructor injection
+- **Maintains layer isolation**: UI should interact through high-level interfaces, not engine internals
+- **Prevents tight coupling**: Cross-module internal imports create fragile dependencies
+
+**Enforcement:** Grep-based checks in `scripts/ci/check-arch-guardrails.sh` (NO allowlist bypass)
 
 ## Common Fixes
 
@@ -95,6 +120,61 @@ Log.d(TAG, "User: ${user.id}")
 // ✅ Correct
 UnifiedLog.d(TAG) { "Starting playback" }
 UnifiedLog.d(TAG) { "User: ${user.id}" }  // Lazy evaluation
+```
+
+### "Hilt EntryPoint forbidden in player:ui"
+**Problem:** Using `@EntryPoint` or `EntryPointAccessors` in player UI components
+
+**Fix:** Use `@HiltViewModel` with constructor injection:
+```kotlin
+// ❌ Wrong - EntryPoint anti-pattern
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface PlayerServiceEntryPoint {
+    fun getPlayerSession(): InternalPlayerSession
+}
+
+@Composable
+fun PlayerScreen(context: Context) {
+    val entryPoint = EntryPointAccessors.fromApplication(
+        context,
+        PlayerServiceEntryPoint::class.java
+    )
+    val session = entryPoint.getPlayerSession()
+}
+
+// ✅ Correct - Constructor injection with ViewModel
+@HiltViewModel
+class PlayerViewModel @Inject constructor(
+    private val playerEntry: PlayerEntryPoint
+) : ViewModel() {
+    // Use playerEntry here
+}
+
+@Composable
+fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
+    // Access state from ViewModel
+}
+```
+
+### "Engine wiring classes forbidden in player:ui"
+**Problem:** Directly referencing internal engine components like `PlaybackSourceResolver`, `ResumeManager`, etc.
+
+**Fix:** Use high-level abstractions:
+```kotlin
+// ❌ Wrong - Direct engine wiring reference
+class PlayerControls(
+    private val resolver: PlaybackSourceResolver,
+    private val resumeManager: ResumeManager
+)
+
+// ✅ Correct - Use domain-level abstraction
+@HiltViewModel
+class PlayerControlsViewModel @Inject constructor(
+    private val playerEntry: PlayerEntryPoint  // High-level interface
+) : ViewModel() {
+    // Engine components are encapsulated inside PlayerEntryPoint
+}
 ```
 
 ## Detekt Configuration
@@ -159,16 +239,21 @@ style:
 
 ## CI Enforcement
 
-Detekt is now enforced in the PR CI pipeline (`.github/workflows/pr-ci.yml`):
+Architecture guardrails are enforced in the PR CI pipeline (`.github/workflows/v2-arch-gates.yml`):
 
+**1. Detekt Static Analysis:**
 ```yaml
-- name: Run Detekt with Report
+- name: Run Detekt (Layer Boundaries + Logging Contract)
   run: ./gradlew detekt --no-daemon --stacktrace
-  env:
-    GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2g"
 ```
 
-This will block PRs that violate architecture rules.
+**2. Grep-based Architecture Checks:**
+```yaml
+- name: Run Grep-based Architecture Checks
+  run: ./scripts/ci/check-arch-guardrails.sh
+```
+
+Both checks must pass for PRs to be merged. The grep-based checks provide additional enforcement for patterns that Detekt cannot easily express (like player:ui EntryPoint usage).
 
 ## References
 
@@ -186,6 +271,11 @@ This will block PRs that violate architecture rules.
 | No infra.data in features | ✅ Active | Detekt ForbiddenImport |
 | UnifiedLog only | ✅ Active | Detekt ForbiddenImport + ForbiddenMethodCall |
 | No println/printStackTrace | ✅ Active | Detekt ForbiddenMethodCall |
-| Detekt in CI | ✅ Active | PR CI pipeline |
+| No Hilt EntryPoints in player:ui | ✅ Active | Grep script (no allowlist) |
+| No engine wiring in player:ui | ✅ Active | Grep script (no allowlist) |
+| No cross-module internal imports in player:ui | ✅ Active | Grep script (no allowlist) |
+| Dual enforcement in CI | ✅ Active | v2-arch-gates workflow |
 
-**Status:** ✅ All B5 architecture guardrails are now active and enforced in CI.
+**Status:** ✅ All architecture guardrails are active and enforced in CI.
+
+**Note:** Player UI guardrails (Hilt EntryPoints, engine wiring) do NOT support allowlist bypass. These are hard architectural boundaries that cannot be circumvented.
