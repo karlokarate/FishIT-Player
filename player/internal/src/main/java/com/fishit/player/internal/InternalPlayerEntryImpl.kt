@@ -9,6 +9,7 @@ import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.PlayerEntryPoint
 import com.fishit.player.playback.domain.ResumeManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -37,7 +38,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class InternalPlayerEntryImpl @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val sourceResolver: PlaybackSourceResolver,
     private val resumeManager: ResumeManager,
     private val kidsPlaybackGate: KidsPlaybackGate,
