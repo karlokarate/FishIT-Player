@@ -31,6 +31,7 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:player-model"))
+    implementation(project(":player:ui-api"))
     implementation(project(":playback:domain"))
     implementation(project(":playback:telegram"))
     implementation(project(":playback:xtream"))

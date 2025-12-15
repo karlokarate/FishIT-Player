@@ -67,11 +67,11 @@ export PATH="${CMDLINE_BIN}:${SDK_ROOT}/platform-tools:${PATH}"
 missing_packages=()
 for package in "${REQUIRED_PACKAGES[@]}"; do
   case "${package}" in
-    platforms;android-*)
+    platforms\;android-*)
       platform_dir="${SDK_ROOT}/platforms/${package#platforms;}"
       [ -d "${platform_dir}" ] || missing_packages+=("${package}")
       ;;
-    build-tools;*)
+    build-tools\;*)
       build_dir="${SDK_ROOT}/build-tools/${package#build-tools;}"
       [ -d "${build_dir}" ] || missing_packages+=("${package}")
       ;;
@@ -83,7 +83,7 @@ for package in "${REQUIRED_PACKAGES[@]}"; do
 done
 
 if [ ${#missing_packages[@]} -gt 0 ]; then
-  yes | "${SDKMANAGER}" --licenses >/dev/null
+  yes | "${SDKMANAGER}" --licenses >/dev/null || true
   "${SDKMANAGER}" --install "${missing_packages[@]}"
 else
   echo "Required Android SDK packages already installed." >&2

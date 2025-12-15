@@ -1,6 +1,6 @@
 package com.fishit.player.tools.cli.commands
 
-import com.fishit.player.core.appstartup.Pipelines
+import com.fishit.player.tools.cli.CliPipelines
 import com.fishit.player.pipeline.telegram.catalog.TelegramChatMediaClassifier
 import com.fishit.player.pipeline.telegram.debug.ChatFilter
 import com.fishit.player.pipeline.telegram.debug.TelegramDebugServiceImpl
@@ -26,7 +26,7 @@ import java.util.Locale
  * - tg list-chats: List chats with optional filter
  * - tg sample-media: Sample media from a chat
  */
-class TelegramCommand(private val pipelines: Pipelines) : CliktCommand(
+class TelegramCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "tg",
     help = "Telegram pipeline commands"
 ) {
@@ -42,7 +42,7 @@ class TelegramCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class TgStatusCommand(private val pipelines: Pipelines) : CliktCommand(
+class TgStatusCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "status",
     help = "Show Telegram pipeline status"
 ) {
@@ -83,7 +83,7 @@ class TgStatusCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class TgListChatsCommand(private val pipelines: Pipelines) : CliktCommand(
+class TgListChatsCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "list-chats",
     help = "List Telegram chats"
 ) {
@@ -135,7 +135,7 @@ class TgListChatsCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class TgSampleMediaCommand(private val pipelines: Pipelines) : CliktCommand(
+class TgSampleMediaCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "sample-media",
     help = "Sample media from a Telegram chat"
 ) {
@@ -154,7 +154,7 @@ class TgSampleMediaCommand(private val pipelines: Pipelines) : CliktCommand(
             return@runBlocking
         }
 
-        val service = TelegramDebugServiceImpl(adapter, TelegramChatMediaClassifier())
+        val service = TelegramDebugServiceImpl(adapter!!, TelegramChatMediaClassifier())
         val media = service.sampleMedia(chatId, limit)
 
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)

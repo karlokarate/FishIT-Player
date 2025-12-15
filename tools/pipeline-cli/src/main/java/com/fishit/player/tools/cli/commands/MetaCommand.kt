@@ -1,6 +1,6 @@
 package com.fishit.player.tools.cli.commands
 
-import com.fishit.player.core.appstartup.Pipelines
+import com.fishit.player.tools.cli.CliPipelines
 import com.fishit.player.pipeline.telegram.catalog.TelegramChatMediaClassifier
 import com.fishit.player.pipeline.telegram.debug.TelegramDebugServiceImpl
 import com.fishit.player.pipeline.xtream.debug.XtreamDebugServiceImpl
@@ -19,7 +19,7 @@ import kotlinx.coroutines.runBlocking
  * Subcommands:
  * - meta normalize-sample: Sample and show normalized metadata
  */
-class MetaCommand(private val pipelines: Pipelines) :
+class MetaCommand(private val pipelines: CliPipelines) :
         CliktCommand(name = "meta", help = "Metadata normalization commands") {
     override fun run() = Unit
 

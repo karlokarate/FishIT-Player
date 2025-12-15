@@ -19,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,10 +55,11 @@ fun PlayerScreen(
     val viewModel: PlayerUiViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
 
+    // Track the last started ID to avoid unnecessary restarts
+    val lastStartedId = remember { mutableStateOf<String?>(null) }
+
     // Start playback only when canonicalId actually changes
-    androidx.compose.runtime.LaunchedEffect(context.canonicalId) {
-        // Use a remembered variable to avoid unnecessary restarts
-        val lastStartedId = androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(context.canonicalId) {
         if (lastStartedId.value != context.canonicalId) {
             viewModel.start(context)
             lastStartedId.value = context.canonicalId

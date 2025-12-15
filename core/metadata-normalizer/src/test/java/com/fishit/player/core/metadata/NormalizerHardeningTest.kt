@@ -249,5 +249,5 @@ package com.fishit.player.core.metadata
  * // ======================================== // PART 3: GENERATED STRESS TESTS //
  * ========================================
  *
- * /** Generate 500 realistic heavily polluted titles for stress testing.
+ * /* Generate 500 realistic heavily polluted titles for stress testing.
  */

@@ -31,6 +31,7 @@ android {
 dependencies {
     // Player modules
     implementation(project(":core:player-model"))
+    implementation(project(":player:ui-api"))
     implementation(project(":player:internal"))
     implementation(project(":infra:logging"))
 

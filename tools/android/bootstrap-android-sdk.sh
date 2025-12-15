@@ -53,7 +53,7 @@ export ANDROID_SDK_ROOT="${SDK_ROOT}"
 export ANDROID_HOME="${SDK_ROOT}"
 export PATH="${CMDLINE_BIN}:${SDK_ROOT}/platform-tools:${PATH}"
 
-yes | "${SDKMANAGER}" --licenses >/dev/null
+yes | "${SDKMANAGER}" --licenses >/dev/null || true
 
 # Only install missing packages for idempotency (see tools/env/setup_android.sh lines 63-79)
 missing_packages=()

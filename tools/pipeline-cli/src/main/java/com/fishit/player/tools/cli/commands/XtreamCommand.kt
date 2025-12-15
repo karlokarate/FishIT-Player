@@ -1,6 +1,6 @@
 package com.fishit.player.tools.cli.commands
 
-import com.fishit.player.core.appstartup.Pipelines
+import com.fishit.player.tools.cli.CliPipelines
 import com.fishit.player.pipeline.xtream.debug.XtreamDebugServiceImpl
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
@@ -21,7 +21,7 @@ import kotlinx.coroutines.runBlocking
  * - xt list-live: List live channels
  * - xt inspect-id: Inspect a specific VOD item
  */
-class XtreamCommand(private val pipelines: Pipelines) : CliktCommand(
+class XtreamCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "xt",
     help = "Xtream pipeline commands"
 ) {
@@ -38,7 +38,7 @@ class XtreamCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class XtStatusCommand(private val pipelines: Pipelines) : CliktCommand(
+class XtStatusCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "status",
     help = "Show Xtream pipeline status"
 ) {
@@ -51,7 +51,7 @@ class XtStatusCommand(private val pipelines: Pipelines) : CliktCommand(
             return@runBlocking
         }
 
-        val service = XtreamDebugServiceImpl(adapter)
+        val service = XtreamDebugServiceImpl(adapter!!)
         val status = service.getStatus()
 
         if (json) {
@@ -78,7 +78,7 @@ class XtStatusCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class XtListVodCommand(private val pipelines: Pipelines) : CliktCommand(
+class XtListVodCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "list-vod",
     help = "List VOD items"
 ) {
@@ -94,7 +94,7 @@ class XtListVodCommand(private val pipelines: Pipelines) : CliktCommand(
             return@runBlocking
         }
 
-        val service = XtreamDebugServiceImpl(adapter)
+        val service = XtreamDebugServiceImpl(adapter!!)
         val items = service.listVod(limit)
 
         if (json) {
@@ -124,7 +124,7 @@ class XtListVodCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class XtListSeriesCommand(private val pipelines: Pipelines) : CliktCommand(
+class XtListSeriesCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "list-series",
     help = "List series"
 ) {
@@ -140,7 +140,7 @@ class XtListSeriesCommand(private val pipelines: Pipelines) : CliktCommand(
             return@runBlocking
         }
 
-        val service = XtreamDebugServiceImpl(adapter)
+        val service = XtreamDebugServiceImpl(adapter!!)
         val items = service.listSeries(limit)
 
         if (json) {
@@ -170,7 +170,7 @@ class XtListSeriesCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class XtListLiveCommand(private val pipelines: Pipelines) : CliktCommand(
+class XtListLiveCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "list-live",
     help = "List live channels"
 ) {
@@ -186,7 +186,7 @@ class XtListLiveCommand(private val pipelines: Pipelines) : CliktCommand(
             return@runBlocking
         }
 
-        val service = XtreamDebugServiceImpl(adapter)
+        val service = XtreamDebugServiceImpl(adapter!!)
         val items = service.listLive(limit)
 
         if (json) {
@@ -215,7 +215,7 @@ class XtListLiveCommand(private val pipelines: Pipelines) : CliktCommand(
     }
 }
 
-class XtInspectCommand(private val pipelines: Pipelines) : CliktCommand(
+class XtInspectCommand(private val pipelines: CliPipelines) : CliktCommand(
     name = "inspect-id",
     help = "Inspect a VOD item by ID"
 ) {
@@ -231,7 +231,7 @@ class XtInspectCommand(private val pipelines: Pipelines) : CliktCommand(
             return@runBlocking
         }
 
-        val service = XtreamDebugServiceImpl(adapter)
+        val service = XtreamDebugServiceImpl(adapter!!)
         val details = service.inspectVod(id)
 
         if (details == null) {
