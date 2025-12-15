@@ -1,7 +1,6 @@
 package com.fishit.player.pipeline.telegram.model
 
 import com.fishit.player.core.model.ExternalIds
-import com.fishit.player.core.model.GlobalIdUtil
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
@@ -29,6 +28,7 @@ import com.fishit.player.core.model.SourceType
  * - ✅ Leave externalIds empty (Telegram doesn't provide TMDB/IMDB/TVDB)
  * - ✅ ImageRef populated from thumbnail/photo data
  * - ✅ NO TMDB lookups, NO cross-pipeline matching, NO canonical identity computation
+ * - ✅ globalId left empty - normalizer will generate it
  */
 
 /**
@@ -38,11 +38,10 @@ import com.fishit.player.core.model.SourceType
  */
 fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         val rawTitle = extractRawTitle()
-        val rawYear = year
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = mapTelegramMediaType(),
-                year = rawYear,
+                year = year,
                 season = seasonNumber,
                 episode = episodeNumber,
                 durationMinutes = durationSecs?.let { it / 60 },
@@ -52,7 +51,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 sourceId = remoteId ?: "msg:$chatId:$messageId",
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.TELEGRAM,
-                globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
+                globalId = "", // Normalizer will generate canonical ID
                 // === ImageRef from TelegramImageRefExtensions ===
                 poster = toPosterImageRef(), // Photo or null for video
                 backdrop = null, // Telegram doesn't provide backdrops

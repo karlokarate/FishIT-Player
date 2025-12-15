@@ -1,6 +1,5 @@
 package com.fishit.player.core.metadata
 
-import com.fishit.player.core.model.GlobalIdUtil
 import com.fishit.player.core.model.MediaVariant
 import com.fishit.player.core.model.NormalizedMedia
 import com.fishit.player.core.model.QualityTags
@@ -46,7 +45,15 @@ object Normalizer {
                 rawItems.groupBy { raw ->
                     raw.globalId.ifEmpty {
                         // Fallback if globalId wasn't set by pipeline
-                        GlobalIdUtil.generateCanonicalId(raw.originalTitle, raw.year)
+                        // Use canonical title (basic normalization) + year
+                        val canonicalTitle = normalizeTitle(raw.originalTitle)
+                        CanonicalIdUtil.canonicalHashId(
+                            canonicalTitle = canonicalTitle,
+                            year = raw.year,
+                            season = raw.season,
+                            episode = raw.episode,
+                            tmdbId = raw.externalIds.tmdbId
+                        )
                     }
                 }
 
@@ -180,5 +187,26 @@ object Normalizer {
             }
             else -> null
         }
+    }
+
+    /**
+     * Normalize a title for canonical ID generation.
+     *
+     * Basic normalization:
+     * - Trim whitespace
+     * - Convert to lowercase
+     * - Replace dots/underscores with spaces
+     * - Collapse multiple spaces
+     *
+     * NOTE: Scene tag stripping removed - pipelines provide raw titles,
+     * and deeper normalization happens in dedicated normalizer components.
+     */
+    private fun normalizeTitle(title: String): String {
+        return title.trim()
+                .lowercase()
+                .replace('.', ' ')
+                .replace('_', ' ')
+                .replace(Regex("""\s+"""), " ")
+                .trim()
     }
 }

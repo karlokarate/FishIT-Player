@@ -47,9 +47,12 @@ data class RawMediaMetadata(
         /** Pipeline that produced this metadata */
         val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
         /**
-         * Canonical global ID for cross-pipeline deduplication. Generated via
-         * [GlobalIdUtil.generateCanonicalId] based on normalized title + year. Format:
-         * "cm:<16-char-hex>"
+         * Canonical global ID for cross-pipeline deduplication.
+         *
+         * Pipelines MUST leave this empty. The metadata normalizer will generate canonical IDs
+         * during normalization using CanonicalIdUtil (in core:metadata-normalizer).
+         *
+         * Format when populated by normalizer: "cm:<16-char-hex>"
          */
         val globalId: String = "",
         // === Imaging Fields (v2) ===
