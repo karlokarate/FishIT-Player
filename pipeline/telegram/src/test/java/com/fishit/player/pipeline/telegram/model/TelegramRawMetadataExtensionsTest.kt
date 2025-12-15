@@ -16,11 +16,12 @@ class TelegramRawMetadataExtensionsTest {
 
     @Test
     fun `toRawMediaMetadata uses title as first priority`() {
+        val expectedRawTitle = "The Movie Title"
         val item = TelegramMediaItem(
             chatId = 123L,
             messageId = 456L,
             mediaType = TelegramMediaType.VIDEO,
-            title = "The Movie Title",
+            title = expectedRawTitle,
             episodeTitle = "Episode Name",
             caption = "Some caption",
             fileName = "movie.mkv"
@@ -28,7 +29,8 @@ class TelegramRawMetadataExtensionsTest {
 
         val raw = item.toRawMediaMetadata()
 
-        assertEquals("The Movie Title", raw.originalTitle)
+        assertEquals(expectedRawTitle, raw.originalTitle)
+        assertEquals("", raw.globalId)
     }
 
     @Test

@@ -31,6 +31,7 @@ class XtreamRawMetadataExtensionsTest {
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:vod:123", raw.sourceId)
         assertEquals("Xtream VOD", raw.sourceLabel)
+        assertEquals("", raw.globalId)
         assertNull(raw.year) // Not available in list
         assertNull(raw.season)
         assertNull(raw.episode)
@@ -53,6 +54,7 @@ class XtreamRawMetadataExtensionsTest {
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:series:456", raw.sourceId)
         assertEquals("Xtream Series", raw.sourceLabel)
+        assertEquals("", raw.globalId)
     }
 
     @Test
@@ -75,6 +77,7 @@ class XtreamRawMetadataExtensionsTest {
         assertEquals("Xtream: Breaking Bad", raw.sourceLabel)
         assertEquals(1, raw.season)
         assertEquals(5, raw.episode)
+        assertEquals("", raw.globalId)
     }
 
     @Test
@@ -91,6 +94,7 @@ class XtreamRawMetadataExtensionsTest {
         val raw = episode.toRawMediaMetadata(seriesName = "Breaking Bad")
 
         assertEquals("Breaking Bad", raw.originalTitle) // Falls back to series name
+        assertEquals("", raw.globalId)
     }
 
     @Test
@@ -111,6 +115,7 @@ class XtreamRawMetadataExtensionsTest {
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:live:101", raw.sourceId)
         assertEquals("Xtream Live", raw.sourceLabel)
+        assertEquals("", raw.globalId)
     }
 
     @Test

@@ -286,6 +286,32 @@ if [[ -n "$violations" ]]; then
 fi
 
 # ======================================================================
+# RAW_METADATA_GLOBALID_GUARD: Pipelines must not set/compute globalId
+# ======================================================================
+echo "Running RAW_METADATA_GLOBALID_GUARD..."
+
+violations=$(grep -R -n "GlobalIdUtil" pipeline/ --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy 2>/dev/null || true)
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: Pipeline references GlobalIdUtil (globalId is assigned centrally)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+violations=$(grep -R -n "generateCanonicalId(" pipeline/ --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy 2>/dev/null || true)
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: Pipeline attempts canonical-id generation (forbidden)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+violations=$(grep -R -n -E '^[^/]*(\s)*globalId\s*=' pipeline/ --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy 2>/dev/null || true)
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: Pipeline assigns RawMediaMetadata.globalId (must remain empty)"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
 # APP-V2 LAYER: Check for forbidden imports (Phase A1.2)
 # ======================================================================
 echo "Checking app-v2 layer for forbidden imports..."

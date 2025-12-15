@@ -1,7 +1,6 @@
 package com.fishit.player.pipeline.telegram.model
 
 import com.fishit.player.core.model.ExternalIds
-import com.fishit.player.core.model.GlobalIdUtil
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
@@ -52,7 +51,6 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 sourceId = remoteId ?: "msg:$chatId:$messageId",
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.TELEGRAM,
-                globalId = GlobalIdUtil.generateCanonicalId(rawTitle, rawYear),
                 // === ImageRef from TelegramImageRefExtensions ===
                 poster = toPosterImageRef(), // Photo or null for video
                 backdrop = null, // Telegram doesn't provide backdrops

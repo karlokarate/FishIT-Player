@@ -47,9 +47,9 @@ data class RawMediaMetadata(
         /** Pipeline that produced this metadata */
         val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
         /**
-         * Canonical global ID for cross-pipeline deduplication. Generated via
-         * [GlobalIdUtil.generateCanonicalId] based on normalized title + year. Format:
-         * "cm:<16-char-hex>"
+         * Canonical identity key for cross-pipeline deduplication.
+         * IMPORTANT: Pipelines MUST leave this empty (""). It is assigned centrally by :core:metadata-normalizer during
+         * unification.
          */
         val globalId: String = "",
         // === Imaging Fields (v2) ===
