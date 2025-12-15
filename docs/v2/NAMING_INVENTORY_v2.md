@@ -40,7 +40,8 @@
 | `core/feature-api/src/main/kotlin/com/fishit/player/core/feature/Features.kt` | `:core:feature-api` | `core.feature` | Feature ID constants | CoreModel | |
 | `core/firebase/src/main/java/com/fishit/player/core/firebase/package-info.kt` | `:core:firebase` | `core.firebase` | Package placeholder | CoreModel | |
 | `core/model/src/main/java/com/fishit/player/core/model/CanonicalMediaId.kt` | `:core:model` | `core.model` | Canonical media identifier | CoreModel | |
-| `core/model/src/main/java/com/fishit/player/core/model/GlobalIdUtil.kt` | `:core:model` | `core.model` | Global ID generation utility | CoreModel | |
+| `core/model/src/main/java/com/fishit/player/core/model/GlobalIdUtil.kt` | `:core:model` | `core.model` | **DEPRECATED** - Moved to CanonicalIdUtil in :core:metadata-normalizer | CoreModel | Deprecated stub only |
+| `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/CanonicalIdUtil.kt` | `:core:metadata-normalizer` | `core.metadata` | Canonical ID generation (TMDB-priority) | MetadataNormalizer | Only accessible to normalizer |
 | `core/model/src/main/java/com/fishit/player/core/model/ImageRef.kt` | `:core:model` | `core.model` | Image reference sealed class | CoreModel | |
 | `core/model/src/main/java/com/fishit/player/core/model/MediaSourceRef.kt` | `:core:model` | `core.model` | Media source reference | CoreModel | |
 | `core/model/src/main/java/com/fishit/player/core/model/MediaSourceRefExtensions.kt` | `:core:model` | `core.model` | MediaSourceRef extension functions | CoreModel | |

@@ -65,6 +65,9 @@ jobs:
       - name: Run Grep-based Architecture Checks
         run: ./scripts/ci/check-arch-guardrails.sh
 
+      - name: Run Canonical ID Isolation Check
+        run: ./scripts/ci/check-canonical-id-isolation.sh
+
       - name: Upload Detekt Reports
         uses: actions/upload-artifact@v4
         if: always()
