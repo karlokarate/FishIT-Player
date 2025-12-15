@@ -1,7 +1,7 @@
 package com.fishit.player.internal.miniplayer
 
 import com.fishit.player.core.playermodel.PlaybackState
-import com.fishit.player.internal.InternalPlayerEntryImpl
+import com.fishit.player.playback.domain.PlayerEntryPoint
 import com.fishit.player.ui.api.MiniPlayerStateSnapshot
 import com.fishit.player.ui.api.MiniPlayerStateSource
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +23,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class InternalMiniPlayerStateSource @Inject constructor(
-    private val playerEntry: InternalPlayerEntryImpl,
+    private val playerEntry: PlayerEntryPoint,
 ) : MiniPlayerStateSource {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
