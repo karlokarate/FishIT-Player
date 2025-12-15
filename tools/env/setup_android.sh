@@ -83,7 +83,7 @@ for package in "${REQUIRED_PACKAGES[@]}"; do
 done
 
 if [ ${#missing_packages[@]} -gt 0 ]; then
-  yes | "${SDKMANAGER}" --licenses >/dev/null
+  yes | "${SDKMANAGER}" --licenses >/dev/null || true
   "${SDKMANAGER}" --install "${missing_packages[@]}"
 else
   echo "Required Android SDK packages already installed." >&2
