@@ -56,7 +56,7 @@ The main architecture guardrails script now calls `check-frozen-manifest.sh` as 
 
 ## Module Manifest (Final)
 
-Total modules: **68** (frozen after this PR)
+Total modules: **42** (frozen after this PR)
 
 ### App (1)
 - `:app-v2`
@@ -74,7 +74,7 @@ Total modules: **68** (frozen after this PR)
 - `:core:ui-layout`
 - `:core:app-startup`
 
-### Playback & Player (9)
+### Playback & Player (7 + 1 new = 8)
 - `:playback:domain`
 - `:playback:telegram`
 - `:playback:xtream`
@@ -100,7 +100,7 @@ Total modules: **68** (frozen after this PR)
 - `:feature:settings`
 - `:feature:onboarding`
 
-### Infrastructure (9)
+### Infrastructure (7 + 2 new = 9)
 - `:infra:logging`
 - `:infra:tooling`
 - `:infra:transport-telegram`

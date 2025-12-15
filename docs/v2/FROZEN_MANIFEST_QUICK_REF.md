@@ -37,13 +37,13 @@ Runs as part of: `scripts/ci/check-arch-guardrails.sh`
 
 ## Complete Module List
 
-Total: **68 modules** (frozen)
+Total: **42 modules** (frozen)
 
 ### Core (11)
 `:core:model`, `:core:player-model`, `:core:feature-api`, `:core:persistence`, `:core:metadata-normalizer`, `:core:catalog-sync`, `:core:firebase`, `:core:ui-imaging`, `:core:ui-theme`, `:core:ui-layout`, `:core:app-startup`
 
 ### Playback & Player (9)
-`:playback:domain`, `:playback:telegram`, `:playback:xtream`, `:player:ui`, `:player:ui-api`, `:player:internal`, `:player:miniplayer`, `:player:nextlib-codecs`
+`:playback:domain`, `:playback:telegram`, `:playback:xtream`, `:player:ui`, `:player:ui-api` ⭐, `:player:internal`, `:player:miniplayer`, `:player:nextlib-codecs`
 
 ### Pipelines (4)
 `:pipeline:telegram`, `:pipeline:xtream`, `:pipeline:io`, `:pipeline:audiobook`
@@ -52,7 +52,7 @@ Total: **68 modules** (frozen)
 `:feature:home`, `:feature:library`, `:feature:live`, `:feature:detail`, `:feature:telegram-media`, `:feature:audiobooks`, `:feature:settings`, `:feature:onboarding`
 
 ### Infrastructure (9)
-`:infra:logging`, `:infra:tooling`, `:infra:transport-telegram`, `:infra:transport-xtream`, `:infra:data-telegram`, `:infra:data-xtream`, `:infra:data-home`, `:infra:imaging`, `:infra:work`
+`:infra:logging`, `:infra:tooling`, `:infra:transport-telegram`, `:infra:transport-xtream`, `:infra:data-telegram`, `:infra:data-xtream`, `:infra:data-home`, `:infra:imaging` ⭐, `:infra:work` ⭐
 
 ### App & Tools (2)
 `:app-v2`, `:tools:pipeline-cli`
