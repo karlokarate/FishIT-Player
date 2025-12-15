@@ -304,7 +304,7 @@ if [[ -n "$violations" ]]; then
     VIOLATIONS=$((VIOLATIONS + 1))
 fi
 
-violations=$(grep -R -n -E '^[^/]*(\s)*globalId\s*=' pipeline/ --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy 2>/dev/null || true)
+violations=$(grep -R -n -E 'globalId\s*=' pipeline/ --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy 2>/dev/null || true)
 if [[ -n "$violations" ]]; then
     echo "$violations"
     echo "❌ VIOLATION: Pipeline assigns RawMediaMetadata.globalId (must remain empty)"
