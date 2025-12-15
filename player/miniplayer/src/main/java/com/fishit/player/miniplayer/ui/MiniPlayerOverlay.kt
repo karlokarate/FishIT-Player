@@ -49,7 +49,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.fishit.player.internal.state.InternalPlayerState
+import com.fishit.player.ui.api.MiniPlayerStateSnapshot
 import com.fishit.player.miniplayer.MiniPlayerAnchor
 import com.fishit.player.miniplayer.MiniPlayerManager
 import com.fishit.player.miniplayer.MiniPlayerMode
@@ -102,7 +102,7 @@ private val RESIZE_BORDER_WIDTH = 3.dp
 @Composable
 fun MiniPlayerOverlay(
     miniPlayerState: MiniPlayerState,
-    playerState: InternalPlayerState,
+    playerState: MiniPlayerStateSnapshot,
     miniPlayerManager: MiniPlayerManager,
     onRequestFullPlayer: () -> Unit,
     onDismiss: () -> Unit,

@@ -20,11 +20,7 @@ import javax.inject.Inject
  * - Uses @HiltViewModel for clean dependency injection
  * - Constructor-injects only high-level abstractions (no engine wiring)
  * - Delegates playback to [PlayerEntryPoint] (domain interface)
- * - Never references engine wiring types:
- *   - PlaybackSourceResolver (internal wiring)
- *   - ResumeManager (internal engine logic)
- *   - KidsPlaybackGate (internal engine logic)
- *   - NextlibCodecConfigurator (internal engine logic)
+ * - Never references internal engine implementation details
  *
  * @param playerEntryPoint High-level playback abstraction (from playback:domain)
  */
