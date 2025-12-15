@@ -45,7 +45,8 @@ object Normalizer {
                 rawItems.groupBy { raw ->
                     raw.globalId.ifEmpty {
                         // Fallback if globalId wasn't set by pipeline
-                        // Use canonical title (basic normalization) + year
+                        // This is expected: pipelines SHOULD leave globalId empty per contract
+                        // The normalizer generates canonical IDs here on-demand
                         val canonicalTitle = normalizeTitle(raw.originalTitle)
                         CanonicalIdUtil.canonicalHashId(
                             canonicalTitle = canonicalTitle,

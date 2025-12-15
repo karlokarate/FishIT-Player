@@ -31,12 +31,12 @@ VIOLATIONS=0
 
 # Pattern 1: Check for GlobalIdUtil imports outside metadata-normalizer
 echo "Checking for GlobalIdUtil imports outside metadata-normalizer..."
-GLOBAL_ID_IMPORTS=$(grep -rn "import.*GlobalIdUtil" \
+GLOBAL_ID_IMPORTS=$(grep -rn "^import.*GlobalIdUtil" \
     --include="*.kt" \
     --exclude-dir=".gradle" \
     --exclude-dir="build" \
     --exclude-dir=".git" \
-    . | grep -v "core/metadata-normalizer/" | grep -v "core/model/GlobalIdUtil.kt" || true)
+    . | grep -v "core/metadata-normalizer/" || true)
 
 if [[ -n "$GLOBAL_ID_IMPORTS" ]]; then
     echo "❌ VIOLATION: GlobalIdUtil imported outside core:metadata-normalizer"
@@ -53,15 +53,15 @@ else
     echo "✅ No GlobalIdUtil imports outside metadata-normalizer"
 fi
 
-# Pattern 2: Check for CanonicalIdUtil imports outside metadata-normalizer and core:model
+# Pattern 2: Check for CanonicalIdUtil imports outside metadata-normalizer
 echo ""
 echo "Checking for CanonicalIdUtil imports outside metadata-normalizer..."
-CANONICAL_ID_IMPORTS=$(grep -rn "import.*CanonicalIdUtil" \
+CANONICAL_ID_IMPORTS=$(grep -rn "^import.*CanonicalIdUtil" \
     --include="*.kt" \
     --exclude-dir=".gradle" \
     --exclude-dir="build" \
     --exclude-dir=".git" \
-    . | grep -v "core/metadata-normalizer/" | grep -v "core/model/" || true)
+    . | grep -v "core/metadata-normalizer/" || true)
 
 if [[ -n "$CANONICAL_ID_IMPORTS" ]]; then
     echo "❌ VIOLATION: CanonicalIdUtil imported outside core:metadata-normalizer"

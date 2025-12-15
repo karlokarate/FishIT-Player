@@ -56,11 +56,14 @@ object CanonicalIdUtil {
             buildString {
                 append("tmdb:")
                 append(tmdbId)
-                if (season != null && episode != null) {
+                // Handle series-level (season only) and episode-level (season + episode)
+                if (season != null) {
                     append("|S")
                     append(season.toString().padStart(2, '0'))
-                    append("E")
-                    append(episode.toString().padStart(2, '0'))
+                    if (episode != null) {
+                        append("E")
+                        append(episode.toString().padStart(2, '0'))
+                    }
                 }
             }
         } else {
@@ -69,11 +72,14 @@ object CanonicalIdUtil {
                 append(canonicalTitle)
                 append("|")
                 append(year?.toString() ?: "unknown")
-                if (season != null && episode != null) {
+                // Handle series-level (season only) and episode-level (season + episode)
+                if (season != null) {
                     append("|S")
                     append(season.toString().padStart(2, '0'))
-                    append("E")
-                    append(episode.toString().padStart(2, '0'))
+                    if (episode != null) {
+                        append("E")
+                        append(episode.toString().padStart(2, '0'))
+                    }
                 }
             }
         }
