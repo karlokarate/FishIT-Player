@@ -449,7 +449,23 @@ echo "========================================="
 if [ $VIOLATIONS -eq 0 ]; then
     echo "✅ No architecture violations detected"
     echo "========================================="
-    exit 0
+    echo ""
+    echo "Running frozen module manifest check..."
+    echo ""
+    # Run the frozen manifest check
+    if "$SCRIPT_DIR/check-frozen-manifest.sh"; then
+        echo ""
+        echo "========================================="
+        echo "✅ All checks passed (architecture + manifest)"
+        echo "========================================="
+        exit 0
+    else
+        echo ""
+        echo "========================================="
+        echo "❌ Frozen manifest check failed"
+        echo "========================================="
+        exit 1
+    fi
 else
     echo "❌ Found $VIOLATIONS architecture violation(s)"
     echo "========================================="
