@@ -8,6 +8,35 @@ To prevent architecture violations from being merged, we use dual enforcement:
 1. **Detekt static analysis** - Import rules, method call rules
 2. **Grep-based checks** - Pattern-based checks for layer boundaries
 
+### Telegram Auth Contract & Wiring — Frozen
+
+- **Canonical file:** `core/feature-api/src/main/kotlin/com/fishit/player/core/feature/auth/TelegramAuthRepository.kt` (contains both `TelegramAuthRepository` + `TelegramAuthState`).
+- **No duplicates:** No other file may declare the interface or state.
+- **Feature deps:** `feature/onboarding` must **not** depend on `infra/*`, `pipeline/*`, `playback/*`, or `app-v2` (core contracts + UI only).
+- **DI binding:** Exactly one binding for `TelegramAuthRepository`, located in `infra/data-telegram` (none in `app-v2`).
+- **Transport imports:** `infra/data-telegram` may use the transport **API surface only**; transport internals/TDLib types are forbidden.
+- **Check locally:** `bash scripts/ci/check-telegram-auth-guardrails.sh`
+
+### Duplicate Contracts & Shadow Types — Frozen
+
+Global guardrails prevent contract duplication and shadow UI/Domain types across the entire codebase.
+
+**Enforced Single Sources of Truth:**
+- `TelegramAuthRepository` + `TelegramAuthState` → `core/feature-api`
+- `XtreamAuthRepository` + `XtreamAuthState` → `core/feature-api`
+- `RawMediaMetadata` → `core/model`
+- `MetadataNormalizer` → `core/metadata-normalizer`
+
+**Forbidden Shadow Types:**
+- `UiTelegramAuthState`, `UiXtreamAuthState`, `Ui*AuthState` (use core contract directly)
+- `DomainTelegramAuthState`, `DomainXtreamAuthState` (use import aliasing instead)
+
+**Role Duplication Smells:**
+Files containing `Bridge`, `Stopgap`, `Temp`, `Copy`, `Old`, `Backup`, `Alt` in their names are flagged as architectural smells (outside legacy/).
+
+- **Check locally:** `bash scripts/ci/check-duplicate-contracts.sh`
+- **Integrated in:** `scripts/ci/check-arch-guardrails.sh`
+
 **Enforced Rules:**
 1. **Layer boundary rules** - Features cannot import pipeline/transport/player-internal
 2. **Logging contract** - Only UnifiedLog allowed outside infra/logging

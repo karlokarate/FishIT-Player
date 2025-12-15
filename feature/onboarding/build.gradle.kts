@@ -34,10 +34,7 @@ dependencies {
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
     implementation(project(":infra:logging"))
-    implementation(project(":infra:transport-telegram"))
-    implementation(project(":infra:transport-xtream"))
-    implementation(project(":infra:data-telegram"))
-    implementation(project(":infra:data-xtream"))
+    implementation(project(":core:feature-api"))
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")

@@ -8,13 +8,16 @@
 - `upsertAll()` for catalog sync
 - Querying by chat, search, filters
 - Using persistence entities internally
+- **Adapters:** Implementing feature-level domain interfaces (e.g. `feature/.../domain/TelegramAuthRepository`) that map to transport APIs
+- **Transport API usage:** Importing transport API surfaces (e.g. `infra/transport-telegram/api/*`, `TelegramAuthClient`) without touching transport internals
 
 ## ❌ Forbidden
 - Pipeline DTOs (`TelegramMediaItem`, `TelegramChatSummary`)
 - Transport DTOs (`TgMessage`, `TgContent`)
 - TDLib types (`TdApi.*`)
+- Transport internals/impl (`infra/transport-telegram/internal`, `DefaultTelegramTransportClient`, `TdlibAuthSession`)
+- UI imports (`feature/*/ui`, `feature/*/presentation`)
 - Playback logic
-- UI imports
 - Network calls
 
 ## Public Surface

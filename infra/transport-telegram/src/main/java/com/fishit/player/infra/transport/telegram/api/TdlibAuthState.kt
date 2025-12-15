@@ -1,55 +1,58 @@
 package com.fishit.player.infra.transport.telegram.api
 
 /**
- * Transport-layer authentication state for Telegram.
+ * Transport-layer TDLib authentication state.
  *
  * Sealed interface representing TDLib authorization states without
- * exposing TDLib types. Used by UI/Domain to handle auth flows.
+ * exposing TDLib types. Maps directly to TDLib AuthorizationState events.
  *
  * **v2 Architecture:**
  * - Transport emits these states via Flow
- * - UI observes and presents appropriate screens
+ * - Data layer maps to domain TelegramAuthState (core/feature-api)
  * - No TDLib types leak outside transport
+ *
+ * **IMPORTANT:** This is NOT the same as core/feature-api TelegramAuthState.
+ * This is transport-level TDLib state; domain state is in core/feature-api.
  */
-sealed interface TelegramAuthState {
+sealed interface TdlibAuthState {
 
     /**
      * Client is ready and authorized.
      * Normal operations can proceed.
      */
-    data object Ready : TelegramAuthState
+    data object Ready : TdlibAuthState
 
     /**
      * Client is connecting/initializing.
      */
-    data object Connecting : TelegramAuthState
+    data object Connecting : TdlibAuthState
 
     /**
      * Idle state before any action taken.
      */
-    data object Idle : TelegramAuthState
+    data object Idle : TdlibAuthState
 
     /**
      * TDLib is closing down.
      */
-    data object LoggingOut : TelegramAuthState
+    data object LoggingOut : TdlibAuthState
 
     /**
      * Client has been closed.
      */
-    data object Closed : TelegramAuthState
+    data object Closed : TdlibAuthState
 
     /**
      * Logged out successfully.
      */
-    data object LoggedOut : TelegramAuthState
+    data object LoggedOut : TdlibAuthState
 
     /**
      * Waiting for phone number input.
      *
      * @property hint Optional hint about expected format
      */
-    data class WaitPhoneNumber(val hint: String? = null) : TelegramAuthState
+    data class WaitPhoneNumber(val hint: String? = null) : TdlibAuthState
 
     /**
      * Waiting for verification code.
@@ -60,7 +63,7 @@ sealed interface TelegramAuthState {
     data class WaitCode(
         val phoneNumber: String? = null,
         val codeLength: Int? = null
-    ) : TelegramAuthState
+    ) : TdlibAuthState
 
     /**
      * Waiting for two-factor authentication password.
@@ -71,33 +74,33 @@ sealed interface TelegramAuthState {
     data class WaitPassword(
         val passwordHint: String? = null,
         val hasRecoveryEmail: Boolean = false
-    ) : TelegramAuthState
+    ) : TdlibAuthState
 
     /**
      * Waiting for TDLib parameters to be set.
      * Internal state, usually handled automatically.
      */
-    data object WaitTdlibParameters : TelegramAuthState
+    data object WaitTdlibParameters : TdlibAuthState
 
     /**
      * Waiting for database encryption key.
      * Internal state for encrypted databases.
      */
-    data object WaitEncryptionKey : TelegramAuthState
+    data object WaitEncryptionKey : TdlibAuthState
 
     /**
      * Error state with message.
      *
      * @property message Error description
      */
-    data class Error(val message: String) : TelegramAuthState
+    data class Error(val message: String) : TdlibAuthState
 
     /**
      * Unknown or unmapped TDLib state.
      *
      * @property raw String representation for debugging
      */
-    data class Unknown(val raw: String) : TelegramAuthState
+    data class Unknown(val raw: String) : TdlibAuthState
 }
 
 /**

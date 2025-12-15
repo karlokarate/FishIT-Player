@@ -1,12 +1,14 @@
 package com.fishit.player.infra.transport.telegram
 
+import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Telegram Transport Client Interface (v2 Architecture)
  *
- * Low-level TDLib operations abstracted for reuse across layers.
- * This interface exposes ONLY transport-level operations - no media-specific logic.
+ * Low-level TDLib operations abstracted for reuse across layers. This interface exposes ONLY
+ * transport-level operations - no media-specific logic.
  *
  * **Module Boundary:**
  * - Transport layer provides raw TDLib access (auth, messages, files)
@@ -28,22 +30,22 @@ import kotlinx.coroutines.flow.Flow
 interface TelegramTransportClient {
 
     /** Current authorization state. Emits updates when auth state changes. */
-    val authState: Flow<TelegramAuthState>
+    val authState: Flow<TdlibAuthState>
 
     /** Current connection state. Emits updates when connection state changes. */
     val connectionState: Flow<TelegramConnectionState>
 
     /**
-     * Stream of incoming messages (media-only) for live ingestion/warm-up.
-     * Implementations should emit only playable media messages.
+     * Stream of incoming messages (media-only) for live ingestion/warm-up. Implementations should
+     * emit only playable media messages.
      */
     val mediaUpdates: Flow<TgMessage>
 
     /**
      * Ensure the client is authorized and ready to use.
      *
-     * If not authorized, this will initiate the auth flow. Callers should observe [authState]
-     * to handle interactive auth steps.
+     * If not authorized, this will initiate the auth flow. Callers should observe [authState] to
+     * handle interactive auth steps.
      *
      * @throws TelegramAuthException if authorization fails
      */
@@ -73,9 +75,9 @@ interface TelegramTransportClient {
      * @return List of messages from the chat
      */
     suspend fun fetchMessages(
-        chatId: Long,
-        limit: Int = 100,
-        offsetMessageId: Long = 0
+            chatId: Long,
+            limit: Int = 100,
+            offsetMessageId: Long = 0
     ): List<TgMessage>
 
     /**
@@ -113,22 +115,17 @@ interface TelegramTransportClient {
 // Transport-Level Types (Wrapper around TDLib DTOs)
 // ============================================================================
 
-/**
- * Wrapper for TDLib Chat.
- * Exposes only fields needed by transport consumers.
- */
+/** Wrapper for TDLib Chat. Exposes only fields needed by transport consumers. */
 data class TgChat(
-    val id: Long,
-    val title: String,
-    val type: TgChatType,
-    val photoSmallFileId: Int?,
-    val photoBigFileId: Int?,
-    val memberCount: Int?
+        val id: Long,
+        val title: String,
+        val type: TgChatType,
+        val photoSmallFileId: Int?,
+        val photoBigFileId: Int?,
+        val memberCount: Int?
 )
 
-/**
- * Simplified chat type enum.
- */
+/** Simplified chat type enum. */
 enum class TgChatType {
     PRIVATE,
     BASIC_GROUP,
@@ -138,195 +135,159 @@ enum class TgChatType {
     UNKNOWN
 }
 
-/**
- * Wrapper for TDLib Message.
- * Contains content details needed for media classification.
- */
+/** Wrapper for TDLib Message. Contains content details needed for media classification. */
 data class TgMessage(
-    val id: Long,
-    val chatId: Long,
-    val senderId: Long,
-    val date: Int,
-    val content: TgContent,
-    val replyToMessageId: Long?
+        val id: Long,
+        val chatId: Long,
+        val senderId: Long,
+        val date: Int,
+        val content: TgContent,
+        val replyToMessageId: Long?
 )
 
 /**
- * Sealed hierarchy for message content types.
- * Maps to TDLib MessageContent types relevant for media.
+ * Sealed hierarchy for message content types. Maps to TDLib MessageContent types relevant for
+ * media.
  */
 sealed class TgContent {
     /** Video message content */
     data class Video(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val duration: Int,
-        val width: Int,
-        val height: Int,
-        val fileName: String?,
-        val mimeType: String?,
-        val fileSize: Long,
-        val caption: String?,
-        val thumbnail: TgThumbnail?,
-        val minithumbnail: TgMinithumbnail?
+            val fileId: Int,
+            val remoteId: String,
+            val uniqueId: String,
+            val duration: Int,
+            val width: Int,
+            val height: Int,
+            val fileName: String?,
+            val mimeType: String?,
+            val fileSize: Long,
+            val caption: String?,
+            val thumbnail: TgThumbnail?,
+            val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Document (file) message content */
     data class Document(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val fileName: String?,
-        val mimeType: String?,
-        val fileSize: Long,
-        val caption: String?,
-        val thumbnail: TgThumbnail?,
-        val minithumbnail: TgMinithumbnail?
+            val fileId: Int,
+            val remoteId: String,
+            val uniqueId: String,
+            val fileName: String?,
+            val mimeType: String?,
+            val fileSize: Long,
+            val caption: String?,
+            val thumbnail: TgThumbnail?,
+            val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Audio message content */
     data class Audio(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val duration: Int,
-        val title: String?,
-        val performer: String?,
-        val fileName: String?,
-        val mimeType: String?,
-        val fileSize: Long,
-        val caption: String?,
-        val albumCoverThumbnail: TgThumbnail?,
-        val albumCoverMinithumbnail: TgMinithumbnail?
+            val fileId: Int,
+            val remoteId: String,
+            val uniqueId: String,
+            val duration: Int,
+            val title: String?,
+            val performer: String?,
+            val fileName: String?,
+            val mimeType: String?,
+            val fileSize: Long,
+            val caption: String?,
+            val albumCoverThumbnail: TgThumbnail?,
+            val albumCoverMinithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Photo message content */
     data class Photo(
-        val sizes: List<TgPhotoSize>,
-        val caption: String?,
-        val minithumbnail: TgMinithumbnail?
+            val sizes: List<TgPhotoSize>,
+            val caption: String?,
+            val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Animation (GIF) message content */
     data class Animation(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val duration: Int,
-        val width: Int,
-        val height: Int,
-        val fileName: String?,
-        val mimeType: String?,
-        val fileSize: Long,
-        val caption: String?,
-        val thumbnail: TgThumbnail?,
-        val minithumbnail: TgMinithumbnail?
+            val fileId: Int,
+            val remoteId: String,
+            val uniqueId: String,
+            val duration: Int,
+            val width: Int,
+            val height: Int,
+            val fileName: String?,
+            val mimeType: String?,
+            val fileSize: Long,
+            val caption: String?,
+            val thumbnail: TgThumbnail?,
+            val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Video note (round video) message content */
     data class VideoNote(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val duration: Int,
-        val length: Int,
-        val fileSize: Long,
-        val thumbnail: TgThumbnail?,
-        val minithumbnail: TgMinithumbnail?
+            val fileId: Int,
+            val remoteId: String,
+            val uniqueId: String,
+            val duration: Int,
+            val length: Int,
+            val fileSize: Long,
+            val thumbnail: TgThumbnail?,
+            val minithumbnail: TgMinithumbnail?
     ) : TgContent()
 
     /** Voice note message content */
     data class VoiceNote(
-        val fileId: Int,
-        val remoteId: String,
-        val uniqueId: String,
-        val duration: Int,
-        val mimeType: String?,
-        val fileSize: Long,
-        val caption: String?
+            val fileId: Int,
+            val remoteId: String,
+            val uniqueId: String,
+            val duration: Int,
+            val mimeType: String?,
+            val fileSize: Long,
+            val caption: String?
     ) : TgContent()
 
     /** Text message (not media but included for completeness) */
-    data class Text(
-        val text: String
-    ) : TgContent()
+    data class Text(val text: String) : TgContent()
 
     /** Unsupported or unknown content type */
-    data class Unsupported(
-        val typeName: String
-    ) : TgContent()
+    data class Unsupported(val typeName: String) : TgContent()
 }
 
-/**
- * Photo size information.
- */
+/** Photo size information. */
 data class TgPhotoSize(
-    val type: String,
-    val fileId: Int,
-    val remoteId: String,
-    val uniqueId: String,
-    val width: Int,
-    val height: Int,
-    val fileSize: Long
+        val type: String,
+        val fileId: Int,
+        val remoteId: String,
+        val uniqueId: String,
+        val width: Int,
+        val height: Int,
+        val fileSize: Long
 )
 
-/**
- * Thumbnail information.
- */
+/** Thumbnail information. */
 data class TgThumbnail(
-    val fileId: Int,
-    val remoteId: String,
-    val uniqueId: String,
-    val width: Int,
-    val height: Int,
-    val fileSize: Long
+        val fileId: Int,
+        val remoteId: String,
+        val uniqueId: String,
+        val width: Int,
+        val height: Int,
+        val fileSize: Long
 )
 
 /** Inline minithumbnail (~40px JPEG) used for instant placeholders. */
 data class TgMinithumbnail(
-    val width: Int,
-    val height: Int,
-    val data: ByteArray,
+        val width: Int,
+        val height: Int,
+        val data: ByteArray,
 )
 
-/**
- * File location and download state.
- */
+/** File location and download state. */
 data class TgFile(
-    val id: Int,
-    val remoteId: String,
-    val uniqueId: String,
-    val size: Long,
-    val expectedSize: Long,
-    val localPath: String?,
-    val downloadedPrefixSize: Long,
-    val isDownloadingActive: Boolean,
-    val isDownloadingCompleted: Boolean
+        val id: Int,
+        val remoteId: String,
+        val uniqueId: String,
+        val size: Long,
+        val expectedSize: Long,
+        val localPath: String?,
+        val downloadedPrefixSize: Long,
+        val isDownloadingActive: Boolean,
+        val isDownloadingCompleted: Boolean
 )
-
-// ============================================================================
-// State Types
-// ============================================================================
-
-/** Telegram authorization state. */
-sealed class TelegramAuthState {
-    data object Idle : TelegramAuthState()
-    data object Connecting : TelegramAuthState()
-    data object WaitingForPhone : TelegramAuthState()
-    data object WaitingForCode : TelegramAuthState()
-    data object WaitingForPassword : TelegramAuthState()
-    data object Ready : TelegramAuthState()
-    data class Error(val message: String) : TelegramAuthState()
-}
-
-/** Telegram connection state. */
-sealed class TelegramConnectionState {
-    data object Disconnected : TelegramConnectionState()
-    data object Connecting : TelegramConnectionState()
-    data object Connected : TelegramConnectionState()
-    data class Error(val message: String) : TelegramConnectionState()
-}
 
 // ============================================================================
 // Exceptions

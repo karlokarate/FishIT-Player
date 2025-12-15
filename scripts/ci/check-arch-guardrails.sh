@@ -442,6 +442,38 @@ if [[ -n "$violations" ]]; then
 fi
 
 # ======================================================================
+# TELEGRAM AUTH CONTRACT & WIRING GUARDRAILS (hard fail)
+# ======================================================================
+echo "Running Telegram auth guardrails..."
+set +e
+"$SCRIPT_DIR/check-telegram-auth-guardrails.sh"
+tg_status=$?
+set -e
+if [ $tg_status -ne 0 ]; then
+    echo "❌ Telegram auth guardrails failed"
+    VIOLATIONS=$((VIOLATIONS + 1))
+else
+    echo "✅ Telegram auth guardrails passed"
+fi
+
+# ======================================================================
+# E) Duplicate Contracts & Shadow Types
+# ======================================================================
+echo ""
+echo "Running duplicate contract guardrails..."
+echo ""
+set +e
+"$SCRIPT_DIR/check-duplicate-contracts.sh"
+dc_status=$?
+set -e
+if [ $dc_status -ne 0 ]; then
+    echo "❌ Duplicate contract guardrails failed"
+    VIOLATIONS=$((VIOLATIONS + 1))
+else
+    echo "✅ Duplicate contract guardrails passed"
+fi
+
+# ======================================================================
 # SUMMARY
 # ======================================================================
 echo ""

@@ -22,5 +22,5 @@ android {
 }
 
 dependencies {
-    // Pure API module - no dependencies beyond Kotlin stdlib
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 }

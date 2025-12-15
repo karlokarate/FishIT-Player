@@ -2,12 +2,12 @@ package com.fishit.player.pipeline.telegram.adapter
 
 import com.fishit.player.core.model.MimeDecider
 import com.fishit.player.core.model.MimeMediaKind
-import com.fishit.player.infra.transport.telegram.TelegramAuthState
-import com.fishit.player.infra.transport.telegram.TelegramConnectionState
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.infra.transport.telegram.TgChat
 import com.fishit.player.infra.transport.telegram.TgContent
 import com.fishit.player.infra.transport.telegram.TgMessage
+import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
 import com.fishit.player.pipeline.telegram.model.TelegramMediaType
 import com.fishit.player.pipeline.telegram.model.TelegramPhotoSize
@@ -33,10 +33,10 @@ class TelegramPipelineAdapter @Inject constructor(
     private val transport: TelegramTransportClient
 ) {
     /** Current authorization state from transport layer. */
-    val authState: Flow<TelegramAuthState> = transport.authState
+    val authState: Flow< TdlibAuthState> = transport.authState
 
     /** Current connection state from transport layer. */
-    val connectionState: Flow<TelegramConnectionState> = transport.connectionState
+    val connectionState: Flow< TelegramConnectionState> = transport.connectionState
 
     /** Live stream of media-only updates mapped into pipeline types. */
     val mediaUpdates: Flow<TelegramMediaUpdate> = transport.mediaUpdates

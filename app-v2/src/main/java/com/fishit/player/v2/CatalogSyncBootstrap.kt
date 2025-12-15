@@ -3,7 +3,7 @@ package com.fishit.player.v2
 import com.fishit.player.core.catalogsync.CatalogSyncService
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
-import com.fishit.player.infra.transport.telegram.api.TelegramAuthState
+import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamConnectionState
 import com.fishit.player.v2.di.AppScopeModule
@@ -53,7 +53,7 @@ class CatalogSyncBootstrap
                     val (telegramReady, xtreamConnected) =
                         combine(
                             telegramAuthClient.authState
-                                .map { it is TelegramAuthState.Ready }
+                                .map { it is TdlibAuthState.Ready }
                                 .onStart {
                                     val isAuthorized =
                                         runCatching { telegramAuthClient.isAuthorized() }

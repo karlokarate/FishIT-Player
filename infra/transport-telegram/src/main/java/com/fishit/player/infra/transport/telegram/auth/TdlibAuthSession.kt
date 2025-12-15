@@ -4,7 +4,7 @@ import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
-import com.fishit.player.infra.transport.telegram.api.TelegramAuthState
+import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
 import com.fishit.player.infra.transport.telegram.util.RetryConfig
 import com.fishit.player.infra.transport.telegram.util.TelegramRetry
 import dev.g000sha256.tdl.TdlClient
@@ -73,8 +73,8 @@ class TdlibAuthSession(
     private val collectorStarted = AtomicBoolean(false)
     private val tdParamsSet = AtomicBoolean(false)
 
-    private val _authState = MutableStateFlow<TelegramAuthState>(TelegramAuthState.Idle)
-    override val authState: Flow<TelegramAuthState> = _authState.asStateFlow()
+    private val _authState = MutableStateFlow< TdlibAuthState>( TdlibAuthState.Idle)
+    override val authState: Flow< TdlibAuthState> = _authState.asStateFlow()
 
     private val _authEvents = MutableSharedFlow<AuthEvent>(replay = 1)
 
@@ -111,7 +111,7 @@ class TdlibAuthSession(
             }
             is TdlResult.Failure -> {
                 val error = "Auth check failed: ${initialResult.code} - ${initialResult.message}"
-                _authState.value = TelegramAuthState.Error(error)
+                _authState.value = TdlibAuthState.Error(error)
                 UnifiedLog.e(TAG, error)
                 throw TelegramAuthException(error)
             }
@@ -175,7 +175,7 @@ class TdlibAuthSession(
         UnifiedLog.d(TAG, "Logging out...")
         try {
             client.logOut().getOrThrow()
-            _authState.value = TelegramAuthState.LoggedOut
+            _authState.value = TdlibAuthState.LoggedOut
         } catch (e: Exception) {
             UnifiedLog.e(TAG, "Error during logout: ${e.message}")
             throw TelegramAuthException("Logout failed: ${e.message}", e)
@@ -315,23 +315,23 @@ class TdlibAuthSession(
     private fun updateAuthState(state: AuthorizationState) {
         _authState.value =
                 when (state) {
-                    is AuthorizationStateWaitTdlibParameters -> TelegramAuthState.Connecting
-                    is AuthorizationStateWaitPhoneNumber -> TelegramAuthState.WaitPhoneNumber()
+                    is AuthorizationStateWaitTdlibParameters -> TdlibAuthState.Connecting
+                    is AuthorizationStateWaitPhoneNumber -> TdlibAuthState.WaitPhoneNumber()
                     is AuthorizationStateWaitCode -> {
                         // Note: codeInfo.type doesn't directly expose length in g00sha256 wrapper
                         // We use null and let UI request code without length hint
-                        TelegramAuthState.WaitCode(codeLength = null)
+                        TdlibAuthState.WaitCode(codeLength = null)
                     }
                     is AuthorizationStateWaitPassword -> {
-                        TelegramAuthState.WaitPassword(
+                        TdlibAuthState.WaitPassword(
                             passwordHint = state.passwordHint,
                             hasRecoveryEmail = state.hasRecoveryEmailAddress
                         )
                     }
-                    is AuthorizationStateReady -> TelegramAuthState.Ready
-                    is AuthorizationStateLoggingOut -> TelegramAuthState.LoggingOut
-                    is AuthorizationStateClosed -> TelegramAuthState.Closed
-                    else -> TelegramAuthState.Idle
+                    is AuthorizationStateReady -> TdlibAuthState.Ready
+                    is AuthorizationStateLoggingOut -> TdlibAuthState.LoggingOut
+                    is AuthorizationStateClosed -> TdlibAuthState.Closed
+                    else -> TdlibAuthState.Idle
                 }
     }
 }

@@ -2,8 +2,8 @@ package com.fishit.player.feature.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fishit.player.feature.onboarding.domain.TelegramAuthRepository
-import com.fishit.player.feature.onboarding.domain.TelegramAuthState as DomainTelegramAuthState
+import com.fishit.player.core.feature.auth.TelegramAuthRepository
+import com.fishit.player.core.feature.auth.TelegramAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamConfig
@@ -35,31 +35,6 @@ data class OnboardingState(
     // General
     val canContinue: Boolean = false,
 )
-
-/**
- * Telegram authentication states (UI model)
- */
-sealed class TelegramAuthState {
-    data object Disconnected : TelegramAuthState()
-
-    data object WaitingForPhoneNumber : TelegramAuthState()
-
-    data object SendingPhone : TelegramAuthState()
-
-    data object WaitingForCode : TelegramAuthState()
-
-    data object SendingCode : TelegramAuthState()
-
-    data object WaitingForPassword : TelegramAuthState()
-
-    data object SendingPassword : TelegramAuthState()
-
-    data object Connected : TelegramAuthState()
-
-    data class Error(
-        val message: String,
-    ) : TelegramAuthState()
-}
 
 /**
  * Xtream connection states (UI model)
@@ -101,7 +76,7 @@ class OnboardingViewModel
         private val _state = MutableStateFlow(OnboardingState())
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
 
-        private var lastTelegramAuthState: DomainTelegramAuthState = DomainTelegramAuthState.Idle
+        private var lastTelegramAuthState: TelegramAuthState = TelegramAuthState.Idle
         private var lastXtreamConnectionState: DomainXtreamConnectionState =
             DomainXtreamConnectionState.Disconnected
 
@@ -361,7 +336,7 @@ class OnboardingViewModel
 
         private fun updateCanContinue() {
             _state.update { state ->
-                val telegramConnected = lastTelegramAuthState is DomainTelegramAuthState.Connected
+                val telegramConnected = lastTelegramAuthState is TelegramAuthState.Connected
                 val xtreamConnected = lastXtreamConnectionState is DomainXtreamConnectionState.Connected
                 state.copy(canContinue = telegramConnected || xtreamConnected)
             }
@@ -371,30 +346,10 @@ class OnboardingViewModel
             viewModelScope.launch {
                 telegramAuthRepository.authState.collectLatest { authState ->
                     lastTelegramAuthState = authState
-                    val mappedState =
-                        when (authState) {
-                            DomainTelegramAuthState.Idle,
-                            DomainTelegramAuthState.Disconnected,
-                            -> TelegramAuthState.Disconnected
-
-                            DomainTelegramAuthState.WaitingForPhone ->
-                                TelegramAuthState.WaitingForPhoneNumber
-
-                            DomainTelegramAuthState.WaitingForCode -> TelegramAuthState.WaitingForCode
-
-                            DomainTelegramAuthState.WaitingForPassword ->
-                                TelegramAuthState.WaitingForPassword
-
-                            DomainTelegramAuthState.Connected -> TelegramAuthState.Connected
-
-                            is DomainTelegramAuthState.Error ->
-                                TelegramAuthState.Error(authState.message)
-                        }
-
                     _state.update {
-                        val errorMessage = (mappedState as? TelegramAuthState.Error)?.message
+                        val errorMessage = (authState as? TelegramAuthState.Error)?.message
                         it.copy(
-                            telegramState = mappedState,
+                            telegramState = authState,
                             telegramError = errorMessage,
                         )
                     }

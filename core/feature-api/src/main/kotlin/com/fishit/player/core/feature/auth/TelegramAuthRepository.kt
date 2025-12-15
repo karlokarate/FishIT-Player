@@ -1,47 +1,24 @@
-package com.fishit.player.feature.onboarding.domain
+package com.fishit.player.core.feature.auth
 
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Telegram authentication client interface for onboarding feature.
- * 
- * This is a feature-owned domain interface following the Dependency Inversion Principle.
- * The actual implementation lives in infra/data-telegram as an adapter.
+ * Feature-domain contract for Telegram authentication.
+ *
+ * Implementations live outside the feature layer (e.g., infra/data-telegram)
+ * and delegate to transport APIs.
  */
 interface TelegramAuthRepository {
-    /**
-     * Current authentication state
-     */
     val authState: StateFlow<TelegramAuthState>
-
-    /**
-     * Start the authentication flow
-     */
     suspend fun ensureAuthorized()
-
-    /**
-     * Submit phone number for verification
-     */
     suspend fun sendPhoneNumber(phoneNumber: String)
-
-    /**
-     * Submit verification code
-     */
     suspend fun sendCode(code: String)
-
-    /**
-     * Submit 2FA password
-     */
     suspend fun sendPassword(password: String)
-
-    /**
-     * Log out from Telegram
-     */
     suspend fun logout()
 }
 
 /**
- * Telegram authentication states (feature domain model)
+ * Feature-domain auth states exposed to UI.
  */
 sealed class TelegramAuthState {
     data object Idle : TelegramAuthState()

@@ -1,8 +1,8 @@
 package com.fishit.player.pipeline.telegram.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramAuthState
-import com.fishit.player.infra.transport.telegram.TelegramConnectionState
+import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
 import com.fishit.player.pipeline.telegram.adapter.TelegramChatInfo
 import com.fishit.player.pipeline.telegram.adapter.TelegramMediaUpdate
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
@@ -48,7 +48,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         try {
             // Pre-flight: Check auth state
             val auth = adapter.authState.first()
-            if (auth !is TelegramAuthState.Ready) {
+            if (auth !is TdlibAuthState.Ready) {
                 UnifiedLog.w(TAG, "Cannot scan: auth state is $auth")
                 trySend(
                     TelegramCatalogEvent.ScanError(
@@ -210,7 +210,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         UnifiedLog.i(TAG_LIVE, "Starting live media updates stream")
 
         val auth = adapter.authState.first()
-        if (auth !is TelegramAuthState.Ready) {
+        if (auth !is TdlibAuthState.Ready) {
             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: auth_state=$auth")
             trySend(
                 TelegramCatalogEvent.ScanError(

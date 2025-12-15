@@ -1,9 +1,11 @@
 package com.fishit.player.infra.data.telegram.di
 
 import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
+import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.infra.data.telegram.ObxTelegramContentRepository
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.telegram.TelegramMediaRepositoryAdapter
+import com.fishit.player.infra.data.telegram.auth.TelegramAuthRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -46,4 +48,10 @@ abstract class TelegramDataModule {
     abstract fun bindTelegramMediaRepository(
         adapter: TelegramMediaRepositoryAdapter
     ): TelegramMediaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTelegramAuthRepository(
+        impl: TelegramAuthRepositoryImpl
+    ): TelegramAuthRepository
 }

@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.fishit.player.core.feature.auth.TelegramAuthState
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
 
@@ -255,7 +256,7 @@ private fun TelegramLoginContent(
     onDisconnect: () -> Unit,
 ) {
     when (state.telegramState) {
-        TelegramAuthState.Disconnected -> {
+        TelegramAuthState.Idle, TelegramAuthState.Disconnected -> {
             Button(
                 onClick = onStartLogin,
                 modifier = Modifier.fillMaxWidth(),
@@ -270,17 +271,13 @@ private fun TelegramLoginContent(
             }
         }
 
-        TelegramAuthState.WaitingForPhoneNumber -> {
+        TelegramAuthState.WaitingForPhone -> {
             PhoneInputField(
                 phone = state.telegramPhoneNumber,
                 onPhoneChange = onPhoneChange,
                 onSubmit = onSubmitPhone,
                 error = state.telegramError,
             )
-        }
-
-        TelegramAuthState.SendingPhone -> {
-            LoadingState("Sending phone number...")
         }
 
         TelegramAuthState.WaitingForCode -> {
@@ -292,10 +289,6 @@ private fun TelegramLoginContent(
             )
         }
 
-        TelegramAuthState.SendingCode -> {
-            LoadingState("Verifying code...")
-        }
-
         TelegramAuthState.WaitingForPassword -> {
             PasswordInputField(
                 password = state.telegramPassword,
@@ -303,10 +296,6 @@ private fun TelegramLoginContent(
                 onSubmit = onSubmitPassword,
                 error = state.telegramError,
             )
-        }
-
-        TelegramAuthState.SendingPassword -> {
-            LoadingState("Verifying password...")
         }
 
         TelegramAuthState.Connected -> {
