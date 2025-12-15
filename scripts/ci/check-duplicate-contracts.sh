@@ -143,6 +143,11 @@ fi
 shadow_ui_states=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Ui.*AuthState" ".")
 shadow_domain_states=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Domain.*AuthState" ".")
 
+# Image/Thumbnail shadow types
+shadow_ui_images=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Ui.*Image" ".")
+shadow_ui_thumbs=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Ui.*Thumb" ".")
+shadow_thumb_states=$(run_search "(sealed|data)?\\s*(class|interface)\\s+.*ThumbState" ".")
+
 if [[ -n "$shadow_ui_states" ]]; then
   echo "$shadow_ui_states"
   fail "Shadow UI state types found (UiTelegramAuthState, UiXtreamAuthState, etc. are forbidden)"
@@ -151,6 +156,21 @@ fi
 if [[ -n "$shadow_domain_states" ]]; then
   echo "$shadow_domain_states"
   fail "Shadow Domain state types found (use import aliasing instead of new types)"
+fi
+
+if [[ -n "$shadow_ui_images" ]]; then
+  echo "$shadow_ui_images"
+  fail "Shadow UI image types found (UiImageRef, UiImage, etc. are forbidden - use core:model ImageRef)"
+fi
+
+if [[ -n "$shadow_ui_thumbs" ]]; then
+  echo "$shadow_ui_thumbs"
+  fail "Shadow UI thumbnail types found (UiThumbState, UiThumbnail, etc. are forbidden - use ImageRef.InlineBytes)"
+fi
+
+if [[ -n "$shadow_thumb_states" ]]; then
+  echo "$shadow_thumb_states"
+  fail "Thumbnail state types found (*ThumbState classes forbidden - use ImageRef variants directly)"
 fi
 
 if [[ $VIOLATIONS -eq 0 ]]; then
