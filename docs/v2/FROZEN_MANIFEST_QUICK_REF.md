@@ -42,7 +42,7 @@ Total: **42 modules** (frozen)
 ### Core (11)
 `:core:model`, `:core:player-model`, `:core:feature-api`, `:core:persistence`, `:core:metadata-normalizer`, `:core:catalog-sync`, `:core:firebase`, `:core:ui-imaging`, `:core:ui-theme`, `:core:ui-layout`, `:core:app-startup`
 
-### Playback & Player (9)
+### Playback & Player (8)
 `:playback:domain`, `:playback:telegram`, `:playback:xtream`, `:player:ui`, `:player:ui-api` ⭐, `:player:internal`, `:player:miniplayer`, `:player:nextlib-codecs`
 
 ### Pipelines (4)

@@ -1,7 +1,5 @@
 package com.fishit.player.tools.cli
 
-import com.fishit.player.core.appstartup.AppStartupImpl
-import com.fishit.player.core.appstartup.Pipelines
 import com.fishit.player.tools.cli.commands.MetaCommand
 import com.fishit.player.tools.cli.commands.TelegramCommand
 import com.fishit.player.tools.cli.commands.XtreamCommand
@@ -60,13 +58,12 @@ fun main(args: Array<String>) = runBlocking {
     }
 
     // Initialize pipelines
-    val config = CliConfigLoader.loadAppStartupConfig()
-    val startup = AppStartupImpl()
+    val config = CliConfigLoader.loadConfig()
 
     println("🚀 Initializing pipelines...")
 
-    val pipelines: Pipelines = try {
-        startup.startPipelines(config)
+    val pipelines: CliPipelines = try {
+        CliPipelineInitializer.initializePipelines(config)
     } catch (e: Exception) {
         println("❌ Failed to initialize pipelines: ${e.message}")
         return@runBlocking

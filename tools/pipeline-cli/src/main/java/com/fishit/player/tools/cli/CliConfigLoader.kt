@@ -1,14 +1,9 @@
 package com.fishit.player.tools.cli
 
-import com.fishit.player.core.appstartup.AppStartupConfig
-import com.fishit.player.core.appstartup.TelegramPipelineConfig
-import com.fishit.player.core.appstartup.XtreamPipelineConfig
-import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
-
 /**
  * CLI Configuration Loader.
  *
- * Reads environment variables to build [AppStartupConfig].
+ * Reads environment variables to build [CliConfig].
  *
  * **Required Environment Variables for Telegram:**
  * - TG_API_ID: Telegram API ID (numeric)
@@ -30,13 +25,13 @@ object CliConfigLoader {
     /**
      * Load configuration from environment variables.
      *
-     * @return AppStartupConfig with detected pipelines
+     * @return CliConfig with detected pipelines
      */
-    fun loadAppStartupConfig(): AppStartupConfig {
+    fun loadConfig(): CliConfig {
         val telegramCfg = loadTelegramConfig()
         val xtreamCfg = loadXtreamConfig()
 
-        return AppStartupConfig(
+        return CliConfig(
             telegram = telegramCfg,
             xtream = xtreamCfg,
         )
@@ -45,9 +40,9 @@ object CliConfigLoader {
     /**
      * Load Telegram configuration from environment.
      *
-     * @return TelegramPipelineConfig or null if not configured
+     * @return TelegramCliConfig or null if not configured
      */
-    private fun loadTelegramConfig(): TelegramPipelineConfig? {
+    private fun loadTelegramConfig(): TelegramCliConfig? {
         val apiId = getenvInt("TG_API_ID") ?: return null
         val apiHash = getenv("TG_API_HASH") ?: return null
 
@@ -56,13 +51,11 @@ object CliConfigLoader {
         val filesDir = getenv("TDLIB_FILES_DIR")
             ?: "$DEFAULT_SESSION_ROOT/files"
 
-        return TelegramPipelineConfig(
-            sessionConfig = TelegramSessionConfig(
-                apiId = apiId,
-                apiHash = apiHash,
-                databaseDir = databaseDir,
-                filesDir = filesDir,
-            ),
+        return TelegramCliConfig(
+            apiId = apiId,
+            apiHash = apiHash,
+            databaseDir = databaseDir,
+            filesDir = filesDir,
             useHotWarmColdClassification = true,
         )
     }
@@ -70,14 +63,14 @@ object CliConfigLoader {
     /**
      * Load Xtream configuration from environment.
      *
-     * @return XtreamPipelineConfig or null if not configured
+     * @return XtreamCliConfig or null if not configured
      */
-    private fun loadXtreamConfig(): XtreamPipelineConfig? {
+    private fun loadXtreamConfig(): XtreamCliConfig? {
         val baseUrl = getenv("XTREAM_BASE_URL") ?: return null
         val username = getenv("XTREAM_USERNAME") ?: return null
         val password = getenv("XTREAM_PASSWORD") ?: return null
 
-        return XtreamPipelineConfig(
+        return XtreamCliConfig(
             baseUrl = baseUrl,
             username = username,
             password = password,
