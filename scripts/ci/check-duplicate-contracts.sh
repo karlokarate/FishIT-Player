@@ -139,14 +139,19 @@ fi
 # B) Shadow UI/Domain State Types
 # ======================================================================
 
-# Match only type definitions, not usage (e.g., "is UiTelegramAuthState")
-shadow_ui_states=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Ui.*AuthState" ".")
-shadow_domain_states=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Domain.*AuthState" ".")
+# Match only Kotlin type definitions (class/interface/object/data/sealed), not comments or docs
+# Pattern breakdown:
+# - ^[^/]* = Not inside a comment (no leading //)
+# - (sealed\s+)?(data\s+)?(class|interface|object)\s+ = Kotlin type keywords
+# - Ui.*AuthState|Domain.*AuthState|Ui.*Image|Ui.*Thumb|.*ThumbState = Forbidden names
 
-# Image/Thumbnail shadow types
-shadow_ui_images=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Ui.*Image" ".")
-shadow_ui_thumbs=$(run_search "(sealed|data)?\\s*(class|interface)\\s+Ui.*Thumb" ".")
-shadow_thumb_states=$(run_search "(sealed|data)?\\s*(class|interface)\\s+.*ThumbState" ".")
+shadow_ui_states=$(run_search "^[^/]*(sealed\\s+)?(data\\s+)?(class|interface|object)\\s+Ui.*AuthState" ".")
+shadow_domain_states=$(run_search "^[^/]*(sealed\\s+)?(data\\s+)?(class|interface|object)\\s+Domain.*AuthState" ".")
+
+# Image/Thumbnail shadow types (type definitions only)
+shadow_ui_images=$(run_search "^[^/]*(sealed\\s+)?(data\\s+)?(class|interface|object)\\s+Ui.*Image" ".")
+shadow_ui_thumbs=$(run_search "^[^/]*(sealed\\s+)?(data\\s+)?(class|interface|object)\\s+Ui.*Thumb" ".")
+shadow_thumb_states=$(run_search "^[^/]*(sealed\\s+)?(data\\s+)?(class|interface|object)\\s+\\w*ThumbState" ".")
 
 if [[ -n "$shadow_ui_states" ]]; then
   echo "$shadow_ui_states"
@@ -178,7 +183,34 @@ if [[ $VIOLATIONS -eq 0 ]]; then
 fi
 
 # ======================================================================
-# C) Role Duplication Smells
+# C) Imaging System Guardrails
+# ======================================================================
+
+# 1. Coil configuration in app-v2 (DI only)
+app_v2_coil_config=$(run_search "(ImageLoader\\.Builder|DiskCache\\.Builder|MemoryCache\\.Builder|\\.components\\s*\\{)" "app-v2/src" \
+  | grep -v "app-v2/src/main/java/com/fishit/player/v2/di/" || true)
+
+if [[ -n "$app_v2_coil_config" ]]; then
+  echo "$app_v2_coil_config"
+  fail "Coil configuration found in app-v2 outside DI layer (must be in core:ui-imaging/GlobalImageLoader)"
+fi
+
+# 2. TelegramThumbFetcher implementation in core:ui-imaging
+core_thumb_impl=$(run_search "^[^/\\*]*class\\s+\\w*TelegramThumbFetcher\\w*(Impl)?" "core/ui-imaging/src" \
+  | grep -v "interface TelegramThumbFetcher" \
+  | grep -v "class NoOpTelegramThumbFetcher" || true)
+
+if [[ -n "$core_thumb_impl" ]]; then
+  echo "$core_thumb_impl"
+  fail "Concrete TelegramThumbFetcher implementation found in core:ui-imaging (belongs in infra/*)"
+fi
+
+if [[ $VIOLATIONS -eq 0 ]]; then
+  echo "✅ Imaging system boundaries respected"
+fi
+
+# ======================================================================
+# D) Role Duplication Smells
 # ======================================================================
 
 # Find files with smell keywords in their names (outside legacy)
