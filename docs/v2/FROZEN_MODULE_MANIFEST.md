@@ -216,6 +216,17 @@ Rules:
 
 ---
 
+## Tools (Owner: Tools)
+### `:tools:pipeline-cli` — **Owner: Tools**
+- **Path:** `tools/pipeline-cli/`
+- **Purpose:** Headless CLI for pipeline/transport testing
+- **Must be headless:** NO Compose plugins, NO AndroidX UI/Compose dependencies, NO Hilt/DI
+- **Allowed deps:** `core:*`, `pipeline:*`, `infra:transport-*`, `infra:logging`, Kotlin stdlib, CLI frameworks (Clikt)
+- **Rule:** This module must remain headless (no UI, no DI) to prevent becoming a backdoor for improper wiring
+- **Note:** Uses Android library plugin due to Android dependencies, but NO Android-specific APIs allowed
+
+---
+
 # One-Time Stub PR Scope (Fixed)
 The ONLY modules allowed to be created as new directories during the stub PR:
 1) `infra/imaging`
@@ -237,6 +248,7 @@ CI MUST fail when:
 - `app-v2` depends on `infra:transport-*` or `pipeline:*` via Gradle deps
 - `player:ui` uses `@EntryPoint` or `EntryPointAccessors`
 - `playback:domain` gains any Compose dependencies
+- `:tools:pipeline-cli` declares Compose plugins or AndroidX UI/Compose dependencies (must remain headless)
 
 ---
 
