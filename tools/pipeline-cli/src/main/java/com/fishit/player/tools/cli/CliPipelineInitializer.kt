@@ -1,8 +1,8 @@
 package com.fishit.player.tools.cli
 
-import com.fishit.player.infra.transport.telegram.DefaultTelegramClient
+import com.fishit.player.infra.transport.telegram.DefaultTelegramTransportClient
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
-import com.fishit.player.infra.transport.xtream.DefaultXtreamClient
+import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import kotlinx.coroutines.CoroutineScope
@@ -41,21 +41,20 @@ object CliPipelineInitializer {
             filesDir = config.filesDir,
         )
 
-        val transportClient = DefaultTelegramClient(
+        val transportClient = DefaultTelegramTransportClient(
             sessionConfig = sessionConfig,
             scope = CoroutineScope(Dispatchers.IO),
         )
 
         // Create and return pipeline adapter
         return TelegramPipelineAdapter(
-            telegramClient = transportClient,
-            scope = CoroutineScope(Dispatchers.IO),
+            transport = transportClient,
         )
     }
 
     private suspend fun initXtream(config: XtreamCliConfig): XtreamPipelineAdapter {
         // Create transport client
-        val transportClient = DefaultXtreamClient(
+        val apiClient = DefaultXtreamApiClient(
             baseUrl = config.baseUrl,
             username = config.username,
             password = config.password,
@@ -63,12 +62,11 @@ object CliPipelineInitializer {
         )
 
         // Authenticate
-        transportClient.authenticate()
+        apiClient.authenticate()
 
         // Create and return pipeline adapter
         return XtreamPipelineAdapter(
-            client = transportClient,
-            scope = CoroutineScope(Dispatchers.IO),
+            apiClient = apiClient,
         )
     }
 }
