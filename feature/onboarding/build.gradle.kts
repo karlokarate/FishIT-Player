@@ -33,7 +33,6 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
-    implementation(project(":infra:logging"))
     implementation(project(":core:feature-api"))
 
     // Hilt DI

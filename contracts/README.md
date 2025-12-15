@@ -17,7 +17,7 @@
 | Contract | Version | Scope | Description |
 |----------|---------|-------|-------------|
 | [GLOSSARY_v2_naming_and_modules.md](GLOSSARY_v2_naming_and_modules.md) | 2.0 | **Global** | Authoritative vocabulary and naming conventions for all v2 code |
-| [MEDIA_NORMALIZATION_CONTRACT.md](MEDIA_NORMALIZATION_CONTRACT.md) | 1.0 | Pipelines, Normalizer | Rules for `RawMediaMetadata` → `NormalizedMediaMetadata` |
+| [MEDIA_NORMALIZATION_CONTRACT.md](../docs/v2/MEDIA_NORMALIZATION_CONTRACT.md) | 1.0 | Pipelines, Normalizer | Rules for `RawMediaMetadata` → `NormalizedMediaMetadata` (canonical location: docs/v2) |
 | [LOGGING_CONTRACT_V2.md](LOGGING_CONTRACT_V2.md) | 1.1 | All Modules | Unified logging rules, lambda-based lazy logging, allowed/forbidden APIs |
 
 ### Player Contracts
@@ -49,10 +49,10 @@ Before modifying code in any of these areas, agents **MUST** read the relevant c
 | Area | Required Contracts |
 |------|-------------------|
 | Naming / New Classes | `GLOSSARY_v2_naming_and_modules.md` |
-| Pipelines | `MEDIA_NORMALIZATION_CONTRACT.md`, `GLOSSARY` |
+| Pipelines | `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`, `GLOSSARY` |
 | Logging | `LOGGING_CONTRACT_V2.md` |
 | Player | All `INTERNAL_PLAYER_*` contracts |
-| Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `MEDIA_NORMALIZATION_CONTRACT.md` |
+| Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
 
 ### 2. Violation Handling
 

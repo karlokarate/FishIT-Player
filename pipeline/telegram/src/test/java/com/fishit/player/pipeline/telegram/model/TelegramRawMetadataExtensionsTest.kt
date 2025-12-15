@@ -29,6 +29,7 @@ class TelegramRawMetadataExtensionsTest {
         val raw = item.toRawMediaMetadata()
 
         assertEquals("The Movie Title", raw.originalTitle)
+        assertEquals("", raw.globalId)
     }
 
     @Test
