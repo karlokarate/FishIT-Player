@@ -901,7 +901,7 @@ ForbiddenImport:
 
 The contracts folder is the **single source of truth** for:
 - Naming conventions and vocabulary (`GLOSSARY_v2_naming_and_modules.md`)
-- Media normalization rules (`MEDIA_NORMALIZATION_CONTRACT.md`)
+- Media normalization rules (`docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` – canonical location)
 - Logging standards (`LOGGING_CONTRACT_V2.md`)
 - Player behavior specifications (`INTERNAL_PLAYER_*_CONTRACT_*.md`)
 - Pipeline-specific contracts (`TELEGRAM_PARSER_CONTRACT.md`)
@@ -913,7 +913,7 @@ Before any code modification, agents MUST verify they have read:
 | Modification Area | Required Contracts |
 |-------------------|-------------------|
 | Any code change | `/contracts/GLOSSARY_v2_naming_and_modules.md` |
-| Pipeline modules | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` |
+| Pipeline modules | `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
 | Logging code | `/contracts/LOGGING_CONTRACT_V2.md` |
 | Player/Playback | All `/contracts/INTERNAL_PLAYER_*` files |
 | Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md` |

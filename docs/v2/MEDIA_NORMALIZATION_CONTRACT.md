@@ -3,6 +3,8 @@
 
 This contract defines the **formal rules, data shapes, and responsibilities** for media metadata normalization and cross-pipeline unification in the FishIT-Player v2 architecture.
 
+This file is the **single authoritative copy** of the media normalization contract. No other `MEDIA_NORMALIZATION_CONTRACT.md` files may exist outside of `docs/v2/`.
+
 It is **binding** for:
 - all pipeline modules (Telegram, Xtream, IO, Audiobook, Local, Plex, etc.),
 - the `:core:metadata-normalizer` module,
@@ -21,6 +23,7 @@ This contract is implementation-agnostic: it describes **what** must happen, not
 ```kotlin
 data class RawMediaMetadata(
     val originalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
     val year: Int? = null,
     val season: Int? = null,
     val episode: Int? = null,
@@ -28,7 +31,13 @@ data class RawMediaMetadata(
     val externalIds: ExternalIds = ExternalIds(),
     val sourceType: SourceType,
     val sourceLabel: String,
-    val sourceId: String
+    val sourceId: String,
+    val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
+    val globalId: String = "",  // MUST remain empty in pipelines; assigned centrally
+    val poster: ImageRef? = null,
+    val backdrop: ImageRef? = null,
+    val thumbnail: ImageRef? = null,
+    val placeholderThumbnail: ImageRef? = null,
 )
 ```
 
@@ -130,13 +139,13 @@ Each pipeline must provide:
 fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 ```
 
-**Pipeline MUST:**
+**Pipelines MUST:**
 
 - Fill all applicable fields from its own domain model.
 - Pass through external IDs if the upstream source exposes them (e.g., Xtream/Plex providing TMDB IDs).
 - Keep `originalTitle` as close to the source as possible (no subjective edits).
 
-**Pipeline MUST NOT:**
+**Pipelines MUST NOT:**
 
 - Normalize titles.
 - Strip edition/resolution tags.
@@ -297,6 +306,7 @@ Any of the following is considered a **contract violation**:
 
 - Pipeline code performing title normalization or TMDB lookups.
 - Direct computation of `CanonicalMediaId` in a pipeline.
+- Pipeline sets `RawMediaMetadata.globalId` or calls any canonical-id generator (GlobalIdUtil/generateCanonicalId).
 - Persistence layer changing normalization or TMDB identity rules.
 - Tests in pipeline modules that assert normalized titles or TMDB-dependent behavior.
 

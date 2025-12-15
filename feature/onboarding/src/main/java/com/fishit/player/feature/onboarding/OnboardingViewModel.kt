@@ -8,7 +8,6 @@ import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamConfig
 import com.fishit.player.feature.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
-import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,10 +68,6 @@ class OnboardingViewModel
         private val telegramAuthRepository: TelegramAuthRepository,
         private val xtreamAuthRepository: XtreamAuthRepository,
     ) : ViewModel() {
-        private companion object {
-            private const val TAG = "OnboardingVM"
-        }
-
         private val _state = MutableStateFlow(OnboardingState())
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
 
@@ -93,10 +88,8 @@ class OnboardingViewModel
         fun startTelegramLogin() {
             _state.update { it.copy(telegramError = null) }
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Starting Telegram auth" }
                 runCatching { telegramAuthRepository.ensureAuthorized() }
                     .onFailure { error ->
-                        UnifiedLog.e(TAG, error) { "Telegram ensureAuthorized failed" }
                         _state.update { it.copy(telegramError = error.message) }
                     }
             }
@@ -116,10 +109,8 @@ class OnboardingViewModel
             }
 
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Submitting phone number" }
                 runCatching { telegramAuthRepository.sendPhoneNumber(phone) }
                     .onFailure { error ->
-                        UnifiedLog.e(TAG, error) { "Failed to submit phone" }
                         _state.update { it.copy(telegramError = error.message) }
                     }
             }
@@ -139,10 +130,8 @@ class OnboardingViewModel
             }
 
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Submitting verification code" }
                 runCatching { telegramAuthRepository.sendCode(code) }
                     .onFailure { error ->
-                        UnifiedLog.e(TAG, error) { "Failed to submit code" }
                         _state.update { it.copy(telegramError = error.message) }
                     }
             }
@@ -162,10 +151,8 @@ class OnboardingViewModel
             }
 
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Submitting 2FA password" }
                 runCatching { telegramAuthRepository.sendPassword(password) }
                     .onFailure { error ->
-                        UnifiedLog.e(TAG, error) { "Failed to submit password" }
                         _state.update { it.copy(telegramError = error.message) }
                     }
             }
@@ -173,10 +160,8 @@ class OnboardingViewModel
 
         fun disconnectTelegram() {
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Logging out of Telegram" }
                 runCatching { telegramAuthRepository.logout() }
                     .onFailure { error ->
-                        UnifiedLog.e(TAG, error) { "Logout failed" }
                         _state.update { it.copy(telegramError = error.message) }
                     }
                 _state.update {
@@ -218,7 +203,6 @@ class OnboardingViewModel
             }
 
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Connecting to Xtream host=${credentials.host}" }
                 val config =
                     XtreamConfig(
                         scheme = if (credentials.useHttps) "https" else "http",
@@ -231,7 +215,6 @@ class OnboardingViewModel
                 val result = xtreamAuthRepository.initialize(config)
                 if (result.isFailure) {
                     val message = result.exceptionOrNull()?.message ?: "Failed to connect"
-                    UnifiedLog.e(TAG) { "Xtream initialization failed: $message" }
                     _state.update {
                         it.copy(
                             xtreamState = XtreamConnectionState.Error(message),
@@ -241,8 +224,9 @@ class OnboardingViewModel
                 } else {
                     // Success - persist credentials for auto-rehydration
                     runCatching { xtreamAuthRepository.saveCredentials(config) }
-                        .onSuccess { UnifiedLog.i(TAG) { "Xtream credentials persisted" } }
-                        .onFailure { error -> UnifiedLog.e(TAG, error) { "Failed to persist credentials" } }
+                        .onFailure { error ->
+                            _state.update { it.copy(xtreamError = error.message) }
+                        }
                 }
             }
         }
@@ -255,14 +239,12 @@ class OnboardingViewModel
                 )
             }
             viewModelScope.launch {
-                UnifiedLog.i(TAG) { "Closing Xtream client and clearing credentials" }
                 runCatching { xtreamAuthRepository.close() }
-                    .onFailure { error -> UnifiedLog.e(TAG, error) { "Error closing Xtream" } }
+                    .onFailure { error -> _state.update { it.copy(xtreamError = error.message) } }
 
                 // Clear stored credentials
                 runCatching { xtreamAuthRepository.clearCredentials() }
-                    .onSuccess { UnifiedLog.i(TAG) { "Xtream credentials cleared" } }
-                    .onFailure { error -> UnifiedLog.e(TAG, error) { "Failed to clear credentials" } }
+                    .onFailure { error -> _state.update { it.copy(xtreamError = error.message) } }
             }
             updateCanContinue()
         }

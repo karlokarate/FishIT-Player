@@ -208,6 +208,29 @@ filter_allowlisted() {
 load_allowlist
 
 # ======================================================================
+# CONTRACT UNIQUENESS: MEDIA_NORMALIZATION_CONTRACT.md must be canonical
+# ======================================================================
+echo "Checking normalization contract doc uniqueness..."
+
+if [[ ! -f "docs/v2/MEDIA_NORMALIZATION_CONTRACT.md" ]]; then
+    echo "❌ VIOLATION: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md is missing (canonical contract must exist)."
+    VIOLATIONS=$((VIOLATIONS + 1))
+else
+    duplicates=$(find . -type f -name "*MEDIA_NORMALIZATION_CONTRACT*.md" \
+        ! -path "./docs/v2/*" \
+        ! -path "./legacy/*" \
+        ! -path "./build/*" \
+        ! -path "./.gradle/*" \
+        ! -path "./.git/*" 2>/dev/null || true)
+
+    if [[ -n "$duplicates" ]]; then
+        echo "$duplicates"
+        echo "❌ VIOLATION: Duplicate MEDIA_NORMALIZATION_CONTRACT.md detected outside docs/v2/. Remove or merge into canonical copy."
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+fi
+
+# ======================================================================
 # FEATURE LAYER: Check for forbidden imports
 # ======================================================================
 echo "Checking feature layer for forbidden imports..."
@@ -276,6 +299,126 @@ if [[ -n "$violations" ]]; then
     echo "$violations"
     echo "❌ VIOLATION: Pipeline layer imports playback layer"
     VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
+# RAW_METADATA_GLOBALID_GUARD: Pipelines must not set/compute globalId
+# (false-positive-free, scans only pipeline/**/src/main/**/*.kt)
+# ======================================================================
+echo "Running RAW_METADATA_GLOBALID_GUARD (strict)..."
+
+PIPELINE_MAIN_FILES=$(find pipeline -type f -name "*.kt" -path "*/src/main/*" \
+  ! -path "*/build/*" ! -path "*/generated/*" ! -path "*/legacy/*" 2>/dev/null || true)
+
+# 1) Forbid GlobalIdUtil usage in pipeline main sources
+violations=$(echo "$PIPELINE_MAIN_FILES" | xargs -r grep -n "GlobalIdUtil" 2>/dev/null || true)
+if [[ -n "$violations" ]]; then
+  echo "$violations"
+  echo "❌ VIOLATION: Pipeline references GlobalIdUtil (canonical identity is assigned centrally)."
+  VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# 2) Forbid generateCanonicalId calls in pipeline main sources
+violations=$(echo "$PIPELINE_MAIN_FILES" | xargs -r grep -n "generateCanonicalId(" 2>/dev/null || true)
+if [[ -n "$violations" ]]; then
+  echo "$violations"
+  echo "❌ VIOLATION: Pipeline attempts canonical-id generation (forbidden)."
+  VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# 3) Context-aware check: forbid named-arg `globalId =` INSIDE RawMediaMetadata(...)
+#    This avoids false positives for unrelated variables or comments.
+globalid_hits=0
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+
+  awk -v FILE="$file" '
+    BEGIN {
+      in_block_comment = 0
+      in_ctor = 0
+      depth = 0
+      found = 0
+    }
+
+    function strip_line_comment(s) {
+      # Skip pure line comments
+      if (s ~ /^[[:space:]]*\/\//) return ""
+      return s
+    }
+
+    function handle_block_comments(s) {
+      # Naive but effective: remove /* ... */ blocks
+      if (in_block_comment) {
+        if (s ~ /\*\//) {
+          sub(/^.*\*\//, "", s)
+          in_block_comment = 0
+        } else {
+          return ""
+        }
+      }
+      if (s ~ /\/\*/) {
+        if (s ~ /\/\*.*\*\//) {
+          gsub(/\/\*.*\*\//, "", s)
+        } else {
+          sub(/\/\*.*/, "", s)
+          in_block_comment = 1
+        }
+      }
+      return s
+    }
+
+    function count_parens(s,   t, o, c) {
+      t = s
+      o = gsub(/\(/, "(", t)
+      t = s
+      c = gsub(/\)/, ")", t)
+      return o - c
+    }
+
+    {
+      line = $0
+      line = handle_block_comments(line)
+      line = strip_line_comment(line)
+      if (line == "") next
+
+      # Start tracking when RawMediaMetadata( appears
+      if (!in_ctor && line ~ /RawMediaMetadata[[:space:]]*\(/) {
+        in_ctor = 1
+        depth = 0
+      }
+
+      if (in_ctor) {
+        # Flag only if globalId is a named argument inside this constructor call
+        if (line ~ /\bglobalId[[:space:]]*=/) {
+          print FILE ":" NR ": forbidden named-arg globalId inside RawMediaMetadata(...)"
+          found = 1
+        }
+
+        depth += count_parens(line)
+
+        # End constructor scope when parentheses close back to <= 0 after starting
+        # (depth becomes 0 at/after the closing parenthesis)
+        if (depth <= 0 && line ~ /\)/) {
+          in_ctor = 0
+          depth = 0
+        }
+      }
+    }
+
+    END {
+      exit(found)
+    }
+  ' "$file"
+
+  rc=$?
+  if [[ $rc -ne 0 ]]; then
+    globalid_hits=$((globalid_hits + 1))
+  fi
+done <<< "$PIPELINE_MAIN_FILES"
+
+if [[ $globalid_hits -gt 0 ]]; then
+  echo "❌ VIOLATION: Pipeline assigns RawMediaMetadata.globalId (must remain empty)."
+  VIOLATIONS=$((VIOLATIONS + 1))
 fi
 
 violations=$(grep -rn "import com\.fishit\.player\.player\." pipeline/ --include="*.kt" 2>/dev/null | filter_allowlisted || true)

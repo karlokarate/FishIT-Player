@@ -16,9 +16,10 @@ class XtreamRawMetadataExtensionsTest {
 
     @Test
     fun `XtreamVodItem toRawMediaMetadata provides correct fields`() {
+        val dtoTitle = "The Matrix"
         val vod = XtreamVodItem(
             id = 123,
-            name = "The Matrix",
+            name = dtoTitle,
             streamIcon = "http://example.com/poster.jpg",
             categoryId = "1",
             containerExtension = "mkv"
@@ -26,7 +27,8 @@ class XtreamRawMetadataExtensionsTest {
 
         val raw = vod.toRawMediaMetadata()
 
-        assertEquals("The Matrix", raw.originalTitle)
+        assertEquals(dtoTitle, raw.originalTitle)
+        assertEquals("", raw.globalId)
         assertEquals(MediaType.MOVIE, raw.mediaType)
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:vod:123", raw.sourceId)
@@ -39,17 +41,19 @@ class XtreamRawMetadataExtensionsTest {
 
     @Test
     fun `XtreamSeriesItem toRawMediaMetadata provides correct fields`() {
+        val dtoTitle = "Breaking Bad"
         val series = XtreamSeriesItem(
             id = 456,
-            name = "Breaking Bad",
+            name = dtoTitle,
             cover = "http://example.com/cover.jpg",
             categoryId = "2"
         )
 
         val raw = series.toRawMediaMetadata()
 
-        assertEquals("Breaking Bad", raw.originalTitle)
-        assertEquals(MediaType.SERIES_EPISODE, raw.mediaType)
+        assertEquals(dtoTitle, raw.originalTitle)
+        assertEquals("", raw.globalId)
+        assertEquals(MediaType.SERIES, raw.mediaType)
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:series:456", raw.sourceId)
         assertEquals("Xtream Series", raw.sourceLabel)
@@ -57,18 +61,20 @@ class XtreamRawMetadataExtensionsTest {
 
     @Test
     fun `XtreamEpisode toRawMediaMetadata includes season and episode`() {
+        val dtoTitle = "Gray Matter"
         val episode = XtreamEpisode(
             id = 789,
             seriesId = 456,
             seasonNumber = 1,
             episodeNumber = 5,
-            title = "Gray Matter",
+            title = dtoTitle,
             containerExtension = "mp4"
         )
 
-        val raw = episode.toRawMediaMetadata(seriesName = "Breaking Bad")
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad")
 
-        assertEquals("Gray Matter", raw.originalTitle)
+        assertEquals(dtoTitle, raw.originalTitle)
+        assertEquals("", raw.globalId)
         assertEquals(MediaType.SERIES_EPISODE, raw.mediaType)
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:episode:789", raw.sourceId)
@@ -88,16 +94,18 @@ class XtreamRawMetadataExtensionsTest {
             containerExtension = "mp4"
         )
 
-        val raw = episode.toRawMediaMetadata(seriesName = "Breaking Bad")
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad")
 
+        assertEquals("", raw.globalId)
         assertEquals("Breaking Bad", raw.originalTitle) // Falls back to series name
     }
 
     @Test
     fun `XtreamChannel toRawMediaMetadata provides LIVE mediaType`() {
+        val dtoTitle = "BBC One HD"
         val channel = XtreamChannel(
             id = 101,
-            name = "BBC One HD",
+            name = dtoTitle,
             streamIcon = "http://example.com/bbc.png",
             epgChannelId = "bbc.one.hd",
             tvArchive = 1,
@@ -106,7 +114,8 @@ class XtreamRawMetadataExtensionsTest {
 
         val raw = channel.toRawMediaMetadata()
 
-        assertEquals("BBC One HD", raw.originalTitle)
+        assertEquals(dtoTitle, raw.originalTitle)
+        assertEquals("", raw.globalId)
         assertEquals(MediaType.LIVE, raw.mediaType)
         assertEquals(SourceType.XTREAM, raw.sourceType)
         assertEquals("xtream:live:101", raw.sourceId)
