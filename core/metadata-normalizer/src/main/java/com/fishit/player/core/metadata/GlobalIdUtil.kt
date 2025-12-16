@@ -1,4 +1,4 @@
-package com.fishit.player.core.model
+package com.fishit.player.core.metadata
 
 import java.security.MessageDigest
 
@@ -24,7 +24,7 @@ object GlobalIdUtil {
     // Basic scene tags to strip (resolution, codec, group, source)
     private val sceneTagPattern =
             Regex(
-                    """[.\s]*(720p|1080p|2160p|4k|uhd|hdr|bluray|bdrip|webrip|web-dl|hdtv|dvdrip|x264|x265|h264|h265|aac|dts|ac3|atmos|remux|\[.*?]|-.{1,15}$)""",
+                    """[\.\s]*(720p|1080p|2160p|4k|uhd|hdr|bluray|bdrip|webrip|web-dl|hdtv|dvdrip|x264|x265|h264|h265|aac|dts|ac3|atmos|remux|\[.*?]|-.{1,15}$)""",
                     RegexOption.IGNORE_CASE,
             )
 
