@@ -55,9 +55,9 @@ data class RawMediaMetadata(
          * assigned centrally by `:core:metadata-normalizer` during unification.
          *
          * Format when set by normalizer: contract canonical key (`tmdb:<id>` or
-         * `movie:<title>[:<year>]` / `episode:<title>:SxxExx`).
+         * `movie:<title>:<year>` / `episode:<title>:SxxExx`).
          *
-         * @see com.fishit.player.core.metadata.GlobalIdUtil for generation logic
+         * @see com.fishit.player.core.metadata.FallbackCanonicalKeyGenerator for fallback generation logic
          */
         val globalId: String = "",
         // === Imaging Fields (v2) ===

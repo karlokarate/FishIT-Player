@@ -47,15 +47,16 @@ object Normalizer {
                 rawItems.groupBy { raw ->
                     raw.globalId.ifEmpty {
                         // Fallback if globalId wasn't set by pipeline
-                        GlobalIdUtil
-                                .generateCanonicalId(
+                        FallbackCanonicalKeyGenerator
+                                .generateFallbackCanonicalId(
                                         originalTitle = raw.originalTitle,
                                         year = raw.year,
                                         season = raw.season,
                                         episode = raw.episode,
                                         mediaType = raw.mediaType,
                                 )
-                                .value
+                                ?.value
+                                ?: "unlinked:${raw.sourceType}:${raw.sourceId}" // Unlinked items get unique synthetic ID
                     }
                 }.mapKeys { (key, _) -> key.asCanonicalId() }
 
