@@ -54,19 +54,29 @@ sealed interface ImageRef {
      * - Document preview images
      * - Photo thumbnails (various sizes)
      *
-     * Fetcher: TelegramThumbFetcher in :core:ui-imaging
-     * - Delegates to infra/telegram-core for TDLib file resolution
-     * - Uses g00sha tdlib-coroutines repository
-     * - Does NOT call raw TdApi directly
+     * ## remoteId-First Architecture (v2)
      *
-     * @property fileId TDLib file ID for the thumbnail
-     * @property uniqueId TDLib unique file ID (cross-session stable)
-     * @property chatId Chat containing the media (for context)
-     * @property messageId Message containing the media (for context)
+     * This class follows the **remoteId-first design** defined in
+     * `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`.
+     *
+     * ### Key Points:
+     * - `remoteId` is the **only** file identifier stored
+     * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+     * - `uniqueId` is **not stored** (no API to resolve it back)
+     *
+     * Fetcher: TelegramThumbFetcher in :core:ui-imaging
+     * - Resolves remoteId → fileId via transport layer
+     * - Downloads via TDLib to its cache
+     * - Returns local path for Coil to decode
+     *
+     * @property remoteId Stable TDLib remote file ID (cross-session stable)
+     * @property chatId Chat containing the media (for context/debugging)
+     * @property messageId Message containing the media (for context/debugging)
+     *
+     * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
      */
     data class TelegramThumb(
-            val fileId: Int,
-            val uniqueId: String,
+            val remoteId: String,
             val chatId: Long? = null,
             val messageId: Long? = null,
             override val preferredWidth: Int? = null,
@@ -140,6 +150,9 @@ sealed interface ImageRef {
          * - `file://...` → LocalFile
          * - `http://...` or `https://...` → Http
          *
+         * ## URI Format (v2 remoteId-first):
+         * `tg://thumb/<remoteId>?chatId=123&messageId=456`
+         *
          * @param urlOrPath URL or path string
          * @return Appropriate ImageRef variant, or null if invalid
          */
@@ -156,17 +169,22 @@ sealed interface ImageRef {
             }
         }
 
-        /** Parse a `tg://thumb/<fileId>/<uniqueId>` URI into TelegramThumb. */
+        /**
+         * Parse a `tg://thumb/<remoteId>?chatId=123&messageId=456` URI into TelegramThumb.
+         *
+         * ## v2 Format (remoteId-first):
+         * `tg://thumb/<remoteId>?chatId=123&messageId=456`
+         *
+         * Note: remoteId may contain special characters, so it's URL-encoded in the path.
+         */
         private fun parseTelegramThumbUri(uri: String): TelegramThumb? {
-            // Format: tg://thumb/<fileId>/<uniqueId>?chatId=123&messageId=456
+            // Format: tg://thumb/<remoteId>?chatId=123&messageId=456
             val path = uri.removePrefix("tg://thumb/")
             val parts = path.split("?", limit = 2)
-            val pathParts = parts[0].split("/")
-
-            if (pathParts.size < 2) return null
-
-            val fileId = pathParts[0].toIntOrNull() ?: return null
-            val uniqueId = pathParts[1]
+            
+            // remoteId is the path component (URL-decoded)
+            val remoteId = java.net.URLDecoder.decode(parts[0], "UTF-8")
+            if (remoteId.isBlank()) return null
 
             var chatId: Long? = null
             var messageId: Long? = null
@@ -182,8 +200,7 @@ sealed interface ImageRef {
             }
 
             return TelegramThumb(
-                    fileId = fileId,
-                    uniqueId = uniqueId,
+                    remoteId = remoteId,
                     chatId = chatId,
                     messageId = messageId,
             )
@@ -194,6 +211,11 @@ sealed interface ImageRef {
 /**
  * Convert ImageRef to a URI string for caching/serialization.
  *
+ * ## v2 Format for TelegramThumb:
+ * `tg://thumb/<remoteId>?chatId=123&messageId=456`
+ *
+ * Note: remoteId is URL-encoded to handle special characters.
+ *
  * @return URI string representation
  */
 fun ImageRef.toUriString(): String =
@@ -201,7 +223,8 @@ fun ImageRef.toUriString(): String =
             is ImageRef.Http -> url
             is ImageRef.TelegramThumb ->
                     buildString {
-                        append("tg://thumb/$fileId/$uniqueId")
+                        append("tg://thumb/")
+                        append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
                         val params = mutableListOf<String>()
                         chatId?.let { params.add("chatId=$it") }
                         messageId?.let { params.add("messageId=$it") }

@@ -11,20 +11,18 @@ import org.junit.Test
  */
 class TelegramDtosTest {
     @Test
-    fun `TelegramPhotoSize holds photo dimensions and file IDs`() {
+    fun `TelegramPhotoSize holds photo dimensions and remoteId`() {
         val photoSize =
             TelegramPhotoSize(
                 width = 1707,
                 height = 2560,
-                fileId = "AgACAgQAAx0CRlwYIgACbTlpKbJSWU3nI6QBGruLlim8mT2bqAACCgtrG1A4NFGAjRHYPL9biAEAAwIAA3gAAzgE",
-                fileUniqueId = "AQADCgtrG1A4NFF9",
+                remoteId = "AgACAgQAAx0CRlwYIgACbTlpKbJSWU3nI6QBGruLlim8mT2bqAACCgtrG1A4NFGAjRHYPL9biAEAAwIAA3gAAzgE",
                 sizeBytes = 81037,
             )
 
         assertEquals(1707, photoSize.width)
         assertEquals(2560, photoSize.height)
-        assertNotNull(photoSize.fileId)
-        assertNotNull(photoSize.fileUniqueId)
+        assertNotNull(photoSize.remoteId)
         assertEquals(81037L, photoSize.sizeBytes)
     }
 
@@ -96,9 +94,9 @@ class TelegramDtosTest {
     fun `TelegramMediaItem with photoSizes list`() {
         val sizes =
             listOf(
-                TelegramPhotoSize(1707, 2560, "fileId1", "uniqueId1", 926278),
-                TelegramPhotoSize(853, 1280, "fileId2", "uniqueId2", 255472),
-                TelegramPhotoSize(213, 320, "fileId3", "uniqueId3", 23401),
+                TelegramPhotoSize(1707, 2560, "remoteId1", 926278),
+                TelegramPhotoSize(853, 1280, "remoteId2", 255472),
+                TelegramPhotoSize(213, 320, "remoteId3", 23401),
             )
 
         val mediaItem =
@@ -141,14 +139,12 @@ class TelegramDtosTest {
                 chatId = -1001180440610,
                 messageId = 29321330688,
                 mediaType = TelegramMediaType.VIDEO,
-                thumbnailFileId = "AAMCAgADHQJGXBgiAAJtO2kpslLHK8bxgsIVnj2Bn_5qfdQyAAL7hgAC1ZoAAUkQTW-gfd-o5AEAB20AAzgE",
-                thumbnailUniqueId = "AQAD-4YAAtWaAAFJcg",
+                thumbRemoteId = "AAMCAgADHQJGXBgiAAJtO2kpslLHK8bxgsIVnj2Bn_5qfdQyAAL7hgAC1ZoAAUkQTW-gfd-o5AEAB20AAzgE",
                 thumbnailWidth = 320,
                 thumbnailHeight = 179,
             )
 
-        assertNotNull(mediaItem.thumbnailFileId)
-        assertNotNull(mediaItem.thumbnailUniqueId)
+        assertNotNull(mediaItem.thumbRemoteId)
         assertEquals(320, mediaItem.thumbnailWidth)
         assertEquals(179, mediaItem.thumbnailHeight)
     }

@@ -178,12 +178,14 @@ class ImageRefFetcher(
 /**
  * Keyer for [ImageRef] to generate stable cache keys.
  *
- * **Key Strategy:**
+ * ## Key Strategy (v2 remoteId-first):
  * - [ImageRef.Http]: Uses URL (consistent with standard Coil behavior)
- * - [ImageRef.TelegramThumb]: Uses `uniqueId` for cross-session stability (fileId may change
- * between sessions, uniqueId is stable)
+ * - [ImageRef.TelegramThumb]: Uses `remoteId` for cross-session stability
+ *   (fileId is volatile, uniqueId has no resolution API)
  * - [ImageRef.LocalFile]: Uses absolute path
  * - [ImageRef.InlineBytes]: Uses content hash for deduplication
+ *
+ * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  *
  * Register with ImageLoader:
  * ```kotlin
@@ -199,7 +201,7 @@ class ImageRefKeyer : Keyer<ImageRef> {
     override fun key(data: ImageRef, options: Options): String {
         return when (data) {
             is ImageRef.Http -> data.url
-            is ImageRef.TelegramThumb -> "tg:${data.uniqueId}"
+            is ImageRef.TelegramThumb -> "tg:${data.remoteId}"
             is ImageRef.LocalFile -> "file:${data.path}"
             is ImageRef.InlineBytes -> "inline:${data.bytes.contentHashCode()}"
         }

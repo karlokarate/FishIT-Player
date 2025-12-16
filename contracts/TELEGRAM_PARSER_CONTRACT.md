@@ -102,10 +102,19 @@ These structures must be mirrored by internal DTOs used for parsing, both for CL
 
 The following decisions are **FINAL** and MUST be followed by all implementation work. See `TELEGRAM_PARSER_COPILOT_TASK.md` for detailed rationale.
 
-### File ID Strategy
-- `remoteId` and `uniqueId` are the **primary identifiers** for all media files
-- `fileId` is volatile and **MUST NEVER be the primary key**
-- Playback: Use `getRemoteFile(remoteId)` to resolve `fileId` at playback time
+### File ID Strategy (v2 remoteId-First Architecture)
+
+Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+
+- `remoteId` is the **only** file identifier stored in persistence
+- `fileId` is **volatile** (session-local) and **MUST NEVER be persisted**
+- `uniqueId` is **NOT stored** (no TDLib API to resolve it back to a file)
+- Playback: Use `getRemoteFile(remoteId)` to resolve `fileId` at runtime
+
+**Resolution Flow:**
+```
+remoteId (persisted) → getRemoteFile(remoteId) → fileId (runtime) → downloadFile(fileId)
+```
 
 ### ObjectBox Migration
 - **Do NOT migrate** legacy `ObxTelegramMessage` data
@@ -246,13 +255,15 @@ enum class TelegramItemType {
 /**
  * Reference to a video file in TDLib.
  * 
- * IMPORTANT: remoteId and uniqueId are REQUIRED and stable across sessions.
- * fileId is OPTIONAL and may become stale - use getRemoteFile(remoteId) to refresh.
+ * ## v2 remoteId-First Architecture
+ * 
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Only `remoteId` is stored (stable across sessions)
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+ * - `uniqueId` is NOT stored (no API to resolve it back)
  */
 data class TelegramMediaRef(
     val remoteId: String,      // REQUIRED - stable across sessions
-    val uniqueId: String,      // REQUIRED - stable across sessions
-    val fileId: Int? = null,   // OPTIONAL - volatile, may become stale
     val sizeBytes: Long,
     val mimeType: String?,
     val durationSeconds: Int?,
@@ -264,13 +275,14 @@ data class TelegramMediaRef(
  * Reference to a document/archive file in TDLib.
  * Used for AUDIOBOOK and RAR_ITEM types.
  * 
- * IMPORTANT: remoteId and uniqueId are REQUIRED and stable across sessions.
- * fileId is OPTIONAL and may become stale.
+ * ## v2 remoteId-First Architecture
+ * 
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Only `remoteId` is stored (stable across sessions)
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
  */
 data class TelegramDocumentRef(
     val remoteId: String,      // REQUIRED - stable across sessions
-    val uniqueId: String,      // REQUIRED - stable across sessions
-    val fileId: Int? = null,   // OPTIONAL - volatile, may become stale
     val sizeBytes: Long,
     val mimeType: String?,
     val fileName: String?
@@ -279,13 +291,14 @@ data class TelegramDocumentRef(
 /**
  * Reference to an image file in TDLib.
  * 
- * IMPORTANT: remoteId and uniqueId are REQUIRED and stable across sessions.
- * fileId is OPTIONAL and may become stale.
+ * ## v2 remoteId-First Architecture
+ * 
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Only `remoteId` is stored (stable across sessions)
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
  */
 data class TelegramImageRef(
     val remoteId: String,      // REQUIRED - stable across sessions
-    val uniqueId: String,      // REQUIRED - stable across sessions
-    val fileId: Int? = null,   // OPTIONAL - volatile, may become stale
     val width: Int,
     val height: Int,
     val sizeBytes: Long
@@ -334,25 +347,28 @@ data class TelegramItem(
 
 There MUST be an ObjectBox entity `ObxTelegramItem` mirroring the important fields:
 
+## v2 remoteId-First Architecture
+
+Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+- **Only** `remoteId` fields are stored (stable across sessions)
+- **NO** `fileId` or `uniqueId` fields (volatile/redundant)
+- `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+
 - Identity:
   - `chatId` (indexed)
   - `anchorMessageId` (indexed; primary logical key; typically the video's message ID)
 - Item type:
   - `itemType: String` (enum name: MOVIE, SERIES_EPISODE, CLIP, AUDIOBOOK, RAR_ITEM, POSTER_ONLY)
 - Video reference (for MOVIE/SERIES_EPISODE/CLIP):
-  - `videoRemoteId: String?` (REQUIRED when videoRef present)
-  - `videoUniqueId: String?` (REQUIRED when videoRef present)
-  - `videoFileId: Int?` (OPTIONAL - volatile, may become stale)
+  - `videoRemoteId: String?` (REQUIRED when videoRef present - resolve via getRemoteFile())
   - `videoSizeBytes: Long?`, `videoMimeType: String?`
   - `videoDurationSeconds: Int?`, `videoWidth: Int?`, `videoHeight: Int?`
 - Document reference (for AUDIOBOOK/RAR_ITEM):
-  - `documentRemoteId: String?` (REQUIRED when documentRef present)
-  - `documentUniqueId: String?` (REQUIRED when documentRef present)
-  - `documentFileId: Int?` (OPTIONAL - volatile, may become stale)
+  - `documentRemoteId: String?` (REQUIRED when documentRef present - resolve via getRemoteFile())
   - `documentSizeBytes: Long?`, `documentMimeType: String?`, `documentFileName: String?`
 - Images:
-  - Poster: `posterRemoteId`, `posterUniqueId`, `posterFileId?`, `posterWidth`, `posterHeight`, `posterSizeBytes`
-  - Backdrop: `backdropRemoteId`, `backdropUniqueId`, `backdropFileId?`, `backdropWidth`, `backdropHeight`, `backdropSizeBytes`
+  - Poster: `posterRemoteId`, `posterWidth`, `posterHeight`, `posterSizeBytes`
+  - Backdrop: `backdropRemoteId`, `backdropWidth`, `backdropHeight`, `backdropSizeBytes`
 - Metadata:
   - `title`, `originalTitle`, `year`, `lengthMinutes`, `fsk`
   - `productionCountry`, `collection`, `director`
@@ -366,8 +382,8 @@ There MUST be an ObjectBox entity `ObxTelegramItem` mirroring the important fiel
 **IMPORTANT**: 
 - ObjectBox-generated `id` is purely technical
 - The **logical identity** of an item is `(chatId, anchorMessageId)`
-- `remoteId`/`uniqueId` are REQUIRED for all file references
-- `fileId` is OPTIONAL and may become stale after TDLib cache changes
+- `remoteId` is REQUIRED for all file references
+- **NO `fileId` or `uniqueId` stored** - these are resolved at runtime
 
 **Migration note**: Do NOT migrate data from legacy `ObxTelegramMessage`. Create fresh `ObxTelegramItem` entities via full resync.
 

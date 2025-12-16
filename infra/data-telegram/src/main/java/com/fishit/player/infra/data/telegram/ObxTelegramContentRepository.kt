@@ -163,6 +163,16 @@ class ObxTelegramContentRepository @Inject constructor(
     // Mapping: ObxTelegramMessage ↔ RawMediaMetadata
     // ========================================================================
 
+    /**
+     * Convert ObjectBox entity to RawMediaMetadata.
+     *
+     * ## v2 remoteId-First Architecture
+     *
+     * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+     * - Uses `posterRemoteId` or `thumbRemoteId` to build ImageRef.TelegramThumb
+     * - Includes chatId/messageId for resolution fallback
+     * - `fileId` resolved at runtime via `getRemoteFile(remoteId)`
+     */
     private fun ObxTelegramMessage.toRawMediaMetadata(): RawMediaMetadata {
         val derivedMediaType = when {
             isSeries -> MediaType.SERIES_EPISODE
@@ -170,10 +180,18 @@ class ObxTelegramContentRepository @Inject constructor(
             else -> MediaType.MOVIE
         }
 
-        // Build thumbnail ImageRef from local path or file reference
+        // Build thumbnail ImageRef from remoteId (v2 architecture)
         val thumbnailRef = when {
-            posterLocalPath != null -> ImageRef.LocalFile(posterLocalPath!!)
-            thumbLocalPath != null -> ImageRef.LocalFile(thumbLocalPath!!)
+            posterRemoteId != null -> ImageRef.TelegramThumb(
+                remoteId = posterRemoteId!!,
+                chatId = chatId,
+                messageId = messageId
+            )
+            thumbRemoteId != null -> ImageRef.TelegramThumb(
+                remoteId = thumbRemoteId!!,
+                chatId = chatId,
+                messageId = messageId
+            )
             else -> null
         }
 

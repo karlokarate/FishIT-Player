@@ -5,6 +5,13 @@ import com.fishit.player.core.model.ImageRef
 /**
  * Extensions for extracting ImageRef from Telegram pipeline models.
  *
+ * ## v2 remoteId-First Architecture
+ *
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Only `remoteId` is used for ImageRef.TelegramThumb
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+ * - `uniqueId` is NOT used (no API to resolve it back)
+ *
  * **Contract (IMAGING_SYSTEM.md):**
  * - Pipelines produce ImageRef (not raw TDLib DTOs)
  * - UI consumes ImageRef via GlobalImageLoader
@@ -12,18 +19,18 @@ import com.fishit.player.core.model.ImageRef
  *
  * **Telegram Thumbnail Strategy:**
  * - Minithumbnail: Inline JPEG bytes (~40px) for instant blur placeholder
- * - Video/Document: thumbnailFileId + thumbnailUniqueId (320px)
- * - Photo: Largest available size from photoSizes
- * - Local fallback: thumbnailPath if downloaded
+ * - Video/Document: thumbRemoteId (320px) - resolved via getRemoteFile()
+ * - Photo: Best photo size remoteId
  *
  * **Tiered Loading (Netflix-style):**
  * 1. Minithumbnail (instant, ~40x40px blur) via ImageRef.InlineBytes
  * 2. Full thumbnail (async download, ~320px) via ImageRef.TelegramThumb
  *
  * **Cache Key Stability:**
- * - Uses `uniqueId` (not `fileId`) for cross-session caching
- * - `fileId` may change between TDLib sessions
- * - `uniqueId` is stable and persistent
+ * - Uses `remoteId` for cross-session caching
+ * - `remoteId` is stable across TDLib sessions
+ *
+ * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 
 // =============================================================================
@@ -55,29 +62,19 @@ fun TelegramMediaItem.toMinithumbnailImageRef(): ImageRef? {
 /**
  * Extract thumbnail ImageRef from Telegram media item.
  *
+ * Uses remoteId-first design: stores only remoteId, fileId resolved at runtime.
+ *
  * Priority order:
- * 1. Local path (if downloaded)
- * 2. TelegramThumb from video/document thumbnail
- * 3. Largest photo size (for photo messages)
+ * 1. TelegramThumb from video/document thumbnail (thumbRemoteId)
+ * 2. Largest photo size (for photo messages)
  *
  * @return ImageRef or null if no thumbnail available
  */
 fun TelegramMediaItem.toThumbnailImageRef(): ImageRef? {
-    // Priority 1: Local thumbnail path (already downloaded)
-    thumbnailPath?.takeIf { it.isNotBlank() }?.let { path ->
-        return ImageRef.LocalFile(
-                path = path,
-                preferredWidth = thumbnailWidth,
-                preferredHeight = thumbnailHeight,
-        )
-    }
-
-    // Priority 2: TelegramThumb reference (video/document thumbnail)
-    if (thumbnailFileId != null && thumbnailUniqueId != null) {
-        val fileIdInt = thumbnailFileId.toIntOrNull() ?: return null
+    // Priority 1: TelegramThumb reference (video/document thumbnail)
+    thumbRemoteId?.takeIf { it.isNotBlank() }?.let { remoteId ->
         return ImageRef.TelegramThumb(
-                fileId = fileIdInt,
-                uniqueId = thumbnailUniqueId,
+                remoteId = remoteId,
                 chatId = chatId,
                 messageId = messageId,
                 preferredWidth = thumbnailWidth,
@@ -85,7 +82,7 @@ fun TelegramMediaItem.toThumbnailImageRef(): ImageRef? {
         )
     }
 
-    // Priority 3: Photo sizes (for photo messages)
+    // Priority 2: Photo sizes (for photo messages)
     return photoSizes.toBestImageRef(chatId, messageId)
 }
 
@@ -104,9 +101,7 @@ fun TelegramMediaItem.toPosterImageRef(): ImageRef? {
 
 /** Check if this media item has any thumbnail available. */
 fun TelegramMediaItem.hasThumbnail(): Boolean =
-        thumbnailPath?.isNotBlank() == true ||
-                (thumbnailFileId != null && thumbnailUniqueId != null) ||
-                photoSizes.isNotEmpty()
+        thumbRemoteId?.isNotBlank() == true || photoSizes.isNotEmpty()
 
 // =============================================================================
 // TelegramPhotoSize Extensions
@@ -133,14 +128,15 @@ fun List<TelegramPhotoSize>.toBestImageRef(chatId: Long, messageId: Long): Image
 /**
  * Convert a single photo size to ImageRef.
  *
+ * Uses remoteId-first design per TELEGRAM_ID_ARCHITECTURE_CONTRACT.md.
+ *
  * @param chatId Chat ID for context
  * @param messageId Message ID for context
  * @return ImageRef.TelegramThumb
  */
 fun TelegramPhotoSize.toImageRef(chatId: Long, messageId: Long): ImageRef {
     return ImageRef.TelegramThumb(
-            fileId = fileId.toIntOrNull() ?: 0,
-            uniqueId = fileUniqueId,
+            remoteId = remoteId,
             chatId = chatId,
             messageId = messageId,
             preferredWidth = width,
@@ -169,4 +165,4 @@ fun List<TelegramPhotoSize>.toThumbnailImageRef(chatId: Long, messageId: Long): 
 // =============================================================================
 
 /** Validate if the ImageRef is usable. */
-fun ImageRef.TelegramThumb.isValid(): Boolean = fileId > 0 && uniqueId.isNotBlank()
+fun ImageRef.TelegramThumb.isValid(): Boolean = remoteId.isNotBlank()

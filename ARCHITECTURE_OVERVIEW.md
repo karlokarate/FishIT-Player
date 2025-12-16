@@ -134,6 +134,8 @@ The v2 architecture follows a strict layer hierarchy:
 
 ## Implementation Progress
 
+> Last updated: 2025-12-16
+
 | Layer | Module | Status |
 |-------|--------|--------|
 | **Core** | `core/model` | ✅ Complete |
@@ -142,19 +144,55 @@ The v2 architecture follows a strict layer hierarchy:
 | **Core** | `core/metadata-normalizer` | ✅ Complete |
 | **Core** | `core/catalog-sync` | ✅ Complete |
 | **Core** | `core/persistence` | ✅ Complete |
+| **Core** | `core/firebase` | ✅ Complete |
+| **Core** | `core/ui-imaging` | ✅ Complete |
 | **Transport** | `infra/transport-telegram` | ✅ Complete |
 | **Transport** | `infra/transport-xtream` | ✅ Complete |
 | **Data** | `infra/data-telegram` | ✅ Complete |
 | **Data** | `infra/data-xtream` | ✅ Complete |
+| **Data** | `infra/data-home` | 🔲 TODO |
+| **Infra** | `infra/logging` | ✅ Complete |
+| **Infra** | `infra/tooling` | ✅ Complete |
+| **Infra** | `infra/imaging` | ✅ Complete |
+| **Infra** | `infra/work` | 🔲 TODO |
 | **Pipeline** | `pipeline/telegram` | ✅ Complete |
 | **Pipeline** | `pipeline/xtream` | ✅ Complete |
-| **Pipeline** | `pipeline/audiobook` | 🔲 Stub |
-| **Pipeline** | `pipeline/io` | 🔲 Stub |
+| **Pipeline** | `pipeline/audiobook` | 🔲 Stub (TODO) |
+| **Pipeline** | `pipeline/io` | 🔲 Stub (TODO) |
 | **Playback** | `playback/domain` | ✅ Complete |
 | **Playback** | `playback/telegram` | ✅ Complete |
 | **Playback** | `playback/xtream` | ✅ Complete |
-| **Player** | `player/internal` | 🚧 Phase 4/14 |
-| **Feature** | `feature/*` | 🔲 Planned |
+| **Player** | `player/internal` | 🚧 Phase 7/14 |
+| **Player** | `player/miniplayer` | ✅ Complete |
+| **Player** | `player/nextlib-codecs` | ✅ Complete |
+| **Player** | `player/ui` | 🔲 TODO |
+| **Player** | `player/ui-api` | 🔲 TODO (Reserved) |
+| **Feature** | `feature/onboarding` | ✅ Complete |
+| **Feature** | `feature/home` | 🚧 Shell only |
+| **Feature** | `feature/telegram-media` | 🔲 TODO |
+| **Feature** | `feature/library` | 🔲 TODO |
+| **Feature** | `feature/live` | 🔲 TODO |
+| **Feature** | `feature/detail` | 🔲 TODO |
+| **Feature** | `feature/settings` | 🔲 TODO |
+| **Feature** | `feature/audiobooks` | 🔲 TODO | |
+| **Pipeline** | `pipeline/audiobook` | 🔲 Stub (TODO) |
+| **Pipeline** | `pipeline/io` | 🔲 Stub (TODO) |
+| **Playback** | `playback/domain` | ✅ Complete |
+| **Playback** | `playback/telegram` | ✅ Complete |
+| **Playback** | `playback/xtream` | ✅ Complete |
+| **Player** | `player/internal` | 🚧 Phase 7/14 |
+| **Player** | `player/miniplayer` | ✅ Complete |
+| **Player** | `player/nextlib-codecs` | ✅ Complete |
+| **Player** | `player/ui` | 🔲 TODO |
+| **Player** | `player/ui-api` | 🔲 TODO (Reserved) |
+| **Feature** | `feature/onboarding` | ✅ Complete |
+| **Feature** | `feature/home` | 🚧 Shell only |
+| **Feature** | `feature/telegram-media` | 🔲 TODO |
+| **Feature** | `feature/library` | 🔲 TODO |
+| **Feature** | `feature/live` | 🔲 TODO |
+| **Feature** | `feature/detail` | 🔲 TODO |
+| **Feature** | `feature/settings` | 🔲 TODO |
+| **Feature** | `feature/audiobooks` | 🔲 TODO |
 
 ---
 

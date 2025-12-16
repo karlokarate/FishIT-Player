@@ -22,9 +22,10 @@ The v2 rebuild follows a phased approach:
 | 2.1 | Transport Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.2 | Data Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.3 | Metadata Normalizer | ✅ COMPLETED | Dec 2025 |
-| 3 | SIP / Internal Player (Phase 0-5) | 🚧 IN PROGRESS | Dec 2025 |
-| 4 | UI Feature Screens | 🔲 PLANNED | Jan 2026 |
-| 5 | Quality & Performance | 🔲 PLANNED | Jan 2026 |
+| 3 | SIP / Internal Player (Phase 0-7) | ✅ COMPLETED | Dec 2025 |
+| 3.1 | SIP / Internal Player (Phase 8-14) | 🚧 IN PROGRESS | Jan 2026 |
+| 4 | UI Feature Screens | 🚧 IN PROGRESS | Jan 2026 |
+| 5 | Quality & Performance | 🔲 PLANNED | Feb 2026 |
 
 ---
 
@@ -178,7 +179,7 @@ Status: ✅ COMPLETED
 
 ## Phase 3 – SIP / Internal Player
 
-Status: 🚧 IN PROGRESS (Player Migration Phase 5 of 14 Complete)
+Status: 🚧 IN PROGRESS (Player Migration Phase 7 of 14 Complete)
 
 ### Goals
 
@@ -200,13 +201,13 @@ See [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player
 | Phase 5 | ✅ COMPLETE | MiniPlayer (`player:miniplayer` module) |
 | Phase 6 | ✅ COMPLETE | Subtitles/CC (`SubtitleTrackManager`) |
 | Phase 7 | ✅ COMPLETE | Audio-Spur (`AudioTrackManager`) |
-| Phase 8 | ⏳ PENDING | Serienmodus & TMDB |
-| Phase 9 | ⏳ PENDING | Kids/Guest Policy |
-| Phase 10 | ⏳ PENDING | Fehler-Handling |
-| Phase 11 | ⏳ PENDING | Download & Offline |
-| Phase 12 | ⏳ PENDING | Live-TV |
-| Phase 13 | ⏳ PENDING | Input & Casting |
-| Phase 14 | ⏳ PENDING | Tests & Doku |
+| Phase 8 | ⏳ TODO | Serienmodus & TMDB |
+| Phase 9 | ⏳ TODO | Kids/Guest Policy |
+| Phase 10 | ⏳ TODO | Fehler-Handling |
+| Phase 11 | ⏳ TODO | Download & Offline |
+| Phase 12 | ⏳ TODO | Live-TV |
+| Phase 13 | ⏳ TODO | Input & Casting |
+| Phase 14 | ⏳ TODO | Tests & Doku |
 
 ### Completed Tasks
 
@@ -272,22 +273,53 @@ The next step for real Telegram content is implementing `DefaultTelegramClient` 
 
 ## Phase 4 – UI Feature Screens
 
-Status: 🔲 PLANNED
+Status: � IN PROGRESS
 
 ### Goals
 
 - Implement main UI screens using v2 architecture
 - Wire screens to feature system and pipelines
 
-### Tasks
+### Completed
 
-- [ ] Home screen (`feature/home`)
-- [ ] Library screen (`feature/library`)
-- [ ] Live channels screen (`feature/live`)
-- [ ] Detail screen (`feature/detail`)
-- [ ] Telegram media screen (`feature/telegram-media`)
-- [ ] Settings screen (`feature/settings`)
-- [ ] Audiobooks screen (`feature/audiobooks`)
+- [x] Onboarding screen (`feature/onboarding`) – Telegram & Xtream auth flows
+- [x] Home screen shell (`feature/home`) – Basic structure
+- [x] Debug playback screen – Test player integration
+
+### TODO (Priority Order)
+
+1. [ ] **Home Content Integration** (`feature/home`)
+   - Wire catalog data from repositories
+   - Add content rows (Continue Watching, Recent, Categories)
+   - Implement TV focus navigation (FocusKit)
+
+2. [ ] **Telegram Media Browser** (`feature/telegram-media`)
+   - Chat list with media preview
+   - Media grid per chat
+   - Wire to TelegramContentRepository
+
+3. [ ] **Library Screen** (`feature/library`)
+   - Category-based VOD browsing
+   - Series/Movie separation
+   - Search functionality
+
+4. [ ] **Detail Screen** (`feature/detail`)
+   - VOD/Series detail view
+   - Episode list for series
+   - Playback launch via MediaActionBar
+
+5. [ ] **Live Channels** (`feature/live`)
+   - EPG grid view
+   - Channel list with categories
+   - Live stream launch
+
+6. [ ] **Settings** (`feature/settings`)
+   - Profile management
+   - Playback preferences
+   - Cache management
+   - Debug/diagnostic options
+
+7. [ ] **Audiobooks** (`feature/audiobooks`) – Future
 
 ### Modules Affected
 
@@ -310,21 +342,39 @@ Status: 🔲 PLANNED
 - Implement cache management
 - Profile and optimize performance
 
-### Tasks
+### TODO (Priority Order)
 
-- [ ] Integrate telemetry for player, pipelines, UI
-- [ ] Implement cache management UI
-- [ ] Add log viewer feature
-- [ ] Profile startup time
-- [ ] Optimize memory usage
-- [ ] Add quality gates (Detekt, Lint, tests)
+1. [ ] **Telemetry Foundation**
+   - Extend UnifiedLog for structured telemetry events
+   - Player stats (buffer, playback time, errors)
+   - Pipeline metrics (scan duration, item count)
+
+2. [ ] **Cache Management UI** (`feature/settings`)
+   - TDLib cache size display and clear action
+   - Image cache (Coil) management
+   - HTTP cache statistics
+
+3. [ ] **Log Viewer** (`feature/settings`)
+   - In-app log browser for diagnostics
+   - Filter by source/level
+   - Export logs functionality
+
+4. [ ] **Performance Profiling**
+   - Startup time measurement
+   - Memory usage monitoring
+   - UI jank detection (dropped frames)
+
+5. [ ] **Quality Gates**
+   - Ensure Detekt rules enforced
+   - Lint clean builds
+   - Minimum test coverage targets
 
 ### Modules Affected
 
-- `core/telemetry`
-- `infra/cache`
-- `infra/logging`
-- `feature/settings`
+- `infra/logging` – Telemetry via UnifiedLog
+- `infra/imaging` – Image cache management
+- `infra/work` – Background cleanup jobs
+- `feature/settings` – Cache/Log UI
 
 ### Docs
 

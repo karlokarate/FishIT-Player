@@ -382,26 +382,32 @@ grep -rn "import okhttp3\|import org.drinkless.td\|import dev.g000sha256.tdl" pi
   - `docs/v2/logging/**`
 - No ad-hoc `println` or unstructured logging. Use the logging abstractions.
 
-5.2. Telemetry (mandatory)
+5.2. Telemetry (TODO)
 
-- Important code paths (player, pipelines, UI, cache) must emit telemetry:
+- Important code paths (player, pipelines, UI, cache) should emit telemetry:
   - Player stats,
   - Pipeline events,
   - UI responsiveness / jank, where relevant.
-- Agents must use and extend telemetry services under:
-  - `core/telemetry` (or equivalent v2 modules)
-  - `docs/v2/telemetry/**` (when present)
+- **Note:** A dedicated `core/telemetry` module does not exist in v2 yet.
+- For now, use `infra/logging` (UnifiedLog) for structured events.
+- When telemetry is implemented:
+  - Use the v2 logging infrastructure as foundation.
+  - Document telemetry events in `docs/v2/logging/`.
 
-5.3. Cache & Storage
+5.3. Cache & Storage (TODO)
 
-- All cache operations must go through the central cache abstractions under `/infra/cache/**`.
+- **Note:** A dedicated `/infra/cache/**` module does not exist in v2.
+- Cache-related infrastructure is distributed across:
+  - `infra/imaging` – Coil/ImageLoader cache provisioning
+  - `infra/work` – WorkManager scheduling for background sync/cleanup
+  - Transport modules manage their own caches (TDLib files, HTTP responses)
 - Agents MUST NOT:
   - manually delete cache directories,
   - hardcode file paths,
-  - bypass cache APIs.
-- Cache features (e.g. “Clear TDLib cache”, “Clear Xtream cache”, “Clear logs”) must:
-  - be implemented as explicit actions in the cache manager,
-  - log their actions through the logging/telemetry system,
+  - bypass existing cache abstractions.
+- Cache features (e.g. "Clear TDLib cache", "Clear Xtream cache", "Clear logs") must:
+  - be implemented as explicit actions in the respective transport/infra modules,
+  - log their actions through the logging system (UnifiedLog),
   - respect concurrency constraints (e.g. mutex/semaphore to avoid overlapping operations).
 
 ---

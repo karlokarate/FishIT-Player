@@ -6,10 +6,15 @@ package com.fishit.player.infra.transport.telegram
  * This is part of the v2 Transport API Surface. Integrates with Coil 3 image loading for efficient
  * thumbnail display.
  *
- * **v2 Architecture:**
- * - Transport handles TDLib thumbnail download
- * - Returns local file path for Coil to load
- * - Uses remoteId-first design for stable caching
+ * ## v2 remoteId-First Architecture
+ *
+ * This interface follows the **remoteId-first design** defined in
+ * `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`.
+ *
+ * ### Key Points:
+ * - [TgThumbnailRef] contains only `remoteId` (stable identifier)
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+ * - No `fileId` or `uniqueId` stored in persistence
  *
  * **Bounded Error Tracking:** To prevent log spam, implementations should track failed remoteIds in
  * a bounded LRU set and skip repeated fetch attempts.
@@ -17,7 +22,7 @@ package com.fishit.player.infra.transport.telegram
  * **Implementation:** [TelegramThumbFetcherImpl] in `infra/transport-telegram/imaging/`
  *
  * @see TelegramFileClient for general file downloads
- * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
+ * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 interface TelegramThumbFetcher {
 
@@ -26,16 +31,24 @@ interface TelegramThumbFetcher {
      *
      * Downloads the thumbnail if not cached, returns local path.
      *
+     * **Resolution Flow:**
+     * 1. Resolve `remoteId` → `fileId` via `getRemoteFile(remoteId)`
+     * 2. Check if already downloaded (TDLib cache)
+     * 3. If not, call `downloadFile(fileId, priority)`
+     * 4. Return local path
+     *
      * **Priority:** Thumbnails use medium priority (16) to avoid blocking playback downloads but
      * still load quickly for UI.
      *
-     * @param thumbRef Reference to the thumbnail (fileId, remoteId, etc.)
+     * @param thumbRef Reference to the thumbnail (remoteId, dimensions)
      * @return Local file path to thumbnail, or null if unavailable
      */
     suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String?
 
     /**
      * Check if thumbnail is already cached locally.
+     *
+     * Resolves remoteId → fileId first, then checks TDLib cache.
      *
      * @param thumbRef Reference to the thumbnail
      * @return true if available locally without download
@@ -62,12 +75,23 @@ interface TelegramThumbFetcher {
 /**
  * Reference to a Telegram thumbnail.
  *
- * Uses remoteId as the stable identifier. fileId may become stale after TDLib cache eviction.
+ * ## v2 remoteId-First Design
+ *
+ * This class follows the **remoteId-first architecture** defined in
+ * `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`.
+ *
+ * ### Key Points:
+ * - `remoteId` is the **only** identifier stored
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+ * - No `uniqueId` needed (no API to resolve it back)
+ *
+ * @property remoteId Stable remote identifier (cross-session stable)
+ * @property width Thumbnail width in pixels
+ * @property height Thumbnail height in pixels
+ * @property format Thumbnail format (jpeg, webp, etc.)
  */
 data class TgThumbnailRef(
-        /** TDLib file ID (may be stale) */
-        val fileId: Int,
-        /** Stable remote identifier */
+        /** Stable remote identifier - use getRemoteFile(remoteId) to get fileId */
         val remoteId: String,
         /** Thumbnail width */
         val width: Int,

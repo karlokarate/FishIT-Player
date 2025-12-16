@@ -152,6 +152,43 @@ fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 - Conduct TMDB or other external database searches.
 - Attempt to group/merge media items into canonical works.
 - Decide cross-pipeline identity.
+- **Compute or assign `globalId`** – this field MUST remain empty (`""`). Canonical identity is computed centrally by `:core:metadata-normalizer`.
+- Import or use `GlobalIdUtil` – this utility is exclusively for the normalizer layer.
+
+### 2.1.1 GlobalId Isolation (HARD RULE)
+
+> **Pipeline Contract:** Pipelines MUST leave `RawMediaMetadata.globalId` empty (`""`).
+> Canonical identity computation is the exclusive responsibility of `:core:metadata-normalizer`.
+
+**Rationale:**
+- Cross-pipeline deduplication requires cleaned/normalized titles.
+- Pipelines emit RAW data (scene tags, edition markers, etc.) that must be processed first.
+- Computing globalId before normalization would create inconsistent/duplicate canonical IDs.
+
+**Enforcement:**
+- CI guardrails (`GLOBAL_ID_UTIL_OWNERSHIP_GUARD`) fail the build if any file outside `core/metadata-normalizer/` imports or uses `GlobalIdUtil`.
+- CI guardrails (`PIPELINE_GLOBALID_ASSIGNMENT_GUARD`) fail the build if any `pipeline/**/*.kt` file assigns to `globalId` (except empty string).
+
+**Allowed in Pipelines:**
+```kotlin
+// ✅ CORRECT: Leave globalId with default empty value (omit or don't specify)
+return RawMediaMetadata(
+    originalTitle = rawTitle,
+    // ... other fields ...
+    // globalId not specified - uses default ""
+)
+```
+
+**Forbidden in Pipelines:**
+```kotlin
+// ❌ VIOLATION: Pipeline computing globalId
+import com.fishit.player.core.metadata.GlobalIdUtil
+
+return RawMediaMetadata(
+    originalTitle = rawTitle,
+    globalId = GlobalIdUtil.generateCanonicalId(rawTitle, year), // FORBIDDEN
+)
+```
 
 Pipelines remain fully functional without the normalizer and unifier; they can still:
 - list items,

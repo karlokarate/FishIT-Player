@@ -1,5 +1,6 @@
 # FishIT Player v2 – Architecture Overview
 
+> **Last updated:** 2025-12-16  
 > This document defines the **top-level architecture** for FishIT Player v2.  
 > It describes layers, modules, dependencies, and responsibilities.
 

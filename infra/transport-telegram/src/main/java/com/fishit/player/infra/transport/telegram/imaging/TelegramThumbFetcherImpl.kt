@@ -10,30 +10,36 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Telegram Thumbnail Fetcher Implementation (v2 Architecture).
+ * Telegram Thumbnail Fetcher Implementation (v2 remoteId-First Architecture).
  *
- * Fetches Telegram thumbnails for Coil image loading integration. Uses transport-layer file
- * downloads with remoteId-first fallback.
+ * Fetches Telegram thumbnails for Coil image loading integration.
  *
- * **Key Behaviors (from legacy TelegramFileLoader):**
- * - Download thumbnails with medium priority
- * - RemoteId fallback for stale fileIds
+ * ## remoteId-First Design
+ *
+ * This implementation follows the **remoteId-first architecture** defined in
+ * `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`.
+ *
+ * ### Key Behaviors:
+ * - **Always resolve remoteId → fileId** via `getRemoteFile(remoteId)` first
+ * - No fileId stored in persistence (volatile, session-local)
  * - Bounded LRU set for failed remoteIds (prevents log spam)
  * - Bounded prefetch support for scroll-ahead
+ *
+ * ### Resolution Flow:
+ * 1. Check if remoteId is in failed cache → skip
+ * 2. Resolve `remoteId` → `fileId` via `getRemoteFile(remoteId)`
+ * 3. Check if file already downloaded (TDLib cache)
+ * 4. If not, download with medium priority
+ * 5. Return local path
  *
  * **Thread Safety:**
  * - `failedRemoteIds` protected by Mutex for all access
  * - Prefetch limited to [MAX_PREFETCH_BATCH] items to prevent queue overflow
  *
- * **v2 Compliance:**
- * - Uses UnifiedLog for all logging
- * - No UI references
- * - Consumes TelegramFileClient interface
- *
  * @param fileClient The transport-layer file client (injected via DI)
  *
  * @see TelegramThumbFetcher interface this implements
- * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
+ * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 class TelegramThumbFetcherImpl(
         private val fileClient: TelegramFileClient,
@@ -72,45 +78,54 @@ class TelegramThumbFetcherImpl(
     // ========== TelegramThumbFetcher Implementation ==========
 
     override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String? {
+        val remoteId = thumbRef.remoteId
+        
+        // Skip empty remoteId
+        if (remoteId.isBlank()) {
+            UnifiedLog.w(TAG, "Empty remoteId in thumbnail reference")
+            return null
+        }
+        
         // Skip if already known to fail (thread-safe check)
-        if (isKnownFailed(thumbRef.remoteId)) {
+        if (isKnownFailed(remoteId)) {
             return null
         }
 
-        // Check if already cached
-        val cached = isCachedInternal(thumbRef.fileId)
+        // Step 1: Resolve remoteId → fileId via getRemoteFile()
+        val resolved = fileClient.resolveRemoteId(remoteId)
+        if (resolved == null) {
+            UnifiedLog.w(TAG, "Failed to resolve remoteId: $remoteId")
+            markAsFailed(remoteId)
+            return null
+        }
+        
+        val fileId = resolved.id
+        UnifiedLog.d(TAG, "Resolved remoteId → fileId: $remoteId → $fileId")
+
+        // Step 2: Check if already cached in TDLib
+        val cached = isCachedInternal(fileId)
         if (cached != null) {
             return cached
         }
 
-        // Try download with current fileId
-        var localPath = tryDownload(thumbRef.fileId)
+        // Step 3: Download with medium priority
+        val localPath = tryDownload(fileId)
         if (localPath != null) {
             return localPath
         }
 
-        // FileId might be stale - try resolving via remoteId
-        if (thumbRef.remoteId.isNotEmpty()) {
-            val resolved = fileClient.resolveRemoteId(thumbRef.remoteId)
-            if (resolved != null && resolved.id != thumbRef.fileId) {
-                UnifiedLog.d(TAG, "Resolved stale fileId ${thumbRef.fileId} → ${resolved.id}")
-                localPath = tryDownload(resolved.id)
-                if (localPath != null) {
-                    return localPath
-                }
-            }
-        }
-
         // All attempts failed - add to failed cache (thread-safe)
-        if (thumbRef.remoteId.isNotEmpty()) {
-            markAsFailed(thumbRef.remoteId)
-        }
-
+        markAsFailed(remoteId)
         return null
     }
 
     override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean {
-        return isCachedInternal(thumbRef.fileId) != null
+        val remoteId = thumbRef.remoteId
+        if (remoteId.isBlank()) return false
+        
+        // Resolve remoteId → fileId first
+        val resolved = fileClient.resolveRemoteId(remoteId) ?: return false
+        return isCachedInternal(resolved.id) != null
     }
 
     /**
@@ -131,16 +146,23 @@ class TelegramThumbFetcherImpl(
                 break
             }
 
+            val remoteId = ref.remoteId
+            if (remoteId.isBlank()) continue
+
             // Skip known failures (thread-safe check)
-            if (isKnownFailed(ref.remoteId)) continue
+            if (isKnownFailed(remoteId)) continue
+
+            // Resolve remoteId → fileId
+            val resolved = fileClient.resolveRemoteId(remoteId) ?: continue
+            val fileId = resolved.id
 
             // Skip already cached
-            if (isCachedInternal(ref.fileId) != null) continue
+            if (isCachedInternal(fileId) != null) continue
 
             // Start low-priority download (don't wait for completion)
             try {
                 fileClient.startDownload(
-                        fileId = ref.fileId,
+                        fileId = fileId,
                         priority = PREFETCH_PRIORITY,
                         offset = 0,
                         limit = 0,

@@ -120,42 +120,28 @@ Legacy modules MUST NOT be modified.
 
 ### Checklist
 
-- [ ] In `:core:model`:
-  - [ ] Define `enum class PlaybackType { VOD, SERIES, LIVE, TELEGRAM, AUDIOBOOK, IO }`.
-  - [ ] Define `data class PlaybackContext(...)` with fields for:
-    - `type: PlaybackType`
-    - IDs or generic identifiers appropriate for each type (can be nullable, future-proof).
-    - Optional profile / kids hints if needed later.
-- [ ] In `:playback:domain`:
-  - [ ] Declare interfaces:
-    - `ResumeManager`
-    - `KidsPlaybackGate`
-    - `SubtitleStyleManager`
-    - `SubtitleSelectionPolicy`
-    - `LivePlaybackController`
-    - `TvInputController`
-  - [ ] Provide simple default implementations that:
-    - Do not crash.
-    - Use no external data (no real persistence yet, can return defaults).
-    - Are wired via Hilt for now.
-- [ ] In `:player:internal`:
-  - [ ] Port and adapt the v2 SIP code from the existing repo:
-    - `InternalPlayerState` and related state models into `internal.state`.
-    - `InternalPlayerSession` into `internal.session`, wired to use the interfaces from `:playback:domain`.
-    - Minimal `InternalPlaybackSourceResolver` in `internal.source` that:
-      - For now, ignores pipelines and always uses a hard-coded HTTP test URL for any `PlaybackContext`.
-    - Basic `InternalPlayerControls` + `PlayerSurface` Composables in `internal.ui`.
-  - [ ] Expose `InternalPlayerEntry(playbackContext: PlaybackContext, ...)` as the public Composable entrypoint.
-- [ ] In `:feature:home`:
-  - [ ] Add a `DebugPlaybackScreen` that:
-    - Builds a simple `PlaybackContext` (e.g. `type = PlaybackType.VOD`, fake ID).
-    - Calls `InternalPlayerEntry(playbackContext)`.
-- [ ] In `:app-v2`:
-  - [ ] Update navigation to start at `DebugPlaybackScreen`.
-- [ ] i18n:
-  - [ ] Any new UI text in Phase 1 must:
-    - Be added as string resources in English and German.
-    - Not be hardcoded in code.
+> **Note (2025-12-16):** `PlaybackContext` is defined in `:core:player-model`, NOT `:core:model`.
+> This doc has outdated module references that will be corrected during implementation.
+
+- [x] In `:core:player-model` (was `:core:model`):
+  - [x] Define `enum class SourceType { TELEGRAM, XTREAM, AUDIOBOOK, IO, UNKNOWN }`.
+  - [x] Define `data class PlaybackContext(...)` with fields for playback.
+- [x] In `:playback:domain`:
+  - [x] Declare interfaces:
+    - `PlaybackSourceFactory`
+    - `ResumeManager` (interface)
+    - `KidsPlaybackGate` (interface)
+  - [x] Provide Hilt multibindings setup.
+- [x] In `:player:internal`:
+  - [x] Port and adapt the v2 SIP code:
+    - `InternalPlayerState` and related state models.
+    - `InternalPlayerSession` wired to use `:playback:domain` interfaces.
+    - `PlaybackSourceResolver` with `Set<PlaybackSourceFactory>` injection.
+  - [x] Expose `DebugPlaybackScreen` for testing.
+- [x] In `:feature:home`:
+  - [x] Add `DebugPlaybackScreen` with test stream (Big Buck Bunny).
+- [x] In `:app-v2`:
+  - [x] Navigation to `DebugPlaybackScreen` available.
 
 **Result:**  
 At the end of Phase 1, `:app-v2` launches, and the SIP internal player can play a test HTTP stream via `DebugPlaybackScreen`.

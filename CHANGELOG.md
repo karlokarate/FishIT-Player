@@ -8,6 +8,27 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Documentation Sync (2025-12-16)
+
+- **docs(sync)**: Comprehensive documentation update to match IST-Zustand
+  - **AGENTS.md**: Corrected non-existent module references
+    - Removed references to `core/telemetry` (TODO for future)
+    - Removed references to `infra/cache` (cache is distributed across `infra/imaging`, `infra/work`, transport modules)
+    - Added accurate descriptions of existing cache/telemetry infrastructure
+  - **ROADMAP.md**: Updated all phase statuses
+    - Phase 3 (SIP) updated to Phase 7/14 complete (was 5/14)
+    - Phase 4 (UI) marked IN PROGRESS with detailed TODOs
+    - Phase 5 corrected module references (no `core/telemetry`, no `infra/cache`)
+    - Added prioritized TODO lists for remaining work
+  - **ARCHITECTURE_OVERVIEW.md**: Updated Implementation Progress table
+    - Player phases 0-7 now marked complete
+    - Added missing modules: `player/miniplayer`, `player/nextlib-codecs`, `player/ui`, `player/ui-api`
+    - Corrected pipeline stub status
+  - **FROZEN_MODULE_MANIFEST.md**: Verified complete (includes `nextlib-codecs`, `miniplayer`)
+  - **IMPLEMENTATION_PHASES_V2.md**: Module location notes added
+    - `PlaybackContext` is in `:core:player-model` (not `:core:model`)
+  - **General**: All v2 documentation paths verified against actual directory structure
+
 ### Logging System Update (2025-12-11)
 
 - **feat(logging)**: Lambda-based lazy logging as primary API

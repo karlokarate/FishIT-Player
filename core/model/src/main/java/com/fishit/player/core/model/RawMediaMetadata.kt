@@ -48,7 +48,13 @@ data class RawMediaMetadata(
         val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
         /**
          * Canonical identity key for cross-pipeline deduplication.
-         * IMPORTANT: Pipelines MUST leave this empty (""). It is assigned centrally by :core:metadata-normalizer during unification.
+         *
+         * **PIPELINE CONTRACT:** Pipelines MUST leave this empty (""). Canonical identity is
+         * assigned centrally by `:core:metadata-normalizer` during unification.
+         *
+         * Format when set by normalizer: `cm:<16-char-hex>` (e.g., "cm:a1b2c3d4e5f67890")
+         *
+         * @see com.fishit.player.core.metadata.GlobalIdUtil for generation logic
          */
         val globalId: String = "",
         // === Imaging Fields (v2) ===

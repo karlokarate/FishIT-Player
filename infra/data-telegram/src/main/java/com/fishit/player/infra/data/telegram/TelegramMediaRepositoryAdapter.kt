@@ -2,6 +2,7 @@ package com.fishit.player.infra.data.telegram
 
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.RawMediaMetadata
+import com.fishit.player.core.model.toUriString
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -55,6 +56,12 @@ class TelegramMediaRepositoryAdapter @Inject constructor(
  * Maps RawMediaMetadata to TelegramMediaItem (domain model).
  *
  * Extracts chatId and messageId from sourceId format: "msg:chatId:messageId"
+ *
+ * ## v2 remoteId-First Architecture
+ *
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Uses only `remoteId` for Telegram thumbnails
+ * - `fileId` resolved at runtime via `getRemoteFile(remoteId)`
  */
 private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
     // Extract chatId and messageId from sourceId
@@ -62,11 +69,11 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
     val chatId = parts.getOrNull(1)?.toLongOrNull()
     val messageId = parts.getOrNull(2)?.toLongOrNull()
 
-    // Extract posterUrl from ImageRef
+    // Extract posterUrl from ImageRef using remoteId-first URI format
     val posterUrl = poster?.let { imageRef ->
         when (imageRef) {
             is ImageRef.Http -> imageRef.url
-            is ImageRef.TelegramThumb -> "tg://thumb/${imageRef.fileId}/${imageRef.uniqueId}"
+            is ImageRef.TelegramThumb -> imageRef.toUriString()
             is ImageRef.LocalFile -> "file://${imageRef.path}"
             else -> null
         }

@@ -14,9 +14,11 @@ This document replaces all implicit assumptions about title matching, identity h
 1. Every media work (movie, series, episode) receives a **global, pipeline-independent identity** (`CanonicalMediaId`).
 2. Every pipeline provides **RawMediaMetadata only** — no normalization, no title cleaning, no heuristics.
 3. All normalization happens **centrally** inside:
+
    ```
    :core:metadata-normalizer
    ```
+
 4. TMDB IDs act as **absolute identity keys** when available.
 5. Without TMDB IDs, titles, years, and season/episode numbers are normalized through a **shared, deterministic heuristic layer** (regex-based, scene-naming aware).
 6. Features enabled by this:
@@ -29,15 +31,49 @@ This document replaces all implicit assumptions about title matching, identity h
 
 ---
 
+# 📌 1.1 Telegram ID Architecture (remoteId-First)
+
+**Contract:** `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`
+
+For Telegram pipeline, special rules apply to file IDs:
+
+## Persisted (Stable Across Sessions)
+
+- `chatId: Long` – for chat lookups and history API
+- `messageId: Long` – for message reload and pagination
+- `remoteId: String` – for all file references (video, thumbnail, poster)
+
+## NOT Persisted (Volatile/Redundant)
+
+- `fileId: Int` – session-local, becomes stale after TDLib changes
+- `uniqueId: String` – no API to resolve back to file
+
+## Resolution Flow
+
+```
+remoteId (persisted) → getRemoteFile(remoteId) → fileId (runtime) → downloadFile(fileId)
+```
+
+## Coil Image Cache
+
+- **Memory Cache:** ENABLED (decode once, display multiple times)
+- **Disk Cache:** DISABLED for Telegram (TDLib already caches files)
+- **Cache Key:** `tg:${remoteId}` (stable across sessions)
+
+---
+
 # 🧱 2. Tools Used
 
 ## 🧩 2.1 `tmdb-java` (Apache 2.0 License)
+
 **Purpose:**
+
 - Find movies/series via TMDB search
 - Obtain reliable `tmdbId`
 - Fetch titles, release years, posters, runtime, genres
 
 **Gradle Integration:**
+
 ```kotlin
 dependencies {
     implementation("com.uwetrottmann.tmdb2:tmdb-java:<latest-version>")
@@ -47,11 +83,13 @@ dependencies {
 ---
 
 ## 🧩 2.2 Scene/Title Parser (Custom Kotlin Regex Engine)
+
 We implement a **dedicated Kotlin-based scene/title parser**, inspired by behavior and regex patterns from Sonarr, Radarr, GuessIt, and FileBot.
 
 We do *not* embed their code directly — only port behaviors and patterns.
 
 This parser extracts:
+
 - cleaned title ("x-men")
 - release year
 - season/episode (S01E05 / 1x05)
@@ -136,25 +174,29 @@ interface TmdbMetadataResolver {
 
 ## ❗ Mandatory for ALL pipelines
 
-### Pipelines MUST expose:
+### Pipelines MUST expose
+
 ```kotlin
 fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 ```
 
-### Pipelines MUST NOT:
+### Pipelines MUST NOT
+
 - implement their own title cleaning  
 - apply heuristics  
 - perform TMDB searches  
 - unify or match media across versions  
 - decide identity between items  
 
-### Pipelines MUST:
+### Pipelines MUST
+
 - extract all raw metadata they can provide (title, year, season/episode, duration)
 - include external IDs when available (e.g., tmdbId from Xtream or Plex)
 - populate `sourceType`, `sourceLabel`, `sourceId`
 - ensure deterministic mappings
 
-### Pipeline Tests MUST:
+### Pipeline Tests MUST
+
 - verify RawMediaMetadata generation  
 - NOT test normalization, TMDB resolution, or canonical identity  
 (those belong to the normalizer + unifier modules)
@@ -164,7 +206,9 @@ fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 # 🏗 4. Required Changes to Existing Markdown Documents
 
 ## 📌 Update: `APP_VISION_AND_SCOPE.md`
+
 Add new subsection:
+
 - “Cross-Pipeline Media Identity Layer”
 - Pipelines deliver raw metadata only
 - TMDB-first canonical identity
@@ -173,9 +217,12 @@ Add new subsection:
 ---
 
 ## 📌 Update: `ARCHITECTURE_OVERVIEW_V2.md`
+
 Add:
+
 - new module `:core:metadata-normalizer`
 - new canonical media flow:
+
   ```
   Pipeline → RawMediaMetadata → Normalizer → CanonicalMedia → Resume/UI
   ```
@@ -187,25 +234,30 @@ Add:
 Add new subtasks:
 
 ### Phase 3 — Metadata Normalization Core
+
 - Introduce Raw/Normalized metadata types
 - Implement MediaMetadataNormalizer
 - Implement TmdbMetadataResolver
 - Add metadata-normalizer module
 
 ### Phase 4 — Pipeline Metadata Integration
+
 - Telegram: toRawMediaMetadata()
 - Xtream: toRawMediaMetadata()
 - IO: toRawMediaMetadata()
 - Audiobook: toRawMediaMetadata()
 
 ### Phase 5 — Canonical Media Storage
+
 - Store CanonicalMedia + MediaSourceRef in persistence
 - Implement cross-pipeline resume + detail screen backend
 
 ---
 
 ## 📌 Update: `PHASE2_PARALLELIZATION_PLAN.md`
+
 Add:
+
 - Pipeline agents must prepare `toRawMediaMetadata()` in their stub phase
 - Normalization begins only after Phase 3 is implemented
 - Pipelines remain fully functional without the normalizer → preserves reusability
@@ -216,23 +268,27 @@ Add:
 
 Each agent must:
 
-### a) Implement this function:
+### a) Implement this function
+
 ```kotlin
 fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 ```
 
-### b) Follow these constraints:
+### b) Follow these constraints
+
 - No cleaning logic  
 - No regex heuristics  
 - No TMDB lookup  
 - No identity merging  
 
-### c) Provide complete raw data:
+### c) Provide complete raw data
+
 - best-effort extraction of titles, years, season/episode, duration  
 - external IDs when the source provides them  
 - stable source identifiers
 
-### d) Tests focus ONLY on:
+### d) Tests focus ONLY on
+
 - Raw metadata production  
 NOT on:
 - normalization  

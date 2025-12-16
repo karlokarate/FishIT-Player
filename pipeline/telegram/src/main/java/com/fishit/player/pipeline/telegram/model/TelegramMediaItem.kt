@@ -6,7 +6,12 @@ package com.fishit.player.pipeline.telegram.model
  * Updated based on analysis of real Telegram export JSONs from docs/telegram/exports/exports/.
  * Represents playable media content from Telegram (video, document, audio, photo).
  *
- * Maps to ObxTelegramMessage but provides a cleaner domain interface.
+ * ## v2 remoteId-First Architecture
+ *
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Only `remoteId` and `thumbRemoteId` are stored (stable across sessions)
+ * - `fileId` is resolved at runtime via `getRemoteFile(remoteId)`
+ * - `uniqueId` is NOT stored (no API to resolve it back)
  *
  * **CONTRACT COMPLIANCE (MEDIA_NORMALIZATION_CONTRACT.md):**
  * - All fields are RAW as extracted from Telegram messages
@@ -19,9 +24,7 @@ package com.fishit.player.pipeline.telegram.model
  * @property messageId Telegram message ID
  * @property mediaAlbumId Media album ID for grouped messages (optional)
  * @property mediaType Type of media content (VIDEO, DOCUMENT, AUDIO, PHOTO, OTHER)
- * @property fileId Telegram file ID (nullable for stub)
- * @property fileUniqueId Telegram unique file ID (stable across sessions)
- * @property remoteId Stable TDLib remote ID (session-independent)
+ * @property remoteId Stable TDLib remote ID (session-independent) - use getRemoteFile() to get fileId
  * @property title Display title (from caption or parsed metadata)
  * @property fileName Original file name (RAW, no cleaning)
  * @property caption Message caption text (RAW)
@@ -31,13 +34,13 @@ package com.fishit.player.pipeline.telegram.model
  * @property width Video/photo width in pixels
  * @property height Video/photo height in pixels
  * @property supportsStreaming Whether the file supports streaming playback
- * @property localPath Local file path if downloaded (nullable)
- * @property thumbnailFileId Telegram file ID for thumbnail
- * @property thumbnailUniqueId Telegram unique file ID for thumbnail
+ * @property thumbRemoteId Stable TDLib remote ID for thumbnail - use getRemoteFile() to get fileId
  * @property thumbnailWidth Thumbnail width in pixels
  * @property thumbnailHeight Thumbnail height in pixels
- * @property thumbnailPath Local thumbnail path (nullable)
  * @property photoSizes List of photo sizes (for photo messages)
+ * @property minithumbnailBytes Inline JPEG bytes for instant blur placeholder
+ * @property minithumbnailWidth Minithumbnail width in pixels
+ * @property minithumbnailHeight Minithumbnail height in pixels
  * @property date Message timestamp
  * @property isSeries Whether this is part of a series
  * @property seriesName Series name if applicable
@@ -47,6 +50,8 @@ package com.fishit.player.pipeline.telegram.model
  * @property year Release year (from parsed metadata)
  * @property genres Comma-separated genre list
  * @property description Content description
+ *
+ * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 data class TelegramMediaItem(
         val id: Long = 0,
@@ -54,9 +59,11 @@ data class TelegramMediaItem(
         val messageId: Long = 0,
         val mediaAlbumId: Long? = null,
         val mediaType: TelegramMediaType = TelegramMediaType.OTHER,
-        val fileId: Int? = null,
-        val fileUniqueId: String? = null,
+        
+        // === File Reference (remoteId only - resolve fileId at runtime) ===
+        /** Stable remote ID for media file. Use getRemoteFile(remoteId) to get fileId. */
         val remoteId: String? = null,
+        
         val title: String = "",
         val fileName: String? = null,
         val caption: String? = null,
@@ -66,17 +73,21 @@ data class TelegramMediaItem(
         val width: Int? = null,
         val height: Int? = null,
         val supportsStreaming: Boolean? = null,
-        val localPath: String? = null,
-        val thumbnailFileId: String? = null,
-        val thumbnailUniqueId: String? = null,
+        
+        // === Thumbnail Reference (remoteId only - resolve fileId at runtime) ===
+        /** Stable remote ID for thumbnail. Use getRemoteFile(thumbRemoteId) to get fileId. */
+        val thumbRemoteId: String? = null,
         val thumbnailWidth: Int? = null,
         val thumbnailHeight: Int? = null,
-        val thumbnailPath: String? = null,
+        
+        // === Photo Sizes (each has remoteId) ===
         val photoSizes: List<TelegramPhotoSize> = emptyList(),
+        
         // === Minithumbnail (inline JPEG bytes for instant blur placeholder) ===
         val minithumbnailBytes: ByteArray? = null,
         val minithumbnailWidth: Int? = null,
         val minithumbnailHeight: Int? = null,
+        
         val date: Long? = null,
         val isSeries: Boolean = false,
         val seriesName: String? = null,
@@ -89,19 +100,20 @@ data class TelegramMediaItem(
 ) {
     /**
      * Returns a Telegram URI for this media item in the format:
-     * tg://file/<fileId>?chatId=<chatId>&messageId=<messageId>
+     * tg://media/<remoteId>?chatId=<chatId>&messageId=<messageId>
      *
-     * STUB: Returns placeholder URI for testing.
+     * The remoteId is URL-encoded to handle special characters.
      */
     fun toTelegramUri(): String =
-            if (fileId != null) {
-                "tg://file/$fileId?chatId=$chatId&messageId=$messageId"
+            if (remoteId != null) {
+                val encodedRemoteId = java.net.URLEncoder.encode(remoteId, "UTF-8")
+                "tg://media/$encodedRemoteId?chatId=$chatId&messageId=$messageId"
             } else {
                 "tg://stub/$id?chatId=$chatId&messageId=$messageId"
             }
 
     /** Checks if this media item is playable (has sufficient metadata). */
-    fun isPlayable(): Boolean = fileId != null && mimeType != null
+    fun isPlayable(): Boolean = remoteId != null && mimeType != null
 
     /** Checks if this media item has a minithumbnail for instant preview. */
     fun hasMinithumbnail(): Boolean = minithumbnailBytes != null && minithumbnailBytes.isNotEmpty()
@@ -115,8 +127,6 @@ data class TelegramMediaItem(
                 messageId == other.messageId &&
                 mediaAlbumId == other.mediaAlbumId &&
                 mediaType == other.mediaType &&
-                fileId == other.fileId &&
-                fileUniqueId == other.fileUniqueId &&
                 remoteId == other.remoteId &&
                 title == other.title &&
                 fileName == other.fileName &&
@@ -127,12 +137,9 @@ data class TelegramMediaItem(
                 width == other.width &&
                 height == other.height &&
                 supportsStreaming == other.supportsStreaming &&
-                localPath == other.localPath &&
-                thumbnailFileId == other.thumbnailFileId &&
-                thumbnailUniqueId == other.thumbnailUniqueId &&
+                thumbRemoteId == other.thumbRemoteId &&
                 thumbnailWidth == other.thumbnailWidth &&
                 thumbnailHeight == other.thumbnailHeight &&
-                thumbnailPath == other.thumbnailPath &&
                 photoSizes == other.photoSizes &&
                 minithumbnailBytes.contentEquals(other.minithumbnailBytes) &&
                 minithumbnailWidth == other.minithumbnailWidth &&

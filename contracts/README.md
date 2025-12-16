@@ -37,6 +37,7 @@
 | Contract | Status | Scope | Description |
 |----------|--------|-------|-------------|
 | [TELEGRAM_PARSER_CONTRACT.md](TELEGRAM_PARSER_CONTRACT.md) | Draft | Telegram Pipeline | Telegram message parsing and domain mapping |
+| [TELEGRAM_ID_ARCHITECTURE_CONTRACT.md](TELEGRAM_ID_ARCHITECTURE_CONTRACT.md) | **Binding** | Telegram IDs | remoteId-first design for TDLib file references |
 
 ---
 
@@ -59,7 +60,8 @@ Before modifying code in any of these areas, agents **MUST** read the relevant c
 | Pipelines | `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`, `GLOSSARY` |
 | Logging | `LOGGING_CONTRACT_V2.md` |
 | Player | All `INTERNAL_PLAYER_*` contracts |
-| Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
+| Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`, `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
+| Telegram IDs / Imaging | `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` |
 
 ### 2. Violation Handling
 

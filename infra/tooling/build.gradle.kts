@@ -9,6 +9,8 @@ android {
 
     defaultConfig {
         minSdk = 24
+        
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -18,6 +20,14 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
+    
+    // Enable unit tests
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
     }
 }
 
@@ -29,4 +39,8 @@ dependencies {
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    
+    // Test dependencies for architecture tests
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
 }

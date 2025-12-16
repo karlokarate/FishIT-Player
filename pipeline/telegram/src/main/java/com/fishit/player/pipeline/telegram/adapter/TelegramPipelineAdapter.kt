@@ -115,6 +115,13 @@ private fun TgChat.toChatInfo(): TelegramChatInfo = TelegramChatInfo(
 /**
  * Convert TgMessage to TelegramMediaItem if it contains media.
  * Returns null for non-media messages.
+ *
+ * ## v2 remoteId-First Architecture
+ *
+ * Per `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`:
+ * - Only `remoteId` is stored (stable across sessions)
+ * - `fileId` and `uniqueId` are NOT stored (volatile/redundant)
+ * - Uses `thumbRemoteId` for thumbnail references
  */
 private fun TgMessage.toMediaItem(): TelegramMediaItem? {
     val timestampMs = date.toLong() * 1000L
@@ -125,8 +132,6 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             chatId = chatId,
             messageId = id,
             mediaType = TelegramMediaType.VIDEO,
-            fileId = content.fileId,
-            fileUniqueId = content.uniqueId,
             remoteId = content.remoteId,
             title = content.caption ?: content.fileName ?: "",
             fileName = content.fileName,
@@ -136,8 +141,7 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             durationSecs = content.duration,
             width = content.width,
             height = content.height,
-            thumbnailFileId = content.thumbnail?.fileId?.toString(),
-            thumbnailUniqueId = content.thumbnail?.uniqueId,
+            thumbRemoteId = content.thumbnail?.remoteId,
             thumbnailWidth = content.thumbnail?.width,
             thumbnailHeight = content.thumbnail?.height,
             minithumbnailBytes = content.minithumbnail?.data,
@@ -158,16 +162,13 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                 chatId = chatId,
                 messageId = id,
                 mediaType = mediaType,
-                fileId = content.fileId,
-                fileUniqueId = content.uniqueId,
                 remoteId = content.remoteId,
                 title = content.caption ?: content.fileName ?: "",
                 fileName = content.fileName,
                 caption = content.caption,
                 mimeType = content.mimeType,
                 sizeBytes = content.fileSize,
-                thumbnailFileId = content.thumbnail?.fileId?.toString(),
-                thumbnailUniqueId = content.thumbnail?.uniqueId,
+                thumbRemoteId = content.thumbnail?.remoteId,
                 thumbnailWidth = content.thumbnail?.width,
                 thumbnailHeight = content.thumbnail?.height,
                 minithumbnailBytes = content.minithumbnail?.data,
@@ -182,8 +183,6 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             chatId = chatId,
             messageId = id,
             mediaType = TelegramMediaType.AUDIO,
-            fileId = content.fileId,
-            fileUniqueId = content.uniqueId,
             remoteId = content.remoteId,
             title = content.title ?: content.caption ?: content.fileName ?: "",
             fileName = content.fileName,
@@ -191,8 +190,7 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             mimeType = content.mimeType,
             sizeBytes = content.fileSize,
             durationSecs = content.duration,
-            thumbnailFileId = content.albumCoverThumbnail?.fileId?.toString(),
-            thumbnailUniqueId = content.albumCoverThumbnail?.uniqueId,
+            thumbRemoteId = content.albumCoverThumbnail?.remoteId,
             thumbnailWidth = content.albumCoverThumbnail?.width,
             thumbnailHeight = content.albumCoverThumbnail?.height,
             minithumbnailBytes = content.albumCoverMinithumbnail?.data,
@@ -210,8 +208,6 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                 chatId = chatId,
                 messageId = id,
                 mediaType = TelegramMediaType.PHOTO,
-                fileId = bestSize.fileId,
-                fileUniqueId = bestSize.uniqueId,
                 remoteId = bestSize.remoteId,
                 title = content.caption ?: "",
                 caption = content.caption,
@@ -222,8 +218,7 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                     TelegramPhotoSize(
                         width = size.width,
                         height = size.height,
-                        fileId = size.fileId.toString(),
-                        fileUniqueId = size.uniqueId,
+                        remoteId = size.remoteId,
                         sizeBytes = size.fileSize
                     )
                 },
@@ -239,8 +234,6 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             chatId = chatId,
             messageId = id,
             mediaType = TelegramMediaType.VIDEO, // Treat as video
-            fileId = content.fileId,
-            fileUniqueId = content.uniqueId,
             remoteId = content.remoteId,
             title = content.caption ?: content.fileName ?: "",
             fileName = content.fileName,
@@ -250,8 +243,7 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             durationSecs = content.duration,
             width = content.width,
             height = content.height,
-            thumbnailFileId = content.thumbnail?.fileId?.toString(),
-            thumbnailUniqueId = content.thumbnail?.uniqueId,
+            thumbRemoteId = content.thumbnail?.remoteId,
             thumbnailWidth = content.thumbnail?.width,
             thumbnailHeight = content.thumbnail?.height,
             minithumbnailBytes = content.minithumbnail?.data,
@@ -265,16 +257,13 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             chatId = chatId,
             messageId = id,
             mediaType = TelegramMediaType.VIDEO, // Treat as video
-            fileId = content.fileId,
-            fileUniqueId = content.uniqueId,
             remoteId = content.remoteId,
             title = "",
             sizeBytes = content.fileSize,
             durationSecs = content.duration,
             width = content.length,
             height = content.length,
-            thumbnailFileId = content.thumbnail?.fileId?.toString(),
-            thumbnailUniqueId = content.thumbnail?.uniqueId,
+            thumbRemoteId = content.thumbnail?.remoteId,
             thumbnailWidth = content.thumbnail?.width,
             thumbnailHeight = content.thumbnail?.height,
             minithumbnailBytes = content.minithumbnail?.data,
@@ -288,8 +277,6 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
             chatId = chatId,
             messageId = id,
             mediaType = TelegramMediaType.AUDIO,
-            fileId = content.fileId,
-            fileUniqueId = content.uniqueId,
             remoteId = content.remoteId,
             title = content.caption ?: "",
             caption = content.caption,

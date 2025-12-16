@@ -224,6 +224,22 @@ if [[ -n "$violations" ]]; then
 fi
 
 # ======================================================================
+# PIPELINE_GLOBALID_ASSIGNMENT_GUARD: Pipelines MUST NOT assign globalId
+# See docs/v2/MEDIA_NORMALIZATION_CONTRACT.md Section 2.1.1
+# ======================================================================
+echo "Running PIPELINE_GLOBALID_ASSIGNMENT_GUARD..."
+
+# Check for direct globalId assignment in pipelines (except empty string or comments)
+# Pattern: globalId = <anything except empty string>
+pipeline_globalid_violations=$(grep -rn "globalId[[:space:]]*=[[:space:]]*[^\"[:space:]]" pipeline/ --include="*.kt" 2>/dev/null | grep -v "//.*globalId" | grep -v "^[[:space:]]*\*" || true)
+if [[ -n "$pipeline_globalid_violations" ]]; then
+    echo "$pipeline_globalid_violations"
+    echo "❌ VIOLATION: Pipeline assigns globalId directly (must leave empty for normalizer)"
+    echo "   See docs/v2/MEDIA_NORMALIZATION_CONTRACT.md Section 2.1.1"
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
 # CONTRACT_SSOT_GUARD: Enforce docs/v2 as single source of truth
 # ======================================================================
 echo "Running CONTRACT_SSOT_GUARD..."

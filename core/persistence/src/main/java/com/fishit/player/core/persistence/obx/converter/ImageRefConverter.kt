@@ -59,11 +59,19 @@ class ImageRefConverter : PropertyConverter<ImageRef?, String?> {
 
 /**
  * Extension function for URI string conversion.
+ *
+ * ## v2 Format for TelegramThumb:
+ * `tg://thumb/<remoteId>?chatId=123&messageId=456`
+ *
+ * Note: remoteId is URL-encoded to handle special characters.
+ *
+ * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 private fun ImageRef.toUriString(): String = when (this) {
     is ImageRef.Http -> url
     is ImageRef.TelegramThumb -> buildString {
-        append("tg://thumb/$fileId/$uniqueId")
+        append("tg://thumb/")
+        append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
         val params = mutableListOf<String>()
         chatId?.let { params.add("chatId=$it") }
         messageId?.let { params.add("messageId=$it") }
@@ -105,19 +113,27 @@ private sealed class ImageRefDto {
         )
     }
 
+    /**
+     * Telegram thumbnail DTO for JSON serialization.
+     *
+     * ## v2 remoteId-First Architecture
+     *
+     * Uses only `remoteId` (stable across sessions).
+     * fileId is resolved at runtime via `getRemoteFile(remoteId)`.
+     *
+     * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
+     */
     @Serializable
     @SerialName("telegram")
     data class TelegramThumbDto(
-        val fileId: Int,
-        val uniqueId: String,
+        val remoteId: String,
         val chatId: Long? = null,
         val messageId: Long? = null,
         val preferredWidth: Int? = null,
         val preferredHeight: Int? = null,
     ) : ImageRefDto() {
         override fun toImageRef() = ImageRef.TelegramThumb(
-            fileId = fileId,
-            uniqueId = uniqueId,
+            remoteId = remoteId,
             chatId = chatId,
             messageId = messageId,
             preferredWidth = preferredWidth,
@@ -164,8 +180,7 @@ private sealed class ImageRefDto {
                 preferredHeight = ref.preferredHeight,
             )
             is ImageRef.TelegramThumb -> TelegramThumbDto(
-                fileId = ref.fileId,
-                uniqueId = ref.uniqueId,
+                remoteId = ref.remoteId,
                 chatId = ref.chatId,
                 messageId = ref.messageId,
                 preferredWidth = ref.preferredWidth,

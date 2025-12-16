@@ -114,15 +114,15 @@ The v2 Telegram transport architecture uses typed interfaces instead of exposing
 
 | Interface | Purpose | Status |
 |-----------|---------|--------|
-| `TelegramAuthClient` | Authentication operations | 🚧 Interface defined |
-| `TelegramHistoryClient` | Chat history, message fetching | 🚧 Interface defined |
-| `TelegramFileClient` | File download operations | 🚧 Interface defined |
-| `TelegramThumbFetcher` | Thumbnail fetching for Coil | ✅ Implemented |
+| `TelegramAuthClient` | Authentication operations | ✅ Complete |
+| `TelegramHistoryClient` | Chat history, message fetching | ✅ Complete |
+| `TelegramFileClient` | File download operations | ✅ Complete |
+| `TelegramThumbFetcher` | Thumbnail fetching for Coil | ✅ Complete |
 
 **Implementation:**
 - `DefaultTelegramClient` in `transport-telegram` owns TDLib state
 - Maps TDLib DTOs to `TgMessage`/`TgContent`/`TgThumbnail` wrapper types
-- v1 gold patterns (`T_TelegramServiceClient`, `T_TelegramSession`, `T_ChatBrowser`) extracted to `/legacy/gold/`
+- Core Auth State: `TdlibAuthState` in transport layer (distinct from `TelegramAuthState` contract)
 
 **NOT exposed to upper layers:**
 - TDLib types (`TdApi.*`)
@@ -158,8 +158,9 @@ Key docs:
 | Component | Status | Description |
 |-----------|--------|-------------|
 | `core:player-model` | ✅ Complete | `PlaybackContext`, `PlaybackState`, `SourceType` |
-| `player:internal` | ✅ Test-ready | `InternalPlayerSession`, `PlaybackSourceResolver`, `InternalPlayerEntry` |
-| `player:nextlib-codecs` | ✅ Integrated | FFmpeg codecs via `NextlibCodecConfigurator` |
+| `player:internal` | ✅ Phase 7/14 | `InternalPlayerSession`, Audio/Subtitle selection, FFmpeg codecs |
+| `player:miniplayer` | ✅ Complete | MiniPlayer state machine and overlay |
+| `player:nextlib-codecs` | ✅ Complete | FFmpeg codecs via `NextlibCodecConfigurator` |
 | Debug Playback | ✅ Working | `DebugPlaybackScreen` with Big Buck Bunny test stream |
 | `TelegramPlaybackSourceFactoryImpl` | ⏸️ Disabled | Awaiting `DefaultTelegramClient` in transport layer |
 | `XtreamPlaybackSourceFactoryImpl` | ⏸️ Disabled | Can be enabled when Xtream transport is wired |
@@ -248,12 +249,17 @@ See:
 
 ### 6.2 Cache
 
-- Log, Telegram, Xtream, FFMpegKit caches are managed via central cache modules in `/infra/cache/**`.
-- Cache operations are explicit actions (e.g. “Clear logs”, “Clear Telegram cache”, etc.).
+- Cache is distributed across modules:
+  - `infra/imaging` – Coil/ImageLoader cache
+  - `infra/work` – WorkManager for background sync/cleanup
+  - Transport modules – TDLib/HTTP response caches
+- Cache operations are explicit actions (e.g. "Clear logs", "Clear Telegram cache", etc.).
+
+> **Note:** A dedicated `infra/cache` module does not exist in v2.
+> Cache management is delegated to the owning infrastructure modules.
 
 See:
 
-- `docs/v2/cache/**` (when present)
 - `docs/v2/LOGGING_CONTRACT_V2.md` and logging-related docs.
 
 ---
