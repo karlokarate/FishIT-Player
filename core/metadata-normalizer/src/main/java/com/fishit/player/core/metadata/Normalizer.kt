@@ -1,6 +1,5 @@
 package com.fishit.player.core.metadata
 
-import com.fishit.player.core.model.GlobalIdUtil
 import com.fishit.player.core.model.MediaVariant
 import com.fishit.player.core.model.NormalizedMedia
 import com.fishit.player.core.model.QualityTags
