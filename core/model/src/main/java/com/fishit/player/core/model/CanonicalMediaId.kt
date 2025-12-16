@@ -1,5 +1,7 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.CanonicalId
+
 /**
  * Canonical media identity used for cross-pipeline unification.
  *
@@ -18,7 +20,7 @@ package com.fishit.player.core.model
  */
 data class CanonicalMediaId(
     val kind: MediaKind,
-    val key: String,
+    val key: CanonicalId,
 )
 
 /**

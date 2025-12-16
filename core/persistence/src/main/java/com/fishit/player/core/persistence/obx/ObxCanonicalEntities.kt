@@ -256,7 +256,7 @@ object CanonicalKeyGenerator {
     private const val EPISODE_PREFIX = "episode:"
 
     /** Generate canonical key from TMDB ID (preferred). */
-    fun fromTmdbId(tmdbId: String): String = "$TMDB_PREFIX$tmdbId"
+    fun fromTmdbId(tmdbId: com.fishit.player.core.model.ids.TmdbId): String = "$TMDB_PREFIX${tmdbId.value}"
 
     /** Generate canonical key for a movie without TMDB ID. Uses normalized title + year. */
     fun forMovie(canonicalTitle: String, year: Int?): String {

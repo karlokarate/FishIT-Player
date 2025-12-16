@@ -1,5 +1,7 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.TmdbId
+
 /**
  * Normalized media metadata after processing by the metadata normalizer.
  *
@@ -36,7 +38,7 @@ data class NormalizedMediaMetadata(
         val year: Int? = null,
         val season: Int? = null,
         val episode: Int? = null,
-        val tmdbId: String? = null,
+        val tmdbId: TmdbId? = null,
         val externalIds: ExternalIds = ExternalIds(),
         // === Imaging Fields (v2) ===
         val poster: ImageRef? = null,

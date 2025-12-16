@@ -1,5 +1,7 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.PipelineItemId
+
 /**
  * Reference to a specific media source (version) linked to a canonical media work.
  *
@@ -33,7 +35,7 @@ package com.fishit.player.core.model
  */
 data class MediaSourceRef(
         val sourceType: SourceType,
-        val sourceId: String,
+        val sourceId: PipelineItemId,
         val sourceLabel: String,
         val quality: MediaQuality? = null,
         val languages: LanguageInfo? = null,

@@ -1,6 +1,7 @@
 package com.fishit.player.core.metadata
 
-import java.security.MessageDigest
+import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.ids.CanonicalId
 
 /**
  * Utility for generating deterministic global IDs across pipelines.
@@ -9,15 +10,16 @@ import java.security.MessageDigest
  * share the same globalId, allowing the normalizer to merge them as variants of a single
  * NormalizedMedia.
  *
- * **Algorithm:**
+ * **Algorithm (contract-aligned fallback):**
  * 1. Normalize title (lowercase, collapse spaces, strip obvious scene tags)
- * 2. Compose base string: `<normalizedTitle>|<year-or-unknown>`
- * 3. SHA-256 hash the base string
- * 4. Return `"cm:" + first 16 hex chars` ("cm" = canonical media)
+ * 2. Normalize for key (letters/digits only, spaces → hyphen, collapse hyphens)
+ * 3. Return canonical key in contract format:
+ *    - Episode fallback: `"episode:<title>:S<season>E<episode>"`
+ *    - Movie fallback: `"movie:<title>[:<year>]"`
  *
  * **Examples:**
- * - `"Breaking Bad"` (2008) → `"cm:a1b2c3d4e5f6g7h8"`
- * - `"Breaking.Bad.2008.1080p.BluRay.x264-GROUP"` (2008) → same hash after normalization
+ * - `"Breaking Bad"` (2008, S05E16) → `"episode:breaking-bad:S05E16"`
+ * - `"Inception"` (2010) → `"movie:inception:2010"`
  */
 object GlobalIdUtil {
 
@@ -33,15 +35,30 @@ object GlobalIdUtil {
      *
      * @param originalTitle The raw title from the source (will be normalized)
      * @param year Release year if known, null otherwise
-     * @return Canonical ID in format `"cm:<16-char-hex>"`
+     * @param season Season number for episodes when available
+     * @param episode Episode number for episodes when available
+     * @param mediaType Media type hint to disambiguate fallback formatting
+     * @return Contract canonical ID (tmdb:<id> or movie:/episode: fallback)
      */
-    fun generateCanonicalId(originalTitle: String, year: Int?): String {
+    fun generateCanonicalId(
+            originalTitle: String,
+            year: Int?,
+            season: Int? = null,
+            episode: Int? = null,
+            mediaType: MediaType = MediaType.UNKNOWN,
+    ): CanonicalId {
         val normalizedTitle = normalizeTitle(originalTitle)
-        val yearPart = year?.toString() ?: "unknown"
-        val baseString = "$normalizedTitle|$yearPart"
+        val titleForKey = normalizeForKey(normalizedTitle)
 
-        val hash = sha256(baseString)
-        return "cm:${hash.take(16)}"
+        return if (season != null && episode != null) {
+            CanonicalId(
+                    "episode:${titleForKey}:S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}"
+            )
+        } else {
+            val yearPart = year?.let { ":$it" } ?: ""
+            val prefix = if (mediaType == MediaType.SERIES_EPISODE) "episode" else "movie"
+            CanonicalId("$prefix:${titleForKey}$yearPart")
+        }
     }
 
     /**
@@ -63,10 +80,16 @@ object GlobalIdUtil {
                 .trim()
     }
 
-    /** Compute SHA-256 hash and return as hex string. */
-    private fun sha256(input: String): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(input.toByteArray(Charsets.UTF_8))
-        return digest.joinToString("") { "%02x".format(it) }
-    }
+    /**
+     * Normalize a title string for canonical key composition.
+     * - Lowercase
+     * - Replace non-alphanumeric characters with hyphens
+     * - Collapse multiple hyphens
+     */
+    internal fun normalizeForKey(title: String): String =
+            title.lowercase()
+                    .replace(Regex("[^a-z0-9\\s-]"), "")
+                    .replace(Regex("\\s+"), "-")
+                    .replace(Regex("-+"), "-")
+                    .trim('-')
 }

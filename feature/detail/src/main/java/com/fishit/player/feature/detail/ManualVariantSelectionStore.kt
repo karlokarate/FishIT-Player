@@ -2,6 +2,7 @@ package com.fishit.player.feature.detail
 
 import com.fishit.player.core.model.MediaVariant
 import com.fishit.player.core.model.SourceKey
+import com.fishit.player.core.model.ids.CanonicalId
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 object ManualVariantSelectionStore {
 
     /** User-selected variant overrides, keyed by globalId. */
-    private val overrides = ConcurrentHashMap<String, SourceKey>()
+    private val overrides = ConcurrentHashMap<CanonicalId, SourceKey>()
 
     /**
      * Set a manual override for a media item.
@@ -31,7 +32,7 @@ object ManualVariantSelectionStore {
      * @param globalId The media's canonical global ID
      * @param sourceKey The user-selected variant's source key
      */
-    fun setOverride(globalId: String, sourceKey: SourceKey) {
+    fun setOverride(globalId: CanonicalId, sourceKey: SourceKey) {
         overrides[globalId] = sourceKey
     }
 
@@ -41,7 +42,7 @@ object ManualVariantSelectionStore {
      * @param globalId The media's canonical global ID
      * @return User-selected SourceKey, or null if no override
      */
-    fun getOverride(globalId: String): SourceKey? {
+    fun getOverride(globalId: CanonicalId): SourceKey? {
         return overrides[globalId]
     }
 
@@ -51,7 +52,7 @@ object ManualVariantSelectionStore {
      * @param globalId The media's canonical global ID
      * @return true if user has selected a specific variant
      */
-    fun hasOverride(globalId: String): Boolean {
+    fun hasOverride(globalId: CanonicalId): Boolean {
         return overrides.containsKey(globalId)
     }
 
@@ -60,7 +61,7 @@ object ManualVariantSelectionStore {
      *
      * @param globalId The media's canonical global ID
      */
-    fun clearOverride(globalId: String) {
+    fun clearOverride(globalId: CanonicalId) {
         overrides.remove(globalId)
     }
 
@@ -76,7 +77,7 @@ object ManualVariantSelectionStore {
      * @param variants List of variants to reorder
      * @return Reordered list with override first, or original list if no override
      */
-    fun applyOverride(globalId: String, variants: List<MediaVariant>): List<MediaVariant> {
+    fun applyOverride(globalId: CanonicalId, variants: List<MediaVariant>): List<MediaVariant> {
         val override = getOverride(globalId) ?: return variants
 
         val overrideVariant = variants.find { it.sourceKey == override } ?: return variants

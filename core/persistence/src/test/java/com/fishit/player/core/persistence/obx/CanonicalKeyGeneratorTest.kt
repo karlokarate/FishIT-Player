@@ -1,5 +1,6 @@
 package com.fishit.player.core.persistence.obx
 
+import com.fishit.player.core.model.ids.TmdbId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,14 +13,14 @@ class CanonicalKeyGeneratorTest {
 
     @Test
     fun `generates TMDB key correctly`() {
-        val key = CanonicalKeyGenerator.fromTmdbId("550")
+        val key = CanonicalKeyGenerator.fromTmdbId(TmdbId(550))
         assertEquals("tmdb:550", key)
     }
 
     @Test
     fun `generates TMDB key for TV show`() {
-        val key = CanonicalKeyGenerator.fromTmdbId("tv:1399")
-        assertEquals("tmdb:tv:1399", key)
+        val key = CanonicalKeyGenerator.fromTmdbId(TmdbId(1399))
+        assertEquals("tmdb:1399", key)
     }
 
     // ========== Movie Key Generation ==========

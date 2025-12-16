@@ -1,5 +1,8 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.CanonicalId
+import com.fishit.player.core.model.ids.PipelineItemId
+
 /**
  * Normalized media representation after cross-pipeline merge.
  *
@@ -16,7 +19,7 @@ package com.fishit.player.core.model
  * - Variant 2: Xtream HD German
  * - Variant 3: Telegram SD English OmU
  *
- * @property globalId Canonical ID shared across pipelines (format: "cm:<16-char-hex>")
+ * @property globalId Canonical ID shared across pipelines (tmdb:<id> or movie:/episode: fallback)
  * @property title Normalized/cleaned title for display
  * @property year Release year if known
  * @property mediaType Content type (MOVIE, SERIES_EPISODE, etc.)
@@ -25,12 +28,12 @@ package com.fishit.player.core.model
  * @property variants All available playback variants, ordered by preference (best first)
  */
 data class NormalizedMedia(
-        val globalId: String,
+        val globalId: CanonicalId,
         val title: String,
         val year: Int?,
         val mediaType: MediaType,
         val primaryPipelineIdTag: PipelineIdTag,
-        val primarySourceId: String,
+        val primarySourceId: PipelineItemId,
         val variants: MutableList<MediaVariant>,
 ) {
     init {

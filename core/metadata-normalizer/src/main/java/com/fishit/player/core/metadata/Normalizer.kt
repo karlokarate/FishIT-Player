@@ -9,6 +9,8 @@ import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.VariantHealthStore
 import com.fishit.player.core.model.VariantPreferences
 import com.fishit.player.core.model.VariantSelector
+import com.fishit.player.core.model.ids.asCanonicalId
+import com.fishit.player.core.model.ids.asPipelineItemId
 
 /**
  * Cross-pipeline normalizer that merges RawMediaMetadata from multiple sources into deduplicated
@@ -45,9 +47,17 @@ object Normalizer {
                 rawItems.groupBy { raw ->
                     raw.globalId.ifEmpty {
                         // Fallback if globalId wasn't set by pipeline
-                        GlobalIdUtil.generateCanonicalId(raw.originalTitle, raw.year)
+                        GlobalIdUtil
+                                .generateCanonicalId(
+                                        originalTitle = raw.originalTitle,
+                                        year = raw.year,
+                                        season = raw.season,
+                                        episode = raw.episode,
+                                        mediaType = raw.mediaType,
+                                )
+                                .value
                     }
-                }
+                }.mapKeys { (key, _) -> key.asCanonicalId() }
 
         return groupedByGlobalId.mapNotNull { (globalId, group) ->
             if (group.isEmpty()) return@mapNotNull null
@@ -84,7 +94,7 @@ object Normalizer {
 
     /** Convert a RawMediaMetadata to a MediaVariant. */
     private fun RawMediaMetadata.toMediaVariant(): MediaVariant? {
-        val sourceKey = SourceKey(pipelineIdTag, sourceId)
+        val sourceKey = SourceKey(pipelineIdTag, sourceId.asPipelineItemId())
 
         // Skip permanently dead variants to avoid resurfacing bad sources
         if (VariantHealthStore.isPermanentlyDead(sourceKey)) {

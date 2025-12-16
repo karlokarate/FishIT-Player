@@ -16,6 +16,19 @@ Das Canonical Media System ermöglicht die **Vereinheitlichung von Medieninhalte
 | **Source Selection** | Benutzer wählt die bevorzugte Version (Qualität/Sprache) |
 | **Visual Tagging** | Badges zeigen Pipeline-Herkunft (TG, XC, Local, etc.) |
 
+### Typisierte IDs (v2)
+
+Zur Vermeidung von Verwechslungen zwischen unterschiedlichen ID-Quellen werden die zentralen IDs in
+`core/model/src/main/java/com/fishit/player/core/model/ids/` als `@JvmInline` Value Classes geführt:
+
+- `CanonicalId` (String)
+- `PipelineItemId` (String)
+- `RemoteId` (String)
+- `TmdbId` (Int)
+
+Die Value Classes kapseln lediglich die bestehenden Rohwerte; Persistenz- und Netzwerkformate bleiben
+unverändert (Strings/Ints werden weiterhin in ObjectBox/JSON gespeichert).
+
 ---
 
 ## ⚠️ WICHTIG: Gleicher Film ≠ Identische Datei
@@ -125,7 +138,7 @@ val xtreamPosition = 0.75f * 7_500_000 = 5_625_000    // 1:33:45 (!)
 1. **TMDB ID** (höchste Priorität)
    ```
    tmdb:550          // Fight Club (Movie)
-   tmdb:tv:1399      // Game of Thrones (Series)
+   tmdb:1399         // Game of Thrones (Series)
    ```
 
 2. **Title + Year** (Fallback für Movies ohne TMDB)

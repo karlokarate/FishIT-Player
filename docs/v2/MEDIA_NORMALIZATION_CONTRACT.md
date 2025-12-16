@@ -127,6 +127,11 @@ data class CanonicalMediaId(
      - `CanonicalMediaId.key = "episode:<canonicalTitle>:S<season>E<episode>"`
 3. If neither of the above is available, the item **cannot** be assigned a stable `CanonicalMediaId` and must be treated as unlinked for canonical features.
 
+> **Implementation note (v2):** The concrete ID wrappers live in
+> `core/model/src/main/java/com/fishit/player/core/model/ids/` as Kotlin value classes
+> (`CanonicalId`, `PipelineItemId`, `RemoteId`, `TmdbId`). These wrappers preserve the existing
+> String/Int storage formats while preventing accidental ID mix-ups at compile time.
+
 ---
 
 ## 2. Module Responsibilities

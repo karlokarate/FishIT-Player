@@ -13,6 +13,10 @@ import com.fishit.player.core.model.repository.CanonicalMediaStats
 import com.fishit.player.core.model.repository.CanonicalMediaWithResume
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
+import com.fishit.player.core.model.ids.toTmdbIdOrNull
+import com.fishit.player.core.model.ids.CanonicalId
+import com.fishit.player.core.model.ids.PipelineItemId
+import com.fishit.player.core.model.ids.asCanonicalId
 import com.fishit.player.core.persistence.obx.CanonicalKeyGenerator
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia_
@@ -88,7 +92,7 @@ constructor(
                                                 year = normalized.year ?: existing.year,
                                                 season = normalized.season ?: existing.season,
                                                 episode = normalized.episode ?: existing.episode,
-                                                tmdbId = normalized.externalIds.tmdbId
+                                                tmdbId = normalized.externalIds.tmdbId?.value?.toString()
                                                                 ?: existing.tmdbId,
                                                 imdbId = normalized.externalIds.imdbId
                                                                 ?: existing.imdbId,
@@ -101,7 +105,7 @@ constructor(
                                         kind =
                                                 if (kind == "episode") MediaKind.EPISODE
                                                 else MediaKind.MOVIE,
-                                        key = canonicalKey
+                                        key = canonicalKey.asCanonicalId()
                                 )
                         } else {
                                 // Create new entry
@@ -115,7 +119,7 @@ constructor(
                                                 year = normalized.year,
                                                 season = normalized.season,
                                                 episode = normalized.episode,
-                                                tmdbId = normalized.externalIds.tmdbId,
+                                                tmdbId = normalized.externalIds.tmdbId?.value?.toString(),
                                                 imdbId = normalized.externalIds.imdbId,
                                                 tvdbId = normalized.externalIds.tvdbId,
                                                 createdAt = now,
@@ -126,7 +130,7 @@ constructor(
                                         kind =
                                                 if (kind == "episode") MediaKind.EPISODE
                                                 else MediaKind.MOVIE,
-                                        key = canonicalKey
+                                        key = canonicalKey.asCanonicalId()
                                 )
                         }
                 }
@@ -141,7 +145,7 @@ constructor(
                                 canonicalBox
                                         .query(
                                                 ObxCanonicalMedia_.canonicalKey.equal(
-                                                        canonicalId.key
+                                                        canonicalId.key.value
                                                 )
                                         )
                                         .build()
@@ -151,7 +155,7 @@ constructor(
                         // Check for existing source
                         val existing =
                                 sourceBox
-                                        .query(ObxMediaSourceRef_.sourceId.equal(source.sourceId))
+                                        .query(ObxMediaSourceRef_.sourceId.equal(source.sourceId.value))
                                         .build()
                                         .findFirst()
 
@@ -181,7 +185,7 @@ constructor(
                                 val newRef =
                                         ObxMediaSourceRef(
                                                 sourceType = source.sourceType.name,
-                                                sourceId = source.sourceId,
+                                                sourceId = source.sourceId.value,
                                                 sourceLabel = source.sourceLabel,
                                                 qualityJson =
                                                         source.quality?.let { encodeQuality(it) },
@@ -200,11 +204,11 @@ constructor(
                         }
                 }
 
-        override suspend fun removeSourceRef(sourceId: String): Unit =
+        override suspend fun removeSourceRef(sourceId: com.fishit.player.core.model.ids.PipelineItemId): Unit =
                 withContext(Dispatchers.IO) {
                         val source =
                                 sourceBox
-                                        .query(ObxMediaSourceRef_.sourceId.equal(sourceId))
+                                        .query(ObxMediaSourceRef_.sourceId.equal(sourceId.value))
                                         .build()
                                         .findFirst()
                         source?.let { sourceBox.remove(it) }
@@ -221,7 +225,7 @@ constructor(
                                 canonicalBox
                                         .query(
                                                 ObxCanonicalMedia_.canonicalKey.equal(
-                                                        canonicalId.key
+                                                        canonicalId.key.value
                                                 )
                                         )
                                         .build()
@@ -232,7 +236,7 @@ constructor(
                 }
 
         override suspend fun findByExternalId(
-                tmdbId: String?,
+                tmdbId: com.fishit.player.core.model.ids.TmdbId?,
                 imdbId: String?,
                 tvdbId: String?,
         ): CanonicalMediaWithSources? =
@@ -242,11 +246,11 @@ constructor(
                                 when {
                                         tmdbId != null ->
                                                 canonicalBox
-                                                        .query(
-                                                                ObxCanonicalMedia_.tmdbId.equal(
-                                                                        tmdbId
-                                                                )
-                                                        )
+                                        .query(
+                                                ObxCanonicalMedia_.tmdbId.equal(
+                                                        tmdbId.value.toString()
+                                                )
+                                        )
                                                         .build()
                                                         .findFirst()
                                         imdbId != null ->
@@ -309,11 +313,11 @@ constructor(
                         query.build().find().mapNotNull { toCanonicalMediaWithSources(it) }
                 }
 
-        override suspend fun findBySourceId(sourceId: String): CanonicalMediaWithSources? =
+        override suspend fun findBySourceId(sourceId: com.fishit.player.core.model.ids.PipelineItemId): CanonicalMediaWithSources? =
                 withContext(Dispatchers.IO) {
                         val source =
                                 sourceBox
-                                        .query(ObxMediaSourceRef_.sourceId.equal(sourceId))
+                                        .query(ObxMediaSourceRef_.sourceId.equal(sourceId.value))
                                         .build()
                                         .findFirst()
                                         ?: return@withContext null
@@ -330,7 +334,7 @@ constructor(
                                 canonicalBox
                                         .query(
                                                 ObxCanonicalMedia_.canonicalKey.equal(
-                                                        canonicalId.key
+                                                        canonicalId.key.value
                                                 )
                                         )
                                         .build()
@@ -385,7 +389,7 @@ constructor(
                         resumeBox
                                 .query(
                                         ObxCanonicalResumeMark_.canonicalKey
-                                                .equal(canonicalId.key)
+                                                .equal(canonicalId.key.value)
                                                 .and(
                                                         ObxCanonicalResumeMark_.profileId.equal(
                                                                 profileId
@@ -419,7 +423,7 @@ constructor(
                                 resumeBox
                                         .query(
                                                 ObxCanonicalResumeMark_.canonicalKey
-                                                        .equal(canonicalId.key)
+                                                        .equal(canonicalId.key.value)
                                                         .and(
                                                                 ObxCanonicalResumeMark_.profileId
                                                                         .equal(profileId)
@@ -435,7 +439,7 @@ constructor(
                                                 positionMs = positionMs,
                                                 durationMs = durationMs,
                                                 lastSourceType = sourceRef.sourceType.name,
-                                                lastSourceId = sourceRef.sourceId,
+                                                lastSourceId = sourceRef.sourceId.value,
                                                 lastSourceDurationMs = durationMs,
                                                 updatedAt = now,
                                         )
@@ -443,13 +447,13 @@ constructor(
                         } else {
                                 val newResume =
                                         ObxCanonicalResumeMark(
-                                                canonicalKey = canonicalId.key,
+                                                canonicalKey = canonicalId.key.value,
                                                 profileId = profileId,
                                                 positionPercent = positionPercent,
                                                 positionMs = positionMs,
                                                 durationMs = durationMs,
                                                 lastSourceType = sourceRef.sourceType.name,
-                                                lastSourceId = sourceRef.sourceId,
+                                                lastSourceId = sourceRef.sourceId.value,
                                                 lastSourceDurationMs = durationMs,
                                                 updatedAt = now,
                                         )
@@ -467,7 +471,7 @@ constructor(
                                 resumeBox
                                         .query(
                                                 ObxCanonicalResumeMark_.canonicalKey
-                                                        .equal(canonicalId.key)
+                                                        .equal(canonicalId.key.value)
                                                         .and(
                                                                 ObxCanonicalResumeMark_.profileId
                                                                         .equal(profileId)
@@ -496,7 +500,7 @@ constructor(
                         resumeBox
                                 .query(
                                         ObxCanonicalResumeMark_.canonicalKey
-                                                .equal(canonicalId.key)
+                                                .equal(canonicalId.key.value)
                                                 .and(
                                                         ObxCanonicalResumeMark_.profileId.equal(
                                                                 profileId
@@ -574,7 +578,7 @@ constructor(
                                 canonicalBox
                                         .query(
                                                 ObxCanonicalMedia_.canonicalKey.equal(
-                                                        canonicalId.key
+                                                        canonicalId.key.value
                                                 )
                                         )
                                         .build()
@@ -679,12 +683,12 @@ constructor(
                 val sources = canonical.sources.map { toMediaSourceRef(it) }
 
                         return CanonicalMediaWithSources(
-                        canonicalId = CanonicalMediaId(kind, canonical.canonicalKey),
+                        canonicalId = CanonicalMediaId(kind, canonical.canonicalKey.asCanonicalId()),
                         canonicalTitle = canonical.canonicalTitle,
                         year = canonical.year,
                         season = canonical.season,
                         episode = canonical.episode,
-                        tmdbId = canonical.tmdbId,
+                        tmdbId = canonical.tmdbId?.toTmdbIdOrNull(),
                         imdbId = canonical.imdbId,
                         poster = canonical.poster,
                         backdrop = canonical.backdrop,
@@ -707,7 +711,7 @@ constructor(
 
                 return MediaSourceRef(
                         sourceType = sourceType,
-                        sourceId = obx.sourceId,
+                        sourceId = PipelineItemId(obx.sourceId),
                         sourceLabel = obx.sourceLabel,
                         quality = obx.qualityJson?.let { decodeQuality(it) },
                         languages = obx.languagesJson?.let { decodeLanguages(it) },
@@ -731,12 +735,12 @@ constructor(
                         }
 
                 return CanonicalResumeInfo(
-                        canonicalKey = obx.canonicalKey,
+                        canonicalKey = obx.canonicalKey.asCanonicalId(),
                         progressPercent = progress,
                         positionMs = obx.positionMs,
                         durationMs = obx.durationMs,
                         lastSourceType = obx.lastSourceType,
-                        lastSourceId = obx.lastSourceId,
+                        lastSourceId = obx.lastSourceId?.let(::PipelineItemId),
                         lastSourceDurationMs = obx.lastSourceDurationMs,
                         isCompleted = obx.isCompleted,
                         watchedCount = obx.watchedCount,

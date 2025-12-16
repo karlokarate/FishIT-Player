@@ -2,6 +2,7 @@ package com.fishit.player.core.metadata
 
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.ids.TmdbId
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -69,15 +70,15 @@ class DefaultTmdbMetadataResolverTest {
                     year = 1999,
                     season = null,
                     episode = null,
-                    tmdbId = "603",
-                    externalIds = ExternalIds(tmdbId = "603"),
+                    tmdbId = TmdbId(603),
+                    externalIds = ExternalIds(tmdbId = TmdbId(603)),
                 )
 
             // When: enriching
             val enriched = resolver.enrich(normalized)
 
             // Then: TMDB ID is preserved
-            assertEquals("603", enriched.tmdbId)
+            assertEquals(TmdbId(603), enriched.tmdbId)
             assertEquals(normalized, enriched)
         }
 }

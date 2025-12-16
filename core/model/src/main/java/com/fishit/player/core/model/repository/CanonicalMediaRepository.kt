@@ -5,6 +5,9 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.ids.CanonicalId
+import com.fishit.player.core.model.ids.PipelineItemId
+import com.fishit.player.core.model.ids.TmdbId
 
 /**
  * Repository interface for managing canonical media identity and cross-pipeline unification.
@@ -53,7 +56,7 @@ interface CanonicalMediaRepository {
      *
      * @param sourceId The unique source identifier to remove
      */
-    suspend fun removeSourceRef(sourceId: String)
+    suspend fun removeSourceRef(sourceId: PipelineItemId)
 
     // ========== Query Operations ==========
 
@@ -74,7 +77,7 @@ interface CanonicalMediaRepository {
      * @return The media with all linked sources, or null if not found
      */
     suspend fun findByExternalId(
-            tmdbId: String? = null,
+            tmdbId: TmdbId? = null,
             imdbId: String? = null,
             tvdbId: String? = null,
     ): CanonicalMediaWithSources?
@@ -103,7 +106,7 @@ interface CanonicalMediaRepository {
      * @param sourceId The pipeline-specific source identifier
      * @return The canonical media with all linked sources, or null
      */
-    suspend fun findBySourceId(sourceId: String): CanonicalMediaWithSources?
+    suspend fun findBySourceId(sourceId: PipelineItemId): CanonicalMediaWithSources?
 
     /**
      * Get all sources for a canonical media work.
@@ -224,7 +227,7 @@ data class CanonicalMediaWithSources(
         val year: Int?,
         val season: Int?,
         val episode: Int?,
-        val tmdbId: String?,
+        val tmdbId: TmdbId?,
         val imdbId: String?,
         val poster: ImageRef?,
         val backdrop: ImageRef?,
@@ -261,7 +264,7 @@ data class CanonicalMediaWithSources(
  * 3. If different: calculate position = `progressPercent * newSourceDuration`
  */
 data class CanonicalResumeInfo(
-        val canonicalKey: String,
+        val canonicalKey: CanonicalId,
         /** Percentage position (0.0 - 1.0) - PRIMARY for cross-source resume */
         val progressPercent: Float,
         /** Position in ms from LAST source played (use only for same-source resume) */
@@ -271,7 +274,7 @@ data class CanonicalResumeInfo(
         /** Last pipeline type used */
         val lastSourceType: String?,
         /** Last source ID used (for same-source detection) */
-        val lastSourceId: String?,
+        val lastSourceId: PipelineItemId?,
         /** Duration of last source in ms (for conversion calculations) */
         val lastSourceDurationMs: Long?,
         val isCompleted: Boolean,
@@ -290,7 +293,7 @@ data class CanonicalResumeInfo(
      * @return Pair of (positionMs, isExact) - isExact=true if same source with frame-accurate
      * resume
      */
-    fun calculatePositionForSource(sourceId: String, sourceDurationMs: Long): ResumePosition {
+    fun calculatePositionForSource(sourceId: PipelineItemId, sourceDurationMs: Long): ResumePosition {
         return if (sourceId == lastSourceId && lastSourceDurationMs == sourceDurationMs) {
             // Same source with same duration - use exact position
             ResumePosition(positionMs = positionMs, isExact = true, note = null)
