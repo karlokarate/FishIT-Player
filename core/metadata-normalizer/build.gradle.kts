@@ -25,6 +25,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:scene-name-parser"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
