@@ -18,12 +18,11 @@ import com.fishit.player.core.scenenameparser.api.TmdbType
  * 5. Result assembly: Build ParsedReleaseName from extracted components
  */
 class DefaultSceneNameParser : SceneNameParser {
-
     override fun parse(input: SceneNameInput): SceneNameParseResult {
         try {
             // Step 1: Pre-normalization
             val normalized = preNormalize(input.raw, input.sourceHint)
-            
+
             if (normalized.isBlank()) {
                 return SceneNameParseResult.Unparsed("Empty input after normalization")
             }
@@ -42,22 +41,23 @@ class DefaultSceneNameParser : SceneNameParser {
                 return SceneNameParseResult.Unparsed("No title found")
             }
 
-            val parsed = ParsedReleaseName(
-                title = components.title,
-                year = components.year,
-                season = components.season,
-                episode = components.episode,
-                episodeTitle = components.episodeTitle,
-                resolution = components.resolution,
-                source = components.source,
-                videoCodec = components.videoCodec,
-                audioCodec = components.audioCodec,
-                language = components.language,
-                releaseGroup = components.releaseGroup,
-                tmdbId = tmdbInfo.id,
-                tmdbType = tmdbInfo.type,
-                tmdbUrl = tmdbInfo.url,
-            )
+            val parsed =
+                ParsedReleaseName(
+                    title = components.title,
+                    year = components.year,
+                    season = components.season,
+                    episode = components.episode,
+                    episodeTitle = components.episodeTitle,
+                    resolution = components.resolution,
+                    source = components.source,
+                    videoCodec = components.videoCodec,
+                    audioCodec = components.audioCodec,
+                    language = components.language,
+                    releaseGroup = components.releaseGroup,
+                    tmdbId = tmdbInfo.id,
+                    tmdbType = tmdbInfo.type,
+                    tmdbUrl = tmdbInfo.url,
+                )
 
             return SceneNameParseResult.Parsed(parsed)
         } catch (e: Exception) {
@@ -68,7 +68,10 @@ class DefaultSceneNameParser : SceneNameParser {
     /**
      * Pre-normalize and sanitize input.
      */
-    private fun preNormalize(raw: String, sourceHint: SourceHint): String {
+    private fun preNormalize(
+        raw: String,
+        sourceHint: SourceHint,
+    ): String {
         var text = raw.trim()
 
         // Remove TMDB URLs/tags first (they interfere with parsing)
@@ -81,12 +84,12 @@ class DefaultSceneNameParser : SceneNameParser {
         if (sourceHint == SourceHint.TELEGRAM) {
             // Remove emojis (basic approach - remove common emoji ranges)
             text = text.replace(Regex("[\\p{So}\\p{Sk}]+"), " ")
-            
+
             // Remove Telegram noise
             text = text.replace(Regex("@[a-zA-Z0-9_]+"), "") // @channel
             text = text.replace(Regex("t\\.me/[^\\s]+"), "")
             text = text.replace(Regex("Telegram:\\s*"), "")
-            
+
             // Remove known non-semantic bracket tags
             text = text.replace(Regex("\\[TGx\\]"), "")
             text = text.replace(Regex("\\[NF\\]"), "")
@@ -142,17 +145,18 @@ class DefaultSceneNameParser : SceneNameParser {
     /**
      * Tokenize normalized string.
      */
+    @Suppress("CyclomaticComplexMethod") // Inherently complex due to pattern matching
     private fun tokenize(normalized: String): List<Token> {
         val tokens = mutableListOf<Token>()
-        
+
         // Split on dots, spaces, and dashes (carefully for release groups)
         // Keep compound tokens intact: S01E02, 1x02, DDP5.1, H.264, DTS-HD, etc.
-        
+
         val parts = normalized.split(Regex("[.\\s]+"))
-        
+
         for (part in parts) {
             if (part.isBlank()) continue
-            
+
             // Check for episode pattern: S01E02, S1E2, 1x02
             val episodePattern = Regex("S(\\d{1,2})E(\\d{1,3})", RegexOption.IGNORE_CASE)
             val episodeMatch = episodePattern.find(part)
@@ -312,15 +316,45 @@ class DefaultSceneNameParser : SceneNameParser {
     )
 
     private sealed class Token {
-        data class Word(val value: String) : Token()
-        data class Episode(val season: Int?, val episode: Int?) : Token()
-        data class Year(val value: Int) : Token()
-        data class Resolution(val value: String) : Token()
-        data class Source(val value: String) : Token()
-        data class VideoCodec(val value: String) : Token()
-        data class AudioCodec(val value: String) : Token()
-        data class Language(val value: String) : Token()
-        data class ReleaseGroup(val value: String) : Token()
-        data class StreamingService(val value: String) : Token()
+        data class Word(
+            val value: String,
+        ) : Token()
+
+        data class Episode(
+            val season: Int?,
+            val episode: Int?,
+        ) : Token()
+
+        data class Year(
+            val value: Int,
+        ) : Token()
+
+        data class Resolution(
+            val value: String,
+        ) : Token()
+
+        data class Source(
+            val value: String,
+        ) : Token()
+
+        data class VideoCodec(
+            val value: String,
+        ) : Token()
+
+        data class AudioCodec(
+            val value: String,
+        ) : Token()
+
+        data class Language(
+            val value: String,
+        ) : Token()
+
+        data class ReleaseGroup(
+            val value: String,
+        ) : Token()
+
+        data class StreamingService(
+            val value: String,
+        ) : Token()
     }
 }

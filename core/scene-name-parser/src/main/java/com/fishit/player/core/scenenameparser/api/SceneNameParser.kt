@@ -52,12 +52,16 @@ sealed class SceneNameParseResult {
     /**
      * Successfully parsed release name.
      */
-    data class Parsed(val value: ParsedReleaseName) : SceneNameParseResult()
+    data class Parsed(
+        val value: ParsedReleaseName,
+    ) : SceneNameParseResult()
 
     /**
      * Unable to parse (malformed, insufficient data, etc.).
      */
-    data class Unparsed(val reason: String) : SceneNameParseResult()
+    data class Unparsed(
+        val reason: String,
+    ) : SceneNameParseResult()
 }
 
 /**
@@ -84,7 +88,6 @@ data class ParsedReleaseName(
     val season: Int? = null,
     val episode: Int? = null,
     val episodeTitle: String? = null,
-
     // Technical metadata
     val resolution: String? = null,
     val source: String? = null,
@@ -92,7 +95,6 @@ data class ParsedReleaseName(
     val audioCodec: String? = null,
     val language: String? = null,
     val releaseGroup: String? = null,
-
     // TMDB extraction (string parsing only, no network)
     val tmdbId: Int? = null,
     val tmdbType: TmdbType? = null,
