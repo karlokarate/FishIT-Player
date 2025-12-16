@@ -208,6 +208,22 @@ filter_allowlisted() {
 load_allowlist
 
 # ======================================================================
+# GLOBAL_ID_UTIL_OWNERSHIP_GUARD: Restrict GlobalIdUtil to metadata-normalizer
+# ======================================================================
+echo "Running GLOBAL_ID_UTIL_OWNERSHIP_GUARD..."
+
+import_hits=$(grep -R -n -E "^[[:space:]]*import[[:space:]].*GlobalIdUtil\\b" . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git || true)
+qualified_hits=$(grep -R -n -E "\\bGlobalIdUtil\\." . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git | grep -v -E "^[[:space:]]*//" | grep -v -E "^[[:space:]]*\\*" || true)
+globalid_hits=$(printf "%s\n%s\n" "$import_hits" "$qualified_hits" | sed '/^$/d')
+violations=$(echo "$globalid_hits" | grep -vE "^(\./)?core/metadata-normalizer/" || true)
+
+if [[ -n "$violations" ]]; then
+    echo "$violations"
+    echo "❌ VIOLATION: GlobalIdUtil referenced outside core/metadata-normalizer (ownership restriction)."
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
 # CONTRACT UNIQUENESS: MEDIA_NORMALIZATION_CONTRACT.md must be canonical
 # ======================================================================
 echo "Checking normalization contract doc uniqueness..."
