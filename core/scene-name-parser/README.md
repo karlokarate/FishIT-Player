@@ -82,6 +82,31 @@ sealed class SceneNameParseResult {
 }
 ```
 
+**Usage Example:**
+```kotlin
+// Only called from :core:metadata-normalizer
+val parser = DefaultSceneNameParser()
+val result = parser.parse(
+    SceneNameInput(
+        raw = "The.Matrix.1999.1080p.BluRay.x264",
+        sourceHint = SourceHint.TELEGRAM
+    )
+)
+
+when (result) {
+    is SceneNameParseResult.Parsed -> {
+        val parsed = result.value
+        // parsed.title == "The Matrix"
+        // parsed.year == 1999
+        // parsed.resolution == "1080p"
+        // parsed.videoCodec == "x264"
+    }
+    is SceneNameParseResult.Unparsed -> {
+        // Fallback to raw title
+    }
+}
+```
+
 ---
 
 ## Implementation
