@@ -51,13 +51,16 @@ object GlobalIdUtil {
         val titleForKey = normalizeForKey(normalizedTitle)
 
         return if (season != null && episode != null) {
+            // Episode with season/episode numbers: episode:<title>:S<season>E<episode>
             CanonicalId(
                     "episode:${titleForKey}:S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}"
             )
         } else {
+            // Fall back to movie-style format for episodes without season/episode metadata
+            // or for actual movies. Per contract, episodes without S/E cannot be canonically
+            // identified, so we treat them like movies for identification purposes.
             val yearPart = year?.let { ":$it" } ?: ""
-            val prefix = if (mediaType == MediaType.SERIES_EPISODE) "episode" else "movie"
-            CanonicalId("$prefix:${titleForKey}$yearPart")
+            CanonicalId("movie:${titleForKey}$yearPart")
         }
     }
 

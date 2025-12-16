@@ -423,8 +423,8 @@ class DefaultCatalogSyncService @Inject constructor(
      * - Quality/language comparison across sources
      */
       private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef = MediaSourceRef(
-          sourceType = sourceType,
-          sourceId = sourceId.asPipelineItemId(),
+        sourceType = sourceType,
+        sourceId = sourceId.asPipelineItemId(),
         sourceLabel = sourceLabel,
         quality = null, // TODO: Extract from RawMediaMetadata.quality when available
         languages = null, // TODO: Extract from RawMediaMetadata.languages when available
