@@ -224,26 +224,50 @@ if [[ -n "$violations" ]]; then
 fi
 
 # ======================================================================
-# CONTRACT UNIQUENESS: MEDIA_NORMALIZATION_CONTRACT.md must be canonical
+# CONTRACT_SSOT_GUARD: Enforce docs/v2 as single source of truth
 # ======================================================================
-echo "Checking normalization contract doc uniqueness..."
+echo "Running CONTRACT_SSOT_GUARD..."
 
-if [[ ! -f "docs/v2/MEDIA_NORMALIZATION_CONTRACT.md" ]]; then
+forwarder_path="./contracts/MEDIA_NORMALIZATION_CONTRACT.md"
+canonical_path="./docs/v2/MEDIA_NORMALIZATION_CONTRACT.md"
+
+if [[ ! -f "$canonical_path" ]]; then
     echo "❌ VIOLATION: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md is missing (canonical contract must exist)."
     VIOLATIONS=$((VIOLATIONS + 1))
-else
-    duplicates=$(find . -type f -name "*MEDIA_NORMALIZATION_CONTRACT*.md" \
-        ! -path "./docs/v2/*" \
-        ! -path "./legacy/*" \
-        ! -path "./build/*" \
-        ! -path "./.gradle/*" \
-        ! -path "./.git/*" 2>/dev/null || true)
+fi
 
-    if [[ -n "$duplicates" ]]; then
-        echo "$duplicates"
-        echo "❌ VIOLATION: Duplicate MEDIA_NORMALIZATION_CONTRACT.md detected outside docs/v2/. Remove or merge into canonical copy."
+contract_files=$(find . -type f -name "*MEDIA_NORMALIZATION_CONTRACT*.md" \
+    ! -path "./build/*" \
+    ! -path "./.gradle/*" \
+    ! -path "./.git/*" 2>/dev/null || true)
+
+disallowed=()
+
+while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+
+    case "$file" in
+        "$canonical_path") ;;
+        "./legacy/"*) ;;
+        "$forwarder_path") ;;
+        *) disallowed+=("$file") ;;
+    esac
+done <<< "$contract_files"
+
+if [[ ${#disallowed[@]} -gt 0 ]]; then
+    printf '%s\n' "${disallowed[@]}"
+    echo "❌ VIOLATION: MEDIA_NORMALIZATION_CONTRACT.md detected outside docs/v2/, legacy/, or authorized forwarder."
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+if [[ -f "$forwarder_path" ]]; then
+    if grep -n -E "data class RawMediaMetadata|Pipelines MUST|Violations" "$forwarder_path" >/dev/null; then
+        echo "❌ VIOLATION: Forwarder contracts/MEDIA_NORMALIZATION_CONTRACT.md contains normative content; it must be a pointer only."
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
+else
+    echo "❌ VIOLATION: contracts/MEDIA_NORMALIZATION_CONTRACT.md forwarder is missing; /contracts may only contain forwarders or indexes."
+    VIOLATIONS=$((VIOLATIONS + 1))
 fi
 
 # ======================================================================

@@ -40,6 +40,13 @@
 
 ---
 
+## Canonical Contract Locations
+
+- Media Normalization Contract: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md (SOLE AUTHORITY)
+- Files in /contracts may only forward or index, never define normative rules.
+
+---
+
 ## Contract Compliance Rules
 
 ### 1. Reading Requirements

@@ -29,6 +29,11 @@ All active development happens in the v2 modules:
 | `/docs/v2/` | Active v2 specs: canonical media, pipelines, internal player, logging |
 | `/docs/meta/` | Build, quality, workspace documentation |
 
+### Contracts
+
+- Authoritative v2 contracts live in `docs/v2/` (single source of truth).
+- `/contracts` contains forwarders only.
+
 ### Legacy (Archived)
 
 The v1 codebase and historical documentation are archived under `/legacy/`:
