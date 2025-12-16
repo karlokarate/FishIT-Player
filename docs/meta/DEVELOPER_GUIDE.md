@@ -20,6 +20,11 @@ java -version
 ./gradlew help
 ```
 
+## Contracts
+
+- Authoritative v2 contracts live in `docs/v2/` (single source of truth).
+- `/contracts` contains forwarders only.
+
 ## Quality & Build Tools
 
 ### Gradle Tasks Overview

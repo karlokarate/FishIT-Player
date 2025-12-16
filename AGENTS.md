@@ -906,6 +906,10 @@ The contracts folder is the **single source of truth** for:
 - Player behavior specifications (`INTERNAL_PLAYER_*_CONTRACT_*.md`)
 - Pipeline-specific contracts (`TELEGRAM_PARSER_CONTRACT.md`)
 
+- For v2, the ONLY authoritative contract copies are in docs/v2/. Any /contracts/* file must be forward-only.
+- Agents must not create new contract files outside docs/v2/.
+- When a contract file is requested, link to docs/v2/<NAME>.md.
+
 ### 15.2. Reading Requirements
 
 Before any code modification, agents MUST verify they have read:
