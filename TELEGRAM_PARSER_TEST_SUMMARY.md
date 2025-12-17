@@ -1,10 +1,14 @@
 # Telegram Parser Test Summary
 
-## ✅ Test Status: PASSED
+## ⚠️ Test Status: WRONG PARSER VALIDATED
 
 **Date:** December 17, 2025  
 **Scope:** All 398 Telegram chat exports  
-**Parser:** New implementation (legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/)
+**Parser Tested:** Legacy v1 implementation (legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/)
+
+> **IMPORTANT:** This validation tested the **LEGACY v1 parser**, not the new v2 parser.
+> The new v2 parser is in `pipeline/telegram/` and uses a completely different architecture.
+> JSON exports are v1-specific test data and cannot be used to validate the v2 parser.
 
 ---
 

@@ -2,7 +2,11 @@
 
 **Date:** December 17, 2025  
 **Test Scope:** All Telegram chat exports in `legacy/docs/telegram/exports/exports/`  
-**Parser Version:** New parser implementation in `legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/`
+**Parser Version:** Legacy v1 parser in `legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/`
+
+> **NOTE:** This report validated the **legacy v1 parser**, not the new v2 parser in `pipeline/telegram`.
+> The v2 parser uses live TDLib connections and cannot be tested against JSON exports.
+> The v2 parser is validated via unit tests in `pipeline/telegram/src/test/`.
 
 ---
 

@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-# Detailed Telegram Parser Validation Test
+# Detailed LEGACY V1 Telegram Parser Validation Test
+#
+# NOTE: This validates the v1 parser in legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/
+# The new v2 parser is in pipeline/telegram/ and uses live TDLib connections (cannot test with JSON exports)
 #
 # This script validates specific parser contract requirements:
 # 1. File ID extraction (remoteId, uniqueId from both flat and nested formats)

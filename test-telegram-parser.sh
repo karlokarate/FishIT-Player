@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-# Test script to validate the new Telegram parser on all chat exports
+# Test script to validate the LEGACY V1 Telegram parser on all chat exports
+#
+# NOTE: This validates the v1 parser in legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/
+# The new v2 parser is in pipeline/telegram/ and uses live TDLib connections (cannot test with JSON exports)
 #
 # This script analyzes all JSON export files using jq to extract statistics
 # and validate the parser's expected behavior without needing to compile the Java/Kotlin code.
