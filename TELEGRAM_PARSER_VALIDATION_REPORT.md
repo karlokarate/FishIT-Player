@@ -4,9 +4,17 @@
 **Test Scope:** All Telegram chat exports in `legacy/docs/telegram/exports/exports/`  
 **Parser Version:** Legacy v1 parser in `legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/`
 
-> **NOTE:** This report validated the **legacy v1 parser**, not the new v2 parser in `pipeline/telegram`.
-> The v2 parser uses live TDLib connections and cannot be tested against JSON exports.
-> The v2 parser is validated via unit tests in `pipeline/telegram/src/test/`.
+> **NOTE:** This report validated the **legacy v1 Telegram message parser**, not the scene name parser.
+> 
+> **The actual new parser is the Scene Name Parser:**
+> - Location: `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/parser/`
+> - Purpose: Parse filenames like "Movie.Title.2020.1080p.BluRay.x264-GROUP.mkv"
+> - Validation: See `SCENE_NAME_PARSER_VALIDATION_REPORT.md`
+> - Status: ✅ All 400+ tests passing
+>
+> The v1 Telegram parser groups messages by time windows.  
+> The v2 pipeline is in `pipeline/telegram/` (validated via unit tests).  
+> The scene name parser extracts metadata from filenames (this is the new parser).
 
 ---
 

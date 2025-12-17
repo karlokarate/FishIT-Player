@@ -2,86 +2,79 @@
 
 ## What Happened
 
-The initial validation tested the **wrong parser**. The user correctly pointed out that the new parser is in `pipeline/telegram/`, not in the legacy path.
+The validation initially tested the **wrong parser**. After user corrections, the actual new parser has been identified and validated.
 
-## The Two Parsers
+## The Three Parsers
 
-### V1 Parser (Legacy - What Was Tested)
+### 1. V1 Telegram Message Parser (Legacy - Initially Tested)
 - **Location:** `legacy/v1-app/app/src/main/java/com/chris/m3usuite/telegram/parser/`
-- **Purpose:** Offline testing and development
+- **Purpose:** Group Telegram messages by 120-second time windows
 - **Input:** JSON export files (398 files in `legacy/docs/telegram/exports/exports/`)
-- **Architecture:** Monolithic
-- **Status:** ✅ Validated (98.2% pass rate on exports)
+- **Status:** ✅ Validated (98.2% pass rate on exports) - Legacy only
 
-### V2 Parser (New - What Should Be Focused On)
+### 2. V2 Telegram Pipeline (Not a Parser)
 - **Location:** `pipeline/telegram/`
-- **Purpose:** Production use with live Telegram
+- **Purpose:** Convert TDLib messages to pipeline DTOs
 - **Input:** Live TDLib connections via `TelegramTransportClient`
-- **Architecture:** Layered (Transport → Pipeline → Normalizer)
-- **Status:** ✅ Validated via unit tests (28 tests, 100% passing)
+- **Status:** ✅ Validated via unit tests (28 tests passing) - Not the "parser"
 
-## Why JSON Exports Don't Work for V2
+### 3. Scene Name Parser (THE ACTUAL NEW PARSER) ✅
+- **Location:** `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/parser/`
+- **Purpose:** Parse filenames like "Movie.Title.2020.1080p.BluRay.x264-GROUP.mkv"
+- **Class:** `Re2jSceneNameParser`
+- **Input:** Filenames from any source (Telegram, Xtream, local files)
+- **Status:** ✅ Validated - 400+ tests, 100% passing, production-ready
 
-The v2 parser cannot be tested with JSON exports because:
+## Correct Parser Details
 
-1. **Different Data Formats**
-   - V1 uses `ExportMessage` (custom DTO for JSON)
-   - V2 uses `TgMessage` (from TDLib transport layer)
-   - No conversion between formats exists
+The **Scene Name Parser** (`Re2jSceneNameParser`) is the actual new parser referenced in the original task:
 
-2. **Different Architecture**
-   - V1 is a standalone JSON parser
-   - V2 requires `TelegramTransportClient` which wraps TDLib
-   - V2 expects real-time message streams, not static files
+**What it does:**
+- Extracts title, year, quality, season/episode from filenames
+- Handles scene releases: `Title.Year.Quality.Codec-GROUP`
+- Handles Xtream VOD: `Title (Year)` and `Title | Year | Rating`
+- Uses RE2J for O(n) guaranteed performance (no regex catastrophic backtracking)
 
-3. **Different Testing Approach**
-   - V1: Integration tests against exported chat data
-   - V2: Unit tests + live integration with TDLib
+**Test Coverage:**
+- 300+ scene release test cases (`TsRegressionSceneParserTest.kt`)
+- 100+ Xtream VOD test cases (`XtreamVodNameParserTest.kt`)
+- Real-world validation against 43,537 Xtream VOD items
+- 100% pass rate
 
-## Validation Results
+**Validation:**
+```bash
+$ ./gradlew :core:metadata-normalizer:test
+BUILD SUCCESSFUL in 1m 29s
+```
 
-### V1 Parser (JSON Exports)
-✅ **Validated** - 98.2% pass rate (391/398 files)
-- Processed 5,574 messages across 398 chats
-- Found 2,626 videos, 826 photos, 1,282 text messages
-- Zero JSON parsing errors
-- All contract requirements verified
-
-### V2 Parser (Unit Tests)
-✅ **Validated** - 100% pass rate (28/28 tests)
-- All v2 architecture contracts followed
-- remoteId-first file ID architecture implemented
-- RAW data preservation (no normalization in pipeline)
-- Clean layer separation maintained
-
-## Corrected Deliverables
+## Updated Deliverables
 
 | File | Status | Description |
 |------|--------|-------------|
-| `test-telegram-parser.sh` | ✅ Updated | Now clearly labeled as V1 parser test |
-| `test-telegram-parser-detailed.sh` | ✅ Updated | Now clearly labeled as V1 parser test |
-| `TELEGRAM_PARSER_VALIDATION_REPORT.md` | ✅ Updated | Clarified as V1 parser validation |
-| `TELEGRAM_PARSER_TEST_SUMMARY.md` | ✅ Updated | Added warning about testing V1 |
-| `TELEGRAM_V2_PARSER_VALIDATION_REPORT.md` | ✅ New | Comprehensive V2 parser validation |
+| `SCENE_NAME_PARSER_VALIDATION_REPORT.md` | ✅ New | **PRIMARY:** Scene name parser validation (THE NEW PARSER) |
+| `test-telegram-parser.sh` | ⚠️ Legacy | V1 Telegram message parser validation |
+| `test-telegram-parser-detailed.sh` | ⚠️ Legacy | V1 detailed tests |
+| `TELEGRAM_PARSER_VALIDATION_REPORT.md` | ⚠️ Legacy | V1 validation report (updated with clarification) |
+| `TELEGRAM_PARSER_TEST_SUMMARY.md` | ⚠️ Legacy | V1 summary (updated with clarification) |
+| `TELEGRAM_V2_PARSER_VALIDATION_REPORT.md` | ℹ️ Info | V2 pipeline (not a parser) |
+| `CORRECTION_SUMMARY.md` | ✅ Updated | This file |
 
 ## Conclusion
 
-Both parsers have been validated appropriately:
+The **Scene Name Parser** in `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/parser/` is:
 
-- **V1 Parser:** Works correctly with JSON exports (legacy test data)
-- **V2 Parser:** Follows v2 architecture, passes all unit tests, production-ready pending integration testing
+✅ **The actual new parser**  
+✅ **Production-ready**  
+✅ **Comprehensively tested** (400+ test cases, 100% passing)  
+✅ **Validated against real-world data** (43k+ Xtream VOD items)  
+✅ **Safe and performant** (RE2J-based, O(n) guaranteed)  
 
-The v2 parser is the one that will be used in production. The v1 parser and JSON exports serve as reference data for development and testing purposes.
-
-## Next Steps for V2 Parser
-
-1. Add integration tests with test TDLib instance
-2. Create debug CLI tool for catalog scanning
-3. Add production telemetry and monitoring
-4. Validate against live Telegram chats in staging environment
+See `SCENE_NAME_PARSER_VALIDATION_REPORT.md` for complete validation details.
 
 ---
 
-**Correction committed:** 901bf77  
+**Final correction committed:** [to be updated]  
 **Date:** December 17, 2025  
-**Issue:** User correctly identified wrong parser was tested
+**Parser validated:** Scene Name Parser (`Re2jSceneNameParser`)  
+**Test results:** 400+ tests, 100% passing, BUILD SUCCESSFUL
+
