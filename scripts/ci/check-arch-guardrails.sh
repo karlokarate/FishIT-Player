@@ -688,6 +688,52 @@ else
 fi
 
 # ======================================================================
+# F) Parser Package: NO Kotlin Regex Guard
+# ======================================================================
+echo ""
+echo "-----------------------------------------"
+echo "Parser Package: NO Kotlin Regex Guard"
+echo "-----------------------------------------"
+echo ""
+echo "Checking for Kotlin Regex usage in parser package..."
+echo "(Only RE2J patterns and linear code are allowed)"
+echo ""
+
+PARSER_PACKAGE="core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/parser"
+
+# Check for Regex( constructor usage
+kotlin_regex_violations=$(grep -rn "Regex(" "$PARSER_PACKAGE" 2>/dev/null || true)
+if [ -n "$kotlin_regex_violations" ]; then
+    echo "❌ VIOLATION: Kotlin Regex() found in parser package"
+    echo ""
+    echo "Files with violations:"
+    echo "$kotlin_regex_violations"
+    echo ""
+    echo "The parser package must use only:"
+    echo "  - RE2J (com.google.re2j.Pattern) for regex patterns"
+    echo "  - Linear/token-based code for string operations"
+    echo ""
+    echo "This ensures O(n) guaranteed performance."
+    echo ""
+    VIOLATIONS=$((VIOLATIONS + 1))
+else
+    echo "✅ No Kotlin Regex() found in parser package"
+fi
+
+# Check for kotlin.text.Regex import
+kotlin_regex_import=$(grep -rn "import kotlin.text.Regex" "$PARSER_PACKAGE" 2>/dev/null || true)
+if [ -n "$kotlin_regex_import" ]; then
+    echo "❌ VIOLATION: kotlin.text.Regex import found in parser package"
+    echo ""
+    echo "Files with violations:"
+    echo "$kotlin_regex_import"
+    echo ""
+    VIOLATIONS=$((VIOLATIONS + 1))
+else
+    echo "✅ No kotlin.text.Regex import in parser package"
+fi
+
+# ======================================================================
 # SUMMARY
 # ======================================================================
 echo ""
