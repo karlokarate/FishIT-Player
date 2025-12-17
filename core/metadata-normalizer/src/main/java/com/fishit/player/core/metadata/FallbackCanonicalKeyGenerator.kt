@@ -20,8 +20,8 @@ object FallbackCanonicalKeyGenerator {
     ): CanonicalId? {
         if (mediaType == MediaType.LIVE) return null
 
-        val normalizedTitle = GlobalIdUtil.normalizeTitle(originalTitle)
-        val slug = GlobalIdUtil.normalizeForKey(normalizedTitle)
+        val cleanedTitle = stripSceneTags(originalTitle)
+        val slug = toSlug(cleanedTitle)
 
         return when {
             season != null && episode != null ->
@@ -33,4 +33,24 @@ object FallbackCanonicalKeyGenerator {
         }
     }
 
+    private val sceneTagPattern =
+            Regex(
+                    """[\.\s]*(720p|1080p|2160p|4k|uhd|hdr|bluray|bdrip|webrip|web-dl|hdtv|dvdrip|x264|x265|h264|h265|aac|dts|ac3|atmos|remux|\[.*?]|-.{1,15}$)""",
+                    RegexOption.IGNORE_CASE,
+            )
+
+    private fun stripSceneTags(title: String): String =
+            title
+                    .replace('.', ' ')
+                    .replace('_', ' ')
+                    .replace(sceneTagPattern, "")
+                    .replace(Regex("""\s+"""), " ")
+                    .trim()
+
+    private fun toSlug(input: String): String =
+            input.lowercase()
+                    .replace(Regex("[^a-z0-9\\s-]"), "")
+                    .replace(Regex("\\s+"), "-")
+                    .replace(Regex("-+"), "-")
+                    .trim('-')
 }

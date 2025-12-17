@@ -12,8 +12,8 @@ import com.fishit.player.core.model.ids.PipelineItemId
  * **Invariants:**
  * - [variants] is NEVER empty
  * - [primaryPipelineIdTag] + [primarySourceId] always match the currently best variant
- * - [canonicalId] is shared across all variants when available (enabling cross-pipeline
- *   deduplication)
+ * - [canonicalId] is shared across all variants when present (enabling cross-pipeline
+ *   deduplication). It is null for unlinked media (e.g., LIVE or insufficient metadata).
  *
  * **Example:** "Breaking Bad S01E01" might have:
  * - Variant 1: Telegram FHD German
