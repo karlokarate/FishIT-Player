@@ -1,232 +1,426 @@
 package com.fishit.player.core.metadata.parser
 
 /**
- * Regex-based scene name parser.
+ * Regex-based scene name parser using PTN (parse-torrent-name) inspired "peel the onion" approach.
  *
- * Extracts structured metadata from media filenames using curated regex patterns inspired by
- * video-filename-parser, guessit, and scene-release-parser-php.
+ * Algorithm:
+ * 1. Apply each pattern in order, extract match, remove from working string
+ * 2. Title = what remains after all patterns are applied
+ * 3. Special handling for numeric titles (1917, 300, 2001) to not confuse with years
  *
- * Parsing algorithm:
- * 1. Preprocessing: Remove extension, provider tags, normalize separators
- * 2. Tag extraction: Edition, quality, group, season/episode, year
- * 3. Title extraction: Remove all tags, clean up separators
- * 4. Validation: Ensure title non-empty, validate ranges
+ * Patterns are ordered by priority - most specific first.
  *
- * Deterministic: Same input always produces same output.
+ * Inspired by: https://github.com/divijbindlish/parse-torrent-name
  */
 class RegexSceneNameParser : SceneNameParser {
+
+        // ==========================================================================
+        // PATTERN REGISTRY (ordered by extraction priority)
+        // ==========================================================================
+
+        /**
+         * Pattern definition with name, regex, and optional type. Patterns are applied in order -
+         * earlier patterns have higher priority.
+         */
+        private data class Pattern(
+                val name: String,
+                val regex: Regex,
+                val type: PatternType = PatternType.STRING,
+                val boundary: Boolean = true, // wrap in \b...\b
+        )
+
+        private enum class PatternType {
+                STRING,
+                INTEGER,
+                BOOLEAN
+        }
+
         companion object {
-                // File extensions to remove
-                private val FILE_EXTENSIONS =
-                        Regex(
-                                "\\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|m2ts|ts|vob|iso|3gp|zip|rar|7z)$",
-                                RegexOption.IGNORE_CASE,
+                // Separators that surround valid matches
+                private const val SEPS = """[\s._\-\[\](){}]"""
+
+                // ==========================================================================
+                // IPTV PROVIDER TAGS (must be first - highest priority for IPTV streams)
+                // ==========================================================================
+
+                /** IPTV provider prefixes like "N|", "DE|FHD|", etc. */
+                private val PROVIDER_PREFIX =
+                        Pattern(
+                                "provider",
+                                Regex(
+                                        "^$SEPS*(?:" +
+                                                "(?:N|NF|D|DE|EN|ES|IT|FR|PT|RU|PL|TR|AR|" +
+                                                "FHD|4K|UHD|HD\\+?|SD|HDR|" +
+                                                "VOD|MOVIE|FILM|SERIE|SERIES|TV|LIVE|XXX|ADULT|" +
+                                                "HEVC|H265|X265|H264|X264|" +
+                                                "DV|DOLBY|ATMOS|DTS|DD|AAC|" +
+                                                "MULTI|DUAL|GER|ENG|GERMAN|ENGLISH|FRENCH|SPANISH|ITALIAN|" +
+                                                "LATAM|BR|MX|CO|VE|CL|KIDS)" +
+                                                "[|]$SEPS*)+",
+                                        RegexOption.IGNORE_CASE
+                                ),
+                                boundary = false
                         )
 
-                // ========== IPTV/XTREAM PROVIDER TAGS ==========
-                // Common provider prefixes: N|, NF|, D|, DE|, EN|, FHD|, 4K|, UHD|, HD|, SD|, VOD|,
-                // etc.
-                // These appear at the start of IPTV stream titles and should be stripped
-
-                // Provider tag prefixes (pipe-separated ONLY)
-                // Pattern: strips leading sequences like "N|", "NF|", "D|DE|FHD|", etc.
-                // IMPORTANT: Tags MUST be followed by | or other IPTV separators to avoid false
-                // positives
-                // e.g., "Die Maske" should NOT match "D" as provider tag
-                // Single-letter tags (D, N, etc.) REQUIRE pipe separator
-                // Multi-letter tags (MOVIE, FILM, etc.) also require separator to avoid matching
-                // word starts
-                private val PROVIDER_PREFIX_REGEX =
-                        Regex(
-                                "^" + // Must be at start
-                                "[\\s\\[\\]()]*" + // Optional leading whitespace/brackets only
-                                        "(?:" +
-                                        "(?:N|NF|D|DE|EN|ES|IT|FR|PT|RU|PL|TR|AR|" + // Language/provider codes
-                                        "FHD|4K|UHD|HD\\+?|SD|HDR|" + // Quality prefixes
-                                        "VOD|MOVIE|FILM|SERIE|SERIES|TV|LIVE|XXX|ADULT|" + // Content type
-                                        "HEVC|H265|X265|H264|X264|" + // Codec prefixes
-                                        "DV|DOLBY|ATMOS|DTS|DD|AAC|" + // Audio prefixes
-                                        "MULTI|DUAL|GER|ENG|GERMAN|ENGLISH|FRENCH|SPANISH|ITALIAN|" + // Language prefixes
-                                        "LATAM|BR|MX|CO|VE|CL" + // Latin American country codes
-                                        ")" +
-                                        "[|]" + // REQUIRED: pipe separator after tag
-                                        "[\\s]*" + // Optional trailing space
-                                        ")+", // One or more occurrences
-                                RegexOption.IGNORE_CASE,
+                /** Bracketed provider tags: [N], [4K], (DE), etc. */
+                private val PROVIDER_BRACKET =
+                        Pattern(
+                                "provider_bracket",
+                                Regex(
+                                        "[\\[\\(](N|NF|D|DE|EN|ES|IT|FR|FHD|4K|UHD|HD|SD|HDR|" +
+                                                "VOD|MOVIE|FILM|SERIE|SERIES|TV|LIVE|" +
+                                                "HEVC|H265|X265|H264|X264|DV|DOLBY|ATMOS|" +
+                                                "MULTI|DUAL|GER|ENG|GERMAN|ENGLISH)[\\]\\)]",
+                                        RegexOption.IGNORE_CASE
+                                ),
+                                boundary = false
                         )
 
-                // Bracketed provider tags anywhere in string: [N], [NF], [4K], [HD], (DE), etc.
-                private val PROVIDER_BRACKET_REGEX =
-                        Regex(
-                                "[\\[\\(]+" +
-                                        "(N|NF|D|DE|EN|ES|IT|FR|FHD|4K|UHD|HD|SD|HDR|" +
-                                        "VOD|MOVIE|FILM|SERIE|SERIES|TV|LIVE|" +
-                                        "HEVC|H265|X265|H264|X264|DV|DOLBY|ATMOS|" +
-                                        "MULTI|DUAL|GER|ENG|GERMAN|ENGLISH)" +
-                                        "[\\]\\)]+",
-                                RegexOption.IGNORE_CASE,
+                // ==========================================================================
+                // SEASON/EPISODE PATTERNS (PTN-style, high priority)
+                // ==========================================================================
+
+                /** S01E02, S1E2, s01e02 - standard pattern */
+                private val SEASON_EPISODE =
+                        Pattern(
+                                "season_episode",
+                                Regex("([Ss](\\d{1,2}))[\\s._-]*[Ee](\\d{1,4})"),
+                                boundary = false
                         )
 
-                // TMDb/IMDb suffixes: tmdb-12345, [tmdb:603], (tt0137523), imdb-tt0172495
-                private val EXTERNAL_ID_SUFFIX_REGEX =
-                        Regex(
-                                "[\\s\\-_]*" +
-                                        "(?:" +
-                                        "tmdb[:\\-_]?\\d+" + // tmdb-12345, tmdb:12345
-                                        "|" +
-                                        "imdb[:\\-_]?tt\\d+" + // imdb-tt12345
-                                        "|" +
-                                        "tt\\d{7,}" + // tt1234567 (IMDb ID standalone)
-                                        "|" +
-                                        "\\[tmdb[:\\-_]?\\d+\\]" + // [tmdb:12345]
-                                        "|" +
-                                        "\\(tt\\d+\\)" + // (tt1234567)
-                                        ")",
-                                RegexOption.IGNORE_CASE,
+                /** 1x02, 01x02 - alternative pattern */
+                private val SEASON_X_EPISODE =
+                        Pattern(
+                                "season_x_episode",
+                                Regex("(\\d{1,2})x(\\d{1,4})", RegexOption.IGNORE_CASE),
+                                boundary = false
                         )
 
-                // Resolution patterns
-                private val RESOLUTION_REGEX =
-                        Regex(
-                                "\\b(480p|576p|720p|1080p|2160p|4320p|8K|4K|UHD)\\b",
-                                RegexOption.IGNORE_CASE,
+                /** Episode XX, Ep XX, Ep.XX - word pattern */
+                private val EPISODE_WORD =
+                        Pattern(
+                                "episode_word",
+                                Regex(
+                                        "(?:Episode|Folge|Ep\\.?)\\s*(\\d{1,4})",
+                                        RegexOption.IGNORE_CASE
+                                ),
+                                boundary = false
                         )
 
-                // Video codec patterns
-                private val CODEC_REGEX =
-                        Regex(
-                                "\\b(x264|x265|H\\.?264|H\\.?265|HEVC|AV1|XviD|DivX|VC-?1)\\b",
-                                RegexOption.IGNORE_CASE,
+                /** Anime style: " - 1089 " (episode after dash, 2-4 digits) */
+                private val ANIME_EPISODE =
+                        Pattern(
+                                "anime_episode",
+                                Regex("\\s+-\\s*(\\d{2,4})(?:\\s|\\(|\\[|$)"),
+                                boundary = false
                         )
 
-                // Source patterns
-                private val SOURCE_REGEX =
-                        Regex(
-                                "\\b(WEB-?DL|WEB-?Rip|WEBRip|BluRay|Blu-Ray|BDRip|DVDRip|DVD-Rip|HDTV|PDTV|DVDSCR|BRRip)\\b",
-                                RegexOption.IGNORE_CASE,
+                /** Season only: S01, Season 1 */
+                private val SEASON_ONLY =
+                        Pattern(
+                                "season_only",
+                                Regex("(?:[Ss]|Season\\s*)(\\d{1,2})(?![Ee\\dx])"),
+                                boundary = false
                         )
 
-                // Audio codec patterns
-                private val AUDIO_REGEX =
-                        Regex(
-                                "\\b(AAC(?:\\d\\.\\d)?|AC3|DD(?:\\+)?(?:\\d\\.\\d)?|DTS(?:-HD)?(?:\\s+MA)?|Dolby\\s+Atmos|TrueHD|FLAC|Opus|DDP?\\d?\\.?\\d?)\\b",
-                                RegexOption.IGNORE_CASE,
+                // ==========================================================================
+                // YEAR PATTERN (must come after season/episode to avoid conflicts)
+                // ==========================================================================
+
+                /** Year in parentheses/brackets: (2024), [2019] - highest confidence */
+                private val YEAR_PAREN =
+                        Pattern(
+                                "year_paren",
+                                Regex("[\\[\\(](19\\d{2}|20\\d{2})[\\]\\)]"),
+                                PatternType.INTEGER,
+                                boundary = false
                         )
 
-                // HDR patterns
-                private val HDR_REGEX =
-                        Regex(
-                                "\\b(HDR10\\+|HDR10|HDR|Dolby\\s+Vision|DV)\\b",
-                                RegexOption.IGNORE_CASE,
+                /** Standalone year: 2024, 1999 - with separator boundaries */
+                private val YEAR_STANDALONE =
+                        Pattern(
+                                "year",
+                                Regex(
+                                        """(?:^|[\s._\-\[\](){}])(19\d{2}|20\d{2})(?=[\s._\-\[\](){}]|$)"""
+                                ),
+                                PatternType.INTEGER,
+                                boundary = false
                         )
 
-                // Edition flags
-                private val EXTENDED_REGEX = Regex("\\b(Extended|EXTENDED)\\b")
-                private val DIRECTORS_REGEX =
+                // ==========================================================================
+                // QUALITY PATTERNS (PTN patterns)
+                // ==========================================================================
+
+                private val RESOLUTION =
+                        Pattern(
+                                "resolution",
+                                // Word boundaries to avoid matching inside words
+                                Regex("\\b([0-9]{3,4}p|4K|8K|UHD)\\b", RegexOption.IGNORE_CASE)
+                        )
+
+                private val QUALITY =
+                        Pattern(
+                                "quality",
+                                Regex(
+                                        // All quality tags require word boundaries to avoid matching inside words
+                                        // e.g., "TS" should not match in "Jujutsu" or "Tschick"
+                                        "\\b((?:PPV\\.)?[HP]DTV|(?:HD)?CAM|B[DR]Rip|(?:HD-?)?TS|" +
+                                                "(?:PPV\\s)?WEB-?DL(?:\\sDVDRip)?|HDRip|DVDRip|DVDRIP|" +
+                                                "CamRip|W[EB]BRip|BluRay|Blu-Ray|BDRip|DvDScr|HDTV|Telesync|PDTV|DVDSCR)\\b",
+                                        RegexOption.IGNORE_CASE
+                                )
+                        )
+
+                private val CODEC =
+                        Pattern(
+                                "codec",
+                                Regex(
+                                        // Word boundaries to avoid matching inside words
+                                        "\\b(xvid|[hx]\\.?26[45]|HEVC|AVC|AV1|DivX|VC-?1)\\b",
+                                        RegexOption.IGNORE_CASE
+                                )
+                        )
+
+                private val AUDIO =
+                        Pattern(
+                                "audio",
+                                Regex(
+                                        // Word boundaries to avoid matching inside words
+                                        "\\b(MP3|DD5\\.?1|Dual[\\-\\s]Audio|LiNE|DTS(?:-HD)?(?:\\sMA)?|" +
+                                                "AAC[.-]?LC|AAC(?:\\.?2\\.0)?|AC3(?:\\.5\\.1)?|TrueHD|FLAC|" +
+                                                "Dolby[\\s]?Atmos|Atmos|DD\\+?(?:\\d\\.\\d)?|DDP?\\d?\\.?\\d?|Opus)\\b",
+                                        RegexOption.IGNORE_CASE
+                                )
+                        )
+
+                private val HDR =
+                        Pattern(
+                                "hdr",
+                                Regex(
+                                        // Word boundaries to avoid matching inside words
+                                        "\\b(HDR10\\+?|HDR|Dolby\\s*Vision|DV)\\b",
+                                        RegexOption.IGNORE_CASE
+                                )
+                        )
+
+                // ==========================================================================
+                // EDITION/FLAGS (PTN patterns)
+                // ==========================================================================
+
+                private val EXTENDED =
+                        Pattern(
+                                "extended",
+                                Regex("EXTENDED(?:[._-]?CUT)?", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val DIRECTORS =
+                        Pattern(
+                                "directors",
+                                Regex("Director'?s?[\\s._-]*Cut", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val UNRATED =
+                        Pattern(
+                                "unrated",
+                                Regex("UNRATED", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val THEATRICAL =
+                        Pattern(
+                                "theatrical",
+                                Regex("THEATRICAL", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val REMASTERED =
+                        Pattern(
+                                "remastered",
+                                Regex("REMASTERED", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val PROPER =
+                        Pattern(
+                                "proper",
+                                Regex("PROPER", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val REPACK =
+                        Pattern(
+                                "repack",
+                                Regex("REPACK", RegexOption.IGNORE_CASE),
+                                PatternType.BOOLEAN
+                        )
+                private val IMAX =
+                        Pattern("imax", Regex("IMAX", RegexOption.IGNORE_CASE), PatternType.BOOLEAN)
+                private val THREE_D =
+                        Pattern("3d", Regex("3D", RegexOption.IGNORE_CASE), PatternType.BOOLEAN)
+
+                // ==========================================================================
+                // OTHER PATTERNS
+                // ==========================================================================
+
+                private val CONTAINER =
+                        Pattern(
+                                "container",
+                                Regex(
+                                        "\\.(mkv|avi|mp4|m4v|mov|wmv|flv|webm|mpg|mpeg|m2ts|ts|vob|iso|3gp)\$",
+                                        RegexOption.IGNORE_CASE
+                                ),
+                                boundary = false
+                        )
+
+                private val LANGUAGE =
+                        Pattern(
+                                "language",
+                                Regex(
+                                        "\\b(German|English|French|Spanish|Italian|Portuguese|Russian|Polish|Turkish|Arabic|" +
+                                                "Deutsch|Englisch|Multi|Dual|" +
+                                                "GER|ENG|FRE|SPA|ITA|POR|RUS|POL|TUR|ARA|DL)\\b",
+                                        RegexOption.IGNORE_CASE
+                                )
+                        )
+
+                private val RELEASE_GROUP =
+                        Pattern(
+                                "group",
+                                // Must contain at least one letter to avoid matching years like "1994"
+                                Regex("-\\s*([A-Za-z][A-Za-z0-9]*|[A-Za-z0-9]*[A-Za-z][A-Za-z0-9]*)\\s*\$"),
+                                boundary = false
+                        )
+
+                private val WEBSITE =
+                        Pattern("website", Regex("^\\[\\s*([^\\]]+?)\\s*\\]"), boundary = false)
+
+                private val CHANNEL_TAG =
+                        Pattern("channel", Regex("@[A-Za-z0-9_]+"), boundary = false)
+
+                private val EXTERNAL_ID =
+                        Pattern(
+                                "external_id",
+                                Regex(
+                                        "(?:tmdb[:\\-_]?\\d+|imdb[:\\-_]?tt\\d+|tt\\d{7,}|" +
+                                                "\\[tmdb[:\\-_]?\\d+\\]|\\(tt\\d+\\))",
+                                        RegexOption.IGNORE_CASE
+                                ),
+                                boundary = false
+                        )
+
+                private val SIZE =
+                        Pattern(
+                                "size",
+                                Regex("(\\d+(?:\\.\\d+)?(?:GB|MB))", RegexOption.IGNORE_CASE)
+                        )
+
+                // ==========================================================================
+                // PATTERN ORDER (peel the onion - extract in this order)
+                // ==========================================================================
+
+                private val PATTERNS =
+                        listOf(
+                                // 1. Remove container extension first
+                                CONTAINER,
+                                // 2. Remove IPTV provider tags
+                                PROVIDER_PREFIX,
+                                PROVIDER_BRACKET,
+                                // 3. Remove external IDs and website tags
+                                EXTERNAL_ID,
+                                WEBSITE,
+                                CHANNEL_TAG,
+                                // 4. Extract season/episode (before year to handle conflicts)
+                                SEASON_EPISODE,
+                                SEASON_X_EPISODE,
+                                EPISODE_WORD,
+                                ANIME_EPISODE,
+                                SEASON_ONLY,
+                                // 5. Extract quality tags (before year)
+                                RESOLUTION,
+                                QUALITY,
+                                CODEC,
+                                AUDIO,
+                                HDR,
+                                // 6. Extract edition flags
+                                EXTENDED,
+                                DIRECTORS,
+                                UNRATED,
+                                THEATRICAL,
+                                REMASTERED,
+                                PROPER,
+                                REPACK,
+                                IMAX,
+                                THREE_D,
+                                // 7. Extract language
+                                LANGUAGE,
+                                // 8. Extract size
+                                SIZE,
+                                // 9. Extract release group (at end)
+                                RELEASE_GROUP,
+                                // 10. Extract year LAST (to handle numeric titles like "1917",
+                                // "300")
+                                YEAR_PAREN,
+                                YEAR_STANDALONE,
+                        )
+
+                // Known numeric movie titles that should NOT be treated as years
+                private val NUMERIC_TITLES =
+                        setOf(
+                                "1917",
+                                "1984",
+                                "1776",
+                                "1492",
+                                "1941",
+                                "1922",
+                                "1918",
+                                "1883",
+                                "1923",
+                                "300",
+                                "2001",
+                                "2010",
+                                "2012",
+                                "2036",
+                                "2046",
+                                "2067",
+                                "9",
+                                "8",
+                                "7",
+                                "6",
+                                "5",
+                                "4",
+                                "3",
+                                "2",
+                                "1",
+                                "12",
+                                "13",
+                                "21",
+                                "22",
+                                "23",
+                                "24",
+                                "25",
+                                "42",
+                                "69",
+                                "71",
+                                "77",
+                                "84",
+                                "88",
+                                "96",
+                                "99"
+                        )
+
+                // File extensions for cleanup
+                private val FILE_EXTENSION_REGEX =
                         Regex(
-                                "\\b(Director'?s?\\s*Cut|DIRECTORS?\\s*CUT)\\b",
+                                "\\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|m2ts|ts|vob|iso|3gp|zip|rar|7z)\$",
                                 RegexOption.IGNORE_CASE
-                        )
-                private val UNRATED_REGEX = Regex("\\b(Unrated|UNRATED)\\b")
-                private val THEATRICAL_REGEX = Regex("\\b(Theatrical|THEATRICAL)\\b")
-                private val THREE_D_REGEX = Regex("\\b(3D)\\b", RegexOption.IGNORE_CASE)
-                private val IMAX_REGEX = Regex("\\b(IMAX)\\b", RegexOption.IGNORE_CASE)
-                private val REMASTERED_REGEX = Regex("\\b(Remastered|REMASTERED)\\b")
-                private val PROPER_REGEX = Regex("\\b(PROPER)\\b", RegexOption.IGNORE_CASE)
-                private val REPACK_REGEX = Regex("\\b(REPACK)\\b", RegexOption.IGNORE_CASE)
-
-                // Language tags that should be removed from title
-                private val LANGUAGE_TAG_REGEX =
-                        Regex(
-                                "\\b(German|English|French|Spanish|Italian|Portuguese|Russian|Polish|Turkish|Arabic|" +
-                                        "Deutsch|Englisch|Multi|Dual|" +
-                                        "GER|ENG|FRE|SPA|ITA|POR|RUS|POL|TUR|ARA)\\b",
-                                RegexOption.IGNORE_CASE,
-                        )
-
-                // Note: Timestamp detection (e.g., 20231205) is handled inline in year extraction
-                // to avoid matching years that are part of timestamps
-
-                // Season/Episode patterns (multiple formats)
-                // Allow multiple spaces between S and E: "S05 E16", "S05  E16", "S05E16"
-                private val SEASON_EPISODE_REGEX =
-                        Regex(
-                                "[Ss](\\d{1,2})[\\s_]*[Ee](\\d{1,3})",
-                        )
-                private val SEASON_EPISODE_COMPACT =
-                        Regex(
-                                "(\\d{1,2})x(\\d{1,3})",
-                                RegexOption.IGNORE_CASE,
-                        )
-
-                // Anime-style episode: " - 1089 " or " - 23 " (episode number after dash)
-                private val ANIME_EPISODE_REGEX =
-                        Regex(
-                                "\\s+-\\s*(\\d{1,4})\\s*(?:\\(|\\[|$)",
-                        )
-
-                // Season-only pattern: "S01" without episode (for season packs)
-                private val SEASON_ONLY_REGEX =
-                        Regex(
-                                "[Ss](\\d{1,2})(?:\\s+|\\.|$)(?![Ee])",
-                        )
-
-                // German episode format: "Folge XX" or "Episode XX"
-                private val FOLGE_EPISODE_REGEX =
-                        Regex(
-                                "(?:Folge|Episode|Ep\\.?)\\s*(\\d{1,3})",
-                                RegexOption.IGNORE_CASE,
-                        )
-
-                // Year patterns (with boundaries to avoid false positives)
-                // Matches years with word boundaries or common delimiters
-                // Must be followed by non-digit to avoid matching timestamps like 20231205
-                private val YEAR_REGEX =
-                        Regex(
-                                "(?:^|[\\s._-])(19\\d{2}|20\\d{2})(?=[\\s._-]|$)(?!\\d)",
-                        )
-
-                // Year in parentheses (higher confidence)
-                // Requires actual parentheses to avoid matching years inside timestamps/IDs
-                private val YEAR_PAREN_REGEX =
-                        Regex(
-                                "\\((19\\d{2}|20\\d{2})\\)",
-                        )
-
-                // Year in brackets
-                private val YEAR_BRACKET_REGEX =
-                        Regex(
-                                "\\[(19\\d{2}|20\\d{2})\\]",
-                        )
-
-                // Release group patterns
-                private val GROUP_HYPHEN_REGEX =
-                        Regex(
-                                "-\\s*([A-Za-z0-9]+)\\s*$",
-                        )
-                private val GROUP_BRACKET_REGEX =
-                        Regex(
-                                "\\[([A-Za-z0-9]+)]",
-                        )
-
-                // Channel/user tags (Telegram specific)
-                private val CHANNEL_TAG_REGEX =
-                        Regex(
-                                "@[A-Za-z0-9_]+",
-                        )
-
-                // Garbage-only patterns (for cleanup)
-                private val GARBAGE_ONLY_REGEX =
-                        Regex(
-                                "^[\\s|_\\-*#\\[\\]().,;:!?]+$",
                         )
         }
 
-        override fun parse(filename: String): ParsedSceneInfo {
-                var workingString = filename.trim()
+        // ==========================================================================
+        // PARSING IMPLEMENTATION
+        // ==========================================================================
 
-                // Step 0: Early exit for empty/garbage input
-                if (workingString.isBlank() || GARBAGE_ONLY_REGEX.matches(workingString)) {
+        override fun parse(filename: String): ParsedSceneInfo {
+                var working = filename.trim()
+
+                // Early exit for empty/garbage
+                if (working.isBlank()) {
                         return ParsedSceneInfo(
                                 title = filename.ifBlank { "Unknown" },
                                 year = null,
@@ -235,333 +429,224 @@ class RegexSceneNameParser : SceneNameParser {
                                 episode = null,
                                 quality = null,
                                 edition = null,
-                                extraTags = emptyList(),
+                                extraTags = emptyList()
                         )
                 }
 
-                // Step 1: Remove file extension
-                workingString = workingString.replace(FILE_EXTENSIONS, "")
-
-                // Step 1.5: Remove IPTV/Xtream provider prefixes
-                workingString = workingString.replace(PROVIDER_PREFIX_REGEX, "")
-
-                // Step 1.6: Remove bracketed provider tags
-                workingString = workingString.replace(PROVIDER_BRACKET_REGEX, " ")
-
-                // Step 1.7: Remove external ID suffixes (TMDb, IMDb)
-                workingString = workingString.replace(EXTERNAL_ID_SUFFIX_REGEX, "")
-
-                // Track what we extract
-                var year: Int? = null
+                // Track extracted values
+                val extracted = mutableMapOf<String, Any>()
                 var season: Int? = null
                 var episode: Int? = null
-                var resolution: String? = null
-                var source: String? = null
-                var codec: String? = null
-                var audio: String? = null
-                var hdr: String? = null
-                var group: String? = null
-                val editionFlags = mutableMapOf<String, Boolean>()
+                var year: Int? = null
 
-                // Step 2: Extract edition flags
-                if (EXTENDED_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["extended"] = true
-                        workingString = workingString.replace(EXTENDED_REGEX, " ")
-                }
-                if (DIRECTORS_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["directors"] = true
-                        workingString = workingString.replace(DIRECTORS_REGEX, " ")
-                }
-                if (UNRATED_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["unrated"] = true
-                        workingString = workingString.replace(UNRATED_REGEX, " ")
-                }
-                if (THEATRICAL_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["theatrical"] = true
-                        workingString = workingString.replace(THEATRICAL_REGEX, " ")
-                }
-                if (THREE_D_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["threeD"] = true
-                        workingString = workingString.replace(THREE_D_REGEX, " ")
-                }
-                if (IMAX_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["imax"] = true
-                        workingString = workingString.replace(IMAX_REGEX, " ")
-                }
-                if (REMASTERED_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["remastered"] = true
-                        workingString = workingString.replace(REMASTERED_REGEX, " ")
-                }
-                if (PROPER_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["proper"] = true
-                        workingString = workingString.replace(PROPER_REGEX, " ")
-                }
-                if (REPACK_REGEX.containsMatchIn(workingString)) {
-                        editionFlags["repack"] = true
-                        workingString = workingString.replace(REPACK_REGEX, " ")
-                }
+                // ==========================================================================
+                // STEP 1: Remove file extension
+                // ==========================================================================
+                working = working.replace(FILE_EXTENSION_REGEX, "")
 
-                // Step 3: Extract quality tags
-                resolution = RESOLUTION_REGEX.find(workingString)?.value
-                if (resolution != null) {
-                        workingString = workingString.replace(RESOLUTION_REGEX, " ")
-                }
+                // ==========================================================================
+                // STEP 2: Check for numeric title at start (before year extraction can claim it)
+                // ==========================================================================
+                val numericTitleMatch = Regex("^(\\d{1,4})(?:[\\s._\\-]|$)").find(working)
+                val potentialNumericTitle = numericTitleMatch?.groupValues?.get(1)
+                val hasNumericTitle =
+                        potentialNumericTitle != null &&
+                                (NUMERIC_TITLES.contains(potentialNumericTitle) ||
+                                        // Also protect 3-4 digit numbers at start that look like
+                                        // titles, not years
+                                        (potentialNumericTitle.length <= 3 &&
+                                                potentialNumericTitle.toIntOrNull() != null))
 
-                codec = CODEC_REGEX.find(workingString)?.value
-                if (codec != null) {
-                        workingString = workingString.replace(CODEC_REGEX, " ")
-                }
-
-                source = SOURCE_REGEX.find(workingString)?.value
-                if (source != null) {
-                        workingString = workingString.replace(SOURCE_REGEX, " ")
-                }
-
-                audio = AUDIO_REGEX.find(workingString)?.value
-                if (audio != null) {
-                        workingString = workingString.replace(AUDIO_REGEX, " ")
-                }
-
-                hdr = HDR_REGEX.find(workingString)?.value
-                if (hdr != null) {
-                        workingString = workingString.replace(HDR_REGEX, " ")
-                }
-
-                // Step 4: Extract channel tags (Telegram)
-                workingString = workingString.replace(CHANNEL_TAG_REGEX, " ")
-
-                // Step 5: Extract season/episode
-                val seasonEpisodeMatch = SEASON_EPISODE_REGEX.find(workingString)
-                if (seasonEpisodeMatch != null) {
-                        season = seasonEpisodeMatch.groupValues[1].toIntOrNull()
-                        episode = seasonEpisodeMatch.groupValues[2].toIntOrNull()
-                        workingString = workingString.replace(SEASON_EPISODE_REGEX, " ")
-                } else {
-                        val compactMatch = SEASON_EPISODE_COMPACT.find(workingString)
-                        if (compactMatch != null) {
-                                season = compactMatch.groupValues[1].toIntOrNull()
-                                episode = compactMatch.groupValues[2].toIntOrNull()
-                                workingString = workingString.replace(SEASON_EPISODE_COMPACT, " ")
-                        }
-                }
-
-                // Step 5.5: Extract German-style episode ("Folge XX", "Episode XX")
-                if (episode == null) {
-                        val folgeMatch = FOLGE_EPISODE_REGEX.find(workingString)
-                        if (folgeMatch != null) {
-                                episode = folgeMatch.groupValues[1].toIntOrNull()
-                                workingString = workingString.replace(FOLGE_EPISODE_REGEX, " ")
-                        }
-                }
-
-                // Step 5.6: Extract anime-style episode (" - 1089 " pattern)
-                if (episode == null) {
-                        val animeMatch = ANIME_EPISODE_REGEX.find(workingString)
-                        if (animeMatch != null) {
-                                episode = animeMatch.groupValues[1].toIntOrNull()
-                                // Don't remove the match, just extract the episode number
-                        }
-                }
-
-                // Step 5.7: Extract season-only pattern ("S01" without episode)
-                if (season == null) {
-                        val seasonOnlyMatch = SEASON_ONLY_REGEX.find(workingString)
-                        if (seasonOnlyMatch != null) {
-                                season = seasonOnlyMatch.groupValues[1].toIntOrNull()
-                                workingString = workingString.replace(SEASON_ONLY_REGEX, " ")
-                        }
-                }
-
-                // Step 5.8: Remove remaining language tags
-                workingString = workingString.replace(LANGUAGE_TAG_REGEX, " ")
-
-                // Note: Timestamps are NOT removed from workingString to preserve them in title
-                // Instead, we check for timestamp patterns during year extraction below
-
-                // Step 6: Extract year (prefer parenthesized, then bracketed, then standalone)
-                // Helper function to check if a year is part of a timestamp (e.g., 20231205)
-                fun isPartOfTimestamp(yearMatch: MatchResult, source: String): Boolean {
-                        val yearStr = yearMatch.groupValues[1]
-                        val startPos = yearMatch.range.first
-                        val endPos = yearMatch.range.last + 1
-
-                        // Check if there are 4 more digits immediately after the year (YYYYMMDD
-                        // pattern)
-                        if (endPos < source.length) {
-                                val after =
-                                        source.substring(endPos, minOf(endPos + 4, source.length))
-                                if (after.matches(Regex("\\d{4}.*"))) {
-                                        return true // Year followed by 4+ digits = timestamp
-                                }
-                        }
-                        // Check if year is preceded by digits (within a larger number)
-                        if (startPos > 0) {
-                                val charBefore = source[startPos - 1]
-                                if (charBefore.isDigit()) {
-                                        return true // Part of larger number
-                                }
-                        }
-                        return false
-                }
-
-                val yearParenMatch = YEAR_PAREN_REGEX.findAll(workingString).lastOrNull()
-                if (yearParenMatch != null && !isPartOfTimestamp(yearParenMatch, workingString)) {
-                        val yearStr = yearParenMatch.groupValues[1]
-                        val yearCandidate = yearStr.toIntOrNull()
-                        if (yearCandidate != null && yearCandidate in 1900..2099) {
-                                year = yearCandidate
-                                workingString = workingString.replace(yearParenMatch.value, " ")
-                        }
-                }
-
-                // Try bracketed year if no year yet
-                if (year == null) {
-                        val yearBracketMatch =
-                                YEAR_BRACKET_REGEX.findAll(workingString).lastOrNull()
-                        if (yearBracketMatch != null &&
-                                        !isPartOfTimestamp(yearBracketMatch, workingString)
+                // ==========================================================================
+                // STEP 3: Apply patterns in order (peel the onion)
+                // ==========================================================================
+                for (pattern in PATTERNS) {
+                        // Skip year extraction if we detected a numeric title at the start
+                        if (hasNumericTitle &&
+                                        potentialNumericTitle != null &&
+                                        (pattern.name == "year" || pattern.name == "year_paren")
                         ) {
-                                val yearCandidate = yearBracketMatch.groupValues[1].toIntOrNull()
-                                if (yearCandidate != null && yearCandidate in 1900..2099) {
-                                        year = yearCandidate
-                                        workingString =
-                                                workingString.replace(yearBracketMatch.value, " ")
+                                // Check if the year pattern would match our numeric title
+                                val yearMatch = pattern.regex.find(working)
+                                if (yearMatch != null &&
+                                                yearMatch.value.contains(potentialNumericTitle)
+                                ) {
+                                        // Skip this year match - it's our title
+                                        continue
                                 }
                         }
-                }
 
-                // If no year yet, try standalone (prefer last occurrence)
-                if (year == null) {
-                        val yearMatches =
-                                YEAR_REGEX.findAll(workingString).toList().filter {
-                                        !isPartOfTimestamp(it, workingString)
-                                } // Exclude timestamps
-                        if (yearMatches.isNotEmpty()) {
-                                // Prefer year in last 40% of string (more likely release year)
-                                val lastYearMatch =
-                                        yearMatches.lastOrNull { match ->
-                                                val position =
-                                                        match.range.first.toDouble() /
-                                                                workingString.length
-                                                position > 0.6
+                        val match = pattern.regex.find(working)
+                        if (match != null) {
+                                // Extract the value
+                                when (pattern.name) {
+                                        "season_episode" -> {
+                                                season = match.groupValues[2].toIntOrNull()
+                                                episode = match.groupValues[3].toIntOrNull()
                                         }
-                                                ?: yearMatches.last()
-
-                                val yearCandidate = lastYearMatch.groupValues[1].toIntOrNull()
-                                if (yearCandidate != null && yearCandidate in 1900..2099) {
-                                        year = yearCandidate
-                                        // Replace the full match (including delimiters) with space
-                                        workingString =
-                                                workingString.replace(lastYearMatch.value, " ")
+                                        "season_x_episode" -> {
+                                                season = match.groupValues[1].toIntOrNull()
+                                                episode = match.groupValues[2].toIntOrNull()
+                                        }
+                                        "episode_word", "anime_episode" -> {
+                                                episode = match.groupValues[1].toIntOrNull()
+                                        }
+                                        "season_only" -> {
+                                                season = match.groupValues[1].toIntOrNull()
+                                        }
+                                        "year_paren", "year" -> {
+                                                val yearCandidate =
+                                                        match.groupValues[1].toIntOrNull()
+                                                if (yearCandidate != null &&
+                                                                yearCandidate in 1900..2099
+                                                ) {
+                                                        // Check if year is part of a timestamp
+                                                        // (e.g., 20231205)
+                                                        if (!isPartOfTimestamp(match, working)) {
+                                                                year = yearCandidate
+                                                        } else {
+                                                                continue // Don't remove timestamp
+                                                                // from working string
+                                                        }
+                                                }
+                                        }
+                                        else -> {
+                                                when (pattern.type) {
+                                                        PatternType.BOOLEAN ->
+                                                                extracted[pattern.name] = true
+                                                        PatternType.INTEGER ->
+                                                                extracted[pattern.name] =
+                                                                        match.groupValues
+                                                                                .getOrNull(1)
+                                                                                ?.toIntOrNull()
+                                                                                ?: 0
+                                                        PatternType.STRING ->
+                                                                extracted[pattern.name] =
+                                                                        match.groupValues.getOrNull(
+                                                                                1
+                                                                        )
+                                                                                ?: match.value
+                                                }
+                                        }
                                 }
+
+                                // Remove matched portion from working string (peel the onion)
+                                working = working.replace(match.value, " ")
                         }
                 }
 
-                // Step 7: Extract release group (after year to avoid conflicts)
-                val groupMatch = GROUP_HYPHEN_REGEX.find(workingString)
-                if (groupMatch != null) {
-                        group = groupMatch.groupValues[1]
-                        workingString = workingString.replace(GROUP_HYPHEN_REGEX, " ")
-                }
-                if (group == null) {
-                        val bracketMatch = GROUP_BRACKET_REGEX.find(workingString)
-                        if (bracketMatch != null) {
-                                group = bracketMatch.groupValues[1]
-                                workingString = workingString.replace(GROUP_BRACKET_REGEX, " ")
-                        }
-                }
-
-                // Step 8: Clean up title - replace common separators with spaces
+                // ==========================================================================
+                // STEP 4: Clean up remaining string to get title
+                // ==========================================================================
                 var title =
-                        workingString
-                                .replace(Regex("[._]"), " ") // Dots and underscores to spaces
+                        working.replace(Regex("[._]"), " ") // Dots and underscores to spaces
                                 .replace(
-                                        Regex("[\\[\\](){}|]"),
+                                        Regex("[\\[\\](){}|*#]+"),
                                         " "
-                                ) // Remove remaining brackets and pipes
-                                .replace(Regex("[*#]+"), " ") // Remove stars and hashes
+                                ) // Remove brackets and symbols
                                 .replace(
                                         Regex("^[\\-\\s:]+|[\\-\\s:]+$"),
                                         ""
-                                ) // Trim leading/trailing hyphens, spaces, colons
+                                ) // Trim leading/trailing
                                 .replace(Regex("\\s*-\\s*-\\s*"), " - ") // Normalize double dashes
                                 .replace(Regex("\\s+"), " ") // Collapse multiple spaces
                                 .trim()
 
-                // Step 8.5: If title still has leading/trailing garbage, clean again
+                // Remove any remaining non-alphanumeric prefix/suffix
                 title =
-                        title.replace(
-                                        Regex("^[^a-zA-Z0-9äöüÄÖÜßéèêàâùûôîçñÀ-ÿ]+"),
-                                        ""
-                                ) // Strip leading non-alphanum
-                                .replace(
-                                        Regex("[^a-zA-Z0-9äöüÄÖÜßéèêàâùûôîçñÀ-ÿ!?]+$"),
-                                        ""
-                                ) // Strip trailing non-alphanum
+                        title.replace(Regex("^[^a-zA-Z0-9äöüÄÖÜßéèêàâùûôîçñÀ-ÿ]+"), "")
+                                .replace(Regex("[^a-zA-Z0-9äöüÄÖÜßéèêàâùûôîçñÀ-ÿ!?]+$"), "")
                                 .trim()
 
-                // If title is empty, use original filename without extension
+                // ==========================================================================
+                // STEP 5: Fallback if title is empty
+                // ==========================================================================
                 if (title.isBlank()) {
                         title =
-                                filename.replace(FILE_EXTENSIONS, "")
+                                filename.replace(FILE_EXTENSION_REGEX, "")
                                         .replace(Regex("[\\[\\](){}|*#_.]"), " ")
                                         .replace(Regex("\\s+"), " ")
                                         .trim()
                 }
 
-                // Ultimate fallback: if still blank, use "Unknown"
                 if (title.isBlank()) {
                         title = "Unknown"
                 }
 
-                // Build edition info
+                // ==========================================================================
+                // STEP 6: Build result
+                // ==========================================================================
                 val edition =
-                        if (editionFlags.isNotEmpty()) {
+                        if (extracted.containsKey("extended") ||
+                                        extracted.containsKey("directors") ||
+                                        extracted.containsKey("unrated") ||
+                                        extracted.containsKey("theatrical") ||
+                                        extracted.containsKey("remastered") ||
+                                        extracted.containsKey("proper") ||
+                                        extracted.containsKey("repack") ||
+                                        extracted.containsKey("imax") ||
+                                        extracted.containsKey("3d")
+                        ) {
                                 EditionInfo(
-                                        extended = editionFlags["extended"] ?: false,
-                                        directors = editionFlags["directors"] ?: false,
-                                        unrated = editionFlags["unrated"] ?: false,
-                                        theatrical = editionFlags["theatrical"] ?: false,
-                                        threeD = editionFlags["threeD"] ?: false,
-                                        imax = editionFlags["imax"] ?: false,
-                                        remastered = editionFlags["remastered"] ?: false,
-                                        proper = editionFlags["proper"] ?: false,
-                                        repack = editionFlags["repack"] ?: false,
+                                        extended = extracted["extended"] as? Boolean ?: false,
+                                        directors = extracted["directors"] as? Boolean ?: false,
+                                        unrated = extracted["unrated"] as? Boolean ?: false,
+                                        theatrical = extracted["theatrical"] as? Boolean ?: false,
+                                        threeD = extracted["3d"] as? Boolean ?: false,
+                                        imax = extracted["imax"] as? Boolean ?: false,
+                                        remastered = extracted["remastered"] as? Boolean ?: false,
+                                        proper = extracted["proper"] as? Boolean ?: false,
+                                        repack = extracted["repack"] as? Boolean ?: false,
                                 )
-                        } else {
-                                null
-                        }
+                        } else null
 
-                // Build quality info
                 val quality =
-                        if (resolution != null ||
-                                        source != null ||
-                                        codec != null ||
-                                        audio != null ||
-                                        hdr != null ||
-                                        group != null
+                        if (extracted.containsKey("resolution") ||
+                                        extracted.containsKey("quality") ||
+                                        extracted.containsKey("codec") ||
+                                        extracted.containsKey("audio") ||
+                                        extracted.containsKey("hdr") ||
+                                        extracted.containsKey("group")
                         ) {
                                 QualityInfo(
-                                        resolution = resolution,
-                                        source = source,
-                                        codec = codec,
-                                        audio = audio,
-                                        hdr = hdr,
-                                        group = group,
+                                        resolution = extracted["resolution"] as? String,
+                                        source = extracted["quality"] as? String,
+                                        codec = extracted["codec"] as? String,
+                                        audio = extracted["audio"] as? String,
+                                        hdr = extracted["hdr"] as? String,
+                                        group = extracted["group"] as? String,
                                 )
-                        } else {
-                                null
-                        }
+                        } else null
 
                 return ParsedSceneInfo(
                         title = title,
                         year = year,
-                        isEpisode = season != null && episode != null,
+                        isEpisode = season != null || episode != null,
                         season = season,
                         episode = episode,
                         quality = quality,
                         edition = edition,
                         extraTags = emptyList(),
                 )
+        }
+
+        /**
+         * Check if a year match is part of a timestamp (e.g., 20231205). Returns true if the year
+         * is followed by 4+ more digits.
+         */
+        private fun isPartOfTimestamp(match: MatchResult, source: String): Boolean {
+                val endPos = match.range.last + 1
+                if (endPos < source.length) {
+                        val after = source.substring(endPos, minOf(endPos + 4, source.length))
+                        if (after.matches(Regex("\\d{4}.*"))) {
+                                return true
+                        }
+                }
+                // Also check if preceded by digits
+                val startPos = match.range.first
+                if (startPos > 0 && source[startPos - 1].isDigit()) {
+                        return true
+                }
+                return false
         }
 }
