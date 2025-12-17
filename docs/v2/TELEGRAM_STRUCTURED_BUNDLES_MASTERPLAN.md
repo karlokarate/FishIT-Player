@@ -118,12 +118,16 @@ Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
 │  pipeline/telegram/grouper  [NEU]                                     │
 │                                                                       │
 │  TelegramMessageBundler                                               │
-│  ├── Gruppiert Nachrichten nach identischem Timestamp                 │
+│  ├── Gruppiert Nachrichten nach identischem Timestamp (BundleCandidate)│
+│  ├── Wendet Bundle Cohesion Gate an (R1b):                            │
+│  │   - Album/Group-ID primär, messageId-Proximity fallback            │
+│  │   - Span <= 3*2^20 oder Step-Pattern 2^20                          │
 │  ├── Klassifiziert: Structured (3er/2er) vs Unstructured              │
 │  └── Emittiert: TelegramMessageBundle oder einzelne TgMessage         │
 │                                                                       │
 │  TelegramStructuredMetadataExtractor                                  │
-│  ├── Extrahiert TEXT-Felder: tmdbUrl, year, fsk, genres, etc.         │
+│  ├── Extrahiert TEXT-Felder: tmdbUrl, tmdbType, year, fsk, etc.      │
+│  ├── Wendet Schema Guards an (R4): ungültige Werte → null            │
 │  └── Mappt PHOTO.sizes[] auf ImageRef                                 │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
@@ -132,6 +136,7 @@ Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
 │                                                                       │
 │  TelegramMediaItem (erweitert um Bundle-Felder)                       │
 │  ├── structuredTmdbId: String?      // aus tmdbUrl extrahiert         │
+│  ├── structuredTmdbType: TelegramTmdbType? // MOVIE oder TV          │
 │  ├── structuredRating: Double?      // tmdbRating pass-through        │
 │  ├── structuredYear: Int?           // year pass-through              │
 │  ├── structuredFsk: Int?            // fsk für Kids-Filter            │
@@ -139,10 +144,15 @@ Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
 │  ├── posterSizes: List<TelegramPhotoSize>? // aus PHOTO-Nachricht     │
 │  └── bundleType: BundleType         // FULL_3ER, COMPACT_2ER, SINGLE  │
 │                                                                       │
+│  Multi-Asset Emission (R7, R8):                                       │
+│  ├── Pro Bundle: 1x RawMediaMetadata + Nx PlayableAsset              │
+│  ├── Lossless: Alle VIDEOs werden emittiert                          │
+│  └── Primary Asset Selection (R8b): sizeBytes → duration → messageId │
+│                                                                       │
 │  toRawMediaMetadata() (erweitert)                                     │
-│  ├── externalIds.tmdbId aus structuredTmdbId                          │
-│  ├── year aus structuredYear                                          │
-│  ├── poster aus posterSizes (beste Auflösung)                         │
+│  ├── externalIds.tmdbId + tmdbType aus structuredTmdb*               │
+│  ├── year aus structuredYear (nach Schema Guard)                     │
+│  ├── poster aus posterSizes (max pixel area, R9)                     │
 │  └── ageRating aus structuredFsk                                      │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
@@ -152,6 +162,10 @@ Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
 │  Prüft: Hat RawMediaMetadata bereits tmdbId?                          │
 │  ├── JA:  Skip TMDB-Lookup, direkt normalTitle aus TMDB-Cache         │
 │  └── NEIN: Normaler Pfad (Titel-Parsing, TMDB-Search, etc.)           │
+│                                                                       │
+│  Kanonisches Linking (Contract Section 2.5):                          │
+│  ├── tmdbId vorhanden → canonicalId = tmdb:<type>:<id>               │
+│  └── Alle PlayableAssets werden an gleiche canonicalId gelinkt        │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -199,6 +213,9 @@ data class TelegramMediaItem(
     /** TMDB-ID aus strukturierter TEXT-Nachricht (z.B. "12345" aus tmdbUrl) */
     val structuredTmdbId: String? = null,
     
+    /** TMDB-Typ aus strukturierter TEXT-Nachricht (MOVIE oder TV) */
+    val structuredTmdbType: TelegramTmdbType? = null,
+    
     /** TMDB-Rating aus strukturierter TEXT-Nachricht */
     val structuredRating: Double? = null,
     
@@ -243,6 +260,14 @@ enum class TelegramBundleType {
     /** Einzelne Nachricht (kein Bundle) */
     SINGLE,
 }
+
+enum class TelegramTmdbType {
+    /** TMDB Movie (/movie/<id>) */
+    MOVIE,
+    
+    /** TMDB TV Show (/tv/<id>) */
+    TV,
+}
 ```
 
 ### 4.2 RawMediaMetadata (benötigte Erweiterungen)
@@ -282,16 +307,21 @@ data class ExternalIds(
 
 **Verantwortung:**
 
-- Gruppiert TgMessage-Liste nach identischem Timestamp
+- Gruppiert TgMessage-Liste nach identischem Timestamp (BundleCandidate)
+- Wendet Bundle Cohesion Gate an (Contract R1b)
 - Klassifiziert Cluster nach Typ (3er, 2er, Single)
 - Emittiert TelegramMessageBundle für zusammengehörige Nachrichten
+- Splittet kohäsions-fehlgeschlagene Candidates in SINGLE-Units
 
 ```kotlin
 /**
  * Gruppiert Telegram-Nachrichten nach identischem Timestamp in Bundles.
  *
  * Bundle-Erkennung:
- * - Nachrichten mit identischem `date` (Unix-Timestamp) gehören zusammen
+ * - Nachrichten mit identischem `date` (Unix-Timestamp) werden als BundleCandidate gruppiert
+ * - Bundle Cohesion Gate (Contract R1b):
+ *   - Primär: Album/Group-ID von Telegram/TDLib
+ *   - Fallback: messageId-Proximity (Span <= 3*2^20) oder Step-Pattern 2^20
  * - Reihenfolge in Bundles: PHOTO (niedrigste msgId) → TEXT → VIDEO (höchste msgId)
  *
  * Per MEDIA_NORMALIZATION_CONTRACT: Keine Normalisierung hier.
@@ -300,10 +330,11 @@ data class ExternalIds(
 class TelegramMessageBundler {
     
     /**
-     * Gruppiert Nachrichten nach Timestamp.
+     * Gruppiert Nachrichten nach Timestamp und wendet Cohesion Gate an.
      *
      * @param messages Unsortierte Liste von TgMessage
      * @return Liste von TelegramMessageBundle (sortiert nach neuestem Timestamp)
+     *         Kohäsions-fehlgeschlagene Candidates werden als SINGLE zurückgegeben
      */
     fun groupByTimestamp(messages: List<TgMessage>): List<TelegramMessageBundle>
     
@@ -311,6 +342,13 @@ class TelegramMessageBundler {
      * Klassifiziert einen Bundle-Typ basierend auf enthaltenen Nachrichtentypen.
      */
     fun classifyBundle(messages: List<TgMessage>): TelegramBundleType
+    
+    /**
+     * Prüft Bundle Cohesion (Contract R1b).
+     * 
+     * @return true wenn Candidate kohäsiv ist, false sonst
+     */
+    fun checkBundleCohesion(candidate: List<TgMessage>): Boolean
 }
 
 data class TelegramMessageBundle(
@@ -330,7 +368,8 @@ data class TelegramMessageBundle(
 **Verantwortung:**
 
 - Extrahiert strukturierte Felder aus TEXT-Nachrichten
-- Parst TMDB-URL zu ID
+- Parst TMDB-URL zu ID + Type (MOVIE oder TV)
+- Wendet Schema Guards an
 - Liefert RAW-Werte ohne Normalisierung
 
 ```kotlin
@@ -338,11 +377,16 @@ data class TelegramMessageBundle(
  * Extrahiert strukturierte Metadaten aus Telegram TEXT-Nachrichten.
  *
  * Unterstützte Felder:
- * - tmdbUrl → tmdbId (via Regex /movie/(\d+))
+ * - tmdbUrl → tmdbId + tmdbType (via Regex /movie/(\d+) oder /tv/(\d+))
  * - tmdbRating, year, fsk, genres, director, originalTitle
  * - lengthMinutes, productionCountry
  *
- * Per MEDIA_NORMALIZATION_CONTRACT: Alle Werte RAW extrahiert, keine Bereinigung.
+ * Per MEDIA_NORMALIZATION_CONTRACT: Alle Werte RAW extrahiert mit Schema Guards.
+ * Schema Guards (Contract R4):
+ * - year: 1800..2100 sonst null
+ * - tmdbRating: 0.0..10.0 sonst null
+ * - fsk: 0..21 sonst null
+ * - lengthMinutes: 1..600 sonst null
  */
 class TelegramStructuredMetadataExtractor {
     
@@ -359,15 +403,20 @@ class TelegramStructuredMetadataExtractor {
     fun extractStructuredMetadata(textMessage: TgMessage): StructuredMetadata?
     
     /**
-     * Extrahiert TMDB-ID aus URL.
+     * Extrahiert TMDB-ID und Type aus URL.
      * 
-     * Beispiel: "https://www.themoviedb.org/movie/12345-name" → "12345"
+     * Unterstützte Patterns (Contract R5):
+     * - /movie/(\d+) → (id, MOVIE)
+     * - /tv/(\d+) → (id, TV)
+     * 
+     * Beispiel: "https://www.themoviedb.org/movie/12345-name" → ("12345", MOVIE)
      */
-    fun extractTmdbIdFromUrl(tmdbUrl: String?): String?
+    fun extractTmdbFromUrl(tmdbUrl: String?): Pair<String?, TelegramTmdbType?>
 }
 
 data class StructuredMetadata(
     val tmdbId: String?,
+    val tmdbType: TelegramTmdbType?,
     val tmdbRating: Double?,
     val year: Int?,
     val fsk: Int?,
@@ -385,30 +434,50 @@ data class StructuredMetadata(
 
 **Verantwortung:**
 
-- Konvertiert TelegramMessageBundle → TelegramMediaItem
+- Konvertiert TelegramMessageBundle → TelegramMediaItem(s)
 - Führt VIDEO, TEXT, PHOTO-Daten zusammen
-- Wendet Tie-Breaker-Regeln an
+- Wendet Primary Asset Selection Rules an
+- Emittiert mehrere Assets bei Multi-Video-Bundles (lossless)
 
 ```kotlin
 /**
- * Mappt TelegramMessageBundle auf TelegramMediaItem.
+ * Mappt TelegramMessageBundle auf TelegramMediaItem(s).
  *
  * Mapping-Regeln:
  * 1. VIDEO-Nachricht liefert: remoteId, duration, fileName, mimeType, etc.
- * 2. TEXT-Nachricht liefert: structuredTmdbId, structuredYear, etc.
+ * 2. TEXT-Nachricht liefert: structuredTmdbId, structuredTmdbType, structuredYear, etc.
  * 3. PHOTO-Nachricht liefert: photoSizes für Poster
  *
- * Tie-Breaker (für Bundles mit mehreren VIDEOs):
+ * Multi-Asset Emission (Contract R7, R8):
+ * - Pro Bundle: 1x RawMediaMetadata + Nx PlayableAsset
+ * - Alle VIDEOs werden emittiert (lossless)
+ *
+ * Primary Asset Selection (Contract R8b):
  * - Größte Datei (sizeBytes)
  * - Längste Dauer (duration)
  * - Niedrigste messageId (deterministic)
+ *
+ * Poster Selection (Contract R9):
+ * - Max pixel area (width * height)
+ * - Tie-Breaker: height → width → messageId
  */
 class TelegramBundleToMediaItemMapper {
     
-    fun mapBundleToMediaItem(bundle: TelegramMessageBundle): TelegramMediaItem?
+    /**
+     * Mappt Bundle auf TelegramMediaItem(s).
+     * 
+     * @return Liste von Items (bei Multi-Video > 1 Element)
+     */
+    fun mapBundleToMediaItems(bundle: TelegramMessageBundle): List<TelegramMediaItem>
     
-    fun selectBestVideo(videos: List<TgContent.Video>): TgContent.Video
+    /**
+     * Wählt primäres Video (Contract R8b).
+     */
+    fun selectPrimaryVideo(videos: List<TgContent.Video>): TgContent.Video
     
+    /**
+     * Wählt bestes Photo basierend auf max pixel area (Contract R9).
+     */
     fun selectBestPhoto(photos: List<TgContent.Photo>): TgContent.Photo
 }
 ```
@@ -506,37 +575,62 @@ class TelegramBundleToMediaItemMapper {
 
 **TelegramMessageBundler:**
 
-- Test: Nachrichten mit gleichem Timestamp werden gruppiert
+- Test: Nachrichten mit gleichem Timestamp werden als BundleCandidate gruppiert
 - Test: Nachrichten mit unterschiedlichen Timestamps bleiben getrennt
 - Test: Bundle-Klassifikation (3er, 2er, Single)
 - Test: Sortierung innerhalb Bundle nach messageId
+- Test: Bundle Cohesion Gate akzeptiert validen Candidate (messageId-Span <= 3*2^20)
+- Test: Bundle Cohesion Gate lehnt invaliden Candidate ab (zu großer Span)
+- Test: Cohesion Gate mit Album-ID (primärer Discriminator)
 
 **TelegramStructuredMetadataExtractor:**
 
 - Test: TMDB-URL-Parsing (verschiedene Formate)
+  - `/movie/<id>` → (id, MOVIE)
+  - `/tv/<id>` → (id, TV)
+  - ungültiges Format → (null, null) + WARN log
 - Test: FSK-Extraktion (numerisch)
 - Test: Genre-Liste-Parsing
 - Test: Fehlende Felder → null
+- Test: Schema Guards
+  - Jahr außerhalb 1800..2100 → null
+  - Rating außerhalb 0.0..10.0 → null
+  - FSK außerhalb 0..21 → null
+  - Länge außerhalb 1..600 → null
 
 **TelegramBundleToMediaItemMapper:**
 
 - Test: Vollständiger 3er-Bundle → TelegramMediaItem
 - Test: 2er-Bundle (TEXT+VIDEO) → TelegramMediaItem
-- Test: Tie-Breaker bei mehreren Videos
+- Test: Primary Asset Selection bei mehreren Videos (sizeBytes → duration → messageId)
+- Test: Multi-Video Bundle emittiert N Assets für ein Work (lossless)
+- Test: Poster-Auswahl via max pixel area (width * height)
+- Test: Poster-Auswahl Tie-Breaker (height → width → messageId)
 
 ### 7.2 Integration-Tests
 
 **Fixtures:** Echte JSON-Exports aus `/legacy/docs/telegram/exports/exports/`
 
 - Test: Chat mit 3er-Clustern (z.B. "Mel Brooks")
+  - Assert: ≥8 FULL_3ER Bundles erkannt
 - Test: Chat mit 2er-Clustern (z.B. "Filme kompakt")
+  - Assert: ≥8 COMPACT_2ER Bundles erkannt
 - Test: Chat mit gemischten Patterns
 - Test: Chat ohne strukturierte Daten (Fallback)
+  - Assert: Keine Regression für unstrukturierte Chats
+- Test: Cohesion Rejection
+  - Fixture: BundleCandidate mit gleichem Timestamp aber unrelated messages
+  - Assert: Bundle wird rejected/split in SINGLE units
+- Test: Multi-Video Emission
+  - Fixture: Bundle mit mehreren VIDEOs in einem Timestamp
+  - Assert: ≥2 Assets emittiert für ein Work, alle mit gleicher tmdbId verknüpft
 
 ### 7.3 Regressions-Tests
 
 - Test: Bestehende `toRawMediaMetadata()` bleibt unverändert für Single-Messages
 - Test: Keine Breaking Changes für unstrukturierte Chats
+- Test: Schema Guards lassen valide Werte unverändert durch
+- Test: Multi-Video Emission ändert nicht Single-Video Verhalten
 
 ---
 
@@ -559,10 +653,70 @@ class TelegramBundleToMediaItemMapper {
 | TMDB-Lookups für Structured Chats | 0 | Logging-Counter |
 | Ingest-Zeit pro strukturiertem Item | < 50ms | Performance-Logging |
 | Regressions-Fehler | 0 | CI-Pipeline |
+| Bundle Cohesion Rejection Rate | < 5% in strukturierten Chats | Metrics-Dashboard |
+| Multi-Video Asset Emission | 100% aller VIDEOs emittiert (lossless) | Integration-Tests |
 
 ---
 
-## 10. Referenzen
+## 10. Engineering Guardrails
+
+Diese technischen Guardrails MÜSSEN während der Implementierung beachtet werden:
+
+### 10.1 Code Quality Tools
+
+**Detekt + ktlint/Spotless (MANDATORY in CI):**
+- Alle Module, die von Structured Bundle Work betroffen sind, MÜSSEN Detekt und ktlint/Spotless in CI durchlaufen
+- Konfiguration: `detekt-config.yml` (Repository-Root)
+- Pre-Commit Hook empfohlen für lokale Entwicklung
+- Violations blockieren Merge
+
+**Gradle Dependency Analysis Plugin:**
+- MUSS verwendet werden, um accidentelle Layer Boundary Violations zu verhindern
+- Pipeline-Module dürfen NICHT `core/data` oder `infra/data-*` importieren
+- Pipeline-Module dürfen NICHT `core/persistence` (ObxTelegram*, etc.) importieren
+- Violations führen zu Build-Failure
+
+### 10.2 Test Fixtures & Drift Detection
+
+**Golden-File / Snapshot-Style Fixtures:**
+- JSON-Export-Inputs für Tests MÜSSEN als golden files versioniert werden
+- Änderungen an Fixtures MÜSSEN explizit reviewed werden
+- Automatische Drift Detection via Hash-Vergleich in CI
+- Location: `/test-data/telegram/structured-bundles/`
+
+**Fixture Coverage:**
+- Mindestens 3 Beispiel-Bundles pro Typ (FULL_3ER, COMPACT_2ER)
+- Mindestens 2 Rejection-Cases (cohesion failure)
+- Mindestens 1 Multi-Video Bundle
+
+### 10.3 Performance Benchmarking (Recommended)
+
+**Macrobenchmark / Perfetto:**
+- Empfohlen für Messung der Ingest-Performance nach Code-Implementierung
+- Baseline: Unstrukturierte Chats (aktueller Pfad)
+- Target: Strukturierte Chats ≥5x schneller (Zero-Parsing-Path)
+- Dokumentation der Benchmark-Ergebnisse in `/docs/v2/benchmarks/`
+
+**Nicht in diesem Task:**
+- Macrobenchmark-Setup ist dokumentiert, aber NICHT Teil der Markdown-Änderungen
+- Implementierung erfolgt in separatem Code-Task
+
+### 10.4 Compliance Automation
+
+**CI Pipeline Checks (MUST):**
+- Contract Compliance Checklist (Section 7 im Contract) wird automatisiert geprüft
+- TMDB-Lookup-Calls in Pipeline-Modulen → Build-Failure
+- `globalId`-Assignierung in Pipeline → Build-Failure (bereits via PIPELINE_GLOBALID_ASSIGNMENT_GUARD)
+- Export von `TelegramMediaItem` außerhalb Pipeline → Build-Failure
+
+**Documentation Sync:**
+- Contract und Masterplan MÜSSEN synchronized bleiben
+- Änderungen an einem Dokument MÜSSEN im anderen reflektiert werden
+- Review-Checkliste in PR-Template ergänzen
+
+---
+
+## 11. Referenzen
 
 - [MEDIA_NORMALIZATION_CONTRACT.md](docs/v2/MEDIA_NORMALIZATION_CONTRACT.md)
 - [TELEGRAM_PARSER_CONTRACT.md](contracts/TELEGRAM_PARSER_CONTRACT.md)
@@ -576,6 +730,7 @@ class TelegramBundleToMediaItemMapper {
 
 ### A.1 TEXT-Nachricht mit strukturierten Feldern
 
+**Movie Example:**
 ```json
 {
   "id": 387973120,
@@ -592,6 +747,26 @@ class TelegramBundleToMediaItemMapper {
   "director": "John Doe",
   "lengthMinutes": 120,
   "productionCountry": "US"
+}
+```
+
+**TV Show Example:**
+```json
+{
+  "id": 387973121,
+  "chatId": -1001434421634,
+  "date": 1731704800,
+  "dateIso": "2024-11-15T19:46:40Z",
+  "tmdbUrl": "https://www.themoviedb.org/tv/98765-tv-show-name",
+  "tmdbRating": 8.2,
+  "year": 2019,
+  "originalTitle": "The TV Show",
+  "text": "📺 The TV Show (2019)\n⭐ 8.2/10",
+  "genres": ["Drama", "Thriller"],
+  "fsk": 16,
+  "director": "Jane Smith",
+  "lengthMinutes": 45,
+  "productionCountry": "UK"
 }
 ```
 
@@ -657,9 +832,18 @@ class TelegramBundleToMediaItemMapper {
 
 | Begriff | Definition |
 |---------|------------|
-| **Structured Bundle** | Gruppe von 2-3 Telegram-Nachrichten mit identischem Timestamp, die zusammen ein Media-Item beschreiben |
+| **Structured Bundle** | Gruppe von 2-3 Telegram-Nachrichten mit identischem Timestamp, die zusammen ein Media-Item beschreiben und die Bundle Cohesion Gate bestehen |
+| **BundleCandidate** | Nachrichten mit identischem Timestamp, die als potentielles Bundle gruppiert werden, aber noch nicht die Cohesion Gate durchlaufen haben |
+| **BundleKey** | Eindeutiger Identifikator: (chatId, timestamp, discriminator) - wobei discriminator Album-ID oder messageId-Proximity-basiert ist |
+| **Bundle Cohesion Gate** | Deterministische Prüfung, ob ein BundleCandidate als Structured Bundle behandelt werden darf (Contract R1b) |
 | **3er-Cluster** | Bundle aus PHOTO + TEXT + VIDEO |
 | **2er-Cluster** | Bundle aus TEXT + VIDEO oder PHOTO + VIDEO |
 | **Zero-Parsing-Path** | Pfad ohne Titel-Parsing dank strukturierter Metadaten |
 | **Pass-Through** | TMDB-ID/Jahr/etc. werden unverändert von Quelle zu RawMediaMetadata übernommen |
-| **Tie-Breaker** | Deterministische Regel zur Auswahl bei mehreren gleichwertigen Optionen |
+| **Schema Guards** | Erlaubte Sanity Checks, die ungültige Werte auf null setzen (Contract R4) |
+| **Work** | Kanonikalisierbares Entity (Movie/Episode), das downstream aufgelöst wird |
+| **PlayableAsset** | Konkrete Video-Datei/Stream-Referenz (remoteId/fileId etc.) |
+| **WorkKey** | Temporärer Schlüssel zur Gruppierung von Assets: tmdb:<type>:<id> oder pipeline-lokal |
+| **Primary Asset** | Deterministisch gewähltes "Haupt"-Asset bei Multi-Video-Bundles (Contract R8b) |
+| **Lossless Emission** | Alle VIDEOs werden emittiert, keine Varianten werden verworfen (Contract R8) |
+| **Canonical Linking** | Verknüpfung aller PlayableAssets an dieselbe canonicalId downstream (Contract Section 2.5) |
