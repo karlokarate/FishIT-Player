@@ -135,6 +135,8 @@ Key docs:
   - `docs/v2/telegram/TDLIB_FINAL_REVIEW_UPDATED.md`
   - `docs/v2/telegram/TELEGRAM_TDLIB_V2_INTEGRATION.md`
   - `/contracts/TELEGRAM_PARSER_CONTRACT.md` ⚠️ **Binding Contract (Draft)**
+  - `/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` ⚠️ **Binding Contract**
+  - `docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md` – Structured bundle design
   - `docs/v2/telegram/TELEGRAM_PLAYBACK_PIPELINE_AUDIT.md`
   - `docs/v2/telegram/TDLIB_STREAMING_THUMBNAILS_SSOT.md`
   - `docs/v2/telegram/TDLIB_STREAMING_WITH_HEADER_VALIDATION.md`

@@ -8,6 +8,32 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Telegram Structured Bundles Design (2025-12-17)
+
+- **docs(telegram)**: Created comprehensive Structured Bundles documentation
+  - **TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md**: Full design document in `docs/v2/`
+    - Analysis of 398 Telegram chat exports → 8 chats with structured metadata
+    - Bundle concept: PHOTO→TEXT→VIDEO clusters with identical timestamp
+    - Zero-Parsing-Path for TMDB-ID, year, FSK, genres from TEXT messages
+    - Detailed implementation plan with 8 phases and checkboxes
+  - **TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md**: Binding contract in `contracts/`
+    - Bundle recognition rules (R1-R3)
+    - Metadata extraction rules (R4-R6)
+    - Mapping rules (R7-R9)
+    - Contract compliance (R10-R11)
+    - Required unit and integration tests
+- **docs(agents)**: Updated AGENTS.md Section 15
+  - Added `TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` to Contract Inventory
+  - Added to Required Contracts for Telegram features
+- **docs(pipeline)**: Updated `pipeline/telegram/README.md`
+  - Added Structured Bundle Grouping to Allowed section
+  - Added Structured Bundles (NEW) section with contract reference
+  - Added Related Contracts section
+- **docs(roadmap)**: Added Phase 2.4 – Telegram Structured Bundles
+  - 7 sub-phases with detailed task checklists
+  - Modules affected list
+  - Links to design documents
+
 ### Documentation Sync (2025-12-16)
 
 - **docs(sync)**: Comprehensive documentation update to match IST-Zustand

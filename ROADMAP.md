@@ -177,6 +177,80 @@ Status: ✅ COMPLETED
 
 ---
 
+## Phase 2.4 – Telegram Structured Bundles
+
+Status: 📋 PLANNED (Dec 2025)
+
+### Goals
+
+- Implement structured bundle recognition for Telegram chats
+- Enable zero-parsing path for chats with pre-structured metadata
+- Pass through TMDB-IDs, FSK ratings from TEXT messages
+
+### Background
+
+Analysis of 398 Telegram chat exports revealed that **8 chats** contain structured metadata in TEXT messages (tmdbUrl, year, fsk, genres, etc.). These can be grouped with VIDEO/PHOTO messages by identical timestamp into "Structured Bundles".
+
+This enables:
+- **Zero-Parsing Path:** Direct TMDB-ID pass-through from source
+- **Zero-API-Call Path:** Skip TMDB search for structured chats
+- **Kids-Filter:** FSK values available without TMDB lookup
+
+### Tasks
+
+- [ ] **Phase 2.4.1:** Core Model Extensions
+  - [ ] Add `ageRating: Int?` to `RawMediaMetadata`
+  - [ ] Add `rating: Double?` to `RawMediaMetadata`
+  - [ ] Unit tests for model extensions
+
+- [ ] **Phase 2.4.2:** TelegramMediaItem Extensions
+  - [ ] Add structured bundle fields (structuredTmdbId, structuredYear, structuredFsk, etc.)
+  - [ ] Add `TelegramBundleType` enum (FULL_3ER, COMPACT_2ER, SINGLE)
+  - [ ] Update `toRawMediaMetadata()` for new fields
+  - [ ] Unit tests
+
+- [ ] **Phase 2.4.3:** Message Bundler
+  - [ ] Implement `TelegramMessageBundler` (timestamp grouping)
+  - [ ] Implement `TelegramMessageBundle` data class
+  - [ ] Implement bundle classification (3er, 2er, single)
+  - [ ] Unit tests with JSON fixtures
+
+- [ ] **Phase 2.4.4:** Metadata Extractor
+  - [ ] Implement `TelegramStructuredMetadataExtractor`
+  - [ ] TMDB-URL to ID parsing (`/movie/(\d+)`)
+  - [ ] Structured field extraction
+  - [ ] Unit tests
+
+- [ ] **Phase 2.4.5:** Bundle-to-Item Mapper
+  - [ ] Implement `TelegramBundleToMediaItemMapper`
+  - [ ] Tie-breaker rules (largest file, longest duration)
+  - [ ] Poster selection (best resolution)
+  - [ ] Unit tests
+
+- [ ] **Phase 2.4.6:** Pipeline Integration
+  - [ ] Wire bundler into `TelegramPipelineAdapter`
+  - [ ] Update `TelegramCatalogPipelineImpl` for bundle-aware processing
+  - [ ] Integration tests with real chat exports
+
+- [ ] **Phase 2.4.7:** Normalizer Optimization
+  - [ ] Skip TMDB search when `externalIds.tmdbId` present
+  - [ ] Performance tests
+
+### Modules Affected
+
+- `core/model` (RawMediaMetadata extensions)
+- `pipeline/telegram/grouper` (new package)
+- `pipeline/telegram/mapper` (bundle mapper)
+- `pipeline/telegram/model` (TelegramMediaItem extensions)
+- `core/metadata-normalizer` (TMDB-ID shortcut)
+
+### Docs
+
+- [docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md](docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md) – Full design
+- [contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md](contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) – Binding contract
+
+---
+
 ## Phase 3 – SIP / Internal Player
 
 Status: 🚧 IN PROGRESS (Player Migration Phase 7 of 14 Complete)

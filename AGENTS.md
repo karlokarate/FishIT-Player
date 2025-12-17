@@ -910,7 +910,7 @@ The contracts folder is the **single source of truth** for:
 - Media normalization rules (`docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` – canonical location)
 - Logging standards (`LOGGING_CONTRACT_V2.md`)
 - Player behavior specifications (`INTERNAL_PLAYER_*_CONTRACT_*.md`)
-- Pipeline-specific contracts (`TELEGRAM_PARSER_CONTRACT.md`)
+- Pipeline-specific contracts (`TELEGRAM_PARSER_CONTRACT.md`, `TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md`)
 
 - For v2, the ONLY authoritative contract copies are in docs/v2/. Any /contracts/* file must be forward-only.
 - Agents must not create new contract files outside docs/v2/.
@@ -926,7 +926,7 @@ Before any code modification, agents MUST verify they have read:
 | Pipeline modules | `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
 | Logging code | `/contracts/LOGGING_CONTRACT_V2.md` |
 | Player/Playback | All `/contracts/INTERNAL_PLAYER_*` files |
-| Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md` |
+| Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md`, `/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` |
 
 ### 15.3. Contract Inventory
 
@@ -938,6 +938,7 @@ Before any code modification, agents MUST verify they have read:
 | `INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` | Resume, Kids | Binding |
 | `INTERNAL_PLAYER_*_CONTRACT_*.md` | Player phases | Binding |
 | `TELEGRAM_PARSER_CONTRACT.md` | Telegram pipeline | Draft |
+| `TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` | Telegram Structured Bundles | Binding |
 
 ### 15.4. Conflict Resolution
 
