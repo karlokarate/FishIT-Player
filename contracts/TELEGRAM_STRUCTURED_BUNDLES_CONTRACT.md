@@ -56,7 +56,7 @@ Fields that may appear in TEXT messages from structured chats:
 |------|------------|-------|
 | **Work** | Canonicalizable entity (movie/episode) resolved downstream | A logical work that can have multiple playback variants |
 | **PlayableAsset** | Concrete video file/stream reference (Telegram remoteId/fileId etc.) | A playable file belonging to a Work |
-| **WorkKey** | `tmdb:<type>:<id>` when structured TMDB data is present (type from URL), else pipeline-local key (NOT globalId; MUST be marked as pipeline-local and ephemeral) | Temporary key for grouping assets before normalization |
+| **WorkKey** | `tmdb:<id>` when structured TMDB data is present, else pipeline-local key (NOT globalId; MUST be marked as pipeline-local and ephemeral) | Temporary key for grouping assets before normalization |
 
 ---
 
@@ -166,7 +166,7 @@ Fields that may appear in TEXT messages from structured chats:
 ### 2.5 Canonical Linking Rule (Binding)
 
 **Canonical Linking:**
-> - If `externalIds.tmdbId` is present in `RawMediaMetadata`, downstream MUST compute `canonicalId` as `tmdb:<type>:<id>`.
+> - If `externalIds.tmdbId` is present in `RawMediaMetadata`, downstream MUST compute `canonicalId` as `tmdb:<id>` (per MEDIA_NORMALIZATION_CONTRACT.md and TMDB Canonical Identity Contract).
 > - All playable assets (including alternates) MUST be linkable to the same `canonicalId` downstream.
 > - The pipeline MUST NOT compute `canonicalId`/`globalId`; it only passes through TMDB ID/type and structured raw fields.
 
@@ -418,6 +418,7 @@ Before each merge MUST be verified:
 |---------|------|----------|
 | 1.0 | 2025-12-17 | Initial Release |
 | 2.0 | 2025-12-17 | English-only, UnifiedLog compliance, canonical tmdb: format, multi-variant RawMediaMetadata clarification |
+| 2.1 | 2025-12-17 | Fixed canonical ID format to `tmdb:<id>` per MEDIA_NORMALIZATION_CONTRACT (was incorrectly `tmdb:<type>:<id>`) |
 
 ---
 

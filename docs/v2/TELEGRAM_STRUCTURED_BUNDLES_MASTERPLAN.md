@@ -164,7 +164,7 @@ Timestamp: 1731704712 (identical for all 3 messages)
 │  └── NO: Normal path (title parsing, TMDB search, etc.)               │
 │                                                                       │
 │  Canonical Linking (Contract Section 2.5):                            │
-│  ├── tmdbId present → canonicalId = tmdb:<type>:<id>                 │
+│  ├── tmdbId present → canonicalId = tmdb:<id>                        │
 │  └── All PlayableAssets are linked to same canonicalId               │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -863,7 +863,7 @@ UnifiedLog.e(TAG, exception) { "Failed to process bundle: chatId=$chatId" }
 | **Schema Guards** | Allowed sanity checks that set invalid values to null (Contract R4) |
 | **Work** | Canonicalizable entity (movie/episode) resolved downstream |
 | **PlayableAsset** | Concrete video file/stream reference (remoteId/fileId etc.) |
-| **WorkKey** | Temporary key for grouping assets: tmdb:<type>:<id> or pipeline-local |
+| **WorkKey** | Temporary key for grouping assets: `tmdb:<id>` or pipeline-local |
 | **Primary Asset** | Deterministically chosen "main" asset for multi-video bundles (Contract R8b) |
 | **Lossless Emission** | All VIDEOs are emitted, no variants are dropped (Contract R8) |
 | **Canonical Linking** | Linking all PlayableAssets to the same canonicalId downstream (Contract Section 2.5) |
