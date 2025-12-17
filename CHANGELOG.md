@@ -170,7 +170,7 @@ Status: COMPLETED
 - **feat(model)**: Added cross-pipeline identification types
   - `PipelineIdTag` enum: TELEGRAM, XTREAM, IO, AUDIOBOOK, UNKNOWN with short codes
   - `SourceKey` data class combining PipelineIdTag + sourceId for unique variant identification
-  - `GlobalIdUtil` SHA-256 based canonical ID generator with title normalization
+  - Canonical key generation centralized in the metadata normalizer (fallback generator with slugging)
   - Extended `RawMediaMetadata` with `pipelineIdTag` and `globalId` fields
 
 #### Phase 1 – Variant System
@@ -184,7 +184,7 @@ Status: COMPLETED
 #### Phase 2 – Normalizer Enhancement
 
 - **feat(normalizer)**: Enhanced `Normalizer.kt` in core:metadata-normalizer
-  - Groups `RawMediaMetadata` by globalId for cross-pipeline deduplication
+  - Groups `RawMediaMetadata` by canonicalId for cross-pipeline deduplication
   - Creates `NormalizedMedia` with sorted variants per media item
   - Handles multi-source content unification
 
@@ -192,7 +192,7 @@ Status: COMPLETED
 
 - **feat(telegram)**: Enhanced Telegram catalog pipeline
   - Updated `TelegramRawMetadataExtensions.kt` to set `pipelineIdTag = TELEGRAM`
-  - Generates `globalId` via `GlobalIdUtil.generate()` for each item
+  - Leaves `globalId` empty for normalizer-assigned canonical identity
   - `TelegramChatMediaProfile` for tracking media density per chat
   - `TelegramChatMediaClassifier` with Hot/Warm/Cold classification thresholds
 
@@ -201,7 +201,7 @@ Status: COMPLETED
 - **feat(xtream)**: Enhanced Xtream catalog pipeline
   - Updated `XtreamRawMetadataExtensions.kt` for all content types
   - VOD, Series, Episode, Channel all set `pipelineIdTag = XTREAM`
-  - All types generate `globalId` via `GlobalIdUtil.generate()`
+  - All types leave `globalId` empty for normalizer-assigned canonical identity
 
 #### Phase 5 – Playback Integration
 

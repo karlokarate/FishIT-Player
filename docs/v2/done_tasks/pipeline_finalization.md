@@ -90,35 +90,36 @@ Constructor and `copy()` must expose all fields.
 
 ---
 
-### Task 0.3 – Global ID generation helper
+### Task 0.3 – Canonical key generator
 
-**Goal:** Provide a deterministic global ID (`globalId`) for any media, based on normalized title and year.
+**Goal:** Provide a deterministic canonical key for media when TMDB identity is unavailable, based on normalized title and year.
 
 **File to create:**
 
-- `core/model/src/main/java/com/fishit/player/core/model/GlobalIdUtil.kt`
+- `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/FallbackCanonicalKeyGenerator.kt`
 
 **Implementation requirements:**
 
 - Implement:
   ```kotlin
-  object GlobalIdUtil {
-      fun generateCanonicalId(originalTitle: String, year: Int?): String
+  object FallbackCanonicalKeyGenerator {
+      fun generateFallbackCanonicalId(
+          originalTitle: String,
+          year: Int?,
+          season: Int?,
+          episode: Int?,
+          mediaType: MediaType,
+      ): CanonicalId?
   }
-````
+```
 
 * Behavior:
 
-  * Normalize `originalTitle`:
-
-    * trim whitespace,
-    * convert to lowercase,
-    * collapse multiple spaces,
-    * strip obvious scene tags like resolution, codecs, group tags (basic regex, do not over-engineer).
-  * Compose base string: `<normalizedTitle>|<year-or-unknown>` (use `"unknown"` if year is null).
-  * Hash base string using SHA-256.
-  * Return `canonicalId` as `"cm:" + first 16 hex chars of hash`.
-* All pipelines must call `GlobalIdUtil.generateCanonicalId(...)` when constructing `RawMediaMetadata.globalId`.
+  * Normalize `originalTitle` by stripping obvious scene tags (resolution, codecs, groups) and collapsing whitespace.
+  * Build episode keys as `episode:<slug>:SxxExx` only when season and episode are present.
+  * Build movie keys as `movie:<slug>[:<year>]`.
+  * Return null for media without sufficient metadata (including LIVE).
+* Pipelines leave `globalId` empty; the normalizer assigns canonical identity centrally.
 
 ---
 
@@ -338,7 +339,7 @@ Constructor and `copy()` must expose all fields.
 * In `TelegramRawMetadataExtensions.kt`, extend the `RawMediaMetadata` constructor call to set:
 
   * `pipelineIdTag = PipelineIdTag.TELEGRAM`
-  * `globalId = GlobalIdUtil.generateCanonicalId(originalTitle, year)`
+  * leave `globalId` empty (assigned centrally by the normalizer)
   * `sourceId = remoteId ?: "msg:$chatId:$messageId"` (already present; now consistent with SourceKey).
 
 ---
@@ -589,7 +590,7 @@ Constructor and `copy()` must expose all fields.
       * VOD: `"vod:$streamId"`
       * Episode: `"episode:$seriesId:$episodeId"`,
     * `pipelineIdTag = PipelineIdTag.XTREAM`,
-    * `globalId = GlobalIdUtil.generateCanonicalId(originalTitle, year)`,
+    * leave `globalId` empty (assigned centrally by the normalizer),
     * `poster`/`thumbnail` using image ref extensions,
     * `placeholderThumbnail = null` (no mini-thumbs from Xtream).
 
@@ -772,7 +773,7 @@ Execute tasks in this order:
 
    * [ ] Task 0.1 – PipelineIdTag & SourceKey
    * [ ] Task 0.2 – Core model types (`MediaType`, `SourceType`, `ExternalIds`, `ImageRef`, `RawMediaMetadata`)
-   * [ ] Task 0.3 – GlobalIdUtil
+   * [ ] Task 0.3 – Canonical key generator
 
 2. **Phase 1 – Variants & Normalized Media**
 

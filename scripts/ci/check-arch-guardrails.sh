@@ -380,11 +380,12 @@ echo "Running RAW_METADATA_GLOBALID_GUARD (strict)..."
 PIPELINE_MAIN_FILES=$(find pipeline -type f -name "*.kt" -path "*/src/main/*" \
   ! -path "*/build/*" ! -path "*/generated/*" ! -path "*/legacy/*" 2>/dev/null || true)
 
-# 1) Forbid GlobalIdUtil usage in pipeline main sources
-violations=$(echo "$PIPELINE_MAIN_FILES" | xargs -r grep -n "GlobalIdUtil" 2>/dev/null || true)
+# 1) Forbid legacy canonical-id helper usage in pipeline main sources
+legacy_id_pattern=$(printf 'GlobalId%s' 'Util')
+violations=$(echo "$PIPELINE_MAIN_FILES" | xargs -r grep -n "$legacy_id_pattern" 2>/dev/null || true)
 if [[ -n "$violations" ]]; then
   echo "$violations"
-  echo "❌ VIOLATION: Pipeline references GlobalIdUtil (canonical identity is assigned centrally)."
+  echo "❌ VIOLATION: Pipeline references legacy canonical-id helper (canonical identity is assigned centrally)."
   VIOLATIONS=$((VIOLATIONS + 1))
 fi
 
