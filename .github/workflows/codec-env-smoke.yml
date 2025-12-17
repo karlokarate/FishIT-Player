@@ -4,31 +4,52 @@ on:
   push:
   workflow_dispatch:
 
+env:
+  ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
+  ANDROID_HOME: ${{ github.workspace }}/.android-sdk
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: gradle
 
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}
+          key: ${{ runner.os }}-android-sdk-v2-${{ hashFiles('**/build.gradle*', '**/settings.gradle*', 'gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-android-sdk-v2-
+
       - name: Prepare Android SDK
-        env:
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
-          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
         run: |
+          chmod +x tools/env/setup_android.sh
           tools/env/setup_android.sh
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Gradle assemble
+        run: ./gradlew :app-v2:assembleDebug --no-daemon --stacktrace
         env:
-          ANDROID_SDK_ROOT: ${{ github.workspace }}/.android-sdk
-          ANDROID_HOME: ${{ github.workspace }}/.android-sdk
-        run: ./gradlew :app-v2:assembleDebug
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
 
       - name: Upload APK artifact
         if: success() || failure()
