@@ -6,7 +6,7 @@ fun String.toTmdbIdOrNull(): TmdbId? {
     val numericPart =
             when {
                 startsWith("tmdb:") -> substringAfter("tmdb:")
-                matches(Regex("^\d+$")) -> this
+                matches(Regex("^\\d+$")) -> this
                 else -> return null
             }
 

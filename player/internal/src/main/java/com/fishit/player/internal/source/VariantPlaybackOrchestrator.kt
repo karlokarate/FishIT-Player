@@ -80,8 +80,9 @@ class VariantPlaybackOrchestrator(
                     variant.available && !VariantHealthStore.isPermanentlyDead(variant.sourceKey)
                 }
 
+        val canonicalLabel = media.canonicalId?.value ?: "unlinked"
         if (candidateVariants.isEmpty()) {
-            UnifiedLog.w(TAG, "No available variants for ${media.globalId}")
+            UnifiedLog.w(TAG, "No available variants for $canonicalLabel")
             return PlaybackResult.NoVariantsAvailable
         }
 
@@ -141,7 +142,7 @@ class VariantPlaybackOrchestrator(
             }
         }
 
-        UnifiedLog.e(TAG, "All $attemptedCount variants failed for ${media.globalId}")
+        UnifiedLog.e(TAG, "All $attemptedCount variants failed for $canonicalLabel")
         return PlaybackResult.AllVariantsFailed(attemptedCount, lastError)
     }
 

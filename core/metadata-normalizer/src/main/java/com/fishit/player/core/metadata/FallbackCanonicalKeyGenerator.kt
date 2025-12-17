@@ -20,7 +20,8 @@ object FallbackCanonicalKeyGenerator {
     ): CanonicalId? {
         if (mediaType == MediaType.LIVE) return null
 
-        val slug = originalTitle.toSlug()
+        val normalizedTitle = GlobalIdUtil.normalizeTitle(originalTitle)
+        val slug = GlobalIdUtil.normalizeForKey(normalizedTitle)
 
         return when {
             season != null && episode != null ->
@@ -32,10 +33,4 @@ object FallbackCanonicalKeyGenerator {
         }
     }
 
-    private fun String.toSlug(): String =
-            lowercase()
-                    .replace(Regex("[^a-z0-9\\s-]"), "")
-                    .replace(Regex("\\s+"), "-")
-                    .replace(Regex("-+"), "-")
-                    .trim('-')
 }

@@ -19,7 +19,7 @@ import com.fishit.player.core.model.ids.asPipelineItemId
  * NormalizedMedia with multi-variant support.
  *
  * **Algorithm:**
- * 1. Group raw items by [globalId] (canonical ID based on normalized title + year)
+ * 1. Group raw items by canonicalId (canonical ID based on normalized title + year)
  * 2. For each group, create a [NormalizedMedia] with all variants
  * 3. Sort variants by user preferences using [VariantSelector]
  * 4. Set primary source to the best variant
@@ -57,7 +57,7 @@ object Normalizer {
         }
 
         val linkedNormalized =
-                linkedGroups.mapNotNull { (globalId, group) ->
+                linkedGroups.mapNotNull { (canonicalId, group) ->
                     if (group.isEmpty()) return@mapNotNull null
 
                     val reference = group.first()
@@ -74,7 +74,7 @@ object Normalizer {
                     val bestVariant = variants.first()
 
                     NormalizedMedia(
-                            globalId = globalId,
+                            canonicalId = canonicalId,
                             title = reference.originalTitle, // Later: apply title cleaning here
                             year = reference.year,
                             mediaType = reference.mediaType,
@@ -90,10 +90,7 @@ object Normalizer {
                     val variants = mutableListOf(variant)
 
                     NormalizedMedia(
-                            globalId =
-                                    CanonicalId(
-                                            "unlinked:${raw.sourceType}:${raw.sourceId}"
-                                    ),
+                            canonicalId = null,
                             title = raw.originalTitle,
                             year = raw.year,
                             mediaType = raw.mediaType.takeUnless { it == MediaType.UNKNOWN }

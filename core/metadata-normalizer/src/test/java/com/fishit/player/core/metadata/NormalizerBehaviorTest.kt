@@ -25,7 +25,7 @@ class NormalizerBehaviorTest {
 
         assertEquals(1, normalized.size)
         val entry = normalized.first()
-        assertTrue(entry.globalId.value.startsWith("unlinked:XTREAM:xtream:live:1"))
+        assertEquals(null, entry.canonicalId)
         assertEquals(MediaType.LIVE, entry.mediaType)
     }
 
@@ -53,6 +53,8 @@ class NormalizerBehaviorTest {
         val normalized = Normalizer.normalize(listOf(first, second))
 
         assertEquals(2, normalized.size)
-        assertTrue(normalized[0].globalId != normalized[1].globalId)
+        assertEquals(null, normalized[0].canonicalId)
+        assertEquals(null, normalized[1].canonicalId)
+        assertTrue(normalized[0].primarySourceId != normalized[1].primarySourceId)
     }
 }
