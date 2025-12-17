@@ -31,13 +31,6 @@ class IdsTest {
         assertEquals(pipelineItemId, PipelineItemId(pipelineItemId.value))
     }
 
-    @Test
-    fun `parses tmdb id only from tmdb-prefixed or numeric strings`() {
-        assertEquals(TmdbId(550), "tmdb:550".toTmdbIdOrNull())
-        assertEquals(TmdbId(1399), "1399".toTmdbIdOrNull())
-        assertEquals(null, "xtream:vod:12345".toTmdbIdOrNull())
-    }
-
     private fun acceptCanonical(id: CanonicalId): CanonicalId = id
 
     private fun acceptRemote(id: RemoteId): RemoteId = id

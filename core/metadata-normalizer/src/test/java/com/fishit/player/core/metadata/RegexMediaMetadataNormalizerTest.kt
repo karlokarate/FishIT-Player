@@ -574,4 +574,25 @@ class RegexMediaMetadataNormalizerTest {
             // Then: type remains UNKNOWN (no inference possible)
             assertEquals(MediaType.UNKNOWN, normalized.mediaType)
         }
+
+    @Test
+    fun `xtream media type is not inferred from parsed data`() =
+        runTest {
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Some Show S01E01",
+                    mediaType = MediaType.MOVIE,
+                    year = null,
+                    season = null,
+                    episode = null,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.XTREAM,
+                    sourceLabel = "Xtream: Movies",
+                    sourceId = "xtream://vod/222",
+                )
+
+            val normalized = normalizer.normalize(raw)
+
+            assertEquals(MediaType.MOVIE, normalized.mediaType)
+        }
 }

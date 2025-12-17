@@ -422,16 +422,16 @@ class DefaultCatalogSyncService @Inject constructor(
      * - Source selection in unified detail screen
      * - Quality/language comparison across sources
      */
-      private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef = MediaSourceRef(
-          sourceType = sourceType,
-          sourceId = sourceId.asPipelineItemId(),
-        sourceLabel = sourceLabel,
-        quality = null, // TODO: Extract from RawMediaMetadata.quality when available
-        languages = null, // TODO: Extract from RawMediaMetadata.languages when available
-        format = null, // TODO: Extract from RawMediaMetadata.format when available
-        sizeBytes = null, // TODO: Add to RawMediaMetadata
-        durationMs = durationMinutes?.let { it * 60_000L },
-        priority = calculateSourcePriority(),
+    private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef = MediaSourceRef(
+            sourceType = sourceType,
+            sourceId = sourceId.asPipelineItemId(),
+            sourceLabel = sourceLabel,
+            quality = null, // TODO: Extract from RawMediaMetadata.quality when available
+            languages = null, // TODO: Extract from RawMediaMetadata.languages when available
+            format = null, // TODO: Extract from RawMediaMetadata.format when available
+            sizeBytes = null, // TODO: Add to RawMediaMetadata
+            durationMs = durationMinutes?.let { it * 60_000L },
+            priority = calculateSourcePriority(),
     )
 
     /**

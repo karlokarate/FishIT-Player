@@ -79,7 +79,7 @@ constructor(
      *
      * Use when navigating from a pipeline-specific item to unified detail.
      */
-    fun loadBySourceId(sourceId: com.fishit.player.core.model.ids.PipelineItemId) {
+    fun loadBySourceId(sourceId: PipelineItemId) {
         viewModelScope.launch {
             useCases.findBySourceId(sourceId).collect { mediaState ->
                 when (mediaState) {

@@ -145,6 +145,7 @@ val xtreamPosition = 0.75f * 7_500_000 = 5_625_000    // 1:33:45 (!)
    ```
    movie:fight-club:1999
    movie:inception:2010
+   movie:inception          // Year optional when unknown
    ```
 
 3. **Series + Season + Episode** (für Episoden ohne TMDB)
@@ -152,6 +153,9 @@ val xtreamPosition = 0.75f * 7_500_000 = 5_625_000    // 1:33:45 (!)
    episode:game-of-thrones:S01E01
    episode:breaking-bad:S05E16
    ```
+
+Live-Inhalte erhalten keinen Canonical Key und werden als eigenständige Katalogeinträge (ohne
+Cross-Pipeline-Linking) behandelt.
 
 ### Normalisierung
 
@@ -185,7 +189,7 @@ enum class MediaKind {
 ```kotlin
 data class MediaSourceRef(
     val sourceType: SourceType,       // TELEGRAM, XTREAM, IO, etc.
-    val sourceId: String,             // z.B. "telegram:123:456"
+    val sourceId: PipelineItemId,     // z.B. PipelineItemId("telegram:123:456")
     val sourceLabel: String,          // "Telegram: Movie Group"
     val quality: MediaQuality?,       // 1080p, 4K, HDR, HEVC
     val languages: LanguageInfo?,     // German/English, Multi

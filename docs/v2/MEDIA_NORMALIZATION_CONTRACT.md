@@ -130,7 +130,9 @@ data class CanonicalMediaId(
 > **Implementation note (v2):** The concrete ID wrappers live in
 > `core/model/src/main/java/com/fishit/player/core/model/ids/` as Kotlin value classes
 > (`CanonicalId`, `PipelineItemId`, `RemoteId`, `TmdbId`). These wrappers preserve the existing
-> String/Int storage formats while preventing accidental ID mix-ups at compile time.
+> String/Int storage formats while preventing accidental ID mix-ups at compile time. Xtream
+> `mediaType` is taken directly from the endpoint (no inference), and LIVE entries are treated as
+> unlinked (no canonical id generation).
 
 ---
 
@@ -158,7 +160,7 @@ fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 - Attempt to group/merge media items into canonical works.
 - Decide cross-pipeline identity.
 - **Compute or assign `globalId`** – this field MUST remain empty (`""`). Canonical identity is computed centrally by `:core:metadata-normalizer`.
-- Import or use `GlobalIdUtil` – this utility is exclusively for the normalizer layer.
+- Import or use `FallbackCanonicalKeyGenerator` – this utility is exclusively for the normalizer layer.
 
 ### 2.1.1 GlobalId Isolation (HARD RULE)
 
@@ -171,7 +173,7 @@ fun PipelineMediaItem.toRawMediaMetadata(): RawMediaMetadata
 - Computing globalId before normalization would create inconsistent/duplicate canonical IDs.
 
 **Enforcement:**
-- CI guardrails (`GLOBAL_ID_UTIL_OWNERSHIP_GUARD`) fail the build if any file outside `core/metadata-normalizer/` imports or uses `GlobalIdUtil`.
+- CI guardrails (`FALLBACK_CANONICAL_KEY_GUARD`) fail the build if any file outside `core/metadata-normalizer/` imports or uses `FallbackCanonicalKeyGenerator`.
 - CI guardrails (`PIPELINE_GLOBALID_ASSIGNMENT_GUARD`) fail the build if any `pipeline/**/*.kt` file assigns to `globalId` (except empty string).
 
 **Allowed in Pipelines:**
@@ -187,11 +189,19 @@ return RawMediaMetadata(
 **Forbidden in Pipelines:**
 ```kotlin
 // ❌ VIOLATION: Pipeline computing globalId
-import com.fishit.player.core.metadata.GlobalIdUtil
+import com.fishit.player.core.metadata.FallbackCanonicalKeyGenerator
+import com.fishit.player.core.model.MediaType
 
 return RawMediaMetadata(
     originalTitle = rawTitle,
-    globalId = GlobalIdUtil.generateCanonicalId(rawTitle, year), // FORBIDDEN
+    globalId =
+            FallbackCanonicalKeyGenerator.generateFallbackCanonicalId(
+                    originalTitle = rawTitle,
+                    year = year,
+                    season = null,
+                    episode = null,
+                    mediaType = MediaType.MOVIE,
+            ), // FORBIDDEN
 )
 ```
 
@@ -348,7 +358,7 @@ Any of the following is considered a **contract violation**:
 
 - Pipeline code performing title normalization or TMDB lookups.
 - Direct computation of `CanonicalMediaId` in a pipeline.
-- Pipeline sets `RawMediaMetadata.globalId` or calls any canonical-id generator (GlobalIdUtil/generateCanonicalId).
+- Pipeline sets `RawMediaMetadata.globalId` or calls any canonical-id generator (FallbackCanonicalKeyGenerator/generateFallbackCanonicalId).
 - Persistence layer changing normalization or TMDB identity rules.
 - Tests in pipeline modules that assert normalized titles or TMDB-dependent behavior.
 

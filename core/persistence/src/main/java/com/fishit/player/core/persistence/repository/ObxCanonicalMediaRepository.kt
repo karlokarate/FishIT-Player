@@ -13,10 +13,10 @@ import com.fishit.player.core.model.repository.CanonicalMediaStats
 import com.fishit.player.core.model.repository.CanonicalMediaWithResume
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
-import com.fishit.player.core.model.ids.toTmdbIdOrNull
 import com.fishit.player.core.model.ids.CanonicalId
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.ids.asCanonicalId
+import com.fishit.player.core.persistence.toTmdbIdOrNull
 import com.fishit.player.core.persistence.obx.CanonicalKeyGenerator
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia_

@@ -5,6 +5,7 @@ import com.fishit.player.core.metadata.parser.SceneNameParser
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.RawMediaMetadata
+import com.fishit.player.core.model.SourceType
 
 /**
  * Default no-op implementation of MediaMetadataNormalizer.
@@ -68,7 +69,7 @@ class RegexMediaMetadataNormalizer(
 
         // Refine media type based on parsed metadata if UNKNOWN
         val mediaType =
-                if (raw.mediaType == MediaType.UNKNOWN) {
+                if (raw.mediaType == MediaType.UNKNOWN && raw.sourceType != SourceType.XTREAM) {
                     when {
                         season != null && episode != null -> MediaType.SERIES_EPISODE
                         year != null -> MediaType.MOVIE

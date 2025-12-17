@@ -66,7 +66,7 @@ constructor(
      * @param sourceId The pipeline source ID (e.g., "telegram:123:456")
      * @return Flow of media with sources
      */
-    fun findBySourceId(sourceId: com.fishit.player.core.model.ids.PipelineItemId): Flow<UnifiedMediaState> = flow {
+    fun findBySourceId(sourceId: PipelineItemId): Flow<UnifiedMediaState> = flow {
         emit(UnifiedMediaState.Loading)
 
         try {

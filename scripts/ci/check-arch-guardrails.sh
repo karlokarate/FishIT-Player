@@ -208,18 +208,32 @@ filter_allowlisted() {
 load_allowlist
 
 # ======================================================================
-# GLOBAL_ID_UTIL_OWNERSHIP_GUARD: Restrict GlobalIdUtil to metadata-normalizer
+# FALLBACK_CANONICAL_KEY_GUARD: Restrict fallback generator to metadata-normalizer
 # ======================================================================
-echo "Running GLOBAL_ID_UTIL_OWNERSHIP_GUARD..."
+echo "Running FALLBACK_CANONICAL_KEY_GUARD..."
 
-import_hits=$(grep -R -n -E "^[[:space:]]*import[[:space:]].*GlobalIdUtil\\b" . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git || true)
-qualified_hits=$(grep -R -n -E "\\bGlobalIdUtil\\." . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git | grep -v -E ":[[:space:]]*//" | grep -v -E ":[[:space:]]*\\*" || true)
-globalid_hits=$(printf "%s\n%s\n" "$import_hits" "$qualified_hits" | sed '/^$/d')
-violations=$(echo "$globalid_hits" | grep -vE "^(\./)?core/metadata-normalizer/" || true)
+import_hits=$(grep -R -n -E "^[[:space:]]*import[[:space:]].*FallbackCanonicalKeyGenerator\\b" . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git || true)
+qualified_hits=$(grep -R -n -E "\\bFallbackCanonicalKeyGenerator\\." . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git | grep -v -E ":[[:space:]]*//" | grep -v -E ":[[:space:]]*\\*" || true)
+fallback_hits=$(printf "%s\n%s\n" "$import_hits" "$qualified_hits" | sed '/^$/d')
+violations=$(echo "$fallback_hits" | grep -vE "^(\./)?core/metadata-normalizer/" || true)
 
 if [[ -n "$violations" ]]; then
     echo "$violations"
-    echo "❌ VIOLATION: GlobalIdUtil referenced outside core/metadata-normalizer (ownership restriction)."
+    echo "❌ VIOLATION: FallbackCanonicalKeyGenerator referenced outside core/metadata-normalizer (ownership restriction)."
+    VIOLATIONS=$((VIOLATIONS + 1))
+fi
+
+# ======================================================================
+# TMDB_PARSING_SCOPE_GUARD: toTmdbIdOrNull must live in persistence layer
+# ======================================================================
+echo "Running TMDB_PARSING_SCOPE_GUARD..."
+
+tmdb_usages=$(grep -R -n "toTmdbIdOrNull" . --include="*.kt" --exclude-dir=build --exclude-dir=generated --exclude-dir=legacy --exclude-dir=.gradle --exclude-dir=.git || true)
+tmdb_violations=$(echo "$tmdb_usages" | grep -vE "^(\./)?core/persistence/" || true)
+
+if [[ -n "$tmdb_violations" ]]; then
+    echo "$tmdb_violations"
+    echo "❌ VIOLATION: toTmdbIdOrNull() referenced outside core/persistence (persistence-only helper)."
     VIOLATIONS=$((VIOLATIONS + 1))
 fi
 
