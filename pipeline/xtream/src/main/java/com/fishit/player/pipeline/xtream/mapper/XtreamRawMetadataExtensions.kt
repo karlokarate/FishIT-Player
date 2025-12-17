@@ -24,9 +24,28 @@ import com.fishit.player.pipeline.xtream.model.XtreamVodItem
  * - Uses XtreamImageRefExtensions for conversion
  * - NO raw URLs passed through - only ImageRef
  *
+ * Live Channel Names:
+ * - Unicode block decorators (▃ ▅ ▆ █) are cleaned for display
+ * - Country prefix (DE:, US:, etc.) is preserved
+ *
  * These extensions enable seamless integration with the centralized metadata normalization
  * pipeline.
  */
+
+// Unicode block characters used as decorators in live channel names
+private val UNICODE_DECORATORS = Regex("[▃▅▆█▇▄▂░▒▓■□●○◆◇★☆⬛⬜]+")
+private val WHITESPACE_COLLAPSE = Regex("\\s+")
+
+/**
+ * Clean live channel name by removing Unicode decorators.
+ *
+ * Examples:
+ * - "▃ ▅ ▆ █ DE HEVC █ ▆ ▅ ▃" → "DE HEVC"
+ * - "DE: RTL HD" → "DE: RTL HD" (no change needed)
+ */
+private fun cleanLiveChannelName(name: String): String {
+        return name.replace(UNICODE_DECORATORS, " ").replace(WHITESPACE_COLLAPSE, " ").trim()
+}
 
 /**
  * Converts an XtreamVodItem to RawMediaMetadata.
@@ -39,6 +58,9 @@ fun XtreamVodItem.toRawMediaMetadata(
 ): RawMediaMetadata {
         val rawTitle = name
         val rawYear: Int? = null // Xtream VOD list doesn't include year; detail fetch required
+        // Encode containerExtension in sourceId for playback URL construction
+        // Format: xtream:vod:{id}:{ext} or xtream:vod:{id} if no extension
+        val sourceIdWithExt = containerExtension?.let { "xtream:vod:$id:$it" } ?: "xtream:vod:$id"
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.MOVIE,
@@ -50,9 +72,13 @@ fun XtreamVodItem.toRawMediaMetadata(
                         ExternalIds(), // Xtream list doesn't include TMDB; detail fetch required
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream VOD",
-                sourceId = "xtream:vod:$id",
+                sourceId = sourceIdWithExt,
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
+                // === Timing (v2) - for "Recently Added" sorting ===
+                addedTimestamp = added,
+                // === Rating (v2) - TMDB rating from provider ===
+                rating = rating,
                 // === ImageRef from XtreamImageRefExtensions ===
                 poster = toPosterImageRef(authHeaders),
                 backdrop = null, // VOD list doesn't provide backdrop
@@ -87,6 +113,10 @@ fun XtreamSeriesItem.toRawMediaMetadata(
                 sourceId = "xtream:series:$id",
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
+                // === Timing (v2) - for "Recently Updated" sorting ===
+                addedTimestamp = lastModified,
+                // === Rating (v2) - TMDB rating from provider ===
+                rating = rating,
                 // === ImageRef from XtreamImageRefExtensions ===
                 poster = toPosterImageRef(authHeaders),
                 backdrop = null, // Series list doesn't provide backdrop
@@ -112,6 +142,9 @@ fun XtreamEpisode.toRawMediaMetadata(
         val effectiveSeriesName = seriesName ?: seriesNameOverride
         val rawTitle = title.ifBlank { effectiveSeriesName ?: "Episode $episodeNumber" }
         val rawYear: Int? = null // Episodes typically don't have year; inherit from series
+        // Encode containerExtension in sourceId for playback URL construction
+        // Format: xtream:episode:{id}:{ext} or xtream:episode:{id} if no extension
+        val sourceIdWithExt = containerExtension?.let { "xtream:episode:$id:$it" } ?: "xtream:episode:$id"
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.SERIES_EPISODE,
@@ -122,9 +155,13 @@ fun XtreamEpisode.toRawMediaMetadata(
                 externalIds = ExternalIds(),
                 sourceType = SourceType.XTREAM,
                 sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
-                sourceId = "xtream:episode:$id",
+                sourceId = sourceIdWithExt,
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
+                // === Timing (v2) - for "Recently Added" sorting ===
+                addedTimestamp = added,
+                // === Rating (v2) ===
+                rating = rating,
                 // === ImageRef from XtreamImageRefExtensions ===
                 poster = null, // Episodes don't have poster; inherit from series
                 backdrop = null,
@@ -135,16 +172,22 @@ fun XtreamEpisode.toRawMediaMetadata(
 /**
  * Converts an XtreamChannel to RawMediaMetadata.
  *
+ * Live channel names are cleaned:
+ * - Unicode block decorators (▃ ▅ ▆ █) removed
+ * - Multiple spaces collapsed
+ * - Country prefix (DE:, US:) preserved
+ *
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with live channel fields
  */
 fun XtreamChannel.toRawMediaMetadata(
         authHeaders: Map<String, String> = emptyMap(),
 ): RawMediaMetadata {
-        val rawTitle = name
+        // Clean Unicode decorators from live channel names
+        val rawTitle = cleanLiveChannelName(name)
         return RawMediaMetadata(
                 originalTitle = rawTitle,
-                mediaType = MediaType.LIVE,
+                mediaType = MediaType.LIVE, // Live channels - NO year/scene parsing needed
                 year = null,
                 season = null,
                 episode = null,
@@ -155,6 +198,8 @@ fun XtreamChannel.toRawMediaMetadata(
                 sourceId = "xtream:live:$id",
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
+                // === Timing (v2) - for "Recently Added" sorting ===
+                addedTimestamp = added,
                 // === ImageRef from XtreamImageRefExtensions ===
                 poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
                 backdrop = null,

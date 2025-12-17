@@ -60,6 +60,19 @@ data class RawMediaMetadata(
          * @see com.fishit.player.core.metadata.FallbackCanonicalKeyGenerator for generation logic
          */
         val globalId: String = "",
+        // === Timing Fields (v2) ===
+        /**
+         * Unix epoch timestamp (seconds) when this item was added to the source.
+         *
+         * Used for:
+         * - "Recently Added" sorting
+         * - New content discovery
+         * - Catalog freshness detection
+         *
+         * Pipelines should extract this from source (e.g., Xtream "added" field). Null if not
+         * available from source.
+         */
+        val addedTimestamp: Long? = null,
         // === Imaging Fields (v2) ===
         val poster: ImageRef? = null,
         val backdrop: ImageRef? = null,
@@ -69,6 +82,14 @@ data class RawMediaMetadata(
          * loads
          */
         val placeholderThumbnail: ImageRef? = null,
+        // === Rating Fields (v2) ===
+        /**
+         * User rating from source (0.0-10.0 scale).
+         *
+         * Xtream provides this directly from TMDB scraping. Used for sorting and display before
+         * normalization.
+         */
+        val rating: Double? = null,
 )
 
 /** External IDs from upstream sources. These MUST be passed through without modification. */

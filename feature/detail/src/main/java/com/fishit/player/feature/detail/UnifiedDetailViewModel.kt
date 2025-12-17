@@ -308,7 +308,7 @@ sealed class UnifiedDetailEvent {
  * (different source).
  */
 data class ResumeCalculation(
-        val sourceId: String,
+        val sourceId: PipelineItemId,
         val positionMs: Long,
         val durationMs: Long,
         val isExact: Boolean,

@@ -3,27 +3,46 @@ package com.fishit.player.pipeline.xtream.model
 /**
  * Represents a TV series in the Xtream pipeline.
  *
- * This is a pipeline-internal DTO that will be converted to RawMediaMetadata
- * via toRawMediaMetadata() extension function.
+ * This is a pipeline-internal DTO that will be converted to RawMediaMetadata via
+ * toRawMediaMetadata() extension function.
  *
- * @property id Unique identifier for this series
+ * @property id Unique identifier for this series (may be negative on some panels)
  * @property name Display name of the series
  * @property cover URL to the series cover/poster
+ * @property backdrop URL to the series backdrop image
  * @property categoryId Category identifier this series belongs to
- * @property year Release year
+ * @property year Release year (either from 'year' field or extracted from 'releaseDate')
  * @property rating Rating (0-10 scale)
  * @property plot Plot/description
  * @property cast Cast members
+ * @property director Director(s)
  * @property genre Genre string
+ * @property releaseDate Full release date (ISO format: "2014-09-21")
+ * @property youtubeTrailer YouTube trailer URL/ID
+ * @property episodeRunTime Average episode runtime in minutes
+ * @property lastModified Unix epoch timestamp of last modification (for "recently updated" sorting)
  */
 data class XtreamSeriesItem(
-    val id: Int,
-    val name: String,
-    val cover: String? = null,
-    val categoryId: String? = null,
-    val year: String? = null,
-    val rating: Double? = null,
-    val plot: String? = null,
-    val cast: String? = null,
-    val genre: String? = null,
-)
+        val id: Int,
+        val name: String,
+        val cover: String? = null,
+        val backdrop: String? = null,
+        val categoryId: String? = null,
+        val year: String? = null,
+        val rating: Double? = null,
+        val plot: String? = null,
+        val cast: String? = null,
+        val director: String? = null,
+        val genre: String? = null,
+        val releaseDate: String? = null,
+        val youtubeTrailer: String? = null,
+        val episodeRunTime: String? = null,
+        val lastModified: Long? = null,
+) {
+    /**
+     * Validates if the series ID is valid. Some Xtream panels return negative IDs - we treat them
+     * as valid but log a warning.
+     */
+    val isValidId: Boolean
+        get() = id != 0
+}
