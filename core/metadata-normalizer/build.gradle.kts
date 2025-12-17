@@ -30,6 +30,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
+    // RE2J - linear time regex for untrusted input parsing (Telegram titles, filenames)
+    // Prevents catastrophic backtracking / ReDoS attacks
+    implementation("com.google.re2j:re2j:1.7")
+
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")

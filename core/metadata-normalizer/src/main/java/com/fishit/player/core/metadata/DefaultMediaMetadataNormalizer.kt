@@ -1,6 +1,6 @@
 package com.fishit.player.core.metadata
 
-import com.fishit.player.core.metadata.parser.RegexSceneNameParser
+import com.fishit.player.core.metadata.parser.Re2jSceneNameParser
 import com.fishit.player.core.metadata.parser.SceneNameParser
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
@@ -49,10 +49,16 @@ class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
  * - Prefers explicit metadata from RawMediaMetadata over parsed values
  * - Deterministic: same input → same output
  *
- * @property sceneParser Parser for extracting metadata from filenames
+ * ## Why RE2J?
+ *
+ * This normalizer processes **untrusted input** from Telegram and user filenames.
+ * RE2J guarantees O(n) linear time - no catastrophic backtracking possible.
+ * A malformed title can NEVER block the system.
+ *
+ * @property sceneParser Parser for extracting metadata from filenames (RE2J by default)
  */
 class RegexMediaMetadataNormalizer(
-        private val sceneParser: SceneNameParser = RegexSceneNameParser(),
+        private val sceneParser: SceneNameParser = Re2jSceneNameParser(),
 ) : MediaMetadataNormalizer {
     override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata {
         // Parse filename to extract metadata
