@@ -50,6 +50,7 @@ import com.fishit.player.core.imaging.compose.FishImage
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.asPipelineItemId
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
 import com.fishit.player.feature.detail.UnifiedDetailEvent
@@ -81,7 +82,7 @@ fun DetailScreen(
 
     // Load media on first composition
     LaunchedEffect(mediaId) {
-        viewModel.loadBySourceId(mediaId)
+        viewModel.loadBySourceId(mediaId.asPipelineItemId())
     }
 
     // Handle events

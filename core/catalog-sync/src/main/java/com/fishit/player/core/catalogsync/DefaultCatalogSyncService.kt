@@ -4,6 +4,7 @@ import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
+import com.fishit.player.core.model.ids.asPipelineItemId
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
@@ -422,15 +423,15 @@ class DefaultCatalogSyncService @Inject constructor(
      * - Quality/language comparison across sources
      */
     private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef = MediaSourceRef(
-        sourceType = sourceType,
-        sourceId = sourceId,
-        sourceLabel = sourceLabel,
-        quality = null, // TODO: Extract from RawMediaMetadata.quality when available
-        languages = null, // TODO: Extract from RawMediaMetadata.languages when available
-        format = null, // TODO: Extract from RawMediaMetadata.format when available
-        sizeBytes = null, // TODO: Add to RawMediaMetadata
-        durationMs = durationMinutes?.let { it * 60_000L },
-        priority = calculateSourcePriority(),
+            sourceType = sourceType,
+            sourceId = sourceId.asPipelineItemId(),
+            sourceLabel = sourceLabel,
+            quality = null, // TODO: Extract from RawMediaMetadata.quality when available
+            languages = null, // TODO: Extract from RawMediaMetadata.languages when available
+            format = null, // TODO: Extract from RawMediaMetadata.format when available
+            sizeBytes = null, // TODO: Add to RawMediaMetadata
+            durationMs = durationMinutes?.let { it * 60_000L },
+            priority = calculateSourcePriority(),
     )
 
     /**

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,7 +79,7 @@ constructor(
      *
      * Use when navigating from a pipeline-specific item to unified detail.
      */
-    fun loadBySourceId(sourceId: String) {
+    fun loadBySourceId(sourceId: PipelineItemId) {
         viewModelScope.launch {
             useCases.findBySourceId(sourceId).collect { mediaState ->
                 when (mediaState) {

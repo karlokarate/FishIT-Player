@@ -1,5 +1,8 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.CanonicalId
+import com.fishit.player.core.model.ids.PipelineItemId
+
 /**
  * Normalized media representation after cross-pipeline merge.
  *
@@ -9,14 +12,16 @@ package com.fishit.player.core.model
  * **Invariants:**
  * - [variants] is NEVER empty
  * - [primaryPipelineIdTag] + [primarySourceId] always match the currently best variant
- * - [globalId] is shared across all variants (enabling cross-pipeline deduplication)
+ * - [canonicalId] is shared across all variants when present (enabling cross-pipeline
+ *   deduplication). It is null for unlinked media (e.g., LIVE or insufficient metadata).
  *
  * **Example:** "Breaking Bad S01E01" might have:
  * - Variant 1: Telegram FHD German
  * - Variant 2: Xtream HD German
  * - Variant 3: Telegram SD English OmU
  *
- * @property globalId Canonical ID shared across pipelines (format: "cm:<16-char-hex>")
+ * @property canonicalId Canonical ID shared across pipelines (tmdb:<id> or movie:/episode:
+ * fallback). Null for unlinked items.
  * @property title Normalized/cleaned title for display
  * @property year Release year if known
  * @property mediaType Content type (MOVIE, SERIES_EPISODE, etc.)
@@ -25,12 +30,12 @@ package com.fishit.player.core.model
  * @property variants All available playback variants, ordered by preference (best first)
  */
 data class NormalizedMedia(
-        val globalId: String,
+        val canonicalId: CanonicalId?,
         val title: String,
         val year: Int?,
         val mediaType: MediaType,
         val primaryPipelineIdTag: PipelineIdTag,
-        val primarySourceId: String,
+        val primarySourceId: PipelineItemId,
         val variants: MutableList<MediaVariant>,
 ) {
     init {

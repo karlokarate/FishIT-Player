@@ -1,5 +1,7 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.PipelineItemId
+
 /**
  * Extension functions for creating MediaSourceRef from various pipeline items.
  *
@@ -30,7 +32,7 @@ fun createTelegramSourceRef(
 
     return MediaSourceRef(
             sourceType = SourceType.TELEGRAM,
-            sourceId = sourceId,
+            sourceId = PipelineItemId(sourceId),
             sourceLabel = "Telegram: $chatName",
             quality = filename?.let { MediaQuality.fromFilename(it) }
                             ?: MediaQuality.fromDimensions(width, height),
@@ -60,7 +62,7 @@ fun createXtreamVodSourceRef(
 
     return MediaSourceRef(
             sourceType = SourceType.XTREAM,
-            sourceId = sourceId,
+            sourceId = PipelineItemId(sourceId),
             sourceLabel = "Xtream: $providerName",
             quality = title?.let { MediaQuality.fromFilename(it) },
             languages = title?.let { LanguageInfo.fromFilename(it) },
@@ -91,7 +93,7 @@ fun createXtreamEpisodeSourceRef(
 
     return MediaSourceRef(
             sourceType = SourceType.XTREAM,
-            sourceId = sourceId,
+            sourceId = PipelineItemId(sourceId),
             sourceLabel = "Xtream: $providerName",
             quality = title?.let { MediaQuality.fromFilename(it) },
             languages = title?.let { LanguageInfo.fromFilename(it) },
@@ -117,7 +119,7 @@ fun createIoSourceRef(
 
     return MediaSourceRef(
             sourceType = SourceType.IO,
-            sourceId = sourceId,
+            sourceId = PipelineItemId(sourceId),
             sourceLabel = "Local: $filename",
             quality = MediaQuality.fromFilename(filename),
             languages = LanguageInfo.fromFilename(filename),
@@ -148,7 +150,7 @@ fun createPlexSourceRef(
 
     return MediaSourceRef(
             sourceType = SourceType.PLEX,
-            sourceId = sourceId,
+            sourceId = PipelineItemId(sourceId),
             sourceLabel = "Plex: $serverName",
             quality =
                     MediaQuality(
@@ -179,7 +181,7 @@ fun createAudiobookSourceRef(
 
     return MediaSourceRef(
             sourceType = SourceType.AUDIOBOOK,
-            sourceId = sourceId,
+            sourceId = PipelineItemId(sourceId),
             sourceLabel = "Audiobook: $libraryName",
             format = format?.let { MediaFormat(container = it) },
             sizeBytes = sizeBytes,

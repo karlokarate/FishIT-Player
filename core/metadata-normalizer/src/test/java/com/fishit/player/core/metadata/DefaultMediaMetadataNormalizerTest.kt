@@ -4,6 +4,7 @@ import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.TmdbId
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -29,7 +30,7 @@ class DefaultMediaMetadataNormalizerTest {
                     season = null,
                     episode = null,
                     durationMinutes = 104,
-                    externalIds = ExternalIds(tmdbId = "12345"),
+                    externalIds = ExternalIds(tmdbId = TmdbId(12345)),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
                     sourceId = "file:///storage/movies/xmen.mkv",
@@ -89,7 +90,7 @@ class DefaultMediaMetadataNormalizerTest {
                     season = null,
                     episode = null,
                     durationMinutes = 136,
-                    externalIds = ExternalIds(tmdbId = "603", imdbId = "tt0133093"),
+                    externalIds = ExternalIds(tmdbId = TmdbId(603), imdbId = "tt0133093"),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Premium IPTV",
                     sourceId = "xtream://vod/12345",
@@ -99,7 +100,7 @@ class DefaultMediaMetadataNormalizerTest {
             val normalized = normalizer.normalize(raw)
 
             // Then: TMDB ID is preserved
-            assertEquals("603", normalized.tmdbId)
+            assertEquals(TmdbId(603), normalized.tmdbId)
             assertEquals("tt0133093", normalized.externalIds.imdbId)
         }
 

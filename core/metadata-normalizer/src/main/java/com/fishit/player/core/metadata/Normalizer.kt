@@ -1,5 +1,6 @@
 package com.fishit.player.core.metadata
 
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.MediaVariant
 import com.fishit.player.core.model.NormalizedMedia
 import com.fishit.player.core.model.QualityTags
@@ -9,13 +10,16 @@ import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.VariantHealthStore
 import com.fishit.player.core.model.VariantPreferences
 import com.fishit.player.core.model.VariantSelector
+import com.fishit.player.core.model.ids.CanonicalId
+import com.fishit.player.core.model.ids.asCanonicalId
+import com.fishit.player.core.model.ids.asPipelineItemId
 
 /**
  * Cross-pipeline normalizer that merges RawMediaMetadata from multiple sources into deduplicated
  * NormalizedMedia with multi-variant support.
  *
  * **Algorithm:**
- * 1. Group raw items by [globalId] (canonical ID based on normalized title + year)
+ * 1. Group raw items by canonicalId (canonical ID based on normalized title + year)
  * 2. For each group, create a [NormalizedMedia] with all variants
  * 3. Sort variants by user preferences using [VariantSelector]
  * 4. Set primary source to the best variant
@@ -40,51 +44,84 @@ object Normalizer {
             rawItems: List<RawMediaMetadata>,
             prefs: VariantPreferences = VariantPreferences.default(),
     ): List<NormalizedMedia> {
-        // Group by globalId for cross-pipeline deduplication
-        val groupedByGlobalId =
-                rawItems.groupBy { raw ->
-                    raw.globalId.ifEmpty {
-                        // Fallback if globalId wasn't set by pipeline
-                        GlobalIdUtil.generateCanonicalId(raw.originalTitle, raw.year)
+        val linkedGroups = mutableMapOf<CanonicalId, MutableList<RawMediaMetadata>>()
+        val unlinkedItems = mutableListOf<RawMediaMetadata>()
+
+        rawItems.forEach { raw ->
+            val canonicalId = resolveCanonicalId(raw)
+            if (canonicalId != null) {
+                linkedGroups.getOrPut(canonicalId) { mutableListOf() }.add(raw)
+            } else {
+                unlinkedItems.add(raw)
+            }
+        }
+
+        val linkedNormalized =
+                linkedGroups.mapNotNull { (canonicalId, group) ->
+                    if (group.isEmpty()) return@mapNotNull null
+
+                    val reference = group.first()
+                    val variants = group.mapNotNull { raw -> raw.toMediaVariant() }.toMutableList()
+
+                    if (variants.isEmpty()) {
+                        return@mapNotNull null // All variants are dead or invalid
                     }
+
+                    val sortedVariants = VariantSelector.sortByPreference(variants, prefs)
+                    variants.clear()
+                    variants.addAll(sortedVariants)
+
+                    val bestVariant = variants.first()
+
+                    NormalizedMedia(
+                            canonicalId = canonicalId,
+                            title = reference.originalTitle, // Later: apply title cleaning here
+                            year = reference.year,
+                            mediaType = reference.mediaType,
+                            primaryPipelineIdTag = bestVariant.sourceKey.pipeline,
+                            primarySourceId = bestVariant.sourceKey.sourceId,
+                            variants = variants,
+                    )
                 }
 
-        return groupedByGlobalId.mapNotNull { (globalId, group) ->
-            if (group.isEmpty()) return@mapNotNull null
+        val unlinkedNormalized =
+                unlinkedItems.mapNotNull { raw ->
+                    val variant = raw.toMediaVariant() ?: return@mapNotNull null
+                    val variants = mutableListOf(variant)
 
-            // Use first item as reference for title/year/mediaType
-            val reference = group.first()
+                    NormalizedMedia(
+                            canonicalId = null,
+                            title = raw.originalTitle,
+                            year = raw.year,
+                            mediaType = raw.mediaType.takeUnless { it == MediaType.UNKNOWN }
+                                    ?: MediaType.UNKNOWN,
+                            primaryPipelineIdTag = variant.sourceKey.pipeline,
+                            primarySourceId = variant.sourceKey.sourceId,
+                            variants = variants,
+                    )
+                }
 
-            // Create variants from all raw items
-            val variants = group.mapNotNull { raw -> raw.toMediaVariant() }.toMutableList()
+        return linkedNormalized + unlinkedNormalized
+    }
 
-            if (variants.isEmpty()) {
-                return@mapNotNull null // All variants are dead or invalid
-            }
+    private fun resolveCanonicalId(raw: RawMediaMetadata): CanonicalId? {
+        if (raw.mediaType == MediaType.LIVE) return null
 
-            // Sort by preference
-            val sortedVariants = VariantSelector.sortByPreference(variants, prefs)
-            variants.clear()
-            variants.addAll(sortedVariants)
+        val explicit = raw.globalId.takeIf { it.isNotBlank() }?.asCanonicalId()
+        if (explicit != null) return explicit
 
-            // Best variant becomes primary
-            val bestVariant = variants.first()
-
-            NormalizedMedia(
-                    globalId = globalId,
-                    title = reference.originalTitle, // Later: apply title cleaning here
-                    year = reference.year,
-                    mediaType = reference.mediaType,
-                    primaryPipelineIdTag = bestVariant.sourceKey.pipeline,
-                    primarySourceId = bestVariant.sourceKey.sourceId,
-                    variants = variants,
-            )
-        }
+        return FallbackCanonicalKeyGenerator.generateFallbackCanonicalId(
+                originalTitle = raw.originalTitle,
+                year = raw.year,
+                season = raw.season,
+                episode = raw.episode,
+                mediaType = raw.mediaType,
+        )
     }
 
     /** Convert a RawMediaMetadata to a MediaVariant. */
     private fun RawMediaMetadata.toMediaVariant(): MediaVariant? {
-        val sourceKey = SourceKey(pipelineIdTag, sourceId)
+        val sourceKey = SourceKey(pipelineIdTag, sourceId.asPipelineItemId())
 
         // Skip permanently dead variants to avoid resurfacing bad sources
         if (VariantHealthStore.isPermanentlyDead(sourceKey)) {

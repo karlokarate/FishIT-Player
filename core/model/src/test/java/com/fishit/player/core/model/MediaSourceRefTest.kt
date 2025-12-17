@@ -1,5 +1,6 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.PipelineItemId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -289,7 +290,7 @@ class MediaSourceRefTest {
         val ref =
                 MediaSourceRef(
                         sourceType = SourceType.TELEGRAM,
-                        sourceId = "telegram:123:456",
+                        sourceId = PipelineItemId("telegram:123:456"),
                         sourceLabel = "Telegram: Movies",
                         quality = MediaQuality(resolution = 1080),
                         languages =

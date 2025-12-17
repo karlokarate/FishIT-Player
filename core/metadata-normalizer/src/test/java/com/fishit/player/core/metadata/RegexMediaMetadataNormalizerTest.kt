@@ -4,6 +4,7 @@ import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.TmdbId
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -346,7 +347,7 @@ class RegexMediaMetadataNormalizerTest {
                     season = null,
                     episode = null,
                     durationMinutes = 136,
-                    externalIds = ExternalIds(tmdbId = "603", imdbId = "tt0133093"),
+                    externalIds = ExternalIds(tmdbId = TmdbId(603), imdbId = "tt0133093"),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Premium IPTV",
                     sourceId = "xtream://vod/12345",
@@ -355,7 +356,7 @@ class RegexMediaMetadataNormalizerTest {
             val normalized = normalizer.normalize(raw)
 
             assertEquals("The Matrix", normalized.canonicalTitle)
-            assertEquals("603", normalized.tmdbId)
+            assertEquals(TmdbId(603), normalized.tmdbId)
             assertEquals("tt0133093", normalized.externalIds.imdbId)
         }
 
@@ -572,5 +573,26 @@ class RegexMediaMetadataNormalizerTest {
 
             // Then: type remains UNKNOWN (no inference possible)
             assertEquals(MediaType.UNKNOWN, normalized.mediaType)
+        }
+
+    @Test
+    fun `xtream media type is not inferred from parsed data`() =
+        runTest {
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "Some Show S01E01",
+                    mediaType = MediaType.MOVIE,
+                    year = null,
+                    season = null,
+                    episode = null,
+                    externalIds = ExternalIds(),
+                    sourceType = SourceType.XTREAM,
+                    sourceLabel = "Xtream: Movies",
+                    sourceId = "xtream://vod/222",
+                )
+
+            val normalized = normalizer.normalize(raw)
+
+            assertEquals(MediaType.MOVIE, normalized.mediaType)
         }
 }

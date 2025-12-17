@@ -4,6 +4,7 @@ import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
@@ -65,7 +66,7 @@ constructor(
      * @param sourceId The pipeline source ID (e.g., "telegram:123:456")
      * @return Flow of media with sources
      */
-    fun findBySourceId(sourceId: String): Flow<UnifiedMediaState> = flow {
+    fun findBySourceId(sourceId: PipelineItemId): Flow<UnifiedMediaState> = flow {
         emit(UnifiedMediaState.Loading)
 
         try {

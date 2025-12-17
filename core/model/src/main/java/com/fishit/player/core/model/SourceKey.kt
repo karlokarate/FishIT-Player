@@ -1,5 +1,7 @@
 package com.fishit.player.core.model
 
+import com.fishit.player.core.model.ids.PipelineItemId
+
 /**
  * Uniquely identifies a media source within a specific pipeline.
  *
@@ -16,14 +18,14 @@ package com.fishit.player.core.model
  */
 data class SourceKey(
         val pipeline: PipelineIdTag,
-        val sourceId: String,
+        val sourceId: PipelineItemId,
 ) {
     /**
      * Serialized form for storage/comparison.
      *
      * Format: `<pipeline_code>:<sourceId>` Example: `"tg:12345:67890"`, `"xc:vod:12345"`
      */
-    fun toSerializedString(): String = "${pipeline.code}:$sourceId"
+    fun toSerializedString(): String = "${pipeline.code}:${sourceId.value}"
 
     companion object {
         /**
@@ -41,7 +43,7 @@ data class SourceKey(
 
             return SourceKey(
                     pipeline = PipelineIdTag.fromCode(pipelineCode),
-                    sourceId = sourceId,
+                    sourceId = PipelineItemId(sourceId),
             )
         }
     }

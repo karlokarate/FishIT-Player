@@ -30,12 +30,12 @@ All 8 phases (0-7) from `pipeline_finalization.md` have been fully implemented a
 - Already existed in codebase from previous phases
 - `RawMediaMetadata` extended with new fields
 
-### Task 0.3 – Global ID Generation Helper ✅
+### Task 0.3 – Canonical Key Generator ✅
 
-- **File:** `core/model/src/main/java/com/fishit/player/core/model/GlobalIdUtil.kt`
-  - SHA-256 based canonical ID generation
-  - Title normalization (strips scene tags, resolution, codecs)
-  - Format: `"cm:<16-char-hex>"`
+- **File:** `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/FallbackCanonicalKeyGenerator.kt`
+  - Scene-tag stripping and slug-based canonical key generation
+  - Episode format: `episode:<slug>:SxxExx`, movie format: `movie:<slug>[:<year>]`
+  - Returns null for unlinked media (e.g., LIVE or insufficient metadata)
 
 ---
 
@@ -49,7 +49,7 @@ All 8 phases (0-7) from `pipeline_finalization.md` have been fully implemented a
 ### Task 1.2 – NormalizedMedia Model ✅
 
 - **File:** `core/model/src/main/java/com/fishit/player/core/model/NormalizedMedia.kt`
-  - globalId, title, year, mediaType, primaryPipelineIdTag, primarySourceId, variants
+  - canonicalId, title, year, mediaType, primaryPipelineIdTag, primarySourceId, variants
 
 ### Task 1.3 – Variant Selection ✅
 
@@ -64,7 +64,7 @@ All 8 phases (0-7) from `pipeline_finalization.md` have been fully implemented a
 ### Task 2.1 – Raw → Normalized Merge ✅
 
 - **File:** `core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/Normalizer.kt`
-  - Groups RawMediaMetadata by globalId
+  - Groups RawMediaMetadata by canonicalId
   - Creates NormalizedMedia with sorted variants
   - Uses VariantSelector for ordering
 
@@ -76,7 +76,7 @@ All 8 phases (0-7) from `pipeline_finalization.md` have been fully implemented a
 
 - **File:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramRawMetadataExtensions.kt`
   - Sets `pipelineIdTag = PipelineIdTag.TELEGRAM`
-  - Generates `globalId` via `GlobalIdUtil.generate()`
+  - Leaves `globalId` empty; canonical identity assigned by normalizer
 
 ### Task 3.2 – Chat Classification ✅
 
@@ -100,7 +100,7 @@ All 8 phases (0-7) from `pipeline_finalization.md` have been fully implemented a
 
 - **File:** `pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamRawMetadataExtensions.kt`
   - All content types (VOD, Series, Episode, Channel) set `pipelineIdTag = PipelineIdTag.XTREAM`
-  - All types generate `globalId` via `GlobalIdUtil.generate()`
+  - All types leave `globalId` empty; canonical identity assigned by normalizer
 
 ---
 
@@ -170,7 +170,7 @@ All modules compile successfully:
 ### New Files Created (15)
 1. `core/model/PipelineIdTag.kt`
 2. `core/model/SourceKey.kt`
-3. `core/model/GlobalIdUtil.kt`
+3. `core/metadata-normalizer/FallbackCanonicalKeyGenerator.kt`
 4. `core/model/MediaVariant.kt`
 5. `core/model/NormalizedMedia.kt`
 6. `core/model/VariantSelector.kt`
@@ -186,8 +186,8 @@ All modules compile successfully:
 
 ### Files Modified (5)
 1. `core/model/RawMediaMetadata.kt` - Added pipelineIdTag, globalId fields
-2. `pipeline/telegram/model/TelegramRawMetadataExtensions.kt` - Added GlobalIdUtil integration
-3. `pipeline/xtream/model/XtreamRawMetadataExtensions.kt` - Added GlobalIdUtil integration
+2. `pipeline/telegram/model/TelegramRawMetadataExtensions.kt` - Leaves globalId empty for normalizer assignment
+3. `pipeline/xtream/model/XtreamRawMetadataExtensions.kt` - Leaves globalId empty for normalizer assignment
 4. `feature/settings/build.gradle.kts` - Added DataStore + Hilt dependencies
 5. `feature/detail/build.gradle.kts` - Created with proper dependencies
 
