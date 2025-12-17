@@ -158,7 +158,7 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 #### Post-review hardening
 
 - **Telegram chat classification**: added warm-up callback to trigger ingestion when COLD chats become WARM/HOT, unsuppresses suppressed chats.
-- **Xtream globalId disambiguation**: avoid title collisions without year by seeding canonicalId with source identifiers.
+- **Canonical identity**: assigned centrally by the normalizer (TMDB-first with deterministic movie/episode fallback); pipelines leave `globalId` empty.
 - **Manual variant overrides**: playback orchestrator now honors an explicit SourceKey override before preference sorting.
 - **Dead variant filtering**: Normalizer drops permanently dead variants via VariantHealthStore and skips empty groups.
 - **Language detection**: unknown language now yields null (no device-language bias in VariantSelector).
