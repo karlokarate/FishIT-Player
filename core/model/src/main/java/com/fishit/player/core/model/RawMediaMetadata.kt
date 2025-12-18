@@ -1,7 +1,5 @@
 package com.fishit.player.core.model
 
-import com.fishit.player.core.model.ids.TmdbId
-
 /**
  * Raw media metadata from a pipeline source.
  *
@@ -23,7 +21,7 @@ import com.fishit.player.core.model.ids.TmdbId
  * @property year Release year if available
  * @property season Season number for episodes, null for movies/VOD
  * @property episode Episode number for episodes, null for movies/VOD
- * @property durationMinutes Media runtime in minutes if available
+ * @property durationMs Media runtime in **milliseconds** (v2 standard). Pipelines convert from source units.
  * @property externalIds External IDs provided by upstream (e.g., TMDB from Xtream)
  * @property sourceType Pipeline identifier (XTREAM, TELEGRAM, IO, etc.)
  * @property sourceLabel Human-readable label for UI
@@ -40,7 +38,18 @@ data class RawMediaMetadata(
         val year: Int? = null,
         val season: Int? = null,
         val episode: Int? = null,
-        val durationMinutes: Int? = null,
+        /**
+         * Media runtime in **milliseconds**.
+         *
+         * **v2 Standard:** All durations in RawMediaMetadata are stored as milliseconds.
+         * Pipelines MUST convert from source units:
+         * - Telegram: `durationSecs * 1000L`
+         * - Xtream: depends on source (usually not available in list API)
+         * - IO: `durationMs` from MediaStore or FFmpeg probe
+         *
+         * UI/Player can convert to display format (e.g., "1h 32m") as needed.
+         */
+        val durationMs: Long? = null,
         val externalIds: ExternalIds = ExternalIds(),
         val sourceType: SourceType,
         val sourceLabel: String,
@@ -106,12 +115,80 @@ data class RawMediaMetadata(
         val ageRating: Int? = null,
 )
 
-/** External IDs from upstream sources. These MUST be passed through without modification. */
+/**
+ * External IDs from upstream sources. These MUST be passed through without modification.
+ *
+ * **Typed TMDB Reference (Gold Decision Dec 2025):**
+ * - [tmdb] is the typed TMDB reference (MOVIE or TV) - preferred field
+ * - [legacyTmdbId] is deprecated, kept only for migration of existing data
+ *
+ * For episodes: Use `TmdbRef(TV, seriesId)` with `season/episode` from RawMediaMetadata.
+ * Never create episode-specific TMDB refs.
+ *
+ * @property tmdb Typed TMDB reference (MOVIE or TV type + ID). Preferred field.
+ * @property legacyTmdbId DEPRECATED: Untyped TMDB ID for migration only. Do not use in new code.
+ * @property imdbId IMDb ID (tt-prefixed string, e.g., "tt0137523")
+ * @property tvdbId TheTVDB ID
+ */
 data class ExternalIds(
-        val tmdbId: TmdbId? = null,
+        /**
+         * Typed TMDB reference.
+         *
+         * - For movies: TmdbRef(MOVIE, movieId)
+         * - For TV shows/series: TmdbRef(TV, seriesId)
+         * - For episodes: TmdbRef(TV, seriesId) + season/episode from RawMediaMetadata
+         *
+         * Never use EPISODE type (TMDB has no episode root type).
+         */
+        val tmdb: TmdbRef? = null,
+        /**
+         * DEPRECATED: Legacy untyped TMDB ID.
+         *
+         * Kept only for migration of existing stored data. New code MUST use [tmdb] field.
+         * Migration: Convert to typed [tmdb] using MediaType context.
+         */
+        @Deprecated("Use tmdb (typed TmdbRef) instead", replaceWith = ReplaceWith("tmdb"))
+        val legacyTmdbId: Int? = null,
         val imdbId: String? = null,
         val tvdbId: String? = null,
-)
+) {
+    /**
+     * Get the effective TMDB ID (from typed or legacy field).
+     *
+     * Prefers typed [tmdb] field. Falls back to [legacyTmdbId] for migration compatibility.
+     */
+    val effectiveTmdbId: Int?
+        get() = tmdb?.id ?: legacyTmdbId
+
+    /**
+     * Check if this has any TMDB reference (typed or legacy).
+     */
+    val hasTmdb: Boolean
+        get() = tmdb != null || legacyTmdbId != null
+
+    companion object {
+        /**
+         * Create ExternalIds from legacy untyped TMDB ID with migration.
+         *
+         * @param tmdbId Legacy untyped TMDB ID
+         * @param mediaType MediaType to determine TMDB type
+         * @return ExternalIds with typed tmdb field if type can be determined
+         */
+        fun fromLegacyTmdbId(tmdbId: Int, mediaType: MediaType): ExternalIds {
+            val tmdbRef = when (mediaType) {
+                MediaType.MOVIE -> TmdbRef(TmdbMediaType.MOVIE, tmdbId)
+                MediaType.SERIES, MediaType.SERIES_EPISODE -> TmdbRef(TmdbMediaType.TV, tmdbId)
+                else -> null // Cannot determine type, store as legacy
+            }
+            return if (tmdbRef != null) {
+                ExternalIds(tmdb = tmdbRef)
+            } else {
+                @Suppress("DEPRECATION")
+                ExternalIds(legacyTmdbId = tmdbId)
+            }
+        }
+    }
+}
 
 /**
  * Source type identifier for pipeline.

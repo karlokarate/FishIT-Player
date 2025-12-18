@@ -5,7 +5,7 @@ import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.ids.TmdbId
+import com.fishit.player.core.model.TmdbRef
 
 /**
  * Extensions for converting Telegram pipeline models to RawMediaMetadata.
@@ -47,7 +47,7 @@ import com.fishit.player.core.model.ids.TmdbId
  * - rating from structuredRating
  * - ageRating from structuredFsk
  * - year from structuredYear (overrides filename-parsed year)
- * - durationMinutes from structuredLengthMinutes (overrides durationSecs)
+ * - durationMs from structuredLengthMinutes (converted) or durationSecs * 1000L
  *
  * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md R7 (Lossless Emission):
  * - Each VIDEO in a bundle becomes one RawMediaMetadata
@@ -61,7 +61,12 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         // Structured year takes precedence over filename-parsed year
         val effectiveYear = structuredYear ?: year
         // Structured duration takes precedence over video duration
-        val effectiveDurationMinutes = structuredLengthMinutes ?: durationSecs?.let { it / 60 }
+        // Convert to milliseconds: structuredLengthMinutes (minutes) or durationSecs (seconds)
+        val effectiveDurationMs: Long? = when {
+                structuredLengthMinutes != null -> structuredLengthMinutes.toLong() * 60_000L
+                durationSecs != null -> durationSecs.toLong() * 1000L
+                else -> null
+        }
         // Build ExternalIds with structured TMDB ID if available
         val externalIds = buildExternalIds()
         
@@ -71,7 +76,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 year = effectiveYear,
                 season = seasonNumber,
                 episode = episodeNumber,
-                durationMinutes = effectiveDurationMinutes,
+                durationMs = effectiveDurationMs,
                 externalIds = externalIds,
                 sourceType = SourceType.TELEGRAM,
                 sourceLabel = buildTelegramSourceLabel(),
@@ -91,19 +96,31 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
 }
 
 /**
- * Builds ExternalIds with structured TMDB ID if available.
+ * Builds ExternalIds with typed TMDB reference if available.
  *
- * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md:
- * - Structured Bundles pass through TMDB IDs provided by the source
+ * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md + Gold Decision (Dec 2025):
+ * - Structured Bundles pass through TMDB IDs AND types provided by the source
  * - The pipeline doesn't "guess" - it reads structured fields
- * - externalIds.tmdbId enables downstream unification by normalizer
+ * - externalIds.tmdb (typed TmdbRef) enables downstream unification by normalizer
+ * - Episodes use TV type with series ID (season/episode from other fields)
  */
-private fun TelegramMediaItem.buildExternalIds(): ExternalIds =
-        if (structuredTmdbId != null) {
-                ExternalIds(tmdbId = TmdbId(structuredTmdbId))
-        } else {
-                ExternalIds() // Telegram doesn't provide external IDs for non-structured content
+private fun TelegramMediaItem.buildExternalIds(): ExternalIds {
+        if (structuredTmdbId == null) {
+                return ExternalIds() // Telegram doesn't provide external IDs for non-structured content
         }
+        
+        // Need both ID and type for typed TmdbRef
+        val tmdbType = structuredTmdbType
+        if (tmdbType == null) {
+                // Legacy: Have ID but no type - store as legacy for migration
+                @Suppress("DEPRECATION")
+                return ExternalIds(legacyTmdbId = structuredTmdbId)
+        }
+        
+        // Create typed TmdbRef
+        val tmdbRef = TmdbRef(tmdbType.toTmdbMediaType(), structuredTmdbId)
+        return ExternalIds(tmdb = tmdbRef)
+}
 
 /**
  * Extracts the raw title using simple field priority.

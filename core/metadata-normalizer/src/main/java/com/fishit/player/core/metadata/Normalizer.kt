@@ -7,6 +7,7 @@ import com.fishit.player.core.model.QualityTags
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceKey
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.VariantHealthStore
 import com.fishit.player.core.model.VariantPreferences
 import com.fishit.player.core.model.VariantSelector
@@ -19,17 +20,27 @@ import com.fishit.player.core.model.ids.asPipelineItemId
  * NormalizedMedia with multi-variant support.
  *
  * **Algorithm:**
- * 1. Group raw items by canonicalId (canonical ID based on normalized title + year)
+ * 1. Group raw items by canonicalId (canonical ID based on TMDB or normalized title + year)
  * 2. For each group, create a [NormalizedMedia] with all variants
  * 3. Sort variants by user preferences using [VariantSelector]
  * 4. Set primary source to the best variant
+ *
+ * **Typed TMDB Canonical IDs (Gold Decision Dec 2025):**
+ * - TMDB Movie → "tmdb:movie:{id}"
+ * - TMDB TV/Episode → "tmdb:tv:{id}" (episodes use season/episode fields for specifics)
+ * - Fallback Movie → "movie:{slug}[:{year}]"
+ * - Fallback Episode → "episode:{slug}:SxxExx"
+ *
+ * **Episode Facts Preservation:**
+ * - season and episode are preserved as separate fields in NormalizedMedia
+ * - Never parse season/episode from canonicalId
  *
  * **Example:** Input:
  * - "Breaking.Bad.S01E01.1080p.BluRay" from Telegram
  * - "Breaking Bad - S01E01" from Xtream
  *
  * Output:
- * - Single NormalizedMedia "Breaking Bad S01E01" with 2 variants
+ * - Single NormalizedMedia "Breaking Bad S01E01" with 2 variants, season=1, episode=1
  */
 object Normalizer {
 
@@ -73,11 +84,21 @@ object Normalizer {
 
                     val bestVariant = variants.first()
 
+                    // Aggregate season/episode from group (first non-null wins)
+                    val aggregatedSeason = group.firstNotNullOfOrNull { it.season }
+                    val aggregatedEpisode = group.firstNotNullOfOrNull { it.episode }
+                    
+                    // Extract typed TMDB reference from externalIds
+                    val tmdbRef = group.firstNotNullOfOrNull { it.externalIds.tmdb }
+
                     NormalizedMedia(
                             canonicalId = canonicalId,
                             title = reference.originalTitle, // Later: apply title cleaning here
                             year = reference.year,
                             mediaType = reference.mediaType,
+                            season = aggregatedSeason,
+                            episode = aggregatedEpisode,
+                            tmdb = tmdbRef,
                             primaryPipelineIdTag = bestVariant.sourceKey.pipeline,
                             primarySourceId = bestVariant.sourceKey.sourceId,
                             variants = variants,
@@ -95,6 +116,9 @@ object Normalizer {
                             year = raw.year,
                             mediaType = raw.mediaType.takeUnless { it == MediaType.UNKNOWN }
                                     ?: MediaType.UNKNOWN,
+                            season = raw.season,
+                            episode = raw.episode,
+                            tmdb = raw.externalIds.tmdb,
                             primaryPipelineIdTag = variant.sourceKey.pipeline,
                             primarySourceId = variant.sourceKey.sourceId,
                             variants = variants,
@@ -104,12 +128,31 @@ object Normalizer {
         return linkedNormalized + unlinkedNormalized
     }
 
+    /**
+     * Resolves the canonical ID for a raw metadata item.
+     *
+     * **Priority (Gold Decision Dec 2025):**
+     * 1. Explicit globalId if set (legacy compatibility)
+     * 2. Typed TMDB canonical ID if tmdb reference present:
+     *    - MOVIE → "tmdb:movie:{id}"
+     *    - TV → "tmdb:tv:{id}"
+     * 3. Fallback canonical ID from title/year/season/episode
+     * 4. null for LIVE content or insufficient metadata
+     */
     private fun resolveCanonicalId(raw: RawMediaMetadata): CanonicalId? {
         if (raw.mediaType == MediaType.LIVE) return null
 
+        // 1. Explicit globalId takes precedence (legacy compatibility)
         val explicit = raw.globalId.takeIf { it.isNotBlank() }?.asCanonicalId()
         if (explicit != null) return explicit
 
+        // 2. Typed TMDB canonical ID (Gold Decision Dec 2025)
+        val tmdbRef = raw.externalIds.tmdb
+        if (tmdbRef != null) {
+            return CanonicalId(tmdbRef.toCanonicalIdString())
+        }
+
+        // 3. Fallback canonical ID from content metadata
         return FallbackCanonicalKeyGenerator.generateFallbackCanonicalId(
                 originalTitle = raw.originalTitle,
                 year = raw.year,

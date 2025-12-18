@@ -234,7 +234,7 @@ data class CanonicalMediaWithSources(
         val thumbnail: ImageRef?,
         val plot: String?,
         val rating: Double?,
-        val durationMinutes: Int?,
+        val durationMs: Long?,
         val genres: String?,
         val sources: List<MediaSourceRef>,
 ) {

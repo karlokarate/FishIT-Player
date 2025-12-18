@@ -48,7 +48,7 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
     }
 
     override suspend fun createSource(context: PlaybackContext): PlaybackSource {
-        UnifiedLog.d(TAG, "Creating source for: ${context.canonicalId}")
+        UnifiedLog.d(TAG) { "Creating source for: ${context.canonicalId}" }
 
         // Build or validate tg:// URI
         val telegramUri = resolveTelegramUri(context)
@@ -57,7 +57,7 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
                 sourceType = SourceType.TELEGRAM
             )
 
-        UnifiedLog.d(TAG, "Resolved Telegram URI: $telegramUri")
+        UnifiedLog.d(TAG) { "Resolved Telegram URI: $telegramUri" }
 
         // Determine MIME type from context extras if available
         val mimeType = context.extras["mimeType"]
@@ -106,7 +106,7 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
             )
         }
 
-        UnifiedLog.w(TAG, "Cannot resolve Telegram URI: no valid source info in context")
+        UnifiedLog.w(TAG) { "Cannot resolve Telegram URI: no valid source info in context" }
         return null
     }
 
@@ -134,7 +134,7 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
                 buildTelegramUri(fileId = 0, remoteId = sourceKey, chatId = null, messageId = null)
             }
             else -> {
-                UnifiedLog.w(TAG, "Invalid sourceKey format: $sourceKey")
+                UnifiedLog.w(TAG) { "Invalid sourceKey format: $sourceKey" }
                 null
             }
         } ?: run {

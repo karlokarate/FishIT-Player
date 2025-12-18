@@ -28,7 +28,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:feature-api"))
     implementation(project(":infra:logging"))
-    
+
     // Transport layer (provides TelegramTransportClient)
     api(project(":infra:transport-telegram"))
 

@@ -21,6 +21,7 @@ package com.fishit.player.pipeline.xtream.model
  * @property youtubeTrailer YouTube trailer URL/ID
  * @property episodeRunTime Average episode runtime in minutes
  * @property lastModified Unix epoch timestamp of last modification (for "recently updated" sorting)
+ * @property tmdbId TMDB TV show ID if available from provider (some panels scrape this)
  */
 data class XtreamSeriesItem(
         val id: Int,
@@ -38,6 +39,14 @@ data class XtreamSeriesItem(
         val youtubeTrailer: String? = null,
         val episodeRunTime: String? = null,
         val lastModified: Long? = null,
+        /**
+         * TMDB TV show ID from provider (Gold Decision Dec 2025).
+         *
+         * Some Xtream providers scrape TMDB and include the ID.
+         * Maps to ExternalIds.tmdb = TmdbRef(TV, tmdbId).
+         * Episodes inherit this from the parent series.
+         */
+        val tmdbId: Int? = null,
 ) {
     /**
      * Validates if the series ID is valid. Some Xtream panels return negative IDs - we treat them

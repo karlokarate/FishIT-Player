@@ -1,7 +1,5 @@
 package com.fishit.player.core.model
 
-import com.fishit.player.core.model.ids.TmdbId
-
 /**
  * Normalized media metadata after processing by the metadata normalizer.
  *
@@ -12,6 +10,11 @@ import com.fishit.player.core.model.ids.TmdbId
  * - Only the normalizer/TMDB resolver may populate these fields
  * - Pipelines must treat this as read-only
  * - Deterministic: same input → same normalized output
+ *
+ * **Typed TMDB Reference (Gold Decision Dec 2025):**
+ * - [tmdb] is the typed TMDB reference (MOVIE or TV) - preferred field
+ * - Use [tmdb] directly for TMDB API calls without conversion
+ * - Episodes: tmdb.type=TV + season/episode fields (never EPISODE type)
  *
  * **Imaging Contract:**
  * - ImageRef fields (poster, backdrop, thumbnail) are populated by normalizer
@@ -24,7 +27,7 @@ import com.fishit.player.core.model.ids.TmdbId
  * @property year Release year (possibly refined after normalization/TMDB enrichment)
  * @property season Season number for episodes, null for movies
  * @property episode Episode number for episodes, null for movies
- * @property tmdbId TMDB ID from resolver or trusted upstream source
+ * @property tmdb Typed TMDB reference (MOVIE or TV type + ID). For API calls without conversion.
  * @property externalIds Aggregated external IDs (TMDB, IMDB, TVDB, etc.)
  * @property poster Primary poster image reference (portrait, ~2:3 aspect)
  * @property backdrop Backdrop/banner image reference (landscape, ~16:9 aspect)
@@ -38,7 +41,15 @@ data class NormalizedMediaMetadata(
         val year: Int? = null,
         val season: Int? = null,
         val episode: Int? = null,
-        val tmdbId: TmdbId? = null,
+        /**
+         * Typed TMDB reference from resolver or trusted upstream source.
+         *
+         * Use directly for TMDB API calls:
+         * - MOVIE → GET /movie/{id}
+         * - TV → GET /tv/{id}
+         * - Episode: GET /tv/{id}/season/{season}/episode/{episode}
+         */
+        val tmdb: TmdbRef? = null,
         val externalIds: ExternalIds = ExternalIds(),
         // === Imaging Fields (v2) ===
         val poster: ImageRef? = null,

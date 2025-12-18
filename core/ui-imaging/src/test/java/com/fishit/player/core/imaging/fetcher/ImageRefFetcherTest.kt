@@ -62,16 +62,14 @@ class ImageRefFetcherTest {
     fun `ImageRef TelegramThumb preserves all fields`() {
         val ref =
                 ImageRef.TelegramThumb(
-                        fileId = 12345,
-                        uniqueId = "abc123",
+                        remoteId = "AgACAgIAAxkBAAI12345",
                         chatId = 100L,
                         messageId = 200L,
                         preferredWidth = 100,
                         preferredHeight = 100,
                 )
 
-        assertEquals(12345, ref.fileId)
-        assertEquals("abc123", ref.uniqueId)
+        assertEquals("AgACAgIAAxkBAAI12345", ref.remoteId)
         assertEquals(100L, ref.chatId)
         assertEquals(200L, ref.messageId)
     }
@@ -115,8 +113,8 @@ class ImageRefFetcherTest {
     }
 
     @Test
-    fun `ImageRefKeyer generates uniqueId key for TelegramThumb`() {
-        val ref = ImageRef.TelegramThumb(fileId = 123, uniqueId = "AgACAgIAAxkB")
+    fun `ImageRefKeyer generates remoteId key for TelegramThumb`() {
+        val ref = ImageRef.TelegramThumb(remoteId = "AgACAgIAAxkB")
         val key = keyerTestHelper(ref)
         assertEquals("tg:AgACAgIAAxkB", key)
     }
@@ -129,10 +127,10 @@ class ImageRefFetcherTest {
     }
 
     @Test
-    fun `ImageRefKeyer uses uniqueId not fileId for cross-session stability`() {
-        // Same uniqueId but different fileId should produce same key
-        val ref1 = ImageRef.TelegramThumb(fileId = 100, uniqueId = "stable_id")
-        val ref2 = ImageRef.TelegramThumb(fileId = 200, uniqueId = "stable_id")
+    fun `ImageRefKeyer uses remoteId for cross-session stability`() {
+        // Same remoteId with different optional fields should produce same key
+        val ref1 = ImageRef.TelegramThumb(remoteId = "stable_remote_id", chatId = 100L)
+        val ref2 = ImageRef.TelegramThumb(remoteId = "stable_remote_id", chatId = 200L)
 
         assertEquals(keyerTestHelper(ref1), keyerTestHelper(ref2))
     }
@@ -200,7 +198,7 @@ class ImageRefFetcherTest {
     private fun keyerTestHelper(ref: ImageRef): String {
         return when (ref) {
             is ImageRef.Http -> ref.url
-            is ImageRef.TelegramThumb -> "tg:${ref.uniqueId}"
+            is ImageRef.TelegramThumb -> "tg:${ref.remoteId}"
             is ImageRef.LocalFile -> "file:${ref.path}"
             is ImageRef.InlineBytes -> "inline:${ref.bytes.contentHashCode()}"
         }

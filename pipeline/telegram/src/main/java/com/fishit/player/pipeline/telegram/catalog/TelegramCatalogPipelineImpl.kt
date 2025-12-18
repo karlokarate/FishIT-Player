@@ -7,13 +7,13 @@ import com.fishit.player.pipeline.telegram.adapter.TelegramChatInfo
 import com.fishit.player.pipeline.telegram.adapter.TelegramMediaUpdate
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.model.toRawMediaMetadata
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * Default implementation of [TelegramCatalogPipeline].
@@ -36,12 +36,14 @@ import javax.inject.Inject
  *
  * @param adapter TelegramPipelineAdapter for chat/message access
  */
-class TelegramCatalogPipelineImpl @Inject constructor(
-    private val adapter: TelegramPipelineAdapter,
+class TelegramCatalogPipelineImpl
+@Inject
+constructor(
+        private val adapter: TelegramPipelineAdapter,
 ) : TelegramCatalogPipeline {
 
     override fun scanCatalog(
-        config: TelegramCatalogConfig,
+            config: TelegramCatalogConfig,
     ): Flow<TelegramCatalogEvent> = channelFlow {
         val startTime = System.currentTimeMillis()
 
@@ -49,12 +51,12 @@ class TelegramCatalogPipelineImpl @Inject constructor(
             // Pre-flight: Check auth state
             val auth = adapter.authState.first()
             if (auth !is TdlibAuthState.Ready) {
-                UnifiedLog.w(TAG, "Cannot scan: auth state is $auth")
+                UnifiedLog.w(TAG) { "Cannot scan: auth state is $auth" }
                 trySend(
-                    TelegramCatalogEvent.ScanError(
-                        reason = "unauthenticated",
-                        message = "Telegram is not authenticated. Current state: $auth",
-                    ),
+                        TelegramCatalogEvent.ScanError(
+                                reason = "unauthenticated",
+                                message = "Telegram is not authenticated. Current state: $auth",
+                        ),
                 )
                 return@channelFlow
             }
@@ -62,32 +64,33 @@ class TelegramCatalogPipelineImpl @Inject constructor(
             // Pre-flight: Check connection state
             val conn = adapter.connectionState.first()
             if (conn !is TelegramConnectionState.Connected) {
-                UnifiedLog.w(TAG, "Cannot scan: connection state is $conn")
+                UnifiedLog.w(TAG) { "Cannot scan: connection state is $conn" }
                 trySend(
-                    TelegramCatalogEvent.ScanError(
-                        reason = "not_connected",
-                        message = "Telegram is not connected. Current state: $conn",
-                    ),
+                        TelegramCatalogEvent.ScanError(
+                                reason = "not_connected",
+                                message = "Telegram is not connected. Current state: $conn",
+                        ),
                 )
                 return@channelFlow
             }
 
             // Get chats to scan
             val allChats = adapter.getChats(limit = 200)
-            val chatsToScan = if (config.chatIds != null) {
-                allChats.filter { it.chatId in config.chatIds }
-            } else {
-                allChats
-            }
+            val chatsToScan =
+                    if (config.chatIds != null) {
+                        allChats.filter { it.chatId in config.chatIds }
+                    } else {
+                        allChats
+                    }
 
             val totalChats = chatsToScan.size
-            UnifiedLog.i(TAG, "Starting catalog scan for $totalChats chats")
+            UnifiedLog.i(TAG) { "Starting catalog scan for $totalChats chats" }
 
             trySend(
-                TelegramCatalogEvent.ScanStarted(
-                    chatCount = totalChats,
-                    estimatedTotalMessages = null, // TDLib doesn't provide this efficiently
-                ),
+                    TelegramCatalogEvent.ScanStarted(
+                            chatCount = totalChats,
+                            estimatedTotalMessages = null, // TDLib doesn't provide this efficiently
+                    ),
             )
 
             var scannedChats = 0
@@ -96,12 +99,12 @@ class TelegramCatalogPipelineImpl @Inject constructor(
 
             for (chat in chatsToScan) {
                 if (!isActive) {
-                    UnifiedLog.i(TAG, "Scan cancelled at chat $scannedChats/$totalChats")
+                    UnifiedLog.i(TAG) { "Scan cancelled at chat $scannedChats/$totalChats" }
                     trySend(
-                        TelegramCatalogEvent.ScanCancelled(
-                            scannedChats = scannedChats,
-                            scannedMessages = scannedMessages,
-                        ),
+                            TelegramCatalogEvent.ScanCancelled(
+                                    scannedChats = scannedChats,
+                                    scannedMessages = scannedMessages,
+                            ),
                     )
                     return@channelFlow
                 }
@@ -109,13 +112,14 @@ class TelegramCatalogPipelineImpl @Inject constructor(
                 UnifiedLog.d(TAG, "Scanning chat '${chat.title}' (id=${chat.chatId})")
 
                 try {
-                    val cursor = TelegramMessageCursor(
-                        adapter = adapter,
-                        chat = chat,
-                        maxMessages = config.maxMessagesPerChat,
-                        minMessageTimestampMs = config.minMessageTimestampMs,
-                        pageSize = config.pageSize,
-                    )
+                    val cursor =
+                            TelegramMessageCursor(
+                                    adapter = adapter,
+                                    chat = chat,
+                                    maxMessages = config.maxMessagesPerChat,
+                                    minMessageTimestampMs = config.minMessageTimestampMs,
+                                    pageSize = config.pageSize,
+                            )
 
                     while (isActive && cursor.hasNext()) {
                         val batch = cursor.nextBatch()
@@ -127,12 +131,13 @@ class TelegramCatalogPipelineImpl @Inject constructor(
                             // Convert to RawMediaMetadata
                             val rawMetadata = mediaItem.toRawMediaMetadata()
 
-                            val catalogItem = TelegramCatalogItem(
-                                raw = rawMetadata,
-                                chatId = chat.chatId,
-                                messageId = mediaItem.messageId,
-                                chatTitle = chat.title,
-                            )
+                            val catalogItem =
+                                    TelegramCatalogItem(
+                                            raw = rawMetadata,
+                                            chatId = chat.chatId,
+                                            messageId = mediaItem.messageId,
+                                            chatTitle = chat.title,
+                                    )
 
                             trySend(TelegramCatalogEvent.ItemDiscovered(catalogItem))
                             discoveredItems++
@@ -140,20 +145,20 @@ class TelegramCatalogPipelineImpl @Inject constructor(
                             // Log progress periodically
                             if (scannedMessages % PROGRESS_LOG_INTERVAL == 0L) {
                                 UnifiedLog.d(
-                                    TAG,
-                                    "Progress: $scannedMessages messages, $discoveredItems items",
+                                        TAG,
+                                        "Progress: $scannedMessages messages, $discoveredItems items",
                                 )
                             }
                         }
 
                         // Emit progress event
                         trySend(
-                            TelegramCatalogEvent.ScanProgress(
-                                scannedChats = scannedChats,
-                                totalChats = totalChats,
-                                scannedMessages = scannedMessages,
-                                discoveredItems = discoveredItems,
-                            ),
+                                TelegramCatalogEvent.ScanProgress(
+                                        scannedChats = scannedChats,
+                                        totalChats = totalChats,
+                                        scannedMessages = scannedMessages,
+                                        discoveredItems = discoveredItems,
+                                ),
                         )
                     }
 
@@ -168,18 +173,18 @@ class TelegramCatalogPipelineImpl @Inject constructor(
 
             val durationMs = System.currentTimeMillis() - startTime
             UnifiedLog.i(
-                TAG,
-                "Scan completed: $scannedChats chats, $scannedMessages messages, " +
-                    "$discoveredItems items in ${durationMs}ms",
+                    TAG,
+                    "Scan completed: $scannedChats chats, $scannedMessages messages, " +
+                            "$discoveredItems items in ${durationMs}ms",
             )
 
             trySend(
-                TelegramCatalogEvent.ScanCompleted(
-                    scannedChats = scannedChats,
-                    scannedMessages = scannedMessages,
-                    discoveredItems = discoveredItems,
-                    durationMs = durationMs,
-                ),
+                    TelegramCatalogEvent.ScanCompleted(
+                            scannedChats = scannedChats,
+                            scannedMessages = scannedMessages,
+                            discoveredItems = discoveredItems,
+                            durationMs = durationMs,
+                    ),
             )
         } catch (ce: CancellationException) {
             UnifiedLog.i(TAG, "Scan cancelled by coroutine cancellation")
@@ -187,11 +192,11 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         } catch (t: Throwable) {
             UnifiedLog.e(TAG, "Catalog scan failed", t)
             trySend(
-                TelegramCatalogEvent.ScanError(
-                    reason = "unexpected_error",
-                    message = t.message ?: "Unknown error",
-                    throwable = t,
-                ),
+                    TelegramCatalogEvent.ScanError(
+                            reason = "unexpected_error",
+                            message = t.message ?: "Unknown error",
+                            throwable = t,
+                    ),
             )
         }
     }
@@ -204,7 +209,7 @@ class TelegramCatalogPipelineImpl @Inject constructor(
     }
 
     override fun liveMediaUpdates(
-        config: TelegramLiveUpdatesConfig,
+            config: TelegramLiveUpdatesConfig,
     ): Flow<TelegramCatalogEvent> = channelFlow {
         val liveStartTime = System.currentTimeMillis()
         UnifiedLog.i(TAG_LIVE, "Starting live media updates stream")
@@ -213,10 +218,10 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         if (auth !is TdlibAuthState.Ready) {
             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: auth_state=$auth")
             trySend(
-                TelegramCatalogEvent.ScanError(
-                    reason = "unauthenticated",
-                    message = "Telegram is not authenticated. Current state: $auth",
-                ),
+                    TelegramCatalogEvent.ScanError(
+                            reason = "unauthenticated",
+                            message = "Telegram is not authenticated. Current state: $auth",
+                    ),
             )
             return@channelFlow
         }
@@ -225,10 +230,10 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         if (conn !is TelegramConnectionState.Connected) {
             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: connection_state=$conn")
             trySend(
-                TelegramCatalogEvent.ScanError(
-                    reason = "not_connected",
-                    message = "Telegram is not connected. Current state: $conn",
-                ),
+                    TelegramCatalogEvent.ScanError(
+                            reason = "not_connected",
+                            message = "Telegram is not connected. Current state: $conn",
+                    ),
             )
             return@channelFlow
         }
@@ -243,8 +248,9 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         var warmUpItemsEmitted = 0L
 
         val chatCache = mutableMapOf<Long, TelegramChatInfo>()
-        val initialChats = runCatching { adapter.getChats(limit = config.chatLookupLimit) }
-            .getOrDefault(emptyList())
+        val initialChats =
+                runCatching { adapter.getChats(limit = config.chatLookupLimit) }
+                        .getOrDefault(emptyList())
         initialChats.forEach { chatCache[it.chatId] = it }
         UnifiedLog.i(TAG_LIVE, "Initial chat cache populated: ${initialChats.size} chats")
 
@@ -257,35 +263,38 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         var seedFailCount = 0
         initialChats.forEach { chat ->
             runCatching {
-                val sample = adapter.fetchMessages(
-                    chatId = chat.chatId,
-                    limit = TelegramChatMediaClassifier.SAMPLE_SIZE,
-                )
+                val sample =
+                        adapter.fetchMessages(
+                                chatId = chat.chatId,
+                                limit = TelegramChatMediaClassifier.SAMPLE_SIZE,
+                        )
                 classifier.recordSample(chat.chatId, sample)
                 seedSuccessCount++
-            }.onFailure { error ->
-                seedFailCount++
-                UnifiedLog.w(
-                    TAG_LIVE,
-                    "Classifier seed failed: chat_id=${chat.chatId}, error=${error.message}",
-                )
             }
+                    .onFailure { error ->
+                        seedFailCount++
+                        UnifiedLog.w(
+                                TAG_LIVE,
+                                "Classifier seed failed: chat_id=${chat.chatId}, error=${error.message}",
+                        )
+                    }
         }
         val seedDurationMs = System.currentTimeMillis() - seedStartTime
         UnifiedLog.i(
-            TAG_LIVE,
-            "Classifier seeding complete: success=$seedSuccessCount, failed=$seedFailCount, " +
-                "duration_ms=$seedDurationMs",
+                TAG_LIVE,
+                "Classifier seeding complete: success=$seedSuccessCount, failed=$seedFailCount, " +
+                        "duration_ms=$seedDurationMs",
         )
 
         suspend fun emitDiscovered(update: TelegramMediaUpdate, chatTitle: String?) {
             val media = update.mediaItem
-            val catalogItem = TelegramCatalogItem(
-                raw = media.toRawMediaMetadata(),
-                chatId = media.chatId,
-                messageId = media.messageId,
-                chatTitle = chatTitle,
-            )
+            val catalogItem =
+                    TelegramCatalogItem(
+                            raw = media.toRawMediaMetadata(),
+                            chatId = media.chatId,
+                            messageId = media.messageId,
+                            chatTitle = chatTitle,
+                    )
             send(TelegramCatalogEvent.ItemDiscovered(catalogItem))
             liveMessagesEmitted++
         }
@@ -294,32 +303,35 @@ class TelegramCatalogPipelineImpl @Inject constructor(
             val ingestStartTime = System.currentTimeMillis()
             var ingestItemCount = 0L
 
-            val chatInfo = chatCache[chatId]
-                ?: adapter.getChats(limit = config.chatLookupLimit)
-                    .firstOrNull { it.chatId == chatId }
-                    ?.also { chatCache[chatId] = it }
-                ?: run {
-                    UnifiedLog.w(TAG_LIVE, "Warm-up aborted: chat_id=$chatId not found")
-                    return
-                }
+            val chatInfo =
+                    chatCache[chatId]
+                            ?: adapter.getChats(limit = config.chatLookupLimit)
+                                    .firstOrNull { it.chatId == chatId }
+                                    ?.also { chatCache[chatId] = it }
+                                    ?: run {
+                                UnifiedLog.w(TAG_LIVE, "Warm-up aborted: chat_id=$chatId not found")
+                                return
+                            }
 
-            val cursor = TelegramMessageCursor(
-                adapter = adapter,
-                chat = chatInfo,
-                maxMessages = config.warmUpIngestMessages,
-                minMessageTimestampMs = config.minMessageTimestampMs,
-                pageSize = config.pageSize,
-            )
+            val cursor =
+                    TelegramMessageCursor(
+                            adapter = adapter,
+                            chat = chatInfo,
+                            maxMessages = config.warmUpIngestMessages,
+                            minMessageTimestampMs = config.minMessageTimestampMs,
+                            pageSize = config.pageSize,
+                    )
 
             while (isActive && cursor.hasNext()) {
                 val batch = cursor.nextBatch()
                 for (mediaItem in batch) {
-                    val catalogItem = TelegramCatalogItem(
-                        raw = mediaItem.toRawMediaMetadata(),
-                        chatId = chatInfo.chatId,
-                        messageId = mediaItem.messageId,
-                        chatTitle = chatInfo.title,
-                    )
+                    val catalogItem =
+                            TelegramCatalogItem(
+                                    raw = mediaItem.toRawMediaMetadata(),
+                                    chatId = chatInfo.chatId,
+                                    messageId = mediaItem.messageId,
+                                    chatTitle = chatInfo.title,
+                            )
                     send(TelegramCatalogEvent.ItemDiscovered(catalogItem))
                     ingestItemCount++
                     warmUpItemsEmitted++
@@ -328,9 +340,9 @@ class TelegramCatalogPipelineImpl @Inject constructor(
 
             val ingestDurationMs = System.currentTimeMillis() - ingestStartTime
             UnifiedLog.d(
-                TAG_LIVE,
-                "Warm-up ingest complete: chat_id=$chatId, items=$ingestItemCount, " +
-                    "duration_ms=$ingestDurationMs",
+                    TAG_LIVE,
+                    "Warm-up ingest complete: chat_id=$chatId, items=$ingestItemCount, " +
+                            "duration_ms=$ingestDurationMs",
             )
         }
 
@@ -340,16 +352,16 @@ class TelegramCatalogPipelineImpl @Inject constructor(
                 warmUpTriggered++
                 try {
                     UnifiedLog.i(
-                        TAG_LIVE,
-                        "Warm-up triggered: chat_id=$chatId, classification=$newClass",
+                            TAG_LIVE,
+                            "Warm-up triggered: chat_id=$chatId, classification=$newClass",
                     )
                     warmUpIngest(chatId)
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (t: Throwable) {
                     UnifiedLog.w(
-                        TAG_LIVE,
-                        "Warm-up failed: chat_id=$chatId, error=${t.message}",
+                            TAG_LIVE,
+                            "Warm-up failed: chat_id=$chatId, error=${t.message}",
                     )
                 } finally {
                     warmUpInProgress.remove(chatId)
@@ -358,8 +370,8 @@ class TelegramCatalogPipelineImpl @Inject constructor(
         }
 
         UnifiedLog.i(
-            TAG_LIVE,
-            "Live updates stream ready, init_time_ms=${System.currentTimeMillis() - liveStartTime}",
+                TAG_LIVE,
+                "Live updates stream ready, init_time_ms=${System.currentTimeMillis() - liveStartTime}",
         )
 
         adapter.mediaUpdates.collect { update ->
@@ -377,10 +389,10 @@ class TelegramCatalogPipelineImpl @Inject constructor(
             // Log metrics periodically
             if (liveMessagesReceived % LIVE_METRICS_LOG_INTERVAL == 0L) {
                 UnifiedLog.d(
-                    TAG_LIVE,
-                    "Live metrics: received=$liveMessagesReceived, emitted=$liveMessagesEmitted, " +
-                        "suppressed=$liveMessagesSuppressed, warmups=$warmUpTriggered, " +
-                        "warmup_items=$warmUpItemsEmitted",
+                        TAG_LIVE,
+                        "Live metrics: received=$liveMessagesReceived, emitted=$liveMessagesEmitted, " +
+                                "suppressed=$liveMessagesSuppressed, warmups=$warmUpTriggered, " +
+                                "warmup_items=$warmUpItemsEmitted",
                 )
             }
         }

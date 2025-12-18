@@ -100,7 +100,7 @@ private fun RawMediaMetadata.toHomeMediaItem(): HomeMediaItem {
         backdrop = bestBackdrop,
         mediaType = mediaType,
         sourceType = sourceType,
-        duration = durationMinutes?.let { it * 60_000L } ?: 0L,
+        duration = durationMs ?: 0L,
         year = year,
         navigationId = sourceId,
         navigationSource = sourceType

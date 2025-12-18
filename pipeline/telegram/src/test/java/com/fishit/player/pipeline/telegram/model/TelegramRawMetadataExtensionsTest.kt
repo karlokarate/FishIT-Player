@@ -164,7 +164,8 @@ class TelegramRawMetadataExtensionsTest {
 
                 val raw = item.toRawMediaMetadata()
 
-                assertEquals(120, raw.durationMinutes)
+                // 7200 secs = 7,200,000 ms
+                assertEquals(7_200_000L, raw.durationMs)
         }
 
         @Test
@@ -402,8 +403,8 @@ class TelegramRawMetadataExtensionsTest {
 
                 val raw = item.toRawMediaMetadata()
 
-                // structuredLengthMinutes takes precedence
-                assertEquals(118, raw.durationMinutes)
+                // structuredLengthMinutes (118 min) takes precedence → 118 * 60 * 1000 = 7,080,000 ms
+                assertEquals(7_080_000L, raw.durationMs)
         }
 
         @Test
@@ -439,7 +440,8 @@ class TelegramRawMetadataExtensionsTest {
                 assertEquals(6.9, raw.rating)
                 assertEquals(1987, raw.year)
                 assertEquals(12, raw.ageRating)
-                assertEquals(96, raw.durationMinutes) // structuredLengthMinutes, not 5880/60
+                // structuredLengthMinutes (96 min) → 96 * 60 * 1000 = 5,760,000 ms
+                assertEquals(5_760_000L, raw.durationMs)
                 assertEquals(SourceType.TELEGRAM, raw.sourceType)
         }
 

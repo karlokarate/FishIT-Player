@@ -17,7 +17,7 @@ import com.fishit.player.core.model.MediaType
  * @property title Display title
  * @property sourceLabel Human-readable source label (e.g., "Telegram Chat")
  * @property mediaType Type of media (MOVIE, SERIES_EPISODE, etc.)
- * @property durationMinutes Duration in minutes if available
+ * @property durationMs Duration in milliseconds if available
  * @property posterUrl Poster/thumbnail URL if available
  * @property chatId Telegram chat ID (non-secret identifier)
  * @property messageId Telegram message ID (non-secret identifier)
@@ -27,7 +27,7 @@ data class TelegramMediaItem(
     val title: String,
     val sourceLabel: String,
     val mediaType: MediaType,
-    val durationMinutes: Int? = null,
+    val durationMs: Long? = null,
     val posterUrl: String? = null,
     val chatId: Long? = null,
     val messageId: Long? = null,

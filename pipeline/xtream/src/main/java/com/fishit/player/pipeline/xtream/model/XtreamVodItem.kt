@@ -13,6 +13,7 @@ package com.fishit.player.pipeline.xtream.model
  * @property added Unix epoch timestamp when item was added to provider catalog
  * @property rating TMDB rating (0.0-10.0 scale)
  * @property rating5Based Rating on 5-star scale
+ * @property tmdbId TMDB movie ID if available from provider (some panels scrape this)
  */
 data class XtreamVodItem(
         val id: Int,
@@ -23,4 +24,11 @@ data class XtreamVodItem(
         val added: Long? = null,
         val rating: Double? = null,
         val rating5Based: Double? = null,
+        /**
+         * TMDB movie ID from provider (Gold Decision Dec 2025).
+         *
+         * Some Xtream providers scrape TMDB and include the ID.
+         * Maps to ExternalIds.tmdb = TmdbRef(MOVIE, tmdbId).
+         */
+        val tmdbId: Int? = null,
 )

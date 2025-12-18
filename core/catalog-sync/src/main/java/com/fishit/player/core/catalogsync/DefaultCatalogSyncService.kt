@@ -430,7 +430,7 @@ class DefaultCatalogSyncService @Inject constructor(
             languages = null, // TODO: Extract from RawMediaMetadata.languages when available
             format = null, // TODO: Extract from RawMediaMetadata.format when available
             sizeBytes = null, // TODO: Add to RawMediaMetadata
-            durationMs = durationMinutes?.let { it * 60_000L },
+            durationMs = durationMs,
             priority = calculateSourcePriority(),
     )
 

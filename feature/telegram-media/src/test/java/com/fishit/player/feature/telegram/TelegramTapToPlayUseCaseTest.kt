@@ -165,7 +165,7 @@ class TelegramTapToPlayUseCaseTest {
             title = "Test Video",
             sourceLabel = "Telegram Chat",
             mediaType = MediaType.MOVIE,
-            durationMinutes = 120,
+            durationMs = 120 * 60_000L,
             posterUrl = null,
             chatId = 123L,
             messageId = 456L,

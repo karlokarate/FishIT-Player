@@ -59,11 +59,15 @@ import kotlinx.coroutines.flow.mapNotNull
  *
  * **g00sha tdlib-coroutines Integration:** Uses `dev.g000sha256:tdl-coroutines-android:5.0.0` AAR.
  *
- * @param clientProvider Provider for underlying TdlClient (injected via Hilt)
+ * **v2 Architecture Note:**
+ * This class now accepts TdlClient directly (v2 pattern) instead of TdlibClientProvider (v1 legacy).
+ * The app module is responsible for TdlClient creation and TDLib parameter setup.
+ *
+ * @param tdlClient The g00sha TdlClient wrapper around TDLib (provided by app)
  * @param scope Coroutine scope for background operations
  */
 class DefaultTelegramTransportClient(
-        private val clientProvider: TdlibClientProvider,
+        private val tdlClient: TdlClient,
         private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) : TelegramTransportClient {
 
@@ -72,9 +76,6 @@ class DefaultTelegramTransportClient(
         private const val DEFAULT_RETRIES = 3
         private const val RETRY_DELAY_MS = 500L
     }
-
-    private val tdlClient: TdlClient
-        get() = clientProvider.getClient()
 
     private val _authState = MutableStateFlow<TdlibAuthState>(TdlibAuthState.Idle)
     override val authState: Flow<TdlibAuthState> = _authState.asStateFlow()
@@ -85,7 +86,7 @@ class DefaultTelegramTransportClient(
 
     override val mediaUpdates: Flow<TgMessage>
         get() =
-                clientProvider.getClient().newMessageUpdates.mapNotNull { update ->
+                tdlClient.newMessageUpdates.mapNotNull { update ->
                     val message = update.message ?: return@mapNotNull null
                     if (!message.content.isMediaContent()) return@mapNotNull null
                     mapMessage(message)
@@ -95,13 +96,6 @@ class DefaultTelegramTransportClient(
 
     override suspend fun ensureAuthorized() {
         UnifiedLog.d(TAG, "ensureAuthorized()")
-
-        clientProvider.installLogging()
-
-        if (!clientProvider.isInitialized) {
-            _authState.value = TdlibAuthState.Connecting
-            clientProvider.initialize()
-        }
 
         val authResult = tdlClient.getAuthorizationState()
         when (authResult) {
@@ -127,8 +121,6 @@ class DefaultTelegramTransportClient(
     }
 
     override suspend fun isAuthorized(): Boolean {
-        if (!clientProvider.isInitialized) return false
-
         return try {
             val result = tdlClient.getAuthorizationState()
             result is TdlResult.Success && result.result is AuthorizationStateReady

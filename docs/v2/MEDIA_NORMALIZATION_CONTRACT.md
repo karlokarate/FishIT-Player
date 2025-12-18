@@ -27,7 +27,7 @@ data class RawMediaMetadata(
     val year: Int? = null,
     val season: Int? = null,
     val episode: Int? = null,
-    val durationMinutes: Int? = null,
+    val durationMs: Long? = null,
     val externalIds: ExternalIds = ExternalIds(),
     val sourceType: SourceType,
     val sourceLabel: String,
@@ -50,8 +50,13 @@ data class RawMediaMetadata(
   - Release year (movie) or original air date year (episode), if available.
 - `season` / `episode`  
   - For series/episodes only; null for movies.
-- `durationMinutes`  
-  - Media runtime in minutes, if available.
+- `durationMs`  
+  - Media runtime in **milliseconds** (Long), if available.
+  - Milliseconds are the v2 standard for all duration values.
+  - Conversion from source units:
+    - From seconds: `seconds * 1000L`
+    - From minutes: `minutes * 60_000L`
+  - Null if duration is unknown or not provided by the source.
 - `externalIds`  
   - IDs provided by upstream sources (e.g., TMDB, IMDB, TVDB) without transformation.
 - `sourceType`  

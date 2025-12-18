@@ -1,6 +1,5 @@
 package com.fishit.player.core.model
 
-import com.fishit.player.core.model.ids.TmdbId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -65,12 +64,14 @@ class RawMediaMetadataTest {
     }
 
     @Test
-    fun `externalIds with tmdbId`() {
-        val tmdbId = TmdbId(12345)
-        val externalIds = ExternalIds(tmdbId = tmdbId)
+    fun `externalIds with typed tmdb reference`() {
+        val tmdbRef = TmdbRef(TmdbMediaType.MOVIE, 12345)
+        val externalIds = ExternalIds(tmdb = tmdbRef)
         val metadata = createTestMetadata(externalIds = externalIds)
 
-        assertEquals(12345, metadata.externalIds.tmdbId?.value)
+        assertEquals(12345, metadata.externalIds.tmdb?.id)
+        assertEquals(TmdbMediaType.MOVIE, metadata.externalIds.tmdb?.type)
+        assertEquals(12345, metadata.externalIds.effectiveTmdbId)
     }
 
     @Test
@@ -79,8 +80,8 @@ class RawMediaMetadataTest {
             originalTitle = "The Movie",
             mediaType = MediaType.MOVIE,
             year = 2020,
-            durationMinutes = 120,
-            externalIds = ExternalIds(tmdbId = TmdbId(12345)),
+            durationMs = 120 * 60_000L,
+            externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 12345)),
             sourceType = SourceType.TELEGRAM,
             sourceLabel = "Mel Brooks 🥳",
             sourceId = "-1001434421634_388021760",
@@ -91,8 +92,9 @@ class RawMediaMetadataTest {
         assertEquals("The Movie", metadata.originalTitle)
         assertEquals(MediaType.MOVIE, metadata.mediaType)
         assertEquals(2020, metadata.year)
-        assertEquals(120, metadata.durationMinutes)
-        assertEquals(12345, metadata.externalIds.tmdbId?.value)
+        assertEquals(120 * 60_000L, metadata.durationMs)
+        assertEquals(12345, metadata.externalIds.tmdb?.id)
+        assertEquals(TmdbMediaType.MOVIE, metadata.externalIds.tmdb?.type)
         assertEquals(SourceType.TELEGRAM, metadata.sourceType)
         assertEquals("Mel Brooks 🥳", metadata.sourceLabel)
         assertEquals("-1001434421634_388021760", metadata.sourceId)

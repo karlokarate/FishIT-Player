@@ -58,18 +58,12 @@ object TelegramClientFactory {
         // Create TdlClient
         val tdlClient = createTdlClient()
 
-        // Create provider wrapper
-        val provider = ExistingSessionProvider(
-            client = tdlClient,
-            config = config,
-        )
-
-        // Initialize and wait for auth
-        provider.initialize()
+        // Verify session is valid before creating transport client
+        verifySession(tdlClient)
 
         // Create transport client
         val transportClient = DefaultTelegramTransportClient(
-            clientProvider = provider,
+            tdlClient = tdlClient,
             scope = scope,
         )
 
@@ -85,6 +79,37 @@ object TelegramClientFactory {
         }
 
         return transportClient
+    }
+
+    /**
+     * Verify that the TDLib session is valid.
+     * For existing sessions, we check auth state but don't trigger interactive auth.
+     */
+    private suspend fun verifySession(client: TdlClient) {
+        UnifiedLog.d(TAG, "Verifying TDLib session...")
+
+        val authResult = client.getAuthorizationState()
+        when (authResult) {
+            is TdlResult.Success -> {
+                when (authResult.result) {
+                    is AuthorizationStateReady -> {
+                        UnifiedLog.i(TAG, "Session already authenticated")
+                    }
+                    is AuthorizationStateClosed -> {
+                        throw TelegramSessionException("TDLib session is closed/invalid")
+                    }
+                    else -> {
+                        UnifiedLog.d(TAG, "Initial auth state: ${authResult.result}")
+                        // For other states, ensureAuthorized will handle them
+                    }
+                }
+            }
+            is TdlResult.Failure -> {
+                throw TelegramSessionException(
+                    "Failed to get auth state: ${authResult.code} - ${authResult.message}"
+                )
+            }
+        }
     }
 
     private fun validateSessionDirectories(config: TelegramSessionConfig) {
@@ -106,64 +131,6 @@ object TelegramClientFactory {
 
     private fun createTdlClient(): TdlClient {
         return TdlClient.create()
-    }
-
-    /**
-     * TdlibClientProvider implementation for existing sessions.
-     *
-     * Handles TDLib initialization with pre-configured session paths.
-     * Note: For existing sessions, TDLib should already be ready.
-     */
-    private class ExistingSessionProvider(
-        private val client: TdlClient,
-        private val config: TelegramSessionConfig,
-    ) : TdlibClientProvider {
-
-        private var initialized = false
-
-        override val isInitialized: Boolean
-            get() = initialized
-
-        override fun getClient(): TdlClient {
-            check(initialized) { "TDLib client not initialized. Call initialize() first." }
-            return client
-        }
-
-        override suspend fun initialize() {
-            if (initialized) return
-
-            UnifiedLog.d(TAG, "Initializing TDLib with existing session...")
-
-            // For existing sessions, we just verify the auth state
-            val authResult = client.getAuthorizationState()
-            when (authResult) {
-                is TdlResult.Success -> {
-                    when (authResult.result) {
-                        is AuthorizationStateReady -> {
-                            UnifiedLog.i(TAG, "Session already authenticated")
-                        }
-                        is AuthorizationStateClosed -> {
-                            throw TelegramSessionException("TDLib session is closed/invalid")
-                        }
-                        else -> {
-                            UnifiedLog.d(TAG, "Initial auth state: ${authResult.result}")
-                            // For other states, we'll let ensureAuthorized handle it
-                        }
-                    }
-                }
-                is TdlResult.Failure -> {
-                    throw TelegramSessionException(
-                        "Failed to get auth state: ${authResult.code} - ${authResult.message}"
-                    )
-                }
-            }
-
-            initialized = true
-        }
-
-        override fun getDatabasePath(): String = config.databaseDir
-
-        override fun getFilesDirectory(): String = config.filesDir
     }
 }
 

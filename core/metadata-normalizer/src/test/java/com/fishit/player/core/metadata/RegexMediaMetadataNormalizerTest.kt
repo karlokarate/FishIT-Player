@@ -4,7 +4,8 @@ import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.ids.TmdbId
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -36,7 +37,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 104,
+                    durationMs = 104 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -63,7 +64,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 101,
+                    durationMs = 101 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: Movies",
@@ -88,7 +89,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = 2020, // Explicit year (e.g., from Xtream API)
                     season = null,
                     episode = null,
-                    durationMinutes = 120,
+                    durationMs = 120 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Provider A",
@@ -112,7 +113,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 115,
+                    durationMs = 115 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: UHD Movies",
@@ -134,7 +135,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 97,
+                    durationMs = 97 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -158,7 +159,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 55,
+                    durationMs = 55 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: TV Shows",
@@ -182,7 +183,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = 3, // Explicit from API
                     episode = 10, // Explicit from API
-                    durationMinutes = 45,
+                    durationMs = 45 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Series",
@@ -205,7 +206,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 22,
+                    durationMs = 22 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: Kids Shows",
@@ -229,7 +230,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 22,
+                    durationMs = 22 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -254,7 +255,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 117,
+                    durationMs = 117 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -276,7 +277,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 149,
+                    durationMs = 149 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -302,7 +303,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -324,7 +325,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -346,8 +347,8 @@ class RegexMediaMetadataNormalizerTest {
                     year = 1999,
                     season = null,
                     episode = null,
-                    durationMinutes = 136,
-                    externalIds = ExternalIds(tmdbId = TmdbId(603), imdbId = "tt0133093"),
+                    durationMs = 136 * 60_000L,
+                    externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 603), imdbId = "tt0133093"),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Premium IPTV",
                     sourceId = "xtream://vod/12345",
@@ -356,7 +357,7 @@ class RegexMediaMetadataNormalizerTest {
             val normalized = normalizer.normalize(raw)
 
             assertEquals("The Matrix", normalized.canonicalTitle)
-            assertEquals(TmdbId(603), normalized.tmdbId)
+            assertEquals(TmdbRef(TmdbMediaType.MOVIE, 603), normalized.tmdb)
             assertEquals("tt0133093", normalized.externalIds.imdbId)
         }
 
@@ -370,7 +371,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: Movies",
@@ -393,7 +394,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -417,7 +418,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 120,
+                    durationMs = 120 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -439,7 +440,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -452,7 +453,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -482,7 +483,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null, // Will be parsed from filename
                     episode = null, // Will be parsed from filename
-                    durationMinutes = 22,
+                    durationMs = 22 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -509,7 +510,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null, // Will be parsed from filename
                     season = null,
                     episode = null,
-                    durationMinutes = 148,
+                    durationMs = 148 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
@@ -535,7 +536,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null, // Will be parsed from filename
                     season = null,
                     episode = null,
-                    durationMinutes = 3,
+                    durationMs = 3 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: Trailers",
@@ -561,7 +562,7 @@ class RegexMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = 45,
+                    durationMs = 45 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",

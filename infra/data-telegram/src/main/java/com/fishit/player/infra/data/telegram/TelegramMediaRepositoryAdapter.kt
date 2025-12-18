@@ -84,7 +84,7 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
         title = originalTitle,
         sourceLabel = sourceLabel,
         mediaType = mediaType,
-        durationMinutes = durationMinutes,
+        durationMs = durationMs,
         posterUrl = posterUrl,
         chatId = chatId,
         messageId = messageId,

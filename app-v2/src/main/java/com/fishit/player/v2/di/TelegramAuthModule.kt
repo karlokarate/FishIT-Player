@@ -55,13 +55,30 @@ object TelegramAuthModule {
     @Named(TELEGRAM_AUTH_SCOPE)
     fun provideTelegramAuthScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /**
+     * Provides the shared TdlClient instance for the entire app.
+     *
+     * **v2 Architecture:**
+     * - TdlClient is created once and shared across all Telegram consumers
+     * - This replaces the v1 TdlibClientProvider pattern
+     *
+     * **Consumers:**
+     * - TelegramTransportModule (via TelegramTransportClient)
+     * - TelegramAuthClient (via TdlibAuthSession)
+     */
+    @Provides
+    @Singleton
+    fun provideTdlClient(): TdlClient {
+        return TdlClient.create()
+    }
+
     @Provides
     @Singleton
     fun provideTelegramAuthClient(
+        tdlClient: TdlClient,
         sessionConfig: TelegramSessionConfig,
         @Named(TELEGRAM_AUTH_SCOPE) scope: CoroutineScope,
     ): TelegramAuthClient {
-        val client = TdlClient.create()
-        return TdlibAuthSession(client, sessionConfig, scope)
+        return TdlibAuthSession(tdlClient, sessionConfig, scope)
     }
 }

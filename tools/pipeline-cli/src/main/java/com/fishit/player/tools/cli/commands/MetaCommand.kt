@@ -30,7 +30,7 @@ class MetaCommand(private val pipelines: CliPipelines) :
     }
 }
 
-class NormalizeSampleCommand(private val pipelines: Pipelines) :
+class NormalizeSampleCommand(private val pipelines: CliPipelines) :
         CliktCommand(
                 name = "normalize-sample",
                 help = "Sample and show normalized metadata from a pipeline"

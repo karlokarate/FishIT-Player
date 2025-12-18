@@ -1,12 +1,12 @@
 package com.fishit.player.infra.transport.telegram.di
 
 import com.fishit.player.infra.transport.telegram.DefaultTelegramTransportClient
-import com.fishit.player.infra.transport.telegram.TdlibClientProvider
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.g000sha256.tdl.TdlClient
 import javax.inject.Singleton
 
 /**
@@ -14,8 +14,10 @@ import javax.inject.Singleton
  *
  * Provides TelegramTransportClient for use by higher layers (pipeline, data).
  *
- * **Note:** TdlibClientProvider must be provided by the app module
- * since it requires Android Context for TDLib initialization.
+ * **v2 Architecture:**
+ * - Accepts TdlClient directly (not TdlibClientProvider which is v1 legacy)
+ * - TdlClient must be provided by the app module (requires Android Context for initialization)
+ * - App module handles TDLib parameter setup, logging installation, and lifecycle
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -24,14 +26,14 @@ object TelegramTransportModule {
     /**
      * Provides the TelegramTransportClient singleton.
      *
-     * The TdlibClientProvider is expected to be provided by the app module
-     * via a separate @Binds or @Provides method.
+     * The TdlClient is expected to be provided by the app module
+     * via a separate @Provides method (created after TDLib parameter setup).
      */
     @Provides
     @Singleton
     fun provideTelegramTransportClient(
-        clientProvider: TdlibClientProvider
+        tdlClient: TdlClient
     ): TelegramTransportClient {
-        return DefaultTelegramTransportClient(clientProvider)
+        return DefaultTelegramTransportClient(tdlClient)
     }
 }

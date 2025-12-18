@@ -200,7 +200,7 @@ class ObxTelegramContentRepository @Inject constructor(
             year = year,
             season = seasonNumber,
             episode = episodeNumber,
-            durationMinutes = durationSecs?.let { it / 60 },
+            durationMs = durationSecs?.let { it * 1000L },
             sourceType = SourceType.TELEGRAM,
             sourceLabel = "Telegram Chat: $chatId",
             sourceId = "msg:$chatId:$messageId",
@@ -222,7 +222,7 @@ class ObxTelegramContentRepository @Inject constructor(
             year = year,
             seasonNumber = season,
             episodeNumber = episode,
-            durationSecs = durationMinutes?.let { it * 60 },
+            durationSecs = durationMs?.let { (it / 1000).toInt() },
             isSeries = mediaType == MediaType.SERIES_EPISODE,
             date = System.currentTimeMillis() / 1000
         )

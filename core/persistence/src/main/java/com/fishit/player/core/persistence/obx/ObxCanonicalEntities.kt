@@ -35,7 +35,7 @@ import io.objectbox.relation.ToMany
  * @property thumbnail Thumbnail ImageRef for list views
  * @property plot Description/plot text
  * @property rating Rating (0-10 scale)
- * @property durationMinutes Runtime in minutes
+ * @property durationMs Runtime in milliseconds (Long)
  * @property genres Comma-separated genre list
  * @property director Director name(s)
  * @property cast Comma-separated cast list
@@ -91,8 +91,8 @@ data class ObxCanonicalMedia(
         var plot: String? = null,
         /** Rating (0-10 scale) */
         var rating: Double? = null,
-        /** Runtime in minutes */
-        var durationMinutes: Int? = null,
+        /** Runtime in milliseconds */
+        var durationMs: Long? = null,
         /** Comma-separated genres */
         var genres: String? = null,
         /** Director name(s) */

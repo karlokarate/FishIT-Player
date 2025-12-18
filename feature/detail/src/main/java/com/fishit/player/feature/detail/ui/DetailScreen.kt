@@ -206,7 +206,7 @@ private fun DetailContent(
                 MetaChipsRow(
                     year = media.year,
                     rating = media.rating?.toFloat(),
-                    durationMinutes = state.selectedSource?.durationMs?.let { it / 60000 }?.toInt() ?: media.durationMinutes,
+                    durationMs = state.selectedSource?.durationMs ?: media.durationMs,
                     quality = state.selectedQualityLabel
                 )
             }
@@ -282,7 +282,7 @@ private fun DetailContent(
 private fun MetaChipsRow(
     year: Int?,
     rating: Float?,
-    durationMinutes: Int?,
+    durationMs: Long?,
     quality: String?
 ) {
     Row(
@@ -304,10 +304,11 @@ private fun MetaChipsRow(
             )
         }
 
-        durationMinutes?.let {
+        durationMs?.let {
+            val minutes = (it / 60_000).toInt()
             MetaChip(
                 icon = Icons.Default.Timelapse,
-                text = "${it}m"
+                text = "${minutes}m"
             )
         }
 

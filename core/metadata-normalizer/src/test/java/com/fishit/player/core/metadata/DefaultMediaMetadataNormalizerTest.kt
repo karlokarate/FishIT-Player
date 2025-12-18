@@ -4,7 +4,8 @@ import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.ids.TmdbId
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -29,8 +30,8 @@ class DefaultMediaMetadataNormalizerTest {
                     year = 2000,
                     season = null,
                     episode = null,
-                    durationMinutes = 104,
-                    externalIds = ExternalIds(tmdbId = TmdbId(12345)),
+                    durationMs = 104 * 60_000L,
+                    externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 12345)),
                     sourceType = SourceType.IO,
                     sourceLabel = "Local Files",
                     sourceId = "file:///storage/movies/xmen.mkv",
@@ -45,7 +46,7 @@ class DefaultMediaMetadataNormalizerTest {
             assertEquals(raw.year, normalized.year)
             assertEquals(raw.season, normalized.season)
             assertEquals(raw.episode, normalized.episode)
-            assertEquals(raw.externalIds.tmdbId, normalized.tmdbId)
+            assertEquals(raw.externalIds.tmdb, normalized.tmdb)
             assertEquals(raw.externalIds, normalized.externalIds)
         }
 
@@ -60,7 +61,7 @@ class DefaultMediaMetadataNormalizerTest {
                     year = 2008,
                     season = 1,
                     episode = 1,
-                    durationMinutes = 58,
+                    durationMs = 58 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: TV Shows",
@@ -89,8 +90,8 @@ class DefaultMediaMetadataNormalizerTest {
                     year = 1999,
                     season = null,
                     episode = null,
-                    durationMinutes = 136,
-                    externalIds = ExternalIds(tmdbId = TmdbId(603), imdbId = "tt0133093"),
+                    durationMs = 136 * 60_000L,
+                    externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 603), imdbId = "tt0133093"),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Premium IPTV",
                     sourceId = "xtream://vod/12345",
@@ -99,8 +100,8 @@ class DefaultMediaMetadataNormalizerTest {
             // When: normalizing
             val normalized = normalizer.normalize(raw)
 
-            // Then: TMDB ID is preserved
-            assertEquals(TmdbId(603), normalized.tmdbId)
+            // Then: TMDB reference is preserved
+            assertEquals(TmdbRef(TmdbMediaType.MOVIE, 603), normalized.tmdb)
             assertEquals("tt0133093", normalized.externalIds.imdbId)
         }
 
@@ -115,7 +116,7 @@ class DefaultMediaMetadataNormalizerTest {
                     year = null,
                     season = null,
                     episode = null,
-                    durationMinutes = null,
+                    durationMs = null,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream: Live TV",
@@ -129,7 +130,7 @@ class DefaultMediaMetadataNormalizerTest {
                     year = 2024,
                     season = null,
                     episode = null,
-                    durationMinutes = 3,
+                    durationMs = 3 * 60_000L,
                     externalIds = ExternalIds(),
                     sourceType = SourceType.TELEGRAM,
                     sourceLabel = "Telegram: Clips",

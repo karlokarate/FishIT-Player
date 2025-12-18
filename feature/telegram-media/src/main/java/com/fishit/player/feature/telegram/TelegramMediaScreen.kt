@@ -193,10 +193,11 @@ private fun MediaItemCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                item.durationMinutes?.let { duration ->
+                item.durationMs?.let { durationMs ->
+                    val durationMinutes = (durationMs / 60_000).toInt()
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${duration}m • ${item.mediaType.name}",
+                        text = "${durationMinutes}m • ${item.mediaType.name}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

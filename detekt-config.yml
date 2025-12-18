@@ -352,15 +352,36 @@ style:
         reason: 'Use UnifiedLog from :infra:logging. See LOGGING_CONTRACT_V2.md'
       - value: 'java.lang.Throwable#printStackTrace'
         reason: 'Use UnifiedLog.e(TAG, throwable). See LOGGING_CONTRACT_V2.md'
+      
+      # =====================================================================
+      # GOLD DELUXE P0 GUARDRAILS - Production Code Quality
+      # =====================================================================
+      # Prevent incomplete code from reaching production
+      
+      - value: 'kotlin.TODO'
+        reason: 'TODO() crashes at runtime. Implement properly or use // TODO comment for tracking.'
+      - value: 'kotlin.NotImplementedError'
+        reason: 'NotImplementedError crashes at runtime. Implement properly or throw specific exception.'
+      
+      # =====================================================================
+      # COROUTINE GUARDRAILS - No runBlocking in production
+      # =====================================================================
+      # runBlocking blocks threads and can cause ANRs
+      
+      - value: 'kotlinx.coroutines.runBlocking'
+        reason: 'runBlocking blocks threads and can cause ANRs. Use suspend functions or callbacks instead.'
     
     excludes:
       # infra/logging can use any logging implementation
       - '**/infra/logging/**'
       # legacy modules are exempt
       - '**/legacy/**'
-      # Test files may use println for debugging
+      # Test files may use println/runBlocking for debugging
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/testFixtures/**'
+      # CLI tools can use runBlocking
+      - '**/tools/**'
   FunctionOnlyReturningConstant:
     active: false
   LoopWithTooManyJumpStatements:

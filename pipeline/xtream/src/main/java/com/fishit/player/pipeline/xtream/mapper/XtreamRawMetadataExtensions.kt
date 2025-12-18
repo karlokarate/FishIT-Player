@@ -5,6 +5,8 @@ import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -16,8 +18,13 @@ import com.fishit.player.pipeline.xtream.model.XtreamVodItem
  * Per MEDIA_NORMALIZATION_CONTRACT.md:
  * - Provides RAW metadata only (no cleaning, no normalization, no heuristics)
  * - Title passed through exactly as received from Xtream API
- * - TMDB fields stored as raw strings only
+ * - TMDB fields stored as typed TmdbRef (Gold Decision Dec 2025)
  * - All normalization delegated to :core:metadata-normalizer
+ *
+ * Per Gold Decision (Dec 2025) - Typed TMDB References:
+ * - VOD items → TmdbRef(MOVIE, tmdbId)
+ * - Series → TmdbRef(TV, tmdbId)
+ * - Episodes → TmdbRef(TV, seriesTmdbId) + season/episode fields
  *
  * Per IMAGING_SYSTEM.md:
  * - ImageRef fields populated from source images
@@ -50,6 +57,9 @@ private fun cleanLiveChannelName(name: String): String {
 /**
  * Converts an XtreamVodItem to RawMediaMetadata.
  *
+ * Per Gold Decision (Dec 2025):
+ * - VOD items map to TmdbRef(MOVIE, tmdbId) when tmdbId is available
+ *
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with VOD-specific fields
  */
@@ -61,15 +71,18 @@ fun XtreamVodItem.toRawMediaMetadata(
         // Encode containerExtension in sourceId for playback URL construction
         // Format: xtream:vod:{id}:{ext} or xtream:vod:{id} if no extension
         val sourceIdWithExt = containerExtension?.let { "xtream:vod:$id:$it" } ?: "xtream:vod:$id"
+        // Build typed TMDB reference for movies
+        val externalIds = tmdbId?.let { 
+                ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it))
+        } ?: ExternalIds()
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.MOVIE,
                 year = rawYear,
                 season = null,
                 episode = null,
-                durationMinutes = null, // Xtream VOD list doesn't include duration
-                externalIds =
-                        ExternalIds(), // Xtream list doesn't include TMDB; detail fetch required
+                durationMs = null, // Xtream VOD list doesn't include duration
+                externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream VOD",
                 sourceId = sourceIdWithExt,
@@ -92,6 +105,9 @@ fun XtreamVodItem.toRawMediaMetadata(
  * Note: This represents the series as a whole, not individual episodes. Use
  * XtreamEpisode.toRawMediaMetadata() for episode-level metadata.
  *
+ * Per Gold Decision (Dec 2025):
+ * - Series map to TmdbRef(TV, tmdbId) when tmdbId is available
+ *
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with series-specific fields
  */
@@ -100,14 +116,18 @@ fun XtreamSeriesItem.toRawMediaMetadata(
 ): RawMediaMetadata {
         val rawTitle = name
         val rawYear = year?.toIntOrNull()
+        // Build typed TMDB reference for TV shows
+        val externalIds = tmdbId?.let { 
+                ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it))
+        } ?: ExternalIds()
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.SERIES, // Series container, not episode
                 year = rawYear,
                 season = null,
                 episode = null,
-                durationMinutes = null,
-                externalIds = ExternalIds(),
+                durationMs = null, // Series list doesn't include duration
+                externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream Series",
                 sourceId = "xtream:series:$id",
@@ -130,6 +150,10 @@ fun XtreamSeriesItem.toRawMediaMetadata(
  * Uses the embedded seriesName property (set during loadEpisodes) for context. Falls back to
  * external parameter if provided.
  *
+ * Per Gold Decision (Dec 2025):
+ * - Episodes map to TmdbRef(TV, seriesTmdbId) - using series TMDB ID, not episode ID
+ * - season/episode fields enable episode-level API calls: GET /tv/{id}/season/{s}/episode/{e}
+ *
  * @param seriesNameOverride Optional override for parent series name
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with episode-specific fields
@@ -145,14 +169,18 @@ fun XtreamEpisode.toRawMediaMetadata(
         // Encode containerExtension in sourceId for playback URL construction
         // Format: xtream:episode:{id}:{ext} or xtream:episode:{id} if no extension
         val sourceIdWithExt = containerExtension?.let { "xtream:episode:$id:$it" } ?: "xtream:episode:$id"
+        // Build typed TMDB reference for episodes (uses series TMDB ID with TV type)
+        val externalIds = seriesTmdbId?.let { 
+                ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it))
+        } ?: ExternalIds()
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.SERIES_EPISODE,
                 year = rawYear,
                 season = seasonNumber,
                 episode = episodeNumber,
-                durationMinutes = null,
-                externalIds = ExternalIds(),
+                durationMs = null, // Episode list doesn't include duration
+                externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
                 sourceId = sourceIdWithExt,
@@ -191,7 +219,7 @@ fun XtreamChannel.toRawMediaMetadata(
                 year = null,
                 season = null,
                 episode = null,
-                durationMinutes = null,
+                durationMs = null, // Live channels don't have duration
                 externalIds = ExternalIds(),
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream Live",

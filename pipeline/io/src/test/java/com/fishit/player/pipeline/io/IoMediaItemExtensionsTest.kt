@@ -1,15 +1,19 @@
 package com.fishit.player.pipeline.io
 
-import com.fishit.player.core.model.PlaybackType
+import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.PipelineIdTag
+import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.playermodel.SourceType as PlayerSourceType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * Tests for IoMediaItem extension functions.
  *
- * These tests verify the PlaybackContext conversion helper.
+ * These tests verify the PlaybackContext and RawMediaMetadata conversion helpers.
  */
 class IoMediaItemExtensionsTest {
     @Test
@@ -27,28 +31,21 @@ class IoMediaItemExtensionsTest {
 
         val context = item.toPlaybackContext()
 
-        assertEquals(PlaybackType.IO, context.type)
+        assertEquals(PlayerSourceType.FILE, context.sourceType)
         assertEquals("Test Video", context.title)
         assertEquals("video.mp4", context.subtitle)
-        assertTrue(context.uri.contains("video.mp4"))
-        assertNotNull(context.contentId)
-        assertTrue(context.contentId!!.startsWith("io:file:"))
+        assertNotNull(context.uri)
+        assertTrue(context.uri!!.contains("video.mp4"))
+        assertTrue(context.canonicalId.startsWith("io:"))
     }
 
     @Test
-    fun `toPlaybackContext includes optional parameters`() {
+    fun `toPlaybackContext includes start position`() {
         val item = IoMediaItem.fake()
 
-        val context =
-            item.toPlaybackContext(
-                profileId = 123L,
-                startPositionMs = 5000L,
-                isKidsContent = true,
-            )
+        val context = item.toPlaybackContext(startPositionMs = 5000L)
 
-        assertEquals(123L, context.profileId)
         assertEquals(5000L, context.startPositionMs)
-        assertTrue(context.isKidsContent)
     }
 
     @Test
@@ -110,28 +107,28 @@ class IoMediaItemExtensionsTest {
         val raw = item.toRawMediaMetadata()
 
         // Raw filename must be forwarded as-is, NO cleaning
-        assertEquals("X-Men.2000.1080p.BluRay.x264-GROUP.mkv", raw["originalTitle"])
+        assertEquals("X-Men.2000.1080p.BluRay.x264-GROUP.mkv", raw.originalTitle)
         // IO does NOT extract year/season/episode
-        assertEquals(null, raw["year"])
-        assertEquals(null, raw["season"])
-        assertEquals(null, raw["episode"])
+        assertNull(raw.year)
+        assertNull(raw.season)
+        assertNull(raw.episode)
     }
 
     @Test
-    fun `toRawMediaMetadata forwards duration in minutes`() {
+    fun `toRawMediaMetadata forwards duration in milliseconds`() {
         val item =
             IoMediaItem(
                 id = "test-id",
                 source = IoSource.LocalFile("/path/video.mp4"),
                 title = "Test Video",
                 fileName = "video.mp4",
-                durationMs = 7_260_000L, // 121 minutes
+                durationMs = 7_260_000L, // 121 minutes in ms
             )
 
         val raw = item.toRawMediaMetadata()
 
-        // Duration should be converted from ms to minutes
-        assertEquals(121, raw["durationMinutes"])
+        // Duration should be forwarded directly in milliseconds
+        assertEquals(7_260_000L, raw.durationMs)
     }
 
     @Test
@@ -147,7 +144,7 @@ class IoMediaItemExtensionsTest {
 
         val raw = item.toRawMediaMetadata()
 
-        assertEquals(null, raw["durationMinutes"])
+        assertNull(raw.durationMs)
     }
 
     @Test
@@ -162,21 +159,26 @@ class IoMediaItemExtensionsTest {
 
         val raw = item.toRawMediaMetadata()
 
-        assertEquals("IO", raw["sourceType"])
-        assertEquals("Local File: video.mp4", raw["sourceLabel"])
-        assertEquals("io:file:file:///movies/video.mp4", raw["sourceId"])
+        assertEquals(SourceType.IO, raw.sourceType)
+        assertEquals("Local File: video.mp4", raw.sourceLabel)
+        assertEquals("io:file:file:///movies/video.mp4", raw.sourceId)
+        assertEquals(PipelineIdTag.IO, raw.pipelineIdTag)
     }
 
     @Test
-    fun `toRawMediaMetadata does not include external IDs`() {
-        // IO pipeline cannot provide TMDB/IMDB IDs from raw filesystem
-        val item = IoMediaItem.fake()
+    fun `toRawMediaMetadata infers media type from mime`() {
+        val videoItem =
+            IoMediaItem(
+                id = "test-id",
+                source = IoSource.LocalFile("/path/video.mp4"),
+                title = "Test Video",
+                fileName = "video.mp4",
+                mimeType = "video/mp4",
+            )
 
-        val raw = item.toRawMediaMetadata()
+        val raw = videoItem.toRawMediaMetadata()
 
-        @Suppress("UNCHECKED_CAST")
-        val externalIds = raw["externalIds"] as Map<String, String>
-        assertTrue("IO should not provide external IDs", externalIds.isEmpty())
+        assertEquals(MediaType.CLIP, raw.mediaType)
     }
 
     @Test
@@ -193,6 +195,6 @@ class IoMediaItemExtensionsTest {
         val raw = item.toRawMediaMetadata()
 
         // Special characters must be preserved
-        assertEquals("[Movie] Title (2023) {Edition}.mkv", raw["originalTitle"])
+        assertEquals("[Movie] Title (2023) {Edition}.mkv", raw.originalTitle)
     }
 }

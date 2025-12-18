@@ -104,10 +104,26 @@ data class TelegramMediaItem(
          * TMDB ID from structured TEXT message.
          *
          * Extracted from tmdbUrl (e.g., "https://themoviedb.org/movie/12345" → 12345).
-         * Pass-through to RawMediaMetadata.externalIds.tmdbId (enables downstream unification).
+         * Pass-through to RawMediaMetadata.externalIds.tmdb (enables downstream unification).
          * Per Contract R4 Schema Guards: raw extracted, validation happens in extractor.
+         *
+         * @see structuredTmdbType for the media type (MOVIE or TV)
          */
         val structuredTmdbId: Int? = null,
+        
+        /**
+         * TMDB media type from structured TEXT message (Gold Decision Dec 2025).
+         *
+         * Extracted from tmdbUrl path:
+         * - "/movie/123" → MOVIE
+         * - "/tv/456" → TV
+         *
+         * Episodes use TV type with season/episode from other fields.
+         * Never use EPISODE type (TMDB has no episode root type).
+         *
+         * @see structuredTmdbId for the numeric ID
+         */
+        val structuredTmdbType: TelegramTmdbType? = null,
         
         /**
          * TMDB rating from structured TEXT message (0.0-10.0 scale).

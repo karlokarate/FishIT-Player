@@ -695,7 +695,7 @@ constructor(
                         thumbnail = canonical.thumbnail,
                         plot = canonical.plot,
                         rating = canonical.rating,
-                        durationMinutes = canonical.durationMinutes,
+                        durationMs = canonical.durationMs,
                         genres = canonical.genres,
                         sources = sources,
                 )

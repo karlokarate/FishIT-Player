@@ -19,6 +19,7 @@ package com.fishit.player.pipeline.xtream.model
  * @property rating Rating (0-10 scale)
  * @property thumbnail URL to the episode thumbnail
  * @property added Unix epoch timestamp when episode was added
+ * @property seriesTmdbId TMDB TV show ID inherited from parent series (Gold Decision Dec 2025)
  */
 data class XtreamEpisode(
         val id: Int,
@@ -34,4 +35,12 @@ data class XtreamEpisode(
         val rating: Double? = null,
         val thumbnail: String? = null,
         val added: Long? = null,
+        /**
+         * TMDB TV show ID inherited from parent series (Gold Decision Dec 2025).
+         *
+         * Episodes use the series TMDB ID (TV type) combined with season/episode numbers.
+         * Maps to ExternalIds.tmdb = TmdbRef(TV, seriesTmdbId).
+         * TMDB API: GET /tv/{seriesTmdbId}/season/{seasonNumber}/episode/{episodeNumber}
+         */
+        val seriesTmdbId: Int? = null,
 )

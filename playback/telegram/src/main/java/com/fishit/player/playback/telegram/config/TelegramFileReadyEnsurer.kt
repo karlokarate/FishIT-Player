@@ -57,7 +57,7 @@ class TelegramFileReadyEnsurer(
      * @throws TelegramStreamingException if validation fails or times out
      */
     suspend fun ensureReadyForPlayback(fileId: Int): String {
-        UnifiedLog.d(TAG, "ensureReadyForPlayback(fileId=$fileId)")
+        UnifiedLog.d(TAG) { "ensureReadyForPlayback(fileId=$fileId)" }
 
         // Start high-priority download
         fileClient.startDownload(
@@ -85,7 +85,7 @@ class TelegramFileReadyEnsurer(
      * @throws TelegramStreamingException if fails or times out
      */
     suspend fun ensureReadyForSeek(fileId: Int, seekPosition: Long): String {
-        UnifiedLog.d(TAG, "ensureReadyForSeek(fileId=$fileId, seekPosition=$seekPosition)")
+        UnifiedLog.d(TAG) { "ensureReadyForSeek(fileId=$fileId, seekPosition=$seekPosition)" }
 
         // Start download at seek position with read-ahead
         fileClient.startDownload(
@@ -149,16 +149,15 @@ class TelegramFileReadyEnsurer(
             if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
                             now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
             ) {
-                UnifiedLog.d(
-                        TAG,
-                        "Polling: prefix=${prefixSize / 1024}KB, target=${minBytes / 1024}KB"
-                )
+                UnifiedLog.d(TAG) {
+                    "Polling: prefix=${prefixSize / 1024}KB, target=${minBytes / 1024}KB"
+                }
                 lastLogTime = now
             }
 
             // Check if download is complete
             if (file.isDownloadingCompleted && localPath != null) {
-                UnifiedLog.d(TAG, "Download complete: $localPath")
+                UnifiedLog.d(TAG) { "Download complete: $localPath" }
                 return localPath
             }
 
@@ -166,7 +165,7 @@ class TelegramFileReadyEnsurer(
             if (prefixSize >= minBytes && localPath != null) {
                 if (!validateMoov) {
                     // Non-MP4 path - no moov validation needed
-                    UnifiedLog.d(TAG, "Prefix ready (no moov check): $localPath")
+                    UnifiedLog.d(TAG) { "Prefix ready (no moov check): $localPath" }
                     return localPath
                 }
 
@@ -175,17 +174,18 @@ class TelegramFileReadyEnsurer(
 
                 when {
                     moovResult.isReadyForPlayback -> {
-                        UnifiedLog.d(
-                                TAG,
-                                "Moov validated, ready: $localPath (moovStart=${moovResult.moovStart}, moovSize=${moovResult.moovSize})"
-                        )
+                        UnifiedLog.d(TAG) {
+                            "Moov validated, ready: $localPath (moovStart=${moovResult.moovStart}, moovSize=${moovResult.moovSize})"
+                        }
                         return localPath
                     }
                     moovResult.found && !moovResult.complete -> {
                         // Moov found but incomplete - start/continue timeout
                         if (moovIncompleteStartTime == null) {
                             moovIncompleteStartTime = now
-                            UnifiedLog.d(TAG, "Moov found but incomplete, waiting for more data...")
+                            UnifiedLog.d(TAG) {
+                                "Moov found but incomplete, waiting for more data..."
+                            }
                         } else if (now - moovIncompleteStartTime >=
                                         Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
                         ) {
@@ -236,16 +236,15 @@ class TelegramFileReadyEnsurer(
             if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
                             now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
             ) {
-                UnifiedLog.d(
-                        TAG,
-                        "Seek poll: prefix=${prefixSize / 1024}KB, required=${requiredBytes / 1024}KB"
-                )
+                UnifiedLog.d(TAG) {
+                    "Seek poll: prefix=${prefixSize / 1024}KB, required=${requiredBytes / 1024}KB"
+                }
                 lastLogTime = now
             }
 
             // Check if download is complete
             if (file.isDownloadingCompleted && localPath != null) {
-                UnifiedLog.d(TAG, "Download complete for seek: $localPath")
+                UnifiedLog.d(TAG) { "Download complete for seek: $localPath" }
                 return localPath
             }
 
@@ -260,7 +259,7 @@ class TelegramFileReadyEnsurer(
                                 prefixSize >= seekPosition
 
                 if (hasEnoughBytes || isNearEndOfFile) {
-                    UnifiedLog.d(TAG, "Seek ready at $seekPosition: $localPath")
+                    UnifiedLog.d(TAG) { "Seek ready at $seekPosition: $localPath" }
                     return localPath
                 }
             }

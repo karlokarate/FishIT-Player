@@ -26,7 +26,7 @@ class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
                     year = raw.year,
                     season = raw.season,
                     episode = raw.episode,
-                    tmdbId = raw.externalIds.tmdbId, // Pass through if provided by source
+                    tmdb = raw.externalIds.tmdb, // Pass through typed TMDB ref if provided
                     externalIds = raw.externalIds,
                     // === Pass through ImageRefs from pipeline ===
                     poster = raw.poster,
@@ -91,7 +91,7 @@ class RegexMediaMetadataNormalizer(
                 year = year,
                 season = season,
                 episode = episode,
-                tmdbId = raw.externalIds.tmdbId, // Pass through if provided by source
+                tmdb = raw.externalIds.tmdb, // Pass through typed TMDB ref if provided
                 externalIds = raw.externalIds,
                 // === Pass through ImageRefs from pipeline ===
                 poster = raw.poster,

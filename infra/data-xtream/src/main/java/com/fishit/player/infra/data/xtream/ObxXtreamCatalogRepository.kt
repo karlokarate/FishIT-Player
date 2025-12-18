@@ -253,7 +253,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
         originalTitle = name,
         mediaType = MediaType.MOVIE,
         year = year,
-        durationMinutes = durationSecs?.let { it / 60 },
+        durationMs = durationSecs?.let { it * 1000L },
         sourceType = SourceType.XTREAM,
         sourceLabel = "Xtream VOD",
         sourceId = "xtream:vod:$vodId",
@@ -277,7 +277,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
         mediaType = MediaType.SERIES_EPISODE,
         season = season,
         episode = episodeNum,
-        durationMinutes = durationSecs?.let { it / 60 },
+        durationMs = durationSecs?.let { it * 1000L },
         sourceType = SourceType.XTREAM,
         sourceLabel = "Xtream Episode",
         sourceId = "xtream:episode:$seriesId:$season:$episodeNum",
@@ -292,7 +292,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
             nameLower = originalTitle.lowercase(),
             sortTitleLower = originalTitle.lowercase(),
             year = year,
-            durationSecs = durationMinutes?.let { it * 60 },
+            durationSecs = durationMs?.let { (it / 1000).toInt() },
             poster = (poster as? ImageRef.Http)?.url,
             updatedAt = System.currentTimeMillis()
         )
@@ -323,7 +323,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
             season = seasonNum,
             episodeNum = episodeNum,
             title = originalTitle,
-            durationSecs = durationMinutes?.let { it * 60 },
+            durationSecs = durationMs?.let { (it / 1000).toInt() },
             imageUrl = (thumbnail as? ImageRef.Http)?.url
         )
     }

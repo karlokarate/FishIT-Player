@@ -2,7 +2,8 @@ package com.fishit.player.core.metadata
 
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.NormalizedMediaMetadata
-import com.fishit.player.core.model.ids.TmdbId
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -27,7 +28,7 @@ class DefaultTmdbMetadataResolverTest {
                     year = 2000,
                     season = null,
                     episode = null,
-                    tmdbId = null,
+                    tmdb = null,
                     externalIds = ExternalIds(),
                 )
 
@@ -48,15 +49,15 @@ class DefaultTmdbMetadataResolverTest {
                     year = 1999,
                     season = null,
                     episode = null,
-                    tmdbId = null, // No TMDB ID
+                    tmdb = null, // No TMDB ref
                     externalIds = ExternalIds(),
                 )
 
             // When: enriching
             val enriched = resolver.enrich(normalized)
 
-            // Then: TMDB ID remains null (no lookup performed)
-            assertEquals(null, enriched.tmdbId)
+            // Then: TMDB ref remains null (no lookup performed)
+            assertEquals(null, enriched.tmdb)
             assertEquals(normalized, enriched)
         }
 
@@ -70,15 +71,15 @@ class DefaultTmdbMetadataResolverTest {
                     year = 1999,
                     season = null,
                     episode = null,
-                    tmdbId = TmdbId(603),
-                    externalIds = ExternalIds(tmdbId = TmdbId(603)),
+                    tmdb = TmdbRef(TmdbMediaType.MOVIE, 603),
+                    externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 603)),
                 )
 
             // When: enriching
             val enriched = resolver.enrich(normalized)
 
-            // Then: TMDB ID is preserved
-            assertEquals(TmdbId(603), enriched.tmdbId)
+            // Then: TMDB ref is preserved
+            assertEquals(TmdbRef(TmdbMediaType.MOVIE, 603), enriched.tmdb)
             assertEquals(normalized, enriched)
         }
 }
