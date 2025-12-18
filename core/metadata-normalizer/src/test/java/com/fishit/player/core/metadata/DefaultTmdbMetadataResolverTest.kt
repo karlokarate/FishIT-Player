@@ -1,84 +1,55 @@
 package com.fishit.player.core.metadata
 
-import com.fishit.player.core.model.ExternalIds
-import com.fishit.player.core.model.NormalizedMediaMetadata
-import com.fishit.player.core.model.ids.TmdbId
+import com.fishit.player.core.metadata.tmdb.TmdbConfig
+import com.fishit.player.core.metadata.tmdb.TmdbResolutionResult
+import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.RawMediaMetadata
+import com.fishit.player.core.model.SourceType
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 /**
  * Tests for DefaultTmdbMetadataResolver.
  *
- * Phase 3 skeleton tests verify that the default implementation
- * is a no-op pass-through (no TMDB calls, no enrichment).
+ * Note: Full API integration tests are deferred pending library access resolution.
+ * See TMDB_LIBRARY_INTEGRATION_STATUS.md for details.
  */
 class DefaultTmdbMetadataResolverTest {
-    private val resolver = DefaultTmdbMetadataResolver()
 
     @Test
-    fun `enrich returns input unmodified`() =
-        runTest {
-            // Given: normalized metadata
-            val normalized =
-                NormalizedMediaMetadata(
-                    canonicalTitle = "X-Men",
-                    year = 2000,
-                    season = null,
-                    episode = null,
-                    tmdbId = null,
-                    externalIds = ExternalIds(),
-                )
+    fun `resolver returns Disabled when apiKey is blank`() = runTest {
+        val config = TmdbConfig(apiKey = "")
+        val resolver = DefaultTmdbMetadataResolver(config)
 
-            // When: enriching
-            val enriched = resolver.enrich(normalized)
+        val raw = RawMediaMetadata(
+            originalTitle = "The Matrix",
+            mediaType = MediaType.MOVIE,
+            sourceType = SourceType.TELEGRAM,
+            sourceLabel = "Test",
+            sourceId = "test-123"
+        )
 
-            // Then: output is the same instance (no modifications)
-            assertSame(normalized, enriched)
-        }
+        val result = resolver.resolve(raw)
+        assertTrue(result is TmdbResolutionResult.Disabled)
+    }
 
     @Test
-    fun `enrich does not perform TMDB lookup`() =
-        runTest {
-            // Given: normalized metadata without TMDB ID
-            val normalized =
-                NormalizedMediaMetadata(
-                    canonicalTitle = "The Matrix",
-                    year = 1999,
-                    season = null,
-                    episode = null,
-                    tmdbId = null, // No TMDB ID
-                    externalIds = ExternalIds(),
-                )
+    fun `resolver returns Disabled when apiKey is present but library is not accessible`() = runTest {
+        val config = TmdbConfig(apiKey = "test-api-key-123")
+        val resolver = DefaultTmdbMetadataResolver(config)
 
-            // When: enriching
-            val enriched = resolver.enrich(normalized)
+        val raw = RawMediaMetadata(
+            originalTitle = "The Matrix",
+            mediaType = MediaType.MOVIE,
+            year = 1999,
+            sourceType = SourceType.TELEGRAM,
+            sourceLabel = "Test",
+            sourceId = "test-123"
+        )
 
-            // Then: TMDB ID remains null (no lookup performed)
-            assertEquals(null, enriched.tmdbId)
-            assertEquals(normalized, enriched)
-        }
-
-    @Test
-    fun `enrich preserves existing TMDB ID`() =
-        runTest {
-            // Given: normalized metadata with existing TMDB ID
-            val normalized =
-                NormalizedMediaMetadata(
-                    canonicalTitle = "The Matrix",
-                    year = 1999,
-                    season = null,
-                    episode = null,
-                    tmdbId = TmdbId(603),
-                    externalIds = ExternalIds(tmdbId = TmdbId(603)),
-                )
-
-            // When: enriching
-            val enriched = resolver.enrich(normalized)
-
-            // Then: TMDB ID is preserved
-            assertEquals(TmdbId(603), enriched.tmdbId)
-            assertEquals(normalized, enriched)
-        }
+        // Should return Disabled due to library access limitation
+        val result = resolver.resolve(raw)
+        assertTrue(result is TmdbResolutionResult.Disabled)
+    }
 }

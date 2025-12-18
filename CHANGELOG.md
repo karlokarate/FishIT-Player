@@ -11,13 +11,15 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 ### TMDB Enrichment MVP (2025-12-18)
 
 - **feat(normalizer)**: TMDB enrichment MVP (resolver + SSOT image upgrade rules)
-  - Integrated `app.moviebase:tmdb-api-jvm:1.6.0` for TMDB API access
-  - Implemented deterministic match scoring system (0..100 points)
+  - Integrated `app.moviebase:tmdb-api-jvm:1.6.0` dependency (✅ added, ⏸️ API blocked by internal constructor)
+  - Implemented deterministic match scoring system (0..100 points) with full unit tests
   - Added race-free image rule: TMDB images are SSOT only when explicitly populated
-  - Persisted TMDB resolution state schema (workers deferred to follow-up)
+  - Implemented LRU TTL caching infrastructure (256 entries, 7d/24h TTL)
+  - Persisted TMDB resolution state schema (ready for workers; workers deferred to follow-up)
   - Binding contract: `/contracts/TMDB_ENRICHMENT_CONTRACT.md`
-  - Dependencies: Only `:core:metadata-normalizer` may access TMDB API
+  - Dependencies: Only `:core:metadata-normalizer` may access TMDB API (verified)
   - Logging: All TMDB operations via `UnifiedLog` (no secrets logged)
+  - **Note:** Full API integration pending resolution of library constructor access (see `core/metadata-normalizer/TMDB_LIBRARY_INTEGRATION_STATUS.md`)
 
 ### Telegram Structured Bundles Design (2025-12-17)
 
