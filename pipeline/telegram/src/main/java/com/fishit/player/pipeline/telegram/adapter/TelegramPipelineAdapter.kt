@@ -204,7 +204,7 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                         minithumbnailBytes = content.minithumbnail?.data,
                         minithumbnailWidth = content.minithumbnail?.width,
                         minithumbnailHeight = content.minithumbnail?.height,
-                        date = date.toLong() * 1000L
+                        date = timestampMs
                 )
         is TgContent.Document -> {
             val inferredKind =

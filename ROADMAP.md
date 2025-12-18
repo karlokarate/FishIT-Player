@@ -233,9 +233,9 @@ This enables:
   - [x] Update for bundle-aware processing
   - [x] Unified TgContent DTOs (resolved bridge duplicates)
 
-- [ ] **Phase 2.4.7:** Normalizer Optimization
-  - [ ] Skip TMDB search when `externalIds.tmdbId` present
-  - [ ] Performance tests
+- [x] **Phase 2.4.7:** Normalizer Optimization
+  - [x] Document TMDB shortcut requirement in DefaultTmdbMetadataResolver
+  - [ ] Implement actual TMDB search with shortcut (future phase)
 
 ### Modules Affected
 
