@@ -22,7 +22,7 @@ data class TmdbMatchScore(
     val titleSimilarity: Int,
     val yearScore: Int,
     val kindAgreement: Int,
-    val episodeExact: Int
+    val episodeExact: Int,
 ) {
     /**
      * Total score (0..100).
@@ -48,10 +48,12 @@ data class TmdbMatchScore(
 enum class MatchDecision {
     /** Strong match: accept this TMDB ID */
     ACCEPT,
+
     /** Multiple close matches: manual review needed */
     AMBIGUOUS,
+
     /** No good match: skip TMDB enrichment */
-    REJECT
+    REJECT,
 }
 
 /**
@@ -60,7 +62,6 @@ enum class MatchDecision {
  * Implements deterministic scoring rules from TMDB_ENRICHMENT_CONTRACT.md Section 5.
  */
 object TmdbMatchScorer {
-
     /**
      * Calculate title similarity score (0..60).
      *
@@ -68,7 +69,10 @@ object TmdbMatchScorer {
      * - Levenshtein distance scaling: 60 * (1 - distance / maxLength)
      * - Minimum: 0
      */
-    fun calculateTitleSimilarity(queryTitle: String, tmdbTitle: String): Int {
+    fun calculateTitleSimilarity(
+        queryTitle: String,
+        tmdbTitle: String,
+    ): Int {
         val normalized1 = queryTitle.normalizeForMatch()
         val normalized2 = tmdbTitle.normalizeForMatch()
 
@@ -91,7 +95,10 @@ object TmdbMatchScorer {
      * - ±3 years: 5
      * - >3 years or missing: 0
      */
-    fun calculateYearScore(queryYear: Int?, tmdbYear: Int?): Int {
+    fun calculateYearScore(
+        queryYear: Int?,
+        tmdbYear: Int?,
+    ): Int {
         if (queryYear == null || tmdbYear == null) return 0
 
         val diff = kotlin.math.abs(queryYear - tmdbYear)
@@ -111,13 +118,15 @@ object TmdbMatchScorer {
      * - SERIES_EPISODE ↔ TMDB tv: 10
      * - Mismatch or unknown: 0
      */
-    fun calculateKindAgreement(queryType: MediaType, tmdbMediaType: String): Int {
-        return when {
+    fun calculateKindAgreement(
+        queryType: MediaType,
+        tmdbMediaType: String,
+    ): Int =
+        when {
             queryType == MediaType.MOVIE && tmdbMediaType == "movie" -> 10
             queryType == MediaType.SERIES_EPISODE && tmdbMediaType == "tv" -> 10
             else -> 0
         }
-    }
 
     /**
      * Calculate episode exactness score (0..10, episodes only).
@@ -130,7 +139,7 @@ object TmdbMatchScorer {
         querySeason: Int?,
         queryEpisode: Int?,
         tmdbSeason: Int?,
-        tmdbEpisode: Int?
+        tmdbEpisode: Int?,
     ): Int {
         if (querySeason == null || tmdbSeason == null) return 0
 
@@ -171,20 +180,22 @@ object TmdbMatchScorer {
      * - Collapse multiple spaces to single space
      * - Trim
      */
-    private fun String.normalizeForMatch(): String {
-        return this
+    private fun String.normalizeForMatch(): String =
+        this
             .lowercase()
             .replace(Regex("[^a-z0-9\\s]"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
-    }
 
     /**
      * Calculate Levenshtein distance between two strings.
      *
      * Standard dynamic programming implementation.
      */
-    private fun levenshteinDistance(s1: String, s2: String): Int {
+    private fun levenshteinDistance(
+        s1: String,
+        s2: String,
+    ): Int {
         val len1 = s1.length
         val len2 = s2.length
 
@@ -199,10 +210,11 @@ object TmdbMatchScorer {
         for (i in 1..len1) {
             for (j in 1..len2) {
                 val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
-                dp[i][j] = min(
-                    min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
-                    dp[i - 1][j - 1] + cost
-                )
+                dp[i][j] =
+                    min(
+                        min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+                        dp[i - 1][j - 1] + cost,
+                    )
             }
         }
 

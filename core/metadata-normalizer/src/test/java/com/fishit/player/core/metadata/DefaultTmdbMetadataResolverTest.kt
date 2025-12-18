@@ -16,40 +16,43 @@ import kotlin.test.assertTrue
  * See TMDB_LIBRARY_INTEGRATION_STATUS.md for details.
  */
 class DefaultTmdbMetadataResolverTest {
+    @Test
+    fun `resolver returns Disabled when apiKey is blank`() =
+        runTest {
+            val config = TmdbConfig(apiKey = "")
+            val resolver = DefaultTmdbMetadataResolver(config)
+
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "The Matrix",
+                    mediaType = MediaType.MOVIE,
+                    sourceType = SourceType.TELEGRAM,
+                    sourceLabel = "Test",
+                    sourceId = "test-123",
+                )
+
+            val result = resolver.resolve(raw)
+            assertTrue(result is TmdbResolutionResult.Disabled)
+        }
 
     @Test
-    fun `resolver returns Disabled when apiKey is blank`() = runTest {
-        val config = TmdbConfig(apiKey = "")
-        val resolver = DefaultTmdbMetadataResolver(config)
+    fun `resolver returns Disabled when apiKey is present but library is not accessible`() =
+        runTest {
+            val config = TmdbConfig(apiKey = "test-api-key-123")
+            val resolver = DefaultTmdbMetadataResolver(config)
 
-        val raw = RawMediaMetadata(
-            originalTitle = "The Matrix",
-            mediaType = MediaType.MOVIE,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Test",
-            sourceId = "test-123"
-        )
+            val raw =
+                RawMediaMetadata(
+                    originalTitle = "The Matrix",
+                    mediaType = MediaType.MOVIE,
+                    year = 1999,
+                    sourceType = SourceType.TELEGRAM,
+                    sourceLabel = "Test",
+                    sourceId = "test-123",
+                )
 
-        val result = resolver.resolve(raw)
-        assertTrue(result is TmdbResolutionResult.Disabled)
-    }
-
-    @Test
-    fun `resolver returns Disabled when apiKey is present but library is not accessible`() = runTest {
-        val config = TmdbConfig(apiKey = "test-api-key-123")
-        val resolver = DefaultTmdbMetadataResolver(config)
-
-        val raw = RawMediaMetadata(
-            originalTitle = "The Matrix",
-            mediaType = MediaType.MOVIE,
-            year = 1999,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Test",
-            sourceId = "test-123"
-        )
-
-        // Should return Disabled due to library access limitation
-        val result = resolver.resolve(raw)
-        assertTrue(result is TmdbResolutionResult.Disabled)
-    }
+            // Should return Disabled due to library access limitation
+            val result = resolver.resolve(raw)
+            assertTrue(result is TmdbResolutionResult.Disabled)
+        }
 }

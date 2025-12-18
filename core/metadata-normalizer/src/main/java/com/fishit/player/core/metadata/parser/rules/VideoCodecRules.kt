@@ -26,16 +26,23 @@ data class VideoCodecResult(
  * - XviD, DivX (legacy)
  */
 object VideoCodecRules {
-
     // H.265/HEVC tokens
-    private val h265Tokens = setOf(
-        "x265", "hevc", "h265", "h.265",
-    )
+    private val h265Tokens =
+        setOf(
+            "x265",
+            "hevc",
+            "h265",
+            "h.265",
+        )
 
     // H.264/AVC tokens
-    private val h264Tokens = setOf(
-        "x264", "avc", "h264", "h.264",
-    )
+    private val h264Tokens =
+        setOf(
+            "x264",
+            "avc",
+            "h264",
+            "h.264",
+        )
 
     // Other codecs
     private val av1Tokens = setOf("av1")
@@ -76,26 +83,39 @@ object VideoCodecRules {
     /**
      * Get all known codec tokens (for tech boundary detection).
      */
-    fun getAllCodecTokens(): Set<String> {
-        return h265Tokens + h264Tokens + av1Tokens + vp9Tokens + xvidTokens
-    }
+    fun getAllCodecTokens(): Set<String> = h265Tokens + h264Tokens + av1Tokens + vp9Tokens + xvidTokens
 }
 
 /**
  * Audio codec detection rules.
  */
 object AudioCodecRules {
-
     // DTS variants
-    private val dtsTokens = setOf(
-        "dts", "dts-hd", "dtshd", "dts-ma", "dtsma", "dts-x", "dtsx",
-    )
+    private val dtsTokens =
+        setOf(
+            "dts",
+            "dts-hd",
+            "dtshd",
+            "dts-ma",
+            "dtsma",
+            "dts-x",
+            "dtsx",
+        )
 
     // Dolby variants
-    private val dolbyTokens = setOf(
-        "ac3", "dd", "dd5.1", "dd7.1", "eac3", "ddp", "ddp5.1",
-        "dolby", "truehd", "atmos",
-    )
+    private val dolbyTokens =
+        setOf(
+            "ac3",
+            "dd",
+            "dd5.1",
+            "dd7.1",
+            "eac3",
+            "ddp",
+            "ddp5.1",
+            "dolby",
+            "truehd",
+            "atmos",
+        )
 
     // AAC variants
     private val aacTokens = setOf("aac", "aac2.0", "aac5.1")
@@ -143,7 +163,5 @@ object AudioCodecRules {
     /**
      * Get all known audio tokens.
      */
-    fun getAllAudioTokens(): Set<String> {
-        return dtsTokens + dolbyTokens + aacTokens + flacTokens + pcmTokens + mp3Tokens
-    }
+    fun getAllAudioTokens(): Set<String> = dtsTokens + dolbyTokens + aacTokens + flacTokens + pcmTokens + mp3Tokens
 }

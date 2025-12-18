@@ -26,7 +26,7 @@ sealed interface TmdbResolutionResult {
         val year: Int?,
         val poster: ImageRef.Http?,
         val backdrop: ImageRef.Http?,
-        val externalIds: ExternalIds
+        val externalIds: ExternalIds,
     ) : TmdbResolutionResult
 
     /**
@@ -34,7 +34,9 @@ sealed interface TmdbResolutionResult {
      *
      * @property reason Human-readable reason for debugging
      */
-    data class NotFound(val reason: String) : TmdbResolutionResult
+    data class NotFound(
+        val reason: String,
+    ) : TmdbResolutionResult
 
     /**
      * Multiple ambiguous matches found (no clear winner).
@@ -44,7 +46,7 @@ sealed interface TmdbResolutionResult {
      */
     data class Ambiguous(
         val reason: String,
-        val candidates: List<TmdbCandidate>
+        val candidates: List<TmdbCandidate>,
     ) : TmdbResolutionResult
 
     /**
@@ -57,7 +59,9 @@ sealed interface TmdbResolutionResult {
      *
      * @property error Exception that caused the failure
      */
-    data class Failed(val error: Throwable) : TmdbResolutionResult
+    data class Failed(
+        val error: Throwable,
+    ) : TmdbResolutionResult
 }
 
 /**
@@ -72,5 +76,5 @@ data class TmdbCandidate(
     val tmdbId: TmdbId,
     val title: String,
     val year: Int?,
-    val score: Int
+    val score: Int,
 )

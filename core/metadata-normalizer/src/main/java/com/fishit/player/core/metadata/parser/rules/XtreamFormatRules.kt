@@ -21,11 +21,11 @@ import com.google.re2j.Pattern as Re2Pattern
 
 /** Result from Xtream pipe-format parsing. */
 data class XtreamPipeResult(
-        val title: String,
-        val year: Int?,
-        val rating: Double?,
-        val quality: String?,
-        val matched: Boolean,
+    val title: String,
+    val year: Int?,
+    val rating: Double?,
+    val quality: String?,
+    val matched: Boolean,
 )
 
 /**
@@ -35,7 +35,6 @@ data class XtreamPipeResult(
  * Codes panels.
  */
 object XtreamFormatRules {
-
     // =========================================================================
     // PIPE-SEPARATED FORMAT
     // =========================================================================
@@ -59,8 +58,8 @@ object XtreamFormatRules {
         // Second part should be a valid year (1900-2099)
         val yearPart = parts[1].trim()
         return yearPart.length == 4 &&
-                yearPart.all { it.isDigit() } &&
-                yearPart.toIntOrNull()?.let { it in 1900..2099 } == true
+            yearPart.all { it.isDigit() } &&
+            yearPart.toIntOrNull()?.let { it in 1900..2099 } == true
     }
 
     /**
@@ -73,11 +72,11 @@ object XtreamFormatRules {
     fun parsePipeFormat(input: String): XtreamPipeResult {
         if (!input.contains('|')) {
             return XtreamPipeResult(
-                    title = input,
-                    year = null,
-                    rating = null,
-                    quality = null,
-                    matched = false,
+                title = input,
+                year = null,
+                rating = null,
+                quality = null,
+                matched = false,
             )
         }
 
@@ -120,36 +119,36 @@ object XtreamFormatRules {
         }
 
         return XtreamPipeResult(
-                title = title,
-                year = year,
-                rating = rating,
-                quality = quality,
-                matched = year != null,
+            title = title,
+            year = year,
+            rating = rating,
+            quality = quality,
+            matched = year != null,
         )
     }
 
     // Known quality tags in Xtream pipe format
     private val QUALITY_TAGS =
-            setOf(
-                    "4K",
-                    "UHD",
-                    "2160P",
-                    "FHD",
-                    "1080P",
-                    "HD",
-                    "720P",
-                    "SD",
-                    "480P",
-                    "LOWQ",
-                    "LOW",
-                    "HEVC",
-                    "H265",
-                    "H264",
-                    "HDR",
-                    "SDR",
-                    "DV",
-                    "BACKUP",
-            )
+        setOf(
+            "4K",
+            "UHD",
+            "2160P",
+            "FHD",
+            "1080P",
+            "HD",
+            "720P",
+            "SD",
+            "480P",
+            "LOWQ",
+            "LOW",
+            "HEVC",
+            "H265",
+            "H264",
+            "HDR",
+            "SDR",
+            "DV",
+            "BACKUP",
+        )
 
     // =========================================================================
     // LIVE CHANNEL NAME CLEANUP
@@ -208,9 +207,7 @@ object XtreamFormatRules {
      * - "Evil Dead Rise (2023)"
      * - "Asterix & Obelix im Reich der Mitte (2023)"
      */
-    fun isParenthesesFormat(input: String): Boolean {
-        return parenYearPattern.matcher(input).matches()
-    }
+    fun isParenthesesFormat(input: String): Boolean = parenYearPattern.matcher(input).matches()
 
     /**
      * Parse parentheses year format.

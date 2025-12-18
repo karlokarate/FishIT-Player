@@ -23,28 +23,28 @@ import javax.inject.Singleton
  * Current implementation returns Disabled to allow compilation and testing of other components.
  */
 @Singleton
-class DefaultTmdbMetadataResolver @Inject constructor(
-    private val config: TmdbConfig
-) : TmdbMetadataResolver {
+class DefaultTmdbMetadataResolver
+    @Inject
+    constructor(
+        private val config: TmdbConfig,
+    ) : TmdbMetadataResolver {
+        override suspend fun resolve(raw: RawMediaMetadata): TmdbResolutionResult {
+            // Check if TMDB is enabled
+            if (!config.isEnabled) {
+                UnifiedLog.d(TAG) { "TMDB resolver disabled (no API key)" }
+                return TmdbResolutionResult.Disabled
+            }
 
-    override suspend fun resolve(raw: RawMediaMetadata): TmdbResolutionResult {
-        // Check if TMDB is enabled
-        if (!config.isEnabled) {
-            UnifiedLog.d(TAG) { "TMDB resolver disabled (no API key)" }
+            // TODO: Implement TMDB API integration once library API is accessible
+            // Currently blocked by internal constructor in app.moviebase:tmdb-api-jvm:1.6.0
+            UnifiedLog.w(TAG) {
+                "TMDB resolver skeleton: returning Disabled (API integration pending)"
+            }
+
             return TmdbResolutionResult.Disabled
         }
 
-        // TODO: Implement TMDB API integration once library API is accessible
-        // Currently blocked by internal constructor in app.moviebase:tmdb-api-jvm:1.6.0
-        UnifiedLog.w(TAG) {
-            "TMDB resolver skeleton: returning Disabled (API integration pending)"
+        companion object {
+            private const val TAG = "core/metadata-normalizer/DefaultTmdbMetadataResolver"
         }
-
-        return TmdbResolutionResult.Disabled
     }
-
-    companion object {
-        private const val TAG = "core/metadata-normalizer/DefaultTmdbMetadataResolver"
-    }
-}
-

@@ -10,7 +10,6 @@ import org.junit.Test
  * Per TMDB_ENRICHMENT_CONTRACT.md Section 8.1 requirement #6.
  */
 class TmdbMatchScorerTest {
-
     @Test
     fun `title similarity - exact match gives 60`() {
         val score = TmdbMatchScorer.calculateTitleSimilarity("The Matrix", "The Matrix")
@@ -123,48 +122,53 @@ class TmdbMatchScorerTest {
 
     @Test
     fun `decision - score 85+ with gap 10+ is ACCEPT`() {
-        val scores = listOf(
-            TmdbMatchScore(titleSimilarity = 60, yearScore = 20, kindAgreement = 10, episodeExact = 0),
-            TmdbMatchScore(titleSimilarity = 50, yearScore = 15, kindAgreement = 10, episodeExact = 0)
-        )
+        val scores =
+            listOf(
+                TmdbMatchScore(titleSimilarity = 60, yearScore = 20, kindAgreement = 10, episodeExact = 0),
+                TmdbMatchScore(titleSimilarity = 50, yearScore = 15, kindAgreement = 10, episodeExact = 0),
+            )
         val decision = TmdbMatchScorer.decideMatch(scores)
         assertEquals(MatchDecision.ACCEPT, decision)
     }
 
     @Test
     fun `decision - score 70+ with gap less than 10 is AMBIGUOUS`() {
-        val scores = listOf(
-            TmdbMatchScore(titleSimilarity = 50, yearScore = 20, kindAgreement = 10, episodeExact = 0),
-            TmdbMatchScore(titleSimilarity = 50, yearScore = 15, kindAgreement = 10, episodeExact = 0)
-        )
+        val scores =
+            listOf(
+                TmdbMatchScore(titleSimilarity = 50, yearScore = 20, kindAgreement = 10, episodeExact = 0),
+                TmdbMatchScore(titleSimilarity = 50, yearScore = 15, kindAgreement = 10, episodeExact = 0),
+            )
         val decision = TmdbMatchScorer.decideMatch(scores)
         assertEquals(MatchDecision.AMBIGUOUS, decision)
     }
 
     @Test
     fun `decision - score below 70 is REJECT`() {
-        val scores = listOf(
-            TmdbMatchScore(titleSimilarity = 40, yearScore = 10, kindAgreement = 0, episodeExact = 0),
-            TmdbMatchScore(titleSimilarity = 30, yearScore = 5, kindAgreement = 0, episodeExact = 0)
-        )
+        val scores =
+            listOf(
+                TmdbMatchScore(titleSimilarity = 40, yearScore = 10, kindAgreement = 0, episodeExact = 0),
+                TmdbMatchScore(titleSimilarity = 30, yearScore = 5, kindAgreement = 0, episodeExact = 0),
+            )
         val decision = TmdbMatchScorer.decideMatch(scores)
         assertEquals(MatchDecision.REJECT, decision)
     }
 
     @Test
     fun `decision - single strong candidate is ACCEPT`() {
-        val scores = listOf(
-            TmdbMatchScore(titleSimilarity = 60, yearScore = 20, kindAgreement = 10, episodeExact = 0)
-        )
+        val scores =
+            listOf(
+                TmdbMatchScore(titleSimilarity = 60, yearScore = 20, kindAgreement = 10, episodeExact = 0),
+            )
         val decision = TmdbMatchScorer.decideMatch(scores)
         assertEquals(MatchDecision.ACCEPT, decision)
     }
 
     @Test
     fun `decision - single weak candidate is REJECT`() {
-        val scores = listOf(
-            TmdbMatchScore(titleSimilarity = 40, yearScore = 10, kindAgreement = 0, episodeExact = 0)
-        )
+        val scores =
+            listOf(
+                TmdbMatchScore(titleSimilarity = 40, yearScore = 10, kindAgreement = 0, episodeExact = 0),
+            )
         val decision = TmdbMatchScorer.decideMatch(scores)
         assertEquals(MatchDecision.REJECT, decision)
     }

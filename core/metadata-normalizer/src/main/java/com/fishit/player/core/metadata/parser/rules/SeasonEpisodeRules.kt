@@ -31,7 +31,6 @@ data class SeasonEpisodeResult(
  * - Episode-only: EP02, Episode 02
  */
 object SeasonEpisodeRules {
-
     // RE2J patterns for extraction
     // Note: These allow separators between S and E
     private val sxePattern = Re2Pattern.compile("(?i)S(\\d{1,2})[._ ]?E(\\d{1,4})")
@@ -50,12 +49,11 @@ object SeasonEpisodeRules {
      * Check if input has series markers (SxxEyy, 1x02, Folge, etc.).
      * This is a CHEAP operation - used for classification.
      */
-    fun hasSeriesMarkers(input: String): Boolean {
-        return sxeClassifyPattern.matcher(input).find() ||
+    fun hasSeriesMarkers(input: String): Boolean =
+        sxeClassifyPattern.matcher(input).find() ||
             xFormatClassifyPattern.matcher(input).find() ||
             folgeClassifyPattern.matcher(input).find() ||
             episodeClassifyPattern.matcher(input).find()
-    }
 
     /**
      * Extract season and episode from input.

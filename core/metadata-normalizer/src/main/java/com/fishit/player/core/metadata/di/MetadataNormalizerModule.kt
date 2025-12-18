@@ -22,7 +22,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object MetadataNormalizerModule {
-
     /**
      * Provides the production MediaMetadataNormalizer implementation.
      *
@@ -35,9 +34,7 @@ object MetadataNormalizerModule {
      */
     @Provides
     @Singleton
-    fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer {
-        return RegexMediaMetadataNormalizer()
-    }
+    fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer = RegexMediaMetadataNormalizer()
 
     /**
      * Provides TMDB configuration.
@@ -53,14 +50,15 @@ object MetadataNormalizerModule {
     @Singleton
     fun provideTmdbConfig(): TmdbConfig {
         // Try to get API key from system environment first (for CI/production)
-        val apiKey = System.getenv("TMDB_API_KEY")
-            ?: System.getProperty("tmdb.api.key")
-            ?: "" // Empty = disabled (no crash)
+        val apiKey =
+            System.getenv("TMDB_API_KEY")
+                ?: System.getProperty("tmdb.api.key")
+                ?: "" // Empty = disabled (no crash)
 
         return TmdbConfig(
             apiKey = apiKey,
             language = "en-US",
-            region = null
+            region = null,
         )
     }
 
@@ -72,7 +70,5 @@ object MetadataNormalizerModule {
      */
     @Provides
     @Singleton
-    fun provideTmdbMetadataResolver(config: TmdbConfig): TmdbMetadataResolver {
-        return DefaultTmdbMetadataResolver(config)
-    }
+    fun provideTmdbMetadataResolver(config: TmdbConfig): TmdbMetadataResolver = DefaultTmdbMetadataResolver(config)
 }

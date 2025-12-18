@@ -15,11 +15,11 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class LruTtlCache<K, V>(
     private val maxEntries: Int,
-    private val ttlMillis: Long
+    private val ttlMillis: Long,
 ) {
     private data class CacheEntry<V>(
         val value: V,
-        val timestamp: Long
+        val timestamp: Long,
     )
 
     private val cache = ConcurrentHashMap<K, CacheEntry<V>>()
@@ -53,7 +53,10 @@ class LruTtlCache<K, V>(
      *
      * Evicts oldest entry if maxEntries exceeded.
      */
-    fun put(key: K, value: V) {
+    fun put(
+        key: K,
+        value: V,
+    ) {
         val now = System.currentTimeMillis()
 
         synchronized(this) {

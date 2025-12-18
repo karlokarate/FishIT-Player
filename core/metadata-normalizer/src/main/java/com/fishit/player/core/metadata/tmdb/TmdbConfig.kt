@@ -15,7 +15,7 @@ package com.fishit.player.core.metadata.tmdb
 data class TmdbConfig(
     val apiKey: String,
     val language: String = "en-US",
-    val region: String? = null
+    val region: String? = null,
 ) {
     /**
      * Check if TMDB is enabled (apiKey is not blank).
