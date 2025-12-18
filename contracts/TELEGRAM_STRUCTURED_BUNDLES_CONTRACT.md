@@ -1,126 +1,171 @@
 # Telegram Structured Bundles Contract
 
-**Version:** 1.0  
-**Datum:** 2025-12-17  
-**Status:** Binding – authoritative spec for structured Telegram message handling  
-**Scope:** Erkennung, Gruppierung und Verarbeitung von strukturierten Telegram-Nachrichten-Clustern
+**Version:** 2.1  
+**Date:** 2025-12-18  
+**Status:** Binding – authoritative specification for structured Telegram message handling  
+**Scope:** Detection, grouping, and processing of structured Telegram message clusters
 
-> **⚠️ Dieser Contract ist verbindlich.** Alle Implementierungen in `pipeline/telegram` müssen diesen Regeln folgen. Verletzungen sind Bugs und müssen sofort behoben werden.
+> **⚠️ This contract is binding.** All implementations in `pipeline/telegram` MUST follow these rules. Violations are bugs and MUST be fixed immediately.
 
 ---
 
-## 1. Begriffsdefinitionen
+## 1. Definitions
 
 ### 1.1 Structured Bundle
 
-Ein **Structured Bundle** ist eine Gruppe von 2-3 Telegram-Nachrichten, die:
-- Denselben `date` (Unix-Timestamp in Sekunden) haben
-- Zusammen ein einzelnes Media-Item beschreiben
-- Strukturierte Metadaten in TEXT-Nachrichten enthalten
+A **Structured Bundle** is a group of 2-3 Telegram messages that:
+- Share the same `date` (Unix timestamp in seconds)
+- Together describe a single logical media item
+- Contain structured metadata in TEXT messages
 
-### 1.2 Bundle-Typen
+### 1.2 Bundle Types
 
-| Typ | Zusammensetzung | Beschreibung |
-|-----|-----------------|--------------|
-| `FULL_3ER` | PHOTO + TEXT + VIDEO | Vollständiges Bundle mit Poster, Metadaten und Video |
-| `COMPACT_2ER` | TEXT + VIDEO oder PHOTO + VIDEO | Kompaktes Bundle ohne alle drei Komponenten |
-| `SINGLE` | Einzelne Nachricht | Kein Bundle, normale Verarbeitung |
+| Type | Composition | Description |
+|------|-------------|-------------|
+| `FULL_3ER` | PHOTO + TEXT + VIDEO(s) | Complete bundle with poster, metadata, and video(s) |
+| `COMPACT_2ER` | TEXT + VIDEO(s) or PHOTO + VIDEO(s) | Compact bundle without all three components |
+| `SINGLE` | Single message | No bundle, normal processing |
 
-### 1.3 Structured Metadata Fields
+### 1.3 BundleKey (Pipeline-Internal)
 
-Felder, die in TEXT-Nachrichten strukturierter Chats vorkommen können:
+A **BundleKey** is the unique identifier for grouping messages into a bundle:
+- **Composition:** `(chatId, timestamp)`
+- **Purpose:** Enables deterministic bundle recognition within the pipeline
+- **Scope:** Pipeline-internal only; does NOT leave the pipeline
 
-| Feld | Typ | Beispiel | Verwendung |
-|------|-----|----------|------------|
-| `tmdbUrl` | String | `"https://www.themoviedb.org/movie/12345-name"` | TMDB-ID-Extraktion |
-| `tmdbRating` | Double | `7.5` | Rating-Anzeige |
-| `year` | Int | `2020` | Release-Jahr |
-| `originalTitle` | String | `"The Movie"` | Original-Titel |
-| `genres` | List<String> | `["Action", "Drama"]` | Genre-Tags |
-| `fsk` | Int | `12` | Altersfreigabe (Kids-Filter) |
-| `director` | String | `"John Doe"` | Regie |
-| `lengthMinutes` | Int | `120` | Laufzeit |
-| `productionCountry` | String | `"US"` | Produktionsland |
+### 1.4 Structured Metadata Fields
+
+Fields that may appear in TEXT messages from structured chats:
+
+| Field | Type | Example | Usage |
+|-------|------|---------|-------|
+| `tmdbUrl` | String | `"https://www.themoviedb.org/movie/12345-name"` | TMDB ID extraction |
+| `tmdbRating` | Double | `7.5` | Rating display |
+| `year` | Int | `2020` | Release year |
+| `originalTitle` | String | `"The Movie"` | Original title |
+| `genres` | List<String> | `["Action", "Drama"]` | Genre tags |
+| `fsk` | Int | `12` | Age rating (Kids filter) |
+| `director` | String | `"John Doe"` | Director |
+| `lengthMinutes` | Int | `120` | Runtime |
+| `productionCountry` | String | `"US"` | Production country |
 
 ---
 
 ## 2. Contract Rules
 
-### 2.1 Bundle-Erkennung (MANDATORY)
+### 2.1 Bundle Detection (MANDATORY)
 
-**R1: Timestamp-Gruppierung**
-> Nachrichten mit identischem `date` (Unix-Timestamp) MÜSSEN als potentielles Bundle gruppiert werden.
+**R1: Timestamp Grouping**
+> Messages with identical `date` (Unix timestamp) MUST be grouped into a **BundleCandidate**.
 
-**R2: Bundle-Klassifikation**
-> Ein Bundle MUSS nach Content-Typen klassifiziert werden:
-> - `FULL_3ER`: Hat VIDEO + TEXT + PHOTO
-> - `COMPACT_2ER`: Hat VIDEO + (TEXT oder PHOTO)
-> - `SINGLE`: Nur ein Nachrichten-Typ
+**R2: Bundle Classification**
+> A bundle MUST be classified by content types:
+> - `FULL_3ER`: Has VIDEO(s) + TEXT + PHOTO
+> - `COMPACT_2ER`: Has VIDEO(s) + (TEXT or PHOTO)
+> - `SINGLE`: Only one message type or no VIDEO
 
-**R3: Reihenfolge-Invariante**
-> Innerhalb eines Bundles gilt die Message-ID-Reihenfolge:
-> - PHOTO hat typischerweise die niedrigste `messageId`
-> - TEXT hat die mittlere `messageId`
-> - VIDEO hat die höchste `messageId`
-> - Diese Reihenfolge ist zur Identifikation nutzbar, aber NICHT für Sortierung maßgeblich.
+**R3: Order Invariant**
+> Within a bundle, the message ID order follows:
+> - PHOTO typically has the lowest `messageId`
+> - TEXT has the middle `messageId`
+> - VIDEO has the highest `messageId`
+> - This order is usable for identification but NOT authoritative for sorting.
 
-### 2.2 Metadaten-Extraktion (MANDATORY)
+### 2.2 Metadata Extraction (MANDATORY)
 
-**R4: Pass-Through-Prinzip**
-> Strukturierte Felder MÜSSEN RAW extrahiert und UNVERÄNDERT weitergereicht werden.
-> - Keine Titel-Bereinigung
-> - Keine Normalisierung
-> - Keine Validierung (außer Type-Parsing)
+**R4: Pass-Through Principle**
+> Structured fields MUST be extracted RAW and passed through UNCHANGED.
+> - No title cleaning
+> - No normalization
+> - No validation (except type parsing)
 
-**R5: TMDB-ID-Extraktion**
-> Die TMDB-ID MUSS aus der `tmdbUrl` extrahiert werden via Regex:
+**R5: TMDB ID Extraction**
+> The TMDB ID MUST be extracted from `tmdbUrl` via Regex:
 > ```
 > /movie/(\d+)
+> /tv/(\d+)
 > ```
-> Beispiel: `"https://www.themoviedb.org/movie/12345-name"` → `"12345"`
+> Example: `"https://www.themoviedb.org/movie/12345-name"` → `"12345"`
+> 
+> If the URL does not match either pattern, `structuredTmdbId` MUST be set to `null` and a WARN log MUST be emitted via UnifiedLog.
 
-**R6: FSK-Verwendung**
-> Das `fsk`-Feld MUSS als `ageRating` in `RawMediaMetadata` weitergereicht werden.
-> Dies ermöglicht den Kids-Filter ohne TMDB-Lookup.
+**R6: FSK Usage**
+> The `fsk` field MUST be passed through as `ageRating` in `RawMediaMetadata`.
+> This enables the Kids filter without TMDB lookup.
 
-### 2.3 Mapping-Regeln (MANDATORY)
+### 2.3 Mapping Rules (MANDATORY)
 
-**R7: Bundle → Single TelegramMediaItem**
-> Ein Structured Bundle MUSS auf genau EIN `TelegramMediaItem` gemappt werden.
-> Die VIDEO-Nachricht liefert die primären Playback-Daten.
+**R7: Bundle → Emitted Raw Items (MANDATORY, lossless)**
+> For each accepted Structured Bundle, the pipeline MUST emit **exactly one `RawMediaMetadata` per VIDEO message** contained in the bundle.
+> 
+> The pipeline MUST NOT drop any VIDEO variant.
+> 
+> Example: A bundle with 3 VIDEO messages produces 3 `RawMediaMetadata` items.
 
-**R8: Tie-Breaker (bei mehreren VIDEOs)**
-> Falls ein Bundle mehrere VIDEO-Nachrichten enthält:
-> 1. Wähle das Video mit der größten `sizeBytes`
-> 2. Bei Gleichstand: längste `duration`
-> 3. Bei Gleichstand: niedrigste `messageId` (deterministic)
+**R8: Shared externalIds for Downstream Unification (MANDATORY)**
+> If structured TMDB metadata is present in the TEXT message, then **every `RawMediaMetadata` emitted from that bundle** MUST carry:
+> - `externalIds.tmdbId = structuredTmdbId`
+> - Same `structuredYear`, `structuredFsk`, `structuredRating`, etc.
+> 
+> This enables the downstream normalizer to unify items into a single canonical media entry (with multiple variants).
 
-**R9: Poster-Auswahl**
-> Falls ein Bundle eine PHOTO-Nachricht enthält:
-> - Wähle die Größe mit `height > 1000` (Poster-Qualität)
-> - Falls keine solche existiert: größte verfügbare Höhe
+**R8b: No UI Selection Policy in Pipeline (MANDATORY)**
+> The pipeline MUST NOT define "primary asset for UI defaults".
+> 
+> Selection of default variant is a **downstream concern** (normalizer/unifier/UI policies), NOT pipeline responsibility.
+> 
+> The pipeline MAY pass through raw technical facts per emitted item (e.g., `sizeBytes`, `duration`, `resolution`) only if such raw fields already exist in the pipeline model.
+
+**R9: Poster Selection**
+> If a PHOTO message exists in the bundle:
+> - Select the size with maximum pixel area (`width * height`)
+> - Ties MUST be broken deterministically by: larger `height` → larger `width`
+> - The selected poster is attached to **each** emitted `RawMediaMetadata` from that bundle
 
 ### 2.4 Contract Compliance
 
 **R10: MEDIA_NORMALIZATION_CONTRACT**
-> Alle Regeln aus `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` gelten weiterhin:
-> - Pipeline darf NICHT normalisieren
-> - Pipeline darf KEINE TMDB-Lookups durchführen
-> - `globalId` MUSS leer bleiben
+> All rules from `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` continue to apply:
+> - Pipeline MUST NOT normalize
+> - Pipeline MUST NOT perform TMDB lookups
+> - `globalId` MUST remain empty (computed by normalizer)
+> - Pipeline MUST NOT group/merge into canonical works
 
-**R11: Layer-Boundaries**
-> Structured Bundles werden vollständig in `pipeline/telegram` verarbeitet:
-> - Transport liefert `TgMessage` (keine Bundle-Logik)
-> - Pipeline gruppiert, extrahiert, mappt
-> - Data erhält `RawMediaMetadata` (keine Bundle-Interna)
+**R11: Layer Boundaries**
+> Structured Bundles are processed entirely in `pipeline/telegram`:
+> - Transport provides `TgMessage` (no bundle logic)
+> - Pipeline groups, extracts, maps
+> - Data receives `RawMediaMetadata` (no bundle internals)
+> 
+> **Explicit Export Restriction:**
+> - `TelegramMediaItem` and all bundle-internal DTOs MUST remain pipeline-internal and MUST NOT be exported across module boundaries.
+> - **Only `RawMediaMetadata` MAY leave the pipeline.**
+> - There is no additional pipeline export structure.
+
+### 2.5 Downstream Canonical Linking (Informational)
+
+> **Note:** This section describes downstream behavior for context. The pipeline does NOT implement this.
+
+**Canonical ID Format:**
+> - If `externalIds.tmdbId` is present in `RawMediaMetadata`, the downstream normalizer computes `canonicalId` as `tmdb:<tmdbId>`.
+> - Multiple `RawMediaMetadata` items with the same `externalIds.tmdbId` are unified into a single `NormalizedMedia` with multiple variants.
+
+**Pipeline Responsibility:**
+> - The pipeline MUST NOT compute `canonicalId`/`globalId`.
+> - The pipeline MUST NOT group/merge items into canonical works.
+> - The pipeline only passes through structured IDs to enable downstream unification.
+
+**Downstream Normalizer Behavior:**
+> - If `externalIds.tmdbId` is present, the normalizer MUST NOT perform a title search.
+> - The normalizer MAY validate/refresh TMDB details via the provided `tmdbId`.
 
 ---
 
-## 3. Datenmodell-Erweiterungen
+## 3. Data Model Extensions
 
 ### 3.1 TelegramMediaItem (REQUIRED)
 
-Die folgenden Felder MÜSSEN zu `TelegramMediaItem` hinzugefügt werden:
+The following fields MUST be added to `TelegramMediaItem`:
 
 ```kotlin
 // Structured Bundle Fields
@@ -140,14 +185,16 @@ val photoMessageId: Long? = null
 
 ### 3.2 RawMediaMetadata (REQUIRED)
 
-Die folgenden Felder MÜSSEN zu `RawMediaMetadata` hinzugefügt werden:
+The following fields MUST be added to `RawMediaMetadata`:
 
 ```kotlin
-val ageRating: Int? = null  // FSK/MPAA für Kids-Filter
-val rating: Double? = null  // TMDB-Rating etc.
+val ageRating: Int? = null  // FSK/MPAA/etc. for Kids filter
+val rating: Double? = null  // TMDB rating etc.
 ```
 
 ### 3.3 toRawMediaMetadata() Mapping (REQUIRED)
+
+**Important:** Multi-video bundles require multiple `RawMediaMetadata` emissions (one per VIDEO).
 
 ```kotlin
 fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
@@ -156,6 +203,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
     val effectiveDuration = structuredLengthMinutes ?: durationSecs?.let { it / 60 }
     
     return RawMediaMetadata(
+        sourceId = "${chatId}_${messageId}",  // Unique per VIDEO
         originalTitle = structuredOriginalTitle ?: extractRawTitle(),
         year = effectiveYear,
         durationMinutes = effectiveDuration,
@@ -171,132 +219,160 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
 
 ---
 
-## 4. Komponenten-Spezifikation
+## 4. Component Specifications
 
 ### 4.1 TelegramMessageBundler
 
 **Package:** `com.fishit.player.pipeline.telegram.grouper`
 
-**Responsibility:** Gruppiert TgMessage-Listen nach Timestamp
+**Responsibility:** Groups TgMessage lists by timestamp
 
 **Contract:**
-- MUSS alle Nachrichten mit gleichem `date` gruppieren
-- MUSS `TelegramMessageBundle` mit korrektem `bundleType` zurückgeben
-- MUSS Content-Typen korrekt identifizieren (VIDEO/TEXT/PHOTO)
-- DARF KEINE Normalisierung durchführen
+- MUST group all messages with the same `date`
+- MUST return `TelegramMessageBundle` with correct `bundleType`
+- MUST correctly identify content types (VIDEO/TEXT/PHOTO)
+- MUST NOT perform normalization
 
 ### 4.2 TelegramStructuredMetadataExtractor
 
 **Package:** `com.fishit.player.pipeline.telegram.grouper`
 
-**Responsibility:** Extrahiert strukturierte Felder aus TEXT-Nachrichten
+**Responsibility:** Extracts structured fields from TEXT messages
 
 **Contract:**
-- MUSS alle definierten Structured Fields erkennen (Section 1.3)
-- MUSS TMDB-URL zu ID parsen (Rule R5)
-- MUSS fehlende Felder als `null` zurückgeben
-- DARF KEINE Werte erfinden oder ableiten
+- MUST recognize all defined Structured Fields (Section 1.4)
+- MUST parse TMDB URL to ID (Rule R5) - supports `/movie/` and `/tv/`
+- MUST return missing fields as `null`
+- MUST NOT invent or derive values
 
 ### 4.3 TelegramBundleToMediaItemMapper
 
 **Package:** `com.fishit.player.pipeline.telegram.mapper`
 
-**Responsibility:** Konvertiert Bundles zu TelegramMediaItem
+**Responsibility:** Converts bundles to TelegramMediaItem(s) - supports lossless multi-video emission
 
 **Contract:**
-- MUSS Tie-Breaker-Regeln anwenden (Rule R8)
-- MUSS Poster-Auswahl-Regeln anwenden (Rule R9)
-- MUSS alle Bundle-Felder korrekt setzen
-- MUSS `bundleType` korrekt setzen
+- MUST emit one `TelegramMediaItem` per VIDEO in the bundle (lossless, Rule R7)
+- MUST apply Poster Selection Rules (Rule R9) - max pixel area
+- MUST correctly set all bundle fields on each emitted item
+- MUST correctly set `bundleType` on each emitted item
+- MUST NOT define "primary asset" or UI selection policy (Rule R8b)
 
 ---
 
-## 5. Verhaltensregeln
+## 5. Behavioral Rules
 
-### 5.1 Fallback für Unstrukturierte Chats
+### 5.1 Fallback for Unstructured Chats
 
-Wenn ein Chat keine strukturierten Bundles enthält:
-- Nachrichten werden als `SINGLE` behandelt
-- Bestehende Parsing-Logik wird angewendet
-- Keine Regression für existierende Funktionalität
+When a chat contains no structured bundles:
+- Messages are treated as `SINGLE`
+- Existing parsing logic is applied
+- No regression for existing functionality
 
-### 5.2 Fehlerbehandlung
+### 5.2 Error Handling
 
-| Fehler | Verhalten |
-|--------|-----------|
-| TEXT ohne strukturierte Felder | Behandle als normalen TEXT |
-| Bundle ohne VIDEO | Emittiere KEIN Item (nur VIDEO ist playable) |
-| TMDB-URL unparsebar | `structuredTmdbId = null` |
-| Ungültige Feldwerte | Feld auf `null` setzen, kein Fehler werfen |
+| Error | Behavior |
+|-------|----------|
+| TEXT without structured fields | Treat as normal TEXT |
+| Bundle without VIDEO | Emit NO item (only VIDEO is playable) |
+| TMDB URL unparseable | `structuredTmdbId = null`, log WARN |
+| Invalid field values | Set field to `null`, do not throw error |
 
 ### 5.3 Logging (MANDATORY)
 
-Folgende Events MÜSSEN geloggt werden:
+The following events MUST be logged using **UnifiedLog** with stable, class-based TAGs:
 
-| Event | Log-Level | Inhalt |
-|-------|-----------|--------|
-| Bundle erkannt | DEBUG | `chatId`, `timestamp`, `bundleType`, `messageIds` |
-| Structured Metadata extrahiert | DEBUG | `chatId`, `tmdbId`, `year`, `fsk` |
-| TMDB-URL parse failed | WARN | `chatId`, `messageId`, `tmdbUrl` |
-| Bundle-Statistik pro Chat | INFO | `chatId`, `bundleCount`, `singleCount` |
+| Event | Log Level | TAG | Content |
+|-------|-----------|-----|---------|
+| Bundle detected | DEBUG | `TelegramMessageBundler` | `chatId`, `timestamp`, `bundleType`, `messageIds` |
+| Structured metadata extracted | DEBUG | `TelegramStructuredMetadataExtractor` | `chatId`, `tmdbId`, `year`, `fsk` |
+| TMDB URL parse failed | WARN | `TelegramStructuredMetadataExtractor` | `chatId`, `messageId`, `tmdbUrl` |
+| Bundle statistics per chat | INFO | `TelegramMessageBundler` | `chatId`, `bundleCount`, `singleCount`, `emittedItemCount` |
+
+**Logging Examples:**
+```kotlin
+// TelegramMessageBundler.kt
+private const val TAG = "TelegramMessageBundler"
+
+UnifiedLog.d(TAG) { "Bundle detected: chatId=$chatId, bundleType=$bundleType, videoCount=$videoCount" }
+UnifiedLog.i(TAG) { "Chat stats: chatId=$chatId, bundles=$bundleCount, singles=$singleCount, emitted=$emittedCount" }
+
+// TelegramStructuredMetadataExtractor.kt
+private const val TAG = "TelegramStructuredMetadataExtractor"
+
+UnifiedLog.d(TAG) { "Extracted: chatId=$chatId, tmdbId=$tmdbId, year=$year" }
+UnifiedLog.w(TAG) { "TMDB URL parse failed: chatId=$chatId, url=$tmdbUrl" }
+
+// TelegramBundleToMediaItemMapper.kt
+private const val TAG = "TelegramBundleToMediaItemMapper"
+
+UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=$count" }
+```
 
 ---
 
-## 6. Test-Anforderungen
+## 6. Test Requirements
 
 ### 6.1 Required Unit Tests
 
-| Test-ID | Beschreibung | Fixture |
-|---------|--------------|---------|
-| TB-001 | Gruppierung nach Timestamp | 3 Nachrichten, gleicher Timestamp |
-| TB-002 | Keine Gruppierung bei unterschiedlichen Timestamps | 3 Nachrichten, verschiedene Timestamps |
-| TB-003 | FULL_3ER Klassifikation | VIDEO + TEXT + PHOTO |
-| TB-004 | COMPACT_2ER Klassifikation | TEXT + VIDEO |
-| SM-001 | TMDB-URL Parsing | Standard URL |
-| SM-002 | TMDB-URL mit Slug | URL mit `-name` Suffix |
-| SM-003 | FSK Extraktion | `"fsk": 12` |
-| SM-004 | Fehlende Felder | TEXT ohne tmdbUrl |
-| MM-001 | Tie-Breaker: größtes Video | 2 VIDEOs, verschiedene Größen |
-| MM-002 | Tie-Breaker: längste Dauer | 2 VIDEOs, gleiche Größe |
-| MM-003 | Poster-Auswahl: beste Qualität | PHOTO mit 3 Größen |
+| Test-ID | Description | Fixture |
+|---------|-------------|---------|
+| TB-001 | Grouping by timestamp | 3 messages, same timestamp |
+| TB-002 | No grouping for different timestamps | 3 messages, different timestamps |
+| TB-003 | FULL_3ER classification | VIDEO + TEXT + PHOTO |
+| TB-004 | COMPACT_2ER classification | TEXT + VIDEO |
+| SM-001 | TMDB URL Parsing (movie) | Standard URL `/movie/12345` |
+| SM-002 | TMDB URL Parsing (tv) | TV URL `/tv/98765` |
+| SM-003 | FSK extraction | `"fsk": 12` |
+| SM-004 | Missing fields | TEXT without tmdbUrl |
+| MM-001 | Multi-video: lossless emission | Bundle with 2 VIDEOs → 2 RawMediaMetadata |
+| MM-002 | Multi-video: shared externalIds | All emitted items have same tmdbId |
+| MM-003 | Poster selection: max pixel area | PHOTO with 3 sizes |
 
 ### 6.2 Required Integration Tests
 
-| Test-ID | Chat | Erwartung |
-|---------|------|-----------|
-| INT-001 | Mel Brooks 🥳 | ≥8 FULL_3ER Bundles erkannt |
-| INT-002 | Filme kompakt | ≥8 COMPACT_2ER Bundles erkannt |
-| INT-003 | Unstrukturierter Chat | 0 Bundles, alle SINGLE |
+| Test-ID | Chat | Expectation |
+|---------|------|-------------|
+| INT-001 | Mel Brooks 🥳 | ≥8 bundles detected, correct item count |
+| INT-002 | Filme kompakt | ≥8 COMPACT_2ER bundles detected |
+| INT-003 | Unstructured chat | 0 bundles, all SINGLE |
 
 ---
 
-## 7. Compliance-Checkliste
+## 7. Compliance Checklist
 
-Vor jedem Merge MUSS geprüft werden:
+Before each merge MUST be verified:
 
-- [ ] Keine Normalisierung in Pipeline (MEDIA_NORMALIZATION_CONTRACT R10)
-- [ ] Keine TMDB-Lookups in Pipeline
-- [ ] `globalId` bleibt leer
-- [ ] Structured Fields werden RAW extrahiert (R4)
-- [ ] TMDB-ID via Regex extrahiert (R5)
-- [ ] Tie-Breaker-Regeln implementiert (R8)
-- [ ] Logging gemäß Section 5.3
-- [ ] Alle Required Unit Tests passieren
-- [ ] Alle Required Integration Tests passieren
-
----
-
-## 8. Versionierung
-
-| Version | Datum | Änderungen |
-|---------|-------|------------|
-| 1.0 | 2025-12-17 | Initial Release |
+- [ ] No normalization in pipeline (MEDIA_NORMALIZATION_CONTRACT R10)
+- [ ] No TMDB lookups in pipeline
+- [ ] `globalId` remains empty (pipeline does NOT compute canonical ID)
+- [ ] Structured fields are RAW extracted (R4)
+- [ ] TMDB ID extracted via Regex, supports /movie/ and /tv/ (R5)
+- [ ] Lossless emission: one RawMediaMetadata per VIDEO (R7)
+- [ ] No "primary asset for UI defaults" in pipeline (R8b)
+- [ ] TelegramMediaItem remains pipeline-internal (R11)
+- [ ] Only RawMediaMetadata leaves pipeline (R11)
+- [ ] Logging per Section 5.3 using UnifiedLog with stable TAGs
+- [ ] All required unit tests pass
+- [ ] All required integration tests pass
 
 ---
 
-## 9. Referenzen
+## 8. Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-17 | Initial Release (German) |
+| 2.0 | 2025-12-18 | English translation, v2 compliance started |
+| 2.1 | 2025-12-18 | **v2-compliant:** Removed Work/PlayableAsset/WorkKey; lossless emission (1x RawMediaMetadata per VIDEO); no UI primary selection in pipeline; UnifiedLog with stable TAGs |
+
+---
+
+## 9. References
 
 - [TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md](docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md)
 - [MEDIA_NORMALIZATION_CONTRACT.md](docs/v2/MEDIA_NORMALIZATION_CONTRACT.md)
+- [LOGGING_CONTRACT_V2.md](contracts/LOGGING_CONTRACT_V2.md)
+- [GLOSSARY_v2_naming_and_modules.md](contracts/GLOSSARY_v2_naming_and_modules.md)
 - [TELEGRAM_PARSER_CONTRACT.md](contracts/TELEGRAM_PARSER_CONTRACT.md)
 - [AGENTS.md](AGENTS.md) – Sections 4, 11, 15

@@ -1,51 +1,52 @@
 # Telegram Structured Bundles – Masterplan
 
-**Version:** 1.0  
-**Datum:** 2025-12-17  
-**Status:** Entwurf – bereit zur Umsetzung  
-**Scope:** Erkennung und Verarbeitung von strukturierten Telegram-Nachrichten-Clustern (PHOTO→TEXT→VIDEO)
+**Version:** 2.1  
+**Date:** 2025-12-18  
+**Status:** Draft – ready for implementation  
+**Scope:** Detection and processing of structured Telegram message clusters (PHOTO→TEXT→VIDEO)
 
 ---
 
 ## Executive Summary
 
-Analyse von 398 Telegram-Chat-Exporten hat ergeben, dass 8 Chats **strukturierte Metadaten** enthalten, die eine drastische Optimierung der Pipeline ermöglichen:
+Analysis of 398 Telegram chat exports revealed that 8 chats contain **structured metadata** enabling dramatic pipeline optimization:
 
-- **Zero-Parsing-Path:** TMDB-IDs, Titel, Jahr, FSK direkt aus TEXT-Nachrichten extrahierbar
-- **Zero-API-Call-Path:** Keine TMDB-API-Aufrufe für Basis-Metadaten nötig
-- **Bundle-Konzept:** PHOTO→TEXT→VIDEO-Cluster mit identischem Timestamp als logische Einheit
+- **Zero-Parsing-Path:** TMDB IDs, titles, year, FSK directly extractable from TEXT messages
+- **Zero-API-Call-Path:** No TMDB API calls needed for base metadata
+- **Bundle Concept:** PHOTO→TEXT→VIDEO clusters with identical timestamp as logical unit
+- **Lossless Emission:** One `RawMediaMetadata` per VIDEO (downstream merges variants)
 
-Diese Erkenntnis ermöglicht **ultraschnelles Onboarding** für strukturierte Chats bei gleichzeitiger Unterstützung des regulären Parsing-Pfades für unstrukturierte Chats.
+This insight enables **ultra-fast onboarding** for structured chats while maintaining support for the regular parsing path for unstructured chats.
 
 ---
 
-## 1. Analyseergebnisse
+## 1. Analysis Results
 
-### 1.1 Chat-Klassifikation
+### 1.1 Chat Classification
 
 | Chat-ID | Name | Pattern | TMDB | Videos | Photos |
 |---------|------|---------|------|--------|--------|
-| -1001434421634 | Mel Brooks 🥳 | 3er-Cluster | 9 | 9 | 7 |
-| -1001452246125 | 🎬 Filme von 2001 bis 2010 🎥 | 3er-Cluster | 8 | 8+ | 8+ |
-| -1001203115098 | 🎬⚠️ Filme ab: 2020 ⚠️🎥 | 3er-Cluster | 8 | 8+ | 8+ |
-| -1001180440610 | 🎬 Filme von 2011 bis 2019 🎥 | 3er-Cluster | 8 | 8+ | 8+ |
-| -1001491030766 | John Carpenter | 3er-Cluster | 6 | 6+ | 6+ |
-| -1001326220574 | 🎬Filme kompakt!🎥 | 2er-Cluster | 8 | 8 | 8 |
-| -1001545742878 | Der Frühe Vogel | Gemischt | 5 | 5+ | 5+ |
-| -1001452717239 | Film & Serien JtL | Gemischt | 1 | 1+ | 1+ |
+| -1001434421634 | Mel Brooks 🥳 | 3-cluster | 9 | 9 | 7 |
+| -1001452246125 | 🎬 Filme von 2001 bis 2010 🎥 | 3-cluster | 8 | 8+ | 8+ |
+| -1001203115098 | 🎬⚠️ Filme ab: 2020 ⚠️🎥 | 3-cluster | 8 | 8+ | 8+ |
+| -1001180440610 | 🎬 Filme von 2011 bis 2019 🎥 | 3-cluster | 8 | 8+ | 8+ |
+| -1001491030766 | John Carpenter | 3-cluster | 6 | 6+ | 6+ |
+| -1001326220574 | 🎬Filme kompakt!🎥 | 2-cluster | 8 | 8 | 8 |
+| -1001545742878 | Der Frühe Vogel | Mixed | 5 | 5+ | 5+ |
+| -1001452717239 | Film & Serien JtL | Mixed | 1 | 1+ | 1+ |
 
-### 1.2 Nachrichtenstruktur (JSON-Export-Analyse)
+### 1.2 Message Structure (JSON Export Analysis)
 
-**3er-Cluster (PHOTO → TEXT → VIDEO):**
+**3-cluster (PHOTO → TEXT → VIDEO):**
 
 ```
-Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
-├── PHOTO: content.sizes[] (mehrere Auflösungen bis 1000x1500)
+Timestamp: 1731704712 (identical for all 3 messages)
+├── PHOTO: content.sizes[] (multiple resolutions up to 1000x1500)
 ├── TEXT:  tmdbUrl, tmdbRating, year, originalTitle, genres, fsk, director, lengthMinutes
 └── VIDEO: content.duration, content.fileName, content.file.remoteId
 ```
 
-**Typische TEXT-Felder (strukturiert):**
+**Typical TEXT Fields (structured):**
 
 ```json
 {
@@ -61,17 +62,17 @@ Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
 }
 ```
 
-### 1.3 ID-Korrelation
+### 1.3 ID Correlation
 
-- Nachrichten im selben Cluster haben **identischen Unix-Timestamp** (`date`)
-- Message-IDs differieren um exakt **1.048.576** (2²⁰) innerhalb eines Clusters
-- Reihenfolge: PHOTO (niedrigste ID) → TEXT → VIDEO (höchste ID)
+- Messages in the same cluster have **identical Unix timestamp** (`date`)
+- Message IDs differ by exactly **1,048,576** (2²⁰) within a cluster
+- Order: PHOTO (lowest ID) → TEXT → VIDEO (highest ID)
 
 ---
 
-## 2. Architekturkonzept
+## 2. Architecture Concept
 
-### 2.1 Datenfluss-Übersicht (aktuell)
+### 2.1 Current Data Flow Overview
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -87,186 +88,201 @@ Timestamp: 1731704712 (identisch für alle 3 Nachrichten)
 ┌──────────────────────────────────────────────────────────────────────┐
 │  pipeline/telegram                                                    │
 │  TelegramPipelineAdapter                                              │
-│  TgMessage → TelegramMediaItem (mit toMediaItem())                    │
+│  TgMessage → TelegramMediaItem (with toMediaItem())                   │
 │                                                                       │
 │  TelegramCatalogPipelineImpl                                          │
-│  TelegramMediaItem → RawMediaMetadata (mit toRawMediaMetadata())      │
-│  Emittiert: TelegramCatalogEvent.ItemDiscovered(TelegramCatalogItem)  │
+│  TelegramMediaItem → RawMediaMetadata (with toRawMediaMetadata())     │
+│  Emits: TelegramCatalogEvent.ItemDiscovered(TelegramCatalogItem)      │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  core/metadata-normalizer (ZENTRAL)                                   │
-│  RawMediaMetadata → NormalizedMediaMetadata                           │
-│  TMDB-Lookups, Titel-Cleaning, globalId-Berechnung                    │
+│  core/metadata-normalizer (CENTRAL)                                   │
+│  RawMediaMetadata → NormalizedMedia                                   │
+│  TMDB lookups (if needed), title cleaning, canonicalId computation    │
+│  Multiple RawMediaMetadata with same tmdbId → single NormalizedMedia  │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  data-telegram                                                        │
-│  NormalizedMediaMetadata → ObxTelegramItem (ObjectBox)                │
+│  NormalizedMedia → ObxTelegramItem (ObjectBox)                        │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Erweiterter Datenfluss (Structured Bundles)
+### 2.2 Extended Data Flow (Structured Bundles)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  transport-telegram                                                   │
-│  TgMessage[] → Nachrichten mit identischem Timestamp                  │
+│  TgMessage[] → Messages with identical timestamp                      │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  pipeline/telegram/grouper  [NEU]                                     │
+│  pipeline/telegram/grouper  [NEW]                                     │
 │                                                                       │
 │  TelegramMessageBundler                                               │
-│  ├── Gruppiert Nachrichten nach identischem Timestamp                 │
-│  ├── Klassifiziert: Structured (3er/2er) vs Unstructured              │
-│  └── Emittiert: TelegramMessageBundle oder einzelne TgMessage         │
+│  ├── Groups messages by identical timestamp (BundleCandidate)         │
+│  ├── Classifies: Structured (3-cluster/2-cluster) vs Unstructured     │
+│  └── Emits: TelegramMessageBundle or individual TgMessage             │
 │                                                                       │
 │  TelegramStructuredMetadataExtractor                                  │
-│  ├── Extrahiert TEXT-Felder: tmdbUrl, year, fsk, genres, etc.         │
-│  └── Mappt PHOTO.sizes[] auf ImageRef                                 │
+│  ├── Extracts TEXT fields: tmdbUrl, year, fsk, genres, etc.           │
+│  └── Maps PHOTO.sizes[] to ImageRef (max pixel area)                  │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  pipeline/telegram/mapper                                             │
 │                                                                       │
-│  TelegramMediaItem (erweitert um Bundle-Felder)                       │
-│  ├── structuredTmdbId: String?      // aus tmdbUrl extrahiert         │
+│  TelegramBundleToMediaItemMapper                                      │
+│  ├── Per accepted bundle: Nx TelegramMediaItem (one per VIDEO)        │
+│  ├── Each item carries same structured metadata (tmdbId, year, etc.)  │
+│  └── LOSSLESS: No VIDEO variant is dropped                            │
+│                                                                       │
+│  TelegramMediaItem (extended with bundle fields)                      │
+│  ├── structuredTmdbId: String?      // extracted from tmdbUrl         │
 │  ├── structuredRating: Double?      // tmdbRating pass-through        │
 │  ├── structuredYear: Int?           // year pass-through              │
-│  ├── structuredFsk: Int?            // fsk für Kids-Filter            │
+│  ├── structuredFsk: Int?            // fsk for Kids filter            │
 │  ├── structuredGenres: List<String>?// genres pass-through            │
-│  ├── posterSizes: List<TelegramPhotoSize>? // aus PHOTO-Nachricht     │
+│  ├── posterRef: ImageRef?           // from PHOTO (max pixel area)    │
 │  └── bundleType: BundleType         // FULL_3ER, COMPACT_2ER, SINGLE  │
 │                                                                       │
-│  toRawMediaMetadata() (erweitert)                                     │
-│  ├── externalIds.tmdbId aus structuredTmdbId                          │
-│  ├── year aus structuredYear                                          │
-│  ├── poster aus posterSizes (beste Auflösung)                         │
-│  └── ageRating aus structuredFsk                                      │
+│  toRawMediaMetadata() (extended)                                      │
+│  ├── sourceId: unique per VIDEO (chatId_messageId)                    │
+│  ├── externalIds.tmdbId from structuredTmdbId (enables unification)   │
+│  ├── year from structuredYear                                         │
+│  ├── poster from posterRef                                            │
+│  └── ageRating from structuredFsk                                     │
+│                                                                       │
+│  OUTPUT: Nx RawMediaMetadata (one per VIDEO in bundle)                │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  core/metadata-normalizer                                             │
 │                                                                       │
-│  Prüft: Hat RawMediaMetadata bereits tmdbId?                          │
-│  ├── JA:  Skip TMDB-Lookup, direkt normalTitle aus TMDB-Cache         │
-│  └── NEIN: Normaler Pfad (Titel-Parsing, TMDB-Search, etc.)           │
+│  Checks: Does RawMediaMetadata have externalIds.tmdbId?               │
+│  ├── YES:  MUST NOT do title search; MAY validate/refresh TMDB data   │
+│  └── NO:   Normal path (title parsing, TMDB search, etc.)             │
+│                                                                       │
+│  Downstream Unification:                                              │
+│  ├── Multiple RawMediaMetadata with same tmdbId → single NormalizedMedia │
+│  ├── Each source becomes a variant in NormalizedMedia.variants        │
+│  └── canonicalId = tmdb:<tmdbId>                                      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Contract-Compliance
+## 3. Contract Compliance
 
 ### 3.1 MEDIA_NORMALIZATION_CONTRACT.md
 
 > "Pipelines must not guess TMDB/IMDB IDs; they may only pass through IDs provided by the source."
 
-✅ **Compliant:** Structured Bundles passieren TMDB-IDs durch, die von der Quelle (Telegram-Chat-Betreiber) bereitgestellt wurden. Die Pipeline "rät" nicht, sie liest strukturierte Felder.
+✅ **Compliant:** Structured Bundles pass through TMDB IDs provided by the source (Telegram chat operator). The pipeline doesn't "guess"; it reads structured fields.
 
-### 3.2 Globale Pipeline-Regeln
+### 3.2 Global Pipeline Rules
 
-| Regel | Status | Implementierung |
-|-------|--------|-----------------|
-| Pipeline darf nicht normalisieren | ✅ | Titel wird RAW übergeben |
-| Pipeline darf keine TMDB-Lookups machen | ✅ | TMDB-ID wird pass-through |
-| globalId bleibt leer | ✅ | Normalizer berechnet |
-| Pipeline exportiert keine DTOs | ✅ | Nur RawMediaMetadata verlässt Pipeline |
+| Rule | Status | Implementation |
+|------|--------|----------------|
+| Pipeline must not normalize | ✅ | Title is passed RAW |
+| Pipeline must not make TMDB lookups | ✅ | TMDB ID is pass-through |
+| globalId remains empty | ✅ | Normalizer computes |
+| Pipeline doesn't export DTOs | ✅ | Only RawMediaMetadata leaves pipeline |
+| Pipeline doesn't group/merge into canonical works | ✅ | Emits Nx RawMediaMetadata; downstream unifies |
 
-### 3.3 Layer-Boundaries
+### 3.3 Layer Boundaries
 
-| Layer | Erlaubt | Verboten |
-|-------|---------|----------|
+| Layer | Allowed | Forbidden |
+|-------|---------|-----------|
 | transport-telegram | TgMessage, TgContent | RawMediaMetadata |
-| pipeline/telegram | TelegramMediaItem (intern), RawMediaMetadata (export) | ObxTelegram*, TMDB-Client |
+| pipeline/telegram | TelegramMediaItem (internal), RawMediaMetadata (export) | ObxTelegram*, TMDB client, canonical ID computation |
 | data-telegram | RawMediaMetadata, ObxTelegramItem | TelegramMediaItem, TgMessage |
 
 ---
 
-## 4. Modell-Erweiterungen
+## 4. Model Extensions
 
-### 4.1 TelegramMediaItem (Erweiterungen)
+### 4.1 TelegramMediaItem (Extensions)
 
 ```kotlin
 // pipeline/telegram/model/TelegramMediaItem.kt
 
 data class TelegramMediaItem(
-    // ... bestehende Felder ...
+    // ... existing fields ...
     
-    // === Structured Bundle Fields (NEU) ===
+    // === Structured Bundle Fields (NEW) ===
     
-    /** TMDB-ID aus strukturierter TEXT-Nachricht (z.B. "12345" aus tmdbUrl) */
+    /** TMDB ID from structured TEXT message (e.g., "12345" from tmdbUrl) */
     val structuredTmdbId: String? = null,
     
-    /** TMDB-Rating aus strukturierter TEXT-Nachricht */
+    /** TMDB rating from structured TEXT message */
     val structuredRating: Double? = null,
     
-    /** Jahr aus strukturierter TEXT-Nachricht (überschreibt Parser-Heuristik) */
+    /** Year from structured TEXT message (overrides parser heuristic) */
     val structuredYear: Int? = null,
     
-    /** FSK-Altersfreigabe für Kids-Filter */
+    /** FSK age rating for Kids filter */
     val structuredFsk: Int? = null,
     
-    /** Genres aus strukturierter TEXT-Nachricht */
+    /** Genres from structured TEXT message */
     val structuredGenres: List<String>? = null,
     
-    /** Director aus strukturierter TEXT-Nachricht */
+    /** Director from structured TEXT message */
     val structuredDirector: String? = null,
     
-    /** Original-Titel aus strukturierter TEXT-Nachricht */
+    /** Original title from structured TEXT message */
     val structuredOriginalTitle: String? = null,
     
-    /** Produktionsland */
+    /** Production country */
     val structuredProductionCountry: String? = null,
     
-    /** Laufzeit in Minuten */
+    /** Runtime in minutes */
     val structuredLengthMinutes: Int? = null,
     
-    /** Bundle-Typ für Debugging/Logging */
+    /** Bundle type for debugging/logging */
     val bundleType: TelegramBundleType = TelegramBundleType.SINGLE,
     
-    /** Message-ID der TEXT-Nachricht im Bundle (für Debugging) */
+    /** Message ID of TEXT message in bundle (for debugging) */
     val textMessageId: Long? = null,
     
-    /** Message-ID der PHOTO-Nachricht im Bundle (für Debugging) */
+    /** Message ID of PHOTO message in bundle (for debugging) */
     val photoMessageId: Long? = null,
 )
 
 enum class TelegramBundleType {
-    /** Vollständiger 3er-Cluster: PHOTO + TEXT + VIDEO */
+    /** Complete 3-cluster: PHOTO + TEXT + VIDEO(s) */
     FULL_3ER,
     
-    /** Kompakter 2er-Cluster: TEXT + VIDEO oder PHOTO + VIDEO */
+    /** Compact 2-cluster: TEXT + VIDEO(s) or PHOTO + VIDEO(s) */
     COMPACT_2ER,
     
-    /** Einzelne Nachricht (kein Bundle) */
+    /** Single message (no bundle) */
     SINGLE,
 }
 ```
 
-### 4.2 RawMediaMetadata (benötigte Erweiterungen)
+### 4.2 RawMediaMetadata (Required Extensions)
 
 ```kotlin
 // core/model/RawMediaMetadata.kt
 
 data class RawMediaMetadata(
-    // ... bestehende Felder ...
+    // ... existing fields ...
     
-    /** Altersfreigabe (FSK/MPAA/etc.) für Kids-Filter */
+    /** Age rating (FSK/MPAA/etc.) for Kids filter */
     val ageRating: Int? = null,
     
-    /** Rating (z.B. TMDB-Score 0.0-10.0) */
+    /** Rating (e.g., TMDB score 0.0-10.0) */
     val rating: Double? = null,
 )
 ```
 
-### 4.3 ExternalIds (ggf. erweitern)
+### 4.3 ExternalIds (Check/Extend)
 
 ```kotlin
-// Prüfen: Hat ExternalIds bereits tmdbId als String?
+// Check: Does ExternalIds already have tmdbId as String?
 data class ExternalIds(
-    val tmdbId: String? = null,  // "12345" aus tmdbUrl
+    val tmdbId: String? = null,  // "12345" from tmdbUrl
     val imdbId: String? = null,
     val tvdbId: String? = null,
 )
@@ -274,41 +290,41 @@ data class ExternalIds(
 
 ---
 
-## 5. Neue Komponenten
+## 5. New Components
 
 ### 5.1 TelegramMessageBundler
 
-**Pfad:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/grouper/TelegramMessageBundler.kt`
+**Path:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/grouper/TelegramMessageBundler.kt`
 
-**Verantwortung:**
+**Responsibility:**
 
-- Gruppiert TgMessage-Liste nach identischem Timestamp
-- Klassifiziert Cluster nach Typ (3er, 2er, Single)
-- Emittiert TelegramMessageBundle für zusammengehörige Nachrichten
+- Groups TgMessage list by identical timestamp
+- Classifies clusters by type (3-cluster, 2-cluster, Single)
+- Emits TelegramMessageBundle for related messages
 
 ```kotlin
 /**
- * Gruppiert Telegram-Nachrichten nach identischem Timestamp in Bundles.
+ * Groups Telegram messages by identical timestamp into bundles.
  *
- * Bundle-Erkennung:
- * - Nachrichten mit identischem `date` (Unix-Timestamp) gehören zusammen
- * - Reihenfolge in Bundles: PHOTO (niedrigste msgId) → TEXT → VIDEO (höchste msgId)
+ * Bundle Detection:
+ * - Messages with identical `date` (Unix timestamp) are grouped
+ * - Order in bundles: PHOTO (lowest msgId) → TEXT → VIDEO (highest msgId)
  *
- * Per MEDIA_NORMALIZATION_CONTRACT: Keine Normalisierung hier.
- * Bundle-Felder werden RAW extrahiert und an TelegramMediaItem übergeben.
+ * Per MEDIA_NORMALIZATION_CONTRACT: No normalization here.
+ * Bundle fields are RAW extracted and passed to TelegramMediaItem.
  */
 class TelegramMessageBundler {
     
     /**
-     * Gruppiert Nachrichten nach Timestamp.
+     * Groups messages by timestamp.
      *
-     * @param messages Unsortierte Liste von TgMessage
-     * @return Liste von TelegramMessageBundle (sortiert nach neuestem Timestamp)
+     * @param messages Unsorted list of TgMessage
+     * @return List of TelegramMessageBundle (sorted by newest timestamp)
      */
     fun groupByTimestamp(messages: List<TgMessage>): List<TelegramMessageBundle>
     
     /**
-     * Klassifiziert einen Bundle-Typ basierend auf enthaltenen Nachrichtentypen.
+     * Classifies a bundle type based on contained message types.
      */
     fun classifyBundle(messages: List<TgMessage>): TelegramBundleType
 }
@@ -317,51 +333,60 @@ data class TelegramMessageBundle(
     val timestamp: Long,
     val messages: List<TgMessage>,
     val bundleType: TelegramBundleType,
-    val videoMessage: TgMessage?,
+    val videoMessages: List<TgMessage>,  // All VIDEOs (may be >1)
     val textMessage: TgMessage?,
     val photoMessage: TgMessage?,
 )
 ```
 
+**Logging (UnifiedLog):**
+```kotlin
+private const val TAG = "TelegramMessageBundler"
+
+UnifiedLog.d(TAG) { "Bundle detected: chatId=$chatId, bundleType=$bundleType, videoCount=${videoMessages.size}" }
+UnifiedLog.i(TAG) { "Chat stats: chatId=$chatId, bundles=$bundleCount, singles=$singleCount, emittedItems=$emittedCount" }
+```
+
 ### 5.2 TelegramStructuredMetadataExtractor
 
-**Pfad:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/grouper/TelegramStructuredMetadataExtractor.kt`
+**Path:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/grouper/TelegramStructuredMetadataExtractor.kt`
 
-**Verantwortung:**
+**Responsibility:**
 
-- Extrahiert strukturierte Felder aus TEXT-Nachrichten
-- Parst TMDB-URL zu ID
-- Liefert RAW-Werte ohne Normalisierung
+- Extracts structured fields from TEXT messages
+- Parses TMDB URL to ID (supports `/movie/` and `/tv/`)
+- Returns RAW values without normalization
 
 ```kotlin
 /**
- * Extrahiert strukturierte Metadaten aus Telegram TEXT-Nachrichten.
+ * Extracts structured metadata from Telegram TEXT messages.
  *
- * Unterstützte Felder:
- * - tmdbUrl → tmdbId (via Regex /movie/(\d+))
+ * Supported Fields:
+ * - tmdbUrl → tmdbId (via Regex /movie/(\d+) or /tv/(\d+))
  * - tmdbRating, year, fsk, genres, director, originalTitle
  * - lengthMinutes, productionCountry
  *
- * Per MEDIA_NORMALIZATION_CONTRACT: Alle Werte RAW extrahiert, keine Bereinigung.
+ * Per MEDIA_NORMALIZATION_CONTRACT: All values RAW extracted, no cleaning.
  */
 class TelegramStructuredMetadataExtractor {
     
     /**
-     * Prüft, ob eine TEXT-Nachricht strukturierte Felder enthält.
+     * Checks if a TEXT message contains structured fields.
      */
     fun hasStructuredFields(textMessage: TgMessage): Boolean
     
     /**
-     * Extrahiert alle strukturierten Felder aus einer TEXT-Nachricht.
+     * Extracts all structured fields from a TEXT message.
      *
-     * @return StructuredMetadata oder null wenn keine strukturierten Felder
+     * @return StructuredMetadata or null if no structured fields
      */
     fun extractStructuredMetadata(textMessage: TgMessage): StructuredMetadata?
     
     /**
-     * Extrahiert TMDB-ID aus URL.
+     * Extracts TMDB ID from URL.
      * 
-     * Beispiel: "https://www.themoviedb.org/movie/12345-name" → "12345"
+     * Example: "https://www.themoviedb.org/movie/12345-name" → "12345"
+     * Example: "https://www.themoviedb.org/tv/98765-show" → "98765"
      */
     fun extractTmdbIdFromUrl(tmdbUrl: String?): String?
 }
@@ -379,192 +404,228 @@ data class StructuredMetadata(
 )
 ```
 
+**Logging (UnifiedLog):**
+```kotlin
+private const val TAG = "TelegramStructuredMetadataExtractor"
+
+UnifiedLog.d(TAG) { "Extracted: chatId=$chatId, tmdbId=$tmdbId, year=$year" }
+UnifiedLog.w(TAG) { "TMDB URL parse failed: chatId=$chatId, url=$tmdbUrl" }
+```
+
 ### 5.3 TelegramBundleToMediaItemMapper
 
-**Pfad:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramBundleToMediaItemMapper.kt`
+**Path:** `pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramBundleToMediaItemMapper.kt`
 
-**Verantwortung:**
+**Responsibility:**
 
-- Konvertiert TelegramMessageBundle → TelegramMediaItem
-- Führt VIDEO, TEXT, PHOTO-Daten zusammen
-- Wendet Tie-Breaker-Regeln an
+- Converts TelegramMessageBundle → List<TelegramMediaItem> (one per VIDEO)
+- Merges VIDEO, TEXT, PHOTO data
+- **Lossless:** Emits all VIDEO variants, no dropping
 
 ```kotlin
 /**
- * Mappt TelegramMessageBundle auf TelegramMediaItem.
+ * Maps TelegramMessageBundle to TelegramMediaItem(s).
  *
- * Mapping-Regeln:
- * 1. VIDEO-Nachricht liefert: remoteId, duration, fileName, mimeType, etc.
- * 2. TEXT-Nachricht liefert: structuredTmdbId, structuredYear, etc.
- * 3. PHOTO-Nachricht liefert: photoSizes für Poster
+ * Mapping Rules:
+ * 1. VIDEO message provides: remoteId, duration, fileName, mimeType, etc.
+ * 2. TEXT message provides: structuredTmdbId, structuredYear, etc.
+ * 3. PHOTO message provides: posterRef (max pixel area)
  *
- * Tie-Breaker (für Bundles mit mehreren VIDEOs):
- * - Größte Datei (sizeBytes)
- * - Längste Dauer (duration)
- * - Niedrigste messageId (deterministic)
+ * Lossless Emission (Contract R7):
+ * - Per accepted bundle: Nx TelegramMediaItem (one per VIDEO)
+ * - All VIDEOs are emitted, no variant is dropped
+ * - Each item carries the same structured metadata (for downstream unification)
+ *
+ * No UI Selection Policy (Contract R8b):
+ * - Pipeline does NOT select "primary" asset
+ * - Selection of default variant is a downstream concern
  */
 class TelegramBundleToMediaItemMapper {
     
-    fun mapBundleToMediaItem(bundle: TelegramMessageBundle): TelegramMediaItem?
+    /**
+     * Maps bundle to TelegramMediaItem(s).
+     * 
+     * @return List of items (one per VIDEO in bundle)
+     */
+    fun mapBundleToMediaItems(bundle: TelegramMessageBundle): List<TelegramMediaItem>
     
-    fun selectBestVideo(videos: List<TgContent.Video>): TgContent.Video
-    
+    /**
+     * Selects best photo based on max pixel area (width * height).
+     * Ties broken by: larger height → larger width
+     */
     fun selectBestPhoto(photos: List<TgContent.Photo>): TgContent.Photo
 }
 ```
 
----
+**Logging (UnifiedLog):**
+```kotlin
+private const val TAG = "TelegramBundleToMediaItemMapper"
 
-## 6. Implementierungsplan
-
-### Phase 1: Core-Model-Erweiterungen (Priorität: HOCH)
-
-- [ ] **1.1** RawMediaMetadata um `ageRating: Int?` erweitern
-- [ ] **1.2** RawMediaMetadata um `rating: Double?` erweitern  
-- [ ] **1.3** ExternalIds prüfen/erweitern für tmdbId-String
-- [ ] **1.4** Unit-Tests für RawMediaMetadata-Erweiterungen
-
-**Geschätzter Aufwand:** 2-4 Stunden
-
-### Phase 2: TelegramMediaItem-Erweiterungen (Priorität: HOCH)
-
-- [ ] **2.1** TelegramMediaItem um Structured-Bundle-Felder erweitern
-- [ ] **2.2** TelegramBundleType Enum erstellen
-- [ ] **2.3** toRawMediaMetadata() erweitern für neue Felder
-- [ ] **2.4** Unit-Tests für TelegramMediaItem-Erweiterungen
-
-**Geschätzter Aufwand:** 4-6 Stunden
-
-### Phase 3: Message Bundler (Priorität: MITTEL)
-
-- [ ] **3.1** TelegramMessageBundle data class erstellen
-- [ ] **3.2** TelegramMessageBundler implementieren
-  - [ ] `groupByTimestamp()` mit Timestamp-Gruppierung
-  - [ ] `classifyBundle()` mit Content-Type-Analyse
-- [ ] **3.3** Unit-Tests mit echten JSON-Fixtures aus `/legacy/docs/telegram/exports/`
-- [ ] **3.4** Edge-Cases: Einzelne Messages, unvollständige Bundles
-
-**Geschätzter Aufwand:** 6-8 Stunden
-
-### Phase 4: Structured Metadata Extractor (Priorität: MITTEL)
-
-- [ ] **4.1** TelegramStructuredMetadataExtractor implementieren
-  - [ ] `hasStructuredFields()` mit Field-Detection
-  - [ ] `extractStructuredMetadata()` mit JSON-Parsing
-  - [ ] `extractTmdbIdFromUrl()` mit Regex
-- [ ] **4.2** StructuredMetadata data class erstellen
-- [ ] **4.3** Unit-Tests mit echten TEXT-Messages aus JSON-Exports
-
-**Geschätzter Aufwand:** 4-6 Stunden
-
-### Phase 5: Bundle-to-MediaItem-Mapper (Priorität: MITTEL)
-
-- [ ] **5.1** TelegramBundleToMediaItemMapper implementieren
-  - [ ] `mapBundleToMediaItem()` mit Feld-Zusammenführung
-  - [ ] `selectBestVideo()` mit Tie-Breaker
-  - [ ] `selectBestPhoto()` mit Auflösungs-Priorisierung
-- [ ] **5.2** Integration in TelegramPipelineAdapter
-- [ ] **5.3** Unit-Tests für Mapping und Tie-Breaker
-
-**Geschätzter Aufwand:** 6-8 Stunden
-
-### Phase 6: Pipeline-Integration (Priorität: HOCH)
-
-- [ ] **6.1** TelegramPipelineAdapter erweitern
-  - [ ] `fetchMediaMessages()` mit Bundle-Gruppierung
-  - [ ] Fallback auf Single-Message-Pfad
-- [ ] **6.2** TelegramCatalogPipelineImpl anpassen
-  - [ ] Bundle-aware Iteration
-  - [ ] Logging für Bundle-Statistiken
-- [ ] **6.3** Integration-Tests mit echten Chat-Exports
-
-**Geschätzter Aufwand:** 8-10 Stunden
-
-### Phase 7: Normalizer-Optimierung (Priorität: NIEDRIG)
-
-- [ ] **7.1** metadata-normalizer: TMDB-ID-Check vor Lookup
-  - [ ] Wenn `externalIds.tmdbId` vorhanden → Skip Search
-  - [ ] Direkt TMDB-Details-API (wenn nötig) statt Search
-- [ ] **7.2** Performance-Tests: Structured vs Unstructured Chats
-
-**Geschätzter Aufwand:** 4-6 Stunden
-
-### Phase 8: Dokumentation & Cleanup (Priorität: NIEDRIG)
-
-- [ ] **8.1** Contract-Dokument finalisieren
-- [ ] **8.2** README-Updates für betroffene Module
-- [ ] **8.3** CHANGELOG.md aktualisieren
-- [ ] **8.4** Gold-Folder um Structured-Bundle-Patterns erweitern
-
-**Geschätzter Aufwand:** 2-4 Stunden
+UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=${items.size}" }
+```
 
 ---
 
-## 7. Test-Strategie
+## 6. Implementation Plan
 
-### 7.1 Unit-Tests
+### Phase 1: Core Model Extensions (Priority: HIGH)
+
+- [ ] **1.1** Extend RawMediaMetadata with `ageRating: Int?`
+- [ ] **1.2** Extend RawMediaMetadata with `rating: Double?`
+- [ ] **1.3** Check/extend ExternalIds for tmdbId String
+- [ ] **1.4** Unit tests for RawMediaMetadata extensions
+
+**Estimated Effort:** 2-4 hours
+
+### Phase 2: TelegramMediaItem Extensions (Priority: HIGH)
+
+- [ ] **2.1** Extend TelegramMediaItem with Structured Bundle fields
+- [ ] **2.2** Create TelegramBundleType enum
+- [ ] **2.3** Extend toRawMediaMetadata() for new fields
+- [ ] **2.4** Unit tests for TelegramMediaItem extensions
+
+**Estimated Effort:** 4-6 hours
+
+### Phase 3: Message Bundler (Priority: MEDIUM)
+
+- [ ] **3.1** Create TelegramMessageBundle data class
+- [ ] **3.2** Implement TelegramMessageBundler
+  - [ ] `groupByTimestamp()` with timestamp grouping
+  - [ ] `classifyBundle()` with content type analysis
+- [ ] **3.3** Unit tests with real JSON fixtures from `/legacy/docs/telegram/exports/`
+- [ ] **3.4** Edge cases: Single messages, incomplete bundles
+
+**Estimated Effort:** 6-8 hours
+
+### Phase 4: Structured Metadata Extractor (Priority: MEDIUM)
+
+- [ ] **4.1** Implement TelegramStructuredMetadataExtractor
+  - [ ] `hasStructuredFields()` with field detection
+  - [ ] `extractStructuredMetadata()` with JSON parsing
+  - [ ] `extractTmdbIdFromUrl()` with Regex for /movie/ and /tv/
+- [ ] **4.2** Create StructuredMetadata data class
+- [ ] **4.3** Unit tests with real TEXT messages from JSON exports
+
+**Estimated Effort:** 4-6 hours
+
+### Phase 5: Bundle-to-MediaItem Mapper (Priority: MEDIUM)
+
+- [ ] **5.1** Implement TelegramBundleToMediaItemMapper
+  - [ ] `mapBundleToMediaItems()` with lossless multi-video emission
+  - [ ] `selectBestPhoto()` with max pixel area
+- [ ] **5.2** Integration into TelegramPipelineAdapter
+- [ ] **5.3** Unit tests for mapping (lossless emission, shared externalIds)
+
+**Estimated Effort:** 6-8 hours
+
+### Phase 6: Pipeline Integration (Priority: HIGH)
+
+- [ ] **6.1** Extend TelegramPipelineAdapter
+  - [ ] `fetchMediaMessages()` with bundle grouping
+  - [ ] Fallback to single-message path
+- [ ] **6.2** Adapt TelegramCatalogPipelineImpl
+  - [ ] Bundle-aware iteration
+  - [ ] Logging for bundle statistics via UnifiedLog
+- [ ] **6.3** Integration tests with real chat exports
+
+**Estimated Effort:** 8-10 hours
+
+### Phase 7: Normalizer Optimization (Priority: LOW)
+
+- [ ] **7.1** metadata-normalizer: tmdbId check before lookup
+  - [ ] If `externalIds.tmdbId` present → MUST NOT do title search
+  - [ ] MAY validate/refresh TMDB details via tmdbId
+- [ ] **7.2** Unification: Multiple RawMediaMetadata with same tmdbId → single NormalizedMedia with variants
+- [ ] **7.3** Performance tests: Structured vs Unstructured chats
+
+**Estimated Effort:** 4-6 hours
+
+### Phase 8: Documentation & Cleanup (Priority: LOW)
+
+- [ ] **8.1** Finalize Contract document
+- [ ] **8.2** README updates for affected modules
+- [ ] **8.3** Update CHANGELOG.md
+- [ ] **8.4** Extend Gold folder with Structured Bundle patterns
+
+**Estimated Effort:** 2-4 hours
+
+---
+
+## 7. Test Strategy
+
+### 7.1 Unit Tests
 
 **TelegramMessageBundler:**
 
-- Test: Nachrichten mit gleichem Timestamp werden gruppiert
-- Test: Nachrichten mit unterschiedlichen Timestamps bleiben getrennt
-- Test: Bundle-Klassifikation (3er, 2er, Single)
-- Test: Sortierung innerhalb Bundle nach messageId
+- Test: Messages with same timestamp are grouped
+- Test: Messages with different timestamps remain separate
+- Test: Bundle classification (3-cluster, 2-cluster, Single)
+- Test: Sorting within bundle by messageId
 
 **TelegramStructuredMetadataExtractor:**
 
-- Test: TMDB-URL-Parsing (verschiedene Formate)
-- Test: FSK-Extraktion (numerisch)
-- Test: Genre-Liste-Parsing
-- Test: Fehlende Felder → null
+- Test: TMDB URL parsing (various formats)
+  - `/movie/<id>` → id
+  - `/tv/<id>` → id
+  - invalid format → null + WARN log
+- Test: FSK extraction (numeric)
+- Test: Genre list parsing
+- Test: Missing fields → null
 
 **TelegramBundleToMediaItemMapper:**
 
-- Test: Vollständiger 3er-Bundle → TelegramMediaItem
-- Test: 2er-Bundle (TEXT+VIDEO) → TelegramMediaItem
-- Test: Tie-Breaker bei mehreren Videos
+- Test: Complete 3-cluster → List<TelegramMediaItem>
+- Test: 2-cluster (TEXT+VIDEO) → List<TelegramMediaItem>
+- Test: **Lossless emission:** Bundle with 3 VIDEOs → 3 items
+- Test: **Shared externalIds:** All emitted items have same tmdbId
+- Test: Poster selection via max pixel area
 
-### 7.2 Integration-Tests
+### 7.2 Integration Tests
 
-**Fixtures:** Echte JSON-Exports aus `/legacy/docs/telegram/exports/exports/`
+**Fixtures:** Real JSON exports from `/legacy/docs/telegram/exports/exports/`
 
-- Test: Chat mit 3er-Clustern (z.B. "Mel Brooks")
-- Test: Chat mit 2er-Clustern (z.B. "Filme kompakt")
-- Test: Chat mit gemischten Patterns
-- Test: Chat ohne strukturierte Daten (Fallback)
+- Test: Chat with 3-clusters (e.g., "Mel Brooks")
+  - Assert: Bundles detected, correct total item count
+- Test: Chat with 2-clusters (e.g., "Filme kompakt")
+  - Assert: COMPACT_2ER bundles detected
+- Test: Chat with mixed patterns
+- Test: Chat without structured data (fallback)
+  - Assert: No regression for unstructured chats
 
-### 7.3 Regressions-Tests
+### 7.3 Regression Tests
 
-- Test: Bestehende `toRawMediaMetadata()` bleibt unverändert für Single-Messages
-- Test: Keine Breaking Changes für unstrukturierte Chats
-
----
-
-## 8. Risiken & Mitigationen
-
-| Risiko | Wahrscheinlichkeit | Impact | Mitigation |
-|--------|-------------------|--------|------------|
-| Strukturierte Chats ändern Format | Mittel | Mittel | Feature-Flag für Bundle-Erkennung |
-| TMDB-URL-Format ändert sich | Niedrig | Niedrig | Mehrere Regex-Patterns |
-| Performance bei großen Chats | Niedrig | Mittel | Batch-Processing, Lazy Evaluation |
-| Transport-Layer liefert andere Struktur | Niedrig | Hoch | Adapter-Pattern isoliert Pipeline |
+- Test: Existing `toRawMediaMetadata()` remains unchanged for single messages
+- Test: No breaking changes for unstructured chats
 
 ---
 
-## 9. Metriken & Erfolgskriterien
+## 8. Risks & Mitigations
 
-| Metrik | Ziel | Messmethode |
-|--------|------|-------------|
-| Structured-Chat-Erkennung | 100% der 8 bekannten Chats | Unit-Test-Coverage |
-| TMDB-Lookups für Structured Chats | 0 | Logging-Counter |
-| Ingest-Zeit pro strukturiertem Item | < 50ms | Performance-Logging |
-| Regressions-Fehler | 0 | CI-Pipeline |
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| Structured chats change format | Medium | Medium | Feature flag for bundle detection |
+| TMDB URL format changes | Low | Low | Multiple regex patterns |
+| Performance with large chats | Low | Medium | Batch processing, lazy evaluation |
+| Transport layer delivers different structure | Low | High | Adapter pattern isolates pipeline |
 
 ---
 
-## 10. Referenzen
+## 9. Metrics & Success Criteria
+
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Structured chat detection | 100% of 8 known chats | Unit test coverage |
+| TMDB lookups for structured chats | 0 (title search skipped) | Logging counter via UnifiedLog |
+| Ingest time per structured item | < 50ms | Performance logging |
+| Lossless emission | 100% of VIDEOs emitted | Integration tests |
+| Regression errors | 0 | CI pipeline |
+
+---
+
+## 10. References
 
 - [MEDIA_NORMALIZATION_CONTRACT.md](docs/v2/MEDIA_NORMALIZATION_CONTRACT.md)
+- [LOGGING_CONTRACT_V2.md](contracts/LOGGING_CONTRACT_V2.md)
 - [TELEGRAM_PARSER_CONTRACT.md](contracts/TELEGRAM_PARSER_CONTRACT.md)
 - [GOLD_TELEGRAM_CORE.md](legacy/gold/telegram-pipeline/GOLD_TELEGRAM_CORE.md)
 - [GLOSSARY_v2_naming_and_modules.md](contracts/GLOSSARY_v2_naming_and_modules.md)
@@ -572,9 +633,9 @@ class TelegramBundleToMediaItemMapper {
 
 ---
 
-## Anhang A: JSON-Nachrichtenbeispiele
+## Appendix A: JSON Message Examples
 
-### A.1 TEXT-Nachricht mit strukturierten Feldern
+### A.1 TEXT Message with Structured Fields
 
 ```json
 {
@@ -595,7 +656,7 @@ class TelegramBundleToMediaItemMapper {
 }
 ```
 
-### A.2 VIDEO-Nachricht im Bundle
+### A.2 VIDEO Message in Bundle
 
 ```json
 {
@@ -620,7 +681,7 @@ class TelegramBundleToMediaItemMapper {
 }
 ```
 
-### A.3 PHOTO-Nachricht im Bundle
+### A.3 PHOTO Message in Bundle
 
 ```json
 {
@@ -653,13 +714,16 @@ class TelegramBundleToMediaItemMapper {
 
 ---
 
-## Anhang B: Glossar
+## Appendix B: Glossary
 
-| Begriff | Definition |
-|---------|------------|
-| **Structured Bundle** | Gruppe von 2-3 Telegram-Nachrichten mit identischem Timestamp, die zusammen ein Media-Item beschreiben |
-| **3er-Cluster** | Bundle aus PHOTO + TEXT + VIDEO |
-| **2er-Cluster** | Bundle aus TEXT + VIDEO oder PHOTO + VIDEO |
-| **Zero-Parsing-Path** | Pfad ohne Titel-Parsing dank strukturierter Metadaten |
-| **Pass-Through** | TMDB-ID/Jahr/etc. werden unverändert von Quelle zu RawMediaMetadata übernommen |
-| **Tie-Breaker** | Deterministische Regel zur Auswahl bei mehreren gleichwertigen Optionen |
+| Term | Definition |
+|------|------------|
+| **Structured Bundle** | Group of 2-3 Telegram messages with identical timestamp that together describe a media item |
+| **3-cluster** | Bundle of PHOTO + TEXT + VIDEO(s) |
+| **2-cluster** | Bundle of TEXT + VIDEO(s) or PHOTO + VIDEO(s) |
+| **Zero-Parsing-Path** | Path without title parsing thanks to structured metadata |
+| **Pass-Through** | TMDB ID/year/etc. are passed unchanged from source to RawMediaMetadata |
+| **Lossless Emission** | Pipeline emits one RawMediaMetadata per VIDEO; no variants are dropped |
+| **Downstream Unification** | Normalizer merges multiple RawMediaMetadata with same tmdbId into single NormalizedMedia with variants |
+| **BundleKey** | Pipeline-internal key `(chatId, timestamp)` for grouping messages |
+| **UnifiedLog** | v2 logging façade for all modules (see LOGGING_CONTRACT_V2.md) |
