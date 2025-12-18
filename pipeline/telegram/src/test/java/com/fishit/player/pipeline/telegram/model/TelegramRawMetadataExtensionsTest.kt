@@ -2,6 +2,7 @@ package com.fishit.player.pipeline.telegram.model
 
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.TmdbMediaType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -216,7 +217,7 @@ class TelegramRawMetadataExtensionsTest {
                 val raw = item.toRawMediaMetadata()
 
                 // Per contract: Telegram doesn't provide TMDB/IMDB/TVDB
-                assertNull(raw.externalIds.tmdbId)
+                assertNull(raw.externalIds.tmdb)
                 assertNull(raw.externalIds.imdbId)
                 assertNull(raw.externalIds.tvdbId)
         }
@@ -319,7 +320,7 @@ class TelegramRawMetadataExtensionsTest {
         // ========== Structured Bundle Tests (Phase 2) ==========
 
         @Test
-        fun `toRawMediaMetadata passes through structuredTmdbId to externalIds`() {
+        fun `toRawMediaMetadata passes through typed structuredTmdb to externalIds`() {
                 val item =
                         TelegramMediaItem(
                                 chatId = 123L,
@@ -327,12 +328,37 @@ class TelegramRawMetadataExtensionsTest {
                                 mediaType = TelegramMediaType.VIDEO,
                                 title = "The Movie",
                                 structuredTmdbId = 12345,
+                                structuredTmdbType = TelegramTmdbType.MOVIE,
                                 bundleType = TelegramBundleType.FULL_3ER,
                         )
 
                 val raw = item.toRawMediaMetadata()
 
-                assertEquals(12345, raw.externalIds.tmdbId?.value)
+                // Per Gold Decision: Typed TmdbRef with MOVIE type
+                assertEquals(12345, raw.externalIds.tmdb?.id)
+                assertEquals(TmdbMediaType.MOVIE, raw.externalIds.tmdb?.type)
+        }
+        
+        @Test
+        fun `toRawMediaMetadata uses legacyTmdbId when type missing`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "The Movie",
+                                structuredTmdbId = 12345,
+                                // NO structuredTmdbType - legacy behavior
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                // Typed TmdbRef is null when type is missing
+                assertNull(raw.externalIds.tmdb)
+                // Legacy ID is set for migration compatibility
+                @Suppress("DEPRECATION")
+                assertEquals(12345, raw.externalIds.legacyTmdbId)
         }
 
         @Test
@@ -420,6 +446,7 @@ class TelegramRawMetadataExtensionsTest {
                                 durationSecs = 5880,
                                 // Structured Bundle Fields
                                 structuredTmdbId = 957,
+                                structuredTmdbType = TelegramTmdbType.MOVIE, // Gold Decision: typed TMDB
                                 structuredRating = 6.9,
                                 structuredYear = 1987,
                                 structuredFsk = 12,
@@ -436,7 +463,8 @@ class TelegramRawMetadataExtensionsTest {
                 val raw = item.toRawMediaMetadata()
 
                 // Verify all structured fields are passed through
-                assertEquals(957, raw.externalIds.tmdbId?.value)
+                assertEquals(957, raw.externalIds.tmdb?.id)
+                assertEquals(TmdbMediaType.MOVIE, raw.externalIds.tmdb?.type)
                 assertEquals(6.9, raw.rating)
                 assertEquals(1987, raw.year)
                 assertEquals(12, raw.ageRating)
@@ -458,7 +486,7 @@ class TelegramRawMetadataExtensionsTest {
 
                 val raw = item.toRawMediaMetadata()
 
-                assertNull(raw.externalIds.tmdbId)
+                assertNull(raw.externalIds.tmdb)
                 assertNull(raw.rating)
                 assertNull(raw.ageRating)
         }

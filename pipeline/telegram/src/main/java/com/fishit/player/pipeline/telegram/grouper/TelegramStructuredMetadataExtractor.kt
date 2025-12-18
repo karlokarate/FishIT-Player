@@ -3,6 +3,7 @@ package com.fishit.player.pipeline.telegram.grouper
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgMessage
+import com.fishit.player.pipeline.telegram.model.TelegramTmdbType
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,13 +12,17 @@ import javax.inject.Singleton
  *
  * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md Section 1.2:
  * - Parses JSON-like fields from TEXT message captions
- * - Extracts TMDB URL and converts to ID
+ * - Extracts TMDB URL and converts to typed reference (ID + type)
  * - Applies Schema Guards (Contract R4) for range validation
  *
  * **Supported Fields:**
- * - tmdbUrl → tmdbId (via Regex /movie/(\d+) or /tv/(\d+))
+ * - tmdbUrl → tmdbId + tmdbType (via TelegramTmdbType.parseFromUrl())
  * - tmdbRating, year, fsk, genres, director, originalTitle
  * - lengthMinutes, productionCountry
+ *
+ * Per Gold Decision Dec 2025:
+ * - TMDB type (MOVIE or TV) is extracted from URL path
+ * - Both ID and type are required for typed canonical IDs
  *
  * Per MEDIA_NORMALIZATION_CONTRACT: All values RAW extracted, no cleaning.
  *
@@ -38,10 +43,6 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
         private val RATING_RANGE = 0.0..10.0
         private val FSK_RANGE = 0..21
         private val LENGTH_RANGE = 1..600
-
-        // TMDB URL patterns
-        private val TMDB_MOVIE_PATTERN = Regex("""themoviedb\.org/movie/(\d+)""")
-        private val TMDB_TV_PATTERN = Regex("""themoviedb\.org/tv/(\d+)""")
 
         // Field extraction patterns for JSON-like text
         private val TMDB_URL_PATTERN =
@@ -91,6 +92,9 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
     /**
      * Extracts all structured fields from a TEXT message.
      *
+     * Per Gold Decision Dec 2025: Uses TelegramTmdbType.parseFromUrl() to extract
+     * both TMDB ID and type from the URL in a single pass.
+     *
      * @param textMessage The TEXT message to extract from
      * @return StructuredMetadata or null if no structured fields
      */
@@ -101,8 +105,12 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
             return null
         }
 
+        // Extract typed TMDB reference (ID + type) using TelegramTmdbType.parseFromUrl()
         val tmdbUrl = extractField(text, TMDB_URL_PATTERN)
-        val tmdbId = extractTmdbIdFromUrl(tmdbUrl)
+        val tmdbParsed = tmdbUrl?.let { TelegramTmdbType.parseFromUrl(it) }
+        val tmdbType = tmdbParsed?.first
+        val tmdbId = tmdbParsed?.second
+        
         val tmdbRating = extractDouble(text, TMDB_RATING_PATTERN)?.let { applyRatingGuard(it) }
         val year = extractInt(text, YEAR_PATTERN)?.let { applyYearGuard(it) }
         val fsk = extractInt(text, FSK_PATTERN)?.let { applyFskGuard(it) }
@@ -115,6 +123,7 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
         val metadata =
                 StructuredMetadata(
                         tmdbId = tmdbId,
+                        tmdbType = tmdbType,
                         tmdbRating = tmdbRating,
                         year = year,
                         fsk = fsk,
@@ -127,7 +136,7 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
 
         if (metadata.hasAnyField) {
             val chatId = textMessage.chatId
-            UnifiedLog.d(TAG) { "Extracted: chatId=$chatId, tmdbId=$tmdbId, year=$year, fsk=$fsk" }
+            UnifiedLog.d(TAG) { "Extracted: chatId=$chatId, tmdbId=$tmdbId, tmdbType=$tmdbType, year=$year, fsk=$fsk" }
             return metadata
         }
 
@@ -135,7 +144,9 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
     }
 
     /**
-     * Extracts TMDB ID from URL.
+     * Extracts TMDB ID from URL (legacy, kept for backward compatibility).
+     *
+     * **Prefer using TelegramTmdbType.parseFromUrl() for typed extraction.**
      *
      * Supports formats:
      * - "https://www.themoviedb.org/movie/12345-movie-name" → 12345
@@ -145,21 +156,13 @@ class TelegramStructuredMetadataExtractor @Inject constructor() {
      * @param tmdbUrl The TMDB URL to parse
      * @return TMDB ID as Int or null if parse fails
      */
+    @Deprecated(
+        "Use TelegramTmdbType.parseFromUrl() for typed extraction",
+        ReplaceWith("TelegramTmdbType.parseFromUrl(tmdbUrl)?.second")
+    )
     fun extractTmdbIdFromUrl(tmdbUrl: String?): Int? {
         if (tmdbUrl.isNullOrBlank()) return null
-
-        // Try movie pattern first
-        TMDB_MOVIE_PATTERN.find(tmdbUrl)?.let { match ->
-            return match.groupValues[1].toIntOrNull()
-        }
-
-        // Try TV pattern
-        TMDB_TV_PATTERN.find(tmdbUrl)?.let { match ->
-            return match.groupValues[1].toIntOrNull()
-        }
-
-        UnifiedLog.w(TAG) { "TMDB URL parse failed: url=$tmdbUrl" }
-        return null
+        return TelegramTmdbType.parseFromUrl(tmdbUrl)?.second
     }
 
     // ========== Schema Guards (Contract R4) ==========

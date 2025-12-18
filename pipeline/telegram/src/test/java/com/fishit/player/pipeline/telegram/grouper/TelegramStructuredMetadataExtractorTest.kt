@@ -2,6 +2,7 @@ package com.fishit.player.pipeline.telegram.grouper
 
 import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgMessage
+import com.fishit.player.pipeline.telegram.model.TelegramTmdbType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -29,12 +30,41 @@ class TelegramStructuredMetadataExtractorTest {
         extractor = TelegramStructuredMetadataExtractor()
     }
 
-    // ========== TMDB URL Parsing Tests ==========
+    // ========== TMDB URL Parsing Tests (Gold Decision Dec 2025) ==========
+
+    @Test
+    fun `extractStructuredMetadata extracts MOVIE tmdbType from movie URL`() {
+        val message = createTextMessageWithCaption(
+            """tmdbUrl: "https://www.themoviedb.org/movie/12345-movie-name""""
+        )
+        
+        val metadata = extractor.extractStructuredMetadata(message)
+        
+        assertNotNull(metadata)
+        assertEquals(12345, metadata?.tmdbId)
+        assertEquals(TelegramTmdbType.MOVIE, metadata?.tmdbType)
+        assertTrue(metadata?.hasTypedTmdb == true)
+    }
+
+    @Test
+    fun `extractStructuredMetadata extracts TV tmdbType from tv URL`() {
+        val message = createTextMessageWithCaption(
+            """tmdbUrl: "https://www.themoviedb.org/tv/98765-show-name""""
+        )
+        
+        val metadata = extractor.extractStructuredMetadata(message)
+        
+        assertNotNull(metadata)
+        assertEquals(98765, metadata?.tmdbId)
+        assertEquals(TelegramTmdbType.TV, metadata?.tmdbType)
+        assertTrue(metadata?.hasTypedTmdb == true)
+    }
 
     @Test
     fun `extractTmdbIdFromUrl parses movie URL`() {
         val url = "https://www.themoviedb.org/movie/12345-movie-name"
         
+        @Suppress("DEPRECATION")
         val tmdbId = extractor.extractTmdbIdFromUrl(url)
         
         assertEquals(12345, tmdbId)
@@ -44,6 +74,7 @@ class TelegramStructuredMetadataExtractorTest {
     fun `extractTmdbIdFromUrl parses TV URL`() {
         val url = "https://www.themoviedb.org/tv/98765-show-name"
         
+        @Suppress("DEPRECATION")
         val tmdbId = extractor.extractTmdbIdFromUrl(url)
         
         assertEquals(98765, tmdbId)
@@ -53,6 +84,7 @@ class TelegramStructuredMetadataExtractorTest {
     fun `extractTmdbIdFromUrl parses URL without protocol`() {
         val url = "themoviedb.org/movie/54321"
         
+        @Suppress("DEPRECATION")
         val tmdbId = extractor.extractTmdbIdFromUrl(url)
         
         assertEquals(54321, tmdbId)
@@ -69,6 +101,7 @@ class TelegramStructuredMetadataExtractorTest {
         )
         
         invalidUrls.forEach { url ->
+            @Suppress("DEPRECATION")
             val tmdbId = extractor.extractTmdbIdFromUrl(url)
             assertNull("Expected null for: $url", tmdbId)
         }
@@ -237,6 +270,8 @@ class TelegramStructuredMetadataExtractorTest {
         
         assertNotNull(metadata)
         assertEquals(957, metadata?.tmdbId)
+        assertEquals(TelegramTmdbType.MOVIE, metadata?.tmdbType)
+        assertTrue(metadata?.hasTypedTmdb == true)
         assertEquals(6.9, metadata?.tmdbRating)
         assertEquals(1987, metadata?.year)
         assertEquals(12, metadata?.fsk)
@@ -306,6 +341,7 @@ class TelegramStructuredMetadataExtractorTest {
     fun `hasTmdbId returns true when tmdbId is set`() {
         val metadata = StructuredMetadata(
             tmdbId = 123,
+            tmdbType = TelegramTmdbType.MOVIE,
             tmdbRating = null,
             year = null,
             fsk = null,
@@ -317,12 +353,14 @@ class TelegramStructuredMetadataExtractorTest {
         )
         
         assertTrue(metadata.hasTmdbId)
+        assertTrue(metadata.hasTypedTmdb)
     }
 
     @Test
     fun `hasAnyField returns true when any field is set`() {
         val metadata = StructuredMetadata(
             tmdbId = null,
+            tmdbType = null,
             tmdbRating = null,
             year = 2020,
             fsk = null,

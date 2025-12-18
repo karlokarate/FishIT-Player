@@ -77,7 +77,8 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
             "Mapped bundle: chatId=${bundle.chatId}, " +
                     "bundleType=${bundle.bundleType}, " +
                     "emittedItems=${items.size}, " +
-                    "hasTmdbId=${structuredMetadata.hasTmdbId}"
+                    "hasTypedTmdb=${structuredMetadata.hasTypedTmdb}, " +
+                    "tmdbType=${structuredMetadata.tmdbType}"
         }
 
         return items
@@ -176,7 +177,9 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
                 date = timestampMs,
 
                 // === Structured Bundle Fields (Contract Section 3.1) ===
+                // Per Gold Decision Dec 2025: Both tmdbId AND tmdbType for typed canonical IDs
                 structuredTmdbId = structuredMetadata.tmdbId,
+                structuredTmdbType = structuredMetadata.tmdbType,
                 structuredRating = structuredMetadata.tmdbRating,
                 structuredYear = structuredMetadata.year,
                 structuredFsk = structuredMetadata.fsk,

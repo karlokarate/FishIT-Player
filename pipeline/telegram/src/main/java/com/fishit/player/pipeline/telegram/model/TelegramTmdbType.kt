@@ -45,13 +45,18 @@ enum class TelegramTmdbType {
          * @return Pair of (type, id) or null if URL doesn't match
          */
         fun parseFromUrl(url: String): Pair<TelegramTmdbType, Int>? {
-            val movieMatch = MOVIE_URL_PATTERN.find(url)
+            // First verify URL is from themoviedb.org
+            if (!TMDB_HOST_PATTERN.containsMatchIn(url)) {
+                return null
+            }
+            
+            val movieMatch = MOVIE_PATH_PATTERN.find(url)
             if (movieMatch != null) {
                 val id = movieMatch.groupValues[1].toIntOrNull() ?: return null
                 return MOVIE to id
             }
 
-            val tvMatch = TV_URL_PATTERN.find(url)
+            val tvMatch = TV_PATH_PATTERN.find(url)
             if (tvMatch != null) {
                 val id = tvMatch.groupValues[1].toIntOrNull() ?: return null
                 return TV to id
@@ -60,10 +65,13 @@ enum class TelegramTmdbType {
             return null
         }
 
-        // Match /movie/123 or /movie/123-slug
-        private val MOVIE_URL_PATTERN = Regex("""/movie/(\d+)""")
+        // Verify URL contains themoviedb.org (with or without www)
+        private val TMDB_HOST_PATTERN = Regex("""(www\.)?themoviedb\.org""", RegexOption.IGNORE_CASE)
         
-        // Match /tv/123 or /tv/123-slug
-        private val TV_URL_PATTERN = Regex("""/tv/(\d+)""")
+        // Match /movie/123 or /movie/123-slug path segment
+        private val MOVIE_PATH_PATTERN = Regex("""/movie/(\d+)""")
+        
+        // Match /tv/123 or /tv/123-slug path segment  
+        private val TV_PATH_PATTERN = Regex("""/tv/(\d+)""")
     }
 }
