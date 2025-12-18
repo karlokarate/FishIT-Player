@@ -38,9 +38,7 @@ object MetadataNormalizerModule {
      */
     @Provides
     @Singleton
-    fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer {
-        return RegexMediaMetadataNormalizer()
-    }
+    fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer = RegexMediaMetadataNormalizer()
 }
 
 /**

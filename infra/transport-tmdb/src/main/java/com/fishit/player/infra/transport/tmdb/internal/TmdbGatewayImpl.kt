@@ -48,7 +48,8 @@ class TmdbGatewayImpl
         ): TmdbResult<TmdbMovieDetails> =
             executeRequest("getMovieDetails") {
                 val response =
-                    tmdb.moviesService()
+                    tmdb
+                        .moviesService()
                         .summary(movieId, params.language, null)
                         .execute()
 
@@ -67,7 +68,8 @@ class TmdbGatewayImpl
         ): TmdbResult<TmdbTvDetails> =
             executeRequest("getTvDetails") {
                 val response =
-                    tmdb.tvService()
+                    tmdb
+                        .tvService()
                         .tv(tvId, params.language, null)
                         .execute()
 
@@ -86,7 +88,8 @@ class TmdbGatewayImpl
         ): TmdbResult<TmdbImages> =
             executeRequest("getMovieImages") {
                 val response =
-                    tmdb.moviesService()
+                    tmdb
+                        .moviesService()
                         .images(movieId, params.language)
                         .execute()
 
@@ -105,7 +108,8 @@ class TmdbGatewayImpl
         ): TmdbResult<TmdbImages> =
             executeRequest("getTvImages") {
                 val response =
-                    tmdb.tvService()
+                    tmdb
+                        .tvService()
                         .images(tvId, params.language)
                         .execute()
 

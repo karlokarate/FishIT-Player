@@ -12,14 +12,14 @@ class NormalizerBehaviorTest {
     @Test
     fun `xtream live stays unlinked singleton`() {
         val raw =
-                RawMediaMetadata(
-                        originalTitle = "News Channel HD",
-                        mediaType = MediaType.LIVE,
-                        sourceType = SourceType.XTREAM,
-                        sourceLabel = "Xtream Live",
-                        sourceId = "xtream:live:1",
-                        pipelineIdTag = PipelineIdTag.XTREAM,
-                )
+            RawMediaMetadata(
+                originalTitle = "News Channel HD",
+                mediaType = MediaType.LIVE,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream Live",
+                sourceId = "xtream:live:1",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -32,23 +32,23 @@ class NormalizerBehaviorTest {
     @Test
     fun `unlinked items are not grouped`() {
         val first =
-                RawMediaMetadata(
-                        originalTitle = "Mystery Movie",
-                        mediaType = MediaType.UNKNOWN,
-                        sourceType = SourceType.TELEGRAM,
-                        sourceLabel = "TG 1",
-                        sourceId = "tg:1",
-                        pipelineIdTag = PipelineIdTag.TELEGRAM,
-                )
+            RawMediaMetadata(
+                originalTitle = "Mystery Movie",
+                mediaType = MediaType.UNKNOWN,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "TG 1",
+                sourceId = "tg:1",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
         val second =
-                RawMediaMetadata(
-                        originalTitle = "Mystery Movie",
-                        mediaType = MediaType.UNKNOWN,
-                        sourceType = SourceType.IO,
-                        sourceLabel = "Local",
-                        sourceId = "file://2",
-                        pipelineIdTag = PipelineIdTag.IO,
-                )
+            RawMediaMetadata(
+                originalTitle = "Mystery Movie",
+                mediaType = MediaType.UNKNOWN,
+                sourceType = SourceType.IO,
+                sourceLabel = "Local",
+                sourceId = "file://2",
+                pipelineIdTag = PipelineIdTag.IO,
+            )
 
         val normalized = Normalizer.normalize(listOf(first, second))
 

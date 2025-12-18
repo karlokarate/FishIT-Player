@@ -3,15 +3,14 @@ package com.fishit.player.core.metadata
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.ids.TmdbId
-import com.fishit.player.infra.transport.tmdb.testing.FakeTmdbGateway
 import com.fishit.player.infra.transport.tmdb.api.TmdbError
 import com.fishit.player.infra.transport.tmdb.api.TmdbRequestParams
 import com.fishit.player.infra.transport.tmdb.api.TmdbResult
+import com.fishit.player.infra.transport.tmdb.testing.FakeTmdbGateway
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
  * Tests for DefaultTmdbMetadataResolver using FakeTmdbGateway.

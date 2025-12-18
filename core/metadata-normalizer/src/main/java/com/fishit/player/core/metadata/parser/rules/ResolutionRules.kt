@@ -25,7 +25,6 @@ data class ResolutionResult(
  * - Numeric: 4320, 2160, 1080, 720, etc. (when followed by p/i)
  */
 object ResolutionRules {
-
     // Resolution tokens (case-insensitive)
     private val resolution2160pTokens = setOf("2160p", "4k", "uhd", "4320p")
     private val resolution1080pTokens = setOf("1080p", "1080i")
@@ -80,11 +79,10 @@ object ResolutionRules {
     /**
      * Get all known resolution tokens (for tech boundary detection).
      */
-    fun getAllResolutionTokens(): Set<String> {
-        return resolution2160pTokens +
+    fun getAllResolutionTokens(): Set<String> =
+        resolution2160pTokens +
             resolution1080pTokens +
             resolution720pTokens +
             resolution576pTokens +
             resolution480pTokens
-    }
 }

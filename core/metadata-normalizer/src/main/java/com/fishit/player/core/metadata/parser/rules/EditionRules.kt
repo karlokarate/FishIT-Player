@@ -36,55 +36,78 @@ data class EditionResult(
  * - HDR, Dolby Vision
  */
 object EditionRules {
-
     // Extended edition tokens
-    private val extendedTokens = setOf(
-        "extended", "uncut", "collector", "ultimate", "special",
-    )
+    private val extendedTokens =
+        setOf(
+            "extended",
+            "uncut",
+            "collector",
+            "ultimate",
+            "special",
+        )
 
     // Director's cut tokens
-    private val directorsTokens = setOf(
-        "director", "directors", "dc",
-    )
+    private val directorsTokens =
+        setOf(
+            "director",
+            "directors",
+            "dc",
+        )
 
     // Unrated tokens
-    private val unratedTokens = setOf(
-        "unrated", "uncensored",
-    )
+    private val unratedTokens =
+        setOf(
+            "unrated",
+            "uncensored",
+        )
 
     // Theatrical tokens
-    private val theatricalTokens = setOf(
-        "theatrical",
-    )
+    private val theatricalTokens =
+        setOf(
+            "theatrical",
+        )
 
     // 3D tokens
-    private val threeDTokens = setOf(
-        "3d",
-    )
+    private val threeDTokens =
+        setOf(
+            "3d",
+        )
 
     // IMAX tokens
-    private val imaxTokens = setOf(
-        "imax",
-    )
+    private val imaxTokens =
+        setOf(
+            "imax",
+        )
 
     // Remastered tokens
-    private val remasteredTokens = setOf(
-        "remastered", "anniversary", "restored", "4kremastered",
-    )
+    private val remasteredTokens =
+        setOf(
+            "remastered",
+            "anniversary",
+            "restored",
+            "4kremastered",
+        )
 
     // Proper/Repack tokens
     private val properTokens = setOf("proper", "real")
     private val repackTokens = setOf("repack", "rerip")
 
     // HDR tokens
-    private val hdrTokens = setOf(
-        "hdr", "hdr10", "hdr10+", "hdr10plus",
-    )
+    private val hdrTokens =
+        setOf(
+            "hdr",
+            "hdr10",
+            "hdr10+",
+            "hdr10plus",
+        )
 
     // Dolby Vision tokens
-    private val dolbyVisionTokens = setOf(
-        "dv", "dolbyvision", "dolby-vision",
-    )
+    private val dolbyVisionTokens =
+        setOf(
+            "dv",
+            "dolbyvision",
+            "dolby-vision",
+        )
 
     /**
      * Detect edition information from tokens.
@@ -156,8 +179,8 @@ object EditionRules {
     /**
      * Get all known edition tokens.
      */
-    fun getAllEditionTokens(): Set<String> {
-        return extendedTokens +
+    fun getAllEditionTokens(): Set<String> =
+        extendedTokens +
             directorsTokens +
             unratedTokens +
             theatricalTokens +
@@ -168,5 +191,4 @@ object EditionRules {
             repackTokens +
             hdrTokens +
             dolbyVisionTokens
-    }
 }

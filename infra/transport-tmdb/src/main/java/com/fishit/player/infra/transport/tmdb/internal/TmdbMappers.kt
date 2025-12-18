@@ -16,11 +16,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Mappers from tmdb-java entities to internal DTOs.
- *
- * These extension functions ensure tmdb-java types never leak outside this module.
- */
+// Mappers from tmdb-java entities to internal DTOs.
+// These extension functions ensure tmdb-java types never leak outside this module.
 
 /**
  * Convert Date to ISO 8601 string (YYYY-MM-DD).

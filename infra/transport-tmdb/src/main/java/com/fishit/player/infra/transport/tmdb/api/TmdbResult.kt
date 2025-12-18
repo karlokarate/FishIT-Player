@@ -10,12 +10,16 @@ sealed class TmdbResult<out T> {
     /**
      * Successful result with data.
      */
-    data class Ok<T>(val value: T) : TmdbResult<T>()
+    data class Ok<T>(
+        val value: T,
+    ) : TmdbResult<T>()
 
     /**
      * Failed result with typed error.
      */
-    data class Err(val error: TmdbError) : TmdbResult<Nothing>()
+    data class Err(
+        val error: TmdbError,
+    ) : TmdbResult<Nothing>()
 }
 
 /**
@@ -49,12 +53,16 @@ sealed class TmdbError {
      *
      * @property retryAfter Optional retry-after header value in seconds
      */
-    data class RateLimited(val retryAfter: Long? = null) : TmdbError()
+    data class RateLimited(
+        val retryAfter: Long? = null,
+    ) : TmdbError()
 
     /**
      * Server error (5xx) or other unknown error.
      *
      * @property message Optional error message for logging
      */
-    data class Unknown(val message: String? = null) : TmdbError()
+    data class Unknown(
+        val message: String? = null,
+    ) : TmdbError()
 }
