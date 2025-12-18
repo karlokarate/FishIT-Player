@@ -175,6 +175,7 @@ dependencies {
     implementation(project(":infra:data-telegram"))
     implementation(project(":infra:data-xtream"))
     implementation(project(":infra:data-home"))
+    implementation(project(":infra:work"))
 
     // Coil for ImageLoader singleton
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
