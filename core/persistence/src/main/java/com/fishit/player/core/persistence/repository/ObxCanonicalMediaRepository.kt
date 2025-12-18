@@ -92,7 +92,7 @@ constructor(
                                                 year = normalized.year ?: existing.year,
                                                 season = normalized.season ?: existing.season,
                                                 episode = normalized.episode ?: existing.episode,
-                                                tmdbId = normalized.externalIds.tmdbId?.value?.toString()
+                                                tmdbId = normalized.externalIds.tmdb?.id?.toString()
                                                                 ?: existing.tmdbId,
                                                 imdbId = normalized.externalIds.imdbId
                                                                 ?: existing.imdbId,
@@ -119,7 +119,7 @@ constructor(
                                                 year = normalized.year,
                                                 season = normalized.season,
                                                 episode = normalized.episode,
-                                                tmdbId = normalized.externalIds.tmdbId?.value?.toString(),
+                                                tmdbId = normalized.externalIds.tmdb?.id?.toString(),
                                                 imdbId = normalized.externalIds.imdbId,
                                                 tvdbId = normalized.externalIds.tvdbId,
                                                 createdAt = now,
@@ -662,8 +662,8 @@ constructor(
 
         private fun generateCanonicalKey(normalized: NormalizedMediaMetadata): String {
                 // Priority 1: TMDB ID
-                normalized.externalIds.tmdbId?.let { tmdbId ->
-                        return CanonicalKeyGenerator.fromTmdbId(tmdbId)
+                normalized.externalIds.tmdb?.let { tmdbRef ->
+                        return CanonicalKeyGenerator.fromTmdbId(tmdbRef)
                 }
 
                 // Priority 2: Title + Year (+ S/E for episodes)

@@ -257,6 +257,18 @@ object CanonicalKeyGenerator {
 
     /** Generate canonical key from TMDB ID (preferred). */
     fun fromTmdbId(tmdbId: com.fishit.player.core.model.ids.TmdbId): String = "$TMDB_PREFIX${tmdbId.value}"
+    
+    /** 
+     * Generate canonical key from typed TmdbRef (preferred).
+     * Per Gold Decision Dec 2025: Format is tmdb:{type}:{id}
+     */
+    fun fromTmdbId(tmdbRef: com.fishit.player.core.model.TmdbRef): String {
+        val typePath = when (tmdbRef.type) {
+            com.fishit.player.core.model.TmdbMediaType.MOVIE -> "movie"
+            com.fishit.player.core.model.TmdbMediaType.TV -> "tv"
+        }
+        return "$TMDB_PREFIX$typePath:${tmdbRef.id}"
+    }
 
     /** Generate canonical key for a movie without TMDB ID. Uses normalized title + year. */
     fun forMovie(canonicalTitle: String, year: Int?): String {

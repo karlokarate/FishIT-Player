@@ -147,6 +147,40 @@ fun DebugScreen(
                     }
                 }
 
+                // === Manual Sync Section (v2.1) ===
+                item {
+                    DebugSection(title = "Manual Sync", icon = Icons.Default.Refresh) {
+                        Text(
+                            text = "Manually trigger catalog sync from connected sources.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Telegram Sync Button
+                        SyncButton(
+                            name = "Telegram",
+                            icon = Icons.Default.Send,
+                            isSyncing = state.isSyncingTelegram,
+                            isEnabled = state.telegramConnected,
+                            progress = state.telegramSyncProgress,
+                            onClick = viewModel::syncTelegram
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Xtream Sync Button
+                        SyncButton(
+                            name = "Xtream",
+                            icon = Icons.Default.Cloud,
+                            isSyncing = state.isSyncingXtream,
+                            isEnabled = state.xtreamConnected,
+                            progress = state.xtreamSyncProgress,
+                            onClick = viewModel::syncXtream
+                        )
+                    }
+                }
+
                 // Cache Section
                 item {
                     DebugSection(title = "Cache", icon = Icons.Default.Storage) {
@@ -533,6 +567,101 @@ private fun LogEntryRow(log: LogEntry) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+/**
+ * Sync button with progress indicator.
+ * 
+ * Shows:
+ * - Normal state: Button with icon and label
+ * - Syncing state: Progress indicator with item counts
+ * - Disabled state: Grayed out when source not connected
+ * 
+ * Click while syncing cancels the sync.
+ */
+@Composable
+private fun SyncButton(
+    name: String,
+    icon: ImageVector,
+    isSyncing: Boolean,
+    isEnabled: Boolean,
+    progress: SyncProgress?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val buttonText = when {
+        isSyncing -> "Cancel $name Sync"
+        else -> "Sync $name"
+    }
+    
+    val buttonColors = if (isSyncing) {
+        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.error
+        )
+    } else {
+        androidx.compose.material3.ButtonDefaults.buttonColors()
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (isSyncing) {
+            OutlinedButton(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = buttonColors,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(buttonText)
+            }
+            
+            // Progress details
+            progress?.let { p ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = p.currentPhase ?: "Syncing...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${p.itemsPersisted}/${p.itemsDiscovered} items",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        } else {
+            Button(
+                onClick = onClick,
+                enabled = isEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(buttonText)
+            }
+            
+            if (!isEnabled) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$name not connected",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

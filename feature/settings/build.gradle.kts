@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
     implementation(project(":core:firebase"))
+    implementation(project(":core:catalog-sync"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
     
