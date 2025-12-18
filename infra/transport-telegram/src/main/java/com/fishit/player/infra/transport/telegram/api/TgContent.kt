@@ -21,6 +21,50 @@ data class TgPhotoSize(
 )
 
 /**
+ * Thumbnail descriptor for media content.
+ *
+ * @property fileId TDLib file ID
+ * @property remoteId Stable remote file identifier
+ * @property width Width in pixels
+ * @property height Height in pixels
+ * @property fileSize File size in bytes
+ */
+data class TgThumbnail(
+    val fileId: Int,
+    val remoteId: String,
+    val width: Int,
+    val height: Int,
+    val fileSize: Long
+)
+
+/**
+ * Inline minithumbnail (~40px JPEG) for instant placeholders.
+ *
+ * @property width Width in pixels
+ * @property height Height in pixels
+ * @property data Base64-decoded JPEG data
+ */
+data class TgMinithumbnail(
+    val width: Int,
+    val height: Int,
+    val data: ByteArray
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as TgMinithumbnail
+        return width == other.width && height == other.height && data.contentEquals(other.data)
+    }
+
+    override fun hashCode(): Int {
+        var result = width
+        result = 31 * result + height
+        result = 31 * result + data.contentHashCode()
+        return result
+    }
+}
+
+/**
  * Transport-layer content descriptor for Telegram message content.
  *
  * Sealed interface representing different media types that can be
@@ -61,7 +105,9 @@ sealed interface TgContent {
         val height: Int,
         val fileSize: Long,
         val supportsStreaming: Boolean = false,
-        val caption: String? = null
+        val caption: String? = null,
+        val thumbnail: TgThumbnail? = null,
+        val minithumbnail: TgMinithumbnail? = null
     ) : TgContent
 
     /**
@@ -86,7 +132,9 @@ sealed interface TgContent {
         val title: String?,
         val performer: String?,
         val fileSize: Long,
-        val caption: String? = null
+        val caption: String? = null,
+        val albumCoverThumbnail: TgThumbnail? = null,
+        val albumCoverMinithumbnail: TgMinithumbnail? = null
     ) : TgContent
 
     /**
@@ -105,7 +153,9 @@ sealed interface TgContent {
         val fileName: String?,
         val mimeType: String?,
         val fileSize: Long,
-        val caption: String? = null
+        val caption: String? = null,
+        val thumbnail: TgThumbnail? = null,
+        val minithumbnail: TgMinithumbnail? = null
     ) : TgContent
 
     /**
@@ -116,7 +166,8 @@ sealed interface TgContent {
      */
     data class Photo(
         val sizes: List<TgPhotoSize>,
-        val caption: String? = null
+        val caption: String? = null,
+        val minithumbnail: TgMinithumbnail? = null
     ) : TgContent
 
     /**
@@ -152,7 +203,9 @@ sealed interface TgContent {
         val remoteId: String,
         val duration: Int,
         val length: Int,
-        val fileSize: Long
+        val fileSize: Long,
+        val thumbnail: TgThumbnail? = null,
+        val minithumbnail: TgMinithumbnail? = null
     ) : TgContent
 
     /**
@@ -177,7 +230,20 @@ sealed interface TgContent {
         val width: Int,
         val height: Int,
         val fileSize: Long,
-        val caption: String? = null
+        val caption: String? = null,
+        val thumbnail: TgThumbnail? = null,
+        val minithumbnail: TgMinithumbnail? = null
+    ) : TgContent
+
+    /**
+     * Text message content.
+     *
+     * Used for TEXT messages in structured bundles that contain metadata.
+     *
+     * @property text The message text content
+     */
+    data class Text(
+        val text: String
     ) : TgContent
 
     /**

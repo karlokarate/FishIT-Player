@@ -186,7 +186,7 @@ class MediaSourceRefTest {
                 )
 
         assertEquals(SourceType.TELEGRAM, ref.sourceType)
-        assertEquals("telegram:123:456", ref.sourceId)
+        assertEquals("telegram:123:456", ref.sourceId.value)
         assertEquals("Telegram: Movie Group", ref.sourceLabel)
         assertNotNull(ref.quality)
         assertEquals(1080, ref.quality?.resolution)
@@ -205,7 +205,7 @@ class MediaSourceRefTest {
                 )
 
         assertEquals(SourceType.XTREAM, ref.sourceType)
-        assertEquals("xtream:vod:789", ref.sourceId)
+        assertEquals("xtream:vod:789", ref.sourceId.value)
         assertEquals("Xtream: Provider A", ref.sourceLabel)
     }
 
@@ -219,10 +219,10 @@ class MediaSourceRefTest {
                 )
 
         assertEquals(SourceType.IO, ref.sourceType)
-        assertTrue(ref.sourceId.startsWith("io:file:"))
+        assertTrue(ref.sourceId.value.startsWith("io:file:"))
         assertNotNull(ref.quality)
         assertNotNull(ref.languages)
-        assertTrue(ref.languages!!.isMulti)
+        assertTrue(ref.languages?.isMulti == true)
     }
 
     // ========== SourceIdParser Tests ==========

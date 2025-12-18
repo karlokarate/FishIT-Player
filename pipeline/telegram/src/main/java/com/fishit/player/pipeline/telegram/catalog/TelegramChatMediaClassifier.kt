@@ -1,7 +1,7 @@
 package com.fishit.player.pipeline.telegram.catalog
 
-import com.fishit.player.infra.transport.telegram.TgContent
-import com.fishit.player.infra.transport.telegram.TgMessage
+import com.fishit.player.infra.transport.telegram.api.TgContent
+import com.fishit.player.infra.transport.telegram.api.TgMessage
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -85,8 +85,8 @@ class TelegramChatMediaClassifier {
         val profile = getProfile(message.chatId)
         val previousClass = classify(profile)
 
-        val isMedia = message.content.isPlayableMedia()
-        val timestampMillis = message.date.toLong() * 1000L
+        val isMedia = message.content?.isPlayableMedia() == true
+        val timestampMillis = message.date * 1000L
 
         profile.recordMessage(isMedia, timestampMillis)
 
@@ -115,8 +115,8 @@ class TelegramChatMediaClassifier {
         val previousClass = classify(profile)
 
         messages.forEach { msg ->
-            val isMedia = msg.content.isPlayableMedia()
-            val timestampMillis = msg.date.toLong() * 1000L
+            val isMedia = msg.content?.isPlayableMedia() == true
+            val timestampMillis = msg.date * 1000L
             profile.recordMessage(isMedia, timestampMillis)
         }
 
@@ -174,6 +174,6 @@ private fun TgContent.isPlayableMedia(): Boolean {
             mime.startsWith("video/") || mime.startsWith("audio/")
         }
         is TgContent.Text -> false
-        is TgContent.Unsupported -> false
+        is TgContent.Unknown -> false
     }
 }

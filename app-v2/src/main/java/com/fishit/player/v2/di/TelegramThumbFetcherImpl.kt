@@ -54,25 +54,27 @@ class TelegramThumbFetcherImpl(
             options: Options,
     ): FetchResult {
         return withTimeout(DOWNLOAD_TIMEOUT_MS) {
-            // Step 1: Request file resolution/download using remoteId
-            val tgFile =
-                    telegramClient.requestFileDownload(
-                            fileId = ref.remoteId,
-                            priority = 24, // High priority for thumbnails
-                    )
+            // Step 1: Resolve file by remoteId first
+            val resolvedFile = telegramClient.resolveFileByRemoteId(ref.remoteId)
 
             // Step 2: Check if already downloaded
-            val initialPath = tgFile.localPath
-            if (tgFile.isDownloadingCompleted && !initialPath.isNullOrBlank()) {
+            val initialPath = resolvedFile.localPath
+            if (resolvedFile.isDownloadingCompleted && !initialPath.isNullOrBlank()) {
                 return@withTimeout createResult(initialPath)
             }
 
-            // Step 3: Poll for download completion
+            // Step 3: Request download using resolved fileId
+            telegramClient.requestFileDownload(
+                    fileId = resolvedFile.id,
+                    priority = 24, // High priority for thumbnails
+            )
+
+            // Step 4: Poll for download completion
             var retries = 0
             while (retries < MAX_RETRIES) {
                 kotlinx.coroutines.delay(RETRY_DELAY_MS)
 
-                val updated = telegramClient.resolveFile(ref.remoteId)
+                val updated = telegramClient.resolveFile(resolvedFile.id)
                 val updatedPath = updated.localPath
 
                 if (updated.isDownloadingCompleted && !updatedPath.isNullOrBlank()) {

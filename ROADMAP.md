@@ -22,6 +22,7 @@ The v2 rebuild follows a phased approach:
 | 2.1 | Transport Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.2 | Data Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.3 | Metadata Normalizer | ✅ COMPLETED | Dec 2025 |
+| 2.4 | Structured Bundles (Telegram) | ✅ COMPLETED | Dec 2025 |
 | 3 | SIP / Internal Player (Phase 0-7) | ✅ COMPLETED | Dec 2025 |
 | 3.1 | SIP / Internal Player (Phase 8-14) | 🚧 IN PROGRESS | Jan 2026 |
 | 4 | UI Feature Screens | 🚧 IN PROGRESS | Jan 2026 |
@@ -198,39 +199,39 @@ This enables:
 
 ### Tasks
 
-- [ ] **Phase 2.4.1:** Core Model Extensions
-  - [ ] Add `ageRating: Int?` to `RawMediaMetadata`
-  - [ ] Add `rating: Double?` to `RawMediaMetadata`
-  - [ ] Unit tests for model extensions
+- [x] **Phase 2.4.1:** Core Model Extensions
+  - [x] Add `ageRating: Int?` to `RawMediaMetadata`
+  - [x] Add `rating: Double?` to `RawMediaMetadata`
+  - [x] Unit tests for model extensions
 
-- [ ] **Phase 2.4.2:** TelegramMediaItem Extensions
-  - [ ] Add structured bundle fields (structuredTmdbId, structuredYear, structuredFsk, etc.)
-  - [ ] Add `TelegramBundleType` enum (FULL_3ER, COMPACT_2ER, SINGLE)
-  - [ ] Update `toRawMediaMetadata()` for new fields
-  - [ ] Unit tests
+- [x] **Phase 2.4.2:** TelegramMediaItem Extensions
+  - [x] Add structured bundle fields (structuredTmdbId, structuredYear, structuredFsk, etc.)
+  - [x] Add `TelegramBundleType` enum (FULL_3ER, COMPACT_2ER, SINGLE)
+  - [x] Update `toRawMediaMetadata()` for new fields
+  - [x] Unit tests
 
-- [ ] **Phase 2.4.3:** Message Bundler
-  - [ ] Implement `TelegramMessageBundler` (timestamp grouping)
-  - [ ] Implement `TelegramMessageBundle` data class
-  - [ ] Implement bundle classification (3er, 2er, single)
-  - [ ] Unit tests with JSON fixtures
+- [x] **Phase 2.4.3:** Message Bundler
+  - [x] Implement `TelegramMessageBundler` (timestamp grouping)
+  - [x] Implement `TelegramMessageBundle` data class
+  - [x] Implement bundle classification (3er, 2er, single)
+  - [x] Unit tests with JSON fixtures
 
-- [ ] **Phase 2.4.4:** Metadata Extractor
-  - [ ] Implement `TelegramStructuredMetadataExtractor`
-  - [ ] TMDB-URL to ID parsing (`/movie/(\d+)`)
-  - [ ] Structured field extraction
-  - [ ] Unit tests
+- [x] **Phase 2.4.4:** Metadata Extractor
+  - [x] Implement `TelegramStructuredMetadataExtractor`
+  - [x] TMDB-URL to ID parsing (`/movie/(\d+)`)
+  - [x] Structured field extraction
+  - [x] Unit tests
 
-- [ ] **Phase 2.4.5:** Bundle-to-Item Mapper
-  - [ ] Implement `TelegramBundleToMediaItemMapper`
-  - [ ] Tie-breaker rules (largest file, longest duration)
-  - [ ] Poster selection (best resolution)
-  - [ ] Unit tests
+- [x] **Phase 2.4.5:** Bundle-to-Item Mapper
+  - [x] Implement `TelegramBundleToMediaItemMapper`
+  - [x] Lossless multi-video emission (Contract R7)
+  - [x] Poster selection (max pixel area, Contract R9)
+  - [x] Unit tests
 
-- [ ] **Phase 2.4.6:** Pipeline Integration
-  - [ ] Wire bundler into `TelegramPipelineAdapter`
-  - [ ] Update `TelegramCatalogPipelineImpl` for bundle-aware processing
-  - [ ] Integration tests with real chat exports
+- [x] **Phase 2.4.6:** Pipeline Integration
+  - [x] Wire bundler into `TelegramPipelineAdapter`
+  - [x] Update for bundle-aware processing
+  - [x] Unified TgContent DTOs (resolved bridge duplicates)
 
 - [ ] **Phase 2.4.7:** Normalizer Optimization
   - [ ] Skip TMDB search when `externalIds.tmdbId` present

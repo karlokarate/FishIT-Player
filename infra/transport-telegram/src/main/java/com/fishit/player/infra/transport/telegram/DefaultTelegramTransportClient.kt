@@ -3,6 +3,12 @@ package com.fishit.player.infra.transport.telegram
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
+import com.fishit.player.infra.transport.telegram.api.TgContent
+import com.fishit.player.infra.transport.telegram.api.TgFile
+import com.fishit.player.infra.transport.telegram.api.TgMessage
+import com.fishit.player.infra.transport.telegram.api.TgMinithumbnail
+import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
+import com.fishit.player.infra.transport.telegram.api.TgThumbnail
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.AuthorizationState
@@ -304,10 +310,10 @@ class DefaultTelegramTransportClient(
 
     private fun mapMessage(msg: Message): TgMessage =
             TgMessage(
-                    id = msg.id,
+                    messageId = msg.id,
                     chatId = msg.chatId,
                     senderId = extractSenderId(msg),
-                    date = msg.date,
+                    date = msg.date.toLong(),
                     content = mapContent(msg.content),
                     replyToMessageId =
                             msg.replyTo?.let {
@@ -344,13 +350,13 @@ class DefaultTelegramTransportClient(
                         TgContent.Video(
                                 fileId = content.video.video.id,
                                 remoteId = content.video.video.remote.id,
-                                uniqueId = content.video.video.remote.uniqueId,
                                 duration = content.video.duration,
                                 width = content.video.width,
                                 height = content.video.height,
                                 fileName = content.video.fileName,
                                 mimeType = content.video.mimeType,
                                 fileSize = content.video.video.size.toLong(),
+                                supportsStreaming = content.video.supportsStreaming,
                                 caption = content.caption.text.takeIf { it.isNotEmpty() },
                                 thumbnail = content.video.thumbnail?.let { mapThumbnail(it) },
                                 minithumbnail = mapMinithumbnail(content.video.minithumbnail)
@@ -359,7 +365,6 @@ class DefaultTelegramTransportClient(
                         TgContent.Document(
                                 fileId = content.document.document.id,
                                 remoteId = content.document.document.remote.id,
-                                uniqueId = content.document.document.remote.uniqueId,
                                 fileName = content.document.fileName,
                                 mimeType = content.document.mimeType,
                                 fileSize = content.document.document.size.toLong(),
@@ -371,7 +376,6 @@ class DefaultTelegramTransportClient(
                         TgContent.Audio(
                                 fileId = content.audio.audio.id,
                                 remoteId = content.audio.audio.remote.id,
-                                uniqueId = content.audio.audio.remote.uniqueId,
                                 duration = content.audio.duration,
                                 title = content.audio.title.takeIf { it.isNotEmpty() },
                                 performer = content.audio.performer.takeIf { it.isNotEmpty() },
@@ -389,10 +393,8 @@ class DefaultTelegramTransportClient(
                                 sizes =
                                         content.photo.sizes.map { size ->
                                             TgPhotoSize(
-                                                    type = size.type,
                                                     fileId = size.photo.id,
                                                     remoteId = size.photo.remote.id,
-                                                    uniqueId = size.photo.remote.uniqueId,
                                                     width = size.width,
                                                     height = size.height,
                                                     fileSize = size.photo.size
@@ -405,7 +407,6 @@ class DefaultTelegramTransportClient(
                         TgContent.Animation(
                                 fileId = content.animation.animation.id,
                                 remoteId = content.animation.animation.remote.id,
-                                uniqueId = content.animation.animation.remote.uniqueId,
                                 duration = content.animation.duration,
                                 width = content.animation.width,
                                 height = content.animation.height,
@@ -420,7 +421,6 @@ class DefaultTelegramTransportClient(
                         TgContent.VideoNote(
                                 fileId = content.videoNote.video.id,
                                 remoteId = content.videoNote.video.remote.id,
-                                uniqueId = content.videoNote.video.remote.uniqueId,
                                 duration = content.videoNote.duration,
                                 length = content.videoNote.length,
                                 fileSize = content.videoNote.video.size.toLong(),
@@ -431,21 +431,19 @@ class DefaultTelegramTransportClient(
                         TgContent.VoiceNote(
                                 fileId = content.voiceNote.voice.id,
                                 remoteId = content.voiceNote.voice.remote.id,
-                                uniqueId = content.voiceNote.voice.remote.uniqueId,
                                 duration = content.voiceNote.duration,
                                 mimeType = content.voiceNote.mimeType,
                                 fileSize = content.voiceNote.voice.size.toLong(),
                                 caption = content.caption.text.takeIf { it.isNotEmpty() }
                         )
                 is MessageText -> TgContent.Text(text = content.text.text)
-                else -> TgContent.Unsupported(typeName = content::class.simpleName ?: "Unknown")
+                else -> TgContent.Unknown(kind = content::class.simpleName ?: "Unknown")
             }
 
     private fun mapThumbnail(thumb: dev.g000sha256.tdl.dto.Thumbnail): TgThumbnail =
             TgThumbnail(
                     fileId = thumb.file.id,
                     remoteId = thumb.file.remote.id,
-                    uniqueId = thumb.file.remote.uniqueId,
                     width = thumb.width,
                     height = thumb.height,
                     fileSize = thumb.file.size
@@ -474,6 +472,7 @@ class DefaultTelegramTransportClient(
                 size = file.size.toLong(),
                 expectedSize = file.expectedSize.toLong(),
                 localPath = local.path.takeIf { local.isDownloadingCompleted },
+                downloadedSize = local.downloadedSize.toLong(),
                 downloadedPrefixSize = local.downloadedPrefixSize.toLong(),
                 isDownloadingActive = local.isDownloadingActive,
                 isDownloadingCompleted = local.isDownloadingCompleted

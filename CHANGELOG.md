@@ -8,6 +8,60 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Telegram Structured Bundles Implementation (2025-12-19)
+
+- **feat(core/model)**: Extended RawMediaMetadata with `ageRating: Int?` for FSK/MPAA
+  - Schema Guard range: 0..21 (per Contract R4)
+  - Enables Kids profile content filtering without TMDB lookup
+  - Added 10 unit tests for ageRating and rating fields
+
+- **feat(pipeline/telegram)**: Full Structured Bundles implementation
+  - **Phase 1-2: Model Extensions**
+    - Added `TelegramBundleType` enum (FULL_3ER, COMPACT_2ER, SINGLE)
+    - Extended `TelegramMediaItem` with 11 structured fields:
+      - `structuredTmdbId`, `structuredRating`, `structuredYear`
+      - `structuredFsk`, `structuredGenres`, `structuredDirector`
+      - `structuredOriginalTitle`, `structuredProductionCountry`
+      - `structuredLengthMinutes`, `bundleType`, `textMessageId`, `photoMessageId`
+    - Extended `TelegramRawMetadataExtensions.toRawMediaMetadata()` for structured field mapping
+    
+  - **Phase 3: Message Bundler** (`grouper/`)
+    - Created `TelegramMessageBundle` data class for grouped messages
+    - Created `TelegramMessageBundler` with Cohesion Gate (Contract R1b):
+      - MAX_MESSAGE_ID_SPAN = 3,145,728 (3×2²⁰)
+      - EXPECTED_MESSAGE_ID_STEP = 1,048,576 (2²⁰)
+    - 18 unit tests covering grouping and cohesion
+    
+  - **Phase 4: Structured Metadata Extractor** (`grouper/`)
+    - Created `StructuredMetadata` data class with Schema Guard ranges
+    - Created `TelegramStructuredMetadataExtractor`:
+      - TMDB URL parsing (supports /movie/ and /tv/)
+      - Schema Guards: year (1800..2100), rating (0.0..10.0), fsk (0..21), length (1..600)
+      - 25+ unit tests for extraction and validation
+    
+  - **Phase 5: Bundle-to-MediaItem Mapper** (`mapper/`)
+    - Created `TelegramBundleToMediaItemMapper`:
+      - Lossless emission: 1 TelegramMediaItem per VIDEO (Contract R7)
+      - Poster selection: max pixel area (Contract R9)
+      - Shared metadata: all VIDEOs get same structured fields (Contract R8)
+    - 17 unit tests including MM-001, MM-002, MM-003
+
+  - **Phase 6: Pipeline Integration**
+    - Extended `TelegramPipelineAdapter.fetchMediaMessagesWithBundling()`
+    - Added `TgContent.Text` to transport layer for TEXT messages
+    - Added transport-to-api TgMessage converter bridge
+
+- **test(pipeline/telegram)**: Comprehensive test coverage
+  - `TelegramMessageBundlerTest`: 18 tests for bundling logic
+  - `TelegramStructuredMetadataExtractorTest`: 25+ tests for extraction
+  - `TelegramBundleToMediaItemMapperTest`: 17 tests for mapping
+
+- **docs(contract)**: Contract v2.2 "Gold Deluxe Platinum" enforced
+  - All Contract Rules R1-R11 implemented
+  - Schema Guards (R4) with range validation
+  - Cohesion Gate (R1b) with messageId span/step checks
+  - Lossless emission (R7): one RawMediaMetadata per VIDEO
+
 ### Telegram Structured Bundles Design (2025-12-17)
 
 - **docs(telegram)**: Created comprehensive Structured Bundles documentation

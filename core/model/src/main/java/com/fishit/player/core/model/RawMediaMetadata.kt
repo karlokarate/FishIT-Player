@@ -90,6 +90,20 @@ data class RawMediaMetadata(
          * normalization.
          */
         val rating: Double? = null,
+        // === Age Rating Fields (v2 - Structured Bundles) ===
+        /**
+         * Age rating from source (FSK/MPAA/etc.) for Kids filter.
+         *
+         * Structured Telegram bundles provide this directly (fsk field).
+         * Range: 0-21 (per Schema Guards in TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md R4).
+         * 0 = FSK 0 (all ages), 6/12/16/18 = FSK ratings, 21 = explicit adult.
+         *
+         * Used for:
+         * - Kids profile content filtering
+         * - Age gate enforcement
+         * - Parental controls
+         */
+        val ageRating: Int? = null,
 )
 
 /** External IDs from upstream sources. These MUST be passed through without modification. */

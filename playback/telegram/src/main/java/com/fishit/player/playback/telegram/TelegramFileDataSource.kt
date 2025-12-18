@@ -9,7 +9,7 @@ import androidx.media3.datasource.TransferListener
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramFileException
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import com.fishit.player.infra.transport.telegram.TgFile
+import com.fishit.player.infra.transport.telegram.api.TgFile
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException

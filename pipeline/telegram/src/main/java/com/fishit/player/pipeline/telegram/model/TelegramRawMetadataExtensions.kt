@@ -5,6 +5,7 @@ import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.TmdbId
 
 /**
  * Extensions for converting Telegram pipeline models to RawMediaMetadata.
@@ -21,11 +22,19 @@ import com.fishit.player.core.model.SourceType
  * - Uses TelegramImageRefExtensions for conversion
  * - NO raw TDLib DTOs passed through - only ImageRef
  *
+ * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md (v2.2):
+ * - Structured Bundle fields passed through to RawMediaMetadata
+ * - structuredTmdbId → externalIds.tmdbId (enables downstream unification)
+ * - structuredYear overrides year when present
+ * - structuredFsk → ageRating for Kids filter
+ * - structuredRating → rating
+ * - Lossless emission: One RawMediaMetadata per VIDEO (no merging)
+ *
  * CONTRACT COMPLIANCE:
  * - ✅ Provide raw title via simple field priority (NO cleaning)
  * - ✅ Pass through year, season, episode, duration as-is from source
  * - ✅ Provide stable sourceId for tracking (remoteId or "msg:chatId:messageId")
- * - ✅ Leave externalIds empty (Telegram doesn't provide TMDB/IMDB/TVDB)
+ * - ✅ Pass through structuredTmdbId to externalIds.tmdbId (if available)
  * - ✅ ImageRef populated from thumbnail/photo data
  * - ✅ NO TMDB lookups, NO cross-pipeline matching, NO canonical identity computation
  */
@@ -33,19 +42,37 @@ import com.fishit.player.core.model.SourceType
 /**
  * Converts a TelegramMediaItem to RawMediaMetadata.
  *
+ * Structured Bundle items (bundleType != SINGLE) will have:
+ * - externalIds.tmdbId from structuredTmdbId
+ * - rating from structuredRating
+ * - ageRating from structuredFsk
+ * - year from structuredYear (overrides filename-parsed year)
+ * - durationMinutes from structuredLengthMinutes (overrides durationSecs)
+ *
+ * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md R7 (Lossless Emission):
+ * - Each VIDEO in a bundle becomes one RawMediaMetadata
+ * - All items from same bundle share the same externalIds.tmdbId
+ * - Downstream normalizer unifies items with matching tmdbId
+ *
  * @return RawMediaMetadata with Telegram-specific fields and ImageRefs
  */
 fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         val rawTitle = extractRawTitle()
-        val rawYear = year
+        // Structured year takes precedence over filename-parsed year
+        val effectiveYear = structuredYear ?: year
+        // Structured duration takes precedence over video duration
+        val effectiveDurationMinutes = structuredLengthMinutes ?: durationSecs?.let { it / 60 }
+        // Build ExternalIds with structured TMDB ID if available
+        val externalIds = buildExternalIds()
+        
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = mapTelegramMediaType(),
-                year = rawYear,
+                year = effectiveYear,
                 season = seasonNumber,
                 episode = episodeNumber,
-                durationMinutes = durationSecs?.let { it / 60 },
-                externalIds = ExternalIds(), // Telegram doesn't provide external IDs
+                durationMinutes = effectiveDurationMinutes,
+                externalIds = externalIds,
                 sourceType = SourceType.TELEGRAM,
                 sourceLabel = buildTelegramSourceLabel(),
                 sourceId = remoteId ?: "msg:$chatId:$messageId",
@@ -57,8 +84,26 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 thumbnail = toThumbnailImageRef(), // Video thumbnail or best photo size
                 // === Minithumbnail for instant blur placeholder (Netflix-style tiered loading) ===
                 placeholderThumbnail = toMinithumbnailImageRef(),
+                // === Structured Bundle Rating Fields (v2.2) ===
+                rating = structuredRating,
+                ageRating = structuredFsk,
         )
 }
+
+/**
+ * Builds ExternalIds with structured TMDB ID if available.
+ *
+ * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md:
+ * - Structured Bundles pass through TMDB IDs provided by the source
+ * - The pipeline doesn't "guess" - it reads structured fields
+ * - externalIds.tmdbId enables downstream unification by normalizer
+ */
+private fun TelegramMediaItem.buildExternalIds(): ExternalIds =
+        if (structuredTmdbId != null) {
+                ExternalIds(tmdbId = TmdbId(structuredTmdbId))
+        } else {
+                ExternalIds() // Telegram doesn't provide external IDs for non-structured content
+        }
 
 /**
  * Extracts the raw title using simple field priority.

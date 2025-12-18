@@ -97,6 +97,102 @@ data class TelegramMediaItem(
         val year: Int? = null,
         val genres: String? = null,
         val description: String? = null,
+        
+        // === Structured Bundle Fields (v2 - TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) ===
+        
+        /**
+         * TMDB ID from structured TEXT message.
+         *
+         * Extracted from tmdbUrl (e.g., "https://themoviedb.org/movie/12345" → 12345).
+         * Pass-through to RawMediaMetadata.externalIds.tmdbId (enables downstream unification).
+         * Per Contract R4 Schema Guards: raw extracted, validation happens in extractor.
+         */
+        val structuredTmdbId: Int? = null,
+        
+        /**
+         * TMDB rating from structured TEXT message (0.0-10.0 scale).
+         *
+         * Pass-through to RawMediaMetadata.rating.
+         * Per Contract R4 Schema Guards: must be in range 0.0..10.0 else null.
+         */
+        val structuredRating: Double? = null,
+        
+        /**
+         * Year from structured TEXT message.
+         *
+         * Overrides filename-parsed year when present (structured data is more reliable).
+         * Per Contract R4 Schema Guards: must be in range 1800..2100 else null.
+         */
+        val structuredYear: Int? = null,
+        
+        /**
+         * FSK age rating from structured TEXT message.
+         *
+         * Used for Kids profile content filtering.
+         * Per Contract R4 Schema Guards: must be in range 0..21 else null.
+         * Common values: 0 (all ages), 6, 12, 16, 18 (standard FSK), 21 (explicit adult).
+         */
+        val structuredFsk: Int? = null,
+        
+        /**
+         * Genres from structured TEXT message.
+         *
+         * Raw list of genre strings (e.g., ["Action", "Drama"]).
+         * Converted to comma-separated for existing genres field compatibility.
+         */
+        val structuredGenres: List<String>? = null,
+        
+        /**
+         * Director from structured TEXT message.
+         *
+         * Raw director name as provided by source.
+         */
+        val structuredDirector: String? = null,
+        
+        /**
+         * Original title from structured TEXT message.
+         *
+         * Original language title (e.g., "Die Hard" for German release of English film).
+         * Different from title which may be localized.
+         */
+        val structuredOriginalTitle: String? = null,
+        
+        /**
+         * Production country from structured TEXT message.
+         *
+         * ISO country code or full name (e.g., "US", "Germany").
+         */
+        val structuredProductionCountry: String? = null,
+        
+        /**
+         * Runtime in minutes from structured TEXT message.
+         *
+         * Per Contract R4 Schema Guards: must be in range 1..600 else null.
+         * Takes precedence over durationSecs when present.
+         */
+        val structuredLengthMinutes: Int? = null,
+        
+        /**
+         * Bundle type for debugging/logging.
+         *
+         * Indicates how this item was detected: as part of a complete 3-cluster,
+         * compact 2-cluster, or as a single message.
+         */
+        val bundleType: TelegramBundleType = TelegramBundleType.SINGLE,
+        
+        /**
+         * Message ID of TEXT message in bundle (for debugging/logging).
+         *
+         * Null if bundleType is SINGLE or no TEXT message in bundle.
+         */
+        val textMessageId: Long? = null,
+        
+        /**
+         * Message ID of PHOTO message in bundle (for debugging/logging).
+         *
+         * Null if bundleType is SINGLE or no PHOTO message in bundle.
+         */
+        val photoMessageId: Long? = null,
 ) {
     /**
      * Returns a Telegram URI for this media item in the format:
@@ -152,7 +248,20 @@ data class TelegramMediaItem(
                 episodeTitle == other.episodeTitle &&
                 year == other.year &&
                 genres == other.genres &&
-                description == other.description
+                description == other.description &&
+                // Structured Bundle Fields (v2)
+                structuredTmdbId == other.structuredTmdbId &&
+                structuredRating == other.structuredRating &&
+                structuredYear == other.structuredYear &&
+                structuredFsk == other.structuredFsk &&
+                structuredGenres == other.structuredGenres &&
+                structuredDirector == other.structuredDirector &&
+                structuredOriginalTitle == other.structuredOriginalTitle &&
+                structuredProductionCountry == other.structuredProductionCountry &&
+                structuredLengthMinutes == other.structuredLengthMinutes &&
+                bundleType == other.bundleType &&
+                textMessageId == other.textMessageId &&
+                photoMessageId == other.photoMessageId
     }
 
     override fun hashCode(): Int {
@@ -162,4 +271,22 @@ data class TelegramMediaItem(
         result = 31 * result + (minithumbnailBytes?.contentHashCode() ?: 0)
         return result
     }
+    
+    /**
+     * Checks if this media item has structured bundle metadata.
+     *
+     * @return true if any structured field is populated
+     */
+    fun hasStructuredMetadata(): Boolean =
+            structuredTmdbId != null ||
+                    structuredYear != null ||
+                    structuredFsk != null ||
+                    !structuredGenres.isNullOrEmpty()
+    
+    /**
+     * Checks if this media item is from a complete structured bundle (FULL_3ER).
+     *
+     * Complete bundles have PHOTO + TEXT + VIDEO with all metadata fields.
+     */
+    fun isFromCompleteBunde(): Boolean = bundleType == TelegramBundleType.FULL_3ER
 }

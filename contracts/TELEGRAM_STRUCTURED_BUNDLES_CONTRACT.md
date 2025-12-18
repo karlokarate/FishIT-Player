@@ -14,6 +14,7 @@
 ### 1.1 Structured Bundle
 
 A **Structured Bundle** is a group of **2..N** Telegram messages that:
+
 - Share the same `date` (Unix timestamp in seconds) and pass the **Cohesion Gate** (R1b)
 - Must include **≥1 VIDEO** message (may include multiple VIDEO messages)
 - May include optional TEXT and/or PHOTO messages
@@ -31,6 +32,7 @@ A **Structured Bundle** is a group of **2..N** Telegram messages that:
 ### 1.3 BundleKey (Pipeline-Internal)
 
 A **BundleKey** is the unique identifier for grouping messages into a bundle:
+
 - **Composition:** `(chatId, timestamp, discriminator)`
 - **discriminator:**
   - **Primary:** Album/group ID if provided by Telegram/TDLib
@@ -65,7 +67,7 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R1b: Bundle Cohesion Gate (MANDATORY)**
 > A BundleCandidate MAY only be accepted as a Structured Bundle if:
-> 
+>
 > 1. It contains **≥1 VIDEO** message, AND
 > 2. It satisfies a **deterministic cohesion rule**:
 >    - **Primary:** If Telegram/TDLib provides an album/group identifier, that MUST be used as the discriminator; timestamp is secondary.
@@ -76,12 +78,14 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R2: Bundle Classification**
 > A bundle MUST be classified by content types:
+>
 > - `FULL_3ER`: Has VIDEO(s) + TEXT + PHOTO
 > - `COMPACT_2ER`: Has VIDEO(s) + (TEXT or PHOTO)
 > - `SINGLE`: Only one message type or no VIDEO
 
 **R3: Order Invariant**
 > Within a bundle, the message ID order follows:
+>
 > - PHOTO typically has the lowest `messageId`
 > - TEXT has the middle `messageId`
 > - VIDEO has the highest `messageId`
@@ -91,11 +95,13 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R4: Pass-Through with Schema Guards**
 > Structured fields MUST be extracted RAW and passed through with minimal sanity checks.
+>
 > - No title cleaning
 > - No normalization
 > - No derived values
-> 
+>
 > **Schema Guards (MANDATORY):** The following range validations MUST be applied; out-of-range values MUST be set to `null`:
+>
 > - `year`: valid range **1800..2100**, else `null`
 > - `tmdbRating`: valid range **0.0..10.0**, else `null`
 > - `fsk`: valid range **0..21**, else `null`
@@ -103,12 +109,14 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R5: TMDB ID Extraction**
 > The TMDB ID MUST be extracted from `tmdbUrl` via Regex:
+>
 > ```
 > /movie/(\d+)
 > /tv/(\d+)
 > ```
+>
 > Example: `"https://www.themoviedb.org/movie/12345-name"` → `"12345"`
-> 
+>
 > If the URL does not match either pattern, `structuredTmdbId` MUST be set to `null` and a WARN log MUST be emitted via UnifiedLog.
 
 **R6: FSK Usage**
@@ -119,27 +127,29 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R7: Bundle → Emitted Raw Items (MANDATORY, lossless)**
 > For each accepted Structured Bundle, the pipeline MUST emit **exactly one `RawMediaMetadata` per VIDEO message** contained in the bundle.
-> 
+>
 > The pipeline MUST NOT drop any VIDEO variant.
-> 
+>
 > Example: A bundle with 3 VIDEO messages produces 3 `RawMediaMetadata` items.
 
 **R8: Shared externalIds for Downstream Unification (MANDATORY)**
 > If structured TMDB metadata is present in the TEXT message, then **every `RawMediaMetadata` emitted from that bundle** MUST carry:
+>
 > - `externalIds.tmdbId = structuredTmdbId`
 > - Same `structuredYear`, `structuredFsk`, `structuredRating`, etc.
-> 
+>
 > This enables the downstream normalizer to unify items into a single canonical media entry (with multiple variants).
 
 **R8b: No UI Selection Policy in Pipeline (MANDATORY)**
 > The pipeline MUST NOT define "primary asset for UI defaults".
-> 
+>
 > Selection of default variant is a **downstream concern** (normalizer/unifier/UI policies), NOT pipeline responsibility.
-> 
+>
 > The pipeline MAY pass through raw technical facts per emitted item (e.g., `sizeBytes`, `duration`, `resolution`) only if such raw fields already exist in the pipeline model.
 
 **R9: Poster Selection**
 > If a PHOTO message exists in the bundle:
+>
 > - Select the size with maximum pixel area (`width * height`)
 > - Ties MUST be broken deterministically by: larger `height` → larger `width`
 > - The selected poster is attached to **each** emitted `RawMediaMetadata` from that bundle
@@ -148,6 +158,7 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R10: MEDIA_NORMALIZATION_CONTRACT**
 > All rules from `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` continue to apply:
+>
 > - Pipeline MUST NOT normalize
 > - Pipeline MUST NOT perform TMDB lookups
 > - `globalId` MUST remain empty (computed by normalizer)
@@ -155,11 +166,13 @@ Fields that may appear in TEXT messages from structured chats:
 
 **R11: Layer Boundaries**
 > Structured Bundles are processed entirely in `pipeline/telegram`:
+>
 > - Transport provides `TgMessage` (no bundle logic)
 > - Pipeline groups, extracts, maps
 > - Data receives `RawMediaMetadata` (no bundle internals)
-> 
+>
 > **Explicit Export Restriction:**
+>
 > - `TelegramMediaItem` and all bundle-internal DTOs MUST remain pipeline-internal and MUST NOT be exported across module boundaries.
 > - **Only `RawMediaMetadata` MAY leave the pipeline.**
 > - There is no additional pipeline export structure.
@@ -169,15 +182,18 @@ Fields that may appear in TEXT messages from structured chats:
 > **Note:** This section describes downstream behavior for context. The pipeline does NOT implement this.
 
 **Canonical ID Format:**
+>
 > - If `externalIds.tmdbId` is present in `RawMediaMetadata`, the downstream normalizer computes `canonicalId` as `tmdb:<tmdbId>`.
 > - Multiple `RawMediaMetadata` items with the same `externalIds.tmdbId` are unified into a single `NormalizedMedia` with multiple variants.
 
 **Pipeline Responsibility:**
+>
 > - The pipeline MUST NOT compute `canonicalId`/`globalId`.
 > - The pipeline MUST NOT group/merge items into canonical works.
 > - The pipeline only passes through structured IDs to enable downstream unification.
 
 **Downstream Normalizer Behavior:**
+>
 > - If `externalIds.tmdbId` is present, the normalizer MUST NOT perform a title search.
 > - The normalizer MAY validate/refresh TMDB details via the provided `tmdbId`.
 
@@ -250,6 +266,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
 **Responsibility:** Groups TgMessage lists by timestamp
 
 **Contract:**
+
 - MUST group all messages with the same `date`
 - MUST return `TelegramMessageBundle` with correct `bundleType`
 - MUST correctly identify content types (VIDEO/TEXT/PHOTO)
@@ -262,6 +279,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
 **Responsibility:** Extracts structured fields from TEXT messages
 
 **Contract:**
+
 - MUST recognize all defined Structured Fields (Section 1.4)
 - MUST parse TMDB URL to ID (Rule R5) - supports `/movie/` and `/tv/`
 - MUST return missing fields as `null`
@@ -274,6 +292,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
 **Responsibility:** Converts bundles to TelegramMediaItem(s) - supports lossless multi-video emission
 
 **Contract:**
+
 - MUST emit one `TelegramMediaItem` per VIDEO in the bundle (lossless, Rule R7)
 - MUST apply Poster Selection Rules (Rule R9) - max pixel area
 - MUST correctly set all bundle fields on each emitted item
@@ -287,6 +306,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
 ### 5.1 Fallback for Unstructured Chats
 
 When a chat contains no structured bundles:
+
 - Messages are treated as `SINGLE`
 - Existing parsing logic is applied
 - No regression for existing functionality
@@ -315,6 +335,7 @@ The following events MUST be logged using **UnifiedLog** with stable, class-base
 | Bundle statistics per chat | INFO | `TelegramMessageBundler` | `chatId`, `bundleCount`, `rejectedCount`, `singleCount`, `emittedItemCount` |
 
 **Logging Examples:**
+
 ```kotlin
 // TelegramMessageBundler.kt
 private const val TAG = "TelegramMessageBundler"

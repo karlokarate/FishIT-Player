@@ -314,4 +314,198 @@ class TelegramRawMetadataExtensionsTest {
                         "Episode globalId must be empty"
                 )
         }
+
+        // ========== Structured Bundle Tests (Phase 2) ==========
+
+        @Test
+        fun `toRawMediaMetadata passes through structuredTmdbId to externalIds`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "The Movie",
+                                structuredTmdbId = 12345,
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                assertEquals(12345, raw.externalIds.tmdbId?.value)
+        }
+
+        @Test
+        fun `toRawMediaMetadata passes through structuredRating to rating`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "The Movie",
+                                structuredRating = 7.5,
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                assertEquals(7.5, raw.rating)
+        }
+
+        @Test
+        fun `toRawMediaMetadata passes through structuredFsk to ageRating`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "The Movie",
+                                structuredFsk = 16,
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                assertEquals(16, raw.ageRating)
+        }
+
+        @Test
+        fun `toRawMediaMetadata structuredYear overrides filename-parsed year`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "The Movie",
+                                year = 2019, // From filename parsing
+                                structuredYear = 2020, // From structured TEXT
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                // structuredYear takes precedence
+                assertEquals(2020, raw.year)
+        }
+
+        @Test
+        fun `toRawMediaMetadata structuredLengthMinutes overrides durationSecs`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "The Movie",
+                                durationSecs = 7200, // 120 minutes from video metadata
+                                structuredLengthMinutes = 118, // Precise runtime from TEXT
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                // structuredLengthMinutes takes precedence
+                assertEquals(118, raw.durationMinutes)
+        }
+
+        @Test
+        fun `toRawMediaMetadata complete structured bundle has all fields`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = -1001434421634L,
+                                messageId = 388021760L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "Spaceballs (1987)",
+                                fileName = "Spaceballs.1987.German.DL.1080p.BluRay.x264.mkv",
+                                mimeType = "video/x-matroska",
+                                durationSecs = 5880,
+                                // Structured Bundle Fields
+                                structuredTmdbId = 957,
+                                structuredRating = 6.9,
+                                structuredYear = 1987,
+                                structuredFsk = 12,
+                                structuredGenres = listOf("Comedy", "Science Fiction"),
+                                structuredDirector = "Mel Brooks",
+                                structuredOriginalTitle = "Spaceballs",
+                                structuredProductionCountry = "US",
+                                structuredLengthMinutes = 96,
+                                bundleType = TelegramBundleType.FULL_3ER,
+                                textMessageId = 387973120L,
+                                photoMessageId = 387924480L,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                // Verify all structured fields are passed through
+                assertEquals(957, raw.externalIds.tmdbId?.value)
+                assertEquals(6.9, raw.rating)
+                assertEquals(1987, raw.year)
+                assertEquals(12, raw.ageRating)
+                assertEquals(96, raw.durationMinutes) // structuredLengthMinutes, not 5880/60
+                assertEquals(SourceType.TELEGRAM, raw.sourceType)
+        }
+
+        @Test
+        fun `toRawMediaMetadata SINGLE bundle has no externalIds`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                mediaType = TelegramMediaType.VIDEO,
+                                title = "Some Video",
+                                bundleType = TelegramBundleType.SINGLE,
+                        )
+
+                val raw = item.toRawMediaMetadata()
+
+                assertNull(raw.externalIds.tmdbId)
+                assertNull(raw.rating)
+                assertNull(raw.ageRating)
+        }
+
+        @Test
+        fun `hasStructuredMetadata returns true when structured fields present`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                structuredTmdbId = 12345,
+                        )
+
+                assertEquals(true, item.hasStructuredMetadata())
+        }
+
+        @Test
+        fun `hasStructuredMetadata returns false for SINGLE bundle`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                bundleType = TelegramBundleType.SINGLE,
+                        )
+
+                assertEquals(false, item.hasStructuredMetadata())
+        }
+
+        @Test
+        fun `isFromCompleteBundle returns true for FULL_3ER`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                bundleType = TelegramBundleType.FULL_3ER,
+                        )
+
+                assertEquals(true, item.isFromCompleteBunde())
+        }
+
+        @Test
+        fun `isFromCompleteBundle returns false for COMPACT_2ER`() {
+                val item =
+                        TelegramMediaItem(
+                                chatId = 123L,
+                                messageId = 456L,
+                                bundleType = TelegramBundleType.COMPACT_2ER,
+                        )
+
+                assertEquals(false, item.isFromCompleteBunde())
+        }
 }

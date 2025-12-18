@@ -6,6 +6,9 @@ import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
+import com.fishit.player.pipeline.telegram.grouper.TelegramMessageBundler
+import com.fishit.player.pipeline.telegram.grouper.TelegramStructuredMetadataExtractor
+import com.fishit.player.pipeline.telegram.mapper.TelegramBundleToMediaItemMapper
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,8 +76,11 @@ class AppStartupImpl(
             )
             telegramClient = transportClient
 
-            // Create pipeline adapter
-            val adapter = TelegramPipelineAdapter(transportClient)
+            // Create pipeline adapter with bundler and mapper
+            val metadataExtractor = TelegramStructuredMetadataExtractor()
+            val bundler = TelegramMessageBundler()
+            val bundleMapper = TelegramBundleToMediaItemMapper(metadataExtractor)
+            val adapter = TelegramPipelineAdapter(transportClient, bundler, bundleMapper)
 
             UnifiedLog.i(TAG, "Telegram pipeline initialized")
             adapter
