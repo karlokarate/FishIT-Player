@@ -1,6 +1,6 @@
 # Telegram Structured Bundles – Masterplan
 
-**Version:** 2.1  
+**Version:** 2.2  
 **Date:** 2025-12-18  
 **Status:** Draft – ready for implementation  
 **Scope:** Detection and processing of structured Telegram message clusters (PHOTO→TEXT→VIDEO)
@@ -13,8 +13,9 @@ Analysis of 398 Telegram chat exports revealed that 8 chats contain **structured
 
 - **Zero-Parsing-Path:** TMDB IDs, titles, year, FSK directly extractable from TEXT messages
 - **Zero-API-Call-Path:** No TMDB API calls needed for base metadata
-- **Bundle Concept:** PHOTO→TEXT→VIDEO clusters with identical timestamp as logical unit
+- **Bundle Concept:** PHOTO→TEXT→VIDEO clusters with identical timestamp + Cohesion Gate
 - **Lossless Emission:** One `RawMediaMetadata` per VIDEO (downstream merges variants)
+- **Deterministic Bundling:** Cohesion Gate prevents false-bundles from timestamp collisions
 
 This insight enables **ultra-fast onboarding** for structured chats while maintaining support for the regular parsing path for unstructured chats.
 
@@ -121,11 +122,20 @@ Timestamp: 1731704712 (identical for all 3 messages)
 │                                                                       │
 │  TelegramMessageBundler                                               │
 │  ├── Groups messages by identical timestamp (BundleCandidate)         │
+│  ├── Applies Cohesion Gate (Contract R1b):                             │
+│  │   • Primary: albumId from TDLib (if available)                     │
+│  │   • Fallback: messageId span ≤ 3×2²⁰ OR step-pattern 2²⁰           │
+│  │   • Rejected candidates → split into SINGLE units                  │
 │  ├── Classifies: Structured (3-cluster/2-cluster) vs Unstructured     │
 │  └── Emits: TelegramMessageBundle or individual TgMessage             │
 │                                                                       │
 │  TelegramStructuredMetadataExtractor                                  │
 │  ├── Extracts TEXT fields: tmdbUrl, year, fsk, genres, etc.           │
+│  ├── Applies Schema Guards (Contract R4):                             │
+│  │   • year: 1800..2100 else null                                     │
+│  │   • tmdbRating: 0.0..10.0 else null                                │
+│  │   • fsk: 0..21 else null                                           │
+│  │   • lengthMinutes: 1..600 else null                                │
 │  └── Maps PHOTO.sizes[] to ImageRef (max pixel area)                  │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼
@@ -298,16 +308,21 @@ data class ExternalIds(
 
 **Responsibility:**
 
-- Groups TgMessage list by identical timestamp
+- Groups TgMessage list by identical timestamp (BundleCandidate)
+- Applies Cohesion Gate (Contract R1b)
 - Classifies clusters by type (3-cluster, 2-cluster, Single)
-- Emits TelegramMessageBundle for related messages
+- Emits TelegramMessageBundle for accepted bundles; splits rejected candidates into SINGLE
 
 ```kotlin
 /**
  * Groups Telegram messages by identical timestamp into bundles.
  *
  * Bundle Detection:
- * - Messages with identical `date` (Unix timestamp) are grouped
+ * - Messages with identical `date` (Unix timestamp) are grouped as BundleCandidate
+ * - Cohesion Gate (Contract R1b) decides acceptance:
+ *   - Primary: albumId from TDLib (if available)
+ *   - Fallback: messageId span ≤ 3×2²⁰ OR step-pattern 2²⁰
+ * - Rejected candidates are split into SINGLE units
  * - Order in bundles: PHOTO (lowest msgId) → TEXT → VIDEO (highest msgId)
  *
  * Per MEDIA_NORMALIZATION_CONTRACT: No normalization here.
@@ -315,11 +330,20 @@ data class ExternalIds(
  */
 class TelegramMessageBundler {
     
+    companion object {
+        /** Maximum messageId span for cohesion (3 × 2²⁰ = 3,145,728) */
+        const val MAX_MESSAGE_ID_SPAN = 3 * 1_048_576L
+        
+        /** Expected step between messages in a bundle (2²⁰ = 1,048,576) */
+        const val EXPECTED_MESSAGE_ID_STEP = 1_048_576L
+    }
+    
     /**
-     * Groups messages by timestamp.
+     * Groups messages by timestamp and applies Cohesion Gate.
      *
      * @param messages Unsorted list of TgMessage
      * @return List of TelegramMessageBundle (sorted by newest timestamp)
+     *         Cohesion-failed candidates are returned as SINGLE
      */
     fun groupByTimestamp(messages: List<TgMessage>): List<TelegramMessageBundle>
     
@@ -327,6 +351,13 @@ class TelegramMessageBundler {
      * Classifies a bundle type based on contained message types.
      */
     fun classifyBundle(messages: List<TgMessage>): TelegramBundleType
+    
+    /**
+     * Applies Cohesion Gate (Contract R1b).
+     * 
+     * @return true if candidate is cohesive, false otherwise
+     */
+    fun checkCohesion(candidate: List<TgMessage>): Boolean
 }
 
 data class TelegramMessageBundle(
@@ -367,6 +398,12 @@ UnifiedLog.i(TAG) { "Chat stats: chatId=$chatId, bundles=$bundleCount, singles=$
  * - lengthMinutes, productionCountry
  *
  * Per MEDIA_NORMALIZATION_CONTRACT: All values RAW extracted, no cleaning.
+ * 
+ * Schema Guards (Contract R4):
+ * - year: 1800..2100 else null
+ * - tmdbRating: 0.0..10.0 else null
+ * - fsk: 0..21 else null
+ * - lengthMinutes: 1..600 else null
  */
 class TelegramStructuredMetadataExtractor {
     
@@ -557,10 +594,13 @@ UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=${items.size}" 
 
 **TelegramMessageBundler:**
 
-- Test: Messages with same timestamp are grouped
+- Test: Messages with same timestamp are grouped as BundleCandidate
 - Test: Messages with different timestamps remain separate
 - Test: Bundle classification (3-cluster, 2-cluster, Single)
 - Test: Sorting within bundle by messageId
+- Test: **Cohesion Gate accepts** valid candidate (messageId span ≤ 3×2²⁰)
+- Test: **Cohesion Gate rejects** invalid candidate (too large span)
+- Test: **Cohesion Gate with albumId** (primary discriminator)
 
 **TelegramStructuredMetadataExtractor:**
 
@@ -571,6 +611,11 @@ UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=${items.size}" 
 - Test: FSK extraction (numeric)
 - Test: Genre list parsing
 - Test: Missing fields → null
+- Test: **Schema Guards:**
+  - Year outside 1800..2100 → null
+  - Rating outside 0.0..10.0 → null
+  - FSK outside 0..21 → null
+  - Length outside 1..600 → null
 
 **TelegramBundleToMediaItemMapper:**
 
@@ -591,6 +636,9 @@ UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=${items.size}" 
 - Test: Chat with mixed patterns
 - Test: Chat without structured data (fallback)
   - Assert: No regression for unstructured chats
+- Test: **Cohesion Gate rejection**
+  - Fixture: Same-timestamp but unrelated messages (large messageId span)
+  - Assert: Rejected, split into SINGLE units
 
 ### 7.3 Regression Tests
 
@@ -718,12 +766,15 @@ UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=${items.size}" 
 
 | Term | Definition |
 |------|------------|
-| **Structured Bundle** | Group of 2-3 Telegram messages with identical timestamp that together describe a media item |
+| **Structured Bundle** | Group of 2..N Telegram messages with identical timestamp that pass Cohesion Gate and together describe a media item |
+| **BundleCandidate** | Messages grouped by timestamp before Cohesion Gate is applied |
+| **Cohesion Gate** | Deterministic check (Contract R1b): albumId primary, messageId span/step fallback |
 | **3-cluster** | Bundle of PHOTO + TEXT + VIDEO(s) |
 | **2-cluster** | Bundle of TEXT + VIDEO(s) or PHOTO + VIDEO(s) |
 | **Zero-Parsing-Path** | Path without title parsing thanks to structured metadata |
 | **Pass-Through** | TMDB ID/year/etc. are passed unchanged from source to RawMediaMetadata |
+| **Schema Guards** | Range validations (year, rating, fsk, length) that set out-of-range values to null |
 | **Lossless Emission** | Pipeline emits one RawMediaMetadata per VIDEO; no variants are dropped |
 | **Downstream Unification** | Normalizer merges multiple RawMediaMetadata with same tmdbId into single NormalizedMedia with variants |
-| **BundleKey** | Pipeline-internal key `(chatId, timestamp)` for grouping messages |
+| **BundleKey** | Pipeline-internal key `(chatId, timestamp, discriminator)` for grouping messages |
 | **UnifiedLog** | v2 logging façade for all modules (see LOGGING_CONTRACT_V2.md) |

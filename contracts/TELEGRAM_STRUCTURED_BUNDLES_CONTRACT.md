@@ -1,6 +1,6 @@
 # Telegram Structured Bundles Contract
 
-**Version:** 2.1  
+**Version:** 2.2  
 **Date:** 2025-12-18  
 **Status:** Binding – authoritative specification for structured Telegram message handling  
 **Scope:** Detection, grouping, and processing of structured Telegram message clusters
@@ -13,10 +13,12 @@
 
 ### 1.1 Structured Bundle
 
-A **Structured Bundle** is a group of 2-3 Telegram messages that:
-- Share the same `date` (Unix timestamp in seconds)
+A **Structured Bundle** is a group of **2..N** Telegram messages that:
+- Share the same `date` (Unix timestamp in seconds) and pass the **Cohesion Gate** (R1b)
+- Must include **≥1 VIDEO** message (may include multiple VIDEO messages)
+- May include optional TEXT and/or PHOTO messages
 - Together describe a single logical media item
-- Contain structured metadata in TEXT messages
+- Contain structured metadata in TEXT messages (when present)
 
 ### 1.2 Bundle Types
 
@@ -29,7 +31,10 @@ A **Structured Bundle** is a group of 2-3 Telegram messages that:
 ### 1.3 BundleKey (Pipeline-Internal)
 
 A **BundleKey** is the unique identifier for grouping messages into a bundle:
-- **Composition:** `(chatId, timestamp)`
+- **Composition:** `(chatId, timestamp, discriminator)`
+- **discriminator:**
+  - **Primary:** Album/group ID if provided by Telegram/TDLib
+  - **Fallback:** Deterministic discriminator derived from messageId proximity/step pattern
 - **Purpose:** Enables deterministic bundle recognition within the pipeline
 - **Scope:** Pipeline-internal only; does NOT leave the pipeline
 
@@ -58,6 +63,17 @@ Fields that may appear in TEXT messages from structured chats:
 **R1: Timestamp Grouping**
 > Messages with identical `date` (Unix timestamp) MUST be grouped into a **BundleCandidate**.
 
+**R1b: Bundle Cohesion Gate (MANDATORY)**
+> A BundleCandidate MAY only be accepted as a Structured Bundle if:
+> 
+> 1. It contains **≥1 VIDEO** message, AND
+> 2. It satisfies a **deterministic cohesion rule**:
+>    - **Primary:** If Telegram/TDLib provides an album/group identifier, that MUST be used as the discriminator; timestamp is secondary.
+>    - **Fallback:** If no album/group ID is available, cohesion is validated via messageId proximity:
+>      - The candidate is cohesive if the span between smallest and largest messageId is **≤ 3 × 2²⁰** (3,145,728), OR
+>      - The candidate matches the known step-pattern **2²⁰** (1,048,576) within tolerance.
+> 3. **If cohesion fails:** Each message becomes `SINGLE`; no regrouping across timestamps; no semantic matching using captions/titles.
+
 **R2: Bundle Classification**
 > A bundle MUST be classified by content types:
 > - `FULL_3ER`: Has VIDEO(s) + TEXT + PHOTO
@@ -73,11 +89,17 @@ Fields that may appear in TEXT messages from structured chats:
 
 ### 2.2 Metadata Extraction (MANDATORY)
 
-**R4: Pass-Through Principle**
-> Structured fields MUST be extracted RAW and passed through UNCHANGED.
+**R4: Pass-Through with Schema Guards**
+> Structured fields MUST be extracted RAW and passed through with minimal sanity checks.
 > - No title cleaning
 > - No normalization
-> - No validation (except type parsing)
+> - No derived values
+> 
+> **Schema Guards (MANDATORY):** The following range validations MUST be applied; out-of-range values MUST be set to `null`:
+> - `year`: valid range **1800..2100**, else `null`
+> - `tmdbRating`: valid range **0.0..10.0**, else `null`
+> - `fsk`: valid range **0..21**, else `null`
+> - `lengthMinutes`: valid range **1..600**, else `null`
 
 **R5: TMDB ID Extraction**
 > The TMDB ID MUST be extracted from `tmdbUrl` via Regex:
@@ -275,8 +297,9 @@ When a chat contains no structured bundles:
 |-------|----------|
 | TEXT without structured fields | Treat as normal TEXT |
 | Bundle without VIDEO | Emit NO item (only VIDEO is playable) |
+| Cohesion Gate failed | Split into SINGLE units, no regrouping |
 | TMDB URL unparseable | `structuredTmdbId = null`, log WARN |
-| Invalid field values | Set field to `null`, do not throw error |
+| Field value out of Schema Guard range | Set field to `null` (per R4) |
 
 ### 5.3 Logging (MANDATORY)
 
@@ -284,10 +307,12 @@ The following events MUST be logged using **UnifiedLog** with stable, class-base
 
 | Event | Log Level | TAG | Content |
 |-------|-----------|-----|---------|
-| Bundle detected | DEBUG | `TelegramMessageBundler` | `chatId`, `timestamp`, `bundleType`, `messageIds` |
+| Bundle detected | DEBUG | `TelegramMessageBundler` | `chatId`, `timestamp`, `bundleType`, `videoCount` |
+| Cohesion Gate rejected | DEBUG | `TelegramMessageBundler` | `chatId`, `timestamp`, `reason`, `messageIds` |
 | Structured metadata extracted | DEBUG | `TelegramStructuredMetadataExtractor` | `chatId`, `tmdbId`, `year`, `fsk` |
+| Schema Guard applied | DEBUG | `TelegramStructuredMetadataExtractor` | `chatId`, `field`, `originalValue` |
 | TMDB URL parse failed | WARN | `TelegramStructuredMetadataExtractor` | `chatId`, `messageId`, `tmdbUrl` |
-| Bundle statistics per chat | INFO | `TelegramMessageBundler` | `chatId`, `bundleCount`, `singleCount`, `emittedItemCount` |
+| Bundle statistics per chat | INFO | `TelegramMessageBundler` | `chatId`, `bundleCount`, `rejectedCount`, `singleCount`, `emittedItemCount` |
 
 **Logging Examples:**
 ```kotlin
@@ -321,10 +346,14 @@ UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=$count" }
 | TB-002 | No grouping for different timestamps | 3 messages, different timestamps |
 | TB-003 | FULL_3ER classification | VIDEO + TEXT + PHOTO |
 | TB-004 | COMPACT_2ER classification | TEXT + VIDEO |
+| TB-005 | Cohesion Gate accepts valid candidate | messageId span ≤ 3×2²⁰ |
+| TB-006 | Cohesion Gate rejects invalid candidate | messageId span > 3×2²⁰ |
 | SM-001 | TMDB URL Parsing (movie) | Standard URL `/movie/12345` |
 | SM-002 | TMDB URL Parsing (tv) | TV URL `/tv/98765` |
 | SM-003 | FSK extraction | `"fsk": 12` |
 | SM-004 | Missing fields | TEXT without tmdbUrl |
+| SM-005 | Schema Guard: year out of range | `year: 3000` → `null` |
+| SM-006 | Schema Guard: rating out of range | `tmdbRating: 15.0` → `null` |
 | MM-001 | Multi-video: lossless emission | Bundle with 2 VIDEOs → 2 RawMediaMetadata |
 | MM-002 | Multi-video: shared externalIds | All emitted items have same tmdbId |
 | MM-003 | Poster selection: max pixel area | PHOTO with 3 sizes |
@@ -336,6 +365,7 @@ UnifiedLog.d(TAG) { "Mapped bundle: chatId=$chatId, emittedItems=$count" }
 | INT-001 | Mel Brooks 🥳 | ≥8 bundles detected, correct item count |
 | INT-002 | Filme kompakt | ≥8 COMPACT_2ER bundles detected |
 | INT-003 | Unstructured chat | 0 bundles, all SINGLE |
+| INT-004 | Cohesion rejection | Same-timestamp unrelated messages → rejected/split |
 
 ---
 
@@ -346,8 +376,9 @@ Before each merge MUST be verified:
 - [ ] No normalization in pipeline (MEDIA_NORMALIZATION_CONTRACT R10)
 - [ ] No TMDB lookups in pipeline
 - [ ] `globalId` remains empty (pipeline does NOT compute canonical ID)
-- [ ] Structured fields are RAW extracted (R4)
+- [ ] Structured fields are RAW extracted with Schema Guards (R4)
 - [ ] TMDB ID extracted via Regex, supports /movie/ and /tv/ (R5)
+- [ ] Cohesion Gate implemented (R1b)
 - [ ] Lossless emission: one RawMediaMetadata per VIDEO (R7)
 - [ ] No "primary asset for UI defaults" in pipeline (R8b)
 - [ ] TelegramMediaItem remains pipeline-internal (R11)
@@ -364,7 +395,8 @@ Before each merge MUST be verified:
 |---------|------|---------|
 | 1.0 | 2025-12-17 | Initial Release (German) |
 | 2.0 | 2025-12-18 | English translation, v2 compliance started |
-| 2.1 | 2025-12-18 | **v2-compliant:** Removed Work/PlayableAsset/WorkKey; lossless emission (1x RawMediaMetadata per VIDEO); no UI primary selection in pipeline; UnifiedLog with stable TAGs |
+| 2.1 | 2025-12-18 | Removed Work/PlayableAsset/WorkKey; lossless emission (1x RawMediaMetadata per VIDEO); no UI primary selection in pipeline; UnifiedLog with stable TAGs |
+| 2.2 | 2025-12-18 | **Gold Deluxe Platinum:** Add Cohesion Gate (R1b) + discriminator BundleKey; fix multi-video bundle definition (2..N messages); reinstate Schema Guards (R4); keep lossless RawMediaMetadata-per-VIDEO |
 
 ---
 
