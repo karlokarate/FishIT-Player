@@ -1,4 +1,4 @@
-package com.fishit.player.infra.transport.tmdb
+package com.fishit.player.infra.transport.tmdb.testing
 
 import com.fishit.player.infra.transport.tmdb.api.TmdbError
 import com.fishit.player.infra.transport.tmdb.api.TmdbGateway

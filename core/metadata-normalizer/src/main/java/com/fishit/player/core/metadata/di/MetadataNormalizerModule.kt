@@ -1,7 +1,10 @@
 package com.fishit.player.core.metadata.di
 
+import com.fishit.player.core.metadata.DefaultTmdbMetadataResolver
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.metadata.RegexMediaMetadataNormalizer
+import com.fishit.player.core.metadata.TmdbMetadataResolver
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +26,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object MetadataNormalizerModule {
-
     /**
      * Provides the production MediaMetadataNormalizer implementation.
      *
@@ -39,4 +41,15 @@ object MetadataNormalizerModule {
     fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer {
         return RegexMediaMetadataNormalizer()
     }
+}
+
+/**
+ * Hilt binding module for TmdbMetadataResolver.
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class TmdbMetadataResolverModule {
+    @Binds
+    @Singleton
+    abstract fun bindTmdbMetadataResolver(impl: DefaultTmdbMetadataResolver): TmdbMetadataResolver
 }
