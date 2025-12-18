@@ -159,27 +159,63 @@ fun DebugScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        // Telegram Sync Button
-                        SyncButton(
-                            name = "Telegram",
-                            icon = Icons.Default.Send,
-                            isSyncing = state.isSyncingTelegram,
-                            isEnabled = state.telegramConnected,
-                            progress = state.telegramSyncProgress,
-                            onClick = viewModel::syncTelegram
-                        )
+                        // Catalog Sync Actions (via SSOT Scheduler)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Sync Now button
+                            Button(
+                                onClick = viewModel::syncNow,
+                                enabled = !state.isSyncingCatalog,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                if (state.isSyncingCatalog) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text("Sync Now")
+                            }
+                            
+                            // Force Rescan button
+                            OutlinedButton(
+                                onClick = viewModel::forceRescan,
+                                enabled = !state.isSyncingCatalog,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Force rescan",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Force Rescan")
+                            }
+                        }
                         
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Xtream Sync Button
-                        SyncButton(
-                            name = "Xtream",
-                            icon = Icons.Default.Cloud,
-                            isSyncing = state.isSyncingXtream,
-                            isEnabled = state.xtreamConnected,
-                            progress = state.xtreamSyncProgress,
-                            onClick = viewModel::syncXtream
-                        )
+                        // Cancel sync button (only shown when syncing)
+                        if (state.isSyncingCatalog) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = viewModel::cancelSync,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cancel sync",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Cancel Sync")
+                            }
+                        }
                     }
                 }
 
@@ -569,105 +605,6 @@ private fun LogEntryRow(log: LogEntry) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
-        }
-    }
-}
-
-/**
- * Sync button with progress indicator.
- * 
- * Shows:
- * - Normal state: Button with icon and label
- * - Syncing state: Progress indicator with item counts
- * - Disabled state: Grayed out when source not connected
- * 
- * Click while syncing cancels the sync.
- */
-@Composable
-private fun SyncButton(
-    name: String,
-    icon: ImageVector,
-    isSyncing: Boolean,
-    isEnabled: Boolean,
-    progress: SyncProgress?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val buttonText = when {
-        isSyncing -> "Cancel $name Sync"
-        else -> "Sync $name"
-    }
-    
-    val buttonColors = if (isSyncing) {
-        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    } else {
-        androidx.compose.material3.ButtonDefaults.buttonColors()
-    }
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        if (isSyncing) {
-            OutlinedButton(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = buttonColors,
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(buttonText)
-            }
-            
-            // Progress details
-            progress?.let { p ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics {
-                            contentDescription = "Syncing ${p.currentPhase ?: "in progress"}: ${p.itemsPersisted} of ${p.itemsDiscovered} items"
-                        },
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = p.currentPhase ?: "Syncing...",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${p.itemsPersisted}/${p.itemsDiscovered} items",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        } else {
-            Button(
-                onClick = onClick,
-                enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = "$name sync",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(buttonText)
-            }
-            
-            if (!isEnabled) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "$name not connected",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
         }
     }
 }
