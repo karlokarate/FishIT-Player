@@ -81,10 +81,12 @@ Der `TelegramStructuredMetadataExtractor` extrahierte zwar die TMDB ID aus der U
 ### Lösung (implementiert)
 
 **1. `TelegramTmdbType.parseFromUrl()` verbessert:**
+
 - Prüft jetzt explizit auf `themoviedb.org` Host
 - Lehnt URLs von anderen Domains ab (z.B. `example.com/movie/123`)
 
 **2. `StructuredMetadata.kt` erweitert:**
+
 ```kotlin
 data class StructuredMetadata(
     val tmdbId: Int?,
@@ -96,6 +98,7 @@ data class StructuredMetadata(
 ```
 
 **3. `TelegramStructuredMetadataExtractor.extractStructuredMetadata()` nutzt jetzt:**
+
 ```kotlin
 val tmdbParsed = tmdbUrl?.let { TelegramTmdbType.parseFromUrl(it) }
 val tmdbType = tmdbParsed?.first
@@ -103,11 +106,13 @@ val tmdbId = tmdbParsed?.second
 ```
 
 **4. `TelegramBundleToMediaItemMapper` setzt `structuredTmdbType`:**
+
 ```kotlin
 structuredTmdbType = structuredMetadata.tmdbType
 ```
 
 **5. Tests aktualisiert:**
+
 - `TelegramStructuredMetadataExtractorTest`: Neue Tests für MOVIE/TV URL Extraktion
 - `TelegramRawMetadataExtensionsTest`: Tests nutzen jetzt typed TMDB
 
