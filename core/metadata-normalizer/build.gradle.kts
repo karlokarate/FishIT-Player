@@ -25,6 +25,7 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":infra:logging"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
@@ -38,8 +39,8 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
 
-    // TMDB Java API (no usage in skeleton phase - just dependency)
-    implementation("com.uwetrottmann.tmdb2:tmdb-java:2.11.0")
+    // TMDB API (app.moviebase:tmdb-api-jvm) - v2 enrichment MVP
+    implementation("app.moviebase:tmdb-api-jvm:1.6.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
