@@ -1,6 +1,6 @@
 package com.fishit.player.v2
 
-import com.fishit.player.core.catalogsync.CatalogSyncService
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
@@ -9,8 +9,6 @@ import com.fishit.player.infra.transport.xtream.XtreamConnectionState
 import com.fishit.player.v2.di.AppScopeModule
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -30,16 +28,16 @@ import javax.inject.Singleton
  * - Trigger catalog sync when authentication is ready
  * - Does NOT handle session initialization (that's XtreamSessionBootstrap's job)
  */
-@Singleton
-class CatalogSyncBootstrap
-    @Inject
-    constructor(
-        private val catalogSyncService: CatalogSyncService,
-        private val telegramAuthClient: TelegramAuthClient,
-        private val xtreamApiClient: XtreamApiClient,
-        @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
-        private val appScope: CoroutineScope,
-    ) {
+    @Singleton
+    class CatalogSyncBootstrap
+        @Inject
+        constructor(
+            private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
+            private val telegramAuthClient: TelegramAuthClient,
+            private val xtreamApiClient: XtreamApiClient,
+            @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
+            private val appScope: CoroutineScope,
+        ) {
         private val hasStarted = AtomicBoolean(false)
         private val hasTriggered = AtomicBoolean(false)
 
@@ -88,26 +86,7 @@ class CatalogSyncBootstrap
             if (!hasTriggered.compareAndSet(false, true)) return
 
             UnifiedLog.i(TAG) { "Catalog sync bootstrap triggered; telegram=$telegramReady xtream=$xtreamConnected" }
-
-            if (telegramReady) {
-                appScope.launch {
-                    catalogSyncService
-                        .syncTelegram()
-                        .catch { error ->
-                            UnifiedLog.e(TAG, error) { "Telegram sync failed to start" }
-                        }.collect()
-                }
-            }
-
-            if (xtreamConnected) {
-                appScope.launch {
-                    catalogSyncService
-                        .syncXtream()
-                        .catch { error ->
-                            UnifiedLog.e(TAG, error) { "Xtream sync failed to start" }
-                        }.collect()
-                }
-            }
+            catalogSyncWorkScheduler.enqueueAutoSync()
         }
 
         private companion object {

@@ -1,8 +1,11 @@
 package com.fishit.player.infra.work
 
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
+import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 /**
  * RESERVED MODULE: Work Scheduler Infrastructure
@@ -28,4 +31,15 @@ import dagger.hilt.components.SingletonComponent
 object WorkSchedulerModule {
     // TODO: Provide WorkManager configuration when ready
     // TODO: Provide scheduler API for catalog sync triggers
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class CatalogSyncWorkSchedulerModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindCatalogSyncWorkScheduler(
+        impl: DefaultCatalogSyncWorkScheduler
+    ): CatalogSyncWorkScheduler
 }
