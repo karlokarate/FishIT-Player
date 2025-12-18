@@ -456,6 +456,53 @@ Status: 🔲 PLANNED
 
 ---
 
+## Known Issues / Technical Debt
+
+Status: 🔴 BLOCKING or ⚠️ NON-BLOCKING
+
+This section tracks known bugs, missing implementations, and technical debt that must be resolved before release.
+
+### 🔴 BLOCKING – Must Fix Before Feature Complete
+
+| Issue | Module | Description | Created |
+|-------|--------|-------------|---------|
+| Missing TdlibClientProvider binding | `app-v2` | Dagger cannot find `@Provides` for `TdlibClientProvider`. v1 legacy pattern – should NOT be reintroduced. Telegram playback module is disabled until proper typed interfaces are available. | Dec 2025 |
+| Missing XtreamAuthRepository binding | `app-v2` | Dagger cannot find `@Provides` for `XtreamAuthRepository`. Need to implement proper binding in data-xtream module. | Dec 2025 |
+
+### ⚠️ NON-BLOCKING – Can Ship But Should Fix
+
+| Issue | Module | Description | Created |
+|-------|--------|-------------|---------|
+| pipeline-cli API outdated | `tools/pipeline-cli` | CLI tool uses old TgContent signatures (e.g., `content.minithumbnail` instead of `content.thumbnail?.minithumbnail`). Not critical – CLI is dev-only tool. | Dec 2025 |
+| TgChat/TgChatType still inline | `transport-telegram` | `TgChat` and `TgChatType` are still defined inline in `TelegramTransportClient.kt`. Should be moved to `api/` package for consistency. Low priority. | Dec 2025 |
+
+### 📝 TODO – Planned Cleanup Tasks
+
+| Task | Module | Description | Priority |
+|------|--------|-------------|----------|
+| Implement TelegramTransportModule | `infra/transport-telegram` | Create proper Hilt module with typed interface bindings (`TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`). | HIGH |
+| Re-enable TelegramPlaybackModule | `playback/telegram` | Currently disabled via `@Multibinds` empty set. Enable once transport typed interfaces are ready. | HIGH |
+| Move TgChat to api/ package | `infra/transport-telegram` | Extract `TgChat`, `TgChatType` from interface file to `api/TgChat.kt`. | LOW |
+| Update pipeline-cli | `tools/pipeline-cli` | Update CLI to use new TgContent API with nested thumbnail access. | LOW |
+
+### Resolution Protocol
+
+When fixing items from this list:
+
+1. Create a branch from `architecture/v2-bootstrap`
+2. Fix the issue following AGENTS.md guidelines
+3. Update this section: move item to "Resolved" or delete it
+4. Update CHANGELOG.md with the fix
+5. Commit with message referencing this roadmap section
+
+### Resolved Issues
+
+| Issue | Module | Resolution | Date |
+|-------|--------|------------|------|
+| Duplicate TgContent definitions | `transport-telegram`, `pipeline-telegram` | Unified on `api/TgContent.kt`, removed bridge functions | Dec 2025 |
+
+---
+
 ## Related Documents
 
 - [Changelog](CHANGELOG.md) – v2 changelog
