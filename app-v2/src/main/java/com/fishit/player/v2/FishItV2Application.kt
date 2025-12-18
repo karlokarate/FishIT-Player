@@ -1,6 +1,7 @@
 package com.fishit.player.v2
 
 import android.app.Application
+import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -28,13 +29,17 @@ import javax.inject.Provider
 @HiltAndroidApp
 class FishItV2Application :
     Application(),
-    SingletonImageLoader.Factory {
+    SingletonImageLoader.Factory,
+    Configuration.Provider {
     /**
      * Lazy provider for ImageLoader to avoid DI initialization order issues.
      * Hilt ensures this is initialized before newImageLoader() is called.
      */
     @Inject
     lateinit var imageLoaderProvider: Provider<ImageLoader>
+
+    @Inject
+    lateinit var workManagerConfiguration: Configuration
 
     override fun onCreate() {
         super.onCreate()
@@ -65,4 +70,6 @@ class FishItV2Application :
      * @return The DI-configured ImageLoader singleton
      */
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoaderProvider.get()
+
+    override fun getWorkManagerConfiguration(): Configuration = workManagerConfiguration
 }
