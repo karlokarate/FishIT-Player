@@ -174,6 +174,9 @@ The `docs/` folder contains current project specifications and implementation gu
 - **Don't make changes without reading the relevant `/contracts/` first**
 - **Don't introduce naming that violates `/contracts/GLOSSARY_v2_naming_and_modules.md`**
 - **Don't bypass layer boundaries defined in `AGENTS.md` Section 4**
+- **Don't introduce duplicate DTO definitions across layers (see `AGENTS.md` Section 4.7)**
+- **Don't use aliased imports for DTOs (`import ... as ApiXxx`) - this indicates a duplicate**
+- **Don't create bridge/conversion functions (`toApi*`, `fromApi*`) between duplicate definitions**
 
 ## Feature Flags (BuildConfig)
 

@@ -370,6 +370,80 @@ find pipeline/ -name "*Impl.kt" | grep -v "CatalogPipelineImpl"
 grep -rn "import okhttp3\|import org.drinkless.td\|import dev.g000sha256.tdl" pipeline/
 ```
 
+4.7. Bridge Duplicate Detection (MANDATORY)
+
+> **HARD RULE:** Duplicate DTO/model definitions across layers are architecture violations.
+> Agents MUST detect and resolve them immediately.
+
+**What is a Bridge Duplicate?**
+
+A Bridge Duplicate occurs when:
+1. The same data type (e.g., `TgContent`, `TgMessage`) is defined in multiple locations
+2. A "bridge function" exists to convert between the duplicate definitions
+3. Imports use aliases to disambiguate (e.g., `import ...TgContent as ApiTgContent`)
+
+**Real Example (resolved Dec 2025):**
+```kotlin
+// BAD: Two TgContent definitions existed:
+// 1. Inline in TelegramTransportClient.kt (sealed class TgContent)
+// 2. In api/TgContent.kt (sealed interface TgContent)
+// Bridge function toApiContent() converted between them
+// TelegramPipelineAdapter imported both with alias
+```
+
+**Detection Checklist (MANDATORY before any transport/pipeline change):**
+
+```bash
+# 1. Check for aliased imports (strong indicator of duplicates)
+grep -rn "import.*as Api\|import.*as Transport\|import.*as Old" pipeline/ infra/
+
+# 2. Check for bridge/conversion functions
+grep -rn "toApi\|fromApi\|toTransport\|fromTransport\|Bridge" pipeline/ infra/
+
+# 3. Check for duplicate class definitions
+grep -rn "^sealed class Tg\|^sealed interface Tg\|^data class Tg" infra/transport-*/
+
+# 4. Verify single source of truth for DTOs
+ls infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/
+```
+
+**Resolution Protocol:**
+
+When a Bridge Duplicate is detected:
+
+1. **STOP** – Do not proceed with other changes
+2. **IDENTIFY** the canonical location:
+   - DTOs belong in `api/` package (e.g., `infra/transport-telegram/.../api/`)
+   - Inline definitions in interface files are legacy and must be removed
+3. **COMPARE** the definitions:
+   - Newer, more complete definition is canonical
+   - Check git history: `git log --oneline --follow -10 -- <file>`
+4. **MIGRATE**:
+   - Delete the inline/legacy definition
+   - Update all imports to use the canonical `api/` package
+   - Remove bridge functions (they become unnecessary)
+   - Update mapping functions to use unified types
+5. **VERIFY** compilation of all affected modules:
+   ```bash
+   ./gradlew :infra:transport-telegram:compileDebugKotlin \
+             :pipeline:telegram:compileDebugKotlin \
+             :playback:telegram:compileDebugKotlin --no-daemon
+   ```
+
+**Canonical DTO Locations:**
+
+| Layer | Package | Example DTOs |
+|-------|---------|--------------|
+| Transport (Telegram) | `infra/transport-telegram/.../api/` | `TgMessage`, `TgContent`, `TgFile`, `TgPhotoSize` |
+| Transport (Xtream) | `infra/transport-xtream/.../api/` | `XtreamChannel`, `XtreamVod`, `XtreamSeries` |
+| Core Model | `core/model/` | `RawMediaMetadata`, `MediaType`, `SourceType` |
+
+**Prevention:**
+
+- New DTOs MUST be created in `api/` package, not inline
+- Never define transport types inside interface files
+- Use module READMEs to document canonical DTO locations
+
 ---
 
 ## 5. Logging, Telemetry & Cache
@@ -604,6 +678,11 @@ Before making changes, confirm:
    - [ ] No new global mutable singletons.
    - [ ] Logging and telemetry integration identified.
 
+8. **Bridge Duplicate Detection (MANDATORY for transport/pipeline changes)**
+   - [ ] Run detection checklist from Section 4.7 before any transport/pipeline change.
+   - [ ] Verify no aliased imports (`import ... as ApiXxx`, `import ... as TransportXxx`).
+   - [ ] Verify no bridge/conversion functions (`toApi*`, `fromApi*`, `toTransport*`).
+   - [ ] Verify single DTO definition location (all in `api/` package).
 8. **Plan**
    - [ ] Intended changes are scoped and incremental.
    - [ ] Large refactors or tool upgrades have been discussed with the user (or will be proposed first).
@@ -623,21 +702,27 @@ After making changes, confirm:
    - [ ] No `feature/` package in `pipeline/*` modules (use `capability/`).
    - [ ] All vocabulary in code/comments matches Glossary definitions.
 
-3. **Quality**
+3. **Bridge Duplicate Verification (MANDATORY for transport/pipeline changes)**
+   - [ ] No new duplicate DTO definitions introduced (see Section 4.7).
+   - [ ] All bridge functions removed (no `toApi*`, `fromApi*`).
+   - [ ] All aliased imports removed.
+   - [ ] DTOs are in canonical `api/` package locations.
+
+4. **Quality**
    - [ ] Code compiles.
    - [ ] Relevant tests added/updated and passing (at least locally).
    - [ ] No new obvious Lint/Detekt violations introduced, or exceptions are documented.
 
-4. **Logging & Telemetry**
+5. **Logging & Telemetry**
    - [ ] New feature paths emit appropriate logs.
    - [ ] Telemetry events are integrated where sensible.
 
-5. **Docs & Changelog**
+6. **Docs & Changelog**
    - [ ] Any behavioral change is reflected in `docs/v2/**` where needed.
    - [ ] Significant changes are recorded in the v2 changelog (`CHANGELOG.md` or `CHANGELOG_V2.md`).
    - [ ] If the change affects roadmap items, the roadmap has been updated or a note has been added.
 
-6. **User proposal (if applicable)**
+7. **User proposal (if applicable)**
    - [ ] If a new tool, dependency upgrade, or alternative approach is involved, a clear proposal has been written and the user’s confirmation has been obtained before the actual change.
 
 ---
