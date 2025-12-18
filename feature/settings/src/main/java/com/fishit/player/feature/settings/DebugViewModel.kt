@@ -51,7 +51,7 @@ data class DebugState(
     val isClearingCache: Boolean = false,
     val lastActionResult: String? = null,
     
-    // === Sync Status (v2.1) ===
+    // === Manual Catalog Sync ===
     val isSyncingTelegram: Boolean = false,
     val isSyncingXtream: Boolean = false,
     val telegramSyncProgress: SyncProgress? = null,
@@ -196,6 +196,13 @@ class DebugViewModel @Inject constructor(
         _state.update { it.copy(lastActionResult = null) }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        // Cancel any ongoing sync jobs to prevent leaks
+        telegramSyncJob?.cancel()
+        xtreamSyncJob?.cancel()
+    }
+
     // ========== Manual Sync Actions ==========
 
     /**
@@ -206,15 +213,8 @@ class DebugViewModel @Inject constructor(
      */
     fun syncTelegram() {
         if (_state.value.isSyncingTelegram) {
-            // Cancel existing sync
+            // Cancel existing sync - let flow's SyncStatus.Cancelled handle state cleanup
             telegramSyncJob?.cancel()
-            _state.update { 
-                it.copy(
-                    isSyncingTelegram = false, 
-                    telegramSyncProgress = null,
-                    lastActionResult = "Telegram sync cancelled"
-                ) 
-            }
             return
         }
         
@@ -239,8 +239,11 @@ class DebugViewModel @Inject constructor(
                         ) 
                     }
                 }
-                .onCompletion {
-                    if (_state.value.isSyncingTelegram) {
+                .onCompletion { cause ->
+                    // Clean up job reference
+                    telegramSyncJob = null
+                    // Only update state if not cancelled (SyncStatus.Cancelled handles that)
+                    if (cause == null && _state.value.isSyncingTelegram) {
                         _state.update { 
                             it.copy(isSyncingTelegram = false) 
                         }
@@ -313,15 +316,8 @@ class DebugViewModel @Inject constructor(
      */
     fun syncXtream() {
         if (_state.value.isSyncingXtream) {
-            // Cancel existing sync
+            // Cancel existing sync - let flow's SyncStatus.Cancelled handle state cleanup
             xtreamSyncJob?.cancel()
-            _state.update { 
-                it.copy(
-                    isSyncingXtream = false, 
-                    xtreamSyncProgress = null,
-                    lastActionResult = "Xtream sync cancelled"
-                ) 
-            }
             return
         }
         
@@ -349,8 +345,11 @@ class DebugViewModel @Inject constructor(
                         ) 
                     }
                 }
-                .onCompletion {
-                    if (_state.value.isSyncingXtream) {
+                .onCompletion { cause ->
+                    // Clean up job reference
+                    xtreamSyncJob = null
+                    // Only update state if not cancelled (SyncStatus.Cancelled handles that)
+                    if (cause == null && _state.value.isSyncingXtream) {
                         _state.update { 
                             it.copy(isSyncingXtream = false) 
                         }

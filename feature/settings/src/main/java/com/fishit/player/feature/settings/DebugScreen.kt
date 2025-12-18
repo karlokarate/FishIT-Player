@@ -48,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.text.SimpleDateFormat
@@ -147,7 +149,7 @@ fun DebugScreen(
                     }
                 }
 
-                // === Manual Sync Section (v2.1) ===
+                // === Manual Catalog Sync ===
                 item {
                     DebugSection(title = "Manual Sync", icon = Icons.Default.Refresh) {
                         Text(
@@ -624,7 +626,11 @@ private fun SyncButton(
             progress?.let { p ->
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            contentDescription = "Syncing ${p.currentPhase ?: "in progress"}: ${p.itemsPersisted} of ${p.itemsDiscovered} items"
+                        },
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
@@ -647,7 +653,7 @@ private fun SyncButton(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = "$name sync",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
