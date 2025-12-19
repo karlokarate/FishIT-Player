@@ -200,6 +200,7 @@ class DefaultXtreamApiClient(
                 if (fallbackResult) {
                     UnifiedLog.d(TAG, "validateAndComplete: Fallback validation succeeded")
                     _connectionState.value = XtreamConnectionState.Connected(caps.baseUrl, latency)
+                    _authState.value = XtreamAuthState.Unknown
                     Result.success(caps)
                 } else {
                     UnifiedLog.e(TAG, "validateAndComplete: Fallback validation failed")
