@@ -70,47 +70,33 @@ fun AppNavHost(
 
             // Home Screen
             composable(Routes.HOME) {
-                try {
-                    HomeScreen(
-                        onItemClick = { item ->
-                            if (item.sourceType == SourceType.XTREAM &&
-                                (item.mediaType == MediaType.LIVE || item.mediaType == MediaType.MOVIE)
-                            ) {
-                                navController.navigate(
-                                    Routes.player(
-                                        mediaId = item.navigationId,
-                                        sourceType = item.navigationSource.name,
-                                    ),
-                                )
-                            } else {
-                                navController.navigate(
-                                    Routes.detail(
-                                        mediaId = item.navigationId,
-                                        sourceType = item.navigationSource.name,
-                                    ),
-                                )
-                            }
-                        },
-                        onSettingsClick = {
-                            // TODO: Navigate to Settings
-                        },
-                        onDebugClick = {
-                            navController.navigate(Routes.DEBUG)
-                        },
-                    )
-                } catch (t: Throwable) {
-                    // Catch any unexpected crashes in HomeScreen
-                    android.util.Log.e("AppNavHost", "HomeScreen crashed", t)
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Error loading Home: ${t.message}",
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
+                HomeScreen(
+                    onItemClick = { item ->
+                        if (item.sourceType == SourceType.XTREAM &&
+                            (item.mediaType == MediaType.LIVE || item.mediaType == MediaType.MOVIE)
+                        ) {
+                            navController.navigate(
+                                Routes.player(
+                                    mediaId = item.navigationId,
+                                    sourceType = item.navigationSource.name,
+                                ),
+                            )
+                        } else {
+                            navController.navigate(
+                                Routes.detail(
+                                    mediaId = item.navigationId,
+                                    sourceType = item.navigationSource.name,
+                                ),
+                            )
+                        }
+                    },
+                    onSettingsClick = {
+                        // TODO: Navigate to Settings
+                    },
+                    onDebugClick = {
+                        navController.navigate(Routes.DEBUG)
+                    },
+                )
             }
 
             // Detail Screen
