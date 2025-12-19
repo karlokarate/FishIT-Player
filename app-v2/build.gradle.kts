@@ -240,13 +240,21 @@ tasks.register<Exec>("checkNoWorkManagerInitializer") {
     
     commandLine("${rootProject.projectDir}/scripts/check_no_workmanager_initializer.sh")
     
-    // Only run if build has produced merged manifests
-    val debugManifest = file("${layout.buildDirectory.get()}/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml")
-    onlyIf { debugManifest.exists() }
+    // Only run if build has produced at least one merged manifest (any variant)
+    val mergedManifestsDir = file("${layout.buildDirectory.get()}/intermediates/merged_manifests")
+    onlyIf {
+        mergedManifestsDir.exists() &&
+            fileTree(mergedManifestsDir) {
+                include("**/AndroidManifest.xml")
+            }.files.isNotEmpty()
+    }
     
     // Make this task run after manifest processing
     tasks.findByName("processDebugManifest")?.let { processDebug ->
         mustRunAfter(processDebug)
+    }
+    tasks.findByName("processReleaseManifest")?.let { processRelease ->
+        mustRunAfter(processRelease)
     }
 }
 

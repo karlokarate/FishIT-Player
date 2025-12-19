@@ -24,10 +24,22 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "🔍 Checking for WorkManagerInitializer in merged manifests..."
 
-# Find all merged manifest files
-MERGED_MANIFESTS=$(find "$REPO_ROOT/app-v2/build/intermediates/merged_manifests" -name "AndroidManifest.xml" 2>/dev/null || true)
+# Find all merged manifest files and store in an array
+MERGED_MANIFESTS_DIR="$REPO_ROOT/app-v2/build/intermediates/merged_manifests"
+if [ ! -d "$MERGED_MANIFESTS_DIR" ]; then
+    echo "⚠️  WARNING: No merged manifests found."
+    echo "    This is expected if the build hasn't run yet."
+    echo "    Run './gradlew :app-v2:assembleDebug' first."
+    exit 2
+fi
 
-if [ -z "$MERGED_MANIFESTS" ]; then
+# Use process substitution to safely read manifests into array
+MANIFEST_FILES=()
+while IFS= read -r -d '' manifest; do
+    MANIFEST_FILES+=("$manifest")
+done < <(find "$MERGED_MANIFESTS_DIR" -name "AndroidManifest.xml" -print0 2>/dev/null)
+
+if [ ${#MANIFEST_FILES[@]} -eq 0 ]; then
     echo "⚠️  WARNING: No merged manifests found."
     echo "    This is expected if the build hasn't run yet."
     echo "    Run './gradlew :app-v2:assembleDebug' first."
@@ -36,8 +48,10 @@ fi
 
 VIOLATIONS=0
 
-for MANIFEST in $MERGED_MANIFESTS; do
-    VARIANT=$(echo "$MANIFEST" | sed 's|.*/merged_manifests/\([^/]*\)/.*|\1|')
+for MANIFEST in "${MANIFEST_FILES[@]}"; do
+    # Extract variant name using bash parameter expansion
+    REL_PATH="${MANIFEST#*/merged_manifests/}"
+    VARIANT="${REL_PATH%%/*}"
     echo "  Checking variant: $VARIANT"
     
     # Check for WorkManagerInitializer
