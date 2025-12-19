@@ -157,12 +157,14 @@ data class ExternalIds(
      *
      * Prefers typed [tmdb] field. Falls back to [legacyTmdbId] for migration compatibility.
      */
+    @Suppress("DEPRECATION")
     val effectiveTmdbId: Int?
         get() = tmdb?.id ?: legacyTmdbId
 
     /**
      * Check if this has any TMDB reference (typed or legacy).
      */
+    @Suppress("DEPRECATION")
     val hasTmdb: Boolean
         get() = tmdb != null || legacyTmdbId != null
 

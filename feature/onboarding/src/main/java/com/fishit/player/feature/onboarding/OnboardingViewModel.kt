@@ -400,9 +400,8 @@ class OnboardingViewModel
                 }
             }
         }
-    }
 
-    companion object {
-        private const val TAG = "OnboardingViewModel"
+        companion object {
+            private const val TAG = "OnboardingViewModel"
+        }
     }
-}

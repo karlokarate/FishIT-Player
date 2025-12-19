@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
     implementation(project(":core:feature-api"))
+    implementation(project(":infra:logging"))
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
