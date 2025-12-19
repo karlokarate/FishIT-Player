@@ -224,3 +224,33 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
+
+/**
+ * Guardrail task: Verify WorkManagerInitializer is not in merged manifests.
+ *
+ * This project uses on-demand WorkManager initialization via Configuration.Provider.
+ * The auto-initialization must remain disabled to prevent runtime conflicts.
+ *
+ * Run after assembling to validate the manifest merge rules are correct.
+ * CI should run this as a post-build verification step.
+ */
+tasks.register<Exec>("checkNoWorkManagerInitializer") {
+    group = "verification"
+    description = "Verify WorkManagerInitializer is not in merged manifests (on-demand init only)"
+    
+    commandLine("${rootProject.projectDir}/scripts/check_no_workmanager_initializer.sh")
+    
+    // Only run if build has produced merged manifests
+    val debugManifest = file("${layout.buildDirectory.get()}/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml")
+    onlyIf { debugManifest.exists() }
+    
+    // Make this task run after manifest processing
+    tasks.findByName("processDebugManifest")?.let { processDebug ->
+        mustRunAfter(processDebug)
+    }
+}
+
+// Hook into assemble tasks for automatic validation
+tasks.matching { it.name.startsWith("assemble") }.configureEach {
+    finalizedBy("checkNoWorkManagerInitializer")
+}

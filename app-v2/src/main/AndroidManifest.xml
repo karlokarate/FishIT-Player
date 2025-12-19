@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -22,6 +23,20 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 
+            Remove WorkManager auto-initialization via AndroidX Startup.
+            We use on-demand initialization via Configuration.Provider in FishItV2Application.
+            See: https://developer.android.com/topic/libraries/architecture/workmanager/advanced/custom-configuration
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="com.fishit.player.v2.androidx-startup"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                tools:node="remove" />
+        </provider>
         
     </application>
 
