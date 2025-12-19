@@ -16,20 +16,25 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Bridge that maps WorkManager state to [SyncUiState].
+ * WorkManager-based implementation of [SyncStateObserver].
  * 
  * Observes the `catalog_sync_global` unique work and converts WorkInfo states
- * to simple UI-consumable states.
+ * to simple UI-consumable [SyncUiState].
  * 
  * Implements [SyncStateObserver] to allow feature modules to observe sync state
  * without direct WorkManager dependency.
+ * 
+ * **Architecture:**
+ * - Lives in app-v2 (wiring layer)
+ * - Implements core contract [SyncStateObserver]
+ * - No business logic; state mapping only
  * 
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
  * - No business logic; state mapping only
  * - Uses only `catalog_sync_global` work name
  */
 @Singleton
-class CatalogSyncUiBridge @Inject constructor(
+class WorkManagerSyncStateObserver @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : SyncStateObserver {
     private val workManager: WorkManager
@@ -120,7 +125,7 @@ class CatalogSyncUiBridge @Inject constructor(
     }
     
     private companion object {
-        private const val TAG = "CatalogSyncUiBridge"
+        private const val TAG = "WorkManagerSyncStateObserver"
         private const val WORK_NAME = "catalog_sync_global"
         private const val KEY_FAILURE_REASON = "failure_reason"
     }

@@ -6,8 +6,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.fishit.player.core.catalogsync.SourceActivationStore
 import com.fishit.player.core.catalogsync.SourceId
+import com.fishit.player.core.feature.auth.TelegramAuthRepository
+import com.fishit.player.core.feature.auth.TelegramAuthState
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -21,6 +22,10 @@ import dagger.assisted.AssistedInject
  * - Does NOT perform scanning
  * - Only validates TDLib is authorized and ready
  * 
+ * **Architecture:**
+ * - Uses domain interface [TelegramAuthRepository] (not transport layer)
+ * - Implementation in infra/data-telegram bridges to transport
+ * 
  * @see TelegramFullHistoryScanWorker for full history scanning
  * @see TelegramIncrementalScanWorker for incremental scanning
  */
@@ -29,7 +34,7 @@ class TelegramAuthPreflightWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val sourceActivationStore: SourceActivationStore,
-    private val telegramAuthClient: TelegramAuthClient,
+    private val telegramAuthRepository: TelegramAuthRepository,
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -61,28 +66,52 @@ class TelegramAuthPreflightWorker @AssistedInject constructor(
             )
         }
         
-        // Check authorization state
+        // Check authorization state via domain repository
         return try {
-            val isAuthorized = telegramAuthClient.isAuthorized()
+            val authState = telegramAuthRepository.authState.value
             
-            if (isAuthorized) {
-                val durationMs = System.currentTimeMillis() - startTimeMs
-                UnifiedLog.i(TAG) { "SUCCESS duration_ms=$durationMs (TDLib authorized)" }
-                Result.success(
-                    WorkerOutputData.success(
-                        itemsPersisted = 0,
-                        durationMs = durationMs,
+            when (authState) {
+                is TelegramAuthState.Connected -> {
+                    val durationMs = System.currentTimeMillis() - startTimeMs
+                    UnifiedLog.i(TAG) { "SUCCESS duration_ms=$durationMs (TDLib authorized)" }
+                    Result.success(
+                        WorkerOutputData.success(
+                            itemsPersisted = 0,
+                            durationMs = durationMs,
+                        )
                     )
-                )
-            } else {
-                val durationMs = System.currentTimeMillis() - startTimeMs
-                UnifiedLog.e(TAG) { 
-                    "FAILURE reason=not_authorized duration_ms=$durationMs retry=false"
                 }
-                // W-20: Non-retryable failure - user action required
-                Result.failure(
-                    WorkerOutputData.failure(WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED)
-                )
+                
+                is TelegramAuthState.WaitingForPhone,
+                is TelegramAuthState.WaitingForCode,
+                is TelegramAuthState.WaitingForPassword -> {
+                    val durationMs = System.currentTimeMillis() - startTimeMs
+                    UnifiedLog.e(TAG) { 
+                        "FAILURE reason=login_required state=$authState duration_ms=$durationMs retry=false"
+                    }
+                    // W-20: Non-retryable failure - user action required
+                    Result.failure(
+                        WorkerOutputData.failure(WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED)
+                    )
+                }
+                
+                is TelegramAuthState.Disconnected,
+                is TelegramAuthState.Error -> {
+                    val durationMs = System.currentTimeMillis() - startTimeMs
+                    UnifiedLog.e(TAG) { 
+                        "FAILURE reason=not_authorized state=$authState duration_ms=$durationMs retry=false"
+                    }
+                    // W-20: Non-retryable failure - user action required
+                    Result.failure(
+                        WorkerOutputData.failure(WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED)
+                    )
+                }
+                
+                is TelegramAuthState.Idle -> {
+                    // Still initializing, retry
+                    UnifiedLog.w(TAG) { "Auth state idle, retrying" }
+                    Result.retry()
+                }
             }
         } catch (e: Exception) {
             val durationMs = System.currentTimeMillis() - startTimeMs
