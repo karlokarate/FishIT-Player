@@ -15,8 +15,11 @@ echo "Xtream URL Parsing & API Test"
 echo "============================================================"
 echo ""
 
-# User's input URL (M3U format)
-USER_URL="http://konigtv.com:8080/get.php?username=Christoph10&password=JQ2rKsQ744&type=m3u_plus&output=ts"
+# User's input URL (M3U format). Configure via environment variables to avoid hardcoding credentials.
+: "${XTREAM_TEST_BASE_URL:=http://konigtv.com:8080}"
+: "${XTREAM_TEST_USERNAME:=your_username}"
+: "${XTREAM_TEST_PASSWORD:=your_password}"
+USER_URL="${XTREAM_TEST_BASE_URL}/get.php?username=${XTREAM_TEST_USERNAME}&password=${XTREAM_TEST_PASSWORD}&type=m3u_plus&output=ts"
 
 echo -e "${YELLOW}Input URL:${NC}"
 echo "$USER_URL"
