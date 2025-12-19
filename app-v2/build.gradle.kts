@@ -139,6 +139,9 @@ dependencies {
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:firebase"))
 
+    // v2 Metadata Normalizer (TMDB enrichment)
+    implementation(project(":core:metadata-normalizer"))
+
     // v2 Playback & Player
     implementation(project(":playback:domain"))
     implementation(project(":playback:xtream"))

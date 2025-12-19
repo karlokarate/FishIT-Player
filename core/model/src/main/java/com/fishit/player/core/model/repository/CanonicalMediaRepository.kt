@@ -199,6 +199,82 @@ interface CanonicalMediaRepository {
             limit: Int = 20,
     ): List<CanonicalMediaWithResume>
 
+    // ========== TMDB Resolution Queries (per TMDB_ENRICHMENT_CONTRACT.md T-17) ==========
+
+    /**
+     * Find items with TmdbRef but missing SSOT data (poster, metadata).
+     *
+     * For DETAILS_BY_ID enrichment: these items have a TMDB ID but haven't
+     * been enriched with full details yet.
+     *
+     * @param limit Maximum number of candidates to return
+     * @return Items needing TMDB details fetch
+     */
+    suspend fun findCandidatesDetailsByIdMissingSsot(limit: Int): List<CanonicalMediaId>
+
+    /**
+     * Find items without TmdbRef that are eligible for search.
+     *
+     * Respects cooldown: only returns items where tmdbNextEligibleAt <= now.
+     * For SEARCH_MATCH resolution path.
+     *
+     * @param limit Maximum number of candidates to return
+     * @param now Current timestamp for cooldown comparison
+     * @return Items eligible for TMDB search
+     */
+    suspend fun findCandidatesMissingTmdbRefEligible(limit: Int, now: Long): List<CanonicalMediaId>
+
+    /**
+     * Mark item as having TMDB details applied.
+     *
+     * Updates the resolve state to RESOLVED and records the resolution method.
+     *
+     * @param canonicalId The canonical media ID
+     * @param tmdbId The TMDB ID (for cross-reference)
+     * @param resolvedBy How the item was resolved
+     * @param resolvedAt Timestamp of resolution
+     */
+    suspend fun markTmdbDetailsApplied(
+            canonicalId: CanonicalMediaId,
+            tmdbId: TmdbId,
+            resolvedBy: String,
+            resolvedAt: Long,
+    )
+
+    /**
+     * Mark a failed resolution attempt.
+     *
+     * Updates resolve state and sets cooldown for retry.
+     *
+     * @param canonicalId The canonical media ID
+     * @param state The new resolve state (FAILED or AMBIGUOUS)
+     * @param reason Description of why resolution failed
+     * @param attemptAt Timestamp of the attempt
+     * @param nextEligibleAt When the item can be retried
+     */
+    suspend fun markTmdbResolveAttemptFailed(
+            canonicalId: CanonicalMediaId,
+            state: String,
+            reason: String,
+            attemptAt: Long,
+            nextEligibleAt: Long,
+    )
+
+    /**
+     * Mark item as successfully resolved via search.
+     *
+     * Sets the TmdbRef and updates resolve state to RESOLVED.
+     *
+     * @param canonicalId The canonical media ID
+     * @param tmdbId The resolved TMDB ID
+     * @param resolvedAt Timestamp of resolution
+     */
+    suspend fun markTmdbResolved(
+            canonicalId: CanonicalMediaId,
+            tmdbId: TmdbId,
+            resolvedAt: Long,
+    )
+
     // ========== Maintenance Operations ==========
 
     /**

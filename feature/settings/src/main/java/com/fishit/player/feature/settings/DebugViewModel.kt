@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
 import com.fishit.player.core.catalogsync.toDisplayString
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -79,6 +80,7 @@ enum class LogLevel {
 class DebugViewModel @Inject constructor(
     private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
     private val syncStateObserver: SyncStateObserver,
+    private val tmdbEnrichmentScheduler: TmdbEnrichmentScheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DebugState())
@@ -224,6 +226,33 @@ class DebugViewModel @Inject constructor(
         catalogSyncWorkScheduler.cancelSync()
         _state.update { 
             it.copy(lastActionResult = "Sync cancelled")
+        }
+    }
+
+    // ========== TMDB Enrichment Actions ==========
+
+    /**
+     * Trigger TMDB enrichment.
+     * 
+     * Uses WorkManager via TmdbEnrichmentScheduler (SSOT).
+     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2 (W-22)
+     */
+    fun enqueueTmdbEnrichment() {
+        UnifiedLog.i(TAG) { "User triggered: TMDB Enrichment" }
+        tmdbEnrichmentScheduler.enqueueEnrichment()
+        _state.update { 
+            it.copy(lastActionResult = "TMDB enrichment enqueued")
+        }
+    }
+
+    /**
+     * Force TMDB refresh - re-enriches all items.
+     */
+    fun forceTmdbRefresh() {
+        UnifiedLog.i(TAG) { "User triggered: Force TMDB Refresh" }
+        tmdbEnrichmentScheduler.enqueueForceRefresh()
+        _state.update { 
+            it.copy(lastActionResult = "TMDB force refresh started")
         }
     }
 

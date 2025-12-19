@@ -658,6 +658,115 @@ constructor(
                         )
                 }
 
+        // ========== TMDB Resolution Queries (per TMDB_ENRICHMENT_CONTRACT.md T-17) ==========
+
+        override suspend fun findCandidatesDetailsByIdMissingSsot(limit: Int): List<CanonicalMediaId> =
+                withContext(Dispatchers.IO) {
+                        // Find items with TmdbId present but missing SSOT data (poster/backdrop)
+                        // This is the DETAILS_BY_ID path - items have ID but need enrichment
+                        canonicalBox
+                                .query()
+                                .notNull(ObxCanonicalMedia_.tmdbId)
+                                .isNull(ObxCanonicalMedia_.poster) // SSOT poster not yet applied
+                                .orderDesc(ObxCanonicalMedia_.updatedAt)
+                                .build()
+                                .find(0, limit.toLong())
+                                .mapNotNull { obx ->
+                                        val kind = if (obx.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
+                                        CanonicalMediaId(kind, obx.canonicalKey.asCanonicalId())
+                                }
+                }
+
+        override suspend fun findCandidatesMissingTmdbRefEligible(limit: Int, now: Long): List<CanonicalMediaId> =
+                withContext(Dispatchers.IO) {
+                        // Find items without TmdbId that are eligible for search
+                        // Respects cooldown: tmdbNextEligibleAt <= now
+                        canonicalBox
+                                .query()
+                                .isNull(ObxCanonicalMedia_.tmdbId)
+                                .apply {
+                                        // Only include items where cooldown has passed
+                                        // tmdbNextEligibleAt == 0 (never tried) OR tmdbNextEligibleAt <= now
+                                        less(ObxCanonicalMedia_.tmdbNextEligibleAt, now + 1)
+                                }
+                                .orderDesc(ObxCanonicalMedia_.updatedAt)
+                                .build()
+                                .find(0, limit.toLong())
+                                .mapNotNull { obx ->
+                                        val kind = if (obx.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
+                                        CanonicalMediaId(kind, obx.canonicalKey.asCanonicalId())
+                                }
+                }
+
+        override suspend fun markTmdbDetailsApplied(
+                canonicalId: CanonicalMediaId,
+                tmdbId: com.fishit.player.core.model.ids.TmdbId,
+                resolvedBy: String,
+                resolvedAt: Long,
+        ): Unit = withContext(Dispatchers.IO) {
+                val existing = canonicalBox
+                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
+                        .build()
+                        .findFirst() ?: return@withContext
+
+                val updated = existing.copy(
+                        tmdbResolveState = "RESOLVED",
+                        tmdbResolvedBy = resolvedBy,
+                        tmdbLastResolvedAt = resolvedAt,
+                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                        lastTmdbAttemptAt = resolvedAt,
+                        tmdbLastFailureReason = null, // Clear any previous failure
+                        updatedAt = resolvedAt,
+                )
+                canonicalBox.put(updated)
+        }
+
+        override suspend fun markTmdbResolveAttemptFailed(
+                canonicalId: CanonicalMediaId,
+                state: String,
+                reason: String,
+                attemptAt: Long,
+                nextEligibleAt: Long,
+        ): Unit = withContext(Dispatchers.IO) {
+                val existing = canonicalBox
+                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
+                        .build()
+                        .findFirst() ?: return@withContext
+
+                val updated = existing.copy(
+                        tmdbResolveState = state,
+                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                        lastTmdbAttemptAt = attemptAt,
+                        tmdbNextEligibleAt = nextEligibleAt,
+                        tmdbLastFailureReason = reason,
+                        updatedAt = attemptAt,
+                )
+                canonicalBox.put(updated)
+        }
+
+        override suspend fun markTmdbResolved(
+                canonicalId: CanonicalMediaId,
+                tmdbId: com.fishit.player.core.model.ids.TmdbId,
+                resolvedAt: Long,
+        ): Unit = withContext(Dispatchers.IO) {
+                val existing = canonicalBox
+                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
+                        .build()
+                        .findFirst() ?: return@withContext
+
+                val updated = existing.copy(
+                        tmdbId = tmdbId.value.toString(),
+                        tmdbResolveState = "RESOLVED",
+                        tmdbResolvedBy = "SEARCH_MATCH",
+                        tmdbLastResolvedAt = resolvedAt,
+                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                        lastTmdbAttemptAt = resolvedAt,
+                        tmdbLastFailureReason = null,
+                        updatedAt = resolvedAt,
+                )
+                canonicalBox.put(updated)
+        }
+
         // ========== Private Helpers ==========
 
         private fun generateCanonicalKey(normalized: NormalizedMediaMetadata): String {

@@ -214,6 +214,51 @@ fun DebugScreen(
                     }
                 }
 
+                // === TMDB Enrichment (W-22) ===
+                item {
+                    DebugSection(title = "TMDB Enrichment", icon = Icons.Default.Cloud) {
+                        Text(
+                            text = "Enriches catalog items with TMDB metadata (posters, backdrops, ratings).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Enrich Button
+                            Button(
+                                onClick = viewModel::enqueueTmdbEnrichment,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Cloud,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Enrich")
+                            }
+                            
+                            // Force Refresh Button
+                            OutlinedButton(
+                                onClick = viewModel::forceTmdbRefresh,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Force")
+                            }
+                        }
+                    }
+                }
+
                 // Cache Section
                 item {
                     DebugSection(title = "Cache", icon = Icons.Default.Storage) {

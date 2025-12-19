@@ -101,6 +101,27 @@ data class ObxCanonicalMedia(
         var cast: String? = null,
         /** Release date (YYYY-MM-DD) */
         var releaseDate: String? = null,
+        // === TMDB Resolve State (per TMDB_ENRICHMENT_CONTRACT.md T-15/T-16) ===
+        /**
+         * TMDB resolution state: UNRESOLVED, RESOLVED, AMBIGUOUS, FAILED.
+         * @see TmdbResolveState
+         */
+        @Index var tmdbResolveState: String = "UNRESOLVED",
+        /** Number of TMDB search attempts for this item */
+        var tmdbResolveAttempts: Int = 0,
+        /** Timestamp of last TMDB resolution attempt */
+        var lastTmdbAttemptAt: Long? = null,
+        /** Next eligible timestamp for TMDB resolution (cooldown enforcement) */
+        @Index var tmdbNextEligibleAt: Long? = null,
+        /** Last failure reason (if tmdbResolveState is FAILED or AMBIGUOUS) */
+        var tmdbLastFailureReason: String? = null,
+        /** Timestamp when TMDB resolution succeeded */
+        var tmdbLastResolvedAt: Long? = null,
+        /**
+         * How the item was resolved: PASS_THROUGH, DETAILS_BY_ID, SEARCH_MATCH, MANUAL_OVERRIDE.
+         * @see TmdbResolvedBy
+         */
+        var tmdbResolvedBy: String? = null,
         // === Timestamps ===
         @Index var createdAt: Long = System.currentTimeMillis(),
         @Index var updatedAt: Long = System.currentTimeMillis(),

@@ -5,8 +5,10 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
+import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
 import com.fishit.player.v2.work.CatalogSyncUiBridge
 import com.fishit.player.v2.work.CatalogSyncWorkSchedulerImpl
+import com.fishit.player.v2.work.TmdbEnrichmentSchedulerImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -50,4 +52,17 @@ object AppWorkModule {
     fun provideSyncStateObserver(
         bridge: CatalogSyncUiBridge,
     ): SyncStateObserver = bridge
+
+    /**
+     * SSOT: All TMDB enrichment scheduling goes through this single implementation.
+     *
+     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+     * - uniqueWorkName = "tmdb_enrichment_global"
+     * - W-22: TMDB Scope Priority: DETAILS_BY_ID → RESOLVE_MISSING_IDS
+     */
+    @Provides
+    @Singleton
+    fun provideTmdbEnrichmentScheduler(
+        @ApplicationContext context: Context,
+    ): TmdbEnrichmentScheduler = TmdbEnrichmentSchedulerImpl(context)
 }

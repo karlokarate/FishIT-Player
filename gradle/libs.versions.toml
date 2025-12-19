@@ -1,0 +1,15 @@
+[versions]
+# TMDB API - Kotlin Multiplatform client (published 2025-11-04)
+# Repository: https://github.com/MoviebaseApp/tmdb-kotlin
+tmdbApi = "1.6.0"
+
+[libraries]
+# TMDB Kotlin API Client
+# ONLY used in :core:metadata-normalizer per TMDB_ENRICHMENT_CONTRACT.md
+tmdb-api = { module = "app.moviebase:tmdb-api", version.ref = "tmdbApi" }
+
+[bundles]
+# No bundles defined yet
+
+[plugins]
+# No plugins defined yet - plugins are managed in build.gradle.kts

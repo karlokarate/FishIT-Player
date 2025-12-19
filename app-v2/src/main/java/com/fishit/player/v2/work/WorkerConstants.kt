@@ -17,6 +17,9 @@ object WorkerConstants {
     /** SSOT unique work name for global catalog sync */
     const val WORK_NAME_CATALOG_SYNC = "catalog_sync_global"
     
+    /** SSOT unique work name for TMDB enrichment (W-21, W-22) */
+    const val WORK_NAME_TMDB_ENRICHMENT = "tmdb_enrichment_global"
+    
     // =========================================================================
     // Tags (W-12)
     // =========================================================================
@@ -44,6 +47,11 @@ object WorkerConstants {
     const val TAG_WORKER_TELEGRAM_INCREMENTAL = "worker/TelegramIncrementalScanWorker"
     const val TAG_WORKER_IO_QUICK = "worker/IoQuickScanWorker"
     
+    // TMDB Worker tags
+    const val TAG_WORKER_TMDB_ORCHESTRATOR = "worker/TmdbEnrichmentOrchestratorWorker"
+    const val TAG_WORKER_TMDB_BATCH = "worker/TmdbEnrichmentBatchWorker"
+    const val TAG_WORKER_TMDB_CONTINUATION = "worker/TmdbEnrichmentContinuationWorker"
+    
     // =========================================================================
     // Common InputData Keys (W-13)
     // =========================================================================
@@ -67,6 +75,15 @@ object WorkerConstants {
     
     // IO
     const val KEY_IO_SYNC_SCOPE = "io_sync_scope"
+    
+    // =========================================================================
+    // TMDB InputData Keys (W-14)
+    // =========================================================================
+    
+    const val KEY_TMDB_SCOPE = "tmdb_scope"
+    const val KEY_TMDB_FORCE_REFRESH = "tmdb_force_refresh"
+    const val KEY_TMDB_BATCH_SIZE_HINT = "tmdb_batch_size_hint"
+    const val KEY_TMDB_BATCH_CURSOR = "tmdb_batch_cursor"
     
     // =========================================================================
     // Output Data Keys
@@ -105,6 +122,22 @@ object WorkerConstants {
     const val IO_SCOPE_QUICK = "QUICK"
     
     // =========================================================================
+    // TMDB Scopes (W-22)
+    // =========================================================================
+    
+    /** Priority 1: Items with TmdbRef but missing SSOT data */
+    const val TMDB_SCOPE_DETAILS_BY_ID = "DETAILS_BY_ID"
+    
+    /** Priority 2: Items without TmdbRef eligible for search */
+    const val TMDB_SCOPE_RESOLVE_MISSING_IDS = "RESOLVE_MISSING_IDS"
+    
+    /** Both scopes: DETAILS_BY_ID first, then RESOLVE_MISSING_IDS */
+    const val TMDB_SCOPE_BOTH = "BOTH"
+    
+    /** Refresh all SSOT data (expert mode) */
+    const val TMDB_SCOPE_REFRESH_SSOT = "REFRESH_SSOT"
+    
+    // =========================================================================
     // Failure Reasons (Non-Retryable - W-20)
     // =========================================================================
     
@@ -137,4 +170,24 @@ object WorkerConstants {
     
     /** Retry limit for EXPERT modes (W-19) */
     const val RETRY_LIMIT_EXPERT = 5
+    
+    // =========================================================================
+    // TMDB-specific Configuration
+    // =========================================================================
+    
+    /** TMDB cooldown between retry attempts (24 hours) */
+    const val TMDB_COOLDOWN_MS = 24L * 60 * 60 * 1000
+    
+    /** TMDB max attempts before marking UNRESOLVABLE_PERMANENT */
+    const val TMDB_MAX_ATTEMPTS = 3
+    
+    /** TMDB batch size for FireTV low-RAM devices (10-25) */
+    const val TMDB_FIRETV_BATCH_SIZE_MIN = 10
+    const val TMDB_FIRETV_BATCH_SIZE_MAX = 25
+    const val TMDB_FIRETV_BATCH_SIZE_DEFAULT = 15
+    
+    /** TMDB batch size for normal devices (50-150) */
+    const val TMDB_NORMAL_BATCH_SIZE_MIN = 50
+    const val TMDB_NORMAL_BATCH_SIZE_MAX = 150
+    const val TMDB_NORMAL_BATCH_SIZE_DEFAULT = 75
 }
