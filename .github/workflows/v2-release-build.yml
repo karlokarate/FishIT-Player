@@ -22,6 +22,14 @@ on:
           - armeabi-v7a
           - both
         default: "arm64-v8a"
+      build_type:
+        description: "Build type"
+        required: true
+        type: choice
+        options:
+          - release
+          - debug
+        default: "release"
       create_release:
         description: "Create GitHub Release"
         type: boolean
@@ -123,9 +131,11 @@ jobs:
             echo "::warning::Keystore file not found - build will be unsigned"
           fi
 
-      - name: Build V2 release APK for ${{ matrix.abi }}
+      - name: Build V2 ${{ github.event.inputs.build_type }} APK for ${{ matrix.abi }}
         run: |
-          ./gradlew :app-v2:assembleRelease \
+          BUILD_TYPE="${{ github.event.inputs.build_type }}"
+          GRADLE_TASK="assemble${BUILD_TYPE^}"  # Capitalize first letter
+          ./gradlew :app-v2:${GRADLE_TASK} \
             -PabiFilters=${{ matrix.abi }} \
             -PuseSplits=true \
             -PuniversalApk=false \
@@ -141,28 +151,29 @@ jobs:
           TG_API_HASH: ${{ secrets.TG_API_HASH }}
 
       - name: Verify APK signature
+        if: ${{ github.event.inputs.build_type == 'release' }}
         run: |
-          find app-v2/build/outputs/apk/release -type f -name "*.apk" -print0 | \
+          find app-v2/build/outputs/apk/${{ github.event.inputs.build_type }} -type f -name "*.apk" -print0 | \
             xargs -0 -I{} bash -c 'apksigner verify --verbose "{}" || true'
 
       - name: Calculate checksums
         run: |
-          find app-v2/build/outputs/apk/release -type f -name "*.apk" -print0 | \
+          find app-v2/build/outputs/apk/${{ github.event.inputs.build_type }} -type f -name "*.apk" -print0 | \
             xargs -0 sha256sum > v2-checksums-${{ matrix.abi }}.txt
           cat v2-checksums-${{ matrix.abi }}.txt
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-v2-release-${{ matrix.abi }}
+          name: app-v2-${{ github.event.inputs.build_type }}-${{ matrix.abi }}
           path: |
-            app-v2/build/outputs/apk/release/*.apk
+            app-v2/build/outputs/apk/${{ github.event.inputs.build_type }}/*.apk
             v2-checksums-${{ matrix.abi }}.txt
           retention-days: 30
           if-no-files-found: error
 
   create-release:
-    if: ${{ github.event.inputs.create_release == 'true' }}
+    if: ${{ github.event.inputs.create_release == 'true' && github.event.inputs.build_type == 'release' }}
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 10
