@@ -6,8 +6,8 @@ pluginManagement {
     }
     plugins {
         // --- Platform: pin plugin versions project-wide ---
-        id("com.android.application") version "8.6.1" apply false
-        id("com.android.library") version "8.6.1" apply false
+        id("com.android.application") version "8.7.3" apply false
+        id("com.android.library") version "8.7.3" apply false
 
         // Kotlin Gradle plugins (align with Kotlin 2.1.0 / Compose 1.9.x)
         kotlin("android") version "2.1.0" apply false
@@ -55,6 +55,8 @@ include(":core:ui-imaging")
 include(":core:ui-theme")
 include(":core:ui-layout")
 include(":core:app-startup")
+include(":core:epg-model")
+include(":core:epg-normalizer")
 
 // Playback & Player
 include(":playback:domain")
