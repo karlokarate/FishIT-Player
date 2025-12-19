@@ -187,17 +187,61 @@ class DefaultXtreamApiClient(
                     }
                 } else {
                     // No user info but server responded - assume OK
+                    UnifiedLog.d(TAG, "validateAndComplete: No user info in response, assuming OK")
                     _connectionState.value =
                         XtreamConnectionState.Connected(caps.baseUrl, latency)
                     Result.success(caps)
                 }
             },
             onFailure = { error ->
-                _authState.value = XtreamAuthState.Failed(XtreamError.InvalidCredentials)
-                Result.failure(error)
+                UnifiedLog.w(TAG, "validateAndComplete: getServerInfo failed, trying fallback validation", error)
+                // Fallback: Try a simple action-based endpoint to validate connectivity
+                val fallbackResult = tryFallbackValidation()
+                if (fallbackResult) {
+                    UnifiedLog.d(TAG, "validateAndComplete: Fallback validation succeeded")
+                    _connectionState.value = XtreamConnectionState.Connected(caps.baseUrl, latency)
+                    Result.success(caps)
+                } else {
+                    UnifiedLog.e(TAG, "validateAndComplete: Fallback validation failed")
+                    _authState.value = XtreamAuthState.Failed(XtreamError.InvalidCredentials)
+                    Result.failure(error)
+                }
             },
         )
     }
+
+    /**
+     * Fallback validation when getServerInfo() fails.
+     * Some servers don't support player_api.php without action parameter.
+     * Try a simple action-based endpoint instead.
+     */
+    private suspend fun tryFallbackValidation(): Boolean =
+        withContext(io) {
+            try {
+                UnifiedLog.d(TAG, "tryFallbackValidation: Trying get_live_categories")
+                val url = buildPlayerApiUrl("get_live_categories")
+                val body = fetchRaw(url, isEpg = false)
+                
+                if (body != null && body.isNotEmpty()) {
+                    // Try to parse as JSON to verify it's a valid response
+                    val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
+                    if (parsed != null) {
+                        UnifiedLog.d(TAG, "tryFallbackValidation: Success - received valid JSON response")
+                        true
+                    } else {
+                        UnifiedLog.w(TAG, "tryFallbackValidation: Response is not valid JSON")
+                        false
+                    }
+                } else {
+                    UnifiedLog.w(TAG, "tryFallbackValidation: Empty or null response")
+                    false
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "tryFallbackValidation: Exception", e)
+                false
+            }
+        }
+
 
     override suspend fun ping(): Boolean =
         withContext(io) {
