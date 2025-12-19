@@ -55,8 +55,6 @@ include(":core:ui-imaging")
 include(":core:ui-theme")
 include(":core:ui-layout")
 include(":core:app-startup")
-include(":core:epg-model")
-include(":core:epg-normalizer")
 
 // Playback & Player
 include(":playback:domain")
