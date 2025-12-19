@@ -92,6 +92,3 @@ include(":infra:data-xtream")
 include(":infra:data-home")
 include(":infra:imaging")
 include(":infra:work")
-
-// Tools (JVM CLI, no Android)
-include(":tools:pipeline-cli")
