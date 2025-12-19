@@ -835,7 +835,7 @@ class DefaultXtreamApiClient(
         builder.addQueryParameter("password", cfg.password)
 
         val url = builder.build().toString()
-        val redactedUrl = url.replace(Regex("(password|username)=([^&]*)"), "$1=***")
+        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
         UnifiedLog.d(TAG, "buildPlayerApiUrl: Built URL: $redactedUrl")
         
         return url
