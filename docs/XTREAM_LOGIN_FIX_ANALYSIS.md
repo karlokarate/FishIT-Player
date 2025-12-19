@@ -13,14 +13,14 @@ Bei der Anmeldung mit Xtream über die App zur Laufzeit kommt die Fehlermeldung 
 
 **User's Input URL:**
 ```
-http://konigtv.com:8080/get.php?username=Christoph10&password=JQ2rKsQ744&type=m3u_plus&output=ts
+http://example.com:8080/get.php?username=testuser&password=testpass&type=m3u_plus&output=ts
 ```
 
 **Expected Backend Conversion:**
 ```
-BASE="http://konigtv.com:8080"
-USER="Christoph10"
-PASS="JQ2rKsQ744"
+BASE="http://example.com:8080"
+USER="testuser"
+PASS="testpass"
 API="$BASE/player_api.php?username=$USER&password=$PASS"
 ```
 
@@ -41,7 +41,7 @@ App crasht sofort wenn man auf "Continue" klickt um zum nächsten Screen zu komm
 
 2. **Backend URL Construction** ✅ CORRECT
    - `DefaultXtreamApiClient.buildPlayerApiUrl()` correctly builds:
-     - `http://konigtv.com:8080/player_api.php?username=Christoph10&password=JQ2rKsQ744`
+     - `http://example.com:8080/player_api.php?username=testuser&password=testpass`
 
 3. **Validation Flow** ❌ PROBLEM FOUND
    - `DefaultXtreamApiClient.initialize()` calls `validateAndComplete()`
@@ -51,7 +51,7 @@ App crasht sofort wenn man auf "Continue" klickt um zum nächsten Screen zu komm
    - Empty response triggers: `Result.failure(Exception("Empty response"))`
 
 #### Root Cause
-Some Xtream panels (including potentially konigtv.com) do not support the `player_api.php` endpoint without an `action` parameter. They return HTTP 200 with an empty body instead of server info JSON.
+Some Xtream panels do not support the `player_api.php` endpoint without an `action` parameter. They return HTTP 200 with an empty body instead of server info JSON.
 
 This is a known compatibility issue with certain Xtream panel implementations (e.g., older XUI.ONE versions).
 
@@ -202,13 +202,13 @@ Plus detailed logs showing:
    This script validates that the backend correctly parses the URL and builds the expected API endpoints.
 
 2. **Test Xtream Login**:
-   - Enter URL: `http://konigtv.com:8080/get.php?username=Christoph10&password=JQ2rKsQ744&type=m3u_plus&output=ts`
+   - Enter URL: `http://example.com:8080/get.php?username=testuser&password=testpass&type=m3u_plus&output=ts`
    - Check logcat for:
      ```
      OnboardingViewModel: Starting with URL: ...
-     OnboardingViewModel: Parsed credentials - host=konigtv.com, port=8080, username=Christoph10
-     XtreamAuthRepoAdapter: Starting with config - scheme=http, host=konigtv.com, port=8080
-     XtreamApiClient: fetchRaw: Fetching URL: http://konigtv.com:8080/player_api.php?username=***&password=***
+     OnboardingViewModel: Parsed credentials - host=example.com, port=8080, username=testuser
+     XtreamAuthRepoAdapter: Starting with config - scheme=http, host=example.com, port=8080
+     XtreamApiClient: fetchRaw: Fetching URL: http://example.com:8080/player_api.php?username=***&password=***
      XtreamApiClient: fetchRaw: Received response code 200
      XtreamApiClient: getServerInfo: Received N bytes, parsing...
      ```

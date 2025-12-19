@@ -4,6 +4,7 @@ import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamConfig as DomainConfig
 import com.fishit.player.feature.onboarding.domain.XtreamConnectionState as DomainConnectionState
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState as TransportAuthState
@@ -55,23 +56,22 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
     override val authState: StateFlow<DomainAuthState> = _authState.asStateFlow()
 
     override suspend fun initialize(config: DomainConfig): Result<Unit> {
-        android.util.Log.d(TAG, "initialize: Starting with config - scheme=${config.scheme}, host=${config.host}, " +
-            "port=${config.port}, username=${config.username}")
+        UnifiedLog.d(TAG) { "initialize: Starting with config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}" }
         
         _connectionState.value = DomainConnectionState.Connecting
 
         val transportConfig = config.toTransportConfig()
-        android.util.Log.d(TAG, "initialize: Calling apiClient.initialize")
+        UnifiedLog.d(TAG) { "initialize: Calling apiClient.initialize" }
         
         return apiClient.initialize(transportConfig)
             .map { caps ->
-                android.util.Log.d(TAG, "initialize: API client initialized successfully with capabilities: ${caps.baseUrl}")
+                UnifiedLog.d(TAG) { "initialize: API client initialized successfully with capabilities: ${caps.baseUrl}" }
                 // Start observing transport state changes
                 observeTransportStates()
                 Unit
             }
             .onFailure { error ->
-                android.util.Log.e(TAG, "initialize: Failed with error", error)
+                UnifiedLog.e(TAG, error) { "initialize: Failed with error" }
                 _connectionState.value = DomainConnectionState.Error(
                     error.message ?: "Unknown error"
                 )

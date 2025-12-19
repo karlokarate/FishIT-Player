@@ -6,7 +6,7 @@
 **Status**: BEHOBEN
 
 **Was war das Problem?**
-Manche Xtream-Server (inkl. konigtv.com) unterstützen den `player_api.php` Aufruf ohne Action-Parameter nicht. Sie geben HTTP 200 mit leerem Body zurück.
+Manche Xtream-Server unterstützen den `player_api.php` Aufruf ohne Action-Parameter nicht. Sie geben HTTP 200 mit leerem Body zurück.
 
 **Die Lösung:**
 Die App versucht jetzt automatisch einen alternativen Endpunkt (`get_live_categories`), wenn der erste Aufruf leer zurückkommt.
@@ -28,7 +28,7 @@ Defensive Fehlerbehandlung wurde hinzugefügt. Wenn ein Fehler auftritt, wird er
 1. App starten
 2. Diese URL eingeben:
    ```
-   http://konigtv.com:8080/get.php?username=Christoph10&password=JQ2rKsQ744&type=m3u_plus&output=ts
+   http://example.com:8080/get.php?username=testuser&password=testpass&type=m3u_plus&output=ts
    ```
 3. Auf "Connect" klicken
 4. **Erwartetes Ergebnis**: 
@@ -48,7 +48,7 @@ Defensive Fehlerbehandlung wurde hinzugefügt. Wenn ein Fehler auftritt, wird er
 ## Was passiert im Hintergrund?
 
 ### Bei Xtream-Login:
-1. URL wird geparst → `http://konigtv.com:8080`, User: `Christoph10`, Port: `8080`
+1. URL wird geparst → `http://example.com:8080`, User: `testuser`, Port: `8080`
 2. Erste Validierung versucht: `player_api.php` (ohne Action)
 3. **Falls leer** → Fallback: `player_api.php?action=get_live_categories`
 4. Wenn Fallback erfolgreich → Login OK ✅
@@ -56,7 +56,7 @@ Defensive Fehlerbehandlung wurde hinzugefügt. Wenn ein Fehler auftritt, wird er
 ### Logs zum Überprüfen:
 ```
 # Erfolgreiches Login mit Fallback:
-OnboardingViewModel: connectXtream: Starting with URL: http://konigtv.com:8080...
+OnboardingViewModel: connectXtream: Starting with URL: http://example.com:8080...
 XtreamApiClient: getServerInfo: Empty response from server
 XtreamApiClient: tryFallbackValidation: Trying get_live_categories
 XtreamApiClient: tryFallbackValidation: Success - received valid JSON response
@@ -74,8 +74,8 @@ adb logcat | grep -E "(OnboardingViewModel|XtreamApiClient|XtreamAuthRepoAdapter
 ```
 
 ### Was die Logs zeigen sollen:
-1. **URL-Parsing**: `Parsed credentials - host=konigtv.com, port=8080`
-2. **HTTP-Request**: `fetchRaw: Fetching URL: http://konigtv.com:8080/player_api.php`
+1. **URL-Parsing**: `Parsed credentials - host=example.com, port=8080`
+2. **HTTP-Request**: `fetchRaw: Fetching URL: http://example.com:8080/player_api.php`
 3. **Response**: `Received response code 200` + `Received N bytes`
 4. **Fallback** (falls nötig): `tryFallbackValidation: Success`
 
@@ -107,7 +107,7 @@ Dieses Script testet die URL-Parsing-Logik außerhalb der App.
 
 ### Jetzt:
 1. ✅ App auf Gerät deployen
-2. ✅ Mit konigtv.com URL testen
+2. ✅ Mit Xtream URL testen
 3. ✅ Logs überprüfen
 4. ✅ Navigation testen
 
