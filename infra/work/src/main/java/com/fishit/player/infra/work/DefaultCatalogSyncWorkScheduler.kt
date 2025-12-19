@@ -22,6 +22,10 @@ class DefaultCatalogSyncWorkScheduler @Inject constructor() : CatalogSyncWorkSch
         UnifiedLog.i(TAG) { "enqueueExpertSyncNow() invoked (no-op placeholder)" }
     }
 
+    override fun enqueueForceRescan() {
+        UnifiedLog.i(TAG) { "enqueueForceRescan() invoked (no-op placeholder)" }
+    }
+
     private companion object {
         private const val TAG = "CatalogSyncWorkScheduler"
     }

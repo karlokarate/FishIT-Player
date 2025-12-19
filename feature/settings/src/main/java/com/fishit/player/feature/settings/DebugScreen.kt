@@ -48,8 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.text.SimpleDateFormat
@@ -163,9 +161,7 @@ fun DebugScreen(
                         SyncButton(
                             name = "Telegram",
                             icon = Icons.Default.Send,
-                            isSyncing = state.isSyncingTelegram,
                             isEnabled = state.telegramConnected,
-                            progress = state.telegramSyncProgress,
                             onClick = viewModel::syncTelegram
                         )
                         
@@ -175,9 +171,7 @@ fun DebugScreen(
                         SyncButton(
                             name = "Xtream",
                             icon = Icons.Default.Cloud,
-                            isSyncing = state.isSyncingXtream,
                             isEnabled = state.xtreamConnected,
-                            progress = state.xtreamSyncProgress,
                             onClick = viewModel::syncXtream
                         )
                     }
@@ -574,100 +568,42 @@ private fun LogEntryRow(log: LogEntry) {
 }
 
 /**
- * Sync button with progress indicator.
- * 
+ * Sync button that enqueues catalog sync work.
+ *
  * Shows:
  * - Normal state: Button with icon and label
- * - Syncing state: Progress indicator with item counts
  * - Disabled state: Grayed out when source not connected
- * 
- * Click while syncing cancels the sync.
  */
 @Composable
 private fun SyncButton(
     name: String,
     icon: ImageVector,
-    isSyncing: Boolean,
     isEnabled: Boolean,
-    progress: SyncProgress?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val buttonText = when {
-        isSyncing -> "Cancel $name Sync"
-        else -> "Sync $name"
-    }
-    
-    val buttonColors = if (isSyncing) {
-        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    } else {
-        androidx.compose.material3.ButtonDefaults.buttonColors()
-    }
-
     Column(modifier = modifier.fillMaxWidth()) {
-        if (isSyncing) {
-            OutlinedButton(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = buttonColors,
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(buttonText)
-            }
-            
-            // Progress details
-            progress?.let { p ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics {
-                            contentDescription = "Syncing ${p.currentPhase ?: "in progress"}: ${p.itemsPersisted} of ${p.itemsDiscovered} items"
-                        },
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = p.currentPhase ?: "Syncing...",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${p.itemsPersisted}/${p.itemsDiscovered} items",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        } else {
-            Button(
-                onClick = onClick,
-                enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = "$name sync",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(buttonText)
-            }
-            
-            if (!isEnabled) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "$name not connected",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+        Button(
+            onClick = onClick,
+            enabled = isEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = "$name sync",
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Sync $name")
+        }
+
+        if (!isEnabled) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$name not connected",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error
+            )
         }
     }
 }

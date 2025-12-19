@@ -16,4 +16,9 @@ interface CatalogSyncWorkScheduler {
      * Enqueue an on-demand sync with the most aggressive settings available.
      */
     fun enqueueExpertSyncNow()
+
+    /**
+     * Enqueue a rescan that forces all sources to rebuild catalog state.
+     */
+    fun enqueueForceRescan()
 }
