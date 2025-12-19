@@ -187,17 +187,62 @@ class DefaultXtreamApiClient(
                     }
                 } else {
                     // No user info but server responded - assume OK
+                    UnifiedLog.d(TAG, "validateAndComplete: No user info in response, assuming OK")
                     _connectionState.value =
                         XtreamConnectionState.Connected(caps.baseUrl, latency)
                     Result.success(caps)
                 }
             },
             onFailure = { error ->
-                _authState.value = XtreamAuthState.Failed(XtreamError.InvalidCredentials)
-                Result.failure(error)
+                UnifiedLog.w(TAG, "validateAndComplete: getServerInfo failed, trying fallback validation", error)
+                // Fallback: Try a simple action-based endpoint to validate connectivity
+                val fallbackResult = tryFallbackValidation()
+                if (fallbackResult) {
+                    UnifiedLog.d(TAG, "validateAndComplete: Fallback validation succeeded")
+                    _connectionState.value = XtreamConnectionState.Connected(caps.baseUrl, latency)
+                    _authState.value = XtreamAuthState.Unknown
+                    Result.success(caps)
+                } else {
+                    UnifiedLog.e(TAG, "validateAndComplete: Fallback validation failed")
+                    _authState.value = XtreamAuthState.Failed(XtreamError.InvalidCredentials)
+                    Result.failure(error)
+                }
             },
         )
     }
+
+    /**
+     * Fallback validation when getServerInfo() fails.
+     * Some servers don't support player_api.php without action parameter.
+     * Try a simple action-based endpoint instead.
+     */
+    private suspend fun tryFallbackValidation(): Boolean =
+        withContext(io) {
+            try {
+                UnifiedLog.d(TAG, "tryFallbackValidation: Trying get_live_categories")
+                val url = buildPlayerApiUrl("get_live_categories")
+                val body = fetchRaw(url, isEpg = false)
+                
+                if (body != null && body.isNotEmpty()) {
+                    // Try to parse as JSON to verify it's a valid response
+                    val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
+                    if (parsed != null) {
+                        UnifiedLog.d(TAG, "tryFallbackValidation: Success - received valid JSON response")
+                        true
+                    } else {
+                        UnifiedLog.w(TAG, "tryFallbackValidation: Response is not valid JSON")
+                        false
+                    }
+                } else {
+                    UnifiedLog.w(TAG, "tryFallbackValidation: Empty or null response")
+                    false
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "tryFallbackValidation: Exception", e)
+                false
+            }
+        }
+
 
     override suspend fun ping(): Boolean =
         withContext(io) {
@@ -226,11 +271,18 @@ class DefaultXtreamApiClient(
         withContext(io) {
             try {
                 val url = buildPlayerApiUrl(action = null) // No action = server info
+                UnifiedLog.d(TAG, "getServerInfo: Fetching from URL: ${url.replace(Regex("(password|username)=([^&]*)"), "$1=***")}")
+                
                 val body =
                     fetchRaw(url, isEpg = false)
-                        ?: return@withContext Result.failure(
-                            Exception("Empty response"),
-                        )
+                        ?: run {
+                            UnifiedLog.e(TAG, "getServerInfo: Empty response from server")
+                            return@withContext Result.failure(
+                                Exception("Empty response from server. Check URL, credentials, and network connection."),
+                            )
+                        }
+                
+                UnifiedLog.d(TAG, "getServerInfo: Received ${body.length} bytes, parsing...")
                 val parsed = json.decodeFromString<XtreamServerInfo>(body)
                 UnifiedLog.d(
                     TAG,
@@ -782,7 +834,11 @@ class DefaultXtreamApiClient(
         builder.addQueryParameter("username", cfg.username)
         builder.addQueryParameter("password", cfg.password)
 
-        return builder.build().toString()
+        val url = builder.build().toString()
+        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
+        UnifiedLog.d(TAG, "buildPlayerApiUrl: Built URL: $redactedUrl")
+        
+        return url
     }
 
     private fun buildCacheKey(
@@ -811,9 +867,15 @@ class DefaultXtreamApiClient(
         url: String,
         isEpg: Boolean,
     ): String? {
+        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
+        UnifiedLog.d(TAG, "fetchRaw: Fetching URL: $redactedUrl, isEpg=$isEpg")
+        
         // Check cache
         val cached = readCache(url, isEpg)
-        if (cached != null) return cached
+        if (cached != null) {
+            UnifiedLog.d(TAG, "fetchRaw: Cache hit for $redactedUrl, returning ${cached.length} bytes")
+            return cached
+        }
 
         // Rate limit
         takeRateSlot(config?.host ?: "")
@@ -829,17 +891,30 @@ class DefaultXtreamApiClient(
                 .build()
 
         return try {
+            UnifiedLog.d(TAG, "fetchRaw: Executing HTTP request to $redactedUrl")
             http.newCall(request).execute().use { response ->
+                UnifiedLog.d(TAG, "fetchRaw: Received response code ${response.code} for $redactedUrl")
+                
                 if (!response.isSuccessful) {
+                    UnifiedLog.w(TAG, "fetchRaw: Request failed with code ${response.code} for $redactedUrl")
                     return null
                 }
+                
                 val body = response.body.string()
+                UnifiedLog.d(TAG, "fetchRaw: Received ${body.length} bytes from $redactedUrl")
+                
+                if (body.isEmpty()) {
+                    UnifiedLog.w(TAG, "fetchRaw: Response body is empty for $redactedUrl")
+                    return null
+                }
+                
                 if (body.isNotEmpty()) {
                     writeCache(url, body)
                 }
                 body
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $redactedUrl", e)
             null
         }
     }

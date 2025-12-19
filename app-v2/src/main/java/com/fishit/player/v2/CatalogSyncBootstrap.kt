@@ -42,7 +42,10 @@ import javax.inject.Singleton
         private val hasTriggered = AtomicBoolean(false)
 
         fun start() {
-            if (!hasStarted.compareAndSet(false, true)) return
+            if (!hasStarted.compareAndSet(false, true)) {
+                UnifiedLog.d(TAG) { "Catalog sync bootstrap already started, ignoring" }
+                return
+            }
 
             UnifiedLog.i(TAG) { "Catalog sync bootstrap collection started" }
 
@@ -55,6 +58,9 @@ import javax.inject.Singleton
                                 .onStart {
                                     val isAuthorized =
                                         runCatching { telegramAuthClient.isAuthorized() }
+                                            .onFailure { error ->
+                                                UnifiedLog.w(TAG) { "Failed to check Telegram auth: ${error.message}" }
+                                            }
                                             .getOrDefault(false)
                                     emit(isAuthorized)
                                 },
@@ -64,14 +70,18 @@ import javax.inject.Singleton
                                     emit(xtreamApiClient.connectionState.value is XtreamConnectionState.Connected)
                                 },
                         ) { telegramAuthenticated, xtreamAuthenticated ->
+                            UnifiedLog.d(TAG) { "Auth state update: telegram=$telegramAuthenticated, xtream=$xtreamAuthenticated" }
                             telegramAuthenticated to xtreamAuthenticated
                         }.distinctUntilChanged()
                             .first { (telegramAuthenticated, xtreamAuthenticated) ->
-                                telegramAuthenticated || xtreamAuthenticated
+                                val hasAuth = telegramAuthenticated || xtreamAuthenticated
+                                UnifiedLog.d(TAG) { "Checking auth state: hasAuth=$hasAuth" }
+                                hasAuth
                             }
 
                     triggerSync(telegramReady, xtreamConnected)
                 } catch (cancellation: CancellationException) {
+                    UnifiedLog.d(TAG) { "Catalog sync bootstrap cancelled" }
                     throw cancellation
                 } catch (t: Throwable) {
                     UnifiedLog.e(TAG, t) { "Catalog sync bootstrap failed to start" }
