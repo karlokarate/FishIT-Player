@@ -866,7 +866,7 @@ class DefaultXtreamApiClient(
         url: String,
         isEpg: Boolean,
     ): String? {
-        val redactedUrl = url.replace(Regex("(password|username)=([^&]*)"), "$1=***")
+        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
         UnifiedLog.d(TAG, "fetchRaw: Fetching URL: $redactedUrl, isEpg=$isEpg")
         
         // Check cache
