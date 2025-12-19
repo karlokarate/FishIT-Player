@@ -23,6 +23,7 @@ The v2 rebuild follows a phased approach:
 | 2.2 | Data Layer (Telegram/Xtream) | ✅ COMPLETED | Dec 2025 |
 | 2.3 | Metadata Normalizer | ✅ COMPLETED | Dec 2025 |
 | 2.4 | Structured Bundles (Telegram) | ✅ COMPLETED | Dec 2025 |
+| 2.5 | SSOT Catalog Sync Scheduler | ✅ COMPLETED | Dec 2025 |
 | 3 | SIP / Internal Player (Phase 0-7) | ✅ COMPLETED | Dec 2025 |
 | 3.1 | SIP / Internal Player (Phase 8-14) | 🚧 IN PROGRESS | Jan 2026 |
 | 4 | UI Feature Screens | 🚧 IN PROGRESS | Jan 2026 |
@@ -249,6 +250,51 @@ This enables:
 
 - [docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md](docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md) – Full design
 - [contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md](contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) – Binding contract
+
+---
+
+## Phase 2.5 – SSOT Catalog Sync Scheduler
+
+Status: ✅ COMPLETED (Dec 2025)
+
+### Goals
+
+- Implement single-source-of-truth (SSOT) sync scheduling
+- Wire all UI sync triggers to WorkManager only
+- Remove all direct CatalogSyncService.sync() calls from UI
+
+### Background
+
+Contract W-6 (CATALOG_SYNC_WORKERS_CONTRACT_V2) mandates a single global sync queue with `uniqueWorkName = "catalog_sync_global"`. This phase implements the scheduling infrastructure and wires the UI to use it exclusively.
+
+### Tasks (Done)
+
+- [x] **Task 1: SSOT Worker Scheduling**
+  - [x] Extend `CatalogSyncWorkScheduler` interface with `enqueueForceRescan()`, `cancelSync()`
+  - [x] Rename app-v2 scheduler to `CatalogSyncWorkSchedulerImpl`
+  - [x] Remove `DefaultCatalogSyncWorkScheduler` placeholder
+  - [x] Update DI modules (`AppWorkModule`)
+  - [x] Wire scheduler into `DebugViewModel`
+
+- [x] **Task 2: SSOT Sync Trigger Wiring**
+  - [x] Create `SyncUiState` sealed interface (Idle/Running/Success/Failed)
+  - [x] Create `SyncFailureReason` enum
+  - [x] Create `SyncStateObserver` interface
+  - [x] Create `CatalogSyncUiBridge` (WorkManager → SyncUiState mapping)
+  - [x] Update `DebugViewModel` with `SyncStateObserver` injection
+  - [x] Replace Telegram/Xtream sync buttons with SSOT controls
+  - [x] Add `SyncStatusRow` composable for state display
+
+### Modules Affected
+
+- `core/catalog-sync` (SyncUiState, SyncStateObserver)
+- `app-v2/work` (CatalogSyncWorkSchedulerImpl, CatalogSyncUiBridge)
+- `app-v2/di` (AppWorkModule)
+- `feature/settings` (DebugViewModel, DebugScreen)
+
+### Docs
+
+- [docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md](docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md) – Updated to v2.1
 
 ---
 

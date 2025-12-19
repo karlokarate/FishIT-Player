@@ -1,5 +1,7 @@
 package com.fishit.player.v2
 
+import com.fishit.player.core.catalogsync.SourceActivationStore
+import com.fishit.player.core.catalogsync.SourceErrorReason
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
@@ -18,6 +20,7 @@ import javax.inject.Singleton
  * Responsibilities:
  * - Read stored Xtream credentials on app start
  * - Auto-initialize XtreamApiClient if credentials exist
+ * - Update SourceActivationStore on success/failure
  * - Does NOT trigger catalog sync (that's CatalogSyncBootstrap's job)
  * - Runs once per app process
  */
@@ -27,6 +30,7 @@ class XtreamSessionBootstrap
     constructor(
         private val xtreamApiClient: XtreamApiClient,
         private val xtreamCredentialsStore: XtreamCredentialsStore,
+        private val sourceActivationStore: SourceActivationStore,
         @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
         private val appScope: CoroutineScope,
     ) {
@@ -46,17 +50,22 @@ class XtreamSessionBootstrap
                         val result = xtreamApiClient.initialize(storedConfig.toApiConfig())
                         if (result.isSuccess) {
                             UnifiedLog.i(TAG) { "Xtream session auto-initialization succeeded" }
+                            sourceActivationStore.setXtreamActive()
                         } else {
                             val error = result.exceptionOrNull()
                             UnifiedLog.w(TAG, error) {
                                 "Xtream session auto-initialization failed (credentials may be stale)"
                             }
+                            sourceActivationStore.setXtreamInactive(SourceErrorReason.INVALID_CREDENTIALS)
                         }
                     } else {
                         UnifiedLog.d(TAG) { "No stored Xtream credentials found" }
+                        // No credentials = inactive (not an error)
+                        sourceActivationStore.setXtreamInactive()
                     }
                 } catch (t: Throwable) {
                     UnifiedLog.e(TAG, t) { "Xtream session auto-initialization error" }
+                    sourceActivationStore.setXtreamInactive(SourceErrorReason.TRANSPORT_ERROR)
                 }
             }
         }

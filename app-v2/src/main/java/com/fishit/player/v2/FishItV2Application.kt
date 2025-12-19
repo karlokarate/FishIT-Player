@@ -6,8 +6,12 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.fishit.player.infra.logging.UnifiedLogInitializer
+import com.fishit.player.infra.work.SourceActivationObserver
+import com.fishit.player.v2.di.AppScopeModule
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Provider
 
 /**
@@ -39,7 +43,24 @@ class FishItV2Application :
     lateinit var imageLoaderProvider: Provider<ImageLoader>
 
     @Inject
-    lateinit var workManagerConfiguration: Configuration
+    lateinit var workConfiguration: Configuration
+    
+    // Bootstrap components
+    @Inject
+    lateinit var xtreamSessionBootstrap: XtreamSessionBootstrap
+    
+    @Inject
+    lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
+    
+    @Inject
+    lateinit var telegramActivationObserver: TelegramActivationObserver
+    
+    @Inject
+    lateinit var sourceActivationObserver: SourceActivationObserver
+    
+    @Inject
+    @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
+    lateinit var appScope: CoroutineScope
 
     override fun onCreate() {
         super.onCreate()
@@ -48,10 +69,13 @@ class FishItV2Application :
         // This ensures all subsequent logging works correctly
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
 
-        // Initialization logic will be added in later phases:
-        // - DeviceProfile detection
-        // - Local profile loading
-        // - Pipeline initialization (background)
+        // Start source activation observers (must be before bootstraps)
+        sourceActivationObserver.start(appScope)
+        telegramActivationObserver.start()
+        
+        // Start session bootstraps
+        xtreamSessionBootstrap.start()
+        catalogSyncBootstrap.start()
     }
 
     /**
@@ -71,5 +95,6 @@ class FishItV2Application :
      */
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoaderProvider.get()
 
-    override fun getWorkManagerConfiguration(): Configuration = workManagerConfiguration
+    override val workManagerConfiguration: Configuration
+        get() = workConfiguration
 }

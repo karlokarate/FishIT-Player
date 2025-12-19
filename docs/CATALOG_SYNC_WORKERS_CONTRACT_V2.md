@@ -1,9 +1,22 @@
 # CATALOG_SYNC_WORKERS_CONTRACT_V2.md
 
-Version: 2.0  
-Date: 2025-12-18  
+Version: 2.1  
+Date: 2025-12-19  
 Status: Binding Contract  
 Scope: Background execution, catalog sync orchestration, TMDB enrichment workers, Telegram structured bundle safety
+
+---
+
+## Implementation Status
+
+| Component | Status | Module | Notes |
+|-----------|--------|--------|-------|
+| CatalogSyncWorkScheduler | ✅ Implemented | core/catalog-sync | Interface for SSOT scheduling |
+| CatalogSyncWorkSchedulerImpl | ✅ Implemented | app-v2/work | WorkManager implementation |
+| SyncUiState | ✅ Implemented | core/catalog-sync | UI state model |
+| SyncStateObserver | ✅ Implemented | core/catalog-sync | Interface for state observation |
+| CatalogSyncUiBridge | ✅ Implemented | app-v2/work | WorkManager → SyncUiState mapping |
+| DebugScreen Sync UI | ✅ Implemented | feature/settings | SSOT sync controls |
 
 ---
 
@@ -53,10 +66,15 @@ Workers MUST NOT perform bundling or clustering logic.
 
 ## 2. Global Scheduling Model
 
-### W-6 Single Global Sync Queue (MANDATORY)
+### W-6 Single Global Sync Queue (MANDATORY) ✅ IMPLEMENTED
 - uniqueWorkName = "catalog_sync_global"
 - Default policy: ExistingWorkPolicy.KEEP
 - Expert force restart: ExistingWorkPolicy.REPLACE
+
+**Implementation:**
+- `CatalogSyncWorkScheduler` interface in `core/catalog-sync`
+- `CatalogSyncWorkSchedulerImpl` in `app-v2/work`
+- Methods: `enqueueAutoSync()`, `enqueueExpertSyncNow()`, `enqueueForceRescan()`, `cancelSync()`
 
 ### W-7 Source Order (MANDATORY)
 If multiple sources are active, execution order MUST be:
@@ -245,13 +263,21 @@ Cooldown: 24h
 
 ---
 
-## 12. Expert Controls
+## 12. Expert Controls ✅ PARTIALLY IMPLEMENTED
 
 Expert Settings MUST provide:
-- Sync now
-- Force restart sync
-- Telegram full history rescan
-- Force TMDB refresh
-- Reset cursors/checkpoints
+- ✅ Sync now (`enqueueExpertSyncNow()`)
+- ✅ Force restart sync (`enqueueForceRescan()`)
+- ✅ Cancel sync (`cancelSync()`)
+- 🔲 Telegram full history rescan
+- 🔲 Force TMDB refresh
+- 🔲 Reset cursors/checkpoints
+
+**UI Implementation:**
+- `DebugScreen` in `feature/settings` provides:
+  - Sync All button → `syncAll()` → `enqueueExpertSyncNow()`
+  - Force Rescan button → `forceRescan()` → `enqueueForceRescan()`
+  - Cancel button → `cancelSync()` → `cancelSync()`
+  - Status row showing `SyncUiState` (Idle/Running/Success/Failed)
 
 ---

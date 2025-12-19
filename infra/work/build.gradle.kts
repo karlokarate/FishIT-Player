@@ -38,6 +38,9 @@ dependencies {
     // TODO: Add WorkManager dependencies when implementing scheduler
     // implementation("androidx.work:work-runtime-ktx:2.9.1")
 
+    // DataStore for source activation persistence
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

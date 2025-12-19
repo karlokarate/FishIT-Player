@@ -6,7 +6,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,14 +24,54 @@ private const val KEY_MAX_RUNTIME_MS = "max_runtime_ms"
 private const val KEY_DEVICE_CLASS = "device_class"
 
 /**
- * Schedules catalog synchronization work using WorkManager.
+ * SSOT implementation of [CatalogSyncWorkScheduler] using WorkManager.
+ *
+ * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+ * - uniqueWorkName = "catalog_sync_global"
+ * - All sync triggers MUST go through this scheduler
+ * - No UI/ViewModel may call CatalogSyncService directly
  */
 @Singleton
-class CatalogSyncWorkScheduler @Inject constructor(
+class CatalogSyncWorkSchedulerImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : CatalogSyncWorkScheduler {
 
-    fun schedule(request: CatalogSyncWorkRequest) {
+    // ========== Interface Implementation ==========
+
+    override fun enqueueAutoSync() {
+        schedule(
+            CatalogSyncWorkRequest(
+                syncRunId = UUID.randomUUID().toString(),
+                mode = CatalogSyncWorkMode.AUTO,
+            )
+        )
+    }
+
+    override fun enqueueExpertSyncNow() {
+        schedule(
+            CatalogSyncWorkRequest(
+                syncRunId = UUID.randomUUID().toString(),
+                mode = CatalogSyncWorkMode.EXPERT_NOW,
+            )
+        )
+    }
+
+    override fun enqueueForceRescan() {
+        schedule(
+            CatalogSyncWorkRequest(
+                syncRunId = UUID.randomUUID().toString(),
+                mode = CatalogSyncWorkMode.FORCE_RESCAN,
+            )
+        )
+    }
+
+    override fun cancelSync() {
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+    }
+
+    // ========== Internal Implementation ==========
+
+    private fun schedule(request: CatalogSyncWorkRequest) {
         WorkManager
             .getInstance(context)
             .enqueueUniqueWork(
@@ -37,10 +79,6 @@ class CatalogSyncWorkScheduler @Inject constructor(
                 request.mode.workPolicy,
                 buildRequest(request),
             )
-    }
-
-    fun cancel() {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
     }
 
     private fun buildRequest(request: CatalogSyncWorkRequest): OneTimeWorkRequest {

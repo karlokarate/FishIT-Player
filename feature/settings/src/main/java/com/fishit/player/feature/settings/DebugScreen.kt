@@ -19,14 +19,18 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -52,6 +56,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.fishit.player.core.catalogsync.SyncUiState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -149,37 +154,63 @@ fun DebugScreen(
                     }
                 }
 
-                // === Manual Catalog Sync ===
+                // === Catalog Sync (SSOT via WorkManager) ===
                 item {
-                    DebugSection(title = "Manual Sync", icon = Icons.Default.Refresh) {
-                        Text(
-                            text = "Manually trigger catalog sync from connected sources.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    DebugSection(title = "Catalog Sync", icon = Icons.Default.Refresh) {
+                        // Sync Status Line
+                        SyncStatusRow(syncState = state.syncState)
+                        
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        // Telegram Sync Button
-                        SyncButton(
-                            name = "Telegram",
-                            icon = Icons.Default.Send,
-                            isSyncing = state.isSyncingTelegram,
-                            isEnabled = state.telegramConnected,
-                            progress = state.telegramSyncProgress,
-                            onClick = viewModel::syncTelegram
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Xtream Sync Button
-                        SyncButton(
-                            name = "Xtream",
-                            icon = Icons.Default.Cloud,
-                            isSyncing = state.isSyncingXtream,
-                            isEnabled = state.xtreamConnected,
-                            progress = state.xtreamSyncProgress,
-                            onClick = viewModel::syncXtream
-                        )
+                        // Sync Action Buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Sync Now Button
+                            Button(
+                                onClick = viewModel::syncAll,
+                                enabled = !state.syncState.isRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Sync,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Sync")
+                            }
+                            
+                            // Force Rescan Button
+                            OutlinedButton(
+                                onClick = viewModel::forceRescan,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Force")
+                            }
+                            
+                            // Cancel Button (only enabled when running)
+                            OutlinedButton(
+                                onClick = viewModel::cancelSync,
+                                enabled = state.syncState.isRunning,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Cancel")
+                            }
+                        }
                     }
                 }
 
@@ -574,100 +605,77 @@ private fun LogEntryRow(log: LogEntry) {
 }
 
 /**
- * Sync button with progress indicator.
- * 
- * Shows:
- * - Normal state: Button with icon and label
- * - Syncing state: Progress indicator with item counts
- * - Disabled state: Grayed out when source not connected
- * 
- * Click while syncing cancels the sync.
+ * Compact sync status row showing current WorkManager state.
  */
 @Composable
-private fun SyncButton(
-    name: String,
-    icon: ImageVector,
-    isSyncing: Boolean,
-    isEnabled: Boolean,
-    progress: SyncProgress?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun SyncStatusRow(
+    syncState: SyncUiState,
+    modifier: Modifier = Modifier
 ) {
-    val buttonText = when {
-        isSyncing -> "Cancel $name Sync"
-        else -> "Sync $name"
-    }
-    
-    val buttonColors = if (isSyncing) {
-        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    } else {
-        androidx.compose.material3.ButtonDefaults.buttonColors()
-    }
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        if (isSyncing) {
-            OutlinedButton(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = buttonColors,
-            ) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                color = when (syncState) {
+                    is SyncUiState.Running -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    is SyncUiState.Success -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                    is SyncUiState.Failed -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                    is SyncUiState.Idle -> Color.Transparent
+                },
+                shape = MaterialTheme.shapes.small
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Status Icon
+        when (syncState) {
+            is SyncUiState.Running -> {
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(buttonText)
             }
-            
-            // Progress details
-            progress?.let { p ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics {
-                            contentDescription = "Syncing ${p.currentPhase ?: "in progress"}: ${p.itemsPersisted} of ${p.itemsDiscovered} items"
-                        },
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = p.currentPhase ?: "Syncing...",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${p.itemsPersisted}/${p.itemsDiscovered} items",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        } else {
-            Button(
-                onClick = onClick,
-                enabled = isEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            is SyncUiState.Success -> {
                 Icon(
-                    imageVector = icon,
-                    contentDescription = "$name sync",
-                    modifier = Modifier.size(18.dp)
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Sync successful",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(buttonText)
             }
-            
-            if (!isEnabled) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "$name not connected",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
+            is SyncUiState.Failed -> {
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = "Sync failed",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+            is SyncUiState.Idle -> {
+                Icon(
+                    imageVector = Icons.Default.HourglassEmpty,
+                    contentDescription = "Sync idle",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
+        
+        // Status Text
+        Text(
+            text = when (syncState) {
+                is SyncUiState.Running -> "Syncing..."
+                is SyncUiState.Success -> "Last sync: Success"
+                is SyncUiState.Failed -> "Failed: ${syncState.reason.name.lowercase().replace('_', ' ')}"
+                is SyncUiState.Idle -> "Ready to sync"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = when (syncState) {
+                is SyncUiState.Failed -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
     }
 }

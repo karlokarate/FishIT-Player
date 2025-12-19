@@ -3,7 +3,10 @@ package com.fishit.player.v2.di
 import android.content.Context
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.fishit.player.v2.work.CatalogSyncWorkScheduler
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
+import com.fishit.player.core.catalogsync.SyncStateObserver
+import com.fishit.player.v2.work.CatalogSyncUiBridge
+import com.fishit.player.v2.work.CatalogSyncWorkSchedulerImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,9 +27,27 @@ object AppWorkModule {
             .setWorkerFactory(workerFactory)
             .build()
 
+    /**
+     * SSOT: All catalog sync scheduling goes through this single implementation.
+     *
+     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+     * - uniqueWorkName = "catalog_sync_global"
+     * - No UI/ViewModel may call CatalogSyncService directly
+     */
     @Provides
     @Singleton
     fun provideCatalogSyncWorkScheduler(
         @ApplicationContext context: Context,
-    ): CatalogSyncWorkScheduler = CatalogSyncWorkScheduler(context)
+    ): CatalogSyncWorkScheduler = CatalogSyncWorkSchedulerImpl(context)
+    
+    /**
+     * Provides SyncStateObserver for feature modules to observe sync state.
+     * 
+     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+     */
+    @Provides
+    @Singleton
+    fun provideSyncStateObserver(
+        bridge: CatalogSyncUiBridge,
+    ): SyncStateObserver = bridge
 }

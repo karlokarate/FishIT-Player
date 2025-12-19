@@ -2,16 +2,15 @@ package com.fishit.player.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fishit.player.core.catalogsync.CatalogSyncService
-import com.fishit.player.core.catalogsync.SyncConfig
-import com.fishit.player.core.catalogsync.SyncStatus
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
+import com.fishit.player.core.catalogsync.SyncStateObserver
+import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.core.catalogsync.toDisplayString
+import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -51,21 +50,8 @@ data class DebugState(
     val isClearingCache: Boolean = false,
     val lastActionResult: String? = null,
     
-    // === Manual Catalog Sync ===
-    val isSyncingTelegram: Boolean = false,
-    val isSyncingXtream: Boolean = false,
-    val telegramSyncProgress: SyncProgress? = null,
-    val xtreamSyncProgress: SyncProgress? = null,
-)
-
-/**
- * Progress information for sync operations.
- */
-data class SyncProgress(
-    val itemsDiscovered: Long,
-    val itemsPersisted: Long,
-    val currentPhase: String? = null,
-    val durationMs: Long = 0L,
+    // === Catalog Sync (SSOT via WorkManager) ===
+    val syncState: SyncUiState = SyncUiState.Idle,
 )
 
 /**
@@ -85,26 +71,33 @@ enum class LogLevel {
 /**
  * Debug ViewModel - Manages debug/diagnostics screen
  * 
- * Provides manual catalog sync for Telegram and Xtream sources,
- * with progress tracking and error handling.
+ * Uses CatalogSyncWorkScheduler (SSOT) for all sync triggers.
+ * Observes sync state via SyncStateObserver (injected CatalogSyncUiBridge).
+ * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
  */
 @HiltViewModel
 class DebugViewModel @Inject constructor(
-    private val catalogSyncService: CatalogSyncService,
-    // TODO: Inject actual services when available
-    // private val telegramClient: TelegramTransportClient,
-    // private val cacheManager: CacheManager,
-    // private val logRepository: LogRepository
+    private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
+    private val syncStateObserver: SyncStateObserver,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DebugState())
     val state: StateFlow<DebugState> = _state.asStateFlow()
-    
-    private var telegramSyncJob: Job? = null
-    private var xtreamSyncJob: Job? = null
 
     init {
         loadDebugInfo()
+        observeSyncState()
+    }
+    
+    /**
+     * Observe sync state from WorkManager via SyncStateObserver.
+     */
+    private fun observeSyncState() {
+        viewModelScope.launch {
+            syncStateObserver.observeSyncState().collect { syncState ->
+                _state.update { it.copy(syncState = syncState) }
+            }
+        }
     }
 
     private fun loadDebugInfo() {
@@ -196,222 +189,45 @@ class DebugViewModel @Inject constructor(
         _state.update { it.copy(lastActionResult = null) }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        // Cancel any ongoing sync jobs to prevent leaks
-        telegramSyncJob?.cancel()
-        xtreamSyncJob?.cancel()
-    }
-
-    // ========== Manual Sync Actions ==========
+    // ========== Manual Sync Actions (SSOT via CatalogSyncWorkScheduler) ==========
 
     /**
-     * Trigger manual Telegram catalog sync.
+     * Trigger manual catalog sync for all configured sources.
      * 
-     * Scans all connected Telegram chats and persists discovered media items.
-     * Progress is updated live via [DebugState.telegramSyncProgress].
+     * Uses WorkManager via CatalogSyncWorkScheduler (SSOT).
+     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
      */
-    fun syncTelegram() {
-        if (_state.value.isSyncingTelegram) {
-            // Cancel existing sync - let flow's SyncStatus.Cancelled handle state cleanup
-            telegramSyncJob?.cancel()
-            return
-        }
-        
-        telegramSyncJob = viewModelScope.launch {
-            _state.update { 
-                it.copy(
-                    isSyncingTelegram = true, 
-                    telegramSyncProgress = SyncProgress(0, 0, "Starting...")
-                ) 
-            }
-            
-            catalogSyncService.syncTelegram(
-                chatIds = null, // All chats
-                syncConfig = SyncConfig.DEFAULT,
-            )
-                .catch { error ->
-                    _state.update { 
-                        it.copy(
-                            isSyncingTelegram = false,
-                            telegramSyncProgress = null,
-                            lastActionResult = "Telegram sync error: ${error.message}"
-                        ) 
-                    }
-                }
-                .onCompletion { cause ->
-                    // Clean up job reference
-                    telegramSyncJob = null
-                    // Only update state if not cancelled (SyncStatus.Cancelled handles that)
-                    if (cause == null && _state.value.isSyncingTelegram) {
-                        _state.update { 
-                            it.copy(isSyncingTelegram = false) 
-                        }
-                    }
-                }
-                .collect { status ->
-                    handleTelegramSyncStatus(status)
-                }
-        }
-    }
-    
-    private fun handleTelegramSyncStatus(status: SyncStatus) {
-        when (status) {
-            is SyncStatus.Started -> {
-                _state.update { 
-                    it.copy(telegramSyncProgress = SyncProgress(0, 0, "Started...")) 
-                }
-            }
-            is SyncStatus.InProgress -> {
-                _state.update { 
-                    it.copy(
-                        telegramSyncProgress = SyncProgress(
-                            itemsDiscovered = status.itemsDiscovered,
-                            itemsPersisted = status.itemsPersisted,
-                            currentPhase = status.currentPhase,
-                        )
-                    ) 
-                }
-            }
-            is SyncStatus.Completed -> {
-                _state.update { 
-                    it.copy(
-                        isSyncingTelegram = false,
-                        telegramSyncProgress = SyncProgress(
-                            itemsDiscovered = status.totalItems,
-                            itemsPersisted = status.totalItems,
-                            durationMs = status.durationMs,
-                        ),
-                        telegramMediaCount = status.totalItems.toInt(),
-                        lastActionResult = "Telegram sync complete: ${status.totalItems} items in ${status.durationMs / 1000}s"
-                    ) 
-                }
-            }
-            is SyncStatus.Cancelled -> {
-                _state.update { 
-                    it.copy(
-                        isSyncingTelegram = false,
-                        telegramSyncProgress = null,
-                        lastActionResult = "Telegram sync cancelled (${status.itemsPersisted} items saved)"
-                    ) 
-                }
-            }
-            is SyncStatus.Error -> {
-                _state.update { 
-                    it.copy(
-                        isSyncingTelegram = false,
-                        telegramSyncProgress = null,
-                        lastActionResult = "Telegram sync error: ${status.message}"
-                    ) 
-                }
-            }
+    fun syncAll() {
+        UnifiedLog.i(TAG) { "User triggered: Sync All (enqueueExpertSyncNow)" }
+        catalogSyncWorkScheduler.enqueueExpertSyncNow()
+        _state.update { 
+            it.copy(lastActionResult = "Catalog sync enqueued")
         }
     }
 
     /**
-     * Trigger manual Xtream catalog sync.
-     * 
-     * Syncs VOD, Series, Episodes, and Live channels from all configured Xtream sources.
-     * Progress is updated live via [DebugState.xtreamSyncProgress].
+     * Force rescan - cancels any running sync and starts fresh.
      */
-    fun syncXtream() {
-        if (_state.value.isSyncingXtream) {
-            // Cancel existing sync - let flow's SyncStatus.Cancelled handle state cleanup
-            xtreamSyncJob?.cancel()
-            return
-        }
-        
-        xtreamSyncJob = viewModelScope.launch {
-            _state.update { 
-                it.copy(
-                    isSyncingXtream = true, 
-                    xtreamSyncProgress = SyncProgress(0, 0, "Starting...")
-                ) 
-            }
-            
-            catalogSyncService.syncXtream(
-                includeVod = true,
-                includeSeries = true,
-                includeEpisodes = true,
-                includeLive = true,
-                syncConfig = SyncConfig.DEFAULT,
-            )
-                .catch { error ->
-                    _state.update { 
-                        it.copy(
-                            isSyncingXtream = false,
-                            xtreamSyncProgress = null,
-                            lastActionResult = "Xtream sync error: ${error.message}"
-                        ) 
-                    }
-                }
-                .onCompletion { cause ->
-                    // Clean up job reference
-                    xtreamSyncJob = null
-                    // Only update state if not cancelled (SyncStatus.Cancelled handles that)
-                    if (cause == null && _state.value.isSyncingXtream) {
-                        _state.update { 
-                            it.copy(isSyncingXtream = false) 
-                        }
-                    }
-                }
-                .collect { status ->
-                    handleXtreamSyncStatus(status)
-                }
+    fun forceRescan() {
+        UnifiedLog.i(TAG) { "User triggered: Force Rescan (enqueueForceRescan)" }
+        catalogSyncWorkScheduler.enqueueForceRescan()
+        _state.update { 
+            it.copy(lastActionResult = "Force rescan started")
         }
     }
-    
-    private fun handleXtreamSyncStatus(status: SyncStatus) {
-        when (status) {
-            is SyncStatus.Started -> {
-                _state.update { 
-                    it.copy(xtreamSyncProgress = SyncProgress(0, 0, "Started...")) 
-                }
-            }
-            is SyncStatus.InProgress -> {
-                _state.update { 
-                    it.copy(
-                        xtreamSyncProgress = SyncProgress(
-                            itemsDiscovered = status.itemsDiscovered,
-                            itemsPersisted = status.itemsPersisted,
-                            currentPhase = status.currentPhase,
-                        )
-                    ) 
-                }
-            }
-            is SyncStatus.Completed -> {
-                _state.update { 
-                    it.copy(
-                        isSyncingXtream = false,
-                        xtreamSyncProgress = SyncProgress(
-                            itemsDiscovered = status.totalItems,
-                            itemsPersisted = status.totalItems,
-                            durationMs = status.durationMs,
-                        ),
-                        lastActionResult = "Xtream sync complete: ${status.totalItems} items in ${status.durationMs / 1000}s"
-                    ) 
-                }
-            }
-            is SyncStatus.Cancelled -> {
-                _state.update { 
-                    it.copy(
-                        isSyncingXtream = false,
-                        xtreamSyncProgress = null,
-                        lastActionResult = "Xtream sync cancelled (${status.itemsPersisted} items saved)"
-                    ) 
-                }
-            }
-            is SyncStatus.Error -> {
-                _state.update { 
-                    it.copy(
-                        isSyncingXtream = false,
-                        xtreamSyncProgress = null,
-                        lastActionResult = "Xtream sync error: ${status.message}"
-                    ) 
-                }
-            }
+
+    /**
+     * Cancel any running catalog sync.
+     */
+    fun cancelSync() {
+        UnifiedLog.i(TAG) { "User triggered: Cancel Sync" }
+        catalogSyncWorkScheduler.cancelSync()
+        _state.update { 
+            it.copy(lastActionResult = "Sync cancelled")
         }
     }
+
+    // ========== Cache Actions ==========
 
     private fun generateDemoLogs(): List<LogEntry> {
         val now = System.currentTimeMillis()
@@ -424,5 +240,9 @@ class DebugViewModel @Inject constructor(
             LogEntry(now - 30000, LogLevel.DEBUG, "ObjectBox", "DB query completed in 12ms"),
             LogEntry(now - 60000, LogLevel.INFO, "CacheManager", "Cache warm-up complete")
         )
+    }
+    
+    private companion object {
+        private const val TAG = "DebugViewModel"
     }
 }

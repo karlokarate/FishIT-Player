@@ -1,6 +1,6 @@
 package com.fishit.player.infra.work
 
-import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
+import com.fishit.player.core.catalogsync.SourceActivationStore
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -8,38 +8,26 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * RESERVED MODULE: Work Scheduler Infrastructure
+ * Work Scheduler Infrastructure Module
  *
  * Purpose: WorkManager scheduling/orchestration (catalog sync, background fetch)
+ * + Source Activation persistence and observation.
  *
- * TODO: Implement when needed:
- * - [ ] WorkManager scheduler API for catalog sync
- * - [ ] Background sync worker implementations
- * - [ ] Work constraints and policies
- * - [ ] Integration with core:catalog-sync contracts
+ * Provides:
+ * - [SourceActivationStore] - SSOT for source activation states (persisted via DataStore)
+ * - [SourceActivationObserver] - Bridges activation changes to scheduler
  *
- * Contract Rules:
- * - Consumes core:catalog-sync contracts (domain/types)
- * - app-v2 only triggers via interfaces
- * - MUST NOT contain WorkManager scheduling in core:catalog-sync
- * - Scheduler implementation lives here, contracts live in core
+ * Note: CatalogSyncWorkScheduler is provided by app-v2/di/AppWorkModule.
  *
  * See: docs/v2/FROZEN_MODULE_MANIFEST.md
  */
 @Module
 @InstallIn(SingletonComponent::class)
-object WorkSchedulerModule {
-    // TODO: Provide WorkManager configuration when ready
-    // TODO: Provide scheduler API for catalog sync triggers
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class CatalogSyncWorkSchedulerModule {
-
+abstract class SourceActivationModule {
+    
     @Binds
     @Singleton
-    abstract fun bindCatalogSyncWorkScheduler(
-        impl: DefaultCatalogSyncWorkScheduler
-    ): CatalogSyncWorkScheduler
+    abstract fun bindSourceActivationStore(
+        impl: DefaultSourceActivationStore
+    ): SourceActivationStore
 }

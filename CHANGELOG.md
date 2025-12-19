@@ -8,6 +8,39 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### SSOT Catalog Sync Scheduler (2025-12-19)
+
+- **feat(core/catalog-sync)**: Implemented SSOT sync scheduling system
+  - Extended `CatalogSyncWorkScheduler` interface with `enqueueForceRescan()` and `cancelSync()`
+  - Created `SyncUiState` sealed interface (Idle/Running/Success/Failed)
+  - Created `SyncStateObserver` interface for feature modules
+  - Created `SyncFailureReason` enum with human-readable messages
+
+- **feat(app-v2)**: WorkManager SSOT implementation
+  - Renamed scheduler to `CatalogSyncWorkSchedulerImpl` implementing core interface
+  - Created `CatalogSyncUiBridge` implementing `SyncStateObserver`
+  - Maps WorkManager `WorkInfo.State` → `SyncUiState`
+  - Single work name: `catalog_sync_global` (SSOT)
+
+- **feat(feature/settings)**: Debug screen sync UI
+  - Updated `DebugViewModel` with injected `SyncStateObserver`
+  - Replaced Telegram/Xtream buttons with SSOT controls:
+    - "Sync" → `enqueueExpertSyncNow()`
+    - "Force" → `enqueueForceRescan()`  
+    - "Cancel" → `cancelSync()`
+  - Added `SyncStatusRow` showing current sync state
+  - Removed deprecated `syncTelegram()`, `syncXtream()`, `SyncProgress`
+
+- **refactor(di)**: Clean DI wiring
+  - `AppWorkModule` provides `CatalogSyncWorkScheduler` and `SyncStateObserver`
+  - Removed `DefaultCatalogSyncWorkScheduler` placeholder
+  - All sync triggers go through single SSOT scheduler
+
+- **docs(contract)**: Updated CATALOG_SYNC_WORKERS_CONTRACT_V2 to v2.1
+  - Added implementation status table
+  - Marked W-6 (Single Global Sync Queue) as implemented
+  - Marked Expert Controls as partially implemented
+
 ### Telegram Structured Bundles Implementation (2025-12-19)
 
 - **feat(core/model)**: Extended RawMediaMetadata with `ageRating: Int?` for FSK/MPAA

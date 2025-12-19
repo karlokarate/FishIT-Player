@@ -68,7 +68,7 @@
 |------------|--------|
 | `TelegramMessageBundler` | ✅ Implementiert und wird genutzt |
 | `TelegramPipelineAdapter.fetchMediaMessagesWithBundling()` | ✅ Nutzt Bundler aktiv |
-| `TelegramBundleToMediaItemMapper` | ✅ Extrahiert structured metadata **inkl. tmdbType** |
+| `TelegramBundleToMediaItemMapper` | ✅ Extrahiert structured metadata **inkl. tmdbTyupe** |
 
 ---
 
