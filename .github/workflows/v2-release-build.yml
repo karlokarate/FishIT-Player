@@ -13,6 +13,15 @@ on:
         required: true
         type: string
         default: "1"
+      abi:
+        description: "Target ABI (or 'both' for all)"
+        required: true
+        type: choice
+        options:
+          - arm64-v8a
+          - armeabi-v7a
+          - both
+        default: "arm64-v8a"
       create_release:
         description: "Create GitHub Release"
         type: boolean
@@ -40,8 +49,9 @@ jobs:
     timeout-minutes: 60
 
     strategy:
+      fail-fast: false
       matrix:
-        abi: [arm64-v8a, armeabi-v7a]
+        abi: ${{ github.event.inputs.abi == 'both' && fromJson('["arm64-v8a", "armeabi-v7a"]') || fromJson(format('["{0}"]', github.event.inputs.abi)) }}
 
     env:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseParallelGC'"
