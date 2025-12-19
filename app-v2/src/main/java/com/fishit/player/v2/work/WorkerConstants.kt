@@ -1,0 +1,140 @@
+package com.fishit.player.v2.work
+
+/**
+ * Constants for catalog sync workers.
+ * 
+ * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+ * - W-12: Tags (MANDATORY)
+ * - W-13: Common InputData (MANDATORY)
+ * - W-14: Source InputData (MANDATORY)
+ */
+object WorkerConstants {
+    
+    // =========================================================================
+    // Work Names
+    // =========================================================================
+    
+    /** SSOT unique work name for global catalog sync */
+    const val WORK_NAME_CATALOG_SYNC = "catalog_sync_global"
+    
+    // =========================================================================
+    // Tags (W-12)
+    // =========================================================================
+    
+    /** Base tag for all catalog sync workers */
+    const val TAG_CATALOG_SYNC = "catalog_sync"
+    
+    // Source tags
+    const val TAG_SOURCE_XTREAM = "source_xtream"
+    const val TAG_SOURCE_TELEGRAM = "source_telegram"
+    const val TAG_SOURCE_IO = "source_io"
+    const val TAG_SOURCE_TMDB = "source_tmdb"
+    
+    // Mode tags
+    const val TAG_MODE_AUTO = "mode_auto"
+    const val TAG_MODE_EXPERT_NOW = "mode_expert_sync_now"
+    const val TAG_MODE_FORCE_RESCAN = "mode_expert_force_rescan"
+    
+    // Worker tags (format: worker/<ClassName>)
+    const val TAG_WORKER_ORCHESTRATOR = "worker/CatalogSyncOrchestratorWorker"
+    const val TAG_WORKER_XTREAM_PREFLIGHT = "worker/XtreamPreflightWorker"
+    const val TAG_WORKER_XTREAM_SCAN = "worker/XtreamCatalogScanWorker"
+    const val TAG_WORKER_TELEGRAM_AUTH = "worker/TelegramAuthPreflightWorker"
+    const val TAG_WORKER_TELEGRAM_FULL = "worker/TelegramFullHistoryScanWorker"
+    const val TAG_WORKER_TELEGRAM_INCREMENTAL = "worker/TelegramIncrementalScanWorker"
+    const val TAG_WORKER_IO_QUICK = "worker/IoQuickScanWorker"
+    
+    // =========================================================================
+    // Common InputData Keys (W-13)
+    // =========================================================================
+    
+    const val KEY_SYNC_RUN_ID = "sync_run_id"
+    const val KEY_SYNC_MODE = "sync_mode"
+    const val KEY_ACTIVE_SOURCES = "active_sources"
+    const val KEY_WIFI_ONLY = "wifi_only"
+    const val KEY_MAX_RUNTIME_MS = "max_runtime_ms"
+    const val KEY_DEVICE_CLASS = "device_class"
+    
+    // =========================================================================
+    // Source InputData Keys (W-14)
+    // =========================================================================
+    
+    // Xtream
+    const val KEY_XTREAM_SYNC_SCOPE = "xtream_sync_scope"
+    
+    // Telegram
+    const val KEY_TELEGRAM_SYNC_KIND = "telegram_sync_kind"
+    
+    // IO
+    const val KEY_IO_SYNC_SCOPE = "io_sync_scope"
+    
+    // =========================================================================
+    // Output Data Keys
+    // =========================================================================
+    
+    const val KEY_ITEMS_PERSISTED = "items_persisted"
+    const val KEY_DURATION_MS = "duration_ms"
+    const val KEY_FAILURE_REASON = "failure_reason"
+    const val KEY_CHECKPOINT_CURSOR = "checkpoint_cursor"
+    
+    // =========================================================================
+    // Device Classes (W-17)
+    // =========================================================================
+    
+    const val DEVICE_CLASS_FIRETV_LOW_RAM = "FIRETV_LOW_RAM"
+    const val DEVICE_CLASS_ANDROID_PHONE_TABLET = "ANDROID_PHONE_TABLET"
+    
+    // =========================================================================
+    // Sync Modes
+    // =========================================================================
+    
+    const val SYNC_MODE_AUTO = "AUTO"
+    const val SYNC_MODE_EXPERT_NOW = "EXPERT_SYNC_NOW"
+    const val SYNC_MODE_FORCE_RESCAN = "EXPERT_FORCE_RESCAN"
+    
+    // =========================================================================
+    // Sync Scopes
+    // =========================================================================
+    
+    const val XTREAM_SCOPE_INCREMENTAL = "INCREMENTAL"
+    const val XTREAM_SCOPE_FULL = "FULL"
+    
+    const val TELEGRAM_KIND_INCREMENTAL = "INCREMENTAL"
+    const val TELEGRAM_KIND_FULL_HISTORY = "FULL_HISTORY"
+    
+    const val IO_SCOPE_QUICK = "QUICK"
+    
+    // =========================================================================
+    // Failure Reasons (Non-Retryable - W-20)
+    // =========================================================================
+    
+    const val FAILURE_TELEGRAM_NOT_AUTHORIZED = "TELEGRAM_NOT_AUTHORIZED"
+    const val FAILURE_XTREAM_INVALID_CREDENTIALS = "XTREAM_INVALID_CREDENTIALS"
+    const val FAILURE_IO_PERMISSION_MISSING = "IO_PERMISSION_MISSING"
+    const val FAILURE_TMDB_API_KEY_MISSING = "TMDB_API_KEY_MISSING"
+    
+    // =========================================================================
+    // Runtime Configuration (W-16, W-17, W-18)
+    // =========================================================================
+    
+    /** Default max runtime for workers (15 min) */
+    const val DEFAULT_MAX_RUNTIME_MS = 15L * 60 * 1000
+    
+    /** FireTV low RAM batch size (smaller for memory safety) */
+    const val FIRETV_BATCH_SIZE = 20
+    
+    /** Normal device batch size */
+    const val NORMAL_BATCH_SIZE = 50
+    
+    /** Exponential backoff initial delay (W-18) */
+    const val BACKOFF_INITIAL_SECONDS = 30L
+    
+    /** Exponential backoff max delay (W-18) */
+    const val BACKOFF_MAX_SECONDS = 15L * 60
+    
+    /** Retry limit for AUTO mode (W-19) */
+    const val RETRY_LIMIT_AUTO = 3
+    
+    /** Retry limit for EXPERT modes (W-19) */
+    const val RETRY_LIMIT_EXPERT = 5
+}

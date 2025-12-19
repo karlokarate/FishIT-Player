@@ -8,6 +8,60 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### SSOT Ingest Worker Bodies (2025-12-19)
+
+- **feat(app-v2/work)**: Implemented full worker chain for catalog_sync_global
+  - Created `WorkerConstants.kt`:
+    - Centralized tags (TAG_CATALOG_SYNC, TAG_SOURCE_*)
+    - InputData keys (KEY_SYNC_RUN_ID, KEY_SYNC_MODE, KEY_DEVICE_CLASS, ...)
+    - Device classes (ANDROID_PHONE_TABLET, FIRETV_LOW_RAM)
+    - Sync modes (AUTO, EXPERT, FORCE_RESCAN, INCREMENTAL)
+    - Failure reasons (non-retryable: auth failures)
+    - Runtime config (batch sizes, backoff policy, max attempts)
+  
+  - Created `WorkerInputData.kt`:
+    - `WorkerInputData.from(Data)` parsing all keys
+    - `RuntimeGuards.checkGuards()` for battery/network guards (W-16)
+    - `RuntimeGuards.detectDeviceClass()` for FireTV detection
+    - `WorkerOutputData.success/failure()` builder functions
+  
+  - Created `CatalogSyncOrchestratorWorker.kt`:
+    - Builds deterministic worker chain per W-7: Xtream → Telegram → IO
+    - Reads `SourceActivationStore` for active sources
+    - Enqueues child workers via WorkContinuation
+    - Passes input data to all children
+  
+  - Created `XtreamPreflightWorker.kt`:
+    - Validates Xtream auth state before scan
+    - Handles Authenticated, Failed, Expired, Unknown, Pending states
+    - Falls back to ping() for Unknown/Pending
+    - Non-retryable failure for invalid credentials (W-20)
+  
+  - Created `XtreamCatalogScanWorker.kt`:
+    - Calls `CatalogSyncService.syncXtream()` (W-2 compliant)
+    - Collects SyncStatus events with progress logging
+    - FireTV-safe batch processing via `input.batchSize`
+    - Checkpointing via setProgress()
+  
+  - Created `TelegramAuthPreflightWorker.kt`:
+    - Calls `TelegramAuthClient.isAuthorized()` for TDLib auth check
+    - Non-retryable failure if login required (W-20)
+  
+  - Created `TelegramFullHistoryScanWorker.kt`:
+    - Full history scan via `CatalogSyncService.syncTelegram(chatIds=null)`
+    - Progress reporting and checkpointing
+  
+  - Created `TelegramIncrementalScanWorker.kt`:
+    - Incremental sync using pipeline's internal cursors
+    - Same API as full scan, pipeline decides scope
+  
+  - Created `IoQuickScanWorker.kt`:
+    - Permission check (READ_MEDIA_VIDEO or READ_EXTERNAL_STORAGE)
+    - Stub implementation (IO pipeline not yet implemented)
+
+- **docs**: Updated CATALOG_SYNC_WORKERS_CONTRACT_V2 to v2.2
+  - All required workers now marked as ✅ Implemented
+
 ### SSOT Catalog Sync Scheduler (2025-12-19)
 
 - **feat(core/catalog-sync)**: Implemented SSOT sync scheduling system

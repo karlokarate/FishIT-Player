@@ -1,6 +1,6 @@
 # CATALOG_SYNC_WORKERS_CONTRACT_V2.md
 
-Version: 2.1  
+Version: 2.2  
 Date: 2025-12-19  
 Status: Binding Contract  
 Scope: Background execution, catalog sync orchestration, TMDB enrichment workers, Telegram structured bundle safety
@@ -17,6 +17,15 @@ Scope: Background execution, catalog sync orchestration, TMDB enrichment workers
 | SyncStateObserver | ✅ Implemented | core/catalog-sync | Interface for state observation |
 | CatalogSyncUiBridge | ✅ Implemented | app-v2/work | WorkManager → SyncUiState mapping |
 | DebugScreen Sync UI | ✅ Implemented | feature/settings | SSOT sync controls |
+| **CatalogSyncOrchestratorWorker** | ✅ Implemented | app-v2/work | Builds worker chain per W-7 |
+| **WorkerConstants** | ✅ Implemented | app-v2/work | Tags, keys, device classes |
+| **WorkerInputData** | ✅ Implemented | app-v2/work | Input parsing, RuntimeGuards |
+| **XtreamPreflightWorker** | ✅ Implemented | app-v2/work | Xtream auth validation |
+| **XtreamCatalogScanWorker** | ✅ Implemented | app-v2/work | Xtream sync via CatalogSyncService |
+| **TelegramAuthPreflightWorker** | ✅ Implemented | app-v2/work | TDLib auth validation |
+| **TelegramFullHistoryScanWorker** | ✅ Implemented | app-v2/work | Full Telegram sync |
+| **TelegramIncrementalScanWorker** | ✅ Implemented | app-v2/work | Incremental Telegram sync |
+| **IoQuickScanWorker** | ✅ Implemented | app-v2/work | Permission check + stub |
 
 ---
 

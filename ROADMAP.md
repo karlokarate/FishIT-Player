@@ -24,6 +24,7 @@ The v2 rebuild follows a phased approach:
 | 2.3 | Metadata Normalizer | ✅ COMPLETED | Dec 2025 |
 | 2.4 | Structured Bundles (Telegram) | ✅ COMPLETED | Dec 2025 |
 | 2.5 | SSOT Catalog Sync Scheduler | ✅ COMPLETED | Dec 2025 |
+| 2.6 | SSOT Ingest Worker Bodies | ✅ COMPLETED | Dec 2025 |
 | 3 | SIP / Internal Player (Phase 0-7) | ✅ COMPLETED | Dec 2025 |
 | 3.1 | SIP / Internal Player (Phase 8-14) | 🚧 IN PROGRESS | Jan 2026 |
 | 4 | UI Feature Screens | 🚧 IN PROGRESS | Jan 2026 |
@@ -295,6 +296,62 @@ Contract W-6 (CATALOG_SYNC_WORKERS_CONTRACT_V2) mandates a single global sync qu
 ### Docs
 
 - [docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md](docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md) – Updated to v2.1
+
+---
+
+## Phase 2.6 – SSOT Ingest Worker Bodies
+
+Status: ✅ COMPLETED (Dec 2025)
+
+### Goals
+
+- Implement worker bodies for `catalog_sync_global` chain
+- All workers call CatalogSyncService only (W-2 compliant)
+- FireTV-safe: bounded batches + frequent checkpoints
+- Non-retryable failure handling (W-20)
+
+### Background
+
+Phase 2.5 implemented the SSOT scheduler and UI wiring. This phase implements the actual worker bodies that execute catalog synchronization:
+- **Xtream workers:** Preflight validation + catalog scan
+- **Telegram workers:** Auth preflight + full/incremental scan
+- **IO workers:** Permission check + quick scan
+
+### Tasks (Done)
+
+- [x] **Task 1: Worker Infrastructure**
+  - [x] Create `WorkerConstants.kt` (tags, keys, device classes, sync modes)
+  - [x] Create `WorkerInputData.kt` (input parsing, RuntimeGuards)
+  - [x] Create `WorkerOutputData` builder functions
+
+- [x] **Task 2: Orchestrator Worker**
+  - [x] Update `CatalogSyncOrchestratorWorker` with full chain building
+  - [x] Source order: Xtream → Telegram → IO (W-7)
+  - [x] No-source behavior: Return success if no sources active (W-8)
+  - [x] Pass input data to all child workers
+
+- [x] **Task 3: Xtream Workers**
+  - [x] `XtreamPreflightWorker` (auth state validation)
+  - [x] `XtreamCatalogScanWorker` (via CatalogSyncService.syncXtream)
+  - [x] Non-retryable failures: Invalid credentials, Expired account
+
+- [x] **Task 4: Telegram Workers**
+  - [x] `TelegramAuthPreflightWorker` (TDLib auth check)
+  - [x] `TelegramFullHistoryScanWorker` (full scan)
+  - [x] `TelegramIncrementalScanWorker` (incremental sync)
+  - [x] Non-retryable failure: Login required
+
+- [x] **Task 5: IO Workers**
+  - [x] `IoQuickScanWorker` (permission check + stub)
+  - [x] Non-retryable failure: Storage permission denied
+
+### Modules Affected
+
+- `app-v2/work` (All workers)
+
+### Docs
+
+- [docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md](docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md) – Updated to v2.2
 
 ---
 
