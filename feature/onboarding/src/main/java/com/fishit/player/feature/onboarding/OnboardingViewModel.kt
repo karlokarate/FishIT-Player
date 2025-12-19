@@ -186,7 +186,10 @@ class OnboardingViewModel
 
         fun connectXtream() {
             val url = _state.value.xtreamUrl
+            android.util.Log.d(TAG, "connectXtream: Starting with URL: $url")
+            
             if (url.isBlank()) {
+                android.util.Log.w(TAG, "connectXtream: URL is blank")
                 _state.update {
                     it.copy(xtreamError = "Please enter an Xtream URL")
                 }
@@ -196,11 +199,15 @@ class OnboardingViewModel
             // Parse credentials from URL
             val credentials = parseXtreamUrl(url)
             if (credentials == null) {
+                android.util.Log.e(TAG, "connectXtream: Failed to parse URL: $url")
                 _state.update {
                     it.copy(xtreamError = "Invalid Xtream URL. Expected format: http://host:port/get.php?username=X&password=Y")
                 }
                 return
             }
+
+            android.util.Log.d(TAG, "connectXtream: Parsed credentials - host=${credentials.host}, port=${credentials.port}, " +
+                "username=${credentials.username}, useHttps=${credentials.useHttps}")
 
             viewModelScope.launch {
                 val config =
@@ -212,9 +219,14 @@ class OnboardingViewModel
                         password = credentials.password,
                     )
 
+                android.util.Log.d(TAG, "connectXtream: Created config - scheme=${config.scheme}, host=${config.host}, " +
+                    "port=${config.port}, username=${config.username}")
+
                 val result = xtreamAuthRepository.initialize(config)
                 if (result.isFailure) {
-                    val message = result.exceptionOrNull()?.message ?: "Failed to connect"
+                    val error = result.exceptionOrNull()
+                    val message = error?.message ?: "Failed to connect"
+                    android.util.Log.e(TAG, "connectXtream: Initialize failed with message: $message", error)
                     _state.update {
                         it.copy(
                             xtreamState = XtreamConnectionState.Error(message),
@@ -222,9 +234,11 @@ class OnboardingViewModel
                         )
                     }
                 } else {
+                    android.util.Log.d(TAG, "connectXtream: Initialize succeeded, saving credentials")
                     // Success - persist credentials for auto-rehydration
                     runCatching { xtreamAuthRepository.saveCredentials(config) }
                         .onFailure { error ->
+                            android.util.Log.e(TAG, "connectXtream: Failed to save credentials", error)
                             _state.update { it.copy(xtreamError = error.message) }
                         }
                 }
@@ -389,3 +403,7 @@ class OnboardingViewModel
         }
     }
 
+    companion object {
+        private const val TAG = "OnboardingViewModel"
+    }
+}

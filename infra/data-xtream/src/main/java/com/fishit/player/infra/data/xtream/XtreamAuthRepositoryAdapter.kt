@@ -55,21 +55,32 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
     override val authState: StateFlow<DomainAuthState> = _authState.asStateFlow()
 
     override suspend fun initialize(config: DomainConfig): Result<Unit> {
+        android.util.Log.d(TAG, "initialize: Starting with config - scheme=${config.scheme}, host=${config.host}, " +
+            "port=${config.port}, username=${config.username}")
+        
         _connectionState.value = DomainConnectionState.Connecting
 
         val transportConfig = config.toTransportConfig()
+        android.util.Log.d(TAG, "initialize: Calling apiClient.initialize")
+        
         return apiClient.initialize(transportConfig)
-            .map { _ ->
+            .map { caps ->
+                android.util.Log.d(TAG, "initialize: API client initialized successfully with capabilities: ${caps.baseUrl}")
                 // Start observing transport state changes
                 observeTransportStates()
                 Unit
             }
             .onFailure { error ->
+                android.util.Log.e(TAG, "initialize: Failed with error", error)
                 _connectionState.value = DomainConnectionState.Error(
                     error.message ?: "Unknown error"
                 )
                 _authState.value = DomainAuthState.Failed(error.message ?: "Unknown error")
             }
+    }
+
+    companion object {
+        private const val TAG = "XtreamAuthRepoAdapter"
     }
 
     override suspend fun close() {
