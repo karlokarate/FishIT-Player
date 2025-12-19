@@ -6,9 +6,10 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.fishit.player.core.catalogsync.SourceActivationStore
 import com.fishit.player.core.catalogsync.SourceId
+import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.feature.onboarding.domain.XtreamAuthState
+import com.fishit.player.feature.onboarding.domain.XtreamConnectionState
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.xtream.XtreamApiClient
-import com.fishit.player.infra.transport.xtream.XtreamAuthState
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -22,6 +23,10 @@ import dagger.assisted.AssistedInject
  * - Does NOT perform scanning
  * - Only validates config is present and credentials are valid
  * 
+ * **Architecture:**
+ * - Uses domain interface [XtreamAuthRepository] (not transport layer)
+ * - Implementation in infra/data-xtream bridges to transport
+ * 
  * @see XtreamCatalogScanWorker for actual scanning
  */
 @HiltWorker
@@ -29,7 +34,7 @@ class XtreamPreflightWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val sourceActivationStore: SourceActivationStore,
-    private val xtreamApiClient: XtreamApiClient,
+    private val xtreamAuthRepository: XtreamAuthRepository,
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -61,8 +66,15 @@ class XtreamPreflightWorker @AssistedInject constructor(
             )
         }
         
-        // Check auth state
-        val authState = xtreamApiClient.authState.value
+        // Check auth state via domain repository
+        val authState = xtreamAuthRepository.authState.value
+        val connectionState = xtreamAuthRepository.connectionState.value
+        
+        // First check connection state
+        if (connectionState is XtreamConnectionState.Error) {
+            UnifiedLog.w(TAG) { "Connection error: ${connectionState.message} retry=true" }
+            return Result.retry()
+        }
         
         return when (authState) {
             is XtreamAuthState.Authenticated -> {
@@ -79,7 +91,7 @@ class XtreamPreflightWorker @AssistedInject constructor(
             is XtreamAuthState.Failed -> {
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 UnifiedLog.e(TAG) { 
-                    "FAILURE reason=auth_failed error=${authState.error} duration_ms=$durationMs retry=false"
+                    "FAILURE reason=auth_failed error=${authState.message} duration_ms=$durationMs retry=false"
                 }
                 // W-20: Non-retryable failure
                 Result.failure(
@@ -90,7 +102,7 @@ class XtreamPreflightWorker @AssistedInject constructor(
             is XtreamAuthState.Expired -> {
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 UnifiedLog.e(TAG) { 
-                    "FAILURE reason=account_expired duration_ms=$durationMs retry=false"
+                    "FAILURE reason=account_expired exp_date=${authState.expDate} duration_ms=$durationMs retry=false"
                 }
                 // W-20: Non-retryable failure
                 Result.failure(
@@ -98,28 +110,10 @@ class XtreamPreflightWorker @AssistedInject constructor(
                 )
             }
             
-            is XtreamAuthState.Pending,
-            is XtreamAuthState.Unknown -> {
-                // Try ping to validate
-                try {
-                    val isReachable = xtreamApiClient.ping()
-                    if (isReachable) {
-                        val durationMs = System.currentTimeMillis() - startTimeMs
-                        UnifiedLog.i(TAG) { "SUCCESS duration_ms=$durationMs (ping successful)" }
-                        Result.success(
-                            WorkerOutputData.success(
-                                itemsPersisted = 0,
-                                durationMs = durationMs,
-                            )
-                        )
-                    } else {
-                        UnifiedLog.w(TAG) { "FAILURE reason=ping_failed retry=true" }
-                        Result.retry()
-                    }
-                } catch (e: Exception) {
-                    UnifiedLog.e(TAG, e) { "FAILURE reason=ping_exception retry=true" }
-                    Result.retry()
-                }
+            is XtreamAuthState.Idle -> {
+                // Not yet authenticated, retry
+                UnifiedLog.w(TAG) { "Auth state idle, retrying" }
+                Result.retry()
             }
         }
     }

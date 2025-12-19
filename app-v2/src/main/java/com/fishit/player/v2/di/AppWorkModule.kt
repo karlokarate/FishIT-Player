@@ -6,7 +6,7 @@ import androidx.work.Configuration
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
-import com.fishit.player.v2.work.CatalogSyncUiBridge
+import com.fishit.player.v2.work.WorkManagerSyncStateObserver
 import com.fishit.player.v2.work.CatalogSyncWorkSchedulerImpl
 import com.fishit.player.v2.work.TmdbEnrichmentSchedulerImpl
 import dagger.Module
@@ -50,8 +50,8 @@ object AppWorkModule {
     @Provides
     @Singleton
     fun provideSyncStateObserver(
-        bridge: CatalogSyncUiBridge,
-    ): SyncStateObserver = bridge
+        observer: WorkManagerSyncStateObserver,
+    ): SyncStateObserver = observer
 
     /**
      * SSOT: All TMDB enrichment scheduling goes through this single implementation.
