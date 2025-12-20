@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.mapper
 
 import com.fishit.player.core.model.ImageRef
+import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -37,7 +38,7 @@ fun XtreamVodItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMap()
     val url = streamIcon?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
             url = url,
-            headers = authHeaders,
+            headers = XtreamHttpHeaders.withDefaults(authHeaders),
             preferredWidth = 300, // Poster width hint
             preferredHeight = 450, // Poster height hint (2:3 aspect)
     )
@@ -57,7 +58,7 @@ fun XtreamSeriesItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMa
     val url = cover?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
             url = url,
-            headers = authHeaders,
+            headers = XtreamHttpHeaders.withDefaults(authHeaders),
             preferredWidth = 300,
             preferredHeight = 450,
     )
@@ -77,7 +78,7 @@ fun XtreamEpisode.toThumbnailImageRef(authHeaders: Map<String, String> = emptyMa
     val url = thumbnail?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
             url = url,
-            headers = authHeaders,
+            headers = XtreamHttpHeaders.withDefaults(authHeaders),
             preferredWidth = 320, // Thumbnail width hint
             preferredHeight = 180, // Thumbnail height hint (16:9 aspect)
     )
@@ -97,7 +98,7 @@ fun XtreamChannel.toLogoImageRef(authHeaders: Map<String, String> = emptyMap()):
     val url = streamIcon?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
     return ImageRef.Http(
             url = url,
-            headers = authHeaders,
+            headers = XtreamHttpHeaders.withDefaults(authHeaders),
             preferredWidth = 120, // Logo width hint
             preferredHeight = 120, // Logo height hint (square)
     )

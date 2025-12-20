@@ -4,6 +4,7 @@ import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
+import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
 import com.fishit.player.playback.domain.PlaybackSourceException
@@ -90,7 +91,7 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
                 return PlaybackSource(
                     uri = existingUri,
                     mimeType = determineMimeType(context),
-                    headers = buildHeaders(),
+                    headers = buildHeaders(context),
                     dataSourceType = DataSourceType.DEFAULT
                 )
             } else {
@@ -124,7 +125,7 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
         return PlaybackSource(
             uri = streamUrl,
             mimeType = determineMimeType(context, contentType),
-            headers = buildHeaders(),
+            headers = buildHeaders(context),
             dataSourceType = DataSourceType.DEFAULT
         )
     }
@@ -296,9 +297,9 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
     /**
      * Build HTTP headers for authenticated streams.
      */
-    private fun buildHeaders(): Map<String, String> {
-        return mapOf(
-            "User-Agent" to "FishIT-Player/2.0"
+    private fun buildHeaders(context: PlaybackContext): Map<String, String> =
+        XtreamHttpHeaders.withDefaults(
+            headers = context.headers,
+            referer = xtreamApiClient.capabilities?.baseUrl,
         )
-    }
 }
