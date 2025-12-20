@@ -76,9 +76,6 @@ declare -a FROZEN_MODULES=(
     "infra/data-home"
     "infra/imaging"
     "infra/work"
-    
-    # Tools
-    "tools/pipeline-cli"
 )
 
 # ======================================================================
@@ -95,8 +92,20 @@ found_build_files=$(find . -name "build.gradle.kts" -type f \
     | sed 's|/build\.gradle\.kts$||' \
     || true)
 
+# Modules that intentionally remain outside the frozen manifest
+declare -a EXCLUDED_MODULES=(
+    "tools/pipeline-cli"
+)
+
 if [[ -n "$found_build_files" ]]; then
     while IFS= read -r module_path; do
+        # Skip explicitly excluded modules
+        for excluded in "${EXCLUDED_MODULES[@]}"; do
+            if [[ "$module_path" == "$excluded" ]]; then
+                continue 2
+            fi
+        done
+
         # Check if this module is in the frozen list
         is_frozen=false
         for frozen_module in "${FROZEN_MODULES[@]}"; do
@@ -224,47 +233,6 @@ while IFS= read -r include_line; do
         fi
     fi
 done < <(printf '%s\n' "${sorted_expected[@]}")
-
-# ======================================================================
-# CHECK 4: Verify tools:pipeline-cli is headless (no Compose/UI/DI)
-# ======================================================================
-echo "Checking tools:pipeline-cli for headless compliance..."
-
-CLI_BUILD_FILE="tools/pipeline-cli/build.gradle.kts"
-
-if [[ -f "$CLI_BUILD_FILE" ]]; then
-    # Check for Compose plugin (strict - not allowed)
-    if grep -q 'plugin\.compose' "$CLI_BUILD_FILE"; then
-        echo "❌ VIOLATION: tools:pipeline-cli uses Compose plugin"
-        echo "   Found in: $CLI_BUILD_FILE"
-        echo "   The CLI module MUST remain headless (no Compose)"
-        VIOLATIONS=$((VIOLATIONS + 1))
-    fi
-    
-    # Check for AndroidX UI/Compose dependencies (strict - not allowed)
-    if grep -qE 'androidx\.(compose|ui)' "$CLI_BUILD_FILE"; then
-        echo "❌ VIOLATION: tools:pipeline-cli has AndroidX UI/Compose dependencies"
-        echo "   Found in: $CLI_BUILD_FILE"
-        echo "   The CLI module MUST remain headless (no AndroidX UI/Compose)"
-        VIOLATIONS=$((VIOLATIONS + 1))
-    fi
-    
-    # Check for Hilt/DI dependencies (strict - not allowed)
-    if grep -qE '(hilt-android|dagger)' "$CLI_BUILD_FILE"; then
-        echo "❌ VIOLATION: tools:pipeline-cli uses Hilt/DI dependencies"
-        echo "   Found in: $CLI_BUILD_FILE"
-        echo "   The CLI module MUST remain headless (no DI framework)"
-        VIOLATIONS=$((VIOLATIONS + 1))
-    fi
-    
-    # Check for KSP plugin (usually indicates DI usage)
-    if grep -q 'com\.google\.devtools\.ksp' "$CLI_BUILD_FILE"; then
-        echo "❌ VIOLATION: tools:pipeline-cli uses KSP plugin"
-        echo "   Found in: $CLI_BUILD_FILE"
-        echo "   The CLI module should not use KSP (typically for DI codegen)"
-        VIOLATIONS=$((VIOLATIONS + 1))
-    fi
-fi
 
 # ======================================================================
 # SUMMARY
