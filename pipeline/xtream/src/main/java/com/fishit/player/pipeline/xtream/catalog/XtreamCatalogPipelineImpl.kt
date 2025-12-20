@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
 import com.fishit.player.pipeline.xtream.mapper.XtreamCatalogMapper
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -65,7 +66,7 @@ constructor(
             var episodeCount = 0
             var liveCount = 0
 
-            val headers = config.imageAuthHeaders
+            val headers = XtreamHttpHeaders.withDefaults(config.imageAuthHeaders)
 
             // Phase 1: VOD
             if (config.includeVod && currentCoroutineContext().isActive) {

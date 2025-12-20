@@ -5,6 +5,7 @@ import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
+import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -33,6 +34,16 @@ object XtreamTransportModule {
             .writeTimeout(15, TimeUnit.SECONDS)
             .followRedirects(true)
             .followSslRedirects(true)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val builder = request.newBuilder()
+
+                if (request.header("User-Agent") == null) {
+                    builder.header("User-Agent", XtreamHttpHeaders.LEGACY_USER_AGENT)
+                }
+
+                chain.proceed(builder.build())
+            }
             .build()
 
     @Provides
