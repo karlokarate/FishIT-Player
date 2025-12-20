@@ -1,11 +1,15 @@
 package com.fishit.player.infra.transport.xtream.di
 
+import android.content.Context
+import com.chuckerteam.chucker.api.ChuckerInterceptor
+import com.fishit.player.infra.transport.xtream.BuildConfig
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -26,7 +30,9 @@ import javax.inject.Singleton
 object XtreamTransportModule {
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient =
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+    ): OkHttpClient =
         OkHttpClient
             .Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
@@ -43,6 +49,17 @@ object XtreamTransportModule {
                 }
 
                 chain.proceed(builder.build())
+            }
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(
+                        ChuckerInterceptor
+                            .Builder(context)
+                            .redactQueryParameter("password")
+                            .redactQueryParameter("username")
+                            .build(),
+                    )
+                }
             }
             .build()
 

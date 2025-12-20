@@ -433,6 +433,18 @@ sealed interface XtreamError {
         val retryAfterMs: Long?,
     ) : XtreamError
 
+    /** HTML or challenge page instead of expected JSON payload */
+    data class UnexpectedHtml(
+        val message: String,
+        val statusCode: Int? = null,
+    ) : XtreamError
+
+    /** CDN or WAF challenge blocking the request (e.g., Cloudflare) */
+    data class CdnBlocked(
+        val statusCode: Int?,
+        val message: String,
+    ) : XtreamError
+
     /** Unknown error */
     data class Unknown(
         val message: String,

@@ -36,6 +36,8 @@ dependencies {
     // Networking
     api("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
+    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
 
     // Security for credential storage
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

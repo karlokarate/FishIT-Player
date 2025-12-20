@@ -28,6 +28,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import okhttp3.HttpUrl
+import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -126,6 +127,9 @@ class DefaultXtreamApiClient(
                 // 1. Resolve port if not specified
                 resolvedPort = config.port ?: resolvePort(config)
                 UnifiedLog.d(TAG, "Resolved port: $resolvedPort")
+
+                // 1b. Script parity auth check (player_api.php without action)
+                runScriptParityAuthCheck()
 
                 // 2. Check capability cache
                 val cacheKey = buildCacheKey(config, resolvedPort)
@@ -243,6 +247,22 @@ class DefaultXtreamApiClient(
             }
         }
 
+    private suspend fun runScriptParityAuthCheck() =
+        withContext(io) {
+            val preflightUrl = buildPlayerApiUrl(action = null)
+            UnifiedLog.d(TAG) { "runScriptParityAuthCheck: preflight ${preflightUrl.replace(Regex("(password|username)=[^&]*"), "$1=***")}" }
+            fetchRaw(preflightUrl, isEpg = false)
+
+            val serverInfoUrl = buildPlayerApiUrl(action = "get_server_info")
+            runCatching { fetchRaw(serverInfoUrl, isEpg = false) }
+                .recoverCatching { error ->
+                    UnifiedLog.w(TAG, "runScriptParityAuthCheck: get_server_info failed, fallback to get_live_categories", error)
+                    val fallbackUrl = buildPlayerApiUrl(action = "get_live_categories")
+                    fetchRaw(fallbackUrl, isEpg = false)
+                }
+                .getOrThrow()
+        }
+
 
     override suspend fun ping(): Boolean =
         withContext(io) {
@@ -270,18 +290,18 @@ class DefaultXtreamApiClient(
     override suspend fun getServerInfo(): Result<XtreamServerInfo> =
         withContext(io) {
             try {
-                val url = buildPlayerApiUrl(action = null) // No action = server info
+                val url = buildPlayerApiUrl(action = "get_server_info")
                 UnifiedLog.d(TAG, "getServerInfo: Fetching from URL: ${url.replace(Regex("(password|username)=([^&]*)"), "$1=***")}")
-                
-                val body =
-                    fetchRaw(url, isEpg = false)
-                        ?: run {
-                            UnifiedLog.e(TAG, "getServerInfo: Empty response from server")
-                            return@withContext Result.failure(
-                                Exception("Empty response from server. Check URL, credentials, and network connection."),
-                            )
-                        }
-                
+
+                val body = fetchRaw(url, isEpg = false)
+                    ?: fetchRaw(buildPlayerApiUrl(action = null), isEpg = false)
+                    ?: run {
+                        UnifiedLog.e(TAG, "getServerInfo: Empty response from server")
+                        return@withContext Result.failure(
+                            Exception("Empty response from server. Check URL, credentials, and network connection."),
+                        )
+                    }
+
                 UnifiedLog.d(TAG, "getServerInfo: Received ${body.length} bytes, parsing...")
                 val parsed = json.decodeFromString<XtreamServerInfo>(body)
                 UnifiedLog.d(
@@ -869,7 +889,7 @@ class DefaultXtreamApiClient(
     ): String? {
         val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
         UnifiedLog.d(TAG, "fetchRaw: Fetching URL: $redactedUrl, isEpg=$isEpg")
-        
+
         // Check cache
         val cached = readCache(url, isEpg)
         if (cached != null) {
@@ -893,30 +913,50 @@ class DefaultXtreamApiClient(
         return try {
             UnifiedLog.d(TAG, "fetchRaw: Executing HTTP request to $redactedUrl")
             http.newCall(request).execute().use { response ->
+                val contentType = response.body?.contentType()
+                val body = response.body?.string().orEmpty()
                 UnifiedLog.d(TAG, "fetchRaw: Received response code ${response.code} for $redactedUrl")
-                
-                if (!response.isSuccessful) {
-                    UnifiedLog.w(TAG, "fetchRaw: Request failed with code ${response.code} for $redactedUrl")
-                    return null
-                }
-                
-                val body = response.body.string()
                 UnifiedLog.d(TAG, "fetchRaw: Received ${body.length} bytes from $redactedUrl")
-                
+
+                if (!response.isSuccessful) {
+                    throw XtreamHttpException(
+                        XtreamError.Http(
+                            code = response.code,
+                            message = response.message,
+                        ),
+                    )
+                }
+
                 if (body.isEmpty()) {
-                    UnifiedLog.w(TAG, "fetchRaw: Response body is empty for $redactedUrl")
-                    return null
+                    throw XtreamHttpException(XtreamError.ParseError("Empty response"))
                 }
-                
-                if (body.isNotEmpty()) {
-                    writeCache(url, body)
+
+                if (isHtmlResponse(contentType, body)) {
+                    val error =
+                        if (response.code == 403 || response.code == 520 || response.code == 503) {
+                            XtreamError.CdnBlocked(response.code, "Received HTML challenge page")
+                        } else {
+                            XtreamError.UnexpectedHtml("Unexpected HTML response", response.code)
+                        }
+                    throw XtreamHttpException(error)
                 }
+
+                writeCache(url, body)
                 body
             }
+        } catch (e: XtreamHttpException) {
+            UnifiedLog.e(TAG, "fetchRaw: HTTP error while fetching $redactedUrl", e)
+            throw e
         } catch (e: Exception) {
             UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $redactedUrl", e)
-            null
+            throw e
         }
+    }
+
+    private fun isHtmlResponse(contentType: MediaType?, body: String): Boolean {
+        val looksLikeHtml = body.trimStart().startsWith("<", ignoreCase = true)
+        val isHtmlType = contentType?.subtype?.contains("html", ignoreCase = true) == true
+        return isHtmlType || looksLikeHtml
     }
 
     private suspend fun takeRateSlot(host: String) {
@@ -1225,8 +1265,11 @@ class DefaultXtreamApiClient(
 
     private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")
 
+    private class XtreamHttpException(val error: XtreamError) : Exception(error.toString())
+
     private fun mapException(e: Exception): XtreamError =
         when (e) {
+            is XtreamHttpException -> e.error
             is java.net.UnknownHostException -> XtreamError.Network("DNS resolution failed", e)
             is java.net.SocketTimeoutException -> XtreamError.Network("Connection timeout", e)
             is java.io.IOException -> XtreamError.Network(e.message ?: "Network error", e)
