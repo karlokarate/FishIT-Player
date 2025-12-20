@@ -2,9 +2,11 @@ package com.fishit.player.v2
 
 import android.app.Application
 import androidx.work.Configuration
+import androidx.work.WorkManager
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.logging.UnifiedLogInitializer
 import com.fishit.player.infra.work.SourceActivationObserver
 import com.fishit.player.v2.di.AppScopeModule
@@ -13,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Provider
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * FishIT Player v2 Application.
@@ -65,9 +68,17 @@ class FishItV2Application :
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize unified logging system FIRST
-        // This ensures all subsequent logging works correctly
+        val workManagerInitialized = WORK_MANAGER_INITIALIZED.compareAndSet(false, true)
+        if (workManagerInitialized) {
+            WorkManager.initialize(this, workConfiguration)
+        }
+
+        // Early initialization of unified logging system to ensure all subsequent logging works correctly
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
+
+        if (workManagerInitialized) {
+            UnifiedLog.i(TAG) { "WorkManager initialized" }
+        }
 
         // Start source activation observers (must be before bootstraps)
         sourceActivationObserver.start(appScope)
@@ -97,4 +108,9 @@ class FishItV2Application :
 
     override val workManagerConfiguration: Configuration
         get() = workConfiguration
+
+    companion object {
+        private const val TAG = "FishItV2Application"
+        private val WORK_MANAGER_INITIALIZED = AtomicBoolean(false)
+    }
 }
