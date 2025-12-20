@@ -12,9 +12,15 @@ import com.fishit.player.infra.transport.xtream.XtreamConnectionState as Transpo
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamError
 import com.fishit.player.infra.transport.xtream.XtreamStoredConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import javax.inject.Named
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,6 +53,7 @@ import javax.inject.Singleton
 class XtreamAuthRepositoryAdapter @Inject constructor(
     private val apiClient: XtreamApiClient,
     private val credentialsStore: XtreamCredentialsStore,
+    @Named("AppLifecycleScope") private val appScope: CoroutineScope,
 ) : XtreamAuthRepository {
 
     private val _connectionState = MutableStateFlow<DomainConnectionState>(DomainConnectionState.Disconnected)
@@ -54,6 +61,8 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
 
     private val _authState = MutableStateFlow<DomainAuthState>(DomainAuthState.Idle)
     override val authState: StateFlow<DomainAuthState> = _authState.asStateFlow()
+
+    private var transportStateJob: Job? = null
 
     override suspend fun initialize(config: DomainConfig): Result<Unit> {
         UnifiedLog.d(TAG) { "initialize: Starting with config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}" }
@@ -84,6 +93,8 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
     }
 
     override suspend fun close() {
+        transportStateJob?.cancel()
+        transportStateJob = null
         apiClient.close()
         _connectionState.value = DomainConnectionState.Disconnected
         _authState.value = DomainAuthState.Idle
@@ -111,11 +122,27 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
      * after successful initialization.
      */
     private fun observeTransportStates() {
-        // Map current transport connection state
-        _connectionState.value = apiClient.connectionState.value.toDomainConnectionState()
-        
-        // Map current transport auth state
-        _authState.value = apiClient.authState.value.toDomainAuthState()
+        transportStateJob?.cancel()
+        transportStateJob = combine(
+            apiClient.connectionState,
+            apiClient.authState,
+        ) { connection, auth ->
+            connection to auth
+        }
+            .onEach { (connection, auth) ->
+                val domainConnection = connection.toDomainConnectionState()
+                if (_connectionState.value != domainConnection) {
+                    UnifiedLog.d(TAG) { "connectionState -> $connection | domain=$domainConnection" }
+                    _connectionState.value = domainConnection
+                }
+
+                val domainAuth = auth.toDomainAuthState()
+                if (_authState.value != domainAuth) {
+                    UnifiedLog.d(TAG) { "authState -> $auth | domain=$domainAuth" }
+                    _authState.value = domainAuth
+                }
+            }
+            .launchIn(appScope)
     }
 
     // =========================================================================
