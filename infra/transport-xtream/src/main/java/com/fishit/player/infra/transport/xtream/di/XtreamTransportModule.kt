@@ -1,5 +1,9 @@
 package com.fishit.player.infra.transport.xtream.di
 
+import android.content.Context
+import com.chuckerteam.chucker.api.ChuckerCollector
+import com.chuckerteam.chucker.api.ChuckerInterceptor
+import com.fishit.player.infra.transport.xtream.BuildConfig
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -10,11 +14,15 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
+import java.net.CookieManager
+import java.net.CookiePolicy
 
 /**
  * Hilt module for Xtream transport layer.
@@ -26,7 +34,9 @@ import javax.inject.Singleton
 object XtreamTransportModule {
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient =
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+    ): OkHttpClient =
         OkHttpClient
             .Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
@@ -34,6 +44,11 @@ object XtreamTransportModule {
             .writeTimeout(15, TimeUnit.SECONDS)
             .followRedirects(true)
             .followSslRedirects(true)
+            .cookieJar(
+                JavaNetCookieJar(
+                    CookieManager().apply { setCookiePolicy(CookiePolicy.ACCEPT_ALL) },
+                ),
+            )
             .addInterceptor { chain ->
                 val request = chain.request()
                 val builder = request.newBuilder()
@@ -43,6 +58,18 @@ object XtreamTransportModule {
                 }
 
                 chain.proceed(builder.build())
+            }
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(
+                        ChuckerInterceptor
+                            .Builder(context)
+                            .collector(ChuckerCollector(context, showNotification = true))
+                            .redactHeaders("Authorization", "Cookie")
+                            .alwaysReadResponseBody(true)
+                            .build(),
+                    )
+                }
             }
             .build()
 

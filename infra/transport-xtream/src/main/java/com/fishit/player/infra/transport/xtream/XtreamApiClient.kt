@@ -433,6 +433,12 @@ sealed interface XtreamError {
         val retryAfterMs: Long?,
     ) : XtreamError
 
+    /** HTML or challenge page received instead of JSON */
+    data class UnexpectedHtml(
+        val statusCode: Int?,
+        val snippet: String,
+    ) : XtreamError
+
     /** Unknown error */
     data class Unknown(
         val message: String,

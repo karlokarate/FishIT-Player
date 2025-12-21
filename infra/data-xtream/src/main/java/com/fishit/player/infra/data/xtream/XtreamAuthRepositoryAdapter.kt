@@ -17,9 +17,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Named
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -123,26 +122,27 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
      */
     private fun observeTransportStates() {
         transportStateJob?.cancel()
-        transportStateJob = combine(
-            apiClient.connectionState,
-            apiClient.authState,
-        ) { connection, auth ->
-            connection to auth
-        }
-            .onEach { (connection, auth) ->
-                val domainConnection = connection.toDomainConnectionState()
-                if (_connectionState.value != domainConnection) {
-                    UnifiedLog.d(TAG) { "connectionState -> $connection | domain=$domainConnection" }
-                    _connectionState.value = domainConnection
-                }
-
-                val domainAuth = auth.toDomainAuthState()
-                if (_authState.value != domainAuth) {
-                    UnifiedLog.d(TAG) { "authState -> $auth | domain=$domainAuth" }
-                    _authState.value = domainAuth
+        transportStateJob = appScope.launch {
+            launch {
+                apiClient.connectionState.collectLatest { connection ->
+                    val domainConnection = connection.toDomainConnectionState()
+                    if (_connectionState.value != domainConnection) {
+                        UnifiedLog.d(TAG) { "connectionState -> $connection | domain=$domainConnection" }
+                        _connectionState.value = domainConnection
+                    }
                 }
             }
-            .launchIn(appScope)
+
+            launch {
+                apiClient.authState.collectLatest { auth ->
+                    val domainAuth = auth.toDomainAuthState()
+                    if (_authState.value != domainAuth) {
+                        UnifiedLog.d(TAG) { "authState -> $auth | domain=$domainAuth" }
+                        _authState.value = domainAuth
+                    }
+                }
+            }
+        }
     }
 
     // =========================================================================
@@ -186,6 +186,7 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
         is XtreamError.ParseError -> "Parse error: $message"
         is XtreamError.Unsupported -> "Unsupported action: $action"
         is XtreamError.RateLimited -> "Rate limited"
+        is XtreamError.UnexpectedHtml -> "Unexpected HTML response (${statusCode ?: 0})"
         is XtreamError.Unknown -> message
     }
 

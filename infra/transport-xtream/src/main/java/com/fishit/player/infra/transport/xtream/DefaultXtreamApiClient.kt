@@ -270,30 +270,50 @@ class DefaultXtreamApiClient(
     override suspend fun getServerInfo(): Result<XtreamServerInfo> =
         withContext(io) {
             try {
-                val url = buildPlayerApiUrl(action = null) // No action = server info
-                UnifiedLog.d(TAG, "getServerInfo: Fetching from URL: ${url.replace(Regex("(password|username)=([^&]*)"), "$1=***")}")
-                
-                val body =
-                    fetchRaw(url, isEpg = false)
-                        ?: run {
-                            UnifiedLog.e(TAG, "getServerInfo: Empty response from server")
-                            return@withContext Result.failure(
-                                Exception("Empty response from server. Check URL, credentials, and network connection."),
-                            )
-                        }
-                
-                UnifiedLog.d(TAG, "getServerInfo: Received ${body.length} bytes, parsing...")
-                val parsed = json.decodeFromString<XtreamServerInfo>(body)
-                UnifiedLog.d(
-                    TAG,
-                    "Server info retrieved: ${parsed.serverInfo?.url ?: "unknown"}",
-                )
+                val parsed = fetchServerInfoSequence()
+                UnifiedLog.d(TAG) {
+                    "Server info retrieved: ${parsed.serverInfo?.url ?: "unknown"}"
+                }
                 Result.success(parsed)
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, "getServerInfo failed", e)
                 Result.failure(e)
             }
         }
+
+    private suspend fun fetchServerInfoSequence(): XtreamServerInfo {
+        val baseUrl = buildPlayerApiUrl(action = null)
+        UnifiedLog.d(TAG) { "getServerInfo: Fetching base URL: ${redactUrl(baseUrl)}" }
+        val baseBody = fetchRaw(baseUrl, isEpg = false)
+        val baseParsed =
+            baseBody?.let { body ->
+                runCatching { json.decodeFromString<XtreamServerInfo>(body) }.getOrNull()
+            }
+        if (baseParsed != null) {
+            UnifiedLog.d(TAG) { "getServerInfo: Parsed base response (${baseBody?.length ?: 0} bytes)" }
+            return baseParsed
+        }
+
+        val serverInfoUrl = buildPlayerApiUrl("get_server_info")
+        UnifiedLog.d(TAG) { "getServerInfo: Fetching action=get_server_info: ${redactUrl(serverInfoUrl)}" }
+        val serverInfoBody = fetchRaw(serverInfoUrl, isEpg = false)
+        val serverInfoParsed =
+            serverInfoBody?.let { body ->
+                runCatching { json.decodeFromString<XtreamServerInfo>(body) }.getOrNull()
+            }
+        if (serverInfoParsed != null) {
+            UnifiedLog.d(TAG) { "getServerInfo: Parsed action=get_server_info (${serverInfoBody?.length ?: 0} bytes)" }
+            return serverInfoParsed
+        }
+
+        UnifiedLog.w(TAG) { "getServerInfo: No valid server info, trying get_live_categories for reachability" }
+        val fallbackBody = fetchRaw(buildPlayerApiUrl("get_live_categories"), isEpg = false)
+        if (fallbackBody.isNullOrEmpty()) {
+            throw Exception("Empty response from server. Check URL, credentials, and network connection.")
+        }
+
+        throw Exception("Unable to parse server info response")
+    }
 
     override suspend fun getUserInfo(): Result<XtreamUserInfo> =
         withContext(io) {
@@ -867,13 +887,13 @@ class DefaultXtreamApiClient(
         url: String,
         isEpg: Boolean,
     ): String? {
-        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
-        UnifiedLog.d(TAG, "fetchRaw: Fetching URL: $redactedUrl, isEpg=$isEpg")
-        
+        val redactedUrl = redactUrl(url)
+        UnifiedLog.d(TAG) { "fetchRaw: Fetching URL: $redactedUrl, isEpg=$isEpg" }
+
         // Check cache
         val cached = readCache(url, isEpg)
         if (cached != null) {
-            UnifiedLog.d(TAG, "fetchRaw: Cache hit for $redactedUrl, returning ${cached.length} bytes")
+            UnifiedLog.d(TAG) { "fetchRaw: Cache hit for $redactedUrl, returning ${cached.length} bytes" }
             return cached
         }
 
@@ -891,32 +911,65 @@ class DefaultXtreamApiClient(
                 .build()
 
         return try {
-            UnifiedLog.d(TAG, "fetchRaw: Executing HTTP request to $redactedUrl")
+            UnifiedLog.d(TAG) { "fetchRaw: Executing HTTP request to $redactedUrl" }
             http.newCall(request).execute().use { response ->
-                UnifiedLog.d(TAG, "fetchRaw: Received response code ${response.code} for $redactedUrl")
-                
+                val statusCode = response.code
+                val contentType = response.body.contentType()?.toString()
+                UnifiedLog.d(TAG) {
+                    "fetchRaw: Received response code $statusCode for $redactedUrl (contentType=$contentType)"
+                }
+
                 if (!response.isSuccessful) {
-                    UnifiedLog.w(TAG, "fetchRaw: Request failed with code ${response.code} for $redactedUrl")
+                    val error =
+                        if (statusCode == 401 || statusCode == 403) {
+                            XtreamError.InvalidCredentials
+                        } else {
+                            XtreamError.Http(statusCode, response.message)
+                        }
+                    _connectionState.value = XtreamConnectionState.Error(error, retryable = statusCode >= 500)
+                    if (error is XtreamError.InvalidCredentials) {
+                        _authState.value = XtreamAuthState.Failed(error)
+                    }
+                    UnifiedLog.w(TAG) { "fetchRaw: Request failed with code $statusCode for $redactedUrl" }
                     return null
                 }
-                
+
                 val body = response.body.string()
-                UnifiedLog.d(TAG, "fetchRaw: Received ${body.length} bytes from $redactedUrl")
-                
+                UnifiedLog.d(TAG) { "fetchRaw: Received ${body.length} bytes from $redactedUrl" }
+
                 if (body.isEmpty()) {
-                    UnifiedLog.w(TAG, "fetchRaw: Response body is empty for $redactedUrl")
+                    UnifiedLog.w(TAG) { "fetchRaw: Response body is empty for $redactedUrl" }
                     return null
                 }
-                
-                if (body.isNotEmpty()) {
-                    writeCache(url, body)
+
+                if (isHtmlResponse(contentType, body)) {
+                    val error = XtreamError.UnexpectedHtml(statusCode, body.take(200))
+                    UnifiedLog.e(TAG) { "fetchRaw: HTML response detected for $redactedUrl" }
+                    _connectionState.value = XtreamConnectionState.Error(error, retryable = true)
+                    return null
                 }
+
+                writeCache(url, body)
                 body
             }
         } catch (e: Exception) {
             UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $redactedUrl", e)
+            val mapped = mapException(e)
+            _connectionState.value = XtreamConnectionState.Error(mapped, retryable = true)
+            if (mapped == XtreamError.InvalidCredentials || mapped is XtreamError.AccountExpired) {
+                _authState.value = XtreamAuthState.Failed(mapped)
+            }
             null
         }
+    }
+
+    private fun redactUrl(url: String): String =
+        url.replace(Regex("(password|username)=[^&]*"), "$1=***")
+
+    private fun isHtmlResponse(contentType: String?, body: String): Boolean {
+        if (contentType?.contains("html", ignoreCase = true) == true) return true
+        val trimmed = body.trimStart()
+        return trimmed.startsWith("<") || trimmed.contains("<html", ignoreCase = true)
     }
 
     private suspend fun takeRateSlot(host: String) {

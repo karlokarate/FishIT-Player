@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val TAG = "OnboardingViewModel"
+
 /**
  * State for the onboarding/start screen
  */
@@ -187,7 +189,7 @@ class OnboardingViewModel
 
         fun connectXtream() {
             val url = _state.value.xtreamUrl
-            UnifiedLog.d(TAG) { "connectXtream: Starting with URL: $url" }
+            UnifiedLog.d(TAG) { "connectXtream: Starting Xtream connect attempt" }
             
             if (url.isBlank()) {
                 UnifiedLog.w(TAG) { "connectXtream: URL is blank" }
@@ -207,7 +209,9 @@ class OnboardingViewModel
                 return
             }
 
-            UnifiedLog.d(TAG) { "connectXtream: Parsed credentials - host=${credentials.host}, port=${credentials.port}, username=${credentials.username}, useHttps=${credentials.useHttps}" }
+            UnifiedLog.d(TAG) {
+                "connectXtream: Parsed credentials - host=${credentials.host}, port=${credentials.port}, useHttps=${credentials.useHttps}"
+            }
 
             viewModelScope.launch {
                 val config =
@@ -219,7 +223,9 @@ class OnboardingViewModel
                         password = credentials.password,
                     )
 
-                UnifiedLog.d(TAG) { "connectXtream: Created config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}" }
+                UnifiedLog.d(TAG) {
+                    "connectXtream: Created config - scheme=${config.scheme}, host=${config.host}, port=${config.port}"
+                }
 
                 val result = xtreamAuthRepository.initialize(config)
                 if (result.isFailure) {
@@ -273,58 +279,6 @@ class OnboardingViewModel
          * - http://host:port/player_api.php?username=X&password=Y
          * - http://username:password@host:port
          */
-        fun parseXtreamUrl(url: String): XtreamCredentials? {
-            return try {
-                val trimmed = url.trim()
-
-                // Check for userinfo format: http://user:pass@host:port
-                val userinfoPattern = Regex("""^(https?)://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?""")
-                userinfoPattern.find(trimmed)?.let { match ->
-                    val (scheme, user, pass, host, portStr) = match.destructured
-                    return XtreamCredentials(
-                        host = host,
-                        port = portStr.toIntOrNull() ?: if (scheme == "https") 443 else 80,
-                        username = user,
-                        password = pass,
-                        useHttps = scheme == "https",
-                    )
-                }
-
-                // Standard URL format with query params
-                val uri = java.net.URI(trimmed)
-                val host = uri.host ?: return null
-                val port =
-                    if (uri.port > 0) {
-                        uri.port
-                    } else if (uri.scheme == "https") {
-                        443
-                    } else {
-                        80
-                    }
-                val useHttps = uri.scheme == "https"
-
-                // Parse query parameters
-                val queryParams =
-                    uri.query?.split("&")?.associate { param ->
-                        val parts = param.split("=", limit = 2)
-                        if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
-                    } ?: emptyMap()
-
-                val username = queryParams["username"] ?: return null
-                val password = queryParams["password"] ?: return null
-
-                XtreamCredentials(
-                    host = host,
-                    port = port,
-                    username = username,
-                    password = password,
-                    useHttps = useHttps,
-                )
-            } catch (e: Exception) {
-                null
-            }
-        }
-
         // ═══════════════════════════════════════════════════════════════════
         // Helpers
         // ═══════════════════════════════════════════════════════════════════
@@ -403,5 +357,59 @@ class OnboardingViewModel
 
         companion object {
             private const val TAG = "OnboardingViewModel"
+
+            fun parseXtreamUrl(url: String): XtreamCredentials? =
+                try {
+                    val trimmed = url.trim()
+
+                    // Check for userinfo format: http://user:pass@host:port
+                    val userinfoPattern = Regex("""^(https?)://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?""")
+                    userinfoPattern.find(trimmed)?.let { match ->
+                        val (scheme, user, pass, host, portStr) = match.destructured
+                        return XtreamCredentials(
+                            host = host,
+                            port = portStr.toIntOrNull() ?: if (scheme == "https") 443 else 80,
+                            username = decode(user),
+                            password = decode(pass),
+                            useHttps = scheme == "https",
+                        )
+                    }
+
+                    // Standard URL format with query params
+                    val uri = java.net.URI(trimmed)
+                    val host = uri.host ?: return null
+                    val port =
+                        if (uri.port > 0) {
+                            uri.port
+                        } else if (uri.scheme == "https") {
+                            443
+                        } else {
+                            80
+                        }
+                    val useHttps = uri.scheme == "https"
+
+                    // Parse query parameters
+                    val queryParams =
+                        uri.query?.split("&")?.associate { param ->
+                            val parts = param.split("=", limit = 2)
+                            if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
+                        } ?: emptyMap()
+
+                    val username = queryParams["username"]?.let(::decode) ?: return null
+                    val password = queryParams["password"]?.let(::decode) ?: return null
+
+                    XtreamCredentials(
+                        host = host,
+                        port = port,
+                        username = username,
+                        password = password,
+                        useHttps = useHttps,
+                    )
+                } catch (_: Exception) {
+                    null
+                }
+
+            private fun decode(value: String): String =
+                java.net.URLDecoder.decode(value, java.nio.charset.StandardCharsets.UTF_8.name())
         }
     }
