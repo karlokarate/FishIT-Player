@@ -39,6 +39,7 @@ dependencies {
 
     // Networking
     api("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    implementation("com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.14")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Security for credential storage
