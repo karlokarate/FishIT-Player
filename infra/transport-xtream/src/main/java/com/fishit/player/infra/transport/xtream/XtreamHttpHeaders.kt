@@ -27,7 +27,10 @@ object XtreamHttpHeaders {
      * The returned map always includes the legacy User-Agent when absent and
      * adds the provided Referer when it is not already present.
      */
-    fun withDefaults(headers: Map<String, String> = emptyMap(), referer: String? = null): Map<String, String> {
+    fun withDefaults(
+        headers: Map<String, String> = emptyMap(),
+        referer: String? = null,
+    ): Map<String, String> {
         val normalizedReferer = referer?.takeIf { it.isNotBlank() }
         val merged = headers.toMutableMap()
 

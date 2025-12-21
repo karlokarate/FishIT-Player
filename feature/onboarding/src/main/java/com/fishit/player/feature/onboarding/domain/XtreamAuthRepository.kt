@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Xtream API client interface for onboarding feature.
- * 
+ *
  * This is a feature-owned domain interface following the Dependency Inversion Principle.
  * The actual implementation lives in infra/data-xtream as an adapter.
  */
@@ -56,9 +56,14 @@ data class XtreamConfig(
  */
 sealed class XtreamConnectionState {
     data object Disconnected : XtreamConnectionState()
+
     data object Connecting : XtreamConnectionState()
+
     data object Connected : XtreamConnectionState()
-    data class Error(val message: String) : XtreamConnectionState()
+
+    data class Error(
+        val message: String,
+    ) : XtreamConnectionState()
 }
 
 /**
@@ -66,7 +71,14 @@ sealed class XtreamConnectionState {
  */
 sealed class XtreamAuthState {
     data object Idle : XtreamAuthState()
+
     data object Authenticated : XtreamAuthState()
-    data class Failed(val message: String) : XtreamAuthState()
-    data class Expired(val expDate: String?) : XtreamAuthState()
+
+    data class Failed(
+        val message: String,
+    ) : XtreamAuthState()
+
+    data class Expired(
+        val expDate: String?,
+    ) : XtreamAuthState()
 }

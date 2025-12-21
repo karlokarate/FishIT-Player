@@ -3,11 +3,10 @@ package com.fishit.player.feature.onboarding
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Test
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class OnboardingViewModelTest {
-
     @Test
     fun `parseXtreamUrl handles standard get php`() {
         val url = "http://konigtv.com:8080/get.php?username=Christoph10&password=JQ2rKsQ744&type=m3u_plus&output=ts"

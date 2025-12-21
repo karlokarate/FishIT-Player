@@ -19,10 +19,10 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
-import java.util.concurrent.TimeUnit
-import javax.inject.Singleton
 import java.net.CookieManager
 import java.net.CookiePolicy
+import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
 
 /**
  * Hilt module for Xtream transport layer.
@@ -48,8 +48,7 @@ object XtreamTransportModule {
                 JavaNetCookieJar(
                     CookieManager().apply { setCookiePolicy(CookiePolicy.ACCEPT_ALL) },
                 ),
-            )
-            .addInterceptor { chain ->
+            ).addInterceptor { chain ->
                 val request = chain.request()
                 val builder = request.newBuilder()
 
@@ -58,8 +57,7 @@ object XtreamTransportModule {
                 }
 
                 chain.proceed(builder.build())
-            }
-            .apply {
+            }.apply {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(
                         ChuckerInterceptor
@@ -70,8 +68,7 @@ object XtreamTransportModule {
                             .build(),
                     )
                 }
-            }
-            .build()
+            }.build()
 
     @Provides
     @Singleton

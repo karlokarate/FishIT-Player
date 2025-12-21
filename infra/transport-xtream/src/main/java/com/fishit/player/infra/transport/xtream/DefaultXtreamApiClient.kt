@@ -222,7 +222,7 @@ class DefaultXtreamApiClient(
                 UnifiedLog.d(TAG, "tryFallbackValidation: Trying get_live_categories")
                 val url = buildPlayerApiUrl("get_live_categories")
                 val body = fetchRaw(url, isEpg = false)
-                
+
                 if (body != null && body.isNotEmpty()) {
                     // Try to parse as JSON to verify it's a valid response
                     val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
@@ -242,7 +242,6 @@ class DefaultXtreamApiClient(
                 false
             }
         }
-
 
     override suspend fun ping(): Boolean =
         withContext(io) {
@@ -857,7 +856,7 @@ class DefaultXtreamApiClient(
         val url = builder.build().toString()
         val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
         UnifiedLog.d(TAG, "buildPlayerApiUrl: Built URL: $redactedUrl")
-        
+
         return url
     }
 
@@ -953,7 +952,7 @@ class DefaultXtreamApiClient(
                 body
             }
         } catch (e: Exception) {
-            UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $redactedUrl", e)
+            UnifiedLog.e(TAG, e) { "fetchRaw: Exception while fetching $redactedUrl" }
             val mapped = mapException(e)
             _connectionState.value = XtreamConnectionState.Error(mapped, retryable = true)
             if (mapped == XtreamError.InvalidCredentials || mapped is XtreamError.AccountExpired) {
@@ -963,13 +962,16 @@ class DefaultXtreamApiClient(
         }
     }
 
-    private fun redactUrl(url: String): String =
-        url.replace(Regex("(password|username)=[^&]*"), "$1=***")
+    private fun redactUrl(url: String): String = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
 
-    private fun isHtmlResponse(contentType: String?, body: String): Boolean {
+    private fun isHtmlResponse(
+        contentType: String?,
+        body: String,
+    ): Boolean {
         if (contentType?.contains("html", ignoreCase = true) == true) return true
         val trimmed = body.trimStart()
-        return trimmed.startsWith("<") || trimmed.contains("<html", ignoreCase = true)
+        val head = trimmed.take(1000)
+        return head.startsWith("<") || head.contains("<html", ignoreCase = true)
     }
 
     private suspend fun takeRateSlot(host: String) {
