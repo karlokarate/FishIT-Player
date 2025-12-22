@@ -8,7 +8,6 @@ import org.junit.Test
  * Unit tests for XtreamParallelism wrapper class.
  */
 class XtreamParallelismTest {
-
     @Test
     fun `XtreamParallelism stores correct value`() {
         val parallelism = XtreamParallelism(10)

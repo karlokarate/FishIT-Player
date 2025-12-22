@@ -17,7 +17,9 @@ package com.fishit.player.infra.transport.xtream
  * @property value The parallelism level (number of concurrent requests).
  * @see XtreamTransportConfig.getParallelism
  */
-data class XtreamParallelism(val value: Int) {
+data class XtreamParallelism(
+    val value: Int,
+) {
     init {
         require(value > 0) { "Parallelism must be positive, was $value" }
     }

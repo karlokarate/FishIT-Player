@@ -17,7 +17,6 @@ import kotlin.test.assertTrue
  * This prevents JSON parsing exceptions when server returns M3U/HTML/text.
  */
 class JsonResponseGateTest {
-
     /**
      * Simulates the JSON gate logic from fetchRaw().
      * This helper matches the exact implementation in DefaultXtreamApiClient.
@@ -31,12 +30,15 @@ class JsonResponseGateTest {
     /**
      * Detects M3U playlist content, used for better error messages.
      */
-    private fun isM3UPlaylist(body: String, contentType: String): Boolean {
+    private fun isM3UPlaylist(
+        body: String,
+        contentType: String,
+    ): Boolean {
         val trimmed = body.trimStart()
         return trimmed.startsWith("#EXTM3U") ||
-               trimmed.startsWith("#EXTINF") ||
-               contentType.contains("mpegurl", ignoreCase = true) ||
-               contentType.contains("x-mpegurl", ignoreCase = true)
+            trimmed.startsWith("#EXTINF") ||
+            contentType.contains("mpegurl", ignoreCase = true) ||
+            contentType.contains("x-mpegurl", ignoreCase = true)
     }
 
     // ===== Valid JSON Tests =====
@@ -89,23 +91,25 @@ class JsonResponseGateTest {
 
     @Test
     fun `M3U playlist is rejected`() {
-        val body = """
+        val body =
+            """
             #EXTM3U
             #EXTINF:-1 tvg-id="ESPN" tvg-logo="http://logo.png",ESPN
             http://example.com/live/user/pass/12345.ts
-        """.trimIndent()
-        
+            """.trimIndent()
+
         assertFalse(isValidJsonResponse(body), "M3U playlist should be rejected")
     }
 
     @Test
     fun `HTML error page is rejected`() {
-        val body = """
+        val body =
+            """
             <!DOCTYPE html>
             <html><head><title>Error</title></head>
             <body><h1>Server Error</h1></body></html>
-        """.trimIndent()
-        
+            """.trimIndent()
+
         assertFalse(isValidJsonResponse(body), "HTML page should be rejected")
     }
 
