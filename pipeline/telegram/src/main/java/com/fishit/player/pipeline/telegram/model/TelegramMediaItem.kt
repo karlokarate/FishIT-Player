@@ -215,14 +215,51 @@ data class TelegramMediaItem(
      * tg://media/<remoteId>?chatId=<chatId>&messageId=<messageId>
      *
      * The remoteId is URL-encoded to handle special characters.
+     * 
+     * **Production Safety:**
+     * - Stub URLs (tg://stub/) should NEVER appear in production
+     * - If remoteId is null in production, this indicates a bug in message parsing
+     * - Use ALLOW_STUB_URLS flag to control behavior (default: false in production)
+     * 
+     * @throws IllegalStateException if remoteId is null and ALLOW_STUB_URLS is false
      */
-    fun toTelegramUri(): String =
-            if (remoteId != null) {
-                val encodedRemoteId = java.net.URLEncoder.encode(remoteId, "UTF-8")
-                "tg://media/$encodedRemoteId?chatId=$chatId&messageId=$messageId"
-            } else {
-                "tg://stub/$id?chatId=$chatId&messageId=$messageId"
-            }
+    fun toTelegramUri(): String {
+        if (remoteId != null) {
+            val encodedRemoteId = java.net.URLEncoder.encode(remoteId, "UTF-8")
+            return "tg://media/$encodedRemoteId?chatId=$chatId&messageId=$messageId"
+        }
+        
+        // remoteId is null - check if stub URLs are allowed
+        if (ALLOW_STUB_URLS) {
+            // Debug/testing: Allow stub URL
+            return "tg://stub/$id?chatId=$chatId&messageId=$messageId"
+        }
+        
+        // Production: This is a blocker - throw error
+        error(
+            "Production BLOCKER: remoteId is null for message $messageId in chat $chatId. " +
+                "This indicates incomplete message parsing from TDLib. " +
+                "Stub URLs are not allowed in production builds. " +
+                "Set ALLOW_STUB_URLS=true only for testing."
+        )
+    }
+    
+    companion object {
+        /**
+         * Feature flag to allow stub URLs when remoteId is null.
+         * 
+         * **Default: false** (production-safe)
+         * 
+         * Set to true ONLY for:
+         * - Unit tests
+         * - Debug builds during development
+         * - Integration testing with incomplete TDLib setup
+         * 
+         * **NEVER** enable in production releases.
+         */
+        @JvmField
+        var ALLOW_STUB_URLS: Boolean = false
+    }
 
     /** Checks if this media item is playable (has sufficient metadata). */
     fun isPlayable(): Boolean = remoteId != null && mimeType != null

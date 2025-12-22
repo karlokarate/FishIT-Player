@@ -70,10 +70,12 @@ class TelegramAuthPreflightWorker @AssistedInject constructor(
         return try {
             val authState = telegramAuthRepository.authState.value
             
+            UnifiedLog.i(TAG) { "Checking auth state: $authState (isConnected=${authState is TelegramAuthState.Connected})" }
+            
             when (authState) {
                 is TelegramAuthState.Connected -> {
                     val durationMs = System.currentTimeMillis() - startTimeMs
-                    UnifiedLog.i(TAG) { "SUCCESS duration_ms=$durationMs (TDLib authorized)" }
+                    UnifiedLog.i(TAG) { "✅ SUCCESS duration_ms=$durationMs (TDLib authorized)" }
                     Result.success(
                         WorkerOutputData.success(
                             itemsPersisted = 0,
@@ -87,7 +89,7 @@ class TelegramAuthPreflightWorker @AssistedInject constructor(
                 is TelegramAuthState.WaitingForPassword -> {
                     val durationMs = System.currentTimeMillis() - startTimeMs
                     UnifiedLog.e(TAG) { 
-                        "FAILURE reason=login_required state=$authState duration_ms=$durationMs retry=false"
+                        "❌ FAILURE reason=login_required state=$authState duration_ms=$durationMs retry=false"
                     }
                     // W-20: Non-retryable failure - user action required
                     Result.failure(
@@ -99,7 +101,7 @@ class TelegramAuthPreflightWorker @AssistedInject constructor(
                 is TelegramAuthState.Error -> {
                     val durationMs = System.currentTimeMillis() - startTimeMs
                     UnifiedLog.e(TAG) { 
-                        "FAILURE reason=not_authorized state=$authState duration_ms=$durationMs retry=false"
+                        "❌ FAILURE reason=not_authorized state=$authState duration_ms=$durationMs retry=false"
                     }
                     // W-20: Non-retryable failure - user action required
                     Result.failure(
@@ -109,14 +111,14 @@ class TelegramAuthPreflightWorker @AssistedInject constructor(
                 
                 is TelegramAuthState.Idle -> {
                     // Still initializing, retry
-                    UnifiedLog.w(TAG) { "Auth state idle, retrying" }
+                    UnifiedLog.w(TAG) { "⚠️ Auth state idle (still initializing), retrying" }
                     Result.retry()
                 }
             }
         } catch (e: Exception) {
             val durationMs = System.currentTimeMillis() - startTimeMs
             UnifiedLog.e(TAG, e) { 
-                "FAILURE reason=auth_check_failed duration_ms=$durationMs retry=true"
+                "❌ FAILURE reason=auth_check_failed duration_ms=$durationMs retry=true"
             }
             // Transient init error - retry
             Result.retry()

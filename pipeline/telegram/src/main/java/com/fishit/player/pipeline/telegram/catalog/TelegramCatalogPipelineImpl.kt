@@ -49,9 +49,12 @@ constructor(
 
         try {
             // Pre-flight: Check auth state
+            UnifiedLog.i(TAG) { "scanCatalog called - checking auth state..." }
             val auth = adapter.authState.first()
+            UnifiedLog.i(TAG) { "Auth state: $auth (isReady=${auth is TdlibAuthState.Ready})" }
+            
             if (auth !is TdlibAuthState.Ready) {
-                UnifiedLog.w(TAG) { "Cannot scan: auth state is $auth" }
+                UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - auth state is $auth (expected TdlibAuthState.Ready)" }
                 trySend(
                         TelegramCatalogEvent.ScanError(
                                 reason = "unauthenticated",
@@ -62,9 +65,12 @@ constructor(
             }
 
             // Pre-flight: Check connection state
+            UnifiedLog.i(TAG) { "Auth OK - checking connection state..." }
             val conn = adapter.connectionState.first()
+            UnifiedLog.i(TAG) { "Connection state: $conn (isConnected=${conn is TelegramConnectionState.Connected})" }
+            
             if (conn !is TelegramConnectionState.Connected) {
-                UnifiedLog.w(TAG) { "Cannot scan: connection state is $conn" }
+                UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - connection state is $conn (expected TelegramConnectionState.Connected)" }
                 trySend(
                         TelegramCatalogEvent.ScanError(
                                 reason = "not_connected",
@@ -73,6 +79,8 @@ constructor(
                 )
                 return@channelFlow
             }
+            
+            UnifiedLog.i(TAG) { "Pre-flight checks passed - starting catalog scan" }
 
             // Get chats to scan
             val allChats = adapter.getChats(limit = 200)
