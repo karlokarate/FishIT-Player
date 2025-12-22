@@ -27,8 +27,9 @@ dependencies {
     // Logging (via UnifiedLog facade only - no direct Timber)
     implementation(project(":infra:logging"))
     
-    // Coil for image cache access
-    implementation("io.coil-kt.coil3:coil:3.0.4")
+    // Coil ImageLoader type (provided via core:ui-imaging api dependency)
+    // NOTE: ImageLoader is injected via Hilt from app-v2 ImagingModule
+    implementation(project(":core:ui-imaging"))
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

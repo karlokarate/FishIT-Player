@@ -13,20 +13,38 @@ import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 /**
+ * Data-only representation of a throwable for log buffer storage.
+ *
+ * **Contract (LOGGING_CONTRACT_V2):**
+ * - No real Throwable references may be stored in the log buffer
+ * - Only the type name and redacted message are retained
+ * - This ensures no sensitive data persists via exception messages or stack traces
+ *
+ * @property type Simple class name of the original throwable (e.g., "IOException")
+ * @property message Redacted error message (secrets replaced with ***)
+ */
+data class RedactedThrowableInfo(
+    val type: String?,
+    val message: String?
+) {
+    override fun toString(): String = "[$type] $message"
+}
+
+/**
  * A single buffered log entry.
  *
  * @property timestamp Unix timestamp in milliseconds
  * @property priority Android Log priority (Log.DEBUG, Log.INFO, etc.)
  * @property tag Log tag
  * @property message Log message
- * @property throwable Optional throwable
+ * @property throwableInfo Optional redacted throwable info (no real Throwable retained)
  */
 data class BufferedLogEntry(
     val timestamp: Long,
     val priority: Int,
     val tag: String?,
     val message: String,
-    val throwable: Throwable? = null
+    val throwableInfo: RedactedThrowableInfo? = null
 ) {
     /**
      * Format timestamp as HH:mm:ss.SSS
@@ -106,11 +124,12 @@ class LogBufferTree(
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         // MANDATORY: Redact sensitive information before buffering
         // Contract: No secrets may persist in memory (LOGGING_CONTRACT_V2)
+        // Contract: No real Throwable references may be stored (prevents memory leaks & secret retention)
         val redactedMessage = LogRedactor.redact(message)
-        val redactedThrowable = t?.let { original ->
-            LogRedactor.RedactedThrowable(
-                originalType = original::class.simpleName ?: "Unknown",
-                redactedMessage = LogRedactor.redact(original.message ?: "")
+        val redactedThrowableInfo = t?.let { original ->
+            RedactedThrowableInfo(
+                type = original::class.simpleName,
+                message = LogRedactor.redact(original.message ?: "")
             )
         }
 
@@ -119,7 +138,7 @@ class LogBufferTree(
             priority = priority,
             tag = tag,
             message = redactedMessage,
-            throwable = redactedThrowable
+            throwableInfo = redactedThrowableInfo
         )
 
         lock.write {

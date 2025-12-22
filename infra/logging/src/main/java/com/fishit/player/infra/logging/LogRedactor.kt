@@ -78,35 +78,18 @@ object LogRedactor {
      * Create a redacted copy of a [BufferedLogEntry].
      *
      * @param entry The original log entry
-     * @return A new entry with redacted message and throwable message
+     * @return A new entry with redacted message and throwable info
      */
     fun redactEntry(entry: BufferedLogEntry): BufferedLogEntry {
         return entry.copy(
             message = redact(entry.message),
-            // Create a wrapper throwable with redacted message if original has throwable
-            throwable = entry.throwable?.let { original ->
-                RedactedThrowable(
-                    originalType = original::class.simpleName ?: "Unknown",
-                    redactedMessage = redact(original.message ?: "")
+            // Re-redact throwable info (already data-only, no Throwable reference)
+            throwableInfo = entry.throwableInfo?.let { info ->
+                RedactedThrowableInfo(
+                    type = info.type,
+                    message = redact(info.message ?: "")
                 )
             }
         )
-    }
-
-    /**
-     * Wrapper throwable that stores only the redacted message.
-     *
-     * This ensures no sensitive information from the original throwable
-     * persists in memory through stack traces or cause chains.
-     */
-    class RedactedThrowable(
-        private val originalType: String,
-        private val redactedMessage: String
-    ) : Throwable(redactedMessage) {
-        
-        override fun toString(): String = "[$originalType] $redactedMessage"
-        
-        // Override to prevent exposing stack trace of original exception
-        override fun fillInStackTrace(): Throwable = this
     }
 }

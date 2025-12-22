@@ -2,6 +2,7 @@ package com.fishit.player.infra.logging
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -181,7 +182,7 @@ class LogRedactorTest {
             priority = android.util.Log.DEBUG,
             tag = "Test",
             message = "Login with password=secret123",
-            throwable = null
+            throwableInfo = null
         )
         
         val redacted = LogRedactor.redactEntry(entry)
@@ -191,5 +192,62 @@ class LogRedactorTest {
         assertEquals(entry.timestamp, redacted.timestamp)
         assertEquals(entry.priority, redacted.priority)
         assertEquals(entry.tag, redacted.tag)
+    }
+
+    @Test
+    fun `redactEntry redacts throwableInfo message`() {
+        val entry = BufferedLogEntry(
+            timestamp = System.currentTimeMillis(),
+            priority = android.util.Log.ERROR,
+            tag = "Test",
+            message = "Error occurred",
+            throwableInfo = RedactedThrowableInfo(
+                type = "IOException",
+                message = "Failed with password=secret456"
+            )
+        )
+        
+        val redacted = LogRedactor.redactEntry(entry)
+        
+        assertNotNull(redacted.throwableInfo)
+        assertEquals("IOException", redacted.throwableInfo?.type)
+        assertFalse(redacted.throwableInfo?.message?.contains("secret456") ?: true)
+        assertTrue(redacted.throwableInfo?.message?.contains("password=***") ?: false)
+    }
+
+    // ==================== RedactedThrowableInfo Tests ====================
+
+    @Test
+    fun `RedactedThrowableInfo is data-only - no Throwable reference`() {
+        val info = RedactedThrowableInfo(
+            type = "IllegalArgumentException",
+            message = "Test message"
+        )
+        
+        // Verify it's a data class with expected properties
+        assertEquals("IllegalArgumentException", info.type)
+        assertEquals("Test message", info.message)
+        
+        // Verify toString format
+        assertEquals("[IllegalArgumentException] Test message", info.toString())
+    }
+
+    @Test
+    fun `BufferedLogEntry throwableInfo is not a Throwable type`() {
+        // This test verifies at compile-time and runtime that no Throwable is stored
+        val entry = BufferedLogEntry(
+            timestamp = 0L,
+            priority = android.util.Log.DEBUG,
+            tag = "Test",
+            message = "Message",
+            throwableInfo = RedactedThrowableInfo("Type", "Message")
+        )
+        
+        // throwableInfo is RedactedThrowableInfo?, not Throwable?
+        val info: RedactedThrowableInfo? = entry.throwableInfo
+        assertNotNull(info)
+        
+        // Verify the entry cannot hold a real Throwable (compile-level guarantee)
+        // The field type is RedactedThrowableInfo?, not Throwable?
     }
 }
