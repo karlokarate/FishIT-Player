@@ -8,11 +8,13 @@ import com.fishit.player.core.feature.auth.TelegramAuthState
 import com.fishit.player.feature.settings.ConnectionInfo
 import com.fishit.player.feature.settings.ContentCounts
 import com.fishit.player.feature.settings.DebugInfoProvider
+import com.fishit.player.feature.settings.TelegramCredentialStatus
 import com.fishit.player.infra.cache.CacheManager
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
+import com.fishit.player.v2.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -136,6 +138,34 @@ class DefaultDebugInfoProvider @Inject constructor(
                 xtreamLiveCount = liveCount
             )
         }
+    }
+
+    // =========================================================================
+    // API Credential Status
+    // =========================================================================
+
+    override fun getTelegramCredentialStatus(): TelegramCredentialStatus {
+        val apiId = BuildConfig.TG_API_ID
+        val apiHash = BuildConfig.TG_API_HASH
+        
+        val isConfigured = apiId != 0 && apiHash.isNotBlank()
+        
+        val statusMessage = when {
+            isConfigured -> "Configured (API ID: $apiId)"
+            apiId == 0 && apiHash.isBlank() -> "Missing (TG_API_ID and TG_API_HASH not set)"
+            apiId == 0 -> "Missing (TG_API_ID not set)"
+            apiHash.isBlank() -> "Missing (TG_API_HASH not set)"
+            else -> "Unknown status"
+        }
+        
+        return TelegramCredentialStatus(
+            isConfigured = isConfigured,
+            statusMessage = statusMessage
+        )
+    }
+
+    override fun isTmdbApiKeyConfigured(): Boolean {
+        return BuildConfig.TMDB_API_KEY.isNotBlank()
     }
 
     // =========================================================================

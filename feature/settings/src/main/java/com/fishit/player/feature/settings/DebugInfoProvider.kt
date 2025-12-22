@@ -81,6 +81,29 @@ interface DebugInfoProvider {
     fun observeContentCounts(): Flow<ContentCounts>
 
     // =========================================================================
+    // API Credential Status
+    // =========================================================================
+
+    /**
+     * Get Telegram API credential configuration status.
+     *
+     * **Important distinction:**
+     * - Credentials CONFIGURED = TG_API_ID and TG_API_HASH are set (BuildConfig)
+     * - Credentials MISSING = App was built without Telegram API credentials
+     * - Authorization state is separate (user may be logged in or not)
+     *
+     * @return Status of Telegram API credentials
+     */
+    fun getTelegramCredentialStatus(): TelegramCredentialStatus
+
+    /**
+     * Get TMDB API key configuration status.
+     *
+     * @return true if TMDB_API_KEY is configured in BuildConfig
+     */
+    fun isTmdbApiKeyConfigured(): Boolean
+
+    // =========================================================================
     // Cache Actions
     // =========================================================================
 
@@ -109,6 +132,20 @@ interface DebugInfoProvider {
 data class ConnectionInfo(
     val isConnected: Boolean,
     val details: String? = null
+)
+
+/**
+ * Telegram API credential status.
+ *
+ * **Note:** This is separate from authorization state!
+ * - Credentials = TG_API_ID/TG_API_HASH from BuildConfig
+ * - Authorization = User logged in via TDLib
+ */
+data class TelegramCredentialStatus(
+    /** Whether TG_API_ID and TG_API_HASH are configured (non-empty) */
+    val isConfigured: Boolean,
+    /** Human-readable status message */
+    val statusMessage: String,
 )
 
 /**

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration for FishIT-Player v2
+    
+    IMPORTANT: Many Xtream Codes providers use HTTP (not HTTPS).
+    This configuration allows cleartext traffic to enable connectivity
+    with HTTP-only IPTV providers.
+    
+    Security considerations:
+    - Credentials are sent in query parameters (standard Xtream Codes API)
+    - Users should be aware their credentials traverse unencrypted connections
+    - Provider-side TLS/HTTPS adoption is outside our control
+    
+    See: https://developer.android.com/training/articles/security-config
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+      <!-- Trust system CAs for HTTPS connections -->
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>

@@ -34,6 +34,11 @@ data class DebugState(
     val telegramUser: String? = null,
     val xtreamConnected: Boolean = false,
     val xtreamServer: String? = null,
+    
+    // API credential status (separate from connection status!)
+    val telegramCredentialsConfigured: Boolean = false,
+    val telegramCredentialStatus: String = "Unknown",
+    val tmdbApiKeyConfigured: Boolean = false,
 
     // Cache info
     val telegramCacheSize: String = "0 MB",
@@ -97,11 +102,32 @@ class DebugViewModel @Inject constructor(
 
     init {
         loadSystemInfo()
+        loadCredentialStatus()
         observeSyncState()
         observeConnectionStatus()
         observeContentCounts()
         observeLogs()
         loadCacheSizes()
+    }
+    
+    /**
+     * Load API credential configuration status.
+     * 
+     * **Important:** This is separate from connection status!
+     * - Credentials = BuildConfig values (TG_API_ID, TG_API_HASH, TMDB_API_KEY)
+     * - Connection = Runtime auth state (logged in or not)
+     */
+    private fun loadCredentialStatus() {
+        val telegramStatus = debugInfoProvider.getTelegramCredentialStatus()
+        val tmdbConfigured = debugInfoProvider.isTmdbApiKeyConfigured()
+        
+        _state.update {
+            it.copy(
+                telegramCredentialsConfigured = telegramStatus.isConfigured,
+                telegramCredentialStatus = telegramStatus.statusMessage,
+                tmdbApiKeyConfigured = tmdbConfigured
+            )
+        }
     }
     
     /**

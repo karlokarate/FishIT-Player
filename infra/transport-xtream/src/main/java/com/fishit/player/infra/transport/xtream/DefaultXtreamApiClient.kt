@@ -930,38 +930,74 @@ class DefaultXtreamApiClient(
         // Rate limit
         takeRateSlot(config?.host ?: "")
 
-        // Execute request
+        // Execute request with enhanced headers for provider compatibility
         val request =
             Request
                 .Builder()
                 .url(url)
                 .header("Accept", "application/json")
                 .header("Accept-Encoding", "gzip")
+                .header("User-Agent", "FishIT-Player/2.x (Android)")
                 .get()
                 .build()
 
         val safeUrl = redactUrl(url)
         return try {
             http.newCall(request).execute().use { response ->
+                // Network Probe: Log endpoint + status (never credentials)
+                val contentType = response.header("Content-Type") ?: "unknown"
+                val contentLength = response.header("Content-Length") ?: "unknown"
+                
                 if (!response.isSuccessful) {
-                    // INFO only on failure (contract-compliant)
-                    UnifiedLog.i(TAG, "fetchRaw: HTTP ${response.code} for $safeUrl")
+                    // Enhanced diagnostic logging for connection failures
+                    UnifiedLog.i(TAG, "NetworkProbe: HTTP ${response.code} for $safeUrl | contentType=$contentType")
                     return null
                 }
                 
                 val body = response.body.string()
                 
+                // Network Probe: Log success with response metadata (no body content)
+                UnifiedLog.d(TAG, "NetworkProbe: HTTP ${response.code} for $safeUrl | bytes=${body.length} contentType=$contentType")
+                
                 if (body.isEmpty()) {
-                    UnifiedLog.i(TAG, "fetchRaw: Empty response for $safeUrl")
+                    UnifiedLog.i(TAG, "NetworkProbe: Empty body for $safeUrl (contentLength=$contentLength)")
                     return null
+                }
+                
+                // Validate response looks like JSON (not HTML error page or m3u playlist)
+                val trimmed = body.trimStart()
+                if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+                    // Log first 200 chars if it's not JSON (likely error page)
+                    val preview = trimmed.take(200).replace(Regex("[\\r\\n]+"), " ")
+                    UnifiedLog.w(TAG, "NetworkProbe: Non-JSON response for $safeUrl | preview=$preview")
                 }
                 
                 writeCache(url, body)
                 body
             }
+        } catch (e: java.net.UnknownHostException) {
+            UnifiedLog.i(TAG, "NetworkProbe: DNS resolution failed for $safeUrl")
+            null
+        } catch (e: java.net.ConnectException) {
+            UnifiedLog.i(TAG, "NetworkProbe: Connection refused for $safeUrl - ${e.message}")
+            null
+        } catch (e: javax.net.ssl.SSLException) {
+            UnifiedLog.i(TAG, "NetworkProbe: SSL/TLS error for $safeUrl - ${e.message}")
+            null
+        } catch (e: java.net.SocketTimeoutException) {
+            UnifiedLog.i(TAG, "NetworkProbe: Timeout for $safeUrl")
+            null
+        } catch (e: java.io.IOException) {
+            // Check for cleartext traffic blocked
+            val message = e.message ?: ""
+            if (message.contains("CLEARTEXT") || message.contains("cleartext")) {
+                UnifiedLog.e(TAG, "NetworkProbe: Cleartext HTTP blocked! Enable usesCleartextTraffic in AndroidManifest for $safeUrl")
+            } else {
+                UnifiedLog.i(TAG, "NetworkProbe: IO error for $safeUrl - ${e.javaClass.simpleName}: $message")
+            }
+            null
         } catch (e: Exception) {
-            // INFO for exception summary (no stack trace in release)
-            UnifiedLog.i(TAG, "fetchRaw: Failed $safeUrl - ${e.javaClass.simpleName}")
+            UnifiedLog.i(TAG, "NetworkProbe: Failed $safeUrl - ${e.javaClass.simpleName}")
             null
         }
     }

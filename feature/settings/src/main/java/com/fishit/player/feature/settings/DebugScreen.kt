@@ -136,6 +136,24 @@ fun DebugScreen(
                     }
                 }
 
+                // API Credentials Section (separate from connection status!)
+                item {
+                    DebugSection(title = "API Credentials", icon = Icons.Default.Info) {
+                        // Telegram API credentials (BuildConfig)
+                        CredentialStatusRow(
+                            name = "Telegram API",
+                            isConfigured = state.telegramCredentialsConfigured,
+                            details = state.telegramCredentialStatus
+                        )
+                        // TMDB API key (BuildConfig)
+                        CredentialStatusRow(
+                            name = "TMDB API",
+                            isConfigured = state.tmdbApiKeyConfigured,
+                            details = if (state.tmdbApiKeyConfigured) "Configured" else "Missing (TMDB_API_KEY not set)"
+                        )
+                    }
+                }
+
                 // Connection Status Section
                 item {
                     DebugSection(title = "Connections", icon = Icons.Default.Cloud) {
@@ -524,7 +542,49 @@ private fun ConnectionRow(
         }
     }
 }
-
+/**
+ * Row displaying API credential configuration status.
+ * 
+ * **Important distinction from ConnectionRow:**
+ * - CredentialStatusRow shows if credentials are CONFIGURED (BuildConfig)
+ * - ConnectionRow shows if the user is CONNECTED/AUTHORIZED (runtime state)
+ */
+@Composable
+private fun CredentialStatusRow(
+    name: String,
+    isConfigured: Boolean,
+    details: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (isConfigured) Icons.Default.CheckCircle else Icons.Default.Warning,
+            contentDescription = null,
+            tint = if (isConfigured) Color(0xFF4CAF50) else Color(0xFFFF9800),
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = details,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isConfigured) 
+                    MaterialTheme.colorScheme.onSurfaceVariant 
+                else 
+                    Color(0xFFFF9800)
+            )
+        }
+    }
+}
 @Composable
 private fun CacheRow(
     name: String,

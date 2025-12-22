@@ -11,7 +11,9 @@
         android:label="@string/app_name"
         android:roundIcon="@android:drawable/sym_def_app_icon"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FishITPlayerV2">
+        android:theme="@style/Theme.FishITPlayerV2"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
