@@ -56,7 +56,7 @@ class EncryptedXtreamCredentialsStore
                 )
             } catch (e: Exception) {
                 // Storage disabled if encryption unavailable - no plaintext fallback
-                UnifiedLog.w(TAG, e) { 
+                UnifiedLog.w(TAG, e) {
                     "Encrypted storage unavailable (keystore issue) - credential persistence disabled"
                 }
                 null

@@ -439,7 +439,7 @@ sealed interface XtreamError {
 
     /**
      * Server returned non-JSON response (M3U playlist, HTML, text).
-     * 
+     *
      * Common cause: Using get.php URL instead of player_api.php.
      * get.php returns M3U playlist format, not JSON.
      */
