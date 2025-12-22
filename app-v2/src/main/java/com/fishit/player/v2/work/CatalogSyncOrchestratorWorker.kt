@@ -64,6 +64,8 @@ class CatalogSyncOrchestratorWorker @AssistedInject constructor(
         // W-8: Check for active sources
         val activeSources = sourceActivationStore.getActiveSources()
         
+        UnifiedLog.i(TAG) { "Active sources check: $activeSources (isEmpty=${activeSources.isEmpty()})" }
+        
         if (activeSources.isEmpty()) {
             val durationMs = System.currentTimeMillis() - startTimeMs
             UnifiedLog.i(TAG) { 
@@ -77,7 +79,7 @@ class CatalogSyncOrchestratorWorker @AssistedInject constructor(
             )
         }
         
-        UnifiedLog.d(TAG) { "Active sources: $activeSources" }
+        UnifiedLog.d(TAG) { "Active sources: $activeSources (TELEGRAM=${SourceId.TELEGRAM in activeSources}, XTREAM=${SourceId.XTREAM in activeSources}, IO=${SourceId.IO in activeSources})" }
         
         // Build child worker chain in fixed order: Xtream → Telegram → IO (W-7)
         val workManager = WorkManager.getInstance(applicationContext)
@@ -102,6 +104,7 @@ class CatalogSyncOrchestratorWorker @AssistedInject constructor(
         
         // 2. Telegram (if active)
         if (SourceId.TELEGRAM in activeSources) {
+            UnifiedLog.i(TAG) { "✅ Telegram is ACTIVE - building Telegram worker chain" }
             val telegramChain = buildTelegramChain(childInputData, input)
             workContinuation = if (workContinuation == null) {
                 workManager.beginUniqueWork(
@@ -112,7 +115,9 @@ class CatalogSyncOrchestratorWorker @AssistedInject constructor(
             } else {
                 workContinuation.then(telegramChain)
             }
-            UnifiedLog.d(TAG) { "Enqueued Telegram workers" }
+            UnifiedLog.i(TAG) { "✅ Enqueued ${telegramChain.size} Telegram workers (preflight + scan)" }
+        } else {
+            UnifiedLog.w(TAG) { "⚠️ Telegram is NOT ACTIVE - skipping Telegram workers" }
         }
         
         // 3. IO (if active)

@@ -61,36 +61,42 @@ class TelegramActivationObserver @Inject constructor(
         data class Error(val reason: SourceErrorReason) : TelegramActivation
     }
     
-    private fun mapToActivation(state: TelegramAuthState): TelegramActivation = when (state) {
-        is TelegramAuthState.Connected -> TelegramActivation.Active
+    private fun mapToActivation(state: TelegramAuthState): TelegramActivation {
+        val activation = when (state) {
+            is TelegramAuthState.Connected -> TelegramActivation.Active
+            
+            // Logged out/disconnected = inactive, no error
+            is TelegramAuthState.Disconnected -> TelegramActivation.Inactive
+            
+            // Waiting for user input = login required
+            is TelegramAuthState.WaitingForPhone,
+            is TelegramAuthState.WaitingForCode,
+            is TelegramAuthState.WaitingForPassword -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
+            
+            // Idle state = still inactive
+            is TelegramAuthState.Idle -> TelegramActivation.Inactive
+            
+            // Error state = inactive with error
+            is TelegramAuthState.Error -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
+        }
         
-        // Logged out/disconnected = inactive, no error
-        is TelegramAuthState.Disconnected -> TelegramActivation.Inactive
-        
-        // Waiting for user input = login required
-        is TelegramAuthState.WaitingForPhone,
-        is TelegramAuthState.WaitingForCode,
-        is TelegramAuthState.WaitingForPassword -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
-        
-        // Idle state = still inactive
-        is TelegramAuthState.Idle -> TelegramActivation.Inactive
-        
-        // Error state = inactive with error
-        is TelegramAuthState.Error -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
+        UnifiedLog.d(TAG) { "Auth state mapped: $state → $activation" }
+        return activation
     }
     
     private suspend fun handleActivation(activation: TelegramActivation) {
         when (activation) {
             is TelegramActivation.Active -> {
-                UnifiedLog.i(TAG) { "Telegram auth ready → setting ACTIVE" }
+                UnifiedLog.i(TAG) { "✅ Telegram auth ready → calling sourceActivationStore.setTelegramActive()" }
                 sourceActivationStore.setTelegramActive()
+                UnifiedLog.i(TAG) { "✅ Telegram source marked ACTIVE - workers should be scheduled" }
             }
             is TelegramActivation.Inactive -> {
-                UnifiedLog.i(TAG) { "Telegram inactive → setting INACTIVE" }
+                UnifiedLog.i(TAG) { "⚠️ Telegram inactive → setting INACTIVE" }
                 sourceActivationStore.setTelegramInactive()
             }
             is TelegramActivation.Error -> {
-                UnifiedLog.i(TAG) { "Telegram error: ${activation.reason} → setting INACTIVE with reason" }
+                UnifiedLog.i(TAG) { "❌ Telegram error: ${activation.reason} → setting INACTIVE with reason" }
                 sourceActivationStore.setTelegramInactive(activation.reason)
             }
         }
