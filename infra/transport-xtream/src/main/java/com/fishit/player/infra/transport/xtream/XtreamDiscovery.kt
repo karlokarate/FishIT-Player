@@ -46,9 +46,6 @@ class XtreamDiscovery(
         private val portCache = mutableMapOf<String, PortCacheEntry>()
         private val capCache = mutableMapOf<String, CapabilityCacheEntry>()
 
-        private const val PORT_CACHE_TTL_MS = 24 * 60 * 60 * 1000L // 24h
-        private const val CAP_CACHE_TTL_MS = 6 * 60 * 60 * 1000L // 6h
-
         // Port candidates by scheme
         private val HTTP_PORTS = listOf(80, 8080, 8000, 8880, 2052, 2082, 2086)
         private val HTTPS_PORTS = listOf(443, 8443, 2053, 2083, 2087, 2096)
@@ -92,7 +89,7 @@ class XtreamDiscovery(
             if (!forceRefresh) {
                 cacheMutex.withLock {
                     portCache[key]?.let { entry ->
-                        if (SystemClock.elapsedRealtime() - entry.at < PORT_CACHE_TTL_MS) {
+                        if (SystemClock.elapsedRealtime() - entry.at < XtreamTransportConfig.PORT_CACHE_TTL_MS) {
                             return@withContext entry.port
                         }
                     }
@@ -130,7 +127,7 @@ class XtreamDiscovery(
             if (!forceRefresh) {
                 cacheMutex.withLock {
                     capCache[key]?.let { entry ->
-                        if (SystemClock.elapsedRealtime() - entry.at < CAP_CACHE_TTL_MS) {
+                        if (SystemClock.elapsedRealtime() - entry.at < XtreamTransportConfig.CAPABILITY_CACHE_TTL_MS) {
                             return@withContext entry.caps
                         }
                     }
@@ -209,7 +206,8 @@ class XtreamDiscovery(
             val candidates =
                 (if (isHttps) HTTPS_PORTS else HTTP_PORTS).filter { it != defaultPort }.distinct()
 
-            val semaphore = Semaphore(4)
+            // Premium Contract Section 5: Use centralized parallelism config
+            val semaphore = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
             val jobs =
                 candidates.map { port ->
                     async { semaphore.withPermit { if (tryProbe(config, port)) port else null } }
@@ -313,7 +311,8 @@ class XtreamDiscovery(
     ): XtreamCapabilities =
         coroutineScope {
             val actions = mutableMapOf<String, XtreamActionCapability>()
-            val semaphore = Semaphore(4)
+            // Premium Contract Section 5: Use centralized parallelism config
+            val semaphore = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
 
             suspend fun probe(
                 action: String,

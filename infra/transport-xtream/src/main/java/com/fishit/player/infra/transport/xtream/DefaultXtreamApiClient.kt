@@ -71,13 +71,13 @@ class DefaultXtreamApiClient(
     private var config: XtreamApiConfig? = null
     private var resolvedPort: Int = 80
     private var vodKind: String = "vod"
+    private var urlBuilder: XtreamUrlBuilder? = null
 
     // Rate limiting (shared across all instances for same host)
     private companion object {
         private const val TAG = "XtreamApiClient"
         private val rateMutex = Mutex()
         private val lastCallByHost = mutableMapOf<String, Long>()
-        private const val MIN_INTERVAL_MS = 120L
 
         // Response cache
         private val cacheLock = Mutex()
@@ -85,8 +85,6 @@ class DefaultXtreamApiClient(
             object : LinkedHashMap<String, CacheEntry>(512, 0.75f, true) {
                 override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?): Boolean = size > 512
             }
-        private const val CACHE_TTL_MS = 60_000L
-        private const val EPG_CACHE_TTL_MS = 15_000L
 
         // VOD alias candidates in preference order
         private val VOD_ALIAS_CANDIDATES = listOf("vod", "movie", "movies")
@@ -102,8 +100,15 @@ class DefaultXtreamApiClient(
         val body: String,
     )
 
-    // EPG parallel limit
-    private val epgSemaphore = Semaphore(4)
+    /**
+     * Semaphore for EPG parallel requests.
+     *
+     * Premium Contract Section 5: Use device-class parallelism.
+     * Note: This is a default fallback; actual parallelism is controlled via
+     * OkHttp Dispatcher in DI module. The semaphore here is for additional
+     * coroutine-level throttling if needed.
+     */
+    private val epgSemaphore = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
 
     // =========================================================================
     // Lifecycle
@@ -261,10 +266,11 @@ class DefaultXtreamApiClient(
         _authState.value = XtreamAuthState.Unknown
         _capabilities = null
         config = null
+        urlBuilder = null
     }
 
     // =========================================================================
-    // Server & User Info
+    // Server & User Info (Premium Contract Section 2 X-10)
     // =========================================================================
 
     override suspend fun getServerInfo(): Result<XtreamServerInfo> =
@@ -292,6 +298,30 @@ class DefaultXtreamApiClient(
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, "getServerInfo failed", e)
                 Result.failure(e)
+            }
+        }
+
+    /**
+     * Fetch panel info via panel_api.php (optional diagnostics endpoint).
+     *
+     * Per Premium Contract Section 2 (X-10) and Section 8:
+     * - Used for optional diagnostics and capability detection
+     * - May not be available on all panels
+     *
+     * @return Raw JSON response body or null if not available/supported
+     */
+    override suspend fun getPanelInfo(): String? =
+        withContext(io) {
+            val cfg = config ?: return@withContext null
+            val builder = urlBuilder ?: XtreamUrlBuilder(cfg, resolvedPort, vodKind)
+
+            try {
+                val url = builder.panelApiUrl()
+                UnifiedLog.d(TAG, "getPanelInfo: Fetching from panel_api.php")
+                fetchRaw(url, isEpg = false)
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG, "getPanelInfo: panel_api.php not available or failed", e)
+                null
             }
         }
 
@@ -924,8 +954,8 @@ class DefaultXtreamApiClient(
             val now = SystemClock.elapsedRealtime()
             val lastCall = lastCallByHost[host] ?: 0L
             val delta = now - lastCall
-            if (delta in 0 until MIN_INTERVAL_MS) {
-                delay(MIN_INTERVAL_MS - delta)
+            if (delta in 0 until XtreamTransportConfig.MIN_INTERVAL_MS) {
+                delay(XtreamTransportConfig.MIN_INTERVAL_MS - delta)
             }
             lastCallByHost[host] = SystemClock.elapsedRealtime()
         }
@@ -935,7 +965,7 @@ class DefaultXtreamApiClient(
         url: String,
         isEpg: Boolean,
     ): String? {
-        val ttl = if (isEpg) EPG_CACHE_TTL_MS else CACHE_TTL_MS
+        val ttl = if (isEpg) XtreamTransportConfig.EPG_CACHE_TTL_MS else XtreamTransportConfig.CACHE_TTL_MS
         return cacheLock.withLock {
             val entry = cache[url] ?: return@withLock null
             if ((SystemClock.elapsedRealtime() - entry.at) <= ttl) entry.body else null
@@ -1003,7 +1033,8 @@ class DefaultXtreamApiClient(
                     listOf(80, 8080, 8000, 8880, 2052, 2082, 2086)
                 }
 
-            val sem = Semaphore(4)
+            // Premium Contract Section 5: Use centralized parallelism config
+            val sem = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
             val jobs =
                 candidates.distinct().map { port ->
                     async { sem.withPermit { if (tryPing(config, port)) port else null } }
@@ -1088,7 +1119,8 @@ class DefaultXtreamApiClient(
     ): XtreamCapabilities =
         coroutineScope {
             val actions = mutableMapOf<String, XtreamActionCapability>()
-            val sem = Semaphore(4)
+            // Premium Contract Section 5: Use centralized parallelism config
+            val sem = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
 
             suspend fun probe(
                 action: String,

@@ -91,6 +91,49 @@ class XtreamUrlBuilder(
             .toString()
 
     // =========================================================================
+    // Panel API URLs (Premium Contract Section 2/8)
+    // =========================================================================
+
+    /**
+     * Build panel_api.php URL.
+     *
+     * Used for diagnostics and capability detection per Premium Contract X-10.
+     * Some panels expose additional info via panel_api.php.
+     *
+     * @param action Optional action parameter.
+     * @param params Additional query parameters.
+     * @return panel_api.php URL.
+     *
+     * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract Section 2/8</a>
+     */
+    fun panelApiUrl(
+        action: String? = null,
+        params: Map<String, String> = emptyMap(),
+    ): String =
+        HttpUrl
+            .Builder()
+            .scheme(config.scheme.lowercase())
+            .host(config.host)
+            .port(resolvedPort)
+            .apply {
+                addBasePathSegments()
+                addPathSegment("panel_api.php")
+
+                // Credentials first for panel_api
+                addQueryParameter("username", config.username)
+                addQueryParameter("password", config.password)
+
+                // Action if specified
+                if (!action.isNullOrBlank()) {
+                    addQueryParameter("action", action)
+                }
+
+                // Extra params
+                params.forEach { (key, value) -> addQueryParameter(key, value) }
+            }.build()
+            .toString()
+
+    // =========================================================================
     // Playback URLs
     // =========================================================================
 

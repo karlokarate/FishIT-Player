@@ -80,7 +80,7 @@ interface XtreamApiClient {
     fun close()
 
     // =========================================================================
-    // Server & User Info
+    // Server & User Info (Premium Contract Section 2 X-10)
     // =========================================================================
 
     /**
@@ -94,6 +94,20 @@ interface XtreamApiClient {
      * @return Server info or error
      */
     suspend fun getServerInfo(): Result<XtreamServerInfo>
+
+    /**
+     * Fetch panel info via panel_api.php (optional diagnostics endpoint).
+     *
+     * Per Premium Contract Section 2 (X-10) and Section 8:
+     * - Used for optional diagnostics and capability detection
+     * - May not be available on all panels
+     * - Returns raw JSON response for flexible parsing
+     *
+     * @return Raw JSON response body or null if not available/supported
+     *
+     * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract Section 2/8</a>
+     */
+    suspend fun getPanelInfo(): String?
 
     /**
      * Fetch detailed user account information. Same as getServerInfo but with explicit parsing.
