@@ -68,23 +68,21 @@ class FishItV2Application :
     override fun onCreate() {
         super.onCreate()
 
+        // Contract S-1: UnifiedLog MUST be initialized BEFORE any other subsystem
+        UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
+
+        // WorkManager initialization (after logging is ready)
         val workManagerInitialized = WORK_MANAGER_INITIALIZED.compareAndSet(false, true)
         if (workManagerInitialized) {
             WorkManager.initialize(this, workConfiguration)
-        }
-
-        // Early initialization of unified logging system to ensure all subsequent logging works correctly
-        UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
-
-        if (workManagerInitialized) {
             UnifiedLog.i(TAG) { "WorkManager initialized" }
         }
 
-        // Start source activation observers (must be before bootstraps)
+        // Contract S-2: Start lightweight observers (no heavy work)
         sourceActivationObserver.start(appScope)
         telegramActivationObserver.start()
         
-        // Start session bootstraps
+        // Contract S-3: Bootstraps started here ONLY (not in MainActivity or AppNavHost)
         xtreamSessionBootstrap.start()
         catalogSyncBootstrap.start()
     }

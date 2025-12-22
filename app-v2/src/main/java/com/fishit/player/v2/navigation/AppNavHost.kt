@@ -25,10 +25,8 @@ import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.ui.PlayerScreen
-import com.fishit.player.v2.CatalogSyncBootstrap
 import com.fishit.player.v2.navigation.PlayerNavViewModel
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
-import kotlinx.coroutines.flow.collectLatest
 
 /**
  * Top-level navigation host for FishIT Player v2.
@@ -37,21 +35,17 @@ import kotlinx.coroutines.flow.collectLatest
  * Start -> Home -> Detail -> Player
  *               -> Debug -> DebugPlayback (test player)
  *               -> Settings
+ * 
+ * Contract S-3: Bootstraps are started in Application.onCreate() ONLY.
+ * No bootstrap triggers in navigation or UI layers.
  */
 @Composable
-fun AppNavHost(
-    catalogSyncBootstrap: CatalogSyncBootstrap,
-) {
+fun AppNavHost() {
     val navController = rememberNavController()
 
     FishTheme {
-        LaunchedEffect(navController, catalogSyncBootstrap) {
-            navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
-                if (backStackEntry.destination.route == Routes.HOME) {
-                    catalogSyncBootstrap.start()
-                }
-            }
-        }
+        // Contract S-3: Removed LaunchedEffect bootstrap trigger
+        // Sync is managed by CatalogSyncBootstrap in Application.onCreate()
 
         NavHost(
             navController = navController,

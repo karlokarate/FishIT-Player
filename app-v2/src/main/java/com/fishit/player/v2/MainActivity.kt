@@ -11,25 +11,18 @@ import androidx.compose.ui.Modifier
 import com.fishit.player.v2.navigation.AppNavHost
 import com.fishit.player.v2.ui.theme.FishItV2Theme
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 /**
  * Main entry activity for FishIT Player v2.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
-
-    @Inject
-    lateinit var xtreamSessionBootstrap: XtreamSessionBootstrap
+    // Contract S-3: Bootstraps are started in Application.onCreate() ONLY
+    // No duplicate bootstrap injections or starts here
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // Initialize Xtream session before catalog sync
-        xtreamSessionBootstrap.start()
 
         setContent {
             FishItV2Theme {
@@ -37,9 +30,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    AppNavHost(
-                        catalogSyncBootstrap = catalogSyncBootstrap,
-                    )
+                    AppNavHost()
                 }
             }
         }

@@ -14,6 +14,7 @@ import javax.inject.Named
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -91,11 +92,24 @@ class CatalogSyncBootstrap
             }
         }
 
-        private fun triggerSync(
-            telegramReady: Boolean,
-            xtreamConnected: Boolean,
-        ) {
-            if (!hasTriggered.compareAndSet(false, true)) return
+/**
+     * Contract T-2: Mandatory delay gate before sync.
+     * This prevents sync from racing with other startup tasks.
+     */
+    private suspend fun triggerSync(
+        telegramReady: Boolean,
+        xtreamConnected: Boolean,
+    ) {
+        if (!hasTriggered.compareAndSet(false, true)) return
+
+        // Contract T-2: Delay gate - wait before triggering sync
+        delay(SYNC_DELAY_MS)
+
+        // Contract T-3: Only sync if at least one source is ready
+        if (!telegramReady && !xtreamConnected) {
+            UnifiedLog.i(TAG) { "No sources ready, skipping catalog sync" }
+            return
+        }
 
             UnifiedLog.i(TAG) { "Catalog sync bootstrap triggered; telegram=$telegramReady xtream=$xtreamConnected" }
             catalogSyncWorkScheduler.enqueueAutoSync()
@@ -129,5 +143,11 @@ class CatalogSyncBootstrap
 
         private companion object {
             private const val TAG = "CatalogSyncBootstrap"
+
+            /**
+             * Contract T-2: Delay gate in milliseconds.
+             * Prevents sync from racing with other startup operations.
+             */
+            private const val SYNC_DELAY_MS = 5_000L
         }
     }
