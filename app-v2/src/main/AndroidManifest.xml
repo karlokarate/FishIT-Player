@@ -12,7 +12,7 @@
         android:roundIcon="@android:drawable/sym_def_app_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.FishITPlayerV2">
-        
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -25,19 +25,28 @@
         </activity>
 
         <!-- 
-            Remove WorkManager auto-initialization via AndroidX Startup.
+            MANDATORY: Remove WorkManager auto-initialization via AndroidX Startup.
             We use on-demand initialization via Configuration.Provider in FishItV2Application.
-            See: https://developer.android.com/topic/libraries/architecture/workmanager/advanced/custom-configuration
+            
+            The tools:node="remove" on the meta-data completely removes the WorkManagerInitializer
+            from the merged manifest, preventing conflicts with our custom Configuration.Provider.
+            
+            See:
+        https://developer.android.com/topic/libraries/architecture/workmanager/advanced/custom-configuration
+            Contract: WORKMANAGER_INITIALIZATION_GUARDRAIL.md
         -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="com.fishit.player.v2.androidx-startup"
+            android:exported="false"
             tools:node="merge">
+            <!-- Remove WorkManager auto-init - we use Configuration.Provider -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
-        
+
     </application>
 
 </manifest>
