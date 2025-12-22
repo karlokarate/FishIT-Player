@@ -1,4 +1,4 @@
-## App Startup & Sync Trigger Contract — Premium Gold
+# App Startup & Sync Trigger Contract — Premium Gold
 
 **Version:** 1.0
 **Date:** 2025-12-22
@@ -12,7 +12,7 @@
 ## 1) Goals
 
 * **Fast startup** (no jank, especially on FireTV 32-bit)
-* **Immediate UI clarity** (never “empty and silent”)
+* **Immediate UI clarity** (never "empty and silent")
 * **Deterministic background sync** (SSOT WorkManager queue only)
 * **No duplicate bootstraps** and no parallel sync paths
 * **Optional sources** (Xtream/Telegram/IO independent)
@@ -51,8 +51,8 @@ Duplicate `.start()` calls for the same bootstrap are forbidden.
 
 On first render of HOME/LIVE:
 
-* If no sources are active: show “Add source” actions.
-* If sources active but library empty: show “Sync pending” state + passive indicator.
+* If no sources are active: show "Add source" actions.
+* If sources active but library empty: show "Sync pending" state + passive indicator.
 * UI MUST remain usable while sync runs.
 
 ### U-2 UI never performs sync work

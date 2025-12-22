@@ -1,22 +1,5 @@
 package com.fishit.player.infra.transport.xtream
 
-import javax.inject.Qualifier
-
-/**
- * Qualifier for the device-aware parallelism value.
- *
- * Used to inject the parallelism level determined by [XtreamTransportConfig.getParallelism].
- *
- * Premium Contract Section 5:
- * - Phone/Tablet: parallelism = 10
- * - FireTV/low-RAM: parallelism = 3
- *
- * @see XtreamTransportConfig.getParallelism
- */
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class XtreamParallelismValue
-
 /**
  * XtreamParallelism – Device-aware parallelism wrapper for Xtream transport.
  *

@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 class XtreamDiscovery(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
-    private val parallelism: XtreamParallelism = XtreamParallelism(XtreamTransportConfig.PARALLELISM_PHONE_TABLET),
+    private val parallelism: XtreamParallelism,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     // =========================================================================

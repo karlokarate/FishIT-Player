@@ -57,7 +57,7 @@ import okhttp3.Request
 class DefaultXtreamApiClient(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
-    private val parallelism: XtreamParallelism = XtreamParallelism(XtreamTransportConfig.PARALLELISM_PHONE_TABLET),
+    private val parallelism: XtreamParallelism,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -921,13 +921,9 @@ class DefaultXtreamApiClient(
         url: String,
         isEpg: Boolean,
     ): String? {
-        val safeUrl = redactUrl(url)
-        UnifiedLog.d(TAG, "fetchRaw: Fetching $safeUrl, isEpg=$isEpg")
-        
-        // Check cache
+        // Check cache first (no logging for cache hits to reduce noise)
         val cached = readCache(url, isEpg)
         if (cached != null) {
-            UnifiedLog.d(TAG, "fetchRaw: Cache hit for $safeUrl, returning ${cached.length} bytes")
             return cached
         }
 
@@ -944,31 +940,28 @@ class DefaultXtreamApiClient(
                 .get()
                 .build()
 
+        val safeUrl = redactUrl(url)
         return try {
-            UnifiedLog.d(TAG, "fetchRaw: Executing HTTP request to $safeUrl")
             http.newCall(request).execute().use { response ->
-                UnifiedLog.d(TAG, "fetchRaw: Response code ${response.code} for $safeUrl")
-                
                 if (!response.isSuccessful) {
-                    UnifiedLog.w(TAG, "fetchRaw: Request failed with code ${response.code} for $safeUrl")
+                    // INFO only on failure (contract-compliant)
+                    UnifiedLog.i(TAG, "fetchRaw: HTTP ${response.code} for $safeUrl")
                     return null
                 }
                 
                 val body = response.body.string()
-                UnifiedLog.d(TAG, "fetchRaw: Received ${body.length} bytes from $safeUrl")
                 
                 if (body.isEmpty()) {
-                    UnifiedLog.w(TAG, "fetchRaw: Response body is empty for $safeUrl")
+                    UnifiedLog.i(TAG, "fetchRaw: Empty response for $safeUrl")
                     return null
                 }
                 
-                if (body.isNotEmpty()) {
-                    writeCache(url, body)
-                }
+                writeCache(url, body)
                 body
             }
         } catch (e: Exception) {
-            UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $safeUrl", e)
+            // INFO for exception summary (no stack trace in release)
+            UnifiedLog.i(TAG, "fetchRaw: Failed $safeUrl - ${e.javaClass.simpleName}")
             null
         }
     }
