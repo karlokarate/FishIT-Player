@@ -6,6 +6,7 @@ import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
+import com.fishit.player.infra.transport.xtream.XtreamParallelism
 import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
 import dagger.Binds
 import dagger.Module
@@ -43,6 +44,23 @@ annotation class XtreamHttpClient
 object XtreamTransportModule {
 
     /**
+     * Provides the device-aware parallelism as SSOT.
+     *
+     * Premium Contract Section 5:
+     * - Phone/Tablet: 10
+     * - FireTV/low-RAM: 3
+     *
+     * This value is used by:
+     * - OkHttp Dispatcher limits
+     * - All coroutine Semaphores in DefaultXtreamApiClient and XtreamDiscovery
+     */
+    @Provides
+    @Singleton
+    fun provideXtreamParallelism(
+        @ApplicationContext context: Context,
+    ): XtreamParallelism = XtreamParallelism(XtreamTransportConfig.getParallelism(context))
+
+    /**
      * Provides Xtream-specific OkHttpClient with Premium Contract settings.
      *
      * Timeouts per Section 3:
@@ -65,9 +83,8 @@ object XtreamTransportModule {
     @XtreamHttpClient
     fun provideXtreamOkHttpClient(
         @ApplicationContext context: Context,
+        parallelism: XtreamParallelism,
     ): OkHttpClient {
-        val parallelism = XtreamTransportConfig.getParallelism(context)
-
         return OkHttpClient.Builder()
             // Premium Contract Section 3: HTTP Timeouts
             .connectTimeout(XtreamTransportConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -98,8 +115,8 @@ object XtreamTransportModule {
                 // Premium Contract Section 5: Device-class parallelism
                 dispatcher(
                     okhttp3.Dispatcher().apply {
-                        maxRequests = parallelism
-                        maxRequestsPerHost = parallelism
+                        maxRequests = parallelism.value
+                        maxRequestsPerHost = parallelism.value
                     },
                 )
             }
@@ -119,14 +136,16 @@ object XtreamTransportModule {
     fun provideXtreamDiscovery(
         @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
-    ): XtreamDiscovery = XtreamDiscovery(okHttpClient, json)
+        parallelism: XtreamParallelism,
+    ): XtreamDiscovery = XtreamDiscovery(okHttpClient, json, parallelism = parallelism)
 
     @Provides
     @Singleton
     fun provideXtreamApiClient(
         @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
-    ): XtreamApiClient = DefaultXtreamApiClient(okHttpClient, json)
+        parallelism: XtreamParallelism,
+    ): XtreamApiClient = DefaultXtreamApiClient(okHttpClient, json, parallelism = parallelism)
 }
 
 /** Hilt module for Xtream credentials storage. */

@@ -28,6 +28,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -45,10 +46,18 @@ import okhttp3.Request
  * Basiert auf v1 XtreamClient.kt mit Verbesserungen aus:
  * - tellytv/telly (Panel-Kompatibilität)
  * - Real-World Testing mit verschiedenen Panels
+ *
+ * @param http OkHttpClient with Premium Contract settings (timeouts, headers, dispatcher)
+ * @param json JSON parser
+ * @param parallelism Device-aware parallelism from DI (SSOT for Semaphores)
+ * @param io Coroutine dispatcher for IO operations
+ * @param capabilityStore Optional cache for capabilities
+ * @param portStore Optional cache for resolved ports
  */
 class DefaultXtreamApiClient(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
+    private val parallelism: XtreamParallelism = XtreamParallelism(XtreamTransportConfig.PARALLELISM_PHONE_TABLET),
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -93,6 +102,23 @@ class DefaultXtreamApiClient(
         private val VOD_ID_FIELDS = listOf("vod_id", "movie_id", "id", "stream_id")
         private val LIVE_ID_FIELDS = listOf("stream_id", "id")
         private val SERIES_ID_FIELDS = listOf("series_id", "id")
+
+        /**
+         * Redact URL for safe logging: returns "host/path" only.
+         * No query parameters (which contain credentials) are logged.
+         */
+        private fun redactUrl(url: String): String {
+            return try {
+                val httpUrl = url.toHttpUrlOrNull()
+                if (httpUrl != null) {
+                    "${httpUrl.host}${httpUrl.encodedPath}"
+                } else {
+                    "<invalid-url>"
+                }
+            } catch (_: Exception) {
+                "<invalid-url>"
+            }
+        }
     }
 
     private data class CacheEntry(
@@ -103,12 +129,11 @@ class DefaultXtreamApiClient(
     /**
      * Semaphore for EPG parallel requests.
      *
-     * Premium Contract Section 5: Use device-class parallelism.
-     * Note: This is a default fallback; actual parallelism is controlled via
-     * OkHttp Dispatcher in DI module. The semaphore here is for additional
-     * coroutine-level throttling if needed.
+     * Premium Contract Section 5: Use device-class parallelism from DI (SSOT).
+     * This semaphore provides coroutine-level throttling consistent with
+     * OkHttp Dispatcher limits.
      */
-    private val epgSemaphore = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
+    private val epgSemaphore = Semaphore(parallelism.value)
 
     // =========================================================================
     // Lifecycle
@@ -865,8 +890,7 @@ class DefaultXtreamApiClient(
         builder.addQueryParameter("password", cfg.password)
 
         val url = builder.build().toString()
-        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
-        UnifiedLog.d(TAG, "buildPlayerApiUrl: Built URL: $redactedUrl")
+        UnifiedLog.d(TAG, "buildPlayerApiUrl: action=$action -> ${redactUrl(url)}")
         
         return url
     }
@@ -897,13 +921,13 @@ class DefaultXtreamApiClient(
         url: String,
         isEpg: Boolean,
     ): String? {
-        val redactedUrl = url.replace(Regex("(password|username)=[^&]*"), "$1=***")
-        UnifiedLog.d(TAG, "fetchRaw: Fetching URL: $redactedUrl, isEpg=$isEpg")
+        val safeUrl = redactUrl(url)
+        UnifiedLog.d(TAG, "fetchRaw: Fetching $safeUrl, isEpg=$isEpg")
         
         // Check cache
         val cached = readCache(url, isEpg)
         if (cached != null) {
-            UnifiedLog.d(TAG, "fetchRaw: Cache hit for $redactedUrl, returning ${cached.length} bytes")
+            UnifiedLog.d(TAG, "fetchRaw: Cache hit for $safeUrl, returning ${cached.length} bytes")
             return cached
         }
 
@@ -921,20 +945,20 @@ class DefaultXtreamApiClient(
                 .build()
 
         return try {
-            UnifiedLog.d(TAG, "fetchRaw: Executing HTTP request to $redactedUrl")
+            UnifiedLog.d(TAG, "fetchRaw: Executing HTTP request to $safeUrl")
             http.newCall(request).execute().use { response ->
-                UnifiedLog.d(TAG, "fetchRaw: Received response code ${response.code} for $redactedUrl")
+                UnifiedLog.d(TAG, "fetchRaw: Response code ${response.code} for $safeUrl")
                 
                 if (!response.isSuccessful) {
-                    UnifiedLog.w(TAG, "fetchRaw: Request failed with code ${response.code} for $redactedUrl")
+                    UnifiedLog.w(TAG, "fetchRaw: Request failed with code ${response.code} for $safeUrl")
                     return null
                 }
                 
                 val body = response.body.string()
-                UnifiedLog.d(TAG, "fetchRaw: Received ${body.length} bytes from $redactedUrl")
+                UnifiedLog.d(TAG, "fetchRaw: Received ${body.length} bytes from $safeUrl")
                 
                 if (body.isEmpty()) {
-                    UnifiedLog.w(TAG, "fetchRaw: Response body is empty for $redactedUrl")
+                    UnifiedLog.w(TAG, "fetchRaw: Response body is empty for $safeUrl")
                     return null
                 }
                 
@@ -944,7 +968,7 @@ class DefaultXtreamApiClient(
                 body
             }
         } catch (e: Exception) {
-            UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $redactedUrl", e)
+            UnifiedLog.e(TAG, "fetchRaw: Exception while fetching $safeUrl", e)
             null
         }
     }
@@ -1033,8 +1057,8 @@ class DefaultXtreamApiClient(
                     listOf(80, 8080, 8000, 8880, 2052, 2082, 2086)
                 }
 
-            // Premium Contract Section 5: Use centralized parallelism config
-            val sem = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
+            // Premium Contract Section 5: Use device-class parallelism from DI (SSOT)
+            val sem = Semaphore(parallelism.value)
             val jobs =
                 candidates.distinct().map { port ->
                     async { sem.withPermit { if (tryPing(config, port)) port else null } }
@@ -1119,8 +1143,8 @@ class DefaultXtreamApiClient(
     ): XtreamCapabilities =
         coroutineScope {
             val actions = mutableMapOf<String, XtreamActionCapability>()
-            // Premium Contract Section 5: Use centralized parallelism config
-            val sem = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
+            // Premium Contract Section 5: Use device-class parallelism from DI (SSOT)
+            val sem = Semaphore(parallelism.value)
 
             suspend fun probe(
                 action: String,

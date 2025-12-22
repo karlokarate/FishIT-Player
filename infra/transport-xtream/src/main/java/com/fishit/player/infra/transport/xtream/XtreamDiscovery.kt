@@ -31,10 +31,16 @@ import java.util.concurrent.TimeUnit
  * - Panel-Typ-Hinweise (Xtream-UI, XUI.ONE, etc.)
  *
  * Basiert auf v1 XtreamCapabilities.kt mit verbessertem Probing.
+ *
+ * @param http OkHttpClient with Premium Contract settings
+ * @param json JSON parser
+ * @param parallelism Device-aware parallelism from DI (SSOT for Semaphores)
+ * @param io Coroutine dispatcher for IO operations
  */
 class XtreamDiscovery(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
+    private val parallelism: XtreamParallelism = XtreamParallelism(XtreamTransportConfig.PARALLELISM_PHONE_TABLET),
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     // =========================================================================
@@ -206,8 +212,8 @@ class XtreamDiscovery(
             val candidates =
                 (if (isHttps) HTTPS_PORTS else HTTP_PORTS).filter { it != defaultPort }.distinct()
 
-            // Premium Contract Section 5: Use centralized parallelism config
-            val semaphore = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
+            // Premium Contract Section 5: Use device-class parallelism from DI (SSOT)
+            val semaphore = Semaphore(parallelism.value)
             val jobs =
                 candidates.map { port ->
                     async { semaphore.withPermit { if (tryProbe(config, port)) port else null } }
@@ -311,8 +317,8 @@ class XtreamDiscovery(
     ): XtreamCapabilities =
         coroutineScope {
             val actions = mutableMapOf<String, XtreamActionCapability>()
-            // Premium Contract Section 5: Use centralized parallelism config
-            val semaphore = Semaphore(XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
+            // Premium Contract Section 5: Use device-class parallelism from DI (SSOT)
+            val semaphore = Semaphore(parallelism.value)
 
             suspend fun probe(
                 action: String,
