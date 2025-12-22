@@ -59,6 +59,37 @@ data class HomeState(
 }
 
 /**
+ * Type-safe container for all home content streams.
+ * 
+ * This ensures that adding/removing a stream later cannot silently break index order.
+ * Each field is strongly typed - no Array<Any?> or index-based access needed.
+ * 
+ * @property continueWatching Items the user has started watching
+ * @property recentlyAdded Recently added items across all sources
+ * @property telegramMedia Telegram media items
+ * @property xtreamVod Xtream VOD items
+ * @property xtreamSeries Xtream series items
+ * @property xtreamLive Xtream live channel items
+ */
+data class HomeContentStreams(
+    val continueWatching: List<HomeMediaItem> = emptyList(),
+    val recentlyAdded: List<HomeMediaItem> = emptyList(),
+    val telegramMedia: List<HomeMediaItem> = emptyList(),
+    val xtreamVod: List<HomeMediaItem> = emptyList(),
+    val xtreamSeries: List<HomeMediaItem> = emptyList(),
+    val xtreamLive: List<HomeMediaItem> = emptyList()
+) {
+    /** True if any content stream has items */
+    val hasContent: Boolean
+        get() = continueWatching.isNotEmpty() ||
+                recentlyAdded.isNotEmpty() ||
+                telegramMedia.isNotEmpty() ||
+                xtreamVod.isNotEmpty() ||
+                xtreamSeries.isNotEmpty() ||
+                xtreamLive.isNotEmpty()
+}
+
+/**
  * HomeViewModel - Manages Home screen state
  *
  * Aggregates media from multiple pipelines:
@@ -92,39 +123,53 @@ class HomeViewModel @Inject constructor(
     private val xtreamSeriesItems: Flow<List<HomeMediaItem>> =
         homeContentRepository.observeXtreamSeries().toHomeItems()
 
-    val state: StateFlow<HomeState> = combine(
+    /**
+     * Type-safe flow combining all content streams.
+     * 
+     * Uses the 4-parameter combine overload (which is type-safe) to aggregate content flows
+     * into HomeContentStreams, preserving strong typing without index access or casts.
+     */
+    private val contentStreams: Flow<HomeContentStreams> = combine(
         telegramItems,
         xtreamLiveItems,
         xtreamVodItems,
-        xtreamSeriesItems,
+        xtreamSeriesItems
+    ) { telegram, live, vod, series ->
+        HomeContentStreams(
+            continueWatching = emptyList(),  // TODO: Wire up continue watching
+            recentlyAdded = emptyList(),     // TODO: Wire up recently added
+            telegramMedia = telegram,
+            xtreamVod = vod,
+            xtreamSeries = series,
+            xtreamLive = live
+        )
+    }
+
+    /**
+     * Final home state combining content with metadata (errors, sync state, source activation).
+     * 
+     * Uses the 4-parameter combine overload to maintain type safety throughout.
+     * No Array<Any?> values, no index access, no casts.
+     */
+    val state: StateFlow<HomeState> = combine(
+        contentStreams,
         errorState,
         syncStateObserver.observeSyncState(),
         sourceActivationStore.observeStates()
-    ) { values ->
-        // Destructure the array of values from combine
-        @Suppress("UNCHECKED_CAST")
-        val telegram = values[0] as List<HomeMediaItem>
-        @Suppress("UNCHECKED_CAST")
-        val live = values[1] as List<HomeMediaItem>
-        @Suppress("UNCHECKED_CAST")
-        val vod = values[2] as List<HomeMediaItem>
-        @Suppress("UNCHECKED_CAST")
-        val series = values[3] as List<HomeMediaItem>
-        val error = values[4] as String?
-        val syncState = values[5] as SyncUiState
-        val sourceActivation = values[6] as SourceActivationSnapshot
-        
+    ) { content, error, syncState, sourceActivation ->
         HomeState(
             isLoading = false,
-            continueWatchingItems = emptyList(),
-            recentlyAddedItems = emptyList(),
-            telegramMediaItems = telegram,
-            xtreamLiveItems = live,
-            xtreamVodItems = vod,
-            xtreamSeriesItems = series,
+            continueWatchingItems = content.continueWatching,
+            recentlyAddedItems = content.recentlyAdded,
+            telegramMediaItems = content.telegramMedia,
+            xtreamLiveItems = content.xtreamLive,
+            xtreamVodItems = content.xtreamVod,
+            xtreamSeriesItems = content.xtreamSeries,
             error = error,
-            hasTelegramSource = telegram.isNotEmpty(),
-            hasXtreamSource = listOf(live, vod, series).any { it.isNotEmpty() },
+            hasTelegramSource = content.telegramMedia.isNotEmpty(),
+            hasXtreamSource = content.xtreamVod.isNotEmpty() || 
+                              content.xtreamSeries.isNotEmpty() || 
+                              content.xtreamLive.isNotEmpty(),
             syncState = syncState,
             sourceActivation = sourceActivation
         )
