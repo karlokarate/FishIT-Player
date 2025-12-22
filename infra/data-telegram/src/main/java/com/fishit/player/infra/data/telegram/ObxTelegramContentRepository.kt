@@ -4,15 +4,14 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage_
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryBuilder
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -48,20 +47,18 @@ class ObxTelegramContentRepository @Inject constructor(
 
     private val box by lazy { boxStore.boxFor<ObxTelegramMessage>() }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeAll(): Flow<List<RawMediaMetadata>> {
         val query = box.query()
             .order(ObxTelegramMessage_.date, QueryBuilder.DESCENDING)
             .build()
-        return query.subscribe().toFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeByChat(chatId: Long): Flow<List<RawMediaMetadata>> {
         val query = box.query(ObxTelegramMessage_.chatId.equal(chatId))
             .order(ObxTelegramMessage_.date, QueryBuilder.DESCENDING)
             .build()
-        return query.subscribe().toFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
     }
 
     override suspend fun getAll(limit: Int, offset: Int): List<RawMediaMetadata> =

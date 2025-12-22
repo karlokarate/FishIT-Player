@@ -8,14 +8,13 @@ import com.fishit.player.core.persistence.obx.ObxEpisode
 import com.fishit.player.core.persistence.obx.ObxEpisode_
 import com.fishit.player.core.persistence.obx.ObxSeries
 import com.fishit.player.core.persistence.obx.ObxSeries_
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.ObxVod
 import com.fishit.player.core.persistence.obx.ObxVod_
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.kotlin.toFlow
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -54,27 +53,24 @@ class ObxXtreamCatalogRepository @Inject constructor(
     private val seriesBox by lazy { boxStore.boxFor<ObxSeries>() }
     private val episodeBox by lazy { boxStore.boxFor<ObxEpisode>() }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeVod(categoryId: String?): Flow<List<RawMediaMetadata>> {
         val query = if (categoryId != null) {
             vodBox.query(ObxVod_.categoryId.equal(categoryId)).build()
         } else {
             vodBox.query().order(ObxVod_.nameLower).build()
         }
-        return query.subscribe().toFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeSeries(categoryId: String?): Flow<List<RawMediaMetadata>> {
         val query = if (categoryId != null) {
             seriesBox.query(ObxSeries_.categoryId.equal(categoryId)).build()
         } else {
             seriesBox.query().order(ObxSeries_.nameLower).build()
         }
-        return query.subscribe().toFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeEpisodes(seriesId: String, seasonNumber: Int?): Flow<List<RawMediaMetadata>> {
         val seriesIdInt = seriesId.toIntOrNull() ?: return kotlinx.coroutines.flow.flowOf(emptyList())
         
@@ -89,7 +85,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
                 .order(ObxEpisode_.episodeNum)
                 .build()
         }
-        return query.subscribe().toFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
     }
 
     override suspend fun getAll(mediaType: MediaType?, limit: Int, offset: Int): List<RawMediaMetadata> =

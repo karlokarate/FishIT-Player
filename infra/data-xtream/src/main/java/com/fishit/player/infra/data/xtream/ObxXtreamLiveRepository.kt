@@ -4,14 +4,13 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.ObxLive
 import com.fishit.player.core.persistence.obx.ObxLive_
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.kotlin.toFlow
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -46,14 +45,13 @@ class ObxXtreamLiveRepository @Inject constructor(
 
     private val liveBox by lazy { boxStore.boxFor<ObxLive>() }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeChannels(categoryId: String?): Flow<List<RawMediaMetadata>> {
         val query = if (categoryId != null) {
             liveBox.query(ObxLive_.categoryId.equal(categoryId)).build()
         } else {
             liveBox.query().order(ObxLive_.nameLower).build()
         }
-        return query.subscribe().toFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
     }
 
     override suspend fun getAll(limit: Int, offset: Int): List<RawMediaMetadata> =
