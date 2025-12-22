@@ -249,26 +249,24 @@ class DefaultXtreamApiClient(
     private suspend fun tryFallbackValidation(): Boolean =
         withContext(io) {
             try {
-                UnifiedLog.d(TAG, "tryFallbackValidation: Trying get_live_categories")
+                UnifiedLog.d(TAG) { "tryFallbackValidation: Trying get_live_categories" }
                 val url = buildPlayerApiUrl("get_live_categories")
                 val body = fetchRaw(url, isEpg = false)
                 
-                if (body != null && body.isNotEmpty()) {
-                    // Try to parse as JSON to verify it's a valid response
-                    val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
-                    if (parsed != null) {
-                        UnifiedLog.d(TAG, "tryFallbackValidation: Success - received valid JSON response")
-                        true
-                    } else {
-                        UnifiedLog.w(TAG, "tryFallbackValidation: Response is not valid JSON")
-                        false
-                    }
+                // Try to parse as JSON to verify it's a valid response
+                val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
+                if (parsed != null) {
+                    UnifiedLog.d(TAG) { "tryFallbackValidation: Success - received valid JSON response" }
+                    true
                 } else {
-                    UnifiedLog.w(TAG, "tryFallbackValidation: Empty or null response")
+                    UnifiedLog.w(TAG) { "tryFallbackValidation: Response is not valid JSON" }
                     false
                 }
+            } catch (e: XtreamApiException) {
+                UnifiedLog.w(TAG) { "tryFallbackValidation: Failed with ${e.error}" }
+                false
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, "tryFallbackValidation: Exception", e)
+                UnifiedLog.e(TAG, e) { "tryFallbackValidation: Exception" }
                 false
             }
         }
@@ -280,7 +278,7 @@ class DefaultXtreamApiClient(
             try {
                 val url = buildPlayerApiUrl("get_live_categories")
                 val body = fetchRaw(url, isEpg = false)
-                body != null && (body.startsWith("[") || body.startsWith("{"))
+                body.startsWith("[") || body.startsWith("{")
             } catch (_: Exception) {
                 false
             }
@@ -302,26 +300,21 @@ class DefaultXtreamApiClient(
         withContext(io) {
             try {
                 val url = buildPlayerApiUrl(action = null) // No action = server info
-                UnifiedLog.d(TAG, "getServerInfo: Fetching from URL: ${url.replace(Regex("(password|username)=([^&]*)"), "$1=***")}")
+                UnifiedLog.d(TAG) { "getServerInfo: Fetching from URL: ${url.replace(Regex("(password|username)=([^&]*)"), "$1=***")}" }
                 
-                val body =
-                    fetchRaw(url, isEpg = false)
-                        ?: run {
-                            UnifiedLog.e(TAG, "getServerInfo: Empty response from server")
-                            return@withContext Result.failure(
-                                Exception("Empty response from server. Check URL, credentials, and network connection."),
-                            )
-                        }
+                val body = fetchRaw(url, isEpg = false)
                 
-                UnifiedLog.d(TAG, "getServerInfo: Received ${body.length} bytes, parsing...")
+                UnifiedLog.d(TAG) { "getServerInfo: Received ${body.length} bytes, parsing..." }
                 val parsed = json.decodeFromString<XtreamServerInfo>(body)
                 UnifiedLog.d(
                     TAG,
-                    "Server info retrieved: ${parsed.serverInfo?.url ?: "unknown"}",
-                )
+                ) { "Server info retrieved: ${parsed.serverInfo?.url ?: "unknown"}" }
                 Result.success(parsed)
+            } catch (e: XtreamApiException) {
+                UnifiedLog.e(TAG, e) { "getServerInfo failed: ${e.error}" }
+                Result.failure(e)
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, "getServerInfo failed", e)
+                UnifiedLog.e(TAG, e) { "getServerInfo failed" }
                 Result.failure(e)
             }
         }
@@ -380,14 +373,19 @@ class DefaultXtreamApiClient(
 
     private suspend fun fetchCategories(action: String): List<XtreamCategory> =
         withContext(io) {
-            val url = buildPlayerApiUrl(action)
-            val body = fetchRaw(url, isEpg = false) ?: return@withContext emptyList()
-            parseJsonArray(body) { obj ->
-                XtreamCategory(
-                    categoryId = obj.stringOrNull("category_id"),
-                    categoryName = obj.stringOrNull("category_name"),
-                    parentId = obj.intOrNull("parent_id"),
-                )
+            try {
+                val url = buildPlayerApiUrl(action)
+                val body = fetchRaw(url, isEpg = false)
+                parseJsonArray(body) { obj ->
+                    XtreamCategory(
+                        categoryId = obj.stringOrNull("category_id"),
+                        categoryName = obj.stringOrNull("category_name"),
+                        parentId = obj.intOrNull("parent_id"),
+                    )
+                }
+            } catch (e: XtreamApiException) {
+                UnifiedLog.w(TAG) { "fetchCategories($action) failed: ${e.error}" }
+                emptyList()
             }
         }
 
@@ -505,34 +503,39 @@ class DefaultXtreamApiClient(
         categoryId: String?,
         mapper: (JsonObject) -> T,
     ): List<T> {
-        if (categoryId != null) {
-            // Specific category requested
-            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
-            val body = fetchRaw(url, isEpg = false) ?: return emptyList()
-            return parseJsonArray(body, mapper)
-        }
+        try {
+            if (categoryId != null) {
+                // Specific category requested
+                val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
+                val body = fetchRaw(url, isEpg = false)
+                return parseJsonArray(body, mapper)
+            }
 
-        // No category = try fallback sequence
-        // 1. Try category_id=*
-        val starUrl = buildPlayerApiUrl(action, mapOf("category_id" to "*"))
-        val starBody = runCatching { fetchRaw(starUrl, isEpg = false) }.getOrNull()
-        if (!starBody.isNullOrEmpty()) {
-            val result = parseJsonArray(starBody, mapper)
-            if (result.isNotEmpty()) return result
-        }
+            // No category = try fallback sequence
+            // 1. Try category_id=*
+            val starUrl = buildPlayerApiUrl(action, mapOf("category_id" to "*"))
+            val starBody = runCatching { fetchRaw(starUrl, isEpg = false) }.getOrNull()
+            if (!starBody.isNullOrEmpty()) {
+                val result = parseJsonArray(starBody, mapper)
+                if (result.isNotEmpty()) return result
+            }
 
-        // 2. Try category_id=0
-        val zeroUrl = buildPlayerApiUrl(action, mapOf("category_id" to "0"))
-        val zeroBody = runCatching { fetchRaw(zeroUrl, isEpg = false) }.getOrNull()
-        if (!zeroBody.isNullOrEmpty()) {
-            val result = parseJsonArray(zeroBody, mapper)
-            if (result.isNotEmpty()) return result
-        }
+            // 2. Try category_id=0
+            val zeroUrl = buildPlayerApiUrl(action, mapOf("category_id" to "0"))
+            val zeroBody = runCatching { fetchRaw(zeroUrl, isEpg = false) }.getOrNull()
+            if (!zeroBody.isNullOrEmpty()) {
+                val result = parseJsonArray(zeroBody, mapper)
+                if (result.isNotEmpty()) return result
+            }
 
-        // 3. Try without category_id
-        val plainUrl = buildPlayerApiUrl(action)
-        val plainBody = fetchRaw(plainUrl, isEpg = false) ?: return emptyList()
-        return parseJsonArray(plainBody, mapper)
+            // 3. Try without category_id
+            val plainUrl = buildPlayerApiUrl(action)
+            val plainBody = fetchRaw(plainUrl, isEpg = false)
+            return parseJsonArray(plainBody, mapper)
+        } catch (e: XtreamApiException) {
+            UnifiedLog.w(TAG) { "fetchStreamsWithCategoryFallback($action, categoryId=$categoryId) failed: ${e.error}" }
+            return emptyList()
+        }
     }
 
     // =========================================================================
@@ -567,13 +570,18 @@ class DefaultXtreamApiClient(
 
     override suspend fun getSeriesInfo(seriesId: Int): XtreamSeriesInfo? =
         withContext(io) {
-            val url =
-                buildPlayerApiUrl(
-                    "get_series_info",
-                    mapOf("series_id" to seriesId.toString()),
-                )
-            val body = fetchRaw(url, isEpg = false) ?: return@withContext null
-            runCatching { json.decodeFromString<XtreamSeriesInfo>(body) }.getOrNull()
+            try {
+                val url =
+                    buildPlayerApiUrl(
+                        "get_series_info",
+                        mapOf("series_id" to seriesId.toString()),
+                    )
+                val body = fetchRaw(url, isEpg = false)
+                runCatching { json.decodeFromString<XtreamSeriesInfo>(body) }.getOrNull()
+            } catch (e: XtreamApiException) {
+                UnifiedLog.w(TAG) { "getSeriesInfo($seriesId) failed: ${e.error}" }
+                null
+            }
         }
 
     // =========================================================================
@@ -585,46 +593,51 @@ class DefaultXtreamApiClient(
         limit: Int,
     ): List<XtreamEpgProgramme> =
         withContext(io) {
-            val url =
-                buildPlayerApiUrl(
-                    "get_short_epg",
-                    mapOf(
-                        "stream_id" to streamId.toString(),
-                        "limit" to limit.toString(),
-                    ),
-                )
-            val body = fetchRaw(url, isEpg = true) ?: return@withContext emptyList()
+            try {
+                val url =
+                    buildPlayerApiUrl(
+                        "get_short_epg",
+                        mapOf(
+                            "stream_id" to streamId.toString(),
+                            "limit" to limit.toString(),
+                        ),
+                    )
+                val body = fetchRaw(url, isEpg = true)
 
-            // EPG response varies: can be {epg_listings: [...]} or direct [...]
-            val root =
-                runCatching { json.parseToJsonElement(body) }.getOrNull()
-                    ?: return@withContext emptyList()
+                // EPG response varies: can be {epg_listings: [...]} or direct [...]
+                val root =
+                    runCatching { json.parseToJsonElement(body) }.getOrNull()
+                        ?: return@withContext emptyList()
 
-            val listings =
-                when {
-                    root is JsonArray -> root
-                    root is JsonObject && root.containsKey("epg_listings") ->
-                        root["epg_listings"]?.jsonArray
-                    else -> null
+                val listings =
+                    when {
+                        root is JsonArray -> root
+                        root is JsonObject && root.containsKey("epg_listings") ->
+                            root["epg_listings"]?.jsonArray
+                        else -> null
+                    }
+                        ?: return@withContext emptyList()
+
+                listings.mapNotNull { el ->
+                    val obj = el.jsonObjectOrNull() ?: return@mapNotNull null
+                    XtreamEpgProgramme(
+                        id = obj.stringOrNull("id"),
+                        epgId = obj.stringOrNull("epg_id"),
+                        title = obj.stringOrNull("title"),
+                        lang = obj.stringOrNull("lang"),
+                        start = obj.stringOrNull("start"),
+                        startTimestamp = obj.longOrNull("start_timestamp"),
+                        end = obj.stringOrNull("end"),
+                        endTimestamp = obj.longOrNull("end_timestamp"),
+                        stopTimestamp = obj.longOrNull("stop_timestamp"),
+                        description = obj.stringOrNull("description"),
+                        channelId = obj.stringOrNull("channel_id"),
+                        hasArchive = obj.intOrNull("has_archive"),
+                    )
                 }
-                    ?: return@withContext emptyList()
-
-            listings.mapNotNull { el ->
-                val obj = el.jsonObjectOrNull() ?: return@mapNotNull null
-                XtreamEpgProgramme(
-                    id = obj.stringOrNull("id"),
-                    epgId = obj.stringOrNull("epg_id"),
-                    title = obj.stringOrNull("title"),
-                    lang = obj.stringOrNull("lang"),
-                    start = obj.stringOrNull("start"),
-                    startTimestamp = obj.longOrNull("start_timestamp"),
-                    end = obj.stringOrNull("end"),
-                    endTimestamp = obj.longOrNull("end_timestamp"),
-                    stopTimestamp = obj.longOrNull("stop_timestamp"),
-                    description = obj.stringOrNull("description"),
-                    channelId = obj.stringOrNull("channel_id"),
-                    hasArchive = obj.intOrNull("has_archive"),
-                )
+            } catch (e: XtreamApiException) {
+                UnifiedLog.w(TAG) { "getShortEpg($streamId) failed: ${e.error}" }
+                emptyList()
             }
         }
 
@@ -826,8 +839,13 @@ class DefaultXtreamApiClient(
         params: Map<String, String>,
     ): String? =
         withContext(io) {
-            val url = buildPlayerApiUrl(action, params)
-            fetchRaw(url, isEpg = action.contains("epg", ignoreCase = true))
+            try {
+                val url = buildPlayerApiUrl(action, params)
+                fetchRaw(url, isEpg = action.contains("epg", ignoreCase = true))
+            } catch (e: XtreamApiException) {
+                UnifiedLog.w(TAG) { "rawApiCall($action) failed: ${e.error}" }
+                null
+            }
         }
 
     // =========================================================================
@@ -920,7 +938,7 @@ class DefaultXtreamApiClient(
     private suspend fun fetchRaw(
         url: String,
         isEpg: Boolean,
-    ): String? {
+    ): String {
         // Check cache first (no logging for cache hits to reduce noise)
         val cached = readCache(url, isEpg)
         if (cached != null) {
@@ -942,7 +960,7 @@ class DefaultXtreamApiClient(
                 .build()
 
         val safeUrl = redactUrl(url)
-        return try {
+        try {
             http.newCall(request).execute().use { response ->
                 // Network Probe: Log endpoint + status (never credentials)
                 val contentType = response.header("Content-Type") ?: "unknown"
@@ -950,18 +968,28 @@ class DefaultXtreamApiClient(
                 
                 if (!response.isSuccessful) {
                     // Enhanced diagnostic logging for connection failures
-                    UnifiedLog.i(TAG, "NetworkProbe: HTTP ${response.code} for $safeUrl | contentType=$contentType")
-                    return null
+                    UnifiedLog.i(TAG) { "NetworkProbe: HTTP ${response.code} for $safeUrl | contentType=$contentType" }
+                    throw XtreamApiException(
+                        XtreamError.Http(
+                            code = response.code,
+                            message = response.message.ifEmpty { "HTTP ${response.code}" }
+                        )
+                    )
                 }
                 
                 val body = response.body.string()
                 
                 // Network Probe: Log success with response metadata (no body content)
-                UnifiedLog.d(TAG, "NetworkProbe: HTTP ${response.code} for $safeUrl | bytes=${body.length} contentType=$contentType")
+                UnifiedLog.d(TAG) { "NetworkProbe: HTTP ${response.code} for $safeUrl | bytes=${body.length} contentType=$contentType" }
                 
                 if (body.isEmpty()) {
-                    UnifiedLog.i(TAG, "NetworkProbe: Empty body for $safeUrl (contentLength=$contentLength)")
-                    return null
+                    UnifiedLog.i(TAG) { "NetworkProbe: Empty body for $safeUrl (contentLength=$contentLength)" }
+                    throw XtreamApiException(
+                        XtreamError.Network(
+                            message = "Empty response body",
+                            cause = null
+                        )
+                    )
                 }
                 
                 // STRICT JSON GATE: Only return body if it's actually JSON
@@ -978,43 +1006,68 @@ class DefaultXtreamApiClient(
                                 contentType.contains("x-mpegurl", ignoreCase = true)
                     
                     if (isM3U) {
-                        UnifiedLog.w(TAG, "NetworkProbe: M3U playlist response for $safeUrl - this endpoint returns playlist format, not JSON API. Use player_api.php instead of get.php for API calls.")
+                        UnifiedLog.w(TAG) { "NetworkProbe: M3U playlist response for $safeUrl - this endpoint returns playlist format, not JSON API. Use player_api.php instead of get.php for API calls." }
                     } else {
                         // Log first 200 chars if it's not JSON (likely error page)
                         val preview = trimmed.take(200).replace(Regex("[\\r\\n]+"), " ")
-                        UnifiedLog.w(TAG, "NetworkProbe: Non-JSON response for $safeUrl | contentType=$contentType | preview=$preview")
+                        UnifiedLog.w(TAG) { "NetworkProbe: Non-JSON response for $safeUrl | contentType=$contentType | preview=$preview" }
                     }
-                    // Return null - callers must handle missing response
-                    return null
+                    
+                    // Throw NonJsonResponse error with proper metadata
+                    throw XtreamApiException(
+                        XtreamError.NonJsonResponse(
+                            contentType = contentType,
+                            isM3UPlaylist = isM3U
+                        )
+                    )
                 }
                 
                 writeCache(url, body)
-                body
+                return body
             }
+        } catch (e: XtreamApiException) {
+            // Re-throw our structured exceptions
+            throw e
         } catch (e: java.net.UnknownHostException) {
-            UnifiedLog.i(TAG, "NetworkProbe: DNS resolution failed for $safeUrl")
-            null
+            UnifiedLog.i(TAG) { "NetworkProbe: DNS resolution failed for $safeUrl" }
+            throw XtreamApiException(
+                XtreamError.Network("DNS resolution failed: ${e.message ?: "Unknown host"}", e)
+            )
         } catch (e: java.net.ConnectException) {
-            UnifiedLog.i(TAG, "NetworkProbe: Connection refused for $safeUrl - ${e.message}")
-            null
+            UnifiedLog.i(TAG) { "NetworkProbe: Connection refused for $safeUrl - ${e.message}" }
+            throw XtreamApiException(
+                XtreamError.Network("Connection refused: ${e.message ?: "Unable to connect"}", e)
+            )
         } catch (e: javax.net.ssl.SSLException) {
-            UnifiedLog.i(TAG, "NetworkProbe: SSL/TLS error for $safeUrl - ${e.message}")
-            null
+            UnifiedLog.i(TAG) { "NetworkProbe: SSL/TLS error for $safeUrl - ${e.message}" }
+            throw XtreamApiException(
+                XtreamError.Network("SSL/TLS error: ${e.message ?: "Certificate validation failed"}", e)
+            )
         } catch (e: java.net.SocketTimeoutException) {
-            UnifiedLog.i(TAG, "NetworkProbe: Timeout for $safeUrl")
-            null
+            UnifiedLog.i(TAG) { "NetworkProbe: Timeout for $safeUrl" }
+            throw XtreamApiException(
+                XtreamError.Network("Connection timeout", e)
+            )
         } catch (e: java.io.IOException) {
             // Check for cleartext traffic blocked
             val message = e.message ?: ""
             if (message.contains("CLEARTEXT") || message.contains("cleartext")) {
-                UnifiedLog.e(TAG, "NetworkProbe: Cleartext HTTP blocked! Enable usesCleartextTraffic in AndroidManifest for $safeUrl")
+                UnifiedLog.e(TAG) { "NetworkProbe: Cleartext HTTP blocked! Enable usesCleartextTraffic in AndroidManifest for $safeUrl" }
+                throw XtreamApiException(
+                    XtreamError.Network("Cleartext HTTP traffic blocked - HTTPS required", e)
+                )
             } else {
-                UnifiedLog.i(TAG, "NetworkProbe: IO error for $safeUrl - ${e.javaClass.simpleName}: $message")
+                UnifiedLog.i(TAG) { "NetworkProbe: IO error for $safeUrl - ${e.javaClass.simpleName}: $message" }
+                throw XtreamApiException(
+                    XtreamError.Network("Network I/O error: ${e.javaClass.simpleName}", e)
+                )
             }
-            null
         } catch (e: Exception) {
-            UnifiedLog.i(TAG, "NetworkProbe: Failed $safeUrl - ${e.javaClass.simpleName}")
-            null
+            UnifiedLog.i(TAG) { "NetworkProbe: Failed $safeUrl - ${e.javaClass.simpleName}" }
+            throw XtreamApiException(
+                XtreamError.Unknown("Unexpected error: ${e.message ?: e.javaClass.simpleName}"),
+                e
+            )
         }
     }
 
@@ -1196,25 +1249,26 @@ class DefaultXtreamApiClient(
                 extra: Map<String, String> = emptyMap(),
             ): JsonElement? {
                 return sem.withPermit {
-                    val url = buildPlayerApiUrl(action, extra)
-                    val body = fetchRaw(url, isEpg = action.contains("epg"))
-                    if (body.isNullOrEmpty()) {
+                    try {
+                        val url = buildPlayerApiUrl(action, extra)
+                        val body = fetchRaw(url, isEpg = action.contains("epg"))
+                        val el = runCatching { json.parseToJsonElement(body) }.getOrNull()
+                        if (el == null) {
+                            actions[action] = XtreamActionCapability(supported = false)
+                            return@withPermit null
+                        }
+                        val (type, keys) = fingerprint(el)
+                        actions[action] =
+                            XtreamActionCapability(
+                                supported = true,
+                                responseType = type,
+                                sampleKeys = keys,
+                            )
+                        el
+                    } catch (e: XtreamApiException) {
                         actions[action] = XtreamActionCapability(supported = false)
-                        return@withPermit null
+                        null
                     }
-                    val el = runCatching { json.parseToJsonElement(body) }.getOrNull()
-                    if (el == null) {
-                        actions[action] = XtreamActionCapability(supported = false)
-                        return@withPermit null
-                    }
-                    val (type, keys) = fingerprint(el)
-                    actions[action] =
-                        XtreamActionCapability(
-                            supported = true,
-                            responseType = type,
-                            sampleKeys = keys,
-                        )
-                    el
                 }
             }
 
@@ -1328,6 +1382,7 @@ class DefaultXtreamApiClient(
 
     private fun mapException(e: Exception): XtreamError =
         when (e) {
+            is XtreamApiException -> e.error
             is java.net.UnknownHostException -> XtreamError.Network("DNS resolution failed", e)
             is java.net.SocketTimeoutException -> XtreamError.Network("Connection timeout", e)
             is java.io.IOException -> XtreamError.Network(e.message ?: "Network error", e)

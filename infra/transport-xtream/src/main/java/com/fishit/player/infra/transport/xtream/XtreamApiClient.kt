@@ -464,6 +464,18 @@ sealed interface XtreamError {
     ) : XtreamError
 }
 
+/**
+ * Exception wrapper for XtreamError types.
+ * 
+ * This exception is thrown by internal transport methods to propagate
+ * structured error information. Public API methods catch this and convert
+ * it to Result.failure() with appropriate error messages.
+ */
+class XtreamApiException(
+    val error: XtreamError,
+    cause: Throwable? = null,
+) : Exception(error.toString(), cause)
+
 /** Content type enumeration. */
 enum class XtreamContentType {
     LIVE,

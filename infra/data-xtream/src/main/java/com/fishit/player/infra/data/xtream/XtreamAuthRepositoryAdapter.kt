@@ -81,10 +81,12 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
             }
             .onFailure { error ->
                 UnifiedLog.e(TAG, error) { "initialize: Failed with error" }
-                _connectionState.value = DomainConnectionState.Error(
-                    error.message ?: "Unknown error"
-                )
-                _authState.value = DomainAuthState.Failed(error.message ?: "Unknown error")
+                val errorMessage = when (error) {
+                    is com.fishit.player.infra.transport.xtream.XtreamApiException -> error.error.toErrorMessage()
+                    else -> error.message ?: "Unknown error"
+                }
+                _connectionState.value = DomainConnectionState.Error(errorMessage)
+                _authState.value = DomainAuthState.Failed(errorMessage)
             }
     }
 
