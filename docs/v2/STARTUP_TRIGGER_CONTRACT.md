@@ -47,13 +47,19 @@ Duplicate `.start()` calls for the same bootstrap are forbidden.
 
 ## 3) UI First Principles (MANDATORY)
 
-### U-1 UI must render meaningful state immediately
+### U-1 UI must render meaningful state immediately ✅ Implemented
+
+**Implementation:** `feature/home/HomeScreen.kt` - `SmartEmptyContent()`
 
 On first render of HOME/LIVE:
 
-* If no sources are active: show "Add source" actions.
-* If sources active but library empty: show "Sync pending" state + passive indicator.
-* UI MUST remain usable while sync runs.
+* If no sources are active: show "Add source" actions. ✅
+* If sources active but library empty: show "Sync pending" state + passive indicator. ✅
+* UI MUST remain usable while sync runs. ✅
+
+**Files:**
+* [HomeViewModel.kt](feature/home/src/main/java/com/fishit/player/feature/home/HomeViewModel.kt) - Injects `SyncStateObserver` and `SourceActivationStore`
+* [HomeScreen.kt](feature/home/src/main/java/com/fishit/player/feature/home/HomeScreen.kt) - `SmartEmptyContent()` with differentiated states
 
 ### U-2 UI never performs sync work
 
@@ -184,12 +190,18 @@ All background work must:
 
 ## 9) Observability (MANDATORY)
 
-### O-1 Minimal passive indicator for sync
+### O-1 Minimal passive indicator for sync ✅ Implemented
+
+**Implementation:** `feature/home/HomeScreen.kt` - `SyncStatusIndicator()`
 
 UI MUST provide a small passive sync indicator:
 
-* IDLE / RUNNING / SUCCESS / FAILED
-* No blocking dialogs.
+* IDLE / RUNNING / SUCCESS / FAILED ✅
+* No blocking dialogs. ✅
+
+**Files:**
+* [HomeScreen.kt](feature/home/src/main/java/com/fishit/player/feature/home/HomeScreen.kt) - `SyncStatusIndicator()` in `HomeTopBar()`
+* [SyncUiState.kt](core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/SyncUiState.kt) - Sealed interface with Idle/Running/Success/Failed states
 
 ### O-2 UnifiedLog only
 

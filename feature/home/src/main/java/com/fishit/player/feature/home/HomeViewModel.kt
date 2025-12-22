@@ -2,6 +2,10 @@ package com.fishit.player.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.core.catalogsync.SourceActivationSnapshot
+import com.fishit.player.core.catalogsync.SourceActivationStore
+import com.fishit.player.core.catalogsync.SyncStateObserver
+import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.feature.home.domain.HomeContentRepository
@@ -23,6 +27,10 @@ import javax.inject.Inject
 
 /**
  * Home screen state
+ * 
+ * Contract: STARTUP_TRIGGER_CONTRACT (U-1, O-1)
+ * - syncState: Shows current catalog sync status for observability
+ * - sourceActivation: Shows which sources are active for meaningful empty states
  */
 data class HomeState(
     val isLoading: Boolean = true,
@@ -34,8 +42,21 @@ data class HomeState(
     val xtreamSeriesItems: List<HomeMediaItem> = emptyList(),
     val error: String? = null,
     val hasTelegramSource: Boolean = false,
-    val hasXtreamSource: Boolean = false
-)
+    val hasXtreamSource: Boolean = false,
+    /** Current catalog sync state: Idle, Running, Success, or Failed */
+    val syncState: SyncUiState = SyncUiState.Idle,
+    /** Current source activation state snapshot */
+    val sourceActivation: SourceActivationSnapshot = SourceActivationSnapshot.EMPTY
+) {
+    /** True if there is any content to display */
+    val hasContent: Boolean
+        get() = continueWatchingItems.isNotEmpty() ||
+                recentlyAddedItems.isNotEmpty() ||
+                telegramMediaItems.isNotEmpty() ||
+                xtreamLiveItems.isNotEmpty() ||
+                xtreamVodItems.isNotEmpty() ||
+                xtreamSeriesItems.isNotEmpty()
+}
 
 /**
  * HomeViewModel - Manages Home screen state
@@ -45,10 +66,16 @@ data class HomeState(
  * - Xtream VOD/Series/Live
  *
  * Creates unified rows for the Home UI.
+ * 
+ * Contract: STARTUP_TRIGGER_CONTRACT (U-1, O-1)
+ * - Observes SyncStateObserver for sync status indicator
+ * - Observes SourceActivationStore for meaningful empty states
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val homeContentRepository: HomeContentRepository
+    private val homeContentRepository: HomeContentRepository,
+    private val syncStateObserver: SyncStateObserver,
+    private val sourceActivationStore: SourceActivationStore
 ) : ViewModel() {
 
     private val errorState = MutableStateFlow<String?>(null)
@@ -70,8 +97,23 @@ class HomeViewModel @Inject constructor(
         xtreamLiveItems,
         xtreamVodItems,
         xtreamSeriesItems,
-        errorState
-    ) { telegram, live, vod, series, error ->
+        errorState,
+        syncStateObserver.observeSyncState(),
+        sourceActivationStore.observeStates()
+    ) { values ->
+        // Destructure the array of values from combine
+        @Suppress("UNCHECKED_CAST")
+        val telegram = values[0] as List<HomeMediaItem>
+        @Suppress("UNCHECKED_CAST")
+        val live = values[1] as List<HomeMediaItem>
+        @Suppress("UNCHECKED_CAST")
+        val vod = values[2] as List<HomeMediaItem>
+        @Suppress("UNCHECKED_CAST")
+        val series = values[3] as List<HomeMediaItem>
+        val error = values[4] as String?
+        val syncState = values[5] as SyncUiState
+        val sourceActivation = values[6] as SourceActivationSnapshot
+        
         HomeState(
             isLoading = false,
             continueWatchingItems = emptyList(),
@@ -82,7 +124,9 @@ class HomeViewModel @Inject constructor(
             xtreamSeriesItems = series,
             error = error,
             hasTelegramSource = telegram.isNotEmpty(),
-            hasXtreamSource = listOf(live, vod, series).any { it.isNotEmpty() }
+            hasXtreamSource = listOf(live, vod, series).any { it.isNotEmpty() },
+            syncState = syncState,
+            sourceActivation = sourceActivation
         )
     }
         .stateIn(

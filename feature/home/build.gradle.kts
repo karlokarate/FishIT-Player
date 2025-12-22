@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:player-model"))
     implementation(project(":core:persistence"))
+    implementation(project(":core:catalog-sync"))
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
     implementation(project(":core:ui-imaging"))

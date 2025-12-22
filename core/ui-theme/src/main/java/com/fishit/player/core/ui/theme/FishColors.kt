@@ -61,6 +61,11 @@ object FishColors {
     val OnError = Color(0xFF1A0000)
     val ErrorContainer = Color(0xFF4D1F1F)
     val OnErrorContainer = Color(0xFFFFDADA)
+    
+    /** Success state indicator color */
+    val Success = Color(0xFF4CAF50)
+    /** Warning state indicator color */
+    val Warning = Color(0xFFFFC107)
 
     // ═══════════════════════════════════════════════════════════════════
     // Source Colors (for Multi-Source Frame)
