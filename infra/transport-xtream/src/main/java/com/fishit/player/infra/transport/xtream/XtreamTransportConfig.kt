@@ -15,7 +15,6 @@ import android.content.res.Configuration
  * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract</a>
  */
 object XtreamTransportConfig {
-
     // =========================================================================
     // HTTP Timeouts (Premium Contract Section 3)
     // "These values MUST be configured: connect/read/write/call jeweils 30s"
@@ -68,13 +67,15 @@ object XtreamTransportConfig {
      */
     enum class DeviceClass {
         PHONE_TABLET,
-        TV_LOW_RAM;
+        TV_LOW_RAM,
+        ;
 
         val parallelism: Int
-            get() = when (this) {
-                PHONE_TABLET -> PARALLELISM_PHONE_TABLET
-                TV_LOW_RAM -> PARALLELISM_FIRETV_LOW_RAM
-            }
+            get() =
+                when (this) {
+                    PHONE_TABLET -> PARALLELISM_PHONE_TABLET
+                    TV_LOW_RAM -> PARALLELISM_FIRETV_LOW_RAM
+                }
     }
 
     /**
@@ -89,8 +90,9 @@ object XtreamTransportConfig {
         val isTV = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
 
         // Check for low RAM
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE)
-            as? android.app.ActivityManager
+        val activityManager =
+            context.getSystemService(Context.ACTIVITY_SERVICE)
+                as? android.app.ActivityManager
         val memoryInfo = android.app.ActivityManager.MemoryInfo()
         activityManager?.getMemoryInfo(memoryInfo)
         val totalRamMB = memoryInfo.totalMem / (1024 * 1024)

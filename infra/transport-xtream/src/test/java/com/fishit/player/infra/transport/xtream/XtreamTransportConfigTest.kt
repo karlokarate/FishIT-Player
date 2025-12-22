@@ -17,16 +17,16 @@ import org.junit.Test
  * - FireTV/low-RAM: parallelism = 3
  */
 class XtreamTransportConfigTest {
-
     @Test
     fun `detectDeviceClass returns PHONE_TABLET for non-TV high-RAM device`() {
         // Arrange
         val context = mockk<Context>()
         val uiModeManager = mockk<UiModeManager>()
         val activityManager = mockk<ActivityManager>()
-        val memoryInfo = ActivityManager.MemoryInfo().apply {
-            totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
-        }
+        val memoryInfo =
+            ActivityManager.MemoryInfo().apply {
+                totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
+            }
 
         every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
@@ -51,9 +51,10 @@ class XtreamTransportConfigTest {
         val context = mockk<Context>()
         val uiModeManager = mockk<UiModeManager>()
         val activityManager = mockk<ActivityManager>()
-        val memoryInfo = ActivityManager.MemoryInfo().apply {
-            totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
-        }
+        val memoryInfo =
+            ActivityManager.MemoryInfo().apply {
+                totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
+            }
 
         every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
@@ -78,9 +79,10 @@ class XtreamTransportConfigTest {
         val context = mockk<Context>()
         val uiModeManager = mockk<UiModeManager>()
         val activityManager = mockk<ActivityManager>()
-        val memoryInfo = ActivityManager.MemoryInfo().apply {
-            totalMem = 1L * 1024 * 1024 * 1024 // 1GB RAM (below 2GB threshold)
-        }
+        val memoryInfo =
+            ActivityManager.MemoryInfo().apply {
+                totalMem = 1L * 1024 * 1024 * 1024 // 1GB RAM (below 2GB threshold)
+            }
 
         every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
@@ -105,9 +107,10 @@ class XtreamTransportConfigTest {
         val context = mockk<Context>()
         val uiModeManager = mockk<UiModeManager>()
         val activityManager = mockk<ActivityManager>()
-        val memoryInfo = ActivityManager.MemoryInfo().apply {
-            totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
-        }
+        val memoryInfo =
+            ActivityManager.MemoryInfo().apply {
+                totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
+            }
 
         every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager

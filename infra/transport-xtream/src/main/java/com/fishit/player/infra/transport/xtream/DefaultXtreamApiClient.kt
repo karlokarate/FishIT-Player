@@ -107,8 +107,8 @@ class DefaultXtreamApiClient(
          * Redact URL for safe logging: returns "host/path" only.
          * No query parameters (which contain credentials) are logged.
          */
-        private fun redactUrl(url: String): String {
-            return try {
+        private fun redactUrl(url: String): String =
+            try {
                 val httpUrl = url.toHttpUrlOrNull()
                 if (httpUrl != null) {
                     "${httpUrl.host}${httpUrl.encodedPath}"
@@ -118,7 +118,6 @@ class DefaultXtreamApiClient(
             } catch (_: Exception) {
                 "<invalid-url>"
             }
-        }
     }
 
     private data class CacheEntry(
@@ -241,35 +240,45 @@ class DefaultXtreamApiClient(
     /**
      * Fallback validation when getServerInfo() fails.
      * Some servers don't support player_api.php without action parameter.
-     * Try a simple action-based endpoint instead.
+     * Try multiple action-based endpoints to validate connectivity.
+     *
+     * This ensures lenient validation - as long as ANY endpoint returns valid JSON,
+     * we accept the server configuration.
      */
     private suspend fun tryFallbackValidation(): Boolean =
         withContext(io) {
-            try {
-                UnifiedLog.d(TAG) { "tryFallbackValidation: Trying get_live_categories" }
-                val url = buildPlayerApiUrl("get_live_categories")
-                val body = fetchRaw(url, isEpg = false)
-                
-                if (body != null && body.isNotEmpty()) {
-                    // Try to parse as JSON to verify it's a valid response
-                    val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
-                    if (parsed != null) {
-                        UnifiedLog.d(TAG) { "tryFallbackValidation: Success - received valid JSON response" }
-                        true
-                    } else {
-                        UnifiedLog.w(TAG) { "tryFallbackValidation: Response is not valid JSON" }
-                        false
-                    }
-                } else {
-                    UnifiedLog.w(TAG) { "tryFallbackValidation: Empty or null response" }
-                    false
-                }
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "tryFallbackValidation: Exception" }
-                false
-            }
-        }
+            // Try multiple endpoints in order of likelihood
+            val fallbackActions =
+                listOf(
+                    "get_live_categories",
+                    "get_vod_categories",
+                    "get_series_categories",
+                    "get_live_streams",
+                )
 
+            for (action in fallbackActions) {
+                try {
+                    UnifiedLog.d(TAG) { "tryFallbackValidation: Trying $action" }
+                    val url = buildPlayerApiUrl(action)
+                    val body = fetchRaw(url, isEpg = false)
+
+                    if (body != null && body.isNotEmpty()) {
+                        // Try to parse as JSON to verify it's a valid response
+                        val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
+                        if (parsed != null) {
+                            UnifiedLog.d(TAG) { "tryFallbackValidation: Success with $action - received valid JSON response" }
+                            return@withContext true
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Continue to next action
+                    UnifiedLog.d(TAG) { "tryFallbackValidation: $action failed, trying next..." }
+                }
+            }
+
+            UnifiedLog.w(TAG) { "tryFallbackValidation: All fallback endpoints failed" }
+            false
+        }
 
     override suspend fun ping(): Boolean =
         withContext(io) {
@@ -301,20 +310,35 @@ class DefaultXtreamApiClient(
                 val url = buildPlayerApiUrl(action = null) // No action = server info
                 val safeUrl = redactUrl(url)
                 UnifiedLog.d(TAG) { "getServerInfo: Fetching from $safeUrl" }
-                
+
                 val body =
                     fetchRaw(url, isEpg = false)
                         ?: run {
                             // Non-JSON response from player_api.php endpoint
-                            // This is a configuration error - server is not returning valid Xtream API responses
-                            UnifiedLog.w(TAG) { "XtreamConnect: player_api.php returned non-JSON response (endpoint=player_api.php, action=null, reason=ignored_non_json_response)" }
+                            // This will trigger fallback validation with action-based endpoints
+                            UnifiedLog.d(TAG) {
+                                "XtreamConnect: player_api.php returned non-JSON response, will try fallback validation (endpoint=player_api.php, action=null)"
+                            }
                             return@withContext Result.failure(
-                                Exception("Server did not return valid JSON from player_api.php. Please check that the URL points to a valid Xtream Codes API server."),
+                                Exception("player_api.php returned non-JSON response. Will try fallback validation."),
                             )
                         }
-                
+
                 UnifiedLog.d(TAG) { "getServerInfo: Received ${body.length} bytes, parsing..." }
-                val parsed = json.decodeFromString<XtreamServerInfo>(body)
+
+                // Try to parse the JSON response
+                // If parsing fails, treat it as empty response (lenient mode)
+                val parsed =
+                    runCatching {
+                        json.decodeFromString<XtreamServerInfo>(body)
+                    }.getOrElse { parseError ->
+                        UnifiedLog.w(TAG, parseError) { "getServerInfo: JSON parsing failed, treating as empty response" }
+                        // Return empty server info - fallback validation will be triggered
+                        return@withContext Result.failure(
+                            Exception("Failed to parse server info JSON. Will try fallback validation.", parseError),
+                        )
+                    }
+
                 UnifiedLog.d(TAG) { "Server info retrieved: ${parsed.serverInfo?.url ?: "unknown"}" }
                 Result.success(parsed)
             } catch (e: Exception) {
@@ -888,7 +912,7 @@ class DefaultXtreamApiClient(
 
         val url = builder.build().toString()
         UnifiedLog.d(TAG) { "buildPlayerApiUrl: action=$action -> ${redactUrl(url)}" }
-        
+
         return url
     }
 
@@ -944,52 +968,57 @@ class DefaultXtreamApiClient(
                 // Network Probe: Log endpoint + status (never credentials)
                 val contentType = response.header("Content-Type") ?: "unknown"
                 val contentLength = response.header("Content-Length") ?: "unknown"
-                
+
                 if (!response.isSuccessful) {
                     // Enhanced diagnostic logging for connection failures
                     UnifiedLog.i(TAG) { "NetworkProbe: HTTP ${response.code} for $safeUrl | contentType=$contentType" }
                     return null
                 }
-                
+
                 val body = response.body.string()
-                
+
                 // Network Probe: Log success with response metadata (no body content)
                 UnifiedLog.d(TAG) { "NetworkProbe: HTTP ${response.code} for $safeUrl | bytes=${body.length} contentType=$contentType" }
-                
+
                 if (body.isEmpty()) {
                     UnifiedLog.i(TAG) { "NetworkProbe: Empty body for $safeUrl (contentLength=$contentLength)" }
                     return null
                 }
-                
+
                 // STRICT JSON GATE: Only return body if it's actually JSON
                 // This prevents JSON parsing exceptions when server returns M3U/HTML/text
                 val trimmed = body.trimStart()
                 val isJsonBody = trimmed.startsWith("{") || trimmed.startsWith("[")
                 val isJsonContentType = contentType.contains("application/json", ignoreCase = true)
-                
+
                 if (!isJsonBody) {
                     // Detect M3U playlist (common mistake: using get.php URL)
-                    val isM3U = trimmed.startsWith("#EXTM3U") || 
-                                trimmed.startsWith("#EXTINF") ||
-                                contentType.contains("mpegurl", ignoreCase = true) ||
-                                contentType.contains("x-mpegurl", ignoreCase = true)
-                    
+                    val isM3U =
+                        trimmed.startsWith("#EXTM3U") ||
+                            trimmed.startsWith("#EXTINF") ||
+                            contentType.contains("mpegurl", ignoreCase = true) ||
+                            contentType.contains("x-mpegurl", ignoreCase = true)
+
                     // Extract endpoint name for logging (e.g., "player_api.php" or "get.php")
                     val pathPart = url.substringAfterLast('/', "unknown")
                     val endpointName = pathPart.substringBefore('?', pathPart)
-                    
+
                     if (isM3U) {
-                        UnifiedLog.w(TAG) { "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=m3u_playlist_detected)" }
+                        UnifiedLog.w(TAG) {
+                            "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=m3u_playlist_detected)"
+                        }
                     } else {
                         // Log first 50 chars of preview if it's not JSON (likely error page) - no sensitive data
                         val preview = trimmed.take(50).replace(Regex("[\\r\\n]+"), " ")
                         val suffix = if (trimmed.length > 50) "..." else ""
-                        UnifiedLog.w(TAG) { "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=non_json_content, preview=$preview$suffix)" }
+                        UnifiedLog.w(TAG) {
+                            "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=non_json_content, preview=$preview$suffix)"
+                        }
                     }
                     // Return null - callers must handle missing response
                     return null
                 }
-                
+
                 writeCache(url, body)
                 body
             }

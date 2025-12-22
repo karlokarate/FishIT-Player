@@ -14,11 +14,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
 
 /**
  * Qualifier for Xtream-specific OkHttpClient with Premium Contract settings.
@@ -42,7 +42,6 @@ annotation class XtreamHttpClient
 @Module
 @InstallIn(SingletonComponent::class)
 object XtreamTransportModule {
-
     /**
      * Provides the device-aware parallelism as SSOT.
      *
@@ -84,8 +83,9 @@ object XtreamTransportModule {
     fun provideXtreamOkHttpClient(
         @ApplicationContext context: Context,
         parallelism: XtreamParallelism,
-    ): OkHttpClient {
-        return OkHttpClient.Builder()
+    ): OkHttpClient =
+        OkHttpClient
+            .Builder()
             // Premium Contract Section 3: HTTP Timeouts
             .connectTimeout(XtreamTransportConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(XtreamTransportConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -110,8 +110,7 @@ object XtreamTransportModule {
                 }
 
                 chain.proceed(builder.build())
-            }
-            .apply {
+            }.apply {
                 // Premium Contract Section 5: Device-class parallelism
                 dispatcher(
                     okhttp3.Dispatcher().apply {
@@ -119,17 +118,16 @@ object XtreamTransportModule {
                         maxRequestsPerHost = parallelism.value
                     },
                 )
-            }
-            .build()
-    }
+            }.build()
 
     @Provides
     @Singleton
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
+    fun provideJson(): Json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
 
     @Provides
     @Singleton

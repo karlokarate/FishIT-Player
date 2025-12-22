@@ -12,7 +12,6 @@ package com.fishit.player.infra.transport.xtream
  * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract Section 4</a>
  */
 object XtreamHttpHeaders {
-
     /**
      * Premium User-Agent string (mandatory per Premium Contract).
      * Centralized in [XtreamTransportConfig.USER_AGENT].
@@ -52,7 +51,10 @@ object XtreamHttpHeaders {
      *
      * The returned map always includes the premium headers when absent.
      */
-    fun withDefaults(headers: Map<String, String> = emptyMap(), referer: String? = null): Map<String, String> {
+    fun withDefaults(
+        headers: Map<String, String> = emptyMap(),
+        referer: String? = null,
+    ): Map<String, String> {
         val normalizedReferer = referer?.takeIf { it.isNotBlank() }
         val merged = headers.toMutableMap()
 
