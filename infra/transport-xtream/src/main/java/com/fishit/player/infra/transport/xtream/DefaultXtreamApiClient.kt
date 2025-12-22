@@ -31,6 +31,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.zip.GZIPInputStream
 
 /**
  * DefaultXtreamApiClient – Production-Ready Xtream Codes API Client
@@ -966,6 +967,8 @@ class DefaultXtreamApiClient(
         return try {
             http.newCall(request).execute().use { response ->
                 // Network Probe: Log endpoint + status (never credentials)
+                // Note: OkHttp's response.header() is case-insensitive per HTTP spec (RFC 7230)
+                // Works correctly with "Content-Type", "content-type", "CONTENT-TYPE", etc.
                 val contentType = response.header("Content-Type") ?: "unknown"
                 val contentLength = response.header("Content-Length") ?: "unknown"
 
@@ -975,15 +978,44 @@ class DefaultXtreamApiClient(
                     return null
                 }
 
-                val body = response.body.string()
+                // Get body as bytes first to allow gzip detection before string conversion
+                val bodyBytes = response.body.bytes()
 
                 // Network Probe: Log success with response metadata (no body content)
-                UnifiedLog.d(TAG) { "NetworkProbe: HTTP ${response.code} for $safeUrl | bytes=${body.length} contentType=$contentType" }
+                UnifiedLog.d(TAG) { "NetworkProbe: HTTP ${response.code} for $safeUrl | bytes=${bodyBytes.size} contentType=$contentType" }
 
-                if (body.isEmpty()) {
+                if (bodyBytes.isEmpty()) {
                     UnifiedLog.i(TAG) { "NetworkProbe: Empty body for $safeUrl (contentLength=$contentLength)" }
                     return null
                 }
+
+                // Defensive gzip handling: Check if body is gzip-compressed but not decompressed
+                // Some servers may send gzip without proper Content-Encoding header
+                // Check for gzip magic bytes: 0x1F 0x8B (first two bytes of gzip format per RFC 1952)
+                val body =
+                    if (bodyBytes.size >= 2 &&
+                        (bodyBytes[0].toInt() and 0xFF) == 0x1F &&
+                        (bodyBytes[1].toInt() and 0xFF) == 0x8B
+                    ) {
+                        try {
+                            val decompressed =
+                                GZIPInputStream(bodyBytes.inputStream())
+                                    .bufferedReader()
+                                    .readText()
+                            UnifiedLog.d(TAG) {
+                                "NetworkProbe: Manually decompressed gzip body for $safeUrl | original=${bodyBytes.size} decompressed=${decompressed.length}"
+                            }
+                            decompressed
+                        } catch (e: Exception) {
+                            UnifiedLog.w(TAG) {
+                                "NetworkProbe: Failed to decompress suspected gzip body for $safeUrl - ${e.message}"
+                            }
+                            // Continue with original body if decompression fails
+                            String(bodyBytes, Charsets.UTF_8)
+                        }
+                    } else {
+                        String(bodyBytes, Charsets.UTF_8)
+                    }
 
                 // STRICT JSON GATE: Only return body if it's actually JSON
                 // This prevents JSON parsing exceptions when server returns M3U/HTML/text
