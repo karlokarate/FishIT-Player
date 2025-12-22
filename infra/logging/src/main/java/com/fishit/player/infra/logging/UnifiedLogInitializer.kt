@@ -24,8 +24,10 @@ object UnifiedLogInitializer {
      *
      * @param isDebug true for debug builds (enables verbose console logging),
      *                false for release builds (enables production reporting)
+     * @param enableLogBuffer true to enable in-memory log buffering for DebugScreen
+     *                        (default: same as isDebug)
      */
-    fun init(isDebug: Boolean) {
+    fun init(isDebug: Boolean, enableLogBuffer: Boolean = isDebug) {
         // Clear any existing trees (useful for tests)
         Timber.uprootAll()
 
@@ -35,6 +37,11 @@ object UnifiedLogInitializer {
         } else {
             // Release builds: use production tree for error reporting
             Timber.plant(ProductionReportingTree())
+        }
+
+        // Plant LogBufferTree for in-memory log access (used by DebugScreen)
+        if (enableLogBuffer) {
+            Timber.plant(LogBufferTree.getInstance())
         }
     }
 
