@@ -437,6 +437,17 @@ sealed interface XtreamError {
         val message: String,
     ) : XtreamError
 
+    /**
+     * Server returned non-JSON response (M3U playlist, HTML, text).
+     * 
+     * Common cause: Using get.php URL instead of player_api.php.
+     * get.php returns M3U playlist format, not JSON.
+     */
+    data class NonJsonResponse(
+        val contentType: String,
+        val isM3UPlaylist: Boolean,
+    ) : XtreamError
+
     /** API action not supported by panel */
     data class Unsupported(
         val action: String,

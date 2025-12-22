@@ -184,6 +184,11 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
         XtreamError.InvalidCredentials -> "Invalid credentials"
         is XtreamError.AccountExpired -> "Account expired"
         is XtreamError.ParseError -> "Parse error: $message"
+        is XtreamError.NonJsonResponse -> if (isM3UPlaylist) {
+            "Server returned M3U playlist. Please use the API URL (player_api.php), not the playlist URL (get.php)."
+        } else {
+            "Server returned non-JSON response (Content-Type: $contentType)"
+        }
         is XtreamError.Unsupported -> "Unsupported action: $action"
         is XtreamError.RateLimited -> "Rate limited"
         is XtreamError.Unknown -> message

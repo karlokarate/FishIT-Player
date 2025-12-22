@@ -964,12 +964,28 @@ class DefaultXtreamApiClient(
                     return null
                 }
                 
-                // Validate response looks like JSON (not HTML error page or m3u playlist)
+                // STRICT JSON GATE: Only return body if it's actually JSON
+                // This prevents JSON parsing exceptions when server returns M3U/HTML/text
                 val trimmed = body.trimStart()
-                if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-                    // Log first 200 chars if it's not JSON (likely error page)
-                    val preview = trimmed.take(200).replace(Regex("[\\r\\n]+"), " ")
-                    UnifiedLog.w(TAG, "NetworkProbe: Non-JSON response for $safeUrl | preview=$preview")
+                val isJsonBody = trimmed.startsWith("{") || trimmed.startsWith("[")
+                val isJsonContentType = contentType.contains("application/json", ignoreCase = true)
+                
+                if (!isJsonBody) {
+                    // Detect M3U playlist (common mistake: using get.php URL)
+                    val isM3U = trimmed.startsWith("#EXTM3U") || 
+                                trimmed.startsWith("#EXTINF") ||
+                                contentType.contains("mpegurl", ignoreCase = true) ||
+                                contentType.contains("x-mpegurl", ignoreCase = true)
+                    
+                    if (isM3U) {
+                        UnifiedLog.w(TAG, "NetworkProbe: M3U playlist response for $safeUrl - this endpoint returns playlist format, not JSON API. Use player_api.php instead of get.php for API calls.")
+                    } else {
+                        // Log first 200 chars if it's not JSON (likely error page)
+                        val preview = trimmed.take(200).replace(Regex("[\\r\\n]+"), " ")
+                        UnifiedLog.w(TAG, "NetworkProbe: Non-JSON response for $safeUrl | contentType=$contentType | preview=$preview")
+                    }
+                    // Return null - callers must handle missing response
+                    return null
                 }
                 
                 writeCache(url, body)
