@@ -975,15 +975,16 @@ class DefaultXtreamApiClient(
                                 contentType.contains("x-mpegurl", ignoreCase = true)
                     
                     // Extract endpoint name for logging (e.g., "player_api.php" or "get.php")
-                    val endpointName = url.substringAfterLast('/', "unknown")
-                        .substringBefore('?', url.substringAfterLast('/'))
+                    val pathPart = url.substringAfterLast('/', "unknown")
+                    val endpointName = pathPart.substringBefore('?', pathPart)
                     
                     if (isM3U) {
                         UnifiedLog.w(TAG) { "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=m3u_playlist_detected)" }
                     } else {
                         // Log first 50 chars of preview if it's not JSON (likely error page) - no sensitive data
                         val preview = trimmed.take(50).replace(Regex("[\\r\\n]+"), " ")
-                        UnifiedLog.w(TAG) { "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=non_json_content, preview=$preview...)" }
+                        val suffix = if (trimmed.length > 50) "..." else ""
+                        UnifiedLog.w(TAG) { "XtreamConnect: ignored non-JSON response (endpoint=$endpointName, content-type=$contentType, reason=non_json_content, preview=$preview$suffix)" }
                     }
                     // Return null - callers must handle missing response
                     return null
