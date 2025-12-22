@@ -7,6 +7,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.test.runTest
 
 /**
  * Regression tests for [HomeContentStreams] type-safe combine behavior.
@@ -272,6 +276,194 @@ class HomeViewModelCombineSafetyTest {
         
         assertEquals(1, state.xtreamSeriesItems.size)
         assertEquals("series", state.xtreamSeriesItems[0].id)
+    }
+
+    // ==================== HomeContentPartial Tests ====================
+
+    @Test
+    fun `HomeContentPartial contains all 4 fields correctly mapped`() {
+        // Given
+        val continueWatching = listOf(createTestItem(id = "cw-1", title = "Continue 1"))
+        val recentlyAdded = listOf(createTestItem(id = "ra-1", title = "Recent 1"))
+        val telegram = listOf(createTestItem(id = "tg-1", title = "Telegram 1"))
+        val live = listOf(createTestItem(id = "live-1", title = "Live 1"))
+        
+        // When
+        val partial = HomeContentPartial(
+            continueWatching = continueWatching,
+            recentlyAdded = recentlyAdded,
+            telegramMedia = telegram,
+            xtreamLive = live
+        )
+        
+        // Then
+        assertEquals(1, partial.continueWatching.size)
+        assertEquals("cw-1", partial.continueWatching[0].id)
+        assertEquals(1, partial.recentlyAdded.size)
+        assertEquals("ra-1", partial.recentlyAdded[0].id)
+        assertEquals(1, partial.telegramMedia.size)
+        assertEquals("tg-1", partial.telegramMedia[0].id)
+        assertEquals(1, partial.xtreamLive.size)
+        assertEquals("live-1", partial.xtreamLive[0].id)
+    }
+
+    @Test
+    fun `HomeContentStreams preserves HomeContentPartial fields correctly`() {
+        // Given
+        val partial = HomeContentPartial(
+            continueWatching = listOf(createTestItem(id = "cw", title = "Continue")),
+            recentlyAdded = listOf(createTestItem(id = "ra", title = "Recent")),
+            telegramMedia = listOf(createTestItem(id = "tg", title = "Telegram")),
+            xtreamLive = listOf(createTestItem(id = "live", title = "Live"))
+        )
+        val vod = listOf(createTestItem(id = "vod", title = "VOD"))
+        val series = listOf(createTestItem(id = "series", title = "Series"))
+        
+        // When - Simulating stage 2 combine
+        val streams = HomeContentStreams(
+            continueWatching = partial.continueWatching,
+            recentlyAdded = partial.recentlyAdded,
+            telegramMedia = partial.telegramMedia,
+            xtreamLive = partial.xtreamLive,
+            xtreamVod = vod,
+            xtreamSeries = series
+        )
+        
+        // Then - All 6 fields are correctly populated
+        assertEquals("cw", streams.continueWatching[0].id)
+        assertEquals("ra", streams.recentlyAdded[0].id)
+        assertEquals("tg", streams.telegramMedia[0].id)
+        assertEquals("live", streams.xtreamLive[0].id)
+        assertEquals("vod", streams.xtreamVod[0].id)
+        assertEquals("series", streams.xtreamSeries[0].id)
+    }
+
+    // ==================== 6-Stream Integration Test ====================
+
+    @Test
+    fun `full 6-stream combine produces correct HomeContentStreams`() = runTest {
+        // Given - 6 independent flows
+        val continueWatchingFlow = flowOf(listOf(
+            createTestItem(id = "cw-1", title = "Continue 1"),
+            createTestItem(id = "cw-2", title = "Continue 2")
+        ))
+        val recentlyAddedFlow = flowOf(listOf(
+            createTestItem(id = "ra-1", title = "Recent 1")
+        ))
+        val telegramFlow = flowOf(listOf(
+            createTestItem(id = "tg-1", title = "Telegram 1"),
+            createTestItem(id = "tg-2", title = "Telegram 2"),
+            createTestItem(id = "tg-3", title = "Telegram 3")
+        ))
+        val liveFlow = flowOf(listOf(
+            createTestItem(id = "live-1", title = "Live 1")
+        ))
+        val vodFlow = flowOf(listOf(
+            createTestItem(id = "vod-1", title = "VOD 1"),
+            createTestItem(id = "vod-2", title = "VOD 2")
+        ))
+        val seriesFlow = flowOf(listOf(
+            createTestItem(id = "series-1", title = "Series 1")
+        ))
+        
+        // When - Stage 1: 4-way combine into partial
+        val partialFlow = combine(
+            continueWatchingFlow,
+            recentlyAddedFlow,
+            telegramFlow,
+            liveFlow
+        ) { continueWatching, recentlyAdded, telegram, live ->
+            HomeContentPartial(
+                continueWatching = continueWatching,
+                recentlyAdded = recentlyAdded,
+                telegramMedia = telegram,
+                xtreamLive = live
+            )
+        }
+        
+        // When - Stage 2: 3-way combine into streams
+        val streamsFlow = combine(
+            partialFlow,
+            vodFlow,
+            seriesFlow
+        ) { partial, vod, series ->
+            HomeContentStreams(
+                continueWatching = partial.continueWatching,
+                recentlyAdded = partial.recentlyAdded,
+                telegramMedia = partial.telegramMedia,
+                xtreamLive = partial.xtreamLive,
+                xtreamVod = vod,
+                xtreamSeries = series
+            )
+        }
+        
+        // Then - Collect and verify
+        val result = streamsFlow.first()
+        
+        // Verify counts
+        assertEquals(2, result.continueWatching.size)
+        assertEquals(1, result.recentlyAdded.size)
+        assertEquals(3, result.telegramMedia.size)
+        assertEquals(1, result.xtreamLive.size)
+        assertEquals(2, result.xtreamVod.size)
+        assertEquals(1, result.xtreamSeries.size)
+        
+        // Verify IDs are correctly mapped (no index confusion)
+        assertEquals("cw-1", result.continueWatching[0].id)
+        assertEquals("cw-2", result.continueWatching[1].id)
+        assertEquals("ra-1", result.recentlyAdded[0].id)
+        assertEquals("tg-1", result.telegramMedia[0].id)
+        assertEquals("tg-2", result.telegramMedia[1].id)
+        assertEquals("tg-3", result.telegramMedia[2].id)
+        assertEquals("live-1", result.xtreamLive[0].id)
+        assertEquals("vod-1", result.xtreamVod[0].id)
+        assertEquals("vod-2", result.xtreamVod[1].id)
+        assertEquals("series-1", result.xtreamSeries[0].id)
+        
+        // Verify hasContent
+        assertTrue(result.hasContent)
+    }
+
+    @Test
+    fun `6-stream combine with all empty streams produces empty HomeContentStreams`() = runTest {
+        // Given - All empty flows
+        val emptyFlow = flowOf(emptyList<HomeMediaItem>())
+        
+        // When - Stage 1
+        val partialFlow = combine(
+            emptyFlow, emptyFlow, emptyFlow, emptyFlow
+        ) { cw, ra, tg, live ->
+            HomeContentPartial(
+                continueWatching = cw,
+                recentlyAdded = ra,
+                telegramMedia = tg,
+                xtreamLive = live
+            )
+        }
+        
+        // When - Stage 2
+        val streamsFlow = combine(
+            partialFlow, emptyFlow, emptyFlow
+        ) { partial, vod, series ->
+            HomeContentStreams(
+                continueWatching = partial.continueWatching,
+                recentlyAdded = partial.recentlyAdded,
+                telegramMedia = partial.telegramMedia,
+                xtreamLive = partial.xtreamLive,
+                xtreamVod = vod,
+                xtreamSeries = series
+            )
+        }
+        
+        // Then
+        val result = streamsFlow.first()
+        assertFalse(result.hasContent)
+        assertTrue(result.continueWatching.isEmpty())
+        assertTrue(result.recentlyAdded.isEmpty())
+        assertTrue(result.telegramMedia.isEmpty())
+        assertTrue(result.xtreamLive.isEmpty())
+        assertTrue(result.xtreamVod.isEmpty())
+        assertTrue(result.xtreamSeries.isEmpty())
     }
 
     // ==================== Test Helpers ====================

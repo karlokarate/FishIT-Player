@@ -31,6 +31,20 @@ import kotlinx.coroutines.flow.Flow
 interface HomeContentRepository {
 
     /**
+     * Observe items the user has started but not finished watching.
+     * 
+     * @return Flow of continue watching items for Home display
+     */
+    fun observeContinueWatching(): Flow<List<HomeMediaItem>>
+
+    /**
+     * Observe recently added items across all sources.
+     * 
+     * @return Flow of recently added items for Home display
+     */
+    fun observeRecentlyAdded(): Flow<List<HomeMediaItem>>
+
+    /**
      * Observe Telegram media items.
      *
      * @return Flow of Telegram media items for Home display

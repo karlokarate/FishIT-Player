@@ -90,6 +90,22 @@ data class HomeContentStreams(
 }
 
 /**
+ * Intermediate type-safe holder for first stage of content aggregation.
+ * 
+ * Used internally by HomeViewModel to combine the first 4 flows type-safely,
+ * then combined with remaining flows in stage 2 to produce HomeContentStreams.
+ * 
+ * This 2-stage approach allows combining all 6 flows without exceeding the
+ * 4-parameter type-safe combine overload limit.
+ */
+internal data class HomeContentPartial(
+    val continueWatching: List<HomeMediaItem>,
+    val recentlyAdded: List<HomeMediaItem>,
+    val telegramMedia: List<HomeMediaItem>,
+    val xtreamLive: List<HomeMediaItem>
+)
+
+/**
  * HomeViewModel - Manages Home screen state
  *
  * Aggregates media from multiple pipelines:
@@ -111,6 +127,14 @@ class HomeViewModel @Inject constructor(
 
     private val errorState = MutableStateFlow<String?>(null)
 
+    // ==================== Content Flows ====================
+
+    private val continueWatchingItems: Flow<List<HomeMediaItem>> =
+        homeContentRepository.observeContinueWatching().toHomeItems()
+
+    private val recentlyAddedItems: Flow<List<HomeMediaItem>> =
+        homeContentRepository.observeRecentlyAdded().toHomeItems()
+
     private val telegramItems: Flow<List<HomeMediaItem>> =
         homeContentRepository.observeTelegramMedia().toHomeItems()
 
@@ -123,25 +147,45 @@ class HomeViewModel @Inject constructor(
     private val xtreamSeriesItems: Flow<List<HomeMediaItem>> =
         homeContentRepository.observeXtreamSeries().toHomeItems()
 
+    // ==================== Type-Safe Content Aggregation ====================
+
     /**
-     * Type-safe flow combining all content streams.
+     * Stage 1: Combine first 4 flows into HomeContentPartial.
      * 
-     * Uses the 4-parameter combine overload (which is type-safe) to aggregate content flows
-     * into HomeContentStreams, preserving strong typing without index access or casts.
+     * Uses the 4-parameter combine overload (type-safe, no casts needed).
+     */
+    private val contentPartial: Flow<HomeContentPartial> = combine(
+        continueWatchingItems,
+        recentlyAddedItems,
+        telegramItems,
+        xtreamLiveItems
+    ) { continueWatching, recentlyAdded, telegram, live ->
+        HomeContentPartial(
+            continueWatching = continueWatching,
+            recentlyAdded = recentlyAdded,
+            telegramMedia = telegram,
+            xtreamLive = live
+        )
+    }
+
+    /**
+     * Stage 2: Combine partial with remaining flows into HomeContentStreams.
+     * 
+     * Uses the 3-parameter combine overload (type-safe, no casts needed).
+     * All 6 content flows are now aggregated without any Array<Any?> or index access.
      */
     private val contentStreams: Flow<HomeContentStreams> = combine(
-        telegramItems,
-        xtreamLiveItems,
+        contentPartial,
         xtreamVodItems,
         xtreamSeriesItems
-    ) { telegram, live, vod, series ->
+    ) { partial, vod, series ->
         HomeContentStreams(
-            continueWatching = emptyList(),  // TODO: Wire up continue watching
-            recentlyAdded = emptyList(),     // TODO: Wire up recently added
-            telegramMedia = telegram,
+            continueWatching = partial.continueWatching,
+            recentlyAdded = partial.recentlyAdded,
+            telegramMedia = partial.telegramMedia,
+            xtreamLive = partial.xtreamLive,
             xtreamVod = vod,
-            xtreamSeries = series,
-            xtreamLive = live
+            xtreamSeries = series
         )
     }
 

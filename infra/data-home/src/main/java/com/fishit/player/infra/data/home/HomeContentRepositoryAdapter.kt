@@ -10,6 +10,7 @@ import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -41,6 +42,28 @@ class HomeContentRepositoryAdapter @Inject constructor(
     private val xtreamCatalogRepository: XtreamCatalogRepository,
     private val xtreamLiveRepository: XtreamLiveRepository,
 ) : HomeContentRepository {
+
+    /**
+     * Observe items the user has started but not finished watching.
+     * 
+     * TODO: Wire to WatchHistoryRepository once implemented.
+     * For now returns empty flow to enable type-safe combine in HomeViewModel.
+     */
+    override fun observeContinueWatching(): Flow<List<HomeMediaItem>> {
+        // TODO: Implement with WatchHistoryRepository
+        return emptyFlow()
+    }
+
+    /**
+     * Observe recently added items across all sources.
+     * 
+     * TODO: Wire to combined query sorting by addedTimestamp.
+     * For now returns empty flow to enable type-safe combine in HomeViewModel.
+     */
+    override fun observeRecentlyAdded(): Flow<List<HomeMediaItem>> {
+        // TODO: Implement with combined recently-added query
+        return emptyFlow()
+    }
 
     override fun observeTelegramMedia(): Flow<List<HomeMediaItem>> {
         return telegramContentRepository.observeAll()
