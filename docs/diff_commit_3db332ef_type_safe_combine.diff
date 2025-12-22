@@ -1,0 +1,634 @@
+diff --git a/docs/diff_commit_c1c14da9_real_debug_data.md b/docs/diff_commit_c1c14da9_real_debug_data.md
+new file mode 100644
+index 00000000..78b97a17
+--- /dev/null
++++ b/docs/diff_commit_c1c14da9_real_debug_data.md
+@@ -0,0 +1,197 @@
++# Diff: Debug Screen Real Data Implementation (c1c14da9)
++
++**Commit:** c1c14da99e719040f768fda5b64c00b37e820412  
++**Date:** 2025-12-22  
++**Author:** karlokarate
++
++## Summary
++
++DebugScreen now displays **REAL data** instead of hardcoded stubs. This commit replaces all demo/stub data in the debug screen with live implementations that query actual system state.
++
++## Changes Overview
++
++| File | Type | Description |
++|------|------|-------------|
++| [LogBufferTree.kt](infra/logging/src/main/java/com/fishit/player/infra/logging/LogBufferTree.kt) | NEW | Timber.Tree with ring buffer for log capture |
++| [LoggingModule.kt](infra/logging/src/main/java/com/fishit/player/infra/logging/di/LoggingModule.kt) | NEW | Hilt module for LogBufferProvider |
++| [UnifiedLogInitializer.kt](infra/logging/src/main/java/com/fishit/player/infra/logging/UnifiedLogInitializer.kt) | MOD | Plant LogBufferTree on init |
++| [DebugInfoProvider.kt](feature/settings/src/main/java/com/fishit/player/feature/settings/DebugInfoProvider.kt) | NEW | Interface for debug info access |
++| [DefaultDebugInfoProvider.kt](app-v2/src/main/java/com/fishit/player/v2/di/DefaultDebugInfoProvider.kt) | NEW | Real implementation with all dependencies |
++| [DebugModule.kt](app-v2/src/main/java/com/fishit/player/v2/di/DebugModule.kt) | NEW | Hilt module for DebugInfoProvider |
++| [DebugViewModel.kt](feature/settings/src/main/java/com/fishit/player/feature/settings/DebugViewModel.kt) | MOD | Use real providers instead of stubs |
++| [build.gradle.kts](infra/logging/build.gradle.kts) | MOD | Add Hilt dependencies |
++
++## What Was Replaced
++
++| Feature | Before (STUB) | After (REAL) |
++|---------|---------------|--------------|
++| **Logs** | `generateDemoLogs()` hardcoded list | `LogBufferProvider.observeLogs()` from Timber |
++| **Telegram Connection** | `telegramConnected = true` | `TelegramAuthRepository.authState` |
++| **Xtream Connection** | `xtreamConnected = false` | `SourceActivationStore.observeStates()` |
++| **Telegram Cache Size** | `"128 MB"` | File system calculation of tdlib directories |
++| **Image Cache Size** | `"45 MB"` | `imageLoader.diskCache?.size` |
++| **Database Size** | `"12 MB"` | ObjectBox directory calculation |
++| **Content Counts** | Hardcoded zeros | Repository `observeAll().map { it.size }` |
++| **Clear Cache** | `delay(1000)` no-op | Real file deletion |
++
++## Architecture
++
++```
++┌─────────────────────────────────────────────────────────────┐
++│  DebugScreen (UI)                                           │
++│    └─ DebugViewModel                                        │
++│         ├─ LogBufferProvider (logs)                         │
++│         ├─ DebugInfoProvider (connection, cache, counts)    │
++│         ├─ SyncStateObserver (sync state) [existing]        │
++│         └─ CatalogSyncWorkScheduler (sync actions) [exist]  │
++└─────────────────────────────────────────────────────────────┘
++                           ↓
++┌─────────────────────────────────────────────────────────────┐
++│  DefaultDebugInfoProvider (app-v2)                          │
++│    ├─ TelegramAuthRepository (connection status)            │
++│    ├─ SourceActivationStore (Xtream status)                 │
++│    ├─ XtreamCredentialsStore (server details)               │
++│    ├─ TelegramContentRepository (media counts)              │
++│    ├─ XtreamCatalogRepository (VOD/Series counts)           │
++│    ├─ XtreamLiveRepository (Live channel counts)            │
++│    └─ ImageLoader (cache size + clearing)                   │
++└─────────────────────────────────────────────────────────────┘
++```
++
++## New Files
++
++### LogBufferTree.kt (215 lines)
++
++```kotlin
++/**
++ * Timber Tree that buffers log entries in a ring buffer.
++ * - Captures all log entries (DEBUG, INFO, WARN, ERROR)
++ * - Maintains fixed-size buffer (default: 500 entries)
++ * - Provides Flow<List<BufferedLogEntry>> for reactive UI
++ */
++class LogBufferTree(maxEntries: Int = 500) : Timber.Tree() {
++    private val buffer = ArrayDeque<BufferedLogEntry>(maxEntries)
++    private val _entriesFlow = MutableStateFlow<List<BufferedLogEntry>>(emptyList())
++    
++    val entriesFlow: Flow<List<BufferedLogEntry>> = _entriesFlow.asStateFlow()
++    
++    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
++        // Ring buffer logic: remove oldest if at capacity
++        if (buffer.size >= maxEntries) buffer.removeFirst()
++        buffer.addLast(BufferedLogEntry(timestamp, priority, tag, message, t))
++        _entriesFlow.value = buffer.toList()
++    }
++}
++```
++
++### DebugInfoProvider.kt (118 lines)
++
++```kotlin
++/**
++ * Interface for debug/diagnostics information.
++ * Feature-owned (feature/settings), implementation in app-v2.
++ */
++interface DebugInfoProvider {
++    fun observeTelegramConnection(): Flow<ConnectionInfo>
++    fun observeXtreamConnection(): Flow<ConnectionInfo>
++    suspend fun getTelegramCacheSize(): Long?
++    suspend fun getImageCacheSize(): Long?
++    suspend fun getDatabaseSize(): Long?
++    fun observeContentCounts(): Flow<ContentCounts>
++    suspend fun clearTelegramCache(): Boolean
++    suspend fun clearImageCache(): Boolean
++}
++```
++
++### DefaultDebugInfoProvider.kt (238 lines)
++
++```kotlin
++/**
++ * Real implementation with all dependencies.
++ * Bridges feature/settings to infra layer.
++ */
++@Singleton
++class DefaultDebugInfoProvider @Inject constructor(
++    @ApplicationContext private val context: Context,
++    private val sourceActivationStore: SourceActivationStore,
++    private val telegramAuthRepository: TelegramAuthRepository,
++    private val xtreamCredentialsStore: XtreamCredentialsStore,
++    private val telegramContentRepository: TelegramContentRepository,
++    private val xtreamCatalogRepository: XtreamCatalogRepository,
++    private val xtreamLiveRepository: XtreamLiveRepository,
++    private val imageLoader: ImageLoader,
++) : DebugInfoProvider {
++    // Real implementations using dependencies
++}
++```
++
++## DebugViewModel Changes
++
++**Before:**
++
++```kotlin
++class DebugViewModel @Inject constructor(
++    private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
++    private val syncStateObserver: SyncStateObserver,
++    private val tmdbEnrichmentScheduler: TmdbEnrichmentScheduler,
++)
++```
++
++**After:**
++
++```kotlin
++class DebugViewModel @Inject constructor(
++    private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
++    private val syncStateObserver: SyncStateObserver,
++    private val tmdbEnrichmentScheduler: TmdbEnrichmentScheduler,
++    private val logBufferProvider: LogBufferProvider,      // NEW
++    private val debugInfoProvider: DebugInfoProvider,      // NEW
++)
++```
++
++**New Init Block:**
++
++```kotlin
++init {
++    loadSystemInfo()
++    observeSyncState()       // existing
++    observeConnectionStatus() // NEW - real auth state
++    observeContentCounts()    // NEW - real counts from repos
++    observeLogs()             // NEW - real logs from buffer
++    loadCacheSizes()          // NEW - real file sizes
++}
++```
++
++## Data Flow
++
++```
++Timber.d("...") → LogBufferTree → entriesFlow → LogBufferProvider 
++                                                      ↓
++                                               DebugViewModel.observeLogs()
++                                                      ↓
++                                               DebugState.recentLogs
++                                                      ↓
++                                               DebugScreen UI
++```
++
++## Contract Compliance
++
++- **LOGGING_CONTRACT_V2:** LogBufferTree integrates with UnifiedLog via Timber
++- **Layer Boundaries:** DebugInfoProvider interface in feature, impl in app-v2
++- **AGENTS.md Section 4:** No direct transport access from feature layer
++
++## Testing Notes
++
++The debug screen will now show:
++
++- Real log entries from the application
++- Actual connection status (disconnected until login)
++- Real cache sizes (0 until files are cached)
++- Real content counts (0 until catalog sync runs)
++
++To verify:
++
++1. Open app → DebugScreen shows "0 MB" for caches, disconnected status
++2. Login to Telegram → Connection shows "Authorized"
++3. Run catalog sync → Content counts increase
++4. Logs section shows real application logs in real-time
+diff --git a/feature/home/build.gradle.kts b/feature/home/build.gradle.kts
+index 3801a09f..533cd383 100644
+--- a/feature/home/build.gradle.kts
++++ b/feature/home/build.gradle.kts
+@@ -63,4 +63,8 @@ dependencies {
+     // Coroutines
+     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
++    
++    // Test
++    testImplementation("junit:junit:4.13.2")
++    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+ }
+diff --git a/feature/home/src/main/java/com/fishit/player/feature/home/HomeViewModel.kt b/feature/home/src/main/java/com/fishit/player/feature/home/HomeViewModel.kt
+index 800444a7..00f3d615 100644
+--- a/feature/home/src/main/java/com/fishit/player/feature/home/HomeViewModel.kt
++++ b/feature/home/src/main/java/com/fishit/player/feature/home/HomeViewModel.kt
+@@ -58,6 +58,37 @@ data class HomeState(
+                 xtreamSeriesItems.isNotEmpty()
+ }
+ 
++/**
++ * Type-safe container for all home content streams.
++ * 
++ * This ensures that adding/removing a stream later cannot silently break index order.
++ * Each field is strongly typed - no Array<Any?> or index-based access needed.
++ * 
++ * @property continueWatching Items the user has started watching
++ * @property recentlyAdded Recently added items across all sources
++ * @property telegramMedia Telegram media items
++ * @property xtreamVod Xtream VOD items
++ * @property xtreamSeries Xtream series items
++ * @property xtreamLive Xtream live channel items
++ */
++data class HomeContentStreams(
++    val continueWatching: List<HomeMediaItem> = emptyList(),
++    val recentlyAdded: List<HomeMediaItem> = emptyList(),
++    val telegramMedia: List<HomeMediaItem> = emptyList(),
++    val xtreamVod: List<HomeMediaItem> = emptyList(),
++    val xtreamSeries: List<HomeMediaItem> = emptyList(),
++    val xtreamLive: List<HomeMediaItem> = emptyList()
++) {
++    /** True if any content stream has items */
++    val hasContent: Boolean
++        get() = continueWatching.isNotEmpty() ||
++                recentlyAdded.isNotEmpty() ||
++                telegramMedia.isNotEmpty() ||
++                xtreamVod.isNotEmpty() ||
++                xtreamSeries.isNotEmpty() ||
++                xtreamLive.isNotEmpty()
++}
++
+ /**
+  * HomeViewModel - Manages Home screen state
+  *
+@@ -92,39 +123,53 @@ class HomeViewModel @Inject constructor(
+     private val xtreamSeriesItems: Flow<List<HomeMediaItem>> =
+         homeContentRepository.observeXtreamSeries().toHomeItems()
+ 
+-    val state: StateFlow<HomeState> = combine(
++    /**
++     * Type-safe flow combining all content streams.
++     * 
++     * Uses the 4-parameter combine overload (which is type-safe) to aggregate content flows
++     * into HomeContentStreams, preserving strong typing without index access or casts.
++     */
++    private val contentStreams: Flow<HomeContentStreams> = combine(
+         telegramItems,
+         xtreamLiveItems,
+         xtreamVodItems,
+-        xtreamSeriesItems,
++        xtreamSeriesItems
++    ) { telegram, live, vod, series ->
++        HomeContentStreams(
++            continueWatching = emptyList(),  // TODO: Wire up continue watching
++            recentlyAdded = emptyList(),     // TODO: Wire up recently added
++            telegramMedia = telegram,
++            xtreamVod = vod,
++            xtreamSeries = series,
++            xtreamLive = live
++        )
++    }
++
++    /**
++     * Final home state combining content with metadata (errors, sync state, source activation).
++     * 
++     * Uses the 4-parameter combine overload to maintain type safety throughout.
++     * No Array<Any?> values, no index access, no casts.
++     */
++    val state: StateFlow<HomeState> = combine(
++        contentStreams,
+         errorState,
+         syncStateObserver.observeSyncState(),
+         sourceActivationStore.observeStates()
+-    ) { values ->
+-        // Destructure the array of values from combine
+-        @Suppress("UNCHECKED_CAST")
+-        val telegram = values[0] as List<HomeMediaItem>
+-        @Suppress("UNCHECKED_CAST")
+-        val live = values[1] as List<HomeMediaItem>
+-        @Suppress("UNCHECKED_CAST")
+-        val vod = values[2] as List<HomeMediaItem>
+-        @Suppress("UNCHECKED_CAST")
+-        val series = values[3] as List<HomeMediaItem>
+-        val error = values[4] as String?
+-        val syncState = values[5] as SyncUiState
+-        val sourceActivation = values[6] as SourceActivationSnapshot
+-        
++    ) { content, error, syncState, sourceActivation ->
+         HomeState(
+             isLoading = false,
+-            continueWatchingItems = emptyList(),
+-            recentlyAddedItems = emptyList(),
+-            telegramMediaItems = telegram,
+-            xtreamLiveItems = live,
+-            xtreamVodItems = vod,
+-            xtreamSeriesItems = series,
++            continueWatchingItems = content.continueWatching,
++            recentlyAddedItems = content.recentlyAdded,
++            telegramMediaItems = content.telegramMedia,
++            xtreamLiveItems = content.xtreamLive,
++            xtreamVodItems = content.xtreamVod,
++            xtreamSeriesItems = content.xtreamSeries,
+             error = error,
+-            hasTelegramSource = telegram.isNotEmpty(),
+-            hasXtreamSource = listOf(live, vod, series).any { it.isNotEmpty() },
++            hasTelegramSource = content.telegramMedia.isNotEmpty(),
++            hasXtreamSource = content.xtreamVod.isNotEmpty() || 
++                              content.xtreamSeries.isNotEmpty() || 
++                              content.xtreamLive.isNotEmpty(),
+             syncState = syncState,
+             sourceActivation = sourceActivation
+         )
+diff --git a/feature/home/src/test/java/com/fishit/player/feature/home/HomeViewModelCombineSafetyTest.kt b/feature/home/src/test/java/com/fishit/player/feature/home/HomeViewModelCombineSafetyTest.kt
+new file mode 100644
+index 00000000..fb9f09ba
+--- /dev/null
++++ b/feature/home/src/test/java/com/fishit/player/feature/home/HomeViewModelCombineSafetyTest.kt
+@@ -0,0 +1,292 @@
++package com.fishit.player.feature.home
++
++import com.fishit.player.core.model.MediaType
++import com.fishit.player.core.model.SourceType
++import com.fishit.player.feature.home.domain.HomeMediaItem
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Regression tests for [HomeContentStreams] type-safe combine behavior.
++ *
++ * Purpose:
++ * - Verify each list maps to the correct field (no index confusion)
++ * - Verify hasContent logic for single and multiple streams
++ * - Ensure behavior is identical to previous Array<Any?> + cast approach
++ *
++ * These tests validate the Premium Gold refactor that replaced:
++ * ```
++ * combine(...) { values ->
++ *     @Suppress("UNCHECKED_CAST")
++ *     val telegram = values[0] as List<HomeMediaItem>
++ *     ...
++ * }
++ * ```
++ * with type-safe combine:
++ * ```
++ * combine(telegramItems, liveItems, vodItems, seriesItems) { telegram, live, vod, series ->
++ *     HomeContentStreams(telegramMedia = telegram, xtreamLive = live, ...)
++ * }
++ * ```
++ */
++class HomeViewModelCombineSafetyTest {
++
++    // ==================== HomeContentStreams Field Mapping Tests ====================
++
++    @Test
++    fun `HomeContentStreams telegramMedia field contains only telegram items`() {
++        // Given
++        val telegramItems = listOf(
++            createTestItem(id = "tg-1", title = "Telegram Video 1"),
++            createTestItem(id = "tg-2", title = "Telegram Video 2")
++        )
++        
++        // When
++        val streams = HomeContentStreams(telegramMedia = telegramItems)
++        
++        // Then
++        assertEquals(2, streams.telegramMedia.size)
++        assertEquals("tg-1", streams.telegramMedia[0].id)
++        assertEquals("tg-2", streams.telegramMedia[1].id)
++        assertTrue(streams.xtreamLive.isEmpty())
++        assertTrue(streams.xtreamVod.isEmpty())
++        assertTrue(streams.xtreamSeries.isEmpty())
++    }
++
++    @Test
++    fun `HomeContentStreams xtreamLive field contains only live items`() {
++        // Given
++        val liveItems = listOf(
++            createTestItem(id = "live-1", title = "Live Channel 1")
++        )
++        
++        // When
++        val streams = HomeContentStreams(xtreamLive = liveItems)
++        
++        // Then
++        assertEquals(1, streams.xtreamLive.size)
++        assertEquals("live-1", streams.xtreamLive[0].id)
++        assertTrue(streams.telegramMedia.isEmpty())
++        assertTrue(streams.xtreamVod.isEmpty())
++        assertTrue(streams.xtreamSeries.isEmpty())
++    }
++
++    @Test
++    fun `HomeContentStreams xtreamVod field contains only vod items`() {
++        // Given
++        val vodItems = listOf(
++            createTestItem(id = "vod-1", title = "Movie 1"),
++            createTestItem(id = "vod-2", title = "Movie 2"),
++            createTestItem(id = "vod-3", title = "Movie 3")
++        )
++        
++        // When
++        val streams = HomeContentStreams(xtreamVod = vodItems)
++        
++        // Then
++        assertEquals(3, streams.xtreamVod.size)
++        assertEquals("vod-1", streams.xtreamVod[0].id)
++        assertTrue(streams.telegramMedia.isEmpty())
++        assertTrue(streams.xtreamLive.isEmpty())
++        assertTrue(streams.xtreamSeries.isEmpty())
++    }
++
++    @Test
++    fun `HomeContentStreams xtreamSeries field contains only series items`() {
++        // Given
++        val seriesItems = listOf(
++            createTestItem(id = "series-1", title = "TV Show 1")
++        )
++        
++        // When
++        val streams = HomeContentStreams(xtreamSeries = seriesItems)
++        
++        // Then
++        assertEquals(1, streams.xtreamSeries.size)
++        assertEquals("series-1", streams.xtreamSeries[0].id)
++        assertTrue(streams.telegramMedia.isEmpty())
++        assertTrue(streams.xtreamLive.isEmpty())
++        assertTrue(streams.xtreamVod.isEmpty())
++    }
++
++    @Test
++    fun `HomeContentStreams continueWatching and recentlyAdded are independent`() {
++        // Given
++        val continueWatching = listOf(createTestItem(id = "cw-1", title = "Continue 1"))
++        val recentlyAdded = listOf(createTestItem(id = "ra-1", title = "Recent 1"))
++        
++        // When
++        val streams = HomeContentStreams(
++            continueWatching = continueWatching,
++            recentlyAdded = recentlyAdded
++        )
++        
++        // Then
++        assertEquals(1, streams.continueWatching.size)
++        assertEquals("cw-1", streams.continueWatching[0].id)
++        assertEquals(1, streams.recentlyAdded.size)
++        assertEquals("ra-1", streams.recentlyAdded[0].id)
++    }
++
++    // ==================== hasContent Logic Tests ====================
++
++    @Test
++    fun `hasContent is false when all streams are empty`() {
++        // Given
++        val streams = HomeContentStreams()
++        
++        // Then
++        assertFalse(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when only telegramMedia has items`() {
++        // Given
++        val streams = HomeContentStreams(
++            telegramMedia = listOf(createTestItem(id = "tg-1", title = "Test"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when only xtreamLive has items`() {
++        // Given
++        val streams = HomeContentStreams(
++            xtreamLive = listOf(createTestItem(id = "live-1", title = "Test"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when only xtreamVod has items`() {
++        // Given
++        val streams = HomeContentStreams(
++            xtreamVod = listOf(createTestItem(id = "vod-1", title = "Test"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when only xtreamSeries has items`() {
++        // Given
++        val streams = HomeContentStreams(
++            xtreamSeries = listOf(createTestItem(id = "series-1", title = "Test"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when only continueWatching has items`() {
++        // Given
++        val streams = HomeContentStreams(
++            continueWatching = listOf(createTestItem(id = "cw-1", title = "Test"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when only recentlyAdded has items`() {
++        // Given
++        val streams = HomeContentStreams(
++            recentlyAdded = listOf(createTestItem(id = "ra-1", title = "Test"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    @Test
++    fun `hasContent is true when multiple streams have items`() {
++        // Given
++        val streams = HomeContentStreams(
++            telegramMedia = listOf(createTestItem(id = "tg-1", title = "Telegram")),
++            xtreamVod = listOf(createTestItem(id = "vod-1", title = "VOD")),
++            xtreamLive = listOf(createTestItem(id = "live-1", title = "Live"))
++        )
++        
++        // Then
++        assertTrue(streams.hasContent)
++    }
++
++    // ==================== HomeState Consistency Tests ====================
++
++    @Test
++    fun `HomeState hasContent matches HomeContentStreams behavior`() {
++        // Given - empty state
++        val emptyState = HomeState()
++        assertFalse(emptyState.hasContent)
++
++        // Given - state with telegram items
++        val stateWithTelegram = HomeState(
++            telegramMediaItems = listOf(createTestItem(id = "tg-1", title = "Test"))
++        )
++        assertTrue(stateWithTelegram.hasContent)
++
++        // Given - state with mixed items
++        val mixedState = HomeState(
++            xtreamVodItems = listOf(createTestItem(id = "vod-1", title = "Movie")),
++            xtreamSeriesItems = listOf(createTestItem(id = "series-1", title = "Show"))
++        )
++        assertTrue(mixedState.hasContent)
++    }
++
++    @Test
++    fun `HomeState all content fields are independent`() {
++        // Given
++        val state = HomeState(
++            continueWatchingItems = listOf(createTestItem(id = "cw", title = "Continue")),
++            recentlyAddedItems = listOf(createTestItem(id = "ra", title = "Recent")),
++            telegramMediaItems = listOf(createTestItem(id = "tg", title = "Telegram")),
++            xtreamLiveItems = listOf(createTestItem(id = "live", title = "Live")),
++            xtreamVodItems = listOf(createTestItem(id = "vod", title = "VOD")),
++            xtreamSeriesItems = listOf(createTestItem(id = "series", title = "Series"))
++        )
++        
++        // Then - each field contains exactly its item
++        assertEquals(1, state.continueWatchingItems.size)
++        assertEquals("cw", state.continueWatchingItems[0].id)
++        
++        assertEquals(1, state.recentlyAddedItems.size)
++        assertEquals("ra", state.recentlyAddedItems[0].id)
++        
++        assertEquals(1, state.telegramMediaItems.size)
++        assertEquals("tg", state.telegramMediaItems[0].id)
++        
++        assertEquals(1, state.xtreamLiveItems.size)
++        assertEquals("live", state.xtreamLiveItems[0].id)
++        
++        assertEquals(1, state.xtreamVodItems.size)
++        assertEquals("vod", state.xtreamVodItems[0].id)
++        
++        assertEquals(1, state.xtreamSeriesItems.size)
++        assertEquals("series", state.xtreamSeriesItems[0].id)
++    }
++
++    // ==================== Test Helpers ====================
++
++    private fun createTestItem(
++        id: String,
++        title: String,
++        mediaType: MediaType = MediaType.MOVIE,
++        sourceType: SourceType = SourceType.TELEGRAM
++    ): HomeMediaItem = HomeMediaItem(
++        id = id,
++        title = title,
++        mediaType = mediaType,
++        sourceType = sourceType,
++        navigationId = id,
++        navigationSource = sourceType
++    )
++}

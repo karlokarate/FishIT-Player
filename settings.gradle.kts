@@ -84,6 +84,7 @@ include(":feature:onboarding")
 
 // Infrastructure
 include(":infra:logging")
+include(":infra:cache")
 include(":infra:tooling")
 include(":infra:transport-telegram")
 include(":infra:transport-xtream")

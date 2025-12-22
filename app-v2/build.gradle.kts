@@ -172,6 +172,7 @@ dependencies {
 
     // v2 Infrastructure
     implementation(project(":infra:logging"))
+    implementation(project(":infra:cache"))
     implementation(project(":infra:tooling"))
     implementation(project(":infra:transport-telegram"))
     implementation(project(":infra:transport-xtream"))

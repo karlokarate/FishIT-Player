@@ -104,12 +104,22 @@ class LogBufferTree(
     fun size(): Int = lock.read { buffer.size }
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+        // MANDATORY: Redact sensitive information before buffering
+        // Contract: No secrets may persist in memory (LOGGING_CONTRACT_V2)
+        val redactedMessage = LogRedactor.redact(message)
+        val redactedThrowable = t?.let { original ->
+            LogRedactor.RedactedThrowable(
+                originalType = original::class.simpleName ?: "Unknown",
+                redactedMessage = LogRedactor.redact(original.message ?: "")
+            )
+        }
+
         val entry = BufferedLogEntry(
             timestamp = System.currentTimeMillis(),
             priority = priority,
             tag = tag,
-            message = message,
-            throwable = t
+            message = redactedMessage,
+            throwable = redactedThrowable
         )
 
         lock.write {
