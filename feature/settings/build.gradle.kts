@@ -33,8 +33,10 @@ dependencies {
     implementation(project(":core:persistence"))
     implementation(project(":core:firebase"))
     implementation(project(":core:catalog-sync"))
+    implementation(project(":core:metadata-normalizer"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
+    implementation(project(":infra:cache"))
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

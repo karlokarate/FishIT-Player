@@ -146,6 +146,14 @@ object WorkerConstants {
     const val FAILURE_IO_PERMISSION_MISSING = "IO_PERMISSION_MISSING"
     const val FAILURE_TMDB_API_KEY_MISSING = "TMDB_API_KEY_MISSING"
     
+    /**
+     * Non-retryable: Feature not yet implemented.
+     * 
+     * Per TODO_AUDIT_BLOCKING_ISSUES.md: Workers must not pretend to work
+     * when they are stubs. Return failure to indicate feature is unavailable.
+     */
+    const val FAILURE_NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
+    
     // =========================================================================
     // Runtime Configuration (W-16, W-17, W-18)
     // =========================================================================

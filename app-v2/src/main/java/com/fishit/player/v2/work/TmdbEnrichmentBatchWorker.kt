@@ -12,9 +12,15 @@ import androidx.work.WorkerParameters
 import com.fishit.player.core.metadata.TmdbMetadataResolver
 import com.fishit.player.core.metadata.tmdb.TmdbConfigProvider
 import com.fishit.player.core.model.CanonicalMediaId
+import com.fishit.player.core.model.ExternalIds
+import com.fishit.player.core.model.MediaKind
+import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.TmdbResolvedBy
-import com.fishit.player.core.model.ids.TmdbId
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
+import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -272,6 +278,8 @@ class TmdbEnrichmentBatchWorker @AssistedInject constructor(
     /**
      * Enrich a single item that already has TmdbRef with full details.
      *
+     * Path A: Details-by-ID - fetch full metadata from TMDB using known ID.
+     *
      * @return true if successfully enriched
      */
     private suspend fun enrichWithDetails(canonicalId: CanonicalMediaId): Boolean {
@@ -280,24 +288,42 @@ class TmdbEnrichmentBatchWorker @AssistedInject constructor(
 
         val tmdbId = media.tmdbId ?: return false
 
-        // Load the normalized metadata and enrich via resolver
-        // The resolver fetches details by ID and returns enriched metadata
-        // TODO: This needs the full normalized metadata - for now we mark as applied
-        
-        // Mark as having details applied
-        canonicalMediaRepository.markTmdbDetailsApplied(
-            canonicalId = canonicalId,
-            tmdbId = tmdbId,
-            resolvedBy = TmdbResolvedBy.DETAILS_BY_ID.name,
-            resolvedAt = System.currentTimeMillis(),
-        )
+        // Convert to NormalizedMediaMetadata for enrichment
+        val normalized = media.toNormalizedMetadata()
 
-        UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=DETAILS_BY_ID" }
+        // Call real TMDB API via resolver
+        val enriched = tmdbMetadataResolver.enrich(normalized)
+
+        // Check if enrichment added any new data (compare images)
+        val wasEnriched = enriched.poster != null || enriched.backdrop != null
+
+        if (wasEnriched) {
+            // Save enriched metadata back to repository
+            canonicalMediaRepository.updateTmdbEnriched(
+                canonicalId = canonicalId,
+                enriched = enriched,
+                resolvedBy = TmdbResolvedBy.DETAILS_BY_ID.name,
+                resolvedAt = System.currentTimeMillis(),
+            )
+            UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=DETAILS_BY_ID status=ENRICHED" }
+        } else {
+            // Mark as applied even if no new data (already complete)
+            canonicalMediaRepository.markTmdbDetailsApplied(
+                canonicalId = canonicalId,
+                tmdbId = tmdbId,
+                resolvedBy = TmdbResolvedBy.DETAILS_BY_ID.name,
+                resolvedAt = System.currentTimeMillis(),
+            )
+            UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=DETAILS_BY_ID status=NO_NEW_DATA" }
+        }
+
         return true
     }
 
     /**
      * Resolve a single item without TmdbRef via TMDB search.
+     *
+     * Path B: Search + Score - search TMDB and score results.
      *
      * @return true if successfully resolved
      */
@@ -309,26 +335,78 @@ class TmdbEnrichmentBatchWorker @AssistedInject constructor(
         val cooldown = WorkerConstants.TMDB_COOLDOWN_MS
         val nextEligible = now + cooldown
 
-        // TODO: Implement full search resolution via TmdbMetadataResolver
-        // For now, we mark as FAILED to track the attempt and enable cooldown
+        // Convert to NormalizedMediaMetadata for search
+        val normalized = media.toNormalizedMetadata()
 
-        // In the full implementation:
-        // 1. Get NormalizedMediaMetadata from repository
-        // 2. Call tmdbMetadataResolver.enrich(normalized)
-        // 3. Check result for ACCEPT/AMBIGUOUS/REJECT
-        // 4. Update repository accordingly
+        // Call real TMDB API via resolver - this does search + scoring
+        val enriched = tmdbMetadataResolver.enrich(normalized)
 
-        // Placeholder: Mark as failed attempt (will be properly implemented)
-        canonicalMediaRepository.markTmdbResolveAttemptFailed(
-            canonicalId = canonicalId,
-            state = "FAILED",
-            reason = "Search resolution not yet implemented",
-            attemptAt = now,
-            nextEligibleAt = nextEligible,
+        // Check if resolver found and assigned a TmdbRef
+        val resolvedTmdbRef = enriched.externalIds.tmdb
+
+        return if (resolvedTmdbRef != null) {
+            // Successfully resolved - save enriched metadata
+            canonicalMediaRepository.updateTmdbEnriched(
+                canonicalId = canonicalId,
+                enriched = enriched,
+                resolvedBy = TmdbResolvedBy.SEARCH_MATCH.name,
+                resolvedAt = now,
+            )
+            UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=SEARCH_MATCH tmdbId=${resolvedTmdbRef.id}" }
+            true
+        } else {
+            // No match found - mark as failed with cooldown
+            canonicalMediaRepository.markTmdbResolveAttemptFailed(
+                canonicalId = canonicalId,
+                state = "FAILED",
+                reason = "No confident TMDB match found",
+                attemptAt = now,
+                nextEligibleAt = nextEligible,
+            )
+            UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=SEARCH_MATCH status=NO_MATCH" }
+            false
+        }
+    }
+
+    /**
+     * Convert CanonicalMediaWithSources to NormalizedMediaMetadata for enrichment.
+     *
+     * NormalizedMediaMetadata only contains fields needed for TMDB resolution:
+     * - canonicalTitle, mediaType, year, season, episode
+     * - tmdb (TmdbRef), externalIds
+     * - poster, backdrop, thumbnail images
+     */
+    private fun CanonicalMediaWithSources.toNormalizedMetadata(): NormalizedMediaMetadata {
+        // Determine media type from kind and season/episode
+        val mediaType = when {
+            season != null && episode != null -> MediaType.SERIES_EPISODE
+            canonicalId.kind == MediaKind.EPISODE -> MediaType.SERIES_EPISODE
+            else -> MediaType.MOVIE
+        }
+
+        // Determine TMDB media type
+        val tmdbMediaType = when (mediaType) {
+            MediaType.MOVIE -> TmdbMediaType.MOVIE
+            MediaType.SERIES, MediaType.SERIES_EPISODE -> TmdbMediaType.TV
+            else -> TmdbMediaType.MOVIE
+        }
+
+        return NormalizedMediaMetadata(
+            canonicalTitle = canonicalTitle,
+            mediaType = mediaType,
+            year = year,
+            season = season,
+            episode = episode,
+            tmdb = tmdbId?.let { TmdbRef(tmdbMediaType, it.value) },
+            externalIds = ExternalIds(
+                tmdb = tmdbId?.let { TmdbRef(tmdbMediaType, it.value) },
+                imdbId = imdbId,
+                tvdbId = null,
+            ),
+            poster = poster,
+            backdrop = backdrop,
+            thumbnail = thumbnail,
         )
-
-        UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=RESOLVE_MISSING_IDS state=PENDING" }
-        return false
     }
 
     /**

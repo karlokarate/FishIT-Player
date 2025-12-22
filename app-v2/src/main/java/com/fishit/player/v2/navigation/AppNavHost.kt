@@ -24,6 +24,7 @@ import com.fishit.player.feature.home.HomeScreen
 import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
+import com.fishit.player.feature.settings.SettingsScreen
 import com.fishit.player.ui.PlayerScreen
 import com.fishit.player.v2.navigation.PlayerNavViewModel
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
@@ -85,7 +86,7 @@ fun AppNavHost() {
                         }
                     },
                     onSettingsClick = {
-                        // TODO: Navigate to Settings
+                        navController.navigate(Routes.SETTINGS)
                     },
                     onDebugClick = {
                         navController.navigate(Routes.DEBUG)
@@ -116,8 +117,13 @@ fun AppNavHost() {
                     sourceType = sourceType,
                     onBack = { navController.popBackStack() },
                     onPlayback = { event ->
-                        // TODO: Navigate to player with playback context
-                        // navController.navigate(Routes.player(event.canonicalId.value, event.source.sourceId))
+                        // Navigate to player with playback context from StartPlayback event
+                        navController.navigate(
+                            Routes.player(
+                                mediaId = event.canonicalId.key.value,
+                                sourceType = event.source.sourceType.name,
+                            ),
+                        )
                     },
                 )
             }
@@ -157,6 +163,13 @@ fun AppNavHost() {
             // Debug Playback Screen (test player with Big Buck Bunny)
             composable(Routes.DEBUG_PLAYBACK) {
                 DebugPlaybackScreen(
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            // Settings Screen
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
                     onBack = { navController.popBackStack() },
                 )
             }
@@ -218,6 +231,7 @@ object Routes {
     const val DEBUG = "debug"
     const val DEBUG_PLAYBACK = "debug_playback"
     const val DEBUG_SKELETON = "debug_skeleton"
+    const val SETTINGS = "settings"
 
     // Detail route with arguments
     const val ARG_MEDIA_ID = "mediaId"
@@ -234,12 +248,4 @@ object Routes {
         mediaId: String,
         sourceType: String,
     ): String = "player/$mediaId/$sourceType"
-
-    // Future routes
-    // const val LIBRARY = "library"
-    // const val LIVE = "live"
-    // const val TELEGRAM = "telegram"
-    // const val AUDIOBOOKS = "audiobooks"
-    // const val SETTINGS = "settings"
-    // const val PLAYER = "player/{canonicalId}/{sourceId}"
 }

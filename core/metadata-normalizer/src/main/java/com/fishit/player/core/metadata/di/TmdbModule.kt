@@ -2,8 +2,6 @@ package com.fishit.player.core.metadata.di
 
 import com.fishit.player.core.metadata.DefaultTmdbMetadataResolver
 import com.fishit.player.core.metadata.TmdbMetadataResolver
-import com.fishit.player.core.metadata.tmdb.DefaultTmdbConfigProvider
-import com.fishit.player.core.metadata.tmdb.TmdbConfigProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -16,6 +14,9 @@ import javax.inject.Singleton
  * Per TMDB_ENRICHMENT_CONTRACT.md:
  * - TMDB dependency ONLY in :core:metadata-normalizer
  * - Resolver is Singleton-scoped (caches are bounded, FireTV-safe)
+ *
+ * **Note:** TmdbConfigProvider binding is provided by app-v2 (BuildConfigTmdbConfigProvider)
+ * because the config provider needs access to app-level BuildConfig.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -34,15 +35,4 @@ abstract class TmdbModule {
     abstract fun bindTmdbMetadataResolver(
         impl: DefaultTmdbMetadataResolver,
     ): TmdbMetadataResolver
-
-    /**
-     * Binds the TMDB config provider.
-     *
-     * Uses BuildConfig or DataStore for API key and locale settings.
-     */
-    @Binds
-    @Singleton
-    abstract fun bindTmdbConfigProvider(
-        impl: DefaultTmdbConfigProvider,
-    ): TmdbConfigProvider
 }

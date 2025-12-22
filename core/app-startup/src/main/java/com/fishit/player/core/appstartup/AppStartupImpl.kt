@@ -5,6 +5,7 @@ import com.fishit.player.infra.transport.telegram.TelegramClientFactory
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
+import com.fishit.player.infra.transport.xtream.XtreamParallelism
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.grouper.TelegramMessageBundler
 import com.fishit.player.pipeline.telegram.grouper.TelegramStructuredMetadataExtractor
@@ -36,6 +37,8 @@ class AppStartupImpl(
 
     companion object {
         private const val TAG = "AppStartup"
+        /** Default parallelism for Xtream API calls (conservative for startup) */
+        private const val DEFAULT_PARALLELISM = 3
     }
 
     private var telegramClient: TelegramTransportClient? = null
@@ -103,9 +106,12 @@ class AppStartupImpl(
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .build()
 
-            // Create API client
+            // Create API client with default parallelism (conservative for startup)
             val apiConfig = config.toApiConfig()
-            val apiClient = DefaultXtreamApiClient(http = httpClient)
+            val apiClient = DefaultXtreamApiClient(
+                http = httpClient,
+                parallelism = XtreamParallelism(DEFAULT_PARALLELISM),
+            )
             xtreamClient = apiClient
 
             // Initialize and authenticate

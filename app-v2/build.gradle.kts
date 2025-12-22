@@ -51,6 +51,12 @@ android {
         buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
         buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
 
+        // TMDB API key (from environment or gradle.properties)
+        val tmdbApiKey = System.getenv("TMDB_API_KEY")
+            ?: project.findProperty("TMDB_API_KEY")?.toString()
+            ?: ""
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
+
         // ABI configuration is handled via splits when useSplits=true
         // Otherwise, use NDK abiFilters for single-ABI builds
     }

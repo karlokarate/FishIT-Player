@@ -1,5 +1,6 @@
 package com.fishit.player.playback.domain.di
 
+import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.LivePlaybackController
 import com.fishit.player.playback.domain.PlaybackSourceFactory
@@ -9,10 +10,10 @@ import com.fishit.player.playback.domain.SubtitleStyleManager
 import com.fishit.player.playback.domain.TvInputController
 import com.fishit.player.playback.domain.defaults.DefaultKidsPlaybackGate
 import com.fishit.player.playback.domain.defaults.DefaultLivePlaybackController
-import com.fishit.player.playback.domain.defaults.DefaultResumeManager
 import com.fishit.player.playback.domain.defaults.DefaultSubtitleSelectionPolicy
 import com.fishit.player.playback.domain.defaults.DefaultSubtitleStyleManager
 import com.fishit.player.playback.domain.defaults.DefaultTvInputController
+import com.fishit.player.playback.domain.defaults.ObxResumeManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -79,9 +80,17 @@ abstract class PlaybackDomainModule {
 
     companion object {
 
+        /**
+         * Provides ObjectBox-backed ResumeManager.
+         *
+         * Per TODO_AUDIT_BLOCKING_ISSUES.md: Replaces in-memory DefaultResumeManager
+         * with real persistence via CanonicalMediaRepository.
+         */
         @Provides
         @Singleton
-        fun provideResumeManager(): ResumeManager = DefaultResumeManager()
+        fun provideResumeManager(
+            canonicalMediaRepository: CanonicalMediaRepository,
+        ): ResumeManager = ObxResumeManager(canonicalMediaRepository)
 
         @Provides
         @Singleton

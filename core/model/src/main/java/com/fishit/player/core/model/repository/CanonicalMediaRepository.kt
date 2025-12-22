@@ -275,6 +275,26 @@ interface CanonicalMediaRepository {
             resolvedAt: Long,
     )
 
+    /**
+     * Update canonical media with TMDB-enriched metadata.
+     *
+     * Per TMDB_ENRICHMENT_CONTRACT.md:
+     * - T-5/T-6/T-7: SSOT images via ImageRef.TmdbPoster/TmdbBackdrop
+     * - Only updates fields that are non-null in enriched metadata
+     * - Preserves existing source-specific data
+     *
+     * @param canonicalId The canonical media ID to update
+     * @param enriched The TMDB-enriched metadata (from TmdbMetadataResolver.enrich)
+     * @param resolvedBy How the item was resolved (DETAILS_BY_ID or SEARCH_MATCH)
+     * @param resolvedAt Timestamp of enrichment
+     */
+    suspend fun updateTmdbEnriched(
+            canonicalId: CanonicalMediaId,
+            enriched: NormalizedMediaMetadata,
+            resolvedBy: String,
+            resolvedAt: Long,
+    )
+
     // ========== Maintenance Operations ==========
 
     /**

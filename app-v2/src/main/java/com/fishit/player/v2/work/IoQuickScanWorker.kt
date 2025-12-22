@@ -79,18 +79,16 @@ class IoQuickScanWorker @AssistedInject constructor(
             )
         }
         
-        // TODO: Implement actual IO sync when CatalogSyncService.syncIo() is available
-        // For now, return success as IO pipeline is a stub
+        // IO pipeline is not yet implemented.
+        // Per TODO_AUDIT_BLOCKING_ISSUES.md: Workers must not lie about success.
+        // Return non-retryable failure to indicate feature is unavailable.
         val durationMs = System.currentTimeMillis() - startTimeMs
-        UnifiedLog.i(TAG) { 
-            "SUCCESS duration_ms=$durationMs persisted_count=0 (IO pipeline stub)"
+        UnifiedLog.w(TAG) { 
+            "FAILURE reason=not_implemented duration_ms=$durationMs retry=false"
         }
         
-        return Result.success(
-            WorkerOutputData.success(
-                itemsPersisted = 0,
-                durationMs = durationMs,
-            )
+        return Result.failure(
+            WorkerOutputData.failure(WorkerConstants.FAILURE_NOT_IMPLEMENTED)
         )
     }
     

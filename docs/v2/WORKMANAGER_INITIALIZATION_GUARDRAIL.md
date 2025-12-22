@@ -86,7 +86,7 @@ Expected: No `WorkManagerInitializer` entry, or entry with `tools:node="remove"`
 
 ## Related Contracts
 
-- `contracts/startup_trigger_contract.md` - Startup & sync triggers
+- `/docs/v2/STARTUP_TRIGGER_CONTRACT.md` - Startup & sync triggers
 - `docs/v2/WORKMANAGER_PATTERNS.md` - Worker implementation patterns
 
 ## Migration from docs/

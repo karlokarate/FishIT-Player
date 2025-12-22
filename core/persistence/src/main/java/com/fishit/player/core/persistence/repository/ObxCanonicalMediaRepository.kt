@@ -767,6 +767,51 @@ constructor(
                 canonicalBox.put(updated)
         }
 
+        override suspend fun updateTmdbEnriched(
+                canonicalId: CanonicalMediaId,
+                enriched: NormalizedMediaMetadata,
+                resolvedBy: String,
+                resolvedAt: Long,
+        ): Unit = withContext(Dispatchers.IO) {
+                val existing = canonicalBox
+                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
+                        .build()
+                        .findFirst() ?: return@withContext
+
+                // Apply TMDB-enriched fields while preserving existing source data
+                // Per TMDB_ENRICHMENT_CONTRACT.md T-5/T-6/T-7: SSOT images from TMDB
+                //
+                // NormalizedMediaMetadata contains:
+                // - tmdb (TmdbRef: type + id)
+                // - externalIds (imdbId, tvdbId)
+                // - poster, backdrop, thumbnail (ImageRef)
+                // - year (possibly refined from TMDB)
+                val updated = existing.copy(
+                        // TMDB ID (typed TmdbRef) - may have been set via search
+                        tmdbId = enriched.tmdb?.id?.toString() 
+                                ?: enriched.externalIds.tmdb?.id?.toString()
+                                ?: existing.tmdbId,
+                        imdbId = enriched.externalIds.imdbId ?: existing.imdbId,
+                        tvdbId = enriched.externalIds.tvdbId ?: existing.tvdbId,
+                        // SSOT images from TMDB (T-5/T-6/T-7)
+                        poster = enriched.poster ?: existing.poster,
+                        backdrop = enriched.backdrop ?: existing.backdrop,
+                        thumbnail = enriched.thumbnail ?: existing.thumbnail,
+                        // Year may be refined from TMDB
+                        year = enriched.year ?: existing.year,
+                        // TMDB resolve state
+                        tmdbResolveState = "RESOLVED",
+                        tmdbResolvedBy = resolvedBy,
+                        tmdbLastResolvedAt = resolvedAt,
+                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                        lastTmdbAttemptAt = resolvedAt,
+                        tmdbLastFailureReason = null,
+                        tmdbNextEligibleAt = null, // No retry needed
+                        updatedAt = resolvedAt,
+                )
+                canonicalBox.put(updated)
+        }
+
         // ========== Private Helpers ==========
 
         private fun generateCanonicalKey(normalized: NormalizedMediaMetadata): String {
