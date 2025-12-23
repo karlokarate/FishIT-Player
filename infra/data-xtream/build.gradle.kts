@@ -31,9 +31,11 @@ dependencies {
     implementation(project(":infra:transport-xtream"))
     // NOTE: No pipeline:xtream dependency - Data layer works only with RawMediaMetadata
 
-    // Feature interface dependency (Dependency Inversion)
-    // XtreamAuthRepository interface is owned by feature/onboarding, implemented here
+    // Feature interface dependencies (Dependency Inversion)
+    // Repository interfaces are owned by feature modules, implemented here
     implementation(project(":feature:onboarding"))
+    implementation(project(":feature:library"))
+    implementation(project(":feature:live"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

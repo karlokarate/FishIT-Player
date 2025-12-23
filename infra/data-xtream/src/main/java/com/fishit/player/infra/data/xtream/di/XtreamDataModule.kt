@@ -1,5 +1,9 @@
 package com.fishit.player.infra.data.xtream.di
 
+import com.fishit.player.feature.library.domain.LibraryContentRepository
+import com.fishit.player.feature.live.domain.LiveContentRepository
+import com.fishit.player.infra.data.xtream.LibraryContentRepositoryAdapter
+import com.fishit.player.infra.data.xtream.LiveContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.ObxXtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamLiveRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
@@ -53,4 +57,30 @@ abstract class XtreamDataModule {
     abstract fun bindXtreamLiveRepository(
         impl: ObxXtreamLiveRepository
     ): XtreamLiveRepository
+
+    // ========== Feature Layer Repository Bindings ==========
+
+    /**
+     * Binds [LibraryContentRepositoryAdapter] as the implementation for [LibraryContentRepository].
+     *
+     * Provides VOD/Series content for the Library feature screen.
+     * Maps RawMediaMetadata → LibraryMediaItem domain models.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindLibraryContentRepository(
+        impl: LibraryContentRepositoryAdapter
+    ): LibraryContentRepository
+
+    /**
+     * Binds [LiveContentRepositoryAdapter] as the implementation for [LiveContentRepository].
+     *
+     * Provides live TV channels for the Live feature screen.
+     * Maps RawMediaMetadata → LiveChannel domain models.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindLiveContentRepository(
+        impl: LiveContentRepositoryAdapter
+    ): LiveContentRepository
 }
