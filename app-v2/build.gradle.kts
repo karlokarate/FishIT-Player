@@ -144,6 +144,7 @@ dependencies {
     implementation(project(":core:persistence"))
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:firebase"))
+    implementation(project(":core:app-startup"))
 
     // v2 Metadata Normalizer (TMDB enrichment)
     implementation(project(":core:metadata-normalizer"))
@@ -151,8 +152,11 @@ dependencies {
     // v2 Playback & Player
     implementation(project(":playback:domain"))
     implementation(project(":playback:xtream"))
+    implementation(project(":playback:telegram"))
     implementation(project(":player:ui"))
+    implementation(project(":player:ui-api"))
     implementation(project(":player:internal"))
+    implementation(project(":player:miniplayer"))
     implementation(project(":player:nextlib-codecs"))
 
     // v2 Pipelines
@@ -178,6 +182,7 @@ dependencies {
 
     // v2 Infrastructure
     implementation(project(":infra:logging"))
+    implementation(project(":infra:imaging"))
     implementation(project(":infra:cache"))
     implementation(project(":infra:tooling"))
     implementation(project(":infra:transport-telegram"))
