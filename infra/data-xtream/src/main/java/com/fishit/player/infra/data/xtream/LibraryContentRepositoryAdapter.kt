@@ -1,6 +1,5 @@
 package com.fishit.player.infra.data.xtream
 
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.feature.library.domain.LibraryCategory
 import com.fishit.player.feature.library.domain.LibraryContentRepository
@@ -108,13 +107,13 @@ class LibraryContentRepositoryAdapter @Inject constructor(
     private fun RawMediaMetadata.toLibraryMediaItem(): LibraryMediaItem {
         return LibraryMediaItem(
             id = sourceId,
-            title = title,
-            poster = posterUrl?.let { ImageRef(it) },
-            backdrop = backdropUrl?.let { ImageRef(it) },
+            title = originalTitle,
+            poster = poster ?: thumbnail,
+            backdrop = backdrop,
             mediaType = mediaType,
             sourceType = sourceType,
             year = year,
-            rating = rating,
+            rating = rating?.toFloat(),
             categoryId = extras["categoryId"],
             categoryName = extras["categoryName"],
             genres = extras["genres"]?.split(",")?.map { it.trim() } ?: emptyList(),
