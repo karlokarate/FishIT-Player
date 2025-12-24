@@ -1,8 +1,6 @@
 package com.fishit.player.infra.data.xtream
 
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.SourceType
 import com.fishit.player.feature.live.domain.LiveCategory
 import com.fishit.player.feature.live.domain.LiveChannel
 import com.fishit.player.feature.live.domain.LiveContentRepository
@@ -129,16 +127,16 @@ class LiveContentRepositoryAdapter @Inject constructor(
     private fun RawMediaMetadata.toLiveChannel(): LiveChannel {
         return LiveChannel(
             id = sourceId,
-            name = title,
+            name = originalTitle,
             channelNumber = extras["channelNumber"]?.toIntOrNull(),
-            logo = posterUrl?.let { ImageRef.Remote(it) },
+            logo = poster ?: thumbnail,
             categoryId = extras["categoryId"],
             categoryName = extras["categoryName"],
             currentProgram = extras["currentProgram"],
             currentProgramDescription = extras["currentProgramDescription"],
             programStart = extras["programStart"]?.toLongOrNull(),
             programEnd = extras["programEnd"]?.toLongOrNull(),
-            sourceType = SourceType.XTREAM,
+            sourceType = sourceType,
             isFavorite = favoriteIds.contains(sourceId),
             lastWatched = if (recentChannelIds.contains(sourceId)) {
                 System.currentTimeMillis()
