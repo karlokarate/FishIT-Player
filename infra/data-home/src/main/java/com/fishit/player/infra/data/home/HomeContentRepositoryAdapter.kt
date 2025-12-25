@@ -247,12 +247,12 @@ class HomeContentRepositoryAdapter @Inject constructor(
     /**
      * Observe all movies from all sources (cross-pipeline).
      *
-     * Queries ObxCanonicalMedia where kind = "movie".
+     * Queries ObxCanonicalMedia where mediaType = "MOVIE".
      * Items from Xtream and Telegram are unified by canonical key.
      */
     override fun observeMovies(): Flow<List<HomeMediaItem>> {
         val query = canonicalMediaBox.query(
-            ObxCanonicalMedia_.kind.equal("movie")
+            ObxCanonicalMedia_.mediaType.equal("MOVIE")
         )
             .orderDesc(ObxCanonicalMedia_.createdAt)
             .build()
@@ -292,14 +292,14 @@ class HomeContentRepositoryAdapter @Inject constructor(
     /**
      * Observe all series from all sources (cross-pipeline).
      *
-     * Queries ObxCanonicalMedia where kind = "episode" or "series".
+     * Queries ObxCanonicalMedia where mediaType = "SERIES" or "SERIES_EPISODE".
      * Groups by series (distinct by canonicalTitle).
      */
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
-        // Query for series/episodes - we'll dedupe by series title
+        // Query for series + episodes - we'll dedupe by series title
         // Use oneOf() for ObjectBox "IN" clause equivalent
         val query = canonicalMediaBox.query(
-            ObxCanonicalMedia_.kind.oneOf(arrayOf("episode", "series"))
+            ObxCanonicalMedia_.mediaType.oneOf(arrayOf("SERIES", "SERIES_EPISODE"))
         )
             .orderDesc(ObxCanonicalMedia_.createdAt)
             .build()
@@ -353,13 +353,17 @@ class HomeContentRepositoryAdapter @Inject constructor(
      *
      * Clips are:
      * - From Telegram source only
+     * - MediaType is CLIP (short-form video content)
      * - No TMDB ID (not a recognized movie/series)
-     * - Typically short duration
+     * 
+     * NOTE: Items without TMDB ID but with MOVIE/SERIES mediaType should NOT
+     * appear here - they belong in Movies/Series rows even without enrichment.
      */
     override fun observeClips(): Flow<List<HomeMediaItem>> {
-        // Query canonical media: Telegram source + no TMDB ID
-        val query = canonicalMediaBox.query()
-            .isNull(ObxCanonicalMedia_.tmdbId)
+        // Query canonical media: mediaType = CLIP (short-form content only)
+        val query = canonicalMediaBox.query(
+            ObxCanonicalMedia_.mediaType.equal("CLIP")
+        )
             .orderDesc(ObxCanonicalMedia_.createdAt)
             .build()
 
@@ -368,19 +372,23 @@ class HomeContentRepositoryAdapter @Inject constructor(
                 val now = System.currentTimeMillis()
                 val sevenDaysAgo = now - SEVEN_DAYS_MS
                 
-                // Filter to only Telegram sources - no limit, LazyRow handles virtualization
+                // No limit - LazyRow handles virtualization
                 canonicalMediaList
-                    .filter { canonical ->
-                        val hasTelegramSource = canonical.sources.any { 
-                            it.sourceType.uppercase() == "TELEGRAM" 
-                        }
-                        hasTelegramSource
-                    }
                     .map { canonical ->
+                        val sourcesLoaded = canonical.sources
+                        val bestSource = if (sourcesLoaded.isEmpty()) {
+                            SourceType.TELEGRAM
+                        } else {
+                            selectBestSourceType(sourcesLoaded)
+                        }
                         canonical.toHomeMediaItem(
                             isNew = canonical.createdAt >= sevenDaysAgo,
-                            navigationSource = SourceType.TELEGRAM,
-                            sourceTypes = listOf(SourceType.TELEGRAM)
+                            navigationSource = bestSource,
+                            sourceTypes = if (sourcesLoaded.isEmpty()) {
+                                listOf(SourceType.TELEGRAM)
+                            } else {
+                                extractAllSourceTypes(sourcesLoaded)
+                            }
                         )
                     }
             }
@@ -490,13 +498,16 @@ private fun ObxCanonicalMedia.toHomeMediaItem(
     navigationSource: SourceType = SourceType.UNKNOWN,
     sourceTypes: List<SourceType> = listOf(navigationSource)
 ): HomeMediaItem {
+    // Prefer the full mediaType field over the legacy kind field
+    val effectiveMediaType = mediaType.toMediaTypeEnum()
+    
     return HomeMediaItem(
         id = canonicalKey,
         title = canonicalTitle,
         poster = poster,
         placeholderThumbnail = thumbnail,
         backdrop = backdrop,
-        mediaType = kind.toMediaType(),
+        mediaType = effectiveMediaType,
         sourceType = navigationSource,
         sourceTypes = sourceTypes,
         resumePosition = 0L,
@@ -511,7 +522,25 @@ private fun ObxCanonicalMedia.toHomeMediaItem(
 }
 
 /**
- * Converts ObxCanonicalMedia.kind string to MediaType.
+ * Converts ObxCanonicalMedia.mediaType string to MediaType enum.
+ * Falls back to kind-based conversion for legacy data.
+ */
+private fun String.toMediaTypeEnum(): MediaType = when (this.uppercase()) {
+    "MOVIE" -> MediaType.MOVIE
+    "SERIES" -> MediaType.SERIES
+    "SERIES_EPISODE" -> MediaType.SERIES_EPISODE
+    "LIVE" -> MediaType.LIVE
+    "CLIP" -> MediaType.CLIP
+    "AUDIOBOOK" -> MediaType.AUDIOBOOK
+    "MUSIC" -> MediaType.MUSIC
+    "PODCAST" -> MediaType.PODCAST
+    // Legacy kind-based fallback
+    "EPISODE" -> MediaType.SERIES_EPISODE
+    else -> MediaType.UNKNOWN
+}
+
+/**
+ * Converts ObxCanonicalMedia.kind string to MediaType (legacy support).
  */
 private fun String.toMediaType(): MediaType = when (this.lowercase()) {
     "movie" -> MediaType.MOVIE

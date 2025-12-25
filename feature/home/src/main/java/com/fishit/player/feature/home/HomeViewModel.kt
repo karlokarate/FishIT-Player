@@ -279,16 +279,18 @@ class HomeViewModel @Inject constructor(
     private val _isSearchVisible = MutableStateFlow(false)
 
     /**
-     * Filtered state that applies search query and genre filter to content.
+     * Filtered state that applies search query, genre filter, and search visibility.
      * 
      * This is the primary state to use in UI when filtering is desired.
+     * Combines 4 flows: base state + searchQuery + selectedGenre + isSearchVisible
      */
     val filteredState: StateFlow<HomeState> = combine(
         state,
         _searchQuery,
-        _selectedGenre
-    ) { currentState, query, genre ->
-        if (query.isBlank() && genre == GenreFilter.ALL) {
+        _selectedGenre,
+        _isSearchVisible
+    ) { currentState, query, genre, isSearchVisible ->
+        val baseState = if (query.isBlank() && genre == GenreFilter.ALL) {
             currentState
         } else {
             currentState.copy(
@@ -297,11 +299,15 @@ class HomeViewModel @Inject constructor(
                 moviesItems = filterItems(currentState.moviesItems, query, genre),
                 seriesItems = filterItems(currentState.seriesItems, query, genre),
                 clipsItems = filterItems(currentState.clipsItems, query, genre),
-                xtreamLiveItems = filterItems(currentState.xtreamLiveItems, query, genre),
-                searchQuery = query,
-                selectedGenre = genre
+                xtreamLiveItems = filterItems(currentState.xtreamLiveItems, query, genre)
             )
         }
+        // Always update search/filter state from flows
+        baseState.copy(
+            searchQuery = query,
+            selectedGenre = genre,
+            isSearchVisible = isSearchVisible
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

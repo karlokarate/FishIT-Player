@@ -1,8 +1,15 @@
 package com.fishit.player.v2.navigation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -79,9 +87,9 @@ fun AppNavHost(
             composable(Routes.HOME) {
                 HomeScreen(
                     onItemClick = { item ->
-                        if (item.sourceType == SourceType.XTREAM &&
-                            (item.mediaType == MediaType.LIVE || item.mediaType == MediaType.MOVIE)
-                        ) {
+                        // Only LIVE content goes directly to player
+                        // All other content (including Movies) goes to DetailScreen first
+                        if (item.mediaType == MediaType.LIVE) {
                             navController.navigate(
                                 Routes.player(
                                     mediaId = item.navigationId,
@@ -221,11 +229,27 @@ private fun PlayerNavScreen(
             }
 
         state.error != null -> {
-            LaunchedEffect(state.error) {
-                onBack()
-            }
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = state.error ?: "Unable to start playback")
+            // Show error with retry option instead of auto-navigating back
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = state.error ?: "Unable to start playback",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { viewModel.load(mediaId, sourceType) }) {
+                            Text("Retry")
+                        }
+                        Button(onClick = onBack) {
+                            Text("Back")
+                        }
+                    }
+                }
             }
         }
 

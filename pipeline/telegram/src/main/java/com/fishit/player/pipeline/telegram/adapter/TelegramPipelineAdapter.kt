@@ -184,7 +184,8 @@ private fun TgChat.toChatInfo(): TelegramChatInfo =
         TelegramChatInfo(chatId = id, title = title ?: "", type = type, memberCount = memberCount)
 
 /**
- * Convert TgMessage to TelegramMediaItem if it contains media. Returns null for non-media messages.
+ * Convert TgMessage to TelegramMediaItem if it contains PLAYABLE media. 
+ * Returns null for non-media messages and non-playable content (photos, stickers, etc.).
  *
  * ## v2 remoteId-First Architecture
  *
@@ -192,6 +193,17 @@ private fun TgChat.toChatInfo(): TelegramChatInfo =
  * - Only `remoteId` is stored (stable across sessions)
  * - `fileId` and `uniqueId` are NOT stored (volatile/redundant)
  * - Uses `thumbRemoteId` for thumbnail references
+ *
+ * ## Media Filtering (v2.3)
+ *
+ * Only PLAYABLE media types are returned:
+ * - VIDEO: Video files, animations, video notes
+ * - AUDIO: Audio files, voice notes
+ * - DOCUMENT: Only if MIME type indicates video/audio
+ *
+ * EXCLUDED from catalog (not playable as streams):
+ * - PHOTO: Static images are not playable media
+ * - Stickers, polls, contacts, etc.
  */
 private fun TgMessage.toMediaItem(): TelegramMediaItem? {
         val content = content ?: return null
@@ -273,34 +285,9 @@ private fun TgMessage.toMediaItem(): TelegramMediaItem? {
                                 date = timestampMs
                         )
                 is TgContent.Photo -> {
-                        val bestSize = content.sizes.maxByOrNull { it.width * it.height }
-                        if (bestSize == null) return null
-
-                        TelegramMediaItem(
-                                id = id,
-                                chatId = chatId,
-                                messageId = id,
-                                mediaType = TelegramMediaType.PHOTO,
-                                remoteId = bestSize.remoteId,
-                                title = content.caption ?: "",
-                                caption = content.caption,
-                                width = bestSize.width,
-                                height = bestSize.height,
-                                sizeBytes = bestSize.fileSize,
-                                photoSizes =
-                                        content.sizes.map { size ->
-                                                PipelinePhotoSize(
-                                                        width = size.width,
-                                                        height = size.height,
-                                                        remoteId = size.remoteId,
-                                                        sizeBytes = size.fileSize
-                                                )
-                                        },
-                                minithumbnailBytes = content.minithumbnail?.data,
-                                minithumbnailWidth = content.minithumbnail?.width,
-                                minithumbnailHeight = content.minithumbnail?.height,
-                                date = timestampMs
-                        )
+                        // EXCLUDED: Photos are not playable media
+                        // They are only used as poster images in Structured Bundles
+                        null
                 }
                 is TgContent.Animation ->
                         TelegramMediaItem(
