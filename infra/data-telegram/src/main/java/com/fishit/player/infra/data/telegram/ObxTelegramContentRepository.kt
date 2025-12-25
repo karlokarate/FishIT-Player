@@ -227,8 +227,19 @@ class ObxTelegramContentRepository @Inject constructor(
         )
     }
 
+    /**
+     * Convert RawMediaMetadata to ObxTelegramMessage entity.
+     *
+     * Extracts remoteId from ImageRef.TelegramThumb to persist thumbnail references.
+     * Per TELEGRAM_ID_ARCHITECTURE_CONTRACT.md: Only remoteId is stored; fileId resolved at runtime.
+     */
     private fun RawMediaMetadata.toObxEntity(): ObxTelegramMessage? {
         val (chatId, messageId) = parseSourceId(sourceId) ?: return null
+
+        // Extract remoteId from ImageRef.TelegramThumb for poster/thumbnail
+        val posterRemoteId = (poster as? ImageRef.TelegramThumb)?.remoteId
+        val thumbRemoteId = (thumbnail as? ImageRef.TelegramThumb)?.remoteId
+            ?: posterRemoteId // Fallback: use poster as thumbnail if no separate thumbnail
 
         return ObxTelegramMessage(
             chatId = chatId,
@@ -242,6 +253,9 @@ class ObxTelegramContentRepository @Inject constructor(
             durationSecs = durationMs?.let { (it / 1000).toInt() },
             isSeries = mediaType == MediaType.SERIES_EPISODE,
             date = System.currentTimeMillis() / 1000,
+            // Persist thumbnail references for UI display
+            posterRemoteId = posterRemoteId,
+            thumbRemoteId = thumbRemoteId,
             // Persist external IDs for canonical identity
             tmdbId = externalIds.tmdb?.id?.toString(),
             imdbId = externalIds.imdbId

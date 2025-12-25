@@ -1,9 +1,13 @@
 package com.fishit.player.feature.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,9 +25,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -31,6 +38,7 @@ import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
@@ -39,6 +47,8 @@ import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,9 +56,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.catalogsync.SourceActivationSnapshot
@@ -83,7 +99,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    // Use filteredState for search/filter support
+    val state by viewModel.filteredState.collectAsState()
     val dimens = LocalFishDimens.current
 
     Box(
@@ -92,13 +109,30 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar with sync indicator
+            // Top Bar with sync indicator and search button
             HomeTopBar(
                 syncState = state.syncState,
+                isSearchActive = state.isSearchVisible || state.isFilterActive,
+                onSearchClick = viewModel::toggleSearch,
                 onRefreshClick = viewModel::refresh,
                 onSettingsClick = onSettingsClick,
                 onDebugClick = onDebugClick
             )
+
+            // Search & Filter Panel
+            AnimatedVisibility(
+                visible = state.isSearchVisible,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                SearchFilterPanel(
+                    searchQuery = state.searchQuery,
+                    selectedGenre = state.selectedGenre,
+                    onSearchQueryChange = viewModel::setSearchQuery,
+                    onGenreSelected = viewModel::setGenreFilter,
+                    onClearFilters = viewModel::clearFilters
+                )
+            }
 
             // Content
             when {
@@ -128,6 +162,8 @@ fun HomeScreen(
 @Composable
 private fun HomeTopBar(
     syncState: SyncUiState,
+    isSearchActive: Boolean,
+    onSearchClick: () -> Unit,
     onRefreshClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onDebugClick: () -> Unit
@@ -165,6 +201,15 @@ private fun HomeTopBar(
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Search Button with active indicator
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = if (isSearchActive) FishColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             IconButton(onClick = onRefreshClick) {
                 Icon(
                     Icons.Default.Refresh,
@@ -267,6 +312,144 @@ private fun com.fishit.player.core.catalogsync.SyncFailureReason.toDisplayString
         com.fishit.player.core.catalogsync.SyncFailureReason.PERMISSION_MISSING -> "Permission missing"
         com.fishit.player.core.catalogsync.SyncFailureReason.NETWORK_GUARD -> "Network unavailable"
         com.fishit.player.core.catalogsync.SyncFailureReason.UNKNOWN -> "Sync failed"
+    }
+}
+
+/**
+ * Search and Genre Filter Panel
+ * 
+ * Provides:
+ * - Text search field (searches title + year)
+ * - Genre filter chips (horizontal scrollable row)
+ * - Clear filters button
+ */
+@Composable
+private fun SearchFilterPanel(
+    searchQuery: String,
+    selectedGenre: GenreFilter,
+    onSearchQueryChange: (String) -> Unit,
+    onGenreSelected: (GenreFilter) -> Unit,
+    onClearFilters: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dimens = LocalFishDimens.current
+    val focusRequester = remember { FocusRequester() }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .padding(horizontal = dimens.contentPaddingHorizontal, vertical = 12.dp)
+    ) {
+        // Search Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Search TextField
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(
+                        width = 1.dp,
+                        color = if (searchQuery.isNotEmpty()) FishColors.Primary else MaterialTheme.colorScheme.outline,
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester),
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
+                        ),
+                        singleLine = true,
+                        cursorBrush = SolidColor(FishColors.Primary),
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = "Suche nach Titel, Jahr...",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onSearchQueryChange("") },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "Clear search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Clear All Button (only visible when filters are active)
+            if (searchQuery.isNotEmpty() || selectedGenre != GenreFilter.ALL) {
+                IconButton(onClick = onClearFilters) {
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = "Clear all filters",
+                        tint = FishColors.Error
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Genre Filter Chips
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(GenreFilter.all) { genre ->
+                FilterChip(
+                    selected = selectedGenre == genre,
+                    onClick = { onGenreSelected(genre) },
+                    label = {
+                        Text(
+                            text = genre.displayName,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = FishColors.Primary,
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+        }
     }
 }
 
@@ -389,6 +572,11 @@ private fun MediaRow(
     val dimens = LocalFishDimens.current
     val listState = rememberLazyListState()
 
+    // Count items per source type
+    val telegramCount = items.count { it.sourceType == SourceType.TELEGRAM }
+    val xtreamCount = items.count { it.sourceType == SourceType.XTREAM }
+    val otherCount = items.size - telegramCount - xtreamCount
+
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -413,10 +601,11 @@ private fun MediaRow(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "(${items.size})",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            // Source-specific counts with colors
+            SourceCountBadge(
+                telegramCount = telegramCount,
+                xtreamCount = xtreamCount,
+                otherCount = otherCount
             )
         }
 
@@ -664,6 +853,123 @@ private fun buildActiveSourcesText(activeSources: Set<SourceId>): String {
         1 -> "Fetching from ${sourceNames.first()}"
         2 -> "Fetching from ${sourceNames[0]} and ${sourceNames[1]}"
         else -> "Fetching from ${sourceNames.dropLast(1).joinToString(", ")} and ${sourceNames.last()}"
+    }
+}
+
+/**
+ * Displays source-specific counts in a compact format.
+ * 
+ * Shows counts like "848/442" with:
+ * - Telegram count in blue (FishColors.SourceTelegram)
+ * - Xtream count in red (FishColors.SourceXtream)
+ * - Other counts in gray (if present)
+ * 
+ * Examples:
+ * - "848/442" (848 from Telegram, 442 from Xtream)
+ * - "848" (only Telegram)
+ * - "442" (only Xtream)
+ * - "(123)" (only other sources, in gray)
+ */
+@Composable
+private fun SourceCountBadge(
+    telegramCount: Int,
+    xtreamCount: Int,
+    otherCount: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val hasTelegram = telegramCount > 0
+        val hasXtream = xtreamCount > 0
+        val hasOther = otherCount > 0
+
+        Text(
+            text = "(",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        when {
+            // Both Telegram and Xtream
+            hasTelegram && hasXtream -> {
+                Text(
+                    text = "$telegramCount",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FishColors.SourceTelegram
+                )
+                Text(
+                    text = "/",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "$xtreamCount",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FishColors.SourceXtream
+                )
+                if (hasOther) {
+                    Text(
+                        text = "+$otherCount",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            // Only Telegram
+            hasTelegram -> {
+                Text(
+                    text = "$telegramCount",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FishColors.SourceTelegram
+                )
+                if (hasOther) {
+                    Text(
+                        text = "+$otherCount",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            // Only Xtream
+            hasXtream -> {
+                Text(
+                    text = "$xtreamCount",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = FishColors.SourceXtream
+                )
+                if (hasOther) {
+                    Text(
+                        text = "+$otherCount",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            // Only other sources
+            hasOther -> {
+                Text(
+                    text = "$otherCount",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            // Empty (shouldn't happen but handle gracefully)
+            else -> {
+                Text(
+                    text = "0",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Text(
+            text = ")",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

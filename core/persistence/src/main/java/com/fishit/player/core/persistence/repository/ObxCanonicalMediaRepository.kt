@@ -6,6 +6,7 @@ import com.fishit.player.core.model.MediaFormat
 import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaQuality
 import com.fishit.player.core.model.MediaSourceRef
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.ids.PipelineItemId
@@ -81,6 +82,9 @@ constructor(
 
                         val now = System.currentTimeMillis()
 
+                        // Prefer normalized.tmdb (typed ref) over externalIds.tmdb (legacy aggregate)
+                        val effectiveTmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
+
                         if (existing != null) {
                                 // Update existing entry with any new metadata
                                 val updated =
@@ -88,11 +92,11 @@ constructor(
                                                 canonicalTitle = normalized.canonicalTitle,
                                                 canonicalTitleLower =
                                                         normalized.canonicalTitle.lowercase(),
+                                                mediaType = normalized.mediaType.name,
                                                 year = normalized.year ?: existing.year,
                                                 season = normalized.season ?: existing.season,
                                                 episode = normalized.episode ?: existing.episode,
-                                                tmdbId = normalized.externalIds.tmdb?.id?.toString()
-                                                                ?: existing.tmdbId,
+                                                tmdbId = effectiveTmdbId ?: existing.tmdbId,
                                                 imdbId = normalized.externalIds.imdbId
                                                                 ?: existing.imdbId,
                                                 tvdbId = normalized.externalIds.tvdbId
@@ -127,14 +131,14 @@ constructor(
                                         ObxCanonicalMedia(
                                                 canonicalKey = canonicalKey,
                                                 kind = kind,
+                                                mediaType = normalized.mediaType.name,
                                                 canonicalTitle = normalized.canonicalTitle,
                                                 canonicalTitleLower =
                                                         normalized.canonicalTitle.lowercase(),
                                                 year = normalized.year,
                                                 season = normalized.season,
                                                 episode = normalized.episode,
-                                                tmdbId =
-                                                        normalized.externalIds.tmdb?.id?.toString(),
+                                                tmdbId = effectiveTmdbId,
                                                 imdbId = normalized.externalIds.imdbId,
                                                 tvdbId = normalized.externalIds.tvdbId,
                                                 // Pipeline images (from Telegram/Xtream)
@@ -891,8 +895,9 @@ constructor(
         // ========== Private Helpers ==========
 
         private fun generateCanonicalKey(normalized: NormalizedMediaMetadata): String {
-                // Priority 1: TMDB ID
-                normalized.externalIds.tmdb?.let { tmdbRef ->
+                // Priority 1: TMDB ID (prefer typed tmdb over externalIds.tmdb)
+                val effectiveTmdbRef = normalized.tmdb ?: normalized.externalIds.tmdb
+                effectiveTmdbRef?.let { tmdbRef ->
                         return CanonicalKeyGenerator.fromTmdbId(tmdbRef)
                 }
 
@@ -910,12 +915,18 @@ constructor(
                 canonical: ObxCanonicalMedia
         ): CanonicalMediaWithSources? {
                 val kind = if (canonical.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
+                val mediaType = try {
+                        MediaType.valueOf(canonical.mediaType)
+                } catch (e: Exception) {
+                        MediaType.UNKNOWN
+                }
                 val sources = canonical.sources.map { toMediaSourceRef(it) }
 
                 return CanonicalMediaWithSources(
                         canonicalId =
                                 CanonicalMediaId(kind, canonical.canonicalKey.asCanonicalId()),
                         canonicalTitle = canonical.canonicalTitle,
+                        mediaType = mediaType,
                         year = canonical.year,
                         season = canonical.season,
                         episode = canonical.episode,

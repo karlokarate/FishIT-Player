@@ -4,6 +4,7 @@ import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaSourceRef
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.ids.CanonicalId
 import com.fishit.player.core.model.ids.PipelineItemId
@@ -325,6 +326,7 @@ interface CanonicalMediaRepository {
 data class CanonicalMediaWithSources(
     val canonicalId: CanonicalMediaId,
     val canonicalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
     val year: Int?,
     val season: Int?,
     val episode: Int?,

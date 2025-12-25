@@ -50,6 +50,8 @@ data class ObxCanonicalMedia(
         @Unique @Index var canonicalKey: String = "",
         /** Media kind: "movie" or "episode" */
         @Index var kind: String = "movie",
+        /** Media type: MOVIE, SERIES, SERIES_EPISODE, LIVE, CLIP, AUDIOBOOK, MUSIC, PODCAST, UNKNOWN */
+        @Index var mediaType: String = "UNKNOWN",
         /** Normalized/cleaned title */
         @Index var canonicalTitle: String = "",
         /** Lowercase title for case-insensitive search */

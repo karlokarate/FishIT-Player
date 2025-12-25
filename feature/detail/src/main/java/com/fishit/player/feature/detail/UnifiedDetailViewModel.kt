@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
+import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -232,6 +234,46 @@ constructor(
         val media = _state.value.media ?: return emptyList()
         return useCases.findSourcesWithLanguage(media.sources, language)
     }
+
+    // ========== Series-specific methods ==========
+
+    /** Select a season for episode display. */
+    fun selectSeason(season: Int) {
+        _state.update { it.copy(selectedSeason = season) }
+    }
+
+    /** Play a specific episode. */
+    fun playEpisode(episode: DetailEpisodeItem) {
+        val source = episode.sources.firstOrNull() ?: return
+        viewModelScope.launch {
+            _events.emit(
+                UnifiedDetailEvent.StartPlayback(
+                    canonicalId = episode.canonicalId,
+                    source = source,
+                    resumePositionMs = _state.value.episodeResumes[episode.id]?.positionMs ?: 0,
+                )
+            )
+        }
+    }
+
+    // ========== Live-specific methods ==========
+
+    /** Start live stream playback (no resume for live content). */
+    fun playLive() {
+        val currentState = _state.value
+        val source = currentState.selectedSource ?: return
+        val media = currentState.media ?: return
+
+        viewModelScope.launch {
+            _events.emit(
+                UnifiedDetailEvent.StartPlayback(
+                    canonicalId = media.canonicalId,
+                    source = source,
+                    resumePositionMs = 0, // Live always starts "now"
+                )
+            )
+        }
+    }
 }
 
 /** State for unified detail screen. */
@@ -243,7 +285,42 @@ data class UnifiedDetailState(
         val selectedSource: MediaSourceRef? = null,
         val sourceGroups: List<SourceGroup> = emptyList(),
         val showSourcePicker: Boolean = false,
+        // Series-specific state
+        val seasons: List<Int> = emptyList(),
+        val selectedSeason: Int? = null,
+        val episodes: List<DetailEpisodeItem> = emptyList(),
+        val episodeResumes: Map<String, CanonicalResumeInfo> = emptyMap(),
+        // Live-specific state
+        val liveNowPlaying: LiveProgramInfo? = null,
 ) {
+    /** Effective media type for UI rendering */
+    val effectiveMediaType: MediaType
+        get() = media?.mediaType ?: MediaType.UNKNOWN
+
+    /** Whether this is a series with episodes */
+    val isSeries: Boolean
+        get() = effectiveMediaType == MediaType.SERIES
+
+    /** Whether this is a series episode */
+    val isSeriesEpisode: Boolean
+        get() = effectiveMediaType == MediaType.SERIES_EPISODE
+
+    /** Whether this is live content */
+    val isLive: Boolean
+        get() = effectiveMediaType == MediaType.LIVE
+
+    /** Whether this is audio content (audiobook, podcast, music) */
+    val isAudio: Boolean
+        get() = effectiveMediaType in listOf(MediaType.AUDIOBOOK, MediaType.PODCAST, MediaType.MUSIC)
+
+    /** Episodes for the currently selected season */
+    val displayedEpisodes: List<DetailEpisodeItem>
+        get() = if (selectedSeason != null) {
+            episodes.filter { it.season == selectedSeason }
+        } else {
+            episodes
+        }
+
     /** Whether media has multiple sources */
     val hasMultipleSources: Boolean
         get() = (media?.sources?.size ?: 0) > 1
@@ -314,3 +391,14 @@ data class ResumeCalculation(
     val progressPercentInt: Int
         get() = (progressPercent * 100).toInt()
 }
+
+/**
+ * Live TV program info for EPG display.
+ */
+data class LiveProgramInfo(
+    val title: String,
+    val description: String? = null,
+    val startTime: String? = null,
+    val endTime: String? = null,
+    val isLive: Boolean = true,
+)

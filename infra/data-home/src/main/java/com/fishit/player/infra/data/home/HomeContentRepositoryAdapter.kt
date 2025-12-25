@@ -132,10 +132,12 @@ class HomeContentRepositoryAdapter @Inject constructor(
                     return@map emptyList()
                 }
                 
-                // No limit - LazyRow handles virtualization
+                // Apply Recently Added limit (200 max) to prevent overwhelming scroll
+                val limitedList = canonicalMediaList.take(RECENTLY_ADDED_LIMIT)
+                
                 // Build map of canonical key -> best source type
                 // Use sources backlink on canonical entity (no extra query needed)
-                canonicalMediaList.map { canonical ->
+                limitedList.map { canonical ->
                     // Access the eager-loaded sources ToMany relation
                     val sourcesLoaded = canonical.sources
                     val bestSource = if (sourcesLoaded.isEmpty()) {
@@ -397,6 +399,12 @@ class HomeContentRepositoryAdapter @Inject constructor(
          */
         private const val CONTINUE_WATCHING_LIMIT = 50
         
+        /**
+         * Maximum items for Recently Added row.
+         * Limited to prevent overwhelming scroll on large catalogs.
+         */
+        private const val RECENTLY_ADDED_LIMIT = 200
+        
         /** Seven days in milliseconds for "new" badge */
         private const val SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000L
         
@@ -436,6 +444,7 @@ class HomeContentRepositoryAdapter @Inject constructor(
             isNew = false, // Continue watching items are not "new"
             year = canonical.year,
             rating = canonical.rating?.toFloat(),
+            genres = canonical.genres,
             navigationId = canonical.canonicalKey,
             navigationSource = sourceType
         )
@@ -461,6 +470,7 @@ private fun RawMediaMetadata.toHomeMediaItem(): HomeMediaItem {
         sourceType = sourceType,
         duration = durationMs ?: 0L,
         year = year,
+        genres = genres,
         navigationId = sourceId,
         navigationSource = sourceType
     )
@@ -494,6 +504,7 @@ private fun ObxCanonicalMedia.toHomeMediaItem(
         isNew = isNew,
         year = year,
         rating = rating?.toFloat(),
+        genres = genres,
         navigationId = canonicalKey,
         navigationSource = navigationSource
     )

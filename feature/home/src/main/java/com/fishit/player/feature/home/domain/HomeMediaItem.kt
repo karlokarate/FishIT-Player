@@ -45,6 +45,8 @@ data class HomeMediaItem(
     val isNew: Boolean = false,
     val year: Int? = null,
     val rating: Float? = null,
+    /** Comma-separated genres for filtering (e.g., "Action, Drama, Horror") */
+    val genres: String? = null,
     // Navigation data
     val navigationId: String,
     val navigationSource: SourceType
