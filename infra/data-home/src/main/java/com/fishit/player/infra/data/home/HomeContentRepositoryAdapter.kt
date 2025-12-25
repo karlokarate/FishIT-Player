@@ -128,16 +128,14 @@ class HomeContentRepositoryAdapter @Inject constructor(
                 val now = System.currentTimeMillis()
                 val sevenDaysAgo = now - SEVEN_DAYS_MS
                 
-                // Take top N items first (FireTV-safe limit)
-                val topItems = canonicalMediaList.take(RECENTLY_ADDED_LIMIT)
-                
-                if (topItems.isEmpty()) {
+                if (canonicalMediaList.isEmpty()) {
                     return@map emptyList()
                 }
                 
+                // No limit - LazyRow handles virtualization
                 // Build map of canonical key -> best source type
                 // Use sources backlink on canonical entity (no extra query needed)
-                topItems.map { canonical ->
+                canonicalMediaList.map { canonical ->
                     // Access the eager-loaded sources ToMany relation
                     val sourcesLoaded = canonical.sources
                     val bestSource = if (sourcesLoaded.isEmpty()) {
@@ -145,10 +143,16 @@ class HomeContentRepositoryAdapter @Inject constructor(
                     } else {
                         selectBestSourceType(sourcesLoaded)
                     }
+                    val allSourceTypes = if (sourcesLoaded.isEmpty()) {
+                        listOf(SourceType.UNKNOWN)
+                    } else {
+                        extractAllSourceTypes(sourcesLoaded)
+                    }
                     
                     canonical.toHomeMediaItem(
                         isNew = canonical.createdAt >= sevenDaysAgo,
-                        navigationSource = bestSource
+                        navigationSource = bestSource,
+                        sourceTypes = allSourceTypes
                     )
                 }
             }
@@ -171,6 +175,32 @@ class HomeContentRepositoryAdapter @Inject constructor(
             "TELEGRAM" in sourceTypes -> SourceType.TELEGRAM
             "IO" in sourceTypes -> SourceType.IO
             else -> SourceType.UNKNOWN
+        }
+    }
+
+    /**
+     * Extract all distinct source types from a canonical media's sources.
+     *
+     * Used for multi-source gradient border display on Home tiles.
+     * Returns list sorted by priority (XTREAM > TELEGRAM > IO) for consistent gradient direction.
+     */
+    private fun extractAllSourceTypes(sources: io.objectbox.relation.ToMany<ObxMediaSourceRef>): List<SourceType> {
+        val sourceTypes = sources.mapNotNull { ref ->
+            when (ref.sourceType.uppercase()) {
+                "XTREAM" -> SourceType.XTREAM
+                "TELEGRAM" -> SourceType.TELEGRAM
+                "IO" -> SourceType.IO
+                else -> null
+            }
+        }.distinct()
+        // Sort by priority for consistent gradient: XTREAM (left/red) -> TELEGRAM (right/blue)
+        return sourceTypes.sortedByDescending { source ->
+            when (source) {
+                SourceType.XTREAM -> 3
+                SourceType.TELEGRAM -> 2
+                SourceType.IO -> 1
+                else -> 0
+            }
         }
     }
 
@@ -210,17 +240,169 @@ class HomeContentRepositoryAdapter @Inject constructor(
             }
     }
 
+    // ==================== Cross-Pipeline Content Methods ====================
+
+    /**
+     * Observe all movies from all sources (cross-pipeline).
+     *
+     * Queries ObxCanonicalMedia where kind = "movie".
+     * Items from Xtream and Telegram are unified by canonical key.
+     */
+    override fun observeMovies(): Flow<List<HomeMediaItem>> {
+        val query = canonicalMediaBox.query(
+            ObxCanonicalMedia_.kind.equal("movie")
+        )
+            .orderDesc(ObxCanonicalMedia_.createdAt)
+            .build()
+
+        return query.asFlow()
+            .map { canonicalMediaList ->
+                val now = System.currentTimeMillis()
+                val sevenDaysAgo = now - SEVEN_DAYS_MS
+                
+                // No limit - LazyRow handles virtualization
+                canonicalMediaList.map { canonical ->
+                    val sourcesLoaded = canonical.sources
+                    val bestSource = if (sourcesLoaded.isEmpty()) {
+                        SourceType.UNKNOWN
+                    } else {
+                        selectBestSourceType(sourcesLoaded)
+                    }
+                    val allSourceTypes = if (sourcesLoaded.isEmpty()) {
+                        listOf(SourceType.UNKNOWN)
+                    } else {
+                        extractAllSourceTypes(sourcesLoaded)
+                    }
+                    
+                    canonical.toHomeMediaItem(
+                        isNew = canonical.createdAt >= sevenDaysAgo,
+                        navigationSource = bestSource,
+                        sourceTypes = allSourceTypes
+                    )
+                }
+            }
+            .catch { throwable ->
+                UnifiedLog.e(TAG, throwable) { "Failed to observe movies" }
+                emit(emptyList())
+            }
+    }
+
+    /**
+     * Observe all series from all sources (cross-pipeline).
+     *
+     * Queries ObxCanonicalMedia where kind = "episode" or "series".
+     * Groups by series (distinct by canonicalTitle).
+     */
+    override fun observeSeries(): Flow<List<HomeMediaItem>> {
+        // Query for series/episodes - we'll dedupe by series title
+        // Use oneOf() for ObjectBox "IN" clause equivalent
+        val query = canonicalMediaBox.query(
+            ObxCanonicalMedia_.kind.oneOf(arrayOf("episode", "series"))
+        )
+            .orderDesc(ObxCanonicalMedia_.createdAt)
+            .build()
+
+        return query.asFlow()
+            .map { canonicalMediaList ->
+                val now = System.currentTimeMillis()
+                val sevenDaysAgo = now - SEVEN_DAYS_MS
+                
+                // Dedupe by canonicalTitle to show each series once
+                val seenTitles = mutableSetOf<String>()
+                // No limit - LazyRow handles virtualization
+                canonicalMediaList
+                    .filter { canonical ->
+                        val titleLower = canonical.canonicalTitle.lowercase()
+                        if (titleLower in seenTitles) {
+                            false
+                        } else {
+                            seenTitles.add(titleLower)
+                            true
+                        }
+                    }
+                    .map { canonical ->
+                        val sourcesLoaded = canonical.sources
+                        val bestSource = if (sourcesLoaded.isEmpty()) {
+                            SourceType.UNKNOWN
+                        } else {
+                            selectBestSourceType(sourcesLoaded)
+                        }
+                        val allSourceTypes = if (sourcesLoaded.isEmpty()) {
+                            listOf(SourceType.UNKNOWN)
+                        } else {
+                            extractAllSourceTypes(sourcesLoaded)
+                        }
+                        
+                        canonical.toHomeMediaItem(
+                            isNew = canonical.createdAt >= sevenDaysAgo,
+                            navigationSource = bestSource,
+                            sourceTypes = allSourceTypes
+                        )
+                    }
+            }
+            .catch { throwable ->
+                UnifiedLog.e(TAG, throwable) { "Failed to observe series" }
+                emit(emptyList())
+            }
+    }
+
+    /**
+     * Observe Telegram clips (short videos without TMDB match).
+     *
+     * Clips are:
+     * - From Telegram source only
+     * - No TMDB ID (not a recognized movie/series)
+     * - Typically short duration
+     */
+    override fun observeClips(): Flow<List<HomeMediaItem>> {
+        // Query canonical media: Telegram source + no TMDB ID
+        val query = canonicalMediaBox.query()
+            .isNull(ObxCanonicalMedia_.tmdbId)
+            .orderDesc(ObxCanonicalMedia_.createdAt)
+            .build()
+
+        return query.asFlow()
+            .map { canonicalMediaList ->
+                val now = System.currentTimeMillis()
+                val sevenDaysAgo = now - SEVEN_DAYS_MS
+                
+                // Filter to only Telegram sources - no limit, LazyRow handles virtualization
+                canonicalMediaList
+                    .filter { canonical ->
+                        val hasTelegramSource = canonical.sources.any { 
+                            it.sourceType.uppercase() == "TELEGRAM" 
+                        }
+                        hasTelegramSource
+                    }
+                    .map { canonical ->
+                        canonical.toHomeMediaItem(
+                            isNew = canonical.createdAt >= sevenDaysAgo,
+                            navigationSource = SourceType.TELEGRAM,
+                            sourceTypes = listOf(SourceType.TELEGRAM)
+                        )
+                    }
+            }
+            .catch { throwable ->
+                UnifiedLog.e(TAG, throwable) { "Failed to observe clips" }
+                emit(emptyList())
+            }
+    }
+
     companion object {
         private const val TAG = "HomeContentRepositoryAdapter"
         
-        /** Maximum items for Continue Watching row (FireTV-safe) */
-        private const val CONTINUE_WATCHING_LIMIT = 30
-        
-        /** Maximum items for Recently Added row (FireTV-safe) */
-        private const val RECENTLY_ADDED_LIMIT = 60
+        /**
+         * Maximum items for Continue Watching row.
+         * Keep this limited since it's a "curated" row, not a full catalog.
+         */
+        private const val CONTINUE_WATCHING_LIMIT = 50
         
         /** Seven days in milliseconds for "new" badge */
         private const val SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000L
+        
+        // NOTE: Movies, Series, Clips, Recently Added have NO limits.
+        // The UI uses LazyRow which handles virtualization.
+        // ObjectBox query returns all matching items; Compose only renders visible tiles.
     }
 
     /**
@@ -235,6 +417,11 @@ class HomeContentRepositoryAdapter @Inject constructor(
         canonical: ObxCanonicalMedia
     ): HomeMediaItem {
         val sourceType = resume.lastSourceType?.toSourceType() ?: SourceType.UNKNOWN
+        val allSourceTypes = if (canonical.sources.isEmpty()) {
+            listOf(sourceType)
+        } else {
+            extractAllSourceTypes(canonical.sources)
+        }
         return HomeMediaItem(
             id = canonical.canonicalKey,
             title = canonical.canonicalTitle,
@@ -243,6 +430,7 @@ class HomeContentRepositoryAdapter @Inject constructor(
             backdrop = canonical.backdrop,
             mediaType = canonical.kind.toMediaType(),
             sourceType = sourceType,
+            sourceTypes = allSourceTypes,
             resumePosition = resume.positionMs,
             duration = resume.durationMs,
             isNew = false, // Continue watching items are not "new"
@@ -285,10 +473,12 @@ private fun RawMediaMetadata.toHomeMediaItem(): HomeMediaItem {
  *
  * @param isNew Whether to mark this item as newly added
  * @param navigationSource Deterministic source for navigation (never OTHER)
+ * @param sourceTypes All source types for multi-source gradient border
  */
 private fun ObxCanonicalMedia.toHomeMediaItem(
     isNew: Boolean = false,
-    navigationSource: SourceType = SourceType.UNKNOWN
+    navigationSource: SourceType = SourceType.UNKNOWN,
+    sourceTypes: List<SourceType> = listOf(navigationSource)
 ): HomeMediaItem {
     return HomeMediaItem(
         id = canonicalKey,
@@ -298,6 +488,7 @@ private fun ObxCanonicalMedia.toHomeMediaItem(
         backdrop = backdrop,
         mediaType = kind.toMediaType(),
         sourceType = navigationSource,
+        sourceTypes = sourceTypes,
         resumePosition = 0L,
         duration = durationMs ?: 0L,
         isNew = isNew,

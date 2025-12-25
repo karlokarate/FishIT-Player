@@ -40,36 +40,29 @@ constructor(
     private val _events = MutableSharedFlow<UnifiedDetailEvent>()
     val events = _events.asSharedFlow()
 
+    /**
+     * Load canonical media by smart ID detection.
+     *
+     * This is the PRIMARY method for loading media in the unified detail screen. It intelligently
+     * detects whether the provided ID is:
+     * - A canonical key (e.g., `movie:inception:2010`)
+     * - A source ID (e.g., `msg:123:456`, `xtream:vod:123`)
+     *
+     * And routes to the appropriate lookup method.
+     *
+     * @param mediaId Either a canonical key or source ID string
+     */
+    fun loadByMediaId(mediaId: String) {
+        viewModelScope.launch {
+            useCases.loadBySmartId(mediaId).collect { mediaState -> handleMediaState(mediaState) }
+        }
+    }
+
     /** Load canonical media by canonical ID. */
     fun loadByCanonicalId(canonicalId: CanonicalMediaId) {
         viewModelScope.launch {
             useCases.loadCanonicalMedia(canonicalId).collect { mediaState ->
-                when (mediaState) {
-                    is UnifiedMediaState.Loading -> {
-                        _state.update { it.copy(isLoading = true, error = null) }
-                    }
-                    is UnifiedMediaState.NotFound -> {
-                        _state.update { it.copy(isLoading = false, error = "Media not found") }
-                    }
-                    is UnifiedMediaState.Error -> {
-                        _state.update { it.copy(isLoading = false, error = mediaState.message) }
-                    }
-                    is UnifiedMediaState.Success -> {
-                        _state.update {
-                            it.copy(
-                                    isLoading = false,
-                                    error = null,
-                                    media = mediaState.media,
-                                    resume = mediaState.resume,
-                                    selectedSource = mediaState.selectedSource,
-                                    sourceGroups =
-                                            useCases.sortSourcesForDisplay(
-                                                    mediaState.media.sources
-                                            ),
-                            )
-                        }
-                    }
-                }
+                handleMediaState(mediaState)
             }
         }
     }
@@ -81,32 +74,32 @@ constructor(
      */
     fun loadBySourceId(sourceId: PipelineItemId) {
         viewModelScope.launch {
-            useCases.findBySourceId(sourceId).collect { mediaState ->
-                when (mediaState) {
-                    is UnifiedMediaState.Loading -> {
-                        _state.update { it.copy(isLoading = true, error = null) }
-                    }
-                    is UnifiedMediaState.NotFound -> {
-                        _state.update { it.copy(isLoading = false, error = "Media not found") }
-                    }
-                    is UnifiedMediaState.Error -> {
-                        _state.update { it.copy(isLoading = false, error = mediaState.message) }
-                    }
-                    is UnifiedMediaState.Success -> {
-                        _state.update {
-                            it.copy(
-                                    isLoading = false,
-                                    error = null,
-                                    media = mediaState.media,
-                                    resume = mediaState.resume,
-                                    selectedSource = mediaState.selectedSource,
-                                    sourceGroups =
-                                            useCases.sortSourcesForDisplay(
-                                                    mediaState.media.sources
-                                            ),
-                            )
-                        }
-                    }
+            useCases.findBySourceId(sourceId).collect { mediaState -> handleMediaState(mediaState) }
+        }
+    }
+
+    /** Handle media state update from any load method. */
+    private fun handleMediaState(mediaState: UnifiedMediaState) {
+        when (mediaState) {
+            is UnifiedMediaState.Loading -> {
+                _state.update { it.copy(isLoading = true, error = null) }
+            }
+            is UnifiedMediaState.NotFound -> {
+                _state.update { it.copy(isLoading = false, error = "Media not found") }
+            }
+            is UnifiedMediaState.Error -> {
+                _state.update { it.copy(isLoading = false, error = mediaState.message) }
+            }
+            is UnifiedMediaState.Success -> {
+                _state.update {
+                    it.copy(
+                            isLoading = false,
+                            error = null,
+                            media = mediaState.media,
+                            resume = mediaState.resume,
+                            selectedSource = mediaState.selectedSource,
+                            sourceGroups = useCases.sortSourcesForDisplay(mediaState.media.sources),
+                    )
                 }
             }
         }

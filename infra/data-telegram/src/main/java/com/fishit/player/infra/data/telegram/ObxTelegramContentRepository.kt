@@ -1,9 +1,12 @@
 package com.fishit.player.infra.data.telegram
 
+import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage_
@@ -192,6 +195,22 @@ class ObxTelegramContentRepository @Inject constructor(
             else -> null
         }
 
+        // Build ExternalIds from TMDB/IMDB if available
+        // Per MEDIA_NORMALIZATION_CONTRACT.md: TMDB type is derived from mediaType
+        val externalIds = tmdbId?.toIntOrNull()?.let { id ->
+            val tmdbType = when (derivedMediaType) {
+                MediaType.SERIES_EPISODE -> TmdbMediaType.TV
+                MediaType.MOVIE -> TmdbMediaType.MOVIE
+                else -> TmdbMediaType.MOVIE // Default to MOVIE for unknown
+            }
+            ExternalIds(
+                tmdb = TmdbRef(tmdbType, id),
+                imdbId = imdbId
+            )
+        } ?: imdbId?.let {
+            ExternalIds(imdbId = it)
+        } ?: ExternalIds()
+
         return RawMediaMetadata(
             originalTitle = title ?: caption ?: fileName ?: "Unknown",
             year = year,
@@ -203,7 +222,8 @@ class ObxTelegramContentRepository @Inject constructor(
             sourceId = "msg:$chatId:$messageId",
             mediaType = derivedMediaType,
             thumbnail = thumbnailRef,
-            poster = thumbnailRef
+            poster = thumbnailRef,
+            externalIds = externalIds
         )
     }
 
@@ -221,7 +241,10 @@ class ObxTelegramContentRepository @Inject constructor(
             episodeNumber = episode,
             durationSecs = durationMs?.let { (it / 1000).toInt() },
             isSeries = mediaType == MediaType.SERIES_EPISODE,
-            date = System.currentTimeMillis() / 1000
+            date = System.currentTimeMillis() / 1000,
+            // Persist external IDs for canonical identity
+            tmdbId = externalIds.tmdb?.id?.toString(),
+            imdbId = externalIds.imdbId
         )
     }
 

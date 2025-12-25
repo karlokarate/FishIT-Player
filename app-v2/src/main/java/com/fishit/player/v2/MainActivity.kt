@@ -9,8 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.fishit.player.v2.navigation.AppNavHost
+import com.fishit.player.v2.navigation.PlaybackPendingState
 import com.fishit.player.v2.ui.theme.FishItV2Theme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Main entry activity for FishIT Player v2.
@@ -19,6 +21,9 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     // Contract S-3: Bootstraps are started in Application.onCreate() ONLY
     // No duplicate bootstrap injections or starts here
+
+    @Inject
+    lateinit var playbackPendingState: PlaybackPendingState
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +35,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    AppNavHost()
+                    AppNavHost(playbackPendingState = playbackPendingState)
                 }
             }
         }

@@ -47,10 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.imaging.compose.FishImage
-import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.ids.asPipelineItemId
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
 import com.fishit.player.feature.detail.UnifiedDetailEvent
@@ -68,57 +66,59 @@ import com.fishit.player.feature.detail.UnifiedDetailViewModel
  * - Synopsis/Overview
  *
  * Follows v1 legacy visual style adapted to v2 architecture.
+ *
+ * ## Unified ID Resolution
+ *
+ * The DetailScreen accepts a `mediaId` that can be either:
+ * - A **canonical key** (e.g., `movie:inception:2010`) from Continue Watching, Recently Added
+ * - A **source ID** (e.g., `msg:123:456`, `xtream:vod:123`) from Telegram/Xtream rows
+ *
+ * The ViewModel automatically detects the ID type and routes to the appropriate lookup. This
+ * enables a truly unified detail screen that works regardless of where the user navigated from.
  */
 @Composable
 fun DetailScreen(
-    mediaId: String,
-    sourceType: SourceType,
-    onBack: () -> Unit,
-    onPlayback: (UnifiedDetailEvent.StartPlayback) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: UnifiedDetailViewModel = hiltViewModel()
+        mediaId: String,
+        sourceType: SourceType,
+        onBack: () -> Unit,
+        onPlayback: (UnifiedDetailEvent.StartPlayback) -> Unit,
+        modifier: Modifier = Modifier,
+        viewModel: UnifiedDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Load media on first composition
-    LaunchedEffect(mediaId) {
-        viewModel.loadBySourceId(mediaId.asPipelineItemId())
-    }
+    // Load media on first composition using smart ID detection
+    LaunchedEffect(mediaId) { viewModel.loadByMediaId(mediaId) }
 
     // Handle events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is UnifiedDetailEvent.StartPlayback -> onPlayback(event)
-                else -> { /* Handle other events */ }
+                else -> {
+                    /* Handle other events */
+                }
             }
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when {
             state.isLoading -> {
                 LoadingContent()
             }
             state.error != null -> {
-                ErrorContent(
-                    error = state.error!!,
-                    onBack = onBack
-                )
+                ErrorContent(error = state.error!!, onBack = onBack)
             }
             state.media != null -> {
                 DetailContent(
-                    state = state,
-                    onBack = onBack,
-                    onPlay = viewModel::play,
-                    onResume = viewModel::resume,
-                    onPlayFromStart = viewModel::playFromStart,
-                    onShowSourcePicker = viewModel::showSourcePicker,
-                    onSelectSource = viewModel::selectSource
+                        state = state,
+                        onBack = onBack,
+                        onPlay = viewModel::play,
+                        onResume = viewModel::resume,
+                        onPlayFromStart = viewModel::playFromStart,
+                        onShowSourcePicker = viewModel::showSourcePicker,
+                        onSelectSource = viewModel::selectSource
                 )
             }
         }
@@ -127,112 +127,97 @@ fun DetailScreen(
 
 @Composable
 private fun DetailContent(
-    state: UnifiedDetailState,
-    onBack: () -> Unit,
-    onPlay: () -> Unit,
-    onResume: () -> Unit,
-    onPlayFromStart: () -> Unit,
-    onShowSourcePicker: () -> Unit,
-    onSelectSource: (MediaSourceRef) -> Unit
+        state: UnifiedDetailState,
+        onBack: () -> Unit,
+        onPlay: () -> Unit,
+        onResume: () -> Unit,
+        onPlayFromStart: () -> Unit,
+        onShowSourcePicker: () -> Unit,
+        onSelectSource: (MediaSourceRef) -> Unit
 ) {
     val media = state.media ?: return
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-    ) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
         // Hero Section with backdrop
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             // Backdrop image
             FishImage(
-                imageRef = media.backdrop ?: media.poster,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                    imageRef = media.backdrop ?: media.poster,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
             )
 
             // Gradient overlay for text readability
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.1f),
-                                Color.Black.copy(alpha = 0.7f)
-                            )
-                        )
-                    )
+                    modifier =
+                            Modifier.fillMaxSize()
+                                    .background(
+                                            Brush.verticalGradient(
+                                                    colors =
+                                                            listOf(
+                                                                    Color.Black.copy(alpha = 0.3f),
+                                                                    Color.Black.copy(alpha = 0.1f),
+                                                                    Color.Black.copy(alpha = 0.7f)
+                                                            )
+                                            )
+                                    )
             )
 
             // Back button
             IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(16.dp)
+                    onClick = onBack,
+                    modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
                 )
             }
 
             // Title overlay at bottom
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(24.dp)
-            ) {
+            Column(modifier = Modifier.align(Alignment.BottomStart).padding(24.dp)) {
                 Text(
-                    text = media.canonicalTitle,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                        text = media.canonicalTitle,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Meta chips row
                 MetaChipsRow(
-                    year = media.year,
-                    rating = media.rating?.toFloat(),
-                    durationMs = state.selectedSource?.durationMs ?: media.durationMs,
-                    quality = state.selectedQualityLabel
+                        year = media.year,
+                        rating = media.rating?.toFloat(),
+                        durationMs = state.selectedSource?.durationMs ?: media.durationMs,
+                        quality = state.selectedQualityLabel
                 )
             }
         }
 
         // Content section
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
+        Column(modifier = Modifier.padding(24.dp)) {
             // Source badges if multiple sources
             if (state.hasMultipleSources) {
                 SourceBadgesRow(
-                    sourceTypes = state.availableSourceTypes,
-                    selectedSource = state.selectedSource,
-                    onShowPicker = onShowSourcePicker
+                        sourceTypes = state.availableSourceTypes,
+                        selectedSource = state.selectedSource,
+                        onShowPicker = onShowSourcePicker
                 )
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
             // Action buttons
             ActionButtonsRow(
-                canResume = state.canResume,
-                resumeProgress = state.resumeProgressPercent,
-                onPlay = onPlay,
-                onResume = onResume,
-                onPlayFromStart = onPlayFromStart
+                    canResume = state.canResume,
+                    resumeProgress = state.resumeProgressPercent,
+                    onPlay = onPlay,
+                    onResume = onResume,
+                    onPlayFromStart = onPlayFromStart
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -240,15 +225,15 @@ private fun DetailContent(
             // Overview/Synopsis
             media.plot?.let { overview ->
                 Text(
-                    text = "Overview",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground
+                        text = "Overview",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = overview,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = overview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -259,15 +244,15 @@ private fun DetailContent(
             media.genres?.let { genreString ->
                 if (genreString.isNotEmpty()) {
                     Text(
-                        text = "Genres",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                            text = "Genres",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = genreString,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = genreString,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -279,105 +264,78 @@ private fun DetailContent(
 }
 
 @Composable
-private fun MetaChipsRow(
-    year: Int?,
-    rating: Float?,
-    durationMs: Long?,
-    quality: String?
-) {
+private fun MetaChipsRow(year: Int?, rating: Float?, durationMs: Long?, quality: String?) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
     ) {
-        year?.let {
-            MetaChip(
-                icon = Icons.Default.CalendarToday,
-                text = it.toString()
-            )
-        }
+        year?.let { MetaChip(icon = Icons.Default.CalendarToday, text = it.toString()) }
 
         rating?.let {
             MetaChip(
-                icon = Icons.Default.Star,
-                text = String.format("%.1f", it),
-                iconTint = FishColors.Rating
+                    icon = Icons.Default.Star,
+                    text = String.format("%.1f", it),
+                    iconTint = FishColors.Rating
             )
         }
 
         durationMs?.let {
             val minutes = (it / 60_000).toInt()
-            MetaChip(
-                icon = Icons.Default.Timelapse,
-                text = "${minutes}m"
-            )
+            MetaChip(icon = Icons.Default.Timelapse, text = "${minutes}m")
         }
 
-        quality?.let {
-            MetaChip(
-                icon = Icons.Default.Hd,
-                text = it
-            )
-        }
+        quality?.let { MetaChip(icon = Icons.Default.Hd, text = it) }
     }
 }
 
 @Composable
 private fun MetaChip(
-    icon: ImageVector,
-    text: String,
-    iconTint: Color = Color.White.copy(alpha = 0.8f)
+        icon: ImageVector,
+        text: String,
+        iconTint: Color = Color.White.copy(alpha = 0.8f)
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(FishShapes.Chip)
-            .background(Color.Black.copy(alpha = 0.4f))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                    Modifier.clip(FishShapes.Chip)
+                            .background(Color.Black.copy(alpha = 0.4f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(16.dp)
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White
-        )
+        Text(text = text, style = MaterialTheme.typography.labelMedium, color = Color.White)
     }
 }
 
 @Composable
 private fun SourceBadgesRow(
-    sourceTypes: List<SourceType>,
-    selectedSource: MediaSourceRef?,
-    onShowPicker: () -> Unit
+        sourceTypes: List<SourceType>,
+        selectedSource: MediaSourceRef?,
+        onShowPicker: () -> Unit
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Available from:",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Available from:",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        sourceTypes.forEach { type ->
-            SourceBadgeChip(sourceType = type)
-        }
+        sourceTypes.forEach { type -> SourceBadgeChip(sourceType = type) }
 
         if (sourceTypes.size > 1) {
-            OutlinedButton(
-                onClick = onShowPicker,
-                modifier = Modifier.height(32.dp)
-            ) {
+            OutlinedButton(onClick = onShowPicker, modifier = Modifier.height(32.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = "Pick source",
-                    modifier = Modifier.size(16.dp)
+                        imageVector = Icons.Default.Tune,
+                        contentDescription = "Pick source",
+                        modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Pick", style = MaterialTheme.typography.labelSmall)
@@ -388,24 +346,19 @@ private fun SourceBadgesRow(
 
 @Composable
 private fun ActionButtonsRow(
-    canResume: Boolean,
-    resumeProgress: Int,
-    onPlay: () -> Unit,
-    onResume: () -> Unit,
-    onPlayFromStart: () -> Unit
+        canResume: Boolean,
+        resumeProgress: Int,
+        onPlay: () -> Unit,
+        onResume: () -> Unit,
+        onPlayFromStart: () -> Unit
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
         if (canResume) {
             // Resume button (primary)
             Button(
-                onClick = onResume,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = FishColors.Primary
-                ),
-                modifier = Modifier.weight(1f).height(56.dp)
+                    onClick = onResume,
+                    colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
+                    modifier = Modifier.weight(1f).height(56.dp)
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -414,8 +367,8 @@ private fun ActionButtonsRow(
 
             // Play from start (secondary)
             OutlinedButton(
-                onClick = onPlayFromStart,
-                modifier = Modifier.weight(1f).height(56.dp)
+                    onClick = onPlayFromStart,
+                    modifier = Modifier.weight(1f).height(56.dp)
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -424,11 +377,9 @@ private fun ActionButtonsRow(
         } else {
             // Single play button
             Button(
-                onClick = onPlay,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = FishColors.Primary
-                ),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                    onClick = onPlay,
+                    colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
+                    modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -440,59 +391,38 @@ private fun ActionButtonsRow(
 
 @Composable
 private fun LoadingContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator(
-                color = FishColors.Primary,
-                modifier = Modifier.size(48.dp)
-            )
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(color = FishColors.Primary, modifier = Modifier.size(48.dp))
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Loading details...",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Loading details...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-private fun ErrorContent(
-    error: String,
-    onBack: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "😿",
-                style = MaterialTheme.typography.displayMedium
-            )
+private fun ErrorContent(error: String, onBack: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "😿", style = MaterialTheme.typography.displayMedium)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Couldn't load details",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                    text = "Couldn't load details",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = error,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onBack) {
-                Text("Go Back")
-            }
+            Button(onClick = onBack) { Text("Go Back") }
         }
     }
 }

@@ -36,8 +36,14 @@ data class HomeState(
     val isLoading: Boolean = true,
     val continueWatchingItems: List<HomeMediaItem> = emptyList(),
     val recentlyAddedItems: List<HomeMediaItem> = emptyList(),
-    val telegramMediaItems: List<HomeMediaItem> = emptyList(),
+    // Cross-pipeline unified rows
+    val moviesItems: List<HomeMediaItem> = emptyList(),
+    val seriesItems: List<HomeMediaItem> = emptyList(),
+    val clipsItems: List<HomeMediaItem> = emptyList(),
+    // Source-specific rows
     val xtreamLiveItems: List<HomeMediaItem> = emptyList(),
+    // Legacy rows (for backward compatibility)
+    val telegramMediaItems: List<HomeMediaItem> = emptyList(),
     val xtreamVodItems: List<HomeMediaItem> = emptyList(),
     val xtreamSeriesItems: List<HomeMediaItem> = emptyList(),
     val error: String? = null,
@@ -52,10 +58,10 @@ data class HomeState(
     val hasContent: Boolean
         get() = continueWatchingItems.isNotEmpty() ||
                 recentlyAddedItems.isNotEmpty() ||
-                telegramMediaItems.isNotEmpty() ||
-                xtreamLiveItems.isNotEmpty() ||
-                xtreamVodItems.isNotEmpty() ||
-                xtreamSeriesItems.isNotEmpty()
+                moviesItems.isNotEmpty() ||
+                seriesItems.isNotEmpty() ||
+                clipsItems.isNotEmpty() ||
+                xtreamLiveItems.isNotEmpty()
 }
 
 /**
@@ -66,26 +72,26 @@ data class HomeState(
  * 
  * @property continueWatching Items the user has started watching
  * @property recentlyAdded Recently added items across all sources
- * @property telegramMedia Telegram media items
- * @property xtreamVod Xtream VOD items
- * @property xtreamSeries Xtream series items
+ * @property movies Cross-pipeline movies (Xtream + Telegram)
+ * @property series Cross-pipeline series (Xtream + Telegram)
+ * @property clips Telegram clips (short videos without TMDB match)
  * @property xtreamLive Xtream live channel items
  */
 data class HomeContentStreams(
     val continueWatching: List<HomeMediaItem> = emptyList(),
     val recentlyAdded: List<HomeMediaItem> = emptyList(),
-    val telegramMedia: List<HomeMediaItem> = emptyList(),
-    val xtreamVod: List<HomeMediaItem> = emptyList(),
-    val xtreamSeries: List<HomeMediaItem> = emptyList(),
+    val movies: List<HomeMediaItem> = emptyList(),
+    val series: List<HomeMediaItem> = emptyList(),
+    val clips: List<HomeMediaItem> = emptyList(),
     val xtreamLive: List<HomeMediaItem> = emptyList()
 ) {
     /** True if any content stream has items */
     val hasContent: Boolean
         get() = continueWatching.isNotEmpty() ||
                 recentlyAdded.isNotEmpty() ||
-                telegramMedia.isNotEmpty() ||
-                xtreamVod.isNotEmpty() ||
-                xtreamSeries.isNotEmpty() ||
+                movies.isNotEmpty() ||
+                series.isNotEmpty() ||
+                clips.isNotEmpty() ||
                 xtreamLive.isNotEmpty()
 }
 
@@ -101,7 +107,7 @@ data class HomeContentStreams(
 internal data class HomeContentPartial(
     val continueWatching: List<HomeMediaItem>,
     val recentlyAdded: List<HomeMediaItem>,
-    val telegramMedia: List<HomeMediaItem>,
+    val movies: List<HomeMediaItem>,
     val xtreamLive: List<HomeMediaItem>
 )
 
@@ -135,17 +141,17 @@ class HomeViewModel @Inject constructor(
     private val recentlyAddedItems: Flow<List<HomeMediaItem>> =
         homeContentRepository.observeRecentlyAdded().toHomeItems()
 
-    private val telegramItems: Flow<List<HomeMediaItem>> =
-        homeContentRepository.observeTelegramMedia().toHomeItems()
+    private val moviesItems: Flow<List<HomeMediaItem>> =
+        homeContentRepository.observeMovies().toHomeItems()
+
+    private val seriesItems: Flow<List<HomeMediaItem>> =
+        homeContentRepository.observeSeries().toHomeItems()
+
+    private val clipsItems: Flow<List<HomeMediaItem>> =
+        homeContentRepository.observeClips().toHomeItems()
 
     private val xtreamLiveItems: Flow<List<HomeMediaItem>> =
         homeContentRepository.observeXtreamLive().toHomeItems()
-
-    private val xtreamVodItems: Flow<List<HomeMediaItem>> =
-        homeContentRepository.observeXtreamVod().toHomeItems()
-
-    private val xtreamSeriesItems: Flow<List<HomeMediaItem>> =
-        homeContentRepository.observeXtreamSeries().toHomeItems()
 
     // ==================== Type-Safe Content Aggregation ====================
 
@@ -157,13 +163,13 @@ class HomeViewModel @Inject constructor(
     private val contentPartial: Flow<HomeContentPartial> = combine(
         continueWatchingItems,
         recentlyAddedItems,
-        telegramItems,
+        moviesItems,
         xtreamLiveItems
-    ) { continueWatching, recentlyAdded, telegram, live ->
+    ) { continueWatching, recentlyAdded, movies, live ->
         HomeContentPartial(
             continueWatching = continueWatching,
             recentlyAdded = recentlyAdded,
-            telegramMedia = telegram,
+            movies = movies,
             xtreamLive = live
         )
     }
@@ -176,16 +182,16 @@ class HomeViewModel @Inject constructor(
      */
     private val contentStreams: Flow<HomeContentStreams> = combine(
         contentPartial,
-        xtreamVodItems,
-        xtreamSeriesItems
-    ) { partial, vod, series ->
+        seriesItems,
+        clipsItems
+    ) { partial, series, clips ->
         HomeContentStreams(
             continueWatching = partial.continueWatching,
             recentlyAdded = partial.recentlyAdded,
-            telegramMedia = partial.telegramMedia,
+            movies = partial.movies,
             xtreamLive = partial.xtreamLive,
-            xtreamVod = vod,
-            xtreamSeries = series
+            series = series,
+            clips = clips
         )
     }
 
@@ -205,15 +211,19 @@ class HomeViewModel @Inject constructor(
             isLoading = false,
             continueWatchingItems = content.continueWatching,
             recentlyAddedItems = content.recentlyAdded,
-            telegramMediaItems = content.telegramMedia,
+            moviesItems = content.movies,
+            seriesItems = content.series,
+            clipsItems = content.clips,
             xtreamLiveItems = content.xtreamLive,
-            xtreamVodItems = content.xtreamVod,
-            xtreamSeriesItems = content.xtreamSeries,
+            // Legacy fields for backward compatibility
+            telegramMediaItems = emptyList(),
+            xtreamVodItems = emptyList(),
+            xtreamSeriesItems = emptyList(),
             error = error,
-            hasTelegramSource = content.telegramMedia.isNotEmpty(),
-            hasXtreamSource = content.xtreamVod.isNotEmpty() || 
-                              content.xtreamSeries.isNotEmpty() || 
-                              content.xtreamLive.isNotEmpty(),
+            hasTelegramSource = content.clips.isNotEmpty() || 
+                              content.movies.any { it.sourceTypes.contains(SourceType.TELEGRAM) },
+            hasXtreamSource = content.xtreamLive.isNotEmpty() || 
+                              content.movies.any { it.sourceTypes.contains(SourceType.XTREAM) },
             syncState = syncState,
             sourceActivation = sourceActivation
         )

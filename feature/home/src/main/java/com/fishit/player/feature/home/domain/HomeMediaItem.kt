@@ -27,6 +27,7 @@ import com.fishit.player.core.model.SourceType
  * @property isNew Whether this is newly added content
  * @property year Release year if available
  * @property rating Content rating if available (scale 0.0-10.0, e.g., TMDB rating)
+ * @property sourceTypes All source types for this item (for multi-source gradient border)
  * @property navigationId Identifier used for navigation to detail screen
  * @property navigationSource Source type for navigation
  */
@@ -38,6 +39,7 @@ data class HomeMediaItem(
     val backdrop: ImageRef? = null,
     val mediaType: MediaType,
     val sourceType: SourceType,
+    val sourceTypes: List<SourceType> = listOf(sourceType),
     val resumePosition: Long = 0L,
     val duration: Long = 0L,
     val isNew: Boolean = false,
@@ -55,4 +57,11 @@ data class HomeMediaItem(
         get() = if (duration > 0 && resumePosition > 0) {
             (resumePosition.toFloat() / duration).coerceIn(0f, 1f)
         } else null
+
+    /**
+     * Whether this item has multiple sources (e.g., same movie from both Xtream and Telegram).
+     * Used for displaying gradient border on Home tiles.
+     */
+    val hasMultipleSources: Boolean
+        get() = sourceTypes.distinct().size > 1
 }

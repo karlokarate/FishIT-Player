@@ -1,14 +1,23 @@
 package com.fishit.player.ui
 
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -16,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,8 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.Player
+import androidx.media3.ui.PlayerView
 import com.fishit.player.core.playermodel.PlaybackContext
 
 /**
@@ -34,13 +48,13 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * This composable provides a clean, decoupled interface for playback:
  * - Receives only a [PlaybackContext] (source-agnostic)
  * - Uses [PlayerEntryPoint] internally to start playback
- * - No direct dependencies on engine wiring (resolver, resume, kids, codec)
- * - Uses @HiltViewModel for dependency injection (no EntryPoints)
+ * - Displays actual video via Media3 [PlayerView]
+ * - Supports both Xtream (HTTP) and Telegram (TDLib streaming) playback
  *
  * **Architecture:**
  * - UI Layer (player:ui) - This composable
  * - Domain Layer (playback:domain) - PlayerEntryPoint interface
- * - Internal Layer (player:internal) - PlayerEntryPoint implementation
+ * - Internal Layer (player:internal) - PlayerEntryPoint implementation + ExoPlayer
  *
  * @param context Source-agnostic playback descriptor
  * @param onExit Callback when user exits the player
@@ -81,7 +95,10 @@ fun PlayerScreen(
             }
 
             is PlayerUiState.Playing -> {
-                PlayingView(context = context)
+                PlayingView(
+                    viewModel = viewModel,
+                    context = context
+                )
             }
 
             is PlayerUiState.Error -> {
@@ -126,35 +143,90 @@ private fun LoadingView() {
     }
 }
 
+/**
+ * Playing view with actual video surface via Media3 PlayerView.
+ *
+ * **Integration:**
+ * - Gets ExoPlayer instance from ViewModel
+ * - Attaches to PlayerView via AndroidView
+ * - Shows simple controls (play/pause, seek ±10s)
+ */
 @Composable
-private fun PlayingView(context: PlaybackContext) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        // Placeholder for video surface
-        // The actual surface will be integrated in Phase 2 via clean interface split
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
-        ) {
-            Text(
-                text = "🎬 Playing",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Color.White
+private fun PlayingView(
+    viewModel: PlayerUiViewModel,
+    context: PlaybackContext
+) {
+    val player: Player? = viewModel.getPlayer()
+    val localContext = LocalContext.current
+    
+    // Observe player state for play/pause button
+    val isPlaying = remember { mutableStateOf(true) }
+    
+    // Update isPlaying state based on player state
+    LaunchedEffect(player) {
+        player?.let { p ->
+            val listener = object : Player.Listener {
+                override fun onIsPlayingChanged(playing: Boolean) {
+                    isPlaying.value = playing
+                }
+            }
+            p.addListener(listener)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (player != null) {
+            // Actual video surface via Media3 PlayerView
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        this.player = player
+                        layoutParams = FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        // Use built-in controls from Media3
+                        useController = true
+                        setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                    }
+                },
+                update = { playerView ->
+                    playerView.player = player
+                },
+                modifier = Modifier.fillMaxSize()
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = context.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.8f)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = context.canonicalId,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f)
-            )
+            
+            // Cleanup when composable is disposed
+            DisposableEffect(player) {
+                onDispose {
+                    // Player cleanup is handled by ViewModel/Session
+                }
+            }
+        } else {
+            // Fallback when player is not yet available
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Preparing video...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = context.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+            }
         }
     }
 }

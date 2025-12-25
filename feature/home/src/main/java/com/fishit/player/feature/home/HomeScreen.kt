@@ -27,11 +27,15 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -304,53 +308,51 @@ private fun HomeContent(
             }
         }
 
-        // Telegram Media
-        if (state.hasTelegramSource && state.telegramMediaItems.isNotEmpty()) {
-            item(key = "telegram_media") {
-                MediaRow(
-                    title = "Telegram Media",
-                    icon = Icons.Default.Send,
-                    iconTint = FishColors.SourceTelegram,
-                    items = state.telegramMediaItems,
-                    onItemClick = onItemClick
-                )
-            }
-        }
-
-        // Xtream VOD
-        if (state.hasXtreamSource && state.xtreamVodItems.isNotEmpty()) {
-            item(key = "xtream_vod") {
-                MediaRow(
-                    title = "Movies",
-                    icon = Icons.Default.PlayCircle,
-                    iconTint = FishColors.SourceXtream,
-                    items = state.xtreamVodItems,
-                    onItemClick = onItemClick
-                )
-            }
-        }
-
-        // Xtream Series
-        if (state.hasXtreamSource && state.xtreamSeriesItems.isNotEmpty()) {
-            item(key = "xtream_series") {
-                MediaRow(
-                    title = "Series",
-                    icon = Icons.Default.Videocam,
-                    iconTint = FishColors.SourceXtream,
-                    items = state.xtreamSeriesItems,
-                    onItemClick = onItemClick
-                )
-            }
-        }
-
-        // Xtream Live
-        if (state.hasXtreamSource && state.xtreamLiveItems.isNotEmpty()) {
-            item(key = "xtream_live") {
+        // Live TV (Xtream only)
+        if (state.xtreamLiveItems.isNotEmpty()) {
+            item(key = "live_tv") {
                 MediaRow(
                     title = "Live TV",
-                    icon = Icons.Default.Videocam,
+                    icon = Icons.Default.LiveTv,
                     iconTint = FishColors.SourceXtream,
                     items = state.xtreamLiveItems,
+                    onItemClick = onItemClick
+                )
+            }
+        }
+
+        // Movies (cross-pipeline: Xtream + Telegram)
+        if (state.moviesItems.isNotEmpty()) {
+            item(key = "movies") {
+                MediaRow(
+                    title = "Movies",
+                    icon = Icons.Default.Movie,
+                    items = state.moviesItems,
+                    onItemClick = onItemClick
+                )
+            }
+        }
+
+        // Series (cross-pipeline: Xtream + Telegram)
+        if (state.seriesItems.isNotEmpty()) {
+            item(key = "series") {
+                MediaRow(
+                    title = "Series",
+                    icon = Icons.Default.Tv,
+                    items = state.seriesItems,
+                    onItemClick = onItemClick
+                )
+            }
+        }
+
+        // Clips (Telegram only)
+        if (state.clipsItems.isNotEmpty()) {
+            item(key = "clips") {
+                MediaRow(
+                    title = "Clips",
+                    icon = Icons.Default.VideoLibrary,
+                    iconTint = FishColors.SourceTelegram,
+                    items = state.clipsItems,
                     onItemClick = onItemClick
                 )
             }
@@ -440,7 +442,7 @@ private fun MediaRow(
                     title = item.title,
                     poster = item.poster,
                     placeholder = item.placeholderThumbnail,
-                    sourceColors = getSourceColors(item.sourceType),
+                    sourceColors = getSourceColors(item.sourceTypes),
                     resumeFraction = item.resumeFraction,
                     isNew = item.isNew,
                     onClick = { onItemClick(item) }
@@ -666,13 +668,56 @@ private fun buildActiveSourcesText(activeSources: Set<SourceId>): String {
 }
 
 /**
- * Get source-specific colors for tile borders
+ * Get source-specific colors for tile borders.
+ *
+ * Multi-source items get a gradient: Xtream (Red) -> Lila -> Telegram (Blue)
+ * Single-source items get a solid color.
  */
-private fun getSourceColors(sourceType: SourceType): List<Color> {
+private fun getSourceColors(sourceTypes: List<SourceType>): List<Color> {
+    // Filter to only include known sources with colors
+    val relevantSources = sourceTypes.filter { 
+        it == SourceType.XTREAM || it == SourceType.TELEGRAM || it == SourceType.LOCAL 
+    }.distinct()
+    
+    return when {
+        relevantSources.isEmpty() -> emptyList()
+        relevantSources.size == 1 -> {
+            // Single source: solid color
+            listOf(sourceTypeToColor(relevantSources.first()))
+        }
+        else -> {
+            // Multi-source: gradient with purple blend in the middle
+            // Sort: XTREAM first (red on left), TELEGRAM second (blue on right)
+            val sorted = relevantSources.sortedByDescending { source ->
+                when (source) {
+                    SourceType.XTREAM -> 3
+                    SourceType.TELEGRAM -> 2
+                    SourceType.LOCAL -> 1
+                    else -> 0
+                }
+            }
+            // Create gradient: first color -> purple blend -> second color
+            if (sorted.size >= 2) {
+                listOf(
+                    sourceTypeToColor(sorted[0]),  // Xtream Red
+                    FishColors.SourceMultiBlend,   // Purple blend in middle
+                    sourceTypeToColor(sorted[1])   // Telegram Blue
+                )
+            } else {
+                sorted.map { sourceTypeToColor(it) }
+            }
+        }
+    }
+}
+
+/**
+ * Map a single SourceType to its display color.
+ */
+private fun sourceTypeToColor(sourceType: SourceType): Color {
     return when (sourceType) {
-        SourceType.TELEGRAM -> listOf(FishColors.SourceTelegram)
-        SourceType.XTREAM -> listOf(FishColors.SourceXtream)
-        SourceType.LOCAL -> listOf(FishColors.SourceLocal)
-        else -> emptyList()
+        SourceType.TELEGRAM -> FishColors.SourceTelegram
+        SourceType.XTREAM -> FishColors.SourceXtream
+        SourceType.LOCAL -> FishColors.SourceLocal
+        else -> Color.Transparent
     }
 }

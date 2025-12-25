@@ -36,6 +36,14 @@ dependencies {
     // Playback domain layer (clean abstraction - PlayerEntryPoint interface)
     implementation(project(":playback:domain"))
     
+    // Player internal layer (for InternalPlayerEntryImpl access to session/player)
+    // NOTE: player:ui and player:internal are both part of the Player layer
+    // per AGENTS.md Section 4. This dependency is allowed within the layer.
+    implementation(project(":player:internal"))
+    
+    // Media3 for PlayerView
+    implementation("androidx.media3:media3-ui:1.5.1")
+    
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")

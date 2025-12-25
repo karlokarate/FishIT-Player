@@ -277,6 +277,12 @@ data class ObxTelegramMessage(
     var seasonNumber: Int? = null,
     var episodeNumber: Int? = null,
     var episodeTitle: String? = null,
+    
+    // === External IDs (for canonical unification) ===
+    /** TMDB ID for cross-pipeline canonical identity (e.g., "550" for Fight Club) */
+    @Index var tmdbId: String? = null,
+    /** IMDB ID (e.g., "tt0137523") */
+    @Index var imdbId: String? = null,
 )
 
 // --- Aggregated index tables (persisted once per import; no full scans required) ---

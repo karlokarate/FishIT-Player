@@ -38,6 +38,10 @@ dependencies {
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
     
+    // Enrichment dependencies (on-demand detail loading)
+    implementation(project(":infra:transport-xtream"))
+    implementation(project(":pipeline:xtream"))
+    
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")

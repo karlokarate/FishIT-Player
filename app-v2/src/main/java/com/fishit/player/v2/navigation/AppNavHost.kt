@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,8 +28,8 @@ import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.feature.settings.SettingsScreen
 import com.fishit.player.ui.PlayerScreen
-import com.fishit.player.v2.navigation.PlayerNavViewModel
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
+import kotlinx.coroutines.launch
 
 /**
  * Top-level navigation host for FishIT Player v2.
@@ -39,11 +41,20 @@ import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
  *
  * Contract S-3: Bootstraps are started in Application.onCreate() ONLY.
  * No bootstrap triggers in navigation or UI layers.
+ *
+ * **Playback Flow (via Detail Screen):**
+ * 1. DetailScreen emits StartPlayback event with full context
+ * 2. AppNavHost stores context in PlaybackPendingState
+ * 3. Navigation to Player route
+ * 4. PlayerNavViewModel consumes pending state for full playback data
  */
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun AppNavHost() {
+fun AppNavHost(
+    playbackPendingState: PlaybackPendingState,
+) {
     val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
 
     FishTheme {
         // Contract S-3: Removed LaunchedEffect bootstrap trigger
@@ -118,10 +129,13 @@ fun AppNavHost() {
                     sourceType = sourceType,
                     onBack = { navController.popBackStack() },
                     onPlayback = { event ->
-                        // Navigate to player with playback context from StartPlayback event
+                        // Store full playback context in pending state
+                        playbackPendingState.setPendingPlayback(event)
+                        
+                        // Navigate to player with minimal route params (full context in pending state)
                         navController.navigate(
                             Routes.player(
-                                mediaId = event.canonicalId.key.value,
+                                mediaId = event.source.sourceId.value,
                                 sourceType = event.source.sourceType.name,
                             ),
                         )

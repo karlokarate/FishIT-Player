@@ -2,8 +2,12 @@ package com.fishit.player.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.Player
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.internal.InternalPlayerEntryImpl
+import com.fishit.player.internal.session.InternalPlayerSession
+import com.fishit.player.internal.state.InternalPlayerState
 import com.fishit.player.playback.domain.PlayerEntryPoint
 import com.fishit.player.playback.domain.PlaybackException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,21 +22,40 @@ import javax.inject.Inject
  *
  * **Architecture:**
  * - Uses @HiltViewModel for clean dependency injection
- * - Constructor-injects only high-level abstractions (no engine wiring)
- * - Delegates playback to [PlayerEntryPoint] (domain interface)
- * - Never references internal engine implementation details
+ * - Injects [InternalPlayerEntryImpl] for access to player session
+ * - Delegates playback to [PlayerEntryPoint] interface
+ * - Exposes ExoPlayer instance and session state for UI binding
  *
- * @param playerEntryPoint High-level playback abstraction (from playback:domain)
+ * **Player Access:**
+ * - [getPlayer] returns the ExoPlayer instance for PlayerView binding
+ * - [sessionState] exposes the internal player state flow (buffering, position, etc.)
+ *
+ * @param playerEntryImpl Concrete implementation that holds the session
  */
 @HiltViewModel
 class PlayerUiViewModel @Inject constructor(
-    private val playerEntryPoint: PlayerEntryPoint,
+    private val playerEntryImpl: InternalPlayerEntryImpl,
 ) : ViewModel() {
+
+    // Cast to interface for abstraction where needed
+    private val playerEntryPoint: PlayerEntryPoint = playerEntryImpl
 
     private val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Idle)
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
 
     private var lastContext: PlaybackContext? = null
+
+    /**
+     * Returns the current ExoPlayer instance for PlayerView binding.
+     * Returns null if no session is active.
+     */
+    fun getPlayer(): Player? = playerEntryImpl.getCurrentSession()?.getPlayer()
+
+    /**
+     * Returns the internal player state flow for observing detailed playback state.
+     * Returns null if no session is active.
+     */
+    fun getSessionState(): StateFlow<InternalPlayerState>? = playerEntryImpl.getCurrentSession()?.state
 
     /**
      * Starts playback with the given context.
@@ -78,6 +101,34 @@ class PlayerUiViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Toggle play/pause.
+     */
+    fun togglePlayPause() {
+        playerEntryImpl.getCurrentSession()?.togglePlayPause()
+    }
+
+    /**
+     * Seek forward by 10 seconds.
+     */
+    fun seekForward() {
+        playerEntryImpl.getCurrentSession()?.seekForward()
+    }
+
+    /**
+     * Seek backward by 10 seconds.
+     */
+    fun seekBackward() {
+        playerEntryImpl.getCurrentSession()?.seekBackward()
+    }
+
+    /**
+     * Seek to a specific position.
+     */
+    fun seekTo(positionMs: Long) {
+        playerEntryImpl.getCurrentSession()?.seekTo(positionMs)
     }
 
     /**

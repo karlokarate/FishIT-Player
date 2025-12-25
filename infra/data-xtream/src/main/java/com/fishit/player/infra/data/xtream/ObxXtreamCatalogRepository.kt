@@ -1,9 +1,12 @@
 package com.fishit.player.infra.data.xtream
 
+import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.persistence.obx.ObxEpisode
 import com.fishit.player.core.persistence.obx.ObxEpisode_
 import com.fishit.player.core.persistence.obx.ObxSeries
@@ -254,7 +257,10 @@ class ObxXtreamCatalogRepository @Inject constructor(
         sourceLabel = "Xtream VOD",
         sourceId = "xtream:vod:$vodId",
         poster = poster?.let { ImageRef.Http(it) },
-        backdrop = null
+        backdrop = null,
+        externalIds = tmdbId?.toIntOrNull()?.let { id ->
+            ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, id))
+        } ?: ExternalIds()
     )
 
     private fun ObxSeries.toRawMediaMetadata(): RawMediaMetadata = RawMediaMetadata(
@@ -265,7 +271,10 @@ class ObxXtreamCatalogRepository @Inject constructor(
         sourceLabel = "Xtream Series",
         sourceId = "xtream:series:$seriesId",
         poster = imagesJson?.let { ImageRef.Http(it) },
-        backdrop = null
+        backdrop = null,
+        externalIds = tmdbId?.toIntOrNull()?.let { id ->
+            ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, id))
+        } ?: ExternalIds()
     )
 
     private fun ObxEpisode.toRawMediaMetadata(): RawMediaMetadata = RawMediaMetadata(
@@ -290,6 +299,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
             year = year,
             durationSecs = durationMs?.let { (it / 1000).toInt() },
             poster = (poster as? ImageRef.Http)?.url,
+            tmdbId = externalIds.tmdb?.id?.toString(),
             updatedAt = System.currentTimeMillis()
         )
     }
@@ -303,6 +313,7 @@ class ObxXtreamCatalogRepository @Inject constructor(
             sortTitleLower = originalTitle.lowercase(),
             year = year,
             imagesJson = (poster as? ImageRef.Http)?.url,
+            tmdbId = externalIds.tmdb?.id?.toString(),
             updatedAt = System.currentTimeMillis()
         )
     }

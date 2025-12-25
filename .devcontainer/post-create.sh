@@ -8,6 +8,29 @@ echo "=== Setting up Android development environment ==="
 # SDK location in home directory (persists across rebuilds, not in workspace)
 SDK_DIR="/home/codespace/.android-sdk"
 
+# Find correct Java installation
+JAVA_DIR="/usr/lib/jvm/msopenjdk-current"
+if [ ! -d "$JAVA_DIR" ]; then
+    # Fallback: find any Java 21 installation
+    JAVA_DIR=$(find /usr/lib/jvm -maxdepth 1 -type d -name "*21*" 2>/dev/null | head -1)
+fi
+if [ -z "$JAVA_DIR" ] || [ ! -d "$JAVA_DIR" ]; then
+    JAVA_DIR=$(dirname $(dirname $(readlink -f $(which java))))
+fi
+
+echo "Using JAVA_HOME: $JAVA_DIR"
+
+# Set JAVA_HOME in bashrc for persistence
+if ! grep -q "JAVA_HOME=" ~/.bashrc 2>/dev/null; then
+    echo "export JAVA_HOME=\"$JAVA_DIR\"" >> ~/.bashrc
+    echo "export PATH=\"\$JAVA_HOME/bin:\$PATH\"" >> ~/.bashrc
+    echo "✓ JAVA_HOME added to .bashrc"
+fi
+
+# Export for current session
+export JAVA_HOME="$JAVA_DIR"
+export PATH="$JAVA_HOME/bin:$PATH"
+
 # Set SDK location in local.properties
 echo "sdk.dir=$SDK_DIR" > /workspaces/FishIT-Player/local.properties
 echo "✓ local.properties configured"

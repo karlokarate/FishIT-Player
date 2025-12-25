@@ -7,6 +7,7 @@ import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
+import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -237,5 +238,119 @@ fun XtreamChannel.toRawMediaMetadata(
                 poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
                 backdrop = null,
                 thumbnail = toLogoImageRef(authHeaders), // Thumbnail same as logo
+        )
+}
+
+// =============================================================================
+// VOD Detail Extensions (from get_vod_info API)
+// =============================================================================
+
+/**
+ * Converts XtreamVodInfo (from get_vod_info) to RawMediaMetadata with full rich metadata.
+ *
+ * This provides all metadata fields available from the detail API:
+ * - plot, genres, director, cast
+ * - rating, duration
+ * - backdrop images
+ * - IMDB/TMDB IDs
+ * - YouTube trailer URLs
+ *
+ * Use this for detail screens where full metadata is needed.
+ * For list views, use XtreamVodItem.toRawMediaMetadata() instead.
+ *
+ * @param vodItem The original VOD item (for stream_id and container_extension)
+ * @param authHeaders Optional headers for image URL authentication
+ * @return RawMediaMetadata with all available rich metadata
+ */
+fun XtreamVodInfo.toRawMediaMetadata(
+        vodItem: XtreamVodItem,
+        authHeaders: Map<String, String> = emptyMap(),
+): RawMediaMetadata {
+        val infoBlock = info
+        val movieData = movieData
+
+        // Use info block title, fall back to movie_data name, then original vodItem name
+        val rawTitle = infoBlock?.name
+                ?: infoBlock?.originalName
+                ?: movieData?.name
+                ?: vodItem.name
+
+        // Extract year from info block
+        val rawYear = infoBlock?.year?.toIntOrNull()
+
+        // Duration: prefer durationSecs (in seconds), convert to ms
+        val durationMs = infoBlock?.durationSecs?.let { it * 1000L }
+
+        // Rating: prefer rating string parsed, fall back to rating5Based * 2
+        val rating = infoBlock?.rating?.toDoubleOrNull()
+                ?: infoBlock?.rating5Based?.let { it * 2.0 }
+                ?: vodItem.rating
+
+        // Build source ID with container extension
+        val containerExt = movieData?.containerExtension ?: vodItem.containerExtension
+        val streamId = movieData?.streamId ?: vodItem.id
+        val sourceIdWithExt = containerExt?.let { "xtream:vod:$streamId:$it" } ?: "xtream:vod:$streamId"
+
+        // Build TMDB reference - prefer info block, fall back to vodItem
+        val tmdbId = infoBlock?.tmdbId?.toIntOrNull() ?: vodItem.tmdbId
+        val externalIds = tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
+                ?: ExternalIds()
+
+        // Rich metadata from info block
+        val plot = infoBlock?.plot
+                ?: infoBlock?.description
+                ?: infoBlock?.overview
+
+        val genres = infoBlock?.genre ?: infoBlock?.genres
+
+        val director = infoBlock?.director
+
+        val cast = infoBlock?.cast ?: infoBlock?.actors
+
+        // Images: use info block images if available, fall back to vodItem
+        val posterUrl = infoBlock?.movieImage
+                ?: infoBlock?.posterPath
+                ?: infoBlock?.cover
+                ?: infoBlock?.coverBig
+
+        return RawMediaMetadata(
+                originalTitle = rawTitle,
+                mediaType = MediaType.MOVIE,
+                year = rawYear,
+                season = null,
+                episode = null,
+                durationMs = durationMs,
+                externalIds = externalIds,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream VOD",
+                sourceId = sourceIdWithExt,
+                // === Pipeline Identity (v2) ===
+                pipelineIdTag = PipelineIdTag.XTREAM,
+                // === Timing (v2) ===
+                addedTimestamp = movieData?.added?.toLongOrNull() ?: vodItem.added,
+                // === Rating (v2) ===
+                rating = rating,
+                // === ImageRef ===
+                poster = posterUrl?.let { createImageRef(it, authHeaders) }
+                        ?: vodItem.toPosterImageRef(authHeaders),
+                backdrop = infoBlock?.backdropPath?.firstOrNull()?.let { createImageRef(it, authHeaders) },
+                thumbnail = null,
+                // === Rich metadata (v2) ===
+                plot = plot,
+                genres = genres,
+                director = director,
+                cast = cast,
+        )
+}
+
+/**
+ * Creates an ImageRef from a URL string.
+ * Helper for XtreamVodInfo mapping where we have raw URLs.
+ */
+private fun createImageRef(url: String, authHeaders: Map<String, String>): com.fishit.player.core.model.ImageRef? {
+        if (url.isBlank()) return null
+        return com.fishit.player.core.model.ImageRef.Http(
+                url = url,
+                headers = authHeaders.takeIf { it.isNotEmpty() } ?: emptyMap(),
         )
 }

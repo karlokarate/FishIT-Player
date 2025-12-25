@@ -76,6 +76,7 @@ object FishColors {
     val SourceLocal = Color(0xFF4CAF50)      // Local Green
     val SourcePlex = Color(0xFFE5A00D)       // Plex Gold
     val SourceJellyfin = Color(0xFF9C27B0)   // Jellyfin Purple
+    val SourceMultiBlend = Color(0xFF9C27B0) // Purple blend for multi-source gradient (Xtream Red + Telegram Blue)
 
     // ═══════════════════════════════════════════════════════════════════
     // Design Tokens
