@@ -337,6 +337,8 @@ data class CanonicalMediaWithSources(
     val rating: Double?,
     val durationMs: Long?,
     val genres: String?,
+    val director: String?,
+    val cast: String?,
     val sources: List<MediaSourceRef>,
 ) {
     /** Best quality source (by priority) */

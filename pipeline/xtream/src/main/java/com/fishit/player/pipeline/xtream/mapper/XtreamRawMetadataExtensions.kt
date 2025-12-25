@@ -72,9 +72,9 @@ fun XtreamVodItem.toRawMediaMetadata(
         // Format: xtream:vod:{id}:{ext} or xtream:vod:{id} if no extension
         val sourceIdWithExt = containerExtension?.let { "xtream:vod:$id:$it" } ?: "xtream:vod:$id"
         // Build typed TMDB reference for movies
-        val externalIds = tmdbId?.let { 
-                ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it))
-        } ?: ExternalIds()
+        val externalIds =
+                tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
+                        ?: ExternalIds()
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.MOVIE,
@@ -117,9 +117,8 @@ fun XtreamSeriesItem.toRawMediaMetadata(
         val rawTitle = name
         val rawYear = year?.toIntOrNull()
         // Build typed TMDB reference for TV shows
-        val externalIds = tmdbId?.let { 
-                ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it))
-        } ?: ExternalIds()
+        val externalIds =
+                tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) } ?: ExternalIds()
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.SERIES, // Series container, not episode
@@ -141,6 +140,11 @@ fun XtreamSeriesItem.toRawMediaMetadata(
                 poster = toPosterImageRef(authHeaders),
                 backdrop = null, // Series list doesn't provide backdrop
                 thumbnail = null,
+                // === Rich metadata (v2) - from provider TMDB scraping ===
+                plot = plot,
+                genres = genre, // Xtream uses "genre" singular
+                director = director,
+                cast = cast,
         )
 }
 
@@ -168,11 +172,12 @@ fun XtreamEpisode.toRawMediaMetadata(
         val rawYear: Int? = null // Episodes typically don't have year; inherit from series
         // Encode containerExtension in sourceId for playback URL construction
         // Format: xtream:episode:{id}:{ext} or xtream:episode:{id} if no extension
-        val sourceIdWithExt = containerExtension?.let { "xtream:episode:$id:$it" } ?: "xtream:episode:$id"
+        val sourceIdWithExt =
+                containerExtension?.let { "xtream:episode:$id:$it" } ?: "xtream:episode:$id"
         // Build typed TMDB reference for episodes (uses series TMDB ID with TV type)
-        val externalIds = seriesTmdbId?.let { 
-                ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it))
-        } ?: ExternalIds()
+        val externalIds =
+                seriesTmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) }
+                        ?: ExternalIds()
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.SERIES_EPISODE,

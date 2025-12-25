@@ -60,4 +60,42 @@ data class NormalizedMediaMetadata(
      * loads
      */
     val placeholderThumbnail: ImageRef? = null,
+    // === Rich Metadata Fields (v2 - Pipeline Passthrough) ===
+    /**
+     * Plot/description passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val plot: String? = null,
+    /**
+     * Comma-separated genre list passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val genres: String? = null,
+    /**
+     * Director name(s) passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val director: String? = null,
+    /**
+     * Comma-separated cast list passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val cast: String? = null,
+    /**
+     * Rating (0.0-10.0 scale) passed through from source.
+     *
+     * Xtream provides this from TMDB scraping.
+     * May be updated by TMDB resolver.
+     */
+    val rating: Double? = null,
+    /**
+     * Runtime in milliseconds passed through from source.
+     *
+     * Useful for display before TMDB enrichment.
+     */
+    val durationMs: Long? = null,
 )

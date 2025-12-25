@@ -113,6 +113,35 @@ data class RawMediaMetadata(
      * - Parental controls
      */
     val ageRating: Int? = null,
+    // === Rich Metadata Fields (v2 - Pipeline Passthrough) ===
+    /**
+     * Plot/description from source.
+     *
+     * Xtream provides this from API ("plot" field).
+     * Telegram structured bundles may provide this.
+     * Passed through to canonical storage for display in detail screens.
+     */
+    val plot: String? = null,
+    /**
+     * Comma-separated genre list from source.
+     *
+     * Xtream provides this from API ("genre" field).
+     * Example: "Action, Sci-Fi, Thriller"
+     */
+    val genres: String? = null,
+    /**
+     * Director name(s) from source.
+     *
+     * Xtream provides this from API ("director" field).
+     */
+    val director: String? = null,
+    /**
+     * Comma-separated cast list from source.
+     *
+     * Xtream provides this from API ("cast" field).
+     * Example: "Tom Hanks, Robin Wright, Gary Sinise"
+     */
+    val cast: String? = null,
 )
 
 /**

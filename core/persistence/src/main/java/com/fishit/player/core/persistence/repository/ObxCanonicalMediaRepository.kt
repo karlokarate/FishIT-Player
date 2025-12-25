@@ -8,15 +8,13 @@ import com.fishit.player.core.model.MediaQuality
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.PipelineItemId
+import com.fishit.player.core.model.ids.asCanonicalId
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaStats
 import com.fishit.player.core.model.repository.CanonicalMediaWithResume
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
-import com.fishit.player.core.model.ids.CanonicalId
-import com.fishit.player.core.model.ids.PipelineItemId
-import com.fishit.player.core.model.ids.asCanonicalId
-import com.fishit.player.core.persistence.toTmdbIdOrNull
 import com.fishit.player.core.persistence.obx.CanonicalKeyGenerator
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia_
@@ -24,6 +22,7 @@ import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark
 import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark_
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef_
+import com.fishit.player.core.persistence.toTmdbIdOrNull
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryBuilder.StringOrder
@@ -98,6 +97,21 @@ constructor(
                                                                 ?: existing.imdbId,
                                                 tvdbId = normalized.externalIds.tvdbId
                                                                 ?: existing.tvdbId,
+                                                // Pipeline images (fallback to existing if TMDB
+                                                // already set)
+                                                poster = normalized.poster ?: existing.poster,
+                                                backdrop = normalized.backdrop ?: existing.backdrop,
+                                                thumbnail = normalized.thumbnail
+                                                                ?: existing.thumbnail,
+                                                // Rich metadata (fallback to existing if TMDB
+                                                // enrichment already set)
+                                                plot = normalized.plot ?: existing.plot,
+                                                genres = normalized.genres ?: existing.genres,
+                                                director = normalized.director ?: existing.director,
+                                                cast = normalized.cast ?: existing.cast,
+                                                rating = normalized.rating ?: existing.rating,
+                                                durationMs = normalized.durationMs
+                                                                ?: existing.durationMs,
                                                 updatedAt = now,
                                         )
                                 canonicalBox.put(updated)
@@ -119,9 +133,21 @@ constructor(
                                                 year = normalized.year,
                                                 season = normalized.season,
                                                 episode = normalized.episode,
-                                                tmdbId = normalized.externalIds.tmdb?.id?.toString(),
+                                                tmdbId =
+                                                        normalized.externalIds.tmdb?.id?.toString(),
                                                 imdbId = normalized.externalIds.imdbId,
                                                 tvdbId = normalized.externalIds.tvdbId,
+                                                // Pipeline images (from Telegram/Xtream)
+                                                poster = normalized.poster,
+                                                backdrop = normalized.backdrop,
+                                                thumbnail = normalized.thumbnail,
+                                                // Rich metadata (from pipeline)
+                                                plot = normalized.plot,
+                                                genres = normalized.genres,
+                                                director = normalized.director,
+                                                cast = normalized.cast,
+                                                rating = normalized.rating,
+                                                durationMs = normalized.durationMs,
                                                 createdAt = now,
                                                 updatedAt = now,
                                         )
@@ -155,7 +181,11 @@ constructor(
                         // Check for existing source
                         val existing =
                                 sourceBox
-                                        .query(ObxMediaSourceRef_.sourceId.equal(source.sourceId.value))
+                                        .query(
+                                                ObxMediaSourceRef_.sourceId.equal(
+                                                        source.sourceId.value
+                                                )
+                                        )
                                         .build()
                                         .findFirst()
 
@@ -204,7 +234,9 @@ constructor(
                         }
                 }
 
-        override suspend fun removeSourceRef(sourceId: com.fishit.player.core.model.ids.PipelineItemId): Unit =
+        override suspend fun removeSourceRef(
+                sourceId: com.fishit.player.core.model.ids.PipelineItemId
+        ): Unit =
                 withContext(Dispatchers.IO) {
                         val source =
                                 sourceBox
@@ -246,11 +278,11 @@ constructor(
                                 when {
                                         tmdbId != null ->
                                                 canonicalBox
-                                        .query(
-                                                ObxCanonicalMedia_.tmdbId.equal(
-                                                        tmdbId.value.toString()
-                                                )
-                                        )
+                                                        .query(
+                                                                ObxCanonicalMedia_.tmdbId.equal(
+                                                                        tmdbId.value.toString()
+                                                                )
+                                                        )
                                                         .build()
                                                         .findFirst()
                                         imdbId != null ->
@@ -313,7 +345,9 @@ constructor(
                         query.build().find().mapNotNull { toCanonicalMediaWithSources(it) }
                 }
 
-        override suspend fun findBySourceId(sourceId: com.fishit.player.core.model.ids.PipelineItemId): CanonicalMediaWithSources? =
+        override suspend fun findBySourceId(
+                sourceId: com.fishit.player.core.model.ids.PipelineItemId
+        ): CanonicalMediaWithSources? =
                 withContext(Dispatchers.IO) {
                         val source =
                                 sourceBox
@@ -660,7 +694,9 @@ constructor(
 
         // ========== TMDB Resolution Queries (per TMDB_ENRICHMENT_CONTRACT.md T-17) ==========
 
-        override suspend fun findCandidatesDetailsByIdMissingSsot(limit: Int): List<CanonicalMediaId> =
+        override suspend fun findCandidatesDetailsByIdMissingSsot(
+                limit: Int
+        ): List<CanonicalMediaId> =
                 withContext(Dispatchers.IO) {
                         // Find items with TmdbId present but missing SSOT data (poster/backdrop)
                         // This is the DETAILS_BY_ID path - items have ID but need enrichment
@@ -672,12 +708,17 @@ constructor(
                                 .build()
                                 .find(0, limit.toLong())
                                 .mapNotNull { obx ->
-                                        val kind = if (obx.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
+                                        val kind =
+                                                if (obx.kind == "episode") MediaKind.EPISODE
+                                                else MediaKind.MOVIE
                                         CanonicalMediaId(kind, obx.canonicalKey.asCanonicalId())
                                 }
                 }
 
-        override suspend fun findCandidatesMissingTmdbRefEligible(limit: Int, now: Long): List<CanonicalMediaId> =
+        override suspend fun findCandidatesMissingTmdbRefEligible(
+                limit: Int,
+                now: Long
+        ): List<CanonicalMediaId> =
                 withContext(Dispatchers.IO) {
                         // Find items without TmdbId that are eligible for search
                         // Respects cooldown: tmdbNextEligibleAt <= now
@@ -686,14 +727,17 @@ constructor(
                                 .isNull(ObxCanonicalMedia_.tmdbId)
                                 .apply {
                                         // Only include items where cooldown has passed
-                                        // tmdbNextEligibleAt == 0 (never tried) OR tmdbNextEligibleAt <= now
+                                        // tmdbNextEligibleAt == 0 (never tried) OR
+                                        // tmdbNextEligibleAt <= now
                                         less(ObxCanonicalMedia_.tmdbNextEligibleAt, now + 1)
                                 }
                                 .orderDesc(ObxCanonicalMedia_.updatedAt)
                                 .build()
                                 .find(0, limit.toLong())
                                 .mapNotNull { obx ->
-                                        val kind = if (obx.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
+                                        val kind =
+                                                if (obx.kind == "episode") MediaKind.EPISODE
+                                                else MediaKind.MOVIE
                                         CanonicalMediaId(kind, obx.canonicalKey.asCanonicalId())
                                 }
                 }
@@ -703,23 +747,31 @@ constructor(
                 tmdbId: com.fishit.player.core.model.ids.TmdbId,
                 resolvedBy: String,
                 resolvedAt: Long,
-        ): Unit = withContext(Dispatchers.IO) {
-                val existing = canonicalBox
-                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
-                        .build()
-                        .findFirst() ?: return@withContext
+        ): Unit =
+                withContext(Dispatchers.IO) {
+                        val existing =
+                                canonicalBox
+                                        .query(
+                                                ObxCanonicalMedia_.canonicalKey.equal(
+                                                        canonicalId.key.value
+                                                )
+                                        )
+                                        .build()
+                                        .findFirst()
+                                        ?: return@withContext
 
-                val updated = existing.copy(
-                        tmdbResolveState = "RESOLVED",
-                        tmdbResolvedBy = resolvedBy,
-                        tmdbLastResolvedAt = resolvedAt,
-                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
-                        lastTmdbAttemptAt = resolvedAt,
-                        tmdbLastFailureReason = null, // Clear any previous failure
-                        updatedAt = resolvedAt,
-                )
-                canonicalBox.put(updated)
-        }
+                        val updated =
+                                existing.copy(
+                                        tmdbResolveState = "RESOLVED",
+                                        tmdbResolvedBy = resolvedBy,
+                                        tmdbLastResolvedAt = resolvedAt,
+                                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                                        lastTmdbAttemptAt = resolvedAt,
+                                        tmdbLastFailureReason = null, // Clear any previous failure
+                                        updatedAt = resolvedAt,
+                                )
+                        canonicalBox.put(updated)
+                }
 
         override suspend fun markTmdbResolveAttemptFailed(
                 canonicalId: CanonicalMediaId,
@@ -727,90 +779,114 @@ constructor(
                 reason: String,
                 attemptAt: Long,
                 nextEligibleAt: Long,
-        ): Unit = withContext(Dispatchers.IO) {
-                val existing = canonicalBox
-                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
-                        .build()
-                        .findFirst() ?: return@withContext
+        ): Unit =
+                withContext(Dispatchers.IO) {
+                        val existing =
+                                canonicalBox
+                                        .query(
+                                                ObxCanonicalMedia_.canonicalKey.equal(
+                                                        canonicalId.key.value
+                                                )
+                                        )
+                                        .build()
+                                        .findFirst()
+                                        ?: return@withContext
 
-                val updated = existing.copy(
-                        tmdbResolveState = state,
-                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
-                        lastTmdbAttemptAt = attemptAt,
-                        tmdbNextEligibleAt = nextEligibleAt,
-                        tmdbLastFailureReason = reason,
-                        updatedAt = attemptAt,
-                )
-                canonicalBox.put(updated)
-        }
+                        val updated =
+                                existing.copy(
+                                        tmdbResolveState = state,
+                                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                                        lastTmdbAttemptAt = attemptAt,
+                                        tmdbNextEligibleAt = nextEligibleAt,
+                                        tmdbLastFailureReason = reason,
+                                        updatedAt = attemptAt,
+                                )
+                        canonicalBox.put(updated)
+                }
 
         override suspend fun markTmdbResolved(
                 canonicalId: CanonicalMediaId,
                 tmdbId: com.fishit.player.core.model.ids.TmdbId,
                 resolvedAt: Long,
-        ): Unit = withContext(Dispatchers.IO) {
-                val existing = canonicalBox
-                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
-                        .build()
-                        .findFirst() ?: return@withContext
+        ): Unit =
+                withContext(Dispatchers.IO) {
+                        val existing =
+                                canonicalBox
+                                        .query(
+                                                ObxCanonicalMedia_.canonicalKey.equal(
+                                                        canonicalId.key.value
+                                                )
+                                        )
+                                        .build()
+                                        .findFirst()
+                                        ?: return@withContext
 
-                val updated = existing.copy(
-                        tmdbId = tmdbId.value.toString(),
-                        tmdbResolveState = "RESOLVED",
-                        tmdbResolvedBy = "SEARCH_MATCH",
-                        tmdbLastResolvedAt = resolvedAt,
-                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
-                        lastTmdbAttemptAt = resolvedAt,
-                        tmdbLastFailureReason = null,
-                        updatedAt = resolvedAt,
-                )
-                canonicalBox.put(updated)
-        }
+                        val updated =
+                                existing.copy(
+                                        tmdbId = tmdbId.value.toString(),
+                                        tmdbResolveState = "RESOLVED",
+                                        tmdbResolvedBy = "SEARCH_MATCH",
+                                        tmdbLastResolvedAt = resolvedAt,
+                                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                                        lastTmdbAttemptAt = resolvedAt,
+                                        tmdbLastFailureReason = null,
+                                        updatedAt = resolvedAt,
+                                )
+                        canonicalBox.put(updated)
+                }
 
         override suspend fun updateTmdbEnriched(
                 canonicalId: CanonicalMediaId,
                 enriched: NormalizedMediaMetadata,
                 resolvedBy: String,
                 resolvedAt: Long,
-        ): Unit = withContext(Dispatchers.IO) {
-                val existing = canonicalBox
-                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalId.key.value))
-                        .build()
-                        .findFirst() ?: return@withContext
+        ): Unit =
+                withContext(Dispatchers.IO) {
+                        val existing =
+                                canonicalBox
+                                        .query(
+                                                ObxCanonicalMedia_.canonicalKey.equal(
+                                                        canonicalId.key.value
+                                                )
+                                        )
+                                        .build()
+                                        .findFirst()
+                                        ?: return@withContext
 
-                // Apply TMDB-enriched fields while preserving existing source data
-                // Per TMDB_ENRICHMENT_CONTRACT.md T-5/T-6/T-7: SSOT images from TMDB
-                //
-                // NormalizedMediaMetadata contains:
-                // - tmdb (TmdbRef: type + id)
-                // - externalIds (imdbId, tvdbId)
-                // - poster, backdrop, thumbnail (ImageRef)
-                // - year (possibly refined from TMDB)
-                val updated = existing.copy(
-                        // TMDB ID (typed TmdbRef) - may have been set via search
-                        tmdbId = enriched.tmdb?.id?.toString() 
-                                ?: enriched.externalIds.tmdb?.id?.toString()
-                                ?: existing.tmdbId,
-                        imdbId = enriched.externalIds.imdbId ?: existing.imdbId,
-                        tvdbId = enriched.externalIds.tvdbId ?: existing.tvdbId,
-                        // SSOT images from TMDB (T-5/T-6/T-7)
-                        poster = enriched.poster ?: existing.poster,
-                        backdrop = enriched.backdrop ?: existing.backdrop,
-                        thumbnail = enriched.thumbnail ?: existing.thumbnail,
-                        // Year may be refined from TMDB
-                        year = enriched.year ?: existing.year,
-                        // TMDB resolve state
-                        tmdbResolveState = "RESOLVED",
-                        tmdbResolvedBy = resolvedBy,
-                        tmdbLastResolvedAt = resolvedAt,
-                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
-                        lastTmdbAttemptAt = resolvedAt,
-                        tmdbLastFailureReason = null,
-                        tmdbNextEligibleAt = null, // No retry needed
-                        updatedAt = resolvedAt,
-                )
-                canonicalBox.put(updated)
-        }
+                        // Apply TMDB-enriched fields while preserving existing source data
+                        // Per TMDB_ENRICHMENT_CONTRACT.md T-5/T-6/T-7: SSOT images from TMDB
+                        //
+                        // NormalizedMediaMetadata contains:
+                        // - tmdb (TmdbRef: type + id)
+                        // - externalIds (imdbId, tvdbId)
+                        // - poster, backdrop, thumbnail (ImageRef)
+                        // - year (possibly refined from TMDB)
+                        val updated =
+                                existing.copy(
+                                        // TMDB ID (typed TmdbRef) - may have been set via search
+                                        tmdbId = enriched.tmdb?.id?.toString()
+                                                        ?: enriched.externalIds.tmdb?.id?.toString()
+                                                                ?: existing.tmdbId,
+                                        imdbId = enriched.externalIds.imdbId ?: existing.imdbId,
+                                        tvdbId = enriched.externalIds.tvdbId ?: existing.tvdbId,
+                                        // SSOT images from TMDB (T-5/T-6/T-7)
+                                        poster = enriched.poster ?: existing.poster,
+                                        backdrop = enriched.backdrop ?: existing.backdrop,
+                                        thumbnail = enriched.thumbnail ?: existing.thumbnail,
+                                        // Year may be refined from TMDB
+                                        year = enriched.year ?: existing.year,
+                                        // TMDB resolve state
+                                        tmdbResolveState = "RESOLVED",
+                                        tmdbResolvedBy = resolvedBy,
+                                        tmdbLastResolvedAt = resolvedAt,
+                                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                                        lastTmdbAttemptAt = resolvedAt,
+                                        tmdbLastFailureReason = null,
+                                        tmdbNextEligibleAt = null, // No retry needed
+                                        updatedAt = resolvedAt,
+                                )
+                        canonicalBox.put(updated)
+                }
 
         // ========== Private Helpers ==========
 
@@ -836,8 +912,9 @@ constructor(
                 val kind = if (canonical.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
                 val sources = canonical.sources.map { toMediaSourceRef(it) }
 
-                        return CanonicalMediaWithSources(
-                        canonicalId = CanonicalMediaId(kind, canonical.canonicalKey.asCanonicalId()),
+                return CanonicalMediaWithSources(
+                        canonicalId =
+                                CanonicalMediaId(kind, canonical.canonicalKey.asCanonicalId()),
                         canonicalTitle = canonical.canonicalTitle,
                         year = canonical.year,
                         season = canonical.season,
@@ -851,6 +928,8 @@ constructor(
                         rating = canonical.rating,
                         durationMs = canonical.durationMs,
                         genres = canonical.genres,
+                        director = canonical.director,
+                        cast = canonical.cast,
                         sources = sources,
                 )
         }
