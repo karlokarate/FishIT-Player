@@ -3,10 +3,8 @@ package com.fishit.player.internal.di
 import android.content.Context
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import com.fishit.player.infra.transport.telegram.TelegramFileClient
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.telegram.TelegramFileDataSourceFactory
-import com.fishit.player.playback.telegram.config.TelegramFileReadyEnsurer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,6 +34,9 @@ object PlayerDataSourceModule {
      *
      * The player's [InternalPlayerSession] uses this map to configure ExoPlayer with the
      * appropriate MediaSourceFactory for each source type.
+     *
+     * Note: [TelegramFileDataSourceFactory] is provided by [TelegramPlaybackModule] in
+     * :playback:telegram. This module only wires it into the DataSource map.
      */
     @Provides
     @Singleton
@@ -49,17 +50,6 @@ object PlayerDataSourceModule {
         )
     }
 
-    /**
-     * Provides the Telegram file DataSource factory.
-     *
-     * Uses [TelegramFileClient] for zero-copy file streaming via TDLib.
-     */
-    @Provides
-    @Singleton
-    fun provideTelegramFileDataSourceFactory(
-            fileClient: TelegramFileClient,
-            readyEnsurer: TelegramFileReadyEnsurer,
-    ): TelegramFileDataSourceFactory {
-        return TelegramFileDataSourceFactory(fileClient, readyEnsurer)
-    }
+    // Note: TelegramFileDataSourceFactory is provided by TelegramPlaybackModule.
+    // DO NOT add a duplicate @Provides here - it causes Hilt duplicate binding errors.
 }
