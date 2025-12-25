@@ -11,7 +11,9 @@ package com.fishit.player.core.model
  *
  * @property code Short string identifier used in serialization and global IDs
  */
-enum class PipelineIdTag(val code: String) {
+enum class PipelineIdTag(
+    val code: String,
+) {
     /** Telegram media via TDLib */
     TELEGRAM("tg"),
 
@@ -25,7 +27,8 @@ enum class PipelineIdTag(val code: String) {
     AUDIOBOOK("ab"),
 
     /** Unknown or unidentified pipeline */
-    UNKNOWN("unk");
+    UNKNOWN("unk"),
+    ;
 
     companion object {
         /**

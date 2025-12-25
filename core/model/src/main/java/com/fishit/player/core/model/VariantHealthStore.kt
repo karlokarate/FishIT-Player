@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap
  * 3. Call `clearHealth()` if variant becomes playable again
  */
 object VariantHealthStore {
-
     /** Minimum failures before considering permanent death. */
     private const val HARD_FAILURE_THRESHOLD = 3
 
@@ -41,7 +40,10 @@ object VariantHealthStore {
      * @param sourceKey The variant's source key
      * @param nowMillis Current timestamp in milliseconds
      */
-    fun recordHardFailure(sourceKey: SourceKey, nowMillis: Long = System.currentTimeMillis()) {
+    fun recordHardFailure(
+        sourceKey: SourceKey,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
         val key = sourceKey.toSerializedString()
         healthBySourceKey.compute(key) { _, existing ->
             val health = existing ?: VariantHealth()
@@ -59,8 +61,8 @@ object VariantHealthStore {
      * @return true if variant should be considered dead
      */
     fun isPermanentlyDead(
-            sourceKey: SourceKey,
-            nowMillis: Long = System.currentTimeMillis(),
+        sourceKey: SourceKey,
+        nowMillis: Long = System.currentTimeMillis(),
     ): Boolean {
         val key = sourceKey.toSerializedString()
         val health = healthBySourceKey[key] ?: return false
@@ -103,18 +105,16 @@ object VariantHealthStore {
      * @param nowMillis Current timestamp
      * @return Set of dead variant SourceKeys
      */
-    fun getDeadVariants(nowMillis: Long = System.currentTimeMillis()): Set<SourceKey> {
-        return healthBySourceKey
-                .entries
-                .filter { (key, health) ->
-                    health.hardFailureCount >= HARD_FAILURE_THRESHOLD &&
-                            health.lastHardFailureMillis != null &&
-                            (nowMillis - health.lastHardFailureMillis!!) >=
-                                    DEATH_CONFIRMATION_WINDOW_MS
-                }
-                .mapNotNull { SourceKey.fromSerializedString(it.key) }
-                .toSet()
-    }
+    fun getDeadVariants(nowMillis: Long = System.currentTimeMillis()): Set<SourceKey> =
+        healthBySourceKey
+            .entries
+            .filter { (key, health) ->
+                health.hardFailureCount >= HARD_FAILURE_THRESHOLD &&
+                    health.lastHardFailureMillis != null &&
+                    (nowMillis - health.lastHardFailureMillis!!) >=
+                    DEATH_CONFIRMATION_WINDOW_MS
+            }.mapNotNull { SourceKey.fromSerializedString(it.key) }
+            .toSet()
 
     /** Reset all health data (for testing). */
     fun clear() {
@@ -124,6 +124,6 @@ object VariantHealthStore {
 
 /** Health tracking data for a single variant. */
 data class VariantHealth(
-        var hardFailureCount: Int = 0,
-        var lastHardFailureMillis: Long? = null,
+    var hardFailureCount: Int = 0,
+    var lastHardFailureMillis: Long? = null,
 )

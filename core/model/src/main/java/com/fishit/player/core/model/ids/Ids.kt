@@ -1,22 +1,30 @@
 package com.fishit.player.core.model.ids
 
 @JvmInline
-value class CanonicalId(val value: String) {
+value class CanonicalId(
+    val value: String,
+) {
     override fun toString(): String = value
 }
 
 @JvmInline
-value class RemoteId(val value: String) {
+value class RemoteId(
+    val value: String,
+) {
     override fun toString(): String = value
 }
 
 @JvmInline
-value class PipelineItemId(val value: String) {
+value class PipelineItemId(
+    val value: String,
+) {
     override fun toString(): String = value
 }
 
 @JvmInline
-value class TmdbId(val value: Int) {
+value class TmdbId(
+    val value: Int,
+) {
     override fun toString(): String = value.toString()
 }
 

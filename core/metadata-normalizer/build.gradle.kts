@@ -42,7 +42,7 @@ dependencies {
     // TMDB Kotlin API - app.moviebase:tmdb-api:1.6.0
     // ONLY this module may have TMDB API dependency per TMDB_ENRICHMENT_CONTRACT.md
     implementation(libs.tmdb.api)
-    
+
     // Ktor Client for TMDB API (required by tmdb-api library)
     implementation("io.ktor:ktor-client-okhttp:3.0.3")
     implementation("io.ktor:ktor-client-content-negotiation:3.0.3")

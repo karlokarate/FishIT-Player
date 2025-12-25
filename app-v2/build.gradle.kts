@@ -52,9 +52,10 @@ android {
         buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
 
         // TMDB API key (from environment or gradle.properties)
-        val tmdbApiKey = System.getenv("TMDB_API_KEY")
-            ?: project.findProperty("TMDB_API_KEY")?.toString()
-            ?: ""
+        val tmdbApiKey =
+            System.getenv("TMDB_API_KEY")
+                ?: project.findProperty("TMDB_API_KEY")?.toString()
+                ?: ""
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
 
         // ABI configuration is handled via splits when useSplits=true
@@ -250,9 +251,9 @@ dependencies {
 tasks.register<Exec>("checkNoWorkManagerInitializer") {
     group = "verification"
     description = "Verify WorkManagerInitializer is not in merged manifests (on-demand init only)"
-    
+
     commandLine("${rootProject.projectDir}/scripts/check_no_workmanager_initializer.sh")
-    
+
     // Only run if build has produced at least one merged manifest (any variant)
     val mergedManifestsDir = file("${layout.buildDirectory.get()}/intermediates/merged_manifests")
     onlyIf {
@@ -261,7 +262,7 @@ tasks.register<Exec>("checkNoWorkManagerInitializer") {
                 include("**/AndroidManifest.xml")
             }.files.isNotEmpty()
     }
-    
+
     // Make this task run after manifest processing
     tasks.findByName("processDebugManifest")?.let { processDebug ->
         mustRunAfter(processDebug)

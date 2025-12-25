@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
  * - Performs no DB writes, caching, or UI work
  *
  * **Architecture Integration:**
- * - Uses TelegramPipelineAdapter (wraps TelegramTransportClient)
+ * - Uses TelegramPipelineAdapter (wraps typed TelegramClient interfaces)
  * - Uses TelegramMediaItem.toRawMediaMetadata() for conversion
  * - Emits standardized catalog events for CatalogSync consumption
  *

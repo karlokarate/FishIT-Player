@@ -34,16 +34,16 @@ import com.fishit.player.core.model.ids.PipelineItemId
  * @property priority Ordering priority for source selection (higher = preferred)
  */
 data class MediaSourceRef(
-        val sourceType: SourceType,
-        val sourceId: PipelineItemId,
-        val sourceLabel: String,
-        val quality: MediaQuality? = null,
-        val languages: LanguageInfo? = null,
-        val format: MediaFormat? = null,
-        val sizeBytes: Long? = null,
-        val durationMs: Long? = null, // Source-specific duration!
-        val addedAt: Long = System.currentTimeMillis(),
-        val priority: Int = 0,
+    val sourceType: SourceType,
+    val sourceId: PipelineItemId,
+    val sourceLabel: String,
+    val quality: MediaQuality? = null,
+    val languages: LanguageInfo? = null,
+    val format: MediaFormat? = null,
+    val sizeBytes: Long? = null,
+    val durationMs: Long? = null, // Source-specific duration!
+    val addedAt: Long = System.currentTimeMillis(),
+    val priority: Int = 0,
 ) {
     /** Display badge for this source type. */
     val badge: SourceBadge
@@ -53,45 +53,47 @@ data class MediaSourceRef(
      * Create a display label combining quality and language info. e.g., "1080p • German/English •
      * MKV • 4.5 GB • 2h 15m"
      */
-    fun toDisplayLabel(): String = buildString {
-        quality?.let { q -> append(q.toDisplayLabel()) }
-        languages?.let { l ->
-            if (isNotEmpty()) append(" • ")
-            append(l.toDisplayLabel())
+    fun toDisplayLabel(): String =
+        buildString {
+            quality?.let { q -> append(q.toDisplayLabel()) }
+            languages?.let { l ->
+                if (isNotEmpty()) append(" • ")
+                append(l.toDisplayLabel())
+            }
+            format?.let { f ->
+                if (isNotEmpty()) append(" • ")
+                append(f.container.uppercase())
+            }
+            sizeBytes?.let { s ->
+                if (isNotEmpty()) append(" • ")
+                append(formatFileSize(s))
+            }
+            durationMs?.let { d ->
+                if (isNotEmpty()) append(" • ")
+                append(formatDuration(d))
+            }
         }
-        format?.let { f ->
-            if (isNotEmpty()) append(" • ")
-            append(f.container.uppercase())
-        }
-        sizeBytes?.let { s ->
-            if (isNotEmpty()) append(" • ")
-            append(formatFileSize(s))
-        }
-        durationMs?.let { d ->
-            if (isNotEmpty()) append(" • ")
-            append(formatDuration(d))
-        }
-    }
 
     /**
      * Create a compact comparison label for source selection. Shows key differentiators: "TG •
      * 1080p • 4.5 GB • 2:15:30"
      */
-    fun toComparisonLabel(): String = buildString {
-        append(badge.displayText)
-        quality?.resolutionLabel?.let {
-            append(" • ")
-            append(it)
+    fun toComparisonLabel(): String =
+        buildString {
+            append(badge.displayText)
+            quality?.resolutionLabel?.let {
+                append(" • ")
+                append(it)
+            }
+            sizeBytes?.let {
+                append(" • ")
+                append(formatFileSize(it))
+            }
+            durationMs?.let {
+                append(" • ")
+                append(formatDurationPrecise(it))
+            }
         }
-        sizeBytes?.let {
-            append(" • ")
-            append(formatFileSize(it))
-        }
-        durationMs?.let {
-            append(" • ")
-            append(formatDurationPrecise(it))
-        }
-    }
 
     /**
      * Calculate resume position in this source from a percentage. Used when switching from another
@@ -100,9 +102,7 @@ data class MediaSourceRef(
      * @param percent Resume position as percentage (0.0 - 1.0)
      * @return Position in milliseconds for this source, or null if duration unknown
      */
-    fun positionFromPercent(percent: Float): Long? {
-        return durationMs?.let { (percent * it).toLong() }
-    }
+    fun positionFromPercent(percent: Float): Long? = durationMs?.let { (percent * it).toLong() }
 
     /**
      * Calculate percentage position from milliseconds in this source.
@@ -110,9 +110,7 @@ data class MediaSourceRef(
      * @param positionMs Position in milliseconds
      * @return Percentage (0.0 - 1.0), or null if duration unknown
      */
-    fun percentFromPosition(positionMs: Long): Float? {
-        return durationMs?.takeIf { it > 0 }?.let { positionMs.toFloat() / it }
-    }
+    fun percentFromPosition(positionMs: Long): Float? = durationMs?.takeIf { it > 0 }?.let { positionMs.toFloat() / it }
 
     private fun formatFileSize(bytes: Long): String {
         val gb = bytes / (1024.0 * 1024.0 * 1024.0)
@@ -156,51 +154,55 @@ data class MediaSourceRef(
  * @property bitrate Video bitrate in kbps if known
  */
 data class MediaQuality(
-        val resolution: Int? = null,
-        val resolutionLabel: String? = null,
-        val codec: String? = null,
-        val hdr: String? = null,
-        val bitrate: Int? = null,
+    val resolution: Int? = null,
+    val resolutionLabel: String? = null,
+    val codec: String? = null,
+    val hdr: String? = null,
+    val bitrate: Int? = null,
 ) {
-    fun toDisplayLabel(): String = buildString {
-        resolutionLabel?.let { append(it) }
+    fun toDisplayLabel(): String =
+        buildString {
+            resolutionLabel?.let { append(it) }
                 ?: resolution?.let {
                     append(
-                            when {
-                                it >= 2160 -> "4K"
-                                it >= 1080 -> "1080p"
-                                it >= 720 -> "720p"
-                                it >= 480 -> "480p"
-                                else -> "SD"
-                            }
+                        when {
+                            it >= 2160 -> "4K"
+                            it >= 1080 -> "1080p"
+                            it >= 720 -> "720p"
+                            it >= 480 -> "480p"
+                            else -> "SD"
+                        },
                     )
                 }
-        hdr?.let {
-            if (isNotEmpty()) append(" ")
-            append(it)
-        }
-        codec?.let { c ->
-            if (c.contains("265", ignoreCase = true) || c.contains("HEVC", ignoreCase = true)) {
+            hdr?.let {
                 if (isNotEmpty()) append(" ")
-                append("HEVC")
+                append(it)
+            }
+            codec?.let { c ->
+                if (c.contains("265", ignoreCase = true) || c.contains("HEVC", ignoreCase = true)) {
+                    if (isNotEmpty()) append(" ")
+                    append("HEVC")
+                }
             }
         }
-    }
 
     companion object {
         /** Parse quality info from resolution dimensions. */
-        fun fromDimensions(width: Int?, height: Int?): MediaQuality? {
+        fun fromDimensions(
+            width: Int?,
+            height: Int?,
+        ): MediaQuality? {
             val resolution = height ?: return null
             return MediaQuality(
-                    resolution = resolution,
-                    resolutionLabel =
-                            when {
-                                resolution >= 2160 -> "4K"
-                                resolution >= 1080 -> "1080p"
-                                resolution >= 720 -> "720p"
-                                resolution >= 480 -> "480p"
-                                else -> "SD"
-                            }
+                resolution = resolution,
+                resolutionLabel =
+                    when {
+                        resolution >= 2160 -> "4K"
+                        resolution >= 1080 -> "1080p"
+                        resolution >= 720 -> "720p"
+                        resolution >= 480 -> "480p"
+                        else -> "SD"
+                    },
             )
         }
 
@@ -211,28 +213,28 @@ data class MediaQuality(
         fun fromFilename(filename: String): MediaQuality? {
             val lower = filename.lowercase()
             val resolution =
-                    when {
-                        "2160p" in lower || "4k" in lower || "uhd" in lower -> 2160
-                        "1080p" in lower || "fhd" in lower -> 1080
-                        "720p" in lower || "hd" in lower -> 720
-                        "480p" in lower || "sd" in lower -> 480
-                        else -> null
-                    }
+                when {
+                    "2160p" in lower || "4k" in lower || "uhd" in lower -> 2160
+                    "1080p" in lower || "fhd" in lower -> 1080
+                    "720p" in lower || "hd" in lower -> 720
+                    "480p" in lower || "sd" in lower -> 480
+                    else -> null
+                }
             val hdr =
-                    when {
-                        "dolby.vision" in lower || "dv" in lower -> "Dolby Vision"
-                        "hdr10+" in lower -> "HDR10+"
-                        "hdr10" in lower || "hdr" in lower -> "HDR10"
-                        else -> null
-                    }
+                when {
+                    "dolby.vision" in lower || "dv" in lower -> "Dolby Vision"
+                    "hdr10+" in lower -> "HDR10+"
+                    "hdr10" in lower || "hdr" in lower -> "HDR10"
+                    else -> null
+                }
             val codec =
-                    when {
-                        "x265" in lower || "h.265" in lower || "hevc" in lower -> "HEVC"
-                        "x264" in lower || "h.264" in lower || "avc" in lower -> "H.264"
-                        "av1" in lower -> "AV1"
-                        "vp9" in lower -> "VP9"
-                        else -> null
-                    }
+                when {
+                    "x265" in lower || "h.265" in lower || "hevc" in lower -> "HEVC"
+                    "x264" in lower || "h.264" in lower || "avc" in lower -> "H.264"
+                    "av1" in lower -> "AV1"
+                    "vp9" in lower -> "VP9"
+                    else -> null
+                }
             return if (resolution != null || hdr != null || codec != null) {
                 MediaQuality(resolution = resolution, hdr = hdr, codec = codec)
             } else {
@@ -252,40 +254,41 @@ data class MediaQuality(
  * @property isMulti Whether this has multiple audio tracks
  */
 data class LanguageInfo(
-        val audioLanguages: List<String> = emptyList(),
-        val subtitleLanguages: List<String> = emptyList(),
-        val primaryAudio: String? = null,
-        val isDubbed: Boolean = false,
-        val isMulti: Boolean = false,
+    val audioLanguages: List<String> = emptyList(),
+    val subtitleLanguages: List<String> = emptyList(),
+    val primaryAudio: String? = null,
+    val isDubbed: Boolean = false,
+    val isMulti: Boolean = false,
 ) {
-    fun toDisplayLabel(): String = buildString {
-        if (isMulti && audioLanguages.size > 1) {
-            append("Multi (${audioLanguages.joinToString("/") { it.uppercase() }})")
-        } else if (primaryAudio != null) {
-            append(languageDisplayName(primaryAudio))
-        } else if (audioLanguages.isNotEmpty()) {
-            append(audioLanguages.joinToString("/") { languageDisplayName(it) })
+    fun toDisplayLabel(): String =
+        buildString {
+            if (isMulti && audioLanguages.size > 1) {
+                append("Multi (${audioLanguages.joinToString("/") { it.uppercase() }})")
+            } else if (primaryAudio != null) {
+                append(languageDisplayName(primaryAudio))
+            } else if (audioLanguages.isNotEmpty()) {
+                append(audioLanguages.joinToString("/") { languageDisplayName(it) })
+            }
+            if (isDubbed) {
+                if (isNotEmpty()) append(" ")
+                append("[Dubbed]")
+            }
         }
-        if (isDubbed) {
-            if (isNotEmpty()) append(" ")
-            append("[Dubbed]")
-        }
-    }
 
     private fun languageDisplayName(code: String): String =
-            when (code.lowercase()) {
-                "de", "ger", "german" -> "German"
-                "en", "eng", "english" -> "English"
-                "fr", "fre", "french" -> "French"
-                "es", "spa", "spanish" -> "Spanish"
-                "it", "ita", "italian" -> "Italian"
-                "pt", "por", "portuguese" -> "Portuguese"
-                "ru", "rus", "russian" -> "Russian"
-                "ja", "jpn", "japanese" -> "Japanese"
-                "ko", "kor", "korean" -> "Korean"
-                "zh", "chi", "chinese" -> "Chinese"
-                else -> code.uppercase()
-            }
+        when (code.lowercase()) {
+            "de", "ger", "german" -> "German"
+            "en", "eng", "english" -> "English"
+            "fr", "fre", "french" -> "French"
+            "es", "spa", "spanish" -> "Spanish"
+            "it", "ita", "italian" -> "Italian"
+            "pt", "por", "portuguese" -> "Portuguese"
+            "ru", "rus", "russian" -> "Russian"
+            "ja", "jpn", "japanese" -> "Japanese"
+            "ko", "kor", "korean" -> "Korean"
+            "zh", "chi", "chinese" -> "Chinese"
+            else -> code.uppercase()
+        }
 
     companion object {
         /** Parse language info from filename patterns. e.g., "Movie.2020.German.DL.1080p" */
@@ -306,10 +309,10 @@ data class LanguageInfo(
 
             return if (audioLangs.isNotEmpty() || isDubbed || isMulti) {
                 LanguageInfo(
-                        audioLanguages = audioLangs,
-                        primaryAudio = audioLangs.firstOrNull(),
-                        isDubbed = isDubbed,
-                        isMulti = isMulti
+                    audioLanguages = audioLangs,
+                    primaryAudio = audioLangs.firstOrNull(),
+                    isDubbed = isDubbed,
+                    isMulti = isMulti,
                 )
             } else {
                 null
@@ -328,16 +331,17 @@ data class LanguageInfo(
  * @property audioChannels Audio channel layout (e.g., "5.1", "7.1", "2.0")
  */
 data class MediaFormat(
-        val container: String,
-        val videoCodec: String? = null,
-        val audioCodec: String? = null,
-        val audioBitrate: Int? = null,
-        val audioChannels: String? = null,
+    val container: String,
+    val videoCodec: String? = null,
+    val audioCodec: String? = null,
+    val audioBitrate: Int? = null,
+    val audioChannels: String? = null,
 ) {
-    fun toDisplayLabel(): String = buildString {
-        append(container.uppercase())
-        audioCodec?.let { ac ->
-            val label =
+    fun toDisplayLabel(): String =
+        buildString {
+            append(container.uppercase())
+            audioCodec?.let { ac ->
+                val label =
                     when {
                         "truehd" in ac.lowercase() -> "TrueHD"
                         "dts" in ac.lowercase() && "hd" in ac.lowercase() -> "DTS-HD"
@@ -348,50 +352,50 @@ data class MediaFormat(
                         "flac" in ac.lowercase() -> "FLAC"
                         else -> null
                     }
-            label?.let {
-                append(" • ")
-                append(it)
-                audioChannels?.let { ch -> append(" $ch") }
+                label?.let {
+                    append(" • ")
+                    append(it)
+                    audioChannels?.let { ch -> append(" $ch") }
+                }
             }
         }
-    }
 
     companion object {
         /** Parse format from filename extension and patterns. */
         fun fromFilename(filename: String): MediaFormat? {
             val lower = filename.lowercase()
             val container =
-                    when {
-                        lower.endsWith(".mkv") -> "mkv"
-                        lower.endsWith(".mp4") || lower.endsWith(".m4v") -> "mp4"
-                        lower.endsWith(".avi") -> "avi"
-                        lower.endsWith(".mov") -> "mov"
-                        lower.endsWith(".wmv") -> "wmv"
-                        lower.endsWith(".ts") -> "ts"
-                        ".mkv" in lower -> "mkv"
-                        ".mp4" in lower -> "mp4"
-                        else -> return null
-                    }
+                when {
+                    lower.endsWith(".mkv") -> "mkv"
+                    lower.endsWith(".mp4") || lower.endsWith(".m4v") -> "mp4"
+                    lower.endsWith(".avi") -> "avi"
+                    lower.endsWith(".mov") -> "mov"
+                    lower.endsWith(".wmv") -> "wmv"
+                    lower.endsWith(".ts") -> "ts"
+                    ".mkv" in lower -> "mkv"
+                    ".mp4" in lower -> "mp4"
+                    else -> return null
+                }
             val audioCodec =
-                    when {
-                        "truehd" in lower -> "truehd"
-                        "dts-hd" in lower || "dts.hd" in lower -> "dts-hd"
-                        "dts" in lower -> "dts"
-                        "atmos" in lower || "eac3" in lower || "ddp" in lower -> "eac3"
-                        "dd5.1" in lower || "ac3" in lower -> "ac3"
-                        else -> null
-                    }
+                when {
+                    "truehd" in lower -> "truehd"
+                    "dts-hd" in lower || "dts.hd" in lower -> "dts-hd"
+                    "dts" in lower -> "dts"
+                    "atmos" in lower || "eac3" in lower || "ddp" in lower -> "eac3"
+                    "dd5.1" in lower || "ac3" in lower -> "ac3"
+                    else -> null
+                }
             val channels =
-                    when {
-                        "7.1" in lower -> "7.1"
-                        "5.1" in lower -> "5.1"
-                        "2.0" in lower -> "2.0"
-                        else -> null
-                    }
+                when {
+                    "7.1" in lower -> "7.1"
+                    "5.1" in lower -> "5.1"
+                    "2.0" in lower -> "2.0"
+                    else -> null
+                }
             return MediaFormat(
-                    container = container,
-                    audioCodec = audioCodec,
-                    audioChannels = channels
+                container = container,
+                audioCodec = audioCodec,
+                audioChannels = channels,
             )
         }
     }
@@ -404,9 +408,9 @@ data class MediaFormat(
  * the same media are available.
  */
 enum class SourceBadge(
-        val displayText: String,
-        val icon: String, // Material icon name or custom drawable reference
-        val colorHex: String, // Primary color for the badge
+    val displayText: String,
+    val icon: String, // Material icon name or custom drawable reference
+    val colorHex: String, // Primary color for the badge
 ) {
     /** Telegram source - blue T badge */
     TELEGRAM("TG", "telegram", "#2AABEE"),
@@ -424,19 +428,20 @@ enum class SourceBadge(
     PLEX("Plex", "plex", "#E5A00D"),
 
     /** Unknown/other source */
-    OTHER("?", "help", "#9E9E9E");
+    OTHER("?", "help", "#9E9E9E"),
+    ;
 
     companion object {
         fun fromSourceType(sourceType: SourceType): SourceBadge =
-                when (sourceType) {
-                    SourceType.TELEGRAM -> TELEGRAM
-                    SourceType.XTREAM -> XTREAM
-                    SourceType.IO -> IO
-                    SourceType.AUDIOBOOK -> AUDIOBOOK
-                    SourceType.LOCAL -> IO
-                    SourceType.PLEX -> PLEX
-                    SourceType.OTHER -> OTHER
-                    SourceType.UNKNOWN -> OTHER
-                }
+            when (sourceType) {
+                SourceType.TELEGRAM -> TELEGRAM
+                SourceType.XTREAM -> XTREAM
+                SourceType.IO -> IO
+                SourceType.AUDIOBOOK -> AUDIOBOOK
+                SourceType.LOCAL -> IO
+                SourceType.PLEX -> PLEX
+                SourceType.OTHER -> OTHER
+                SourceType.UNKNOWN -> OTHER
+            }
     }
 }

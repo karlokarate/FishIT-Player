@@ -7,14 +7,13 @@ package com.fishit.player.core.feature
  *
  * See: docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md
  */
+object Features {
+    // =========================================================================
+    // Canonical Media Features
+    // =========================================================================
+}
 
-// =============================================================================
-// Canonical Media Features
-// =============================================================================
-
-/**
- * Features related to the canonical media model and normalization.
- */
+/** Features related to the canonical media model and normalization. */
 object CanonicalMediaFeatures {
     /** Canonical media model (MediaItem, Episode, etc.) */
     val CANONICAL_MODEL = FeatureId("media.canonical_model")
@@ -30,9 +29,7 @@ object CanonicalMediaFeatures {
 // Telegram Features
 // =============================================================================
 
-/**
- * Features related to Telegram/TDLib pipeline.
- */
+/** Features related to Telegram/TDLib pipeline. */
 object TelegramFeatures {
     /** Complete chat history scanning and streaming */
     val FULL_HISTORY_STREAMING = FeatureId("telegram.full_history_streaming")
@@ -45,9 +42,7 @@ object TelegramFeatures {
 // Xtream Features
 // =============================================================================
 
-/**
- * Features related to Xtream Codes API pipeline.
- */
+/** Features related to Xtream Codes API pipeline. */
 object XtreamFeatures {
     /** Live TV streaming via Xtream */
     val LIVE_STREAMING = FeatureId("xtream.live_streaming")
@@ -63,9 +58,7 @@ object XtreamFeatures {
 // App Features
 // =============================================================================
 
-/**
- * App-level features.
- */
+/** App-level features. */
 object AppFeatures {
     /** App-wide cache management (clear cache, storage info, etc.) */
     val CACHE_MANAGEMENT = FeatureId("app.cache_management")
@@ -75,9 +68,7 @@ object AppFeatures {
 // Logging Features
 // =============================================================================
 
-/**
- * Logging and telemetry features.
- */
+/** Logging and telemetry features. */
 object LoggingFeatures {
     /** Unified logging facade */
     val UNIFIED_LOGGING = FeatureId("infra.logging.unified")
@@ -87,9 +78,7 @@ object LoggingFeatures {
 // Settings Features
 // =============================================================================
 
-/**
- * Settings and configuration features.
- */
+/** Settings and configuration features. */
 object SettingsFeatures {
     /** Single DataStore for all app settings */
     val CORE_SINGLE_DATASTORE = FeatureId("settings.core_single_datastore")
@@ -99,9 +88,7 @@ object SettingsFeatures {
 // UI Screen Features
 // =============================================================================
 
-/**
- * UI screen features representing navigation destinations.
- */
+/** UI screen features representing navigation destinations. */
 object UiFeatures {
     /** Home screen */
     val SCREEN_HOME = FeatureId("ui.screen.home")

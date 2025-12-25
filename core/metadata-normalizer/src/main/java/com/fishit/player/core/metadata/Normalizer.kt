@@ -7,7 +7,6 @@ import com.fishit.player.core.model.QualityTags
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceKey
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.VariantHealthStore
 import com.fishit.player.core.model.VariantPreferences
 import com.fishit.player.core.model.VariantSelector
@@ -43,7 +42,6 @@ import com.fishit.player.core.model.ids.asPipelineItemId
  * - Single NormalizedMedia "Breaking Bad S01E01" with 2 variants, season=1, episode=1
  */
 object Normalizer {
-
     /**
      * Normalize and merge raw metadata from multiple pipelines.
      *
@@ -52,8 +50,8 @@ object Normalizer {
      * @return Deduplicated normalized media with sorted variants
      */
     fun normalize(
-            rawItems: List<RawMediaMetadata>,
-            prefs: VariantPreferences = VariantPreferences.default(),
+        rawItems: List<RawMediaMetadata>,
+        prefs: VariantPreferences = VariantPreferences.default(),
     ): List<NormalizedMedia> {
         val linkedGroups = mutableMapOf<CanonicalId, MutableList<RawMediaMetadata>>()
         val unlinkedItems = mutableListOf<RawMediaMetadata>()
@@ -68,62 +66,63 @@ object Normalizer {
         }
 
         val linkedNormalized =
-                linkedGroups.mapNotNull { (canonicalId, group) ->
-                    if (group.isEmpty()) return@mapNotNull null
+            linkedGroups.mapNotNull { (canonicalId, group) ->
+                if (group.isEmpty()) return@mapNotNull null
 
-                    val reference = group.first()
-                    val variants = group.mapNotNull { raw -> raw.toMediaVariant() }.toMutableList()
+                val reference = group.first()
+                val variants = group.mapNotNull { raw -> raw.toMediaVariant() }.toMutableList()
 
-                    if (variants.isEmpty()) {
-                        return@mapNotNull null // All variants are dead or invalid
-                    }
-
-                    val sortedVariants = VariantSelector.sortByPreference(variants, prefs)
-                    variants.clear()
-                    variants.addAll(sortedVariants)
-
-                    val bestVariant = variants.first()
-
-                    // Aggregate season/episode from group (first non-null wins)
-                    val aggregatedSeason = group.firstNotNullOfOrNull { it.season }
-                    val aggregatedEpisode = group.firstNotNullOfOrNull { it.episode }
-                    
-                    // Extract typed TMDB reference from externalIds
-                    val tmdbRef = group.firstNotNullOfOrNull { it.externalIds.tmdb }
-
-                    NormalizedMedia(
-                            canonicalId = canonicalId,
-                            title = reference.originalTitle, // Later: apply title cleaning here
-                            year = reference.year,
-                            mediaType = reference.mediaType,
-                            season = aggregatedSeason,
-                            episode = aggregatedEpisode,
-                            tmdb = tmdbRef,
-                            primaryPipelineIdTag = bestVariant.sourceKey.pipeline,
-                            primarySourceId = bestVariant.sourceKey.sourceId,
-                            variants = variants,
-                    )
+                if (variants.isEmpty()) {
+                    return@mapNotNull null // All variants are dead or invalid
                 }
+
+                val sortedVariants = VariantSelector.sortByPreference(variants, prefs)
+                variants.clear()
+                variants.addAll(sortedVariants)
+
+                val bestVariant = variants.first()
+
+                // Aggregate season/episode from group (first non-null wins)
+                val aggregatedSeason = group.firstNotNullOfOrNull { it.season }
+                val aggregatedEpisode = group.firstNotNullOfOrNull { it.episode }
+
+                // Extract typed TMDB reference from externalIds
+                val tmdbRef = group.firstNotNullOfOrNull { it.externalIds.tmdb }
+
+                NormalizedMedia(
+                    canonicalId = canonicalId,
+                    title = reference.originalTitle, // Later: apply title cleaning here
+                    year = reference.year,
+                    mediaType = reference.mediaType,
+                    season = aggregatedSeason,
+                    episode = aggregatedEpisode,
+                    tmdb = tmdbRef,
+                    primaryPipelineIdTag = bestVariant.sourceKey.pipeline,
+                    primarySourceId = bestVariant.sourceKey.sourceId,
+                    variants = variants,
+                )
+            }
 
         val unlinkedNormalized =
-                unlinkedItems.mapNotNull { raw ->
-                    val variant = raw.toMediaVariant() ?: return@mapNotNull null
-                    val variants = mutableListOf(variant)
+            unlinkedItems.mapNotNull { raw ->
+                val variant = raw.toMediaVariant() ?: return@mapNotNull null
+                val variants = mutableListOf(variant)
 
-                    NormalizedMedia(
-                            canonicalId = null,
-                            title = raw.originalTitle,
-                            year = raw.year,
-                            mediaType = raw.mediaType.takeUnless { it == MediaType.UNKNOWN }
-                                    ?: MediaType.UNKNOWN,
-                            season = raw.season,
-                            episode = raw.episode,
-                            tmdb = raw.externalIds.tmdb,
-                            primaryPipelineIdTag = variant.sourceKey.pipeline,
-                            primarySourceId = variant.sourceKey.sourceId,
-                            variants = variants,
-                    )
-                }
+                NormalizedMedia(
+                    canonicalId = null,
+                    title = raw.originalTitle,
+                    year = raw.year,
+                    mediaType =
+                        raw.mediaType.takeUnless { it == MediaType.UNKNOWN }
+                            ?: MediaType.UNKNOWN,
+                    season = raw.season,
+                    episode = raw.episode,
+                    tmdb = raw.externalIds.tmdb,
+                    primaryPipelineIdTag = variant.sourceKey.pipeline,
+                    primarySourceId = variant.sourceKey.sourceId,
+                    variants = variants,
+                )
+            }
 
         return linkedNormalized + unlinkedNormalized
     }
@@ -154,11 +153,11 @@ object Normalizer {
 
         // 3. Fallback canonical ID from content metadata
         return FallbackCanonicalKeyGenerator.generateFallbackCanonicalId(
-                originalTitle = raw.originalTitle,
-                year = raw.year,
-                season = raw.season,
-                episode = raw.episode,
-                mediaType = raw.mediaType,
+            originalTitle = raw.originalTitle,
+            year = raw.year,
+            season = raw.season,
+            episode = raw.episode,
+            mediaType = raw.mediaType,
         )
     }
 
@@ -172,13 +171,13 @@ object Normalizer {
         }
 
         return MediaVariant(
-                sourceKey = sourceKey,
-                qualityTag = deriveQualityTag(),
-                resolutionHeight = deriveResolutionHeight(),
-                language = deriveLanguage(),
-                isOmu = deriveIsOmu(),
-                sourceUrl = deriveSourceUrl(),
-                available = true,
+            sourceKey = sourceKey,
+            qualityTag = deriveQualityTag(),
+            resolutionHeight = deriveResolutionHeight(),
+            language = deriveLanguage(),
+            isOmu = deriveIsOmu(),
+            sourceUrl = deriveSourceUrl(),
+            available = true,
         )
     }
 
@@ -188,8 +187,8 @@ object Normalizer {
 
         return when {
             titleUpper.contains("2160P") ||
-                    titleUpper.contains("4K") ||
-                    titleUpper.contains("UHD") -> QualityTags.UHD
+                titleUpper.contains("4K") ||
+                titleUpper.contains("UHD") -> QualityTags.UHD
             titleUpper.contains("1080P") || titleUpper.contains("FHD") -> QualityTags.FHD
             titleUpper.contains("720P") -> QualityTags.HD
             titleUpper.contains("CAM") || titleUpper.contains("HDCAM") -> QualityTags.CAM
@@ -223,9 +222,9 @@ object Normalizer {
 
         return when {
             titleUpper.contains("[GER]") ||
-                    titleUpper.contains("GERMAN") ||
-                    labelUpper.contains("GERMAN") ||
-                    labelUpper.contains("DE") -> "de"
+                titleUpper.contains("GERMAN") ||
+                labelUpper.contains("GERMAN") ||
+                labelUpper.contains("DE") -> "de"
             titleUpper.contains("[ENG]") || titleUpper.contains("ENGLISH") -> "en"
             titleUpper.contains("[FR]") || titleUpper.contains("FRENCH") -> "fr"
             titleUpper.contains("[ES]") || titleUpper.contains("SPANISH") -> "es"
@@ -238,10 +237,10 @@ object Normalizer {
     private fun RawMediaMetadata.deriveIsOmu(): Boolean {
         val titleLower = originalTitle.lowercase()
         return titleLower.contains("omu") ||
-                titleLower.contains("[omu]") ||
-                titleLower.contains("ov ") ||
-                titleLower.contains("[ov]") ||
-                titleLower.contains("subbed")
+            titleLower.contains("[omu]") ||
+            titleLower.contains("ov ") ||
+            titleLower.contains("[ov]") ||
+            titleLower.contains("subbed")
     }
 
     /**

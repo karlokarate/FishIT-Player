@@ -1,68 +1,135 @@
 package com.fishit.player.infra.transport.telegram.di
 
-import com.fishit.player.infra.transport.telegram.DefaultTelegramTransportClient
+// ============================================================================
+// ARCHITECTURE NOTE:
+// Telegram transport is SSOT-finalized (December 2025).
+// Do NOT add additional Telegram transport implementations.
+// Do NOT create parallel TdlClient instances.
+// See docs/v2/architecture/TELEGRAM_TRANSPORT_SSOT.md
+// ============================================================================
+
+import com.fishit.player.infra.transport.telegram.TelegramAuthClient
+import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
+import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
+import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import com.fishit.player.infra.transport.telegram.file.TelegramFileDownloadManager
-import com.fishit.player.infra.transport.telegram.imaging.TelegramThumbFetcherImpl
+import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.g000sha256.tdl.TdlClient
+import javax.inject.Named
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
- * Hilt module for Telegram transport layer.
+ * Hilt module for Telegram transport layer - SSOT Implementation.
  *
- * Provides transport clients for use by higher layers (pipeline, playback, imaging).
+ * **SSOT Principle (Single Source of Truth):**
+ * - Exactly ONE [TelegramClient] singleton instance owns all Telegram transport capabilities
+ * - All typed interfaces resolve to THIS SAME INSTANCE
+ * - One TdlClient, one orchestrating wrapper, one truth
  *
  * **v2 Architecture:**
  * - Accepts TdlClient directly (not TdlibClientProvider which is v1 legacy)
  * - TdlClient must be provided by the app module (requires Android Context for initialization)
  * - App module handles TDLib parameter setup, logging installation, and lifecycle
  *
- * **Provided Interfaces:**
- * - [TelegramTransportClient] - Main transport client (auth, chats, messages, files)
- * - [TelegramFileClient] - File download operations with priority queue
- * - [TelegramThumbFetcher] - Thumbnail fetching for Coil integration
+ * **Provided Interfaces (all backed by single TelegramClient instance):**
+ * - [TelegramClient]
+ * - Unified facade (for consumers that need multiple capabilities)
+ * - [TelegramAuthClient]
+ * - Authentication operations
+ * - [TelegramHistoryClient]
+ * - Chat/message browsing operations
+ * - [TelegramFileClient]
+ * - File download operations with priority queue
+ * - [TelegramThumbFetcher]
+ * - Thumbnail fetching for Coil integration
+ *
+ * **Why SSOT matters:**
+ * - Shared state/retry/caching logic in one place
+ * - Clear ownership ("who is responsible?")
+ * - No duplicate Flows/Listeners
+ * - One truth, not four "truths"
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object TelegramTransportModule {
 
+    private const val TELEGRAM_AUTH_SCOPE = "TelegramAuthScope"
     private const val TELEGRAM_FILE_SCOPE = "TelegramFileScope"
 
-    /**
-     * Provides a dedicated coroutine scope for Telegram file operations.
-     */
+    /** Provides a dedicated coroutine scope for Telegram auth operations. */
+    @Provides
+    @Singleton
+    @Named(TELEGRAM_AUTH_SCOPE)
+    fun provideTelegramAuthScope(): CoroutineScope =
+            CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Provides a dedicated coroutine scope for Telegram file operations. */
     @Provides
     @Singleton
     @Named(TELEGRAM_FILE_SCOPE)
     fun provideTelegramFileScope(): CoroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
-     * Provides the TelegramTransportClient singleton.
+     * Provides the SINGLE unified TelegramClient instance (SSOT).
      *
-     * The TdlClient is expected to be provided by the app module
-     * via a separate @Provides method (created after TDLib parameter setup).
+     * This is the ONE instance that backs ALL typed interfaces. Internal implementation (
+     * [DefaultTelegramClient]) composes TdlibAuthSession, TelegramChatBrowser,
+     * TelegramFileDownloadManager, and TelegramThumbFetcherImpl.
+     *
+     * **All other providers in this module return THIS SAME INSTANCE.**
      */
     @Provides
     @Singleton
-    fun provideTelegramTransportClient(
-        tdlClient: TdlClient
-    ): TelegramTransportClient {
-        return DefaultTelegramTransportClient(tdlClient)
+    fun provideTelegramClient(
+            tdlClient: TdlClient,
+            sessionConfig: TelegramSessionConfig,
+            @Named(TELEGRAM_AUTH_SCOPE) authScope: CoroutineScope,
+            @Named(TELEGRAM_FILE_SCOPE) fileScope: CoroutineScope,
+    ): TelegramClient {
+        return DefaultTelegramClient(
+                tdlClient = tdlClient,
+                sessionConfig = sessionConfig,
+                authScope = authScope,
+                fileScope = fileScope,
+        )
     }
 
     /**
-     * Provides the TelegramFileClient for file download operations.
+     * Provides TelegramAuthClient - resolves to the SAME TelegramClient instance.
+     *
+     * Consumers should inject this interface when they only need auth capabilities.
+     */
+    @Provides
+    @Singleton
+    fun provideTelegramAuthClient(telegramClient: TelegramClient): TelegramAuthClient =
+            telegramClient
+
+    /**
+     * Provides TelegramHistoryClient - resolves to the SAME TelegramClient instance.
+     *
+     * Features:
+     * - Chat list retrieval with member counts
+     * - Paginated message history loading
+     * - Full chat loading for catalog building
+     * - Message search within chats
+     * - Real-time message updates via Flow
+     */
+    @Provides
+    @Singleton
+    fun provideTelegramHistoryClient(telegramClient: TelegramClient): TelegramHistoryClient =
+            telegramClient
+
+    /**
+     * Provides TelegramFileClient - resolves to the SAME TelegramClient instance.
      *
      * Features:
      * - Priority-based download queue (streaming priority=32)
@@ -72,15 +139,11 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramFileClient(
-        tdlClient: TdlClient,
-        @Named(TELEGRAM_FILE_SCOPE) scope: CoroutineScope
-    ): TelegramFileClient {
-        return TelegramFileDownloadManager(tdlClient, scope)
-    }
+    fun provideTelegramFileClient(telegramClient: TelegramClient): TelegramFileClient =
+            telegramClient
 
     /**
-     * Provides the TelegramThumbFetcher for thumbnail loading.
+     * Provides TelegramThumbFetcher - resolves to the SAME TelegramClient instance.
      *
      * Features:
      * - RemoteId-first design (no fileId stored)
@@ -89,9 +152,6 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcher(
-        fileClient: TelegramFileClient
-    ): TelegramThumbFetcher {
-        return TelegramThumbFetcherImpl(fileClient)
-    }
+    fun provideTelegramThumbFetcher(telegramClient: TelegramClient): TelegramThumbFetcher =
+            telegramClient
 }

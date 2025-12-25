@@ -27,41 +27,113 @@ data class GroupResult(
  * Must NOT match technical tags (codec, resolution, etc.)
  */
 object GroupRules {
-
     // Technical tags that are NOT release groups (lowercase)
-    private val invalidGroups = setOf(
-        // Resolutions
-        "sd", "hd", "720p", "1080p", "2160p", "4k", "uhd",
-        // Codecs
-        "x264", "x265", "hevc", "h264", "h265", "avc", "xvid", "divx",
-        "av1", "vp9",
-        // Audio
-        "aac", "ac3", "dts", "dd", "flac", "mp3", "truehd", "atmos",
-        // Sources
-        "web", "webdl", "webrip", "bluray", "bdrip", "hdtv", "dvdrip",
-        "dvd", "brrip", "hdrip",
-        // Streaming services
-        "amzn", "nf", "netflix", "dsnp", "hmax", "atvp",
-        // Languages
-        "german", "ger", "english", "eng", "multi", "dual", "dl",
-        // Other tech terms
-        "proper", "repack", "internal", "readnfo",
-        "extended", "uncut", "directors", "dc", "remastered",
-        "hdr", "hdr10", "dv", "imax", "3d",
-    )
+    private val invalidGroups =
+        setOf(
+            // Resolutions
+            "sd",
+            "hd",
+            "720p",
+            "1080p",
+            "2160p",
+            "4k",
+            "uhd",
+            // Codecs
+            "x264",
+            "x265",
+            "hevc",
+            "h264",
+            "h265",
+            "avc",
+            "xvid",
+            "divx",
+            "av1",
+            "vp9",
+            // Audio
+            "aac",
+            "ac3",
+            "dts",
+            "dd",
+            "flac",
+            "mp3",
+            "truehd",
+            "atmos",
+            // Sources
+            "web",
+            "webdl",
+            "webrip",
+            "bluray",
+            "bdrip",
+            "hdtv",
+            "dvdrip",
+            "dvd",
+            "brrip",
+            "hdrip",
+            // Streaming services
+            "amzn",
+            "nf",
+            "netflix",
+            "dsnp",
+            "hmax",
+            "atvp",
+            // Languages
+            "german",
+            "ger",
+            "english",
+            "eng",
+            "multi",
+            "dual",
+            "dl",
+            // Other tech terms
+            "proper",
+            "repack",
+            "internal",
+            "readnfo",
+            "extended",
+            "uncut",
+            "directors",
+            "dc",
+            "remastered",
+            "hdr",
+            "hdr10",
+            "dv",
+            "imax",
+            "3d",
+        )
 
     // Known valid scene groups (sample - can be expanded)
-    private val knownGroups = setOf(
-        "sparks", "dimension", "lol", "fgt", "eta", "killers",
-        "memento", "ntb", "ntg", "tbs", "yify", "yts",
-        "flux", "playweb", "cmrg", "exploited",
-    )
+    private val knownGroups =
+        setOf(
+            "sparks",
+            "dimension",
+            "lol",
+            "fgt",
+            "eta",
+            "killers",
+            "memento",
+            "ntb",
+            "ntg",
+            "tbs",
+            "yify",
+            "yts",
+            "flux",
+            "playweb",
+            "cmrg",
+            "exploited",
+        )
 
     // Known anime subgroups (sample)
-    private val knownAnimeGroups = setOf(
-        "subsplease", "erai-raws", "judas", "horriblesubs", "damedesuyo",
-        "ember", "sallysubs", "doki",
-    )
+    private val knownAnimeGroups =
+        setOf(
+            "subsplease",
+            "erai-raws",
+            "judas",
+            "horriblesubs",
+            "damedesuyo",
+            "ember",
+            "sallysubs",
+            "doki",
+        )
 
     /**
      * Detect release group from tokens.
@@ -69,7 +141,10 @@ object GroupRules {
      * @param tokens List of tokens from scene name
      * @param rawInput Original input string (for bracket detection)
      */
-    fun detect(tokens: List<Token>, rawInput: String): GroupResult {
+    fun detect(
+        tokens: List<Token>,
+        rawInput: String,
+    ): GroupResult {
         // First check for anime subgroup in brackets [SubGroup]
         val animeGroup = detectAnimeSubgroup(rawInput)
         if (animeGroup != null) {
@@ -149,7 +224,5 @@ object GroupRules {
     /**
      * Get all known group names.
      */
-    fun getKnownGroups(): Set<String> {
-        return knownGroups + knownAnimeGroups
-    }
+    fun getKnownGroups(): Set<String> = knownGroups + knownAnimeGroups
 }

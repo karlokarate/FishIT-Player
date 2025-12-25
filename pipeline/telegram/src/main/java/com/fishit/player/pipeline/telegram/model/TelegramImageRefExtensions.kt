@@ -33,8 +33,7 @@ import com.fishit.player.core.model.ImageRef
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 
-// =============================================================================
-// TelegramMediaItem Extensions
+// region TelegramMediaItem Extensions
 // =============================================================================
 
 /**

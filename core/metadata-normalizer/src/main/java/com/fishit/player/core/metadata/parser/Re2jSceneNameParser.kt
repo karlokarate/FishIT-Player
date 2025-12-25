@@ -57,7 +57,6 @@ enum class ContentCandidate {
  * used.
  */
 class Re2jSceneNameParser : SceneNameParser {
-
     // =========================================================================
     // MAIN PARSE METHOD
     // =========================================================================
@@ -110,28 +109,28 @@ class Re2jSceneNameParser : SceneNameParser {
 
         // Map quality tag to QualityInfo
         val quality =
-                result.quality?.let { tag ->
-                    when (tag.uppercase()) {
-                        "4K", "UHD", "2160P" -> QualityInfo(resolution = "2160p")
-                        "FHD", "1080P" -> QualityInfo(resolution = "1080p")
-                        "HD", "720P" -> QualityInfo(resolution = "720p")
-                        "SD", "480P" -> QualityInfo(resolution = "480p")
-                        "LOWQ", "LOW" -> QualityInfo(resolution = "SD")
-                        "HEVC", "H265" -> QualityInfo(codec = "HEVC")
-                        "H264" -> QualityInfo(codec = "H.264")
-                        "HDR" -> QualityInfo(hdr = "HDR")
-                        else -> null
-                    }
+            result.quality?.let { tag ->
+                when (tag.uppercase()) {
+                    "4K", "UHD", "2160P" -> QualityInfo(resolution = "2160p")
+                    "FHD", "1080P" -> QualityInfo(resolution = "1080p")
+                    "HD", "720P" -> QualityInfo(resolution = "720p")
+                    "SD", "480P" -> QualityInfo(resolution = "480p")
+                    "LOWQ", "LOW" -> QualityInfo(resolution = "SD")
+                    "HEVC", "H265" -> QualityInfo(codec = "HEVC")
+                    "H264" -> QualityInfo(codec = "H.264")
+                    "HDR" -> QualityInfo(hdr = "HDR")
+                    else -> null
                 }
+            }
 
         return ParsedSceneInfo(
-                title = result.title,
-                year = result.year,
-                isEpisode = false,
-                season = null,
-                episode = null,
-                quality = quality,
-                edition = EditionInfo(),
+            title = result.title,
+            year = result.year,
+            isEpisode = false,
+            season = null,
+            episode = null,
+            quality = quality,
+            edition = EditionInfo(),
         )
     }
 
@@ -146,13 +145,13 @@ class Re2jSceneNameParser : SceneNameParser {
         val (title, year) = XtreamFormatRules.parseParenthesesFormat(input)
 
         return ParsedSceneInfo(
-                title = title,
-                year = year,
-                isEpisode = false,
-                season = null,
-                episode = null,
-                quality = null,
-                edition = EditionInfo(),
+            title = title,
+            year = year,
+            isEpisode = false,
+            season = null,
+            episode = null,
+            quality = null,
+            edition = EditionInfo(),
         )
     }
 
@@ -195,12 +194,12 @@ class Re2jSceneNameParser : SceneNameParser {
 
         // Extract title (everything before S/E marker or tech boundary)
         val titleEndPos =
-                if (markerPos > 0) {
-                    markerPos
-                } else {
-                    val techIdx = TechBoundaryDetector.findTechBoundary(tokens)
-                    if (techIdx < tokens.size) tokens[techIdx].startIndex else input.length
-                }
+            if (markerPos > 0) {
+                markerPos
+            } else {
+                val techIdx = TechBoundaryDetector.findTechBoundary(tokens)
+                if (techIdx < tokens.size) tokens[techIdx].startIndex else input.length
+            }
 
         val rawTitle = if (titleEndPos > 0) input.substring(0, titleEndPos) else input
         val cleanedTitle = cleanTitle(rawTitle, input)
@@ -213,13 +212,13 @@ class Re2jSceneNameParser : SceneNameParser {
         val edition = convertEditionResult(editionResult)
 
         return ParsedSceneInfo(
-                title = cleanedTitle,
-                year = null, // Series don't have years in the same way
-                isEpisode = true,
-                season = seResult.season,
-                episode = seResult.episode,
-                quality = quality,
-                edition = edition,
+            title = cleanedTitle,
+            year = null, // Series don't have years in the same way
+            isEpisode = true,
+            season = seResult.season,
+            episode = seResult.episode,
+            quality = quality,
+            edition = edition,
         )
     }
 
@@ -231,22 +230,22 @@ class Re2jSceneNameParser : SceneNameParser {
         // Find tech boundary first
         val techBoundaryIdx = TechBoundaryDetector.findTechBoundary(tokens)
         val techBoundaryPos =
-                if (techBoundaryIdx < tokens.size) {
-                    tokens[techBoundaryIdx].startIndex
-                } else {
-                    input.length
-                }
+            if (techBoundaryIdx < tokens.size) {
+                tokens[techBoundaryIdx].startIndex
+            } else {
+                input.length
+            }
 
         // Extract year (prefer last valid year before tech boundary)
         val yearResult = YearRules.extract(input, techBoundaryPos)
 
         // Title is everything before year (or before tech boundary if no year)
         val titleEndPos =
-                when {
-                    yearResult.position > 0 -> yearResult.position
-                    techBoundaryPos > 0 && techBoundaryPos < input.length -> techBoundaryPos
-                    else -> input.length
-                }
+            when {
+                yearResult.position > 0 -> yearResult.position
+                techBoundaryPos > 0 && techBoundaryPos < input.length -> techBoundaryPos
+                else -> input.length
+            }
 
         val rawTitle = input.substring(0, titleEndPos)
         val cleanedTitle = cleanTitle(rawTitle, input)
@@ -259,13 +258,13 @@ class Re2jSceneNameParser : SceneNameParser {
         val edition = convertEditionResult(editionResult)
 
         return ParsedSceneInfo(
-                title = cleanedTitle,
-                year = yearResult.year,
-                isEpisode = false,
-                season = null,
-                episode = null,
-                quality = quality,
-                edition = edition,
+            title = cleanedTitle,
+            year = yearResult.year,
+            isEpisode = false,
+            season = null,
+            episode = null,
+            quality = quality,
+            edition = edition,
         )
     }
 
@@ -277,11 +276,11 @@ class Re2jSceneNameParser : SceneNameParser {
         // Find tech boundary
         val techBoundaryIdx = TechBoundaryDetector.findTechBoundary(tokens)
         val techBoundaryPos =
-                if (techBoundaryIdx < tokens.size) {
-                    tokens[techBoundaryIdx].startIndex
-                } else {
-                    input.length
-                }
+            if (techBoundaryIdx < tokens.size) {
+                tokens[techBoundaryIdx].startIndex
+            } else {
+                input.length
+            }
 
         val rawTitle = if (techBoundaryPos > 0) input.substring(0, techBoundaryPos) else input
         val cleanedTitle = cleanTitle(rawTitle, input)
@@ -290,13 +289,13 @@ class Re2jSceneNameParser : SceneNameParser {
         val quality = extractQuality(tokens, input)
 
         return ParsedSceneInfo(
-                title = cleanedTitle,
-                year = null,
-                isEpisode = false,
-                season = null,
-                episode = null,
-                quality = quality,
-                edition = EditionInfo(),
+            title = cleanedTitle,
+            year = null,
+            isEpisode = false,
+            season = null,
+            episode = null,
+            quality = quality,
+            edition = EditionInfo(),
         )
     }
 
@@ -313,7 +312,10 @@ class Re2jSceneNameParser : SceneNameParser {
      * 3. Collapse whitespace
      * 4. Trim trailing separators
      */
-    private fun cleanTitle(rawTitle: String, fullInput: String): String {
+    private fun cleanTitle(
+        rawTitle: String,
+        fullInput: String,
+    ): String {
         var title = rawTitle.trim()
 
         // Remove anime subgroup prefix
@@ -361,7 +363,10 @@ class Re2jSceneNameParser : SceneNameParser {
     }
 
     /** Extract quality information using rule packs. */
-    private fun extractQuality(tokens: List<Token>, rawInput: String): QualityInfo {
+    private fun extractQuality(
+        tokens: List<Token>,
+        rawInput: String,
+    ): QualityInfo {
         val resResult = ResolutionRules.detect(tokens)
         val srcResult = SourceRules.detect(tokens)
         val codecResult = VideoCodecRules.detect(tokens)
@@ -369,29 +374,26 @@ class Re2jSceneNameParser : SceneNameParser {
         val groupResult = GroupRules.detect(tokens, rawInput)
 
         return QualityInfo(
-                resolution = resResult.resolution,
-                source = srcResult.source,
-                codec = codecResult.codec,
-                audio = audio,
-                hdr = null, // HDR is in EditionRules
-                group = groupResult.group,
+            resolution = resResult.resolution,
+            source = srcResult.source,
+            codec = codecResult.codec,
+            audio = audio,
+            hdr = null, // HDR is in EditionRules
+            group = groupResult.group,
         )
     }
 
     /** Convert EditionResult to EditionInfo. */
-    private fun convertEditionResult(
-            result: com.fishit.player.core.metadata.parser.rules.EditionResult
-    ): EditionInfo {
-        return EditionInfo(
-                extended = result.extended,
-                directors = result.directors,
-                unrated = result.unrated,
-                theatrical = result.theatrical,
-                threeD = result.threeD,
-                imax = result.imax,
-                remastered = result.remastered,
-                proper = result.proper,
-                repack = result.repack,
+    private fun convertEditionResult(result: com.fishit.player.core.metadata.parser.rules.EditionResult): EditionInfo =
+        EditionInfo(
+            extended = result.extended,
+            directors = result.directors,
+            unrated = result.unrated,
+            theatrical = result.theatrical,
+            threeD = result.threeD,
+            imax = result.imax,
+            remastered = result.remastered,
+            proper = result.proper,
+            repack = result.repack,
         )
-    }
 }

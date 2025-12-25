@@ -12,7 +12,6 @@ import kotlin.test.assertEquals
  * - Decision thresholds: ACCEPT ≥85 with gap ≥10, CONSIDER ≥70
  */
 class TmdbScoringTest {
-
     // ========== Title Score Tests ==========
 
     @Test
@@ -87,17 +86,18 @@ class TmdbScoringTest {
 
     @Test
     fun `scoreMovie returns correct components`() {
-        val score = TmdbScoring.scoreMovie(
-            movieTitle = "The Matrix",
-            movieYear = 1999,
-            queryTitle = "The Matrix",
-            queryYear = 1999,
-        )
+        val score =
+            TmdbScoring.scoreMovie(
+                movieTitle = "The Matrix",
+                movieYear = 1999,
+                queryTitle = "The Matrix",
+                queryYear = 1999,
+            )
 
         assertEquals(60, score.titleSimilarity) // Exact match
-        assertEquals(20, score.yearScore)       // Exact year
-        assertEquals(10, score.kindAgreement)   // Movie search = movie result
-        assertEquals(0, score.episodeExact)     // N/A for movies
+        assertEquals(20, score.yearScore) // Exact year
+        assertEquals(10, score.kindAgreement) // Movie search = movie result
+        assertEquals(0, score.episodeExact) // N/A for movies
         assertEquals(90, score.total)
     }
 
@@ -105,17 +105,18 @@ class TmdbScoringTest {
 
     @Test
     fun `scoreTvShow returns correct components`() {
-        val score = TmdbScoring.scoreTvShow(
-            showTitle = "Breaking Bad",
-            showYear = 2008,
-            queryTitle = "Breaking Bad",
-            queryYear = 2008,
-        )
+        val score =
+            TmdbScoring.scoreTvShow(
+                showTitle = "Breaking Bad",
+                showYear = 2008,
+                queryTitle = "Breaking Bad",
+                queryYear = 2008,
+            )
 
         assertEquals(60, score.titleSimilarity) // Exact match
-        assertEquals(20, score.yearScore)       // Exact year
-        assertEquals(10, score.kindAgreement)   // TV search = TV result
-        assertEquals(0, score.episodeExact)     // Episode matching done later
+        assertEquals(20, score.yearScore) // Exact year
+        assertEquals(10, score.kindAgreement) // TV search = TV result
+        assertEquals(0, score.episodeExact) // Episode matching done later
         assertEquals(90, score.total)
     }
 
@@ -129,10 +130,11 @@ class TmdbScoringTest {
 
     @Test
     fun `decide returns ACCEPT for high score with clear gap`() {
-        val results = listOf(
-            ScoredTmdbResult("Best", TmdbMatchScore(55, 20, 10, 5)), // 90
-            ScoredTmdbResult("Second", TmdbMatchScore(40, 15, 10, 0)), // 65
-        )
+        val results =
+            listOf(
+                ScoredTmdbResult("Best", TmdbMatchScore(55, 20, 10, 5)), // 90
+                ScoredTmdbResult("Second", TmdbMatchScore(40, 15, 10, 0)), // 65
+            )
 
         val decision = TmdbScoring.decide(results)
         assertEquals(TmdbMatchDecision.ACCEPT, decision) // 90 >= 85, gap = 25 >= 10
@@ -140,10 +142,11 @@ class TmdbScoringTest {
 
     @Test
     fun `decide returns AMBIGUOUS for close scores`() {
-        val results = listOf(
-            ScoredTmdbResult("Best", TmdbMatchScore(50, 18, 10, 0)), // 78
-            ScoredTmdbResult("Second", TmdbMatchScore(48, 18, 10, 0)), // 76
-        )
+        val results =
+            listOf(
+                ScoredTmdbResult("Best", TmdbMatchScore(50, 18, 10, 0)), // 78
+                ScoredTmdbResult("Second", TmdbMatchScore(48, 18, 10, 0)), // 76
+            )
 
         val decision = TmdbScoring.decide(results)
         assertEquals(TmdbMatchDecision.AMBIGUOUS, decision) // Both moderate, gap = 2 < 10
@@ -151,9 +154,10 @@ class TmdbScoringTest {
 
     @Test
     fun `decide returns REJECT for low scores`() {
-        val results = listOf(
-            ScoredTmdbResult("Best", TmdbMatchScore(30, 15, 10, 0)), // 55
-        )
+        val results =
+            listOf(
+                ScoredTmdbResult("Best", TmdbMatchScore(30, 15, 10, 0)), // 55
+            )
 
         val decision = TmdbScoring.decide(results)
         assertEquals(TmdbMatchDecision.REJECT, decision) // 55 < 70 threshold
@@ -161,9 +165,10 @@ class TmdbScoringTest {
 
     @Test
     fun `decide returns ACCEPT for single high-scoring result`() {
-        val results = listOf(
-            ScoredTmdbResult("Only", TmdbMatchScore(55, 20, 10, 5)), // 90
-        )
+        val results =
+            listOf(
+                ScoredTmdbResult("Only", TmdbMatchScore(55, 20, 10, 5)), // 90
+            )
 
         val decision = TmdbScoring.decide(results)
         assertEquals(TmdbMatchDecision.ACCEPT, decision) // 90 >= 85, no competitor

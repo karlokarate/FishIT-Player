@@ -11,7 +11,6 @@ import kotlin.test.assertNull
  * - Unit tests for RawMediaMetadata extensions (ageRating, rating)
  */
 class RawMediaMetadataTest {
-
     @Test
     fun `ageRating field accepts valid FSK values`() {
         val metadata = createTestMetadata(ageRating = 12)
@@ -76,18 +75,19 @@ class RawMediaMetadataTest {
 
     @Test
     fun `structured bundle metadata with all fields`() {
-        val metadata = RawMediaMetadata(
-            originalTitle = "The Movie",
-            mediaType = MediaType.MOVIE,
-            year = 2020,
-            durationMs = 120 * 60_000L,
-            externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 12345)),
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Mel Brooks 🥳",
-            sourceId = "-1001434421634_388021760",
-            rating = 7.5,
-            ageRating = 12,
-        )
+        val metadata =
+            RawMediaMetadata(
+                originalTitle = "The Movie",
+                mediaType = MediaType.MOVIE,
+                year = 2020,
+                durationMs = 120 * 60_000L,
+                externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, 12345)),
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Mel Brooks 🥳",
+                sourceId = "-1001434421634_388021760",
+                rating = 7.5,
+                ageRating = 12,
+            )
 
         assertEquals("The Movie", metadata.originalTitle)
         assertEquals(MediaType.MOVIE, metadata.mediaType)
@@ -105,10 +105,11 @@ class RawMediaMetadataTest {
     @Test
     fun `copy with updated fields`() {
         val original = createTestMetadata()
-        val updated = original.copy(
-            ageRating = 16,
-            rating = 8.5,
-        )
+        val updated =
+            original.copy(
+                ageRating = 16,
+                rating = 8.5,
+            )
 
         assertNull(original.ageRating)
         assertNull(original.rating)
@@ -122,14 +123,15 @@ class RawMediaMetadataTest {
         ageRating: Int? = null,
         rating: Double? = null,
         externalIds: ExternalIds = ExternalIds(),
-    ): RawMediaMetadata = RawMediaMetadata(
-        originalTitle = "Test Movie",
-        mediaType = MediaType.MOVIE,
-        sourceType = SourceType.TELEGRAM,
-        sourceLabel = "Test Chat",
-        sourceId = "test_123",
-        ageRating = ageRating,
-        rating = rating,
-        externalIds = externalIds,
-    )
+    ): RawMediaMetadata =
+        RawMediaMetadata(
+            originalTitle = "Test Movie",
+            mediaType = MediaType.MOVIE,
+            sourceType = SourceType.TELEGRAM,
+            sourceLabel = "Test Chat",
+            sourceId = "test_123",
+            ageRating = ageRating,
+            rating = rating,
+            externalIds = externalIds,
+        )
 }

@@ -12,7 +12,6 @@ package com.fishit.player.core.catalogsync
  * - W-4: TMDB API access MUST exist only via TmdbMetadataResolver
  */
 interface TmdbEnrichmentScheduler {
-    
     /**
      * Enqueue TMDB enrichment with default settings.
      * Uses ExistingWorkPolicy.KEEP (won't interrupt running enrichment).

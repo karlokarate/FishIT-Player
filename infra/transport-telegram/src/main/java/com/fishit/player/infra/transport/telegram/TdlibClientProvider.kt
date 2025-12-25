@@ -1,41 +1,42 @@
 package com.fishit.player.infra.transport.telegram
 
 import com.fishit.player.infra.transport.telegram.internal.TdLibLogInstaller
-import com.fishit.player.infra.transport.telegram.TelegramLoggingConfig
 import dev.g000sha256.tdl.TdlClient
 
 /**
  * Provider interface for TDLib client initialization.
  *
- * This abstraction allows modules to remain Context-free while still supporting TDLib
- * initialization which requires Android Context.
+ * **⚠️ DEPRECATED - V1 LEGACY PATTERN**
  *
- * **ARCHITECTURE:**
- * - Transport module defines this interface (no Context dependency)
- * - App module implements this via Hilt, providing Context internally
- * - This preserves v2 architecture: lower modules have no Android dependencies
+ * This interface is a v1 legacy pattern and must NOT be used in v2 code. Use typed interfaces
+ * instead:
+ * - [TelegramAuthClient] for authentication
+ * - [TelegramHistoryClient] for chat/message operations
+ * - [TelegramFileClient] for file downloads
  *
- * **g00sha tdlib-coroutines Integration:**
- * The underlying TDLib client is `dev.g000sha256.tdl.TdlClient` from the Maven AAR
- * `dev.g000sha256:tdl-coroutines-android:5.0.0`. This wrapper provides:
- * - Kotlin coroutines support (suspend functions)
- * - Flow-based update streams
- * - TdlResult for error handling
- * - DTOs in `dev.g000sha256.tdl.dto.*`
+ * v2 Architecture: TdlClient is provided directly via Hilt in the app module, not through this
+ * provider pattern.
  *
- * @see dev.g000sha256.tdl.TdlClient
+ * @see TelegramAuthClient
+ * @see TelegramHistoryClient
+ * @see TelegramFileClient
+ * @see contracts/GLOSSARY_v2_naming_and_modules.md (TdlibClientProvider entry)
  */
+@Deprecated(
+        message =
+                "v1 legacy pattern. Use typed interfaces (TelegramAuthClient, TelegramHistoryClient, TelegramFileClient) with direct TdlClient injection instead.",
+        level = DeprecationLevel.ERROR
+)
 interface TdlibClientProvider {
-    
+
     /** Whether the TDLib client is initialized and ready. */
     val isInitialized: Boolean
 
     /**
      * Get the underlying TdlClient instance.
      *
-     * **IMPORTANT:** Only ONE TdlClient should exist per process.
-     * This method returns the shared instance.
-     * Call [initialize] first if not yet initialized.
+     * **IMPORTANT:** Only ONE TdlClient should exist per process. This method returns the shared
+     * instance. Call [initialize] first if not yet initialized.
      *
      * @return The g00sha TdlClient wrapper around TDLib
      * @throws IllegalStateException if not initialized
@@ -65,9 +66,9 @@ interface TdlibClientProvider {
     /**
      * Install TDLib logging bridge before client creation.
      *
-     * Default implementation installs a UnifiedLog-backed handler that maps TDLib log
-     * messages to a single tag (`tdlib`). Implementations should invoke this before
-     * calling `TdlClient.create()` to ensure all TDLib diagnostics are captured.
+     * Default implementation installs a UnifiedLog-backed handler that maps TDLib log messages to a
+     * single tag (`tdlib`). Implementations should invoke this before calling `TdlClient.create()`
+     * to ensure all TDLib diagnostics are captured.
      */
     fun installLogging(config: TelegramLoggingConfig = TelegramLoggingConfig.default()) {
         TdLibLogInstaller.install(config)

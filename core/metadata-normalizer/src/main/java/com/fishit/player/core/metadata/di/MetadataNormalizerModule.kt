@@ -23,7 +23,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object MetadataNormalizerModule {
-
     /**
      * Provides the production MediaMetadataNormalizer implementation.
      *
@@ -36,7 +35,5 @@ object MetadataNormalizerModule {
      */
     @Provides
     @Singleton
-    fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer {
-        return RegexMediaMetadataNormalizer()
-    }
+    fun provideMediaMetadataNormalizer(): MediaMetadataNormalizer = RegexMediaMetadataNormalizer()
 }

@@ -26,10 +26,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class TmdbConfigModule {
-
     @Binds
     @Singleton
-    abstract fun bindTmdbConfigProvider(
-        impl: BuildConfigTmdbConfigProvider,
-    ): TmdbConfigProvider
+    abstract fun bindTmdbConfigProvider(impl: BuildConfigTmdbConfigProvider): TmdbConfigProvider
 }

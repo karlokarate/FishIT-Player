@@ -23,10 +23,18 @@ android {
     }
 }
 
+// Ensure ObjectBox cursor classes are generated before this module compiles
+afterEvaluate {
+    tasks.matching { it.name.startsWith("compile") && it.name.endsWith("Kotlin") }.configureEach {
+        dependsOn(":core:persistence:kaptDebugKotlin", ":core:persistence:kaptReleaseKotlin")
+    }
+}
+
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
+    // Use api() for persistence to expose generated ObjectBox cursor classes (ObxVod_, ObxSeries_, etc.)
+    api(project(":core:persistence"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:transport-xtream"))
     // NOTE: No pipeline:xtream dependency - Data layer works only with RawMediaMetadata

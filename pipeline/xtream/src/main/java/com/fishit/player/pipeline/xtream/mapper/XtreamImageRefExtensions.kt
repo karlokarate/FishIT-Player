@@ -24,8 +24,7 @@ import com.fishit.player.pipeline.xtream.model.XtreamVodItem
  * All URLs are HTTP/HTTPS and may require panel auth headers.
  */
 
-// =============================================================================
-// VOD Extensions
+// region VOD Extensions
 // =============================================================================
 
 /**

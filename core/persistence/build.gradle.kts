@@ -24,6 +24,28 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    // Include kapt-generated ObjectBox sources in Java compilation
+    sourceSets {
+        getByName("debug") {
+            java.srcDir("build/generated/source/kapt/debug")
+        }
+        getByName("release") {
+            java.srcDir("build/generated/source/kapt/release")
+        }
+    }
+}
+
+// Force Java compilation to depend on kapt and include generated sources
+tasks.matching { it.name == "compileDebugJavaWithJavac" }.configureEach {
+    dependsOn("kaptDebugKotlin")
+    // Disable caching for this task to ensure generated sources are always compiled
+    outputs.cacheIf { false }
+}
+
+tasks.matching { it.name == "compileReleaseJavaWithJavac" }.configureEach {
+    dependsOn("kaptReleaseKotlin")
+    outputs.cacheIf { false }
 }
 
 dependencies {
@@ -36,9 +58,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
-    // ObjectBox
-    implementation("io.objectbox:objectbox-android:5.0.1")
-    implementation("io.objectbox:objectbox-kotlin:5.0.1")
+    // ObjectBox - use api() to expose generated cursor classes (ObxVod_, ObxSeries_, etc.)
+    // to consumer modules like infra:data-xtream
+    api("io.objectbox:objectbox-android:5.0.1")
+    api("io.objectbox:objectbox-kotlin:5.0.1")
 
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")

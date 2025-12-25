@@ -3,13 +3,13 @@ package com.fishit.player.pipeline.telegram.adapter
 import com.fishit.player.core.model.MimeDecider
 import com.fishit.player.core.model.MimeMediaKind
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import com.fishit.player.infra.transport.telegram.TgChat
+import com.fishit.player.infra.transport.telegram.TelegramAuthClient
+import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
+import com.fishit.player.infra.transport.telegram.api.TgChat
 import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgMessage
-import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
 import com.fishit.player.pipeline.telegram.grouper.TelegramMessageBundler
 import com.fishit.player.pipeline.telegram.mapper.TelegramBundleToMediaItemMapper
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 
 /**
- * Pipeline-level adapter that wraps TelegramTransportClient.
+ * Pipeline-level adapter that wraps typed Telegram transport interfaces.
  *
  * Provides pipeline-specific APIs by:
  * - Exposing auth/connection state from transport layer
@@ -39,112 +39,127 @@ import kotlinx.coroutines.flow.mapNotNull
  * - Uses TelegramMessageBundler for timestamp-based grouping
  * - Uses TelegramBundleToMediaItemMapper for lossless VIDEO emission
  * - Each VIDEO in a bundle becomes one TelegramMediaItem with shared structured metadata
+ *
+ * ## Constructor
+ *
+ * Use the `@Inject` constructor with typed interfaces. For CLI/Test, pass the
+ * unified [TelegramClient] which implements both [TelegramAuthClient] and [TelegramHistoryClient].
  */
 @Singleton
 class TelegramPipelineAdapter
 @Inject
 constructor(
-        private val transport: TelegramTransportClient,
+        private val authClient: TelegramAuthClient,
+        private val historyClient: TelegramHistoryClient,
         private val bundler: TelegramMessageBundler,
         private val bundleMapper: TelegramBundleToMediaItemMapper,
 ) {
-    /** Current authorization state from transport layer. */
-    val authState: Flow<TdlibAuthState> = transport.authState
+        /** Current authorization state from transport layer. */
+        val authState: Flow<TdlibAuthState> = authClient.authState
 
-    /** Current connection state from transport layer. */
-    val connectionState: Flow<TelegramConnectionState> = transport.connectionState
+        /** Current connection state - derived from auth state. */
+        val connectionState: Flow<TelegramConnectionState>
+                get() =
+                        authClient.authState.mapNotNull { authState ->
+                                when (authState) {
+                                        is TdlibAuthState.Ready -> TelegramConnectionState.Connected
+                                        is TdlibAuthState.Error ->
+                                                TelegramConnectionState.Error(authState.message)
+                                        else -> TelegramConnectionState.Connecting
+                                }
+                        }
 
-    /** Live stream of media-only updates mapped into pipeline types. */
-    val mediaUpdates: Flow<TelegramMediaUpdate> =
-            transport.mediaUpdates.mapNotNull { message ->
-                message.toMediaItem()?.let { TelegramMediaUpdate(message, it) }
-            }
+        /** Live stream of media-only updates mapped into pipeline types. */
+        val mediaUpdates: Flow<TelegramMediaUpdate> =
+                historyClient.messageUpdates.mapNotNull { message ->
+                        message.toMediaItem()?.let { TelegramMediaUpdate(message, it) }
+                }
 
-    /** Get available chats converted to pipeline format. */
-    suspend fun getChats(limit: Int = 100): List<TelegramChatInfo> {
-        return transport.getChats(limit).map { it.toChatInfo() }
-    }
-
-    /**
-     * Fetch media messages from a chat.
-     *
-     * Filters for media content and converts to TelegramMediaItem.
-     *
-     * @param chatId Telegram chat ID
-     * @param limit Maximum messages to fetch
-     * @param offsetMessageId Pagination offset
-     * @return List of TelegramMediaItem (only media messages)
-     */
-    suspend fun fetchMediaMessages(
-            chatId: Long,
-            limit: Int = 100,
-            offsetMessageId: Long = 0
-    ): List<TelegramMediaItem> {
-        val messages = transport.fetchMessages(chatId, limit, offsetMessageId)
-        return messages.mapNotNull { it.toMediaItem() }
-    }
-
-    suspend fun fetchMessages(
-            chatId: Long,
-            limit: Int = 100,
-            offsetMessageId: Long = 0
-    ): List<TgMessage> {
-        return transport.fetchMessages(chatId, limit, offsetMessageId)
-    }
-
-    /**
-     * Fetch media items using Structured Bundle processing.
-     *
-     * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md:
-     * - Groups messages by timestamp using TelegramMessageBundler
-     * - Applies Cohesion Gate (R1b) for bundle validation
-     * - Extracts structured metadata from TEXT messages
-     * - Emits one TelegramMediaItem per VIDEO (lossless, Rule R7)
-     * - Attaches poster from PHOTO message to all emitted items
-     *
-     * **When to use:**
-     * - For chats known to contain structured bundles (e.g., "Mel Brooks 🥳")
-     * - When structured metadata (TMDB ID, FSK, year) is expected
-     *
-     * **Fallback:**
-     * - SINGLE items are processed normally via toMediaItem()
-     * - Messages that fail Cohesion Gate are split into SINGLEs
-     *
-     * @param chatId Telegram chat ID
-     * @param limit Maximum messages to fetch
-     * @param offsetMessageId Pagination offset
-     * @return List of TelegramMediaItem with structured metadata where available
-     */
-    suspend fun fetchMediaMessagesWithBundling(
-            chatId: Long,
-            limit: Int = 100,
-            offsetMessageId: Long = 0,
-    ): List<TelegramMediaItem> {
-        val messages = transport.fetchMessages(chatId, limit, offsetMessageId)
-
-        // Group messages into bundles (unified TgMessage type)
-        val bundles = bundler.groupByTimestamp(messages)
-
-        // Map bundles to TelegramMediaItems
-        val items = bundleMapper.mapBundles(bundles)
-
-        UnifiedLog.d(TAG) {
-            "fetchMediaMessagesWithBundling: chatId=$chatId, " +
-                    "messages=${messages.size}, bundles=${bundles.size}, items=${items.size}"
+        /** Get available chats converted to pipeline format. */
+        suspend fun getChats(limit: Int = 100): List<TelegramChatInfo> {
+                return historyClient.getChats(limit).map { it.toChatInfo() }
         }
 
-        return items
-    }
+        /**
+         * Fetch media messages from a chat.
+         *
+         * Filters for media content and converts to TelegramMediaItem.
+         *
+         * @param chatId Telegram chat ID
+         * @param limit Maximum messages to fetch
+         * @param offsetMessageId Pagination offset
+         * @return List of TelegramMediaItem (only media messages)
+         */
+        suspend fun fetchMediaMessages(
+                chatId: Long,
+                limit: Int = 100,
+                offsetMessageId: Long = 0
+        ): List<TelegramMediaItem> {
+                val messages = historyClient.fetchMessages(chatId, limit, offsetMessageId)
+                return messages.mapNotNull { it.toMediaItem() }
+        }
 
-    /** Ensure client is authorized. */
-    suspend fun ensureAuthorized() = transport.ensureAuthorized()
+        suspend fun fetchMessages(
+                chatId: Long,
+                limit: Int = 100,
+                offsetMessageId: Long = 0
+        ): List<TgMessage> {
+                return historyClient.fetchMessages(chatId, limit, offsetMessageId)
+        }
 
-    /** Check if authorized. */
-    suspend fun isAuthorized(): Boolean = transport.isAuthorized()
+        /**
+         * Fetch media items using Structured Bundle processing.
+         *
+         * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md:
+         * - Groups messages by timestamp using TelegramMessageBundler
+         * - Applies Cohesion Gate (R1b) for bundle validation
+         * - Extracts structured metadata from TEXT messages
+         * - Emits one TelegramMediaItem per VIDEO (lossless, Rule R7)
+         * - Attaches poster from PHOTO message to all emitted items
+         *
+         * **When to use:**
+         * - For chats known to contain structured bundles (e.g., "Mel Brooks 🥳")
+         * - When structured metadata (TMDB ID, FSK, year) is expected
+         *
+         * **Fallback:**
+         * - SINGLE items are processed normally via toMediaItem()
+         * - Messages that fail Cohesion Gate are split into SINGLEs
+         *
+         * @param chatId Telegram chat ID
+         * @param limit Maximum messages to fetch
+         * @param offsetMessageId Pagination offset
+         * @return List of TelegramMediaItem with structured metadata where available
+         */
+        suspend fun fetchMediaMessagesWithBundling(
+                chatId: Long,
+                limit: Int = 100,
+                offsetMessageId: Long = 0,
+        ): List<TelegramMediaItem> {
+                val messages = historyClient.fetchMessages(chatId, limit, offsetMessageId)
 
-    companion object {
-        private const val TAG = "TelegramPipelineAdapter"
-    }
+                // Group messages into bundles (unified TgMessage type)
+                val bundles = bundler.groupByTimestamp(messages)
+
+                // Map bundles to TelegramMediaItems
+                val items = bundleMapper.mapBundles(bundles)
+
+                UnifiedLog.d(TAG) {
+                        "fetchMediaMessagesWithBundling: chatId=$chatId, " +
+                                "messages=${messages.size}, bundles=${bundles.size}, items=${items.size}"
+                }
+
+                return items
+        }
+
+        /** Ensure client is authorized. */
+        suspend fun ensureAuthorized() = authClient.ensureAuthorized()
+
+        /** Check if authorized. */
+        suspend fun isAuthorized(): Boolean = authClient.isAuthorized()
+
+        companion object {
+                private const val TAG = "TelegramPipelineAdapter"
+        }
 }
 
 /** Media update carrying both the raw transport message and the mapped pipeline item. */
@@ -166,7 +181,7 @@ data class TelegramChatInfo(
 // ============================================================================
 
 private fun TgChat.toChatInfo(): TelegramChatInfo =
-        TelegramChatInfo(chatId = id, title = title, type = type.name, memberCount = memberCount)
+        TelegramChatInfo(chatId = id, title = title ?: "", type = type, memberCount = memberCount)
 
 /**
  * Convert TgMessage to TelegramMediaItem if it contains media. Returns null for non-media messages.
@@ -179,173 +194,174 @@ private fun TgChat.toChatInfo(): TelegramChatInfo =
  * - Uses `thumbRemoteId` for thumbnail references
  */
 private fun TgMessage.toMediaItem(): TelegramMediaItem? {
-    val content = content ?: return null
-    val timestampMs = date * 1000L
+        val content = content ?: return null
+        val timestampMs = date * 1000L
 
-    return when (content) {
-        is TgContent.Video ->
-                TelegramMediaItem(
-                        id = id,
-                        chatId = chatId,
-                        messageId = id,
-                        mediaType = TelegramMediaType.VIDEO,
-                        remoteId = content.remoteId,
-                        title = content.caption ?: content.fileName ?: "",
-                        fileName = content.fileName,
-                        caption = content.caption,
-                        mimeType = content.mimeType,
-                        sizeBytes = content.fileSize,
-                        durationSecs = content.duration,
-                        width = content.width,
-                        height = content.height,
-                        thumbRemoteId = content.thumbnail?.remoteId,
-                        thumbnailWidth = content.thumbnail?.width,
-                        thumbnailHeight = content.thumbnail?.height,
-                        minithumbnailBytes = content.minithumbnail?.data,
-                        minithumbnailWidth = content.minithumbnail?.width,
-                        minithumbnailHeight = content.minithumbnail?.height,
-                        date = timestampMs
-                )
-        is TgContent.Document -> {
-            val inferredKind =
-                    MimeDecider.inferKind(content.mimeType, content.fileName) ?: return null
-            val mediaType =
-                    when (inferredKind) {
-                        MimeMediaKind.VIDEO -> TelegramMediaType.VIDEO
-                        MimeMediaKind.AUDIO -> TelegramMediaType.AUDIO
-                    }
+        return when (content) {
+                is TgContent.Video ->
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = TelegramMediaType.VIDEO,
+                                remoteId = content.remoteId,
+                                title = content.caption ?: content.fileName ?: "",
+                                fileName = content.fileName,
+                                caption = content.caption,
+                                mimeType = content.mimeType,
+                                sizeBytes = content.fileSize,
+                                durationSecs = content.duration,
+                                width = content.width,
+                                height = content.height,
+                                thumbRemoteId = content.thumbnail?.remoteId,
+                                thumbnailWidth = content.thumbnail?.width,
+                                thumbnailHeight = content.thumbnail?.height,
+                                minithumbnailBytes = content.minithumbnail?.data,
+                                minithumbnailWidth = content.minithumbnail?.width,
+                                minithumbnailHeight = content.minithumbnail?.height,
+                                date = timestampMs
+                        )
+                is TgContent.Document -> {
+                        val inferredKind =
+                                MimeDecider.inferKind(content.mimeType, content.fileName)
+                                        ?: return null
+                        val mediaType =
+                                when (inferredKind) {
+                                        MimeMediaKind.VIDEO -> TelegramMediaType.VIDEO
+                                        MimeMediaKind.AUDIO -> TelegramMediaType.AUDIO
+                                }
 
-            TelegramMediaItem(
-                    id = id,
-                    chatId = chatId,
-                    messageId = id,
-                    mediaType = mediaType,
-                    remoteId = content.remoteId,
-                    title = content.caption ?: content.fileName ?: "",
-                    fileName = content.fileName,
-                    caption = content.caption,
-                    mimeType = content.mimeType,
-                    sizeBytes = content.fileSize,
-                    thumbRemoteId = content.thumbnail?.remoteId,
-                    thumbnailWidth = content.thumbnail?.width,
-                    thumbnailHeight = content.thumbnail?.height,
-                    minithumbnailBytes = content.minithumbnail?.data,
-                    minithumbnailWidth = content.minithumbnail?.width,
-                    minithumbnailHeight = content.minithumbnail?.height,
-                    date = timestampMs
-            )
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = mediaType,
+                                remoteId = content.remoteId,
+                                title = content.caption ?: content.fileName ?: "",
+                                fileName = content.fileName,
+                                caption = content.caption,
+                                mimeType = content.mimeType,
+                                sizeBytes = content.fileSize,
+                                thumbRemoteId = content.thumbnail?.remoteId,
+                                thumbnailWidth = content.thumbnail?.width,
+                                thumbnailHeight = content.thumbnail?.height,
+                                minithumbnailBytes = content.minithumbnail?.data,
+                                minithumbnailWidth = content.minithumbnail?.width,
+                                minithumbnailHeight = content.minithumbnail?.height,
+                                date = timestampMs
+                        )
+                }
+                is TgContent.Audio ->
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = TelegramMediaType.AUDIO,
+                                remoteId = content.remoteId,
+                                title = content.title ?: content.caption ?: content.fileName ?: "",
+                                fileName = content.fileName,
+                                caption = content.caption,
+                                mimeType = content.mimeType,
+                                sizeBytes = content.fileSize,
+                                durationSecs = content.duration,
+                                thumbRemoteId = content.albumCoverThumbnail?.remoteId,
+                                thumbnailWidth = content.albumCoverThumbnail?.width,
+                                thumbnailHeight = content.albumCoverThumbnail?.height,
+                                minithumbnailBytes = content.albumCoverMinithumbnail?.data,
+                                minithumbnailWidth = content.albumCoverMinithumbnail?.width,
+                                minithumbnailHeight = content.albumCoverMinithumbnail?.height,
+                                date = timestampMs
+                        )
+                is TgContent.Photo -> {
+                        val bestSize = content.sizes.maxByOrNull { it.width * it.height }
+                        if (bestSize == null) return null
+
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = TelegramMediaType.PHOTO,
+                                remoteId = bestSize.remoteId,
+                                title = content.caption ?: "",
+                                caption = content.caption,
+                                width = bestSize.width,
+                                height = bestSize.height,
+                                sizeBytes = bestSize.fileSize,
+                                photoSizes =
+                                        content.sizes.map { size ->
+                                                PipelinePhotoSize(
+                                                        width = size.width,
+                                                        height = size.height,
+                                                        remoteId = size.remoteId,
+                                                        sizeBytes = size.fileSize
+                                                )
+                                        },
+                                minithumbnailBytes = content.minithumbnail?.data,
+                                minithumbnailWidth = content.minithumbnail?.width,
+                                minithumbnailHeight = content.minithumbnail?.height,
+                                date = timestampMs
+                        )
+                }
+                is TgContent.Animation ->
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = TelegramMediaType.VIDEO, // Treat as video
+                                remoteId = content.remoteId,
+                                title = content.caption ?: content.fileName ?: "",
+                                fileName = content.fileName,
+                                caption = content.caption,
+                                mimeType = content.mimeType,
+                                sizeBytes = content.fileSize,
+                                durationSecs = content.duration,
+                                width = content.width,
+                                height = content.height,
+                                thumbRemoteId = content.thumbnail?.remoteId,
+                                thumbnailWidth = content.thumbnail?.width,
+                                thumbnailHeight = content.thumbnail?.height,
+                                minithumbnailBytes = content.minithumbnail?.data,
+                                minithumbnailWidth = content.minithumbnail?.width,
+                                minithumbnailHeight = content.minithumbnail?.height,
+                                date = timestampMs
+                        )
+                is TgContent.VideoNote ->
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = TelegramMediaType.VIDEO, // Treat as video
+                                remoteId = content.remoteId,
+                                title = "",
+                                sizeBytes = content.fileSize,
+                                durationSecs = content.duration,
+                                width = content.length,
+                                height = content.length,
+                                thumbRemoteId = content.thumbnail?.remoteId,
+                                thumbnailWidth = content.thumbnail?.width,
+                                thumbnailHeight = content.thumbnail?.height,
+                                minithumbnailBytes = content.minithumbnail?.data,
+                                minithumbnailWidth = content.minithumbnail?.width,
+                                minithumbnailHeight = content.minithumbnail?.height,
+                                date = timestampMs
+                        )
+                is TgContent.VoiceNote ->
+                        TelegramMediaItem(
+                                id = id,
+                                chatId = chatId,
+                                messageId = id,
+                                mediaType = TelegramMediaType.AUDIO,
+                                remoteId = content.remoteId,
+                                title = content.caption ?: "",
+                                caption = content.caption,
+                                mimeType = content.mimeType,
+                                sizeBytes = content.fileSize,
+                                durationSecs = content.duration,
+                                minithumbnailBytes = null,
+                                minithumbnailWidth = null,
+                                minithumbnailHeight = null,
+                                date = timestampMs
+                        )
+                is TgContent.Text, is TgContent.Unknown -> null
         }
-        is TgContent.Audio ->
-                TelegramMediaItem(
-                        id = id,
-                        chatId = chatId,
-                        messageId = id,
-                        mediaType = TelegramMediaType.AUDIO,
-                        remoteId = content.remoteId,
-                        title = content.title ?: content.caption ?: content.fileName ?: "",
-                        fileName = content.fileName,
-                        caption = content.caption,
-                        mimeType = content.mimeType,
-                        sizeBytes = content.fileSize,
-                        durationSecs = content.duration,
-                        thumbRemoteId = content.albumCoverThumbnail?.remoteId,
-                        thumbnailWidth = content.albumCoverThumbnail?.width,
-                        thumbnailHeight = content.albumCoverThumbnail?.height,
-                        minithumbnailBytes = content.albumCoverMinithumbnail?.data,
-                        minithumbnailWidth = content.albumCoverMinithumbnail?.width,
-                        minithumbnailHeight = content.albumCoverMinithumbnail?.height,
-                        date = timestampMs
-                )
-        is TgContent.Photo -> {
-            val bestSize = content.sizes.maxByOrNull { it.width * it.height }
-            if (bestSize == null) return null
-
-            TelegramMediaItem(
-                    id = id,
-                    chatId = chatId,
-                    messageId = id,
-                    mediaType = TelegramMediaType.PHOTO,
-                    remoteId = bestSize.remoteId,
-                    title = content.caption ?: "",
-                    caption = content.caption,
-                    width = bestSize.width,
-                    height = bestSize.height,
-                    sizeBytes = bestSize.fileSize,
-                    photoSizes =
-                            content.sizes.map { size ->
-                                PipelinePhotoSize(
-                                        width = size.width,
-                                        height = size.height,
-                                        remoteId = size.remoteId,
-                                        sizeBytes = size.fileSize
-                                )
-                            },
-                    minithumbnailBytes = content.minithumbnail?.data,
-                    minithumbnailWidth = content.minithumbnail?.width,
-                    minithumbnailHeight = content.minithumbnail?.height,
-                    date = timestampMs
-            )
-        }
-        is TgContent.Animation ->
-                TelegramMediaItem(
-                        id = id,
-                        chatId = chatId,
-                        messageId = id,
-                        mediaType = TelegramMediaType.VIDEO, // Treat as video
-                        remoteId = content.remoteId,
-                        title = content.caption ?: content.fileName ?: "",
-                        fileName = content.fileName,
-                        caption = content.caption,
-                        mimeType = content.mimeType,
-                        sizeBytes = content.fileSize,
-                        durationSecs = content.duration,
-                        width = content.width,
-                        height = content.height,
-                        thumbRemoteId = content.thumbnail?.remoteId,
-                        thumbnailWidth = content.thumbnail?.width,
-                        thumbnailHeight = content.thumbnail?.height,
-                        minithumbnailBytes = content.minithumbnail?.data,
-                        minithumbnailWidth = content.minithumbnail?.width,
-                        minithumbnailHeight = content.minithumbnail?.height,
-                        date = timestampMs
-                )
-        is TgContent.VideoNote ->
-                TelegramMediaItem(
-                        id = id,
-                        chatId = chatId,
-                        messageId = id,
-                        mediaType = TelegramMediaType.VIDEO, // Treat as video
-                        remoteId = content.remoteId,
-                        title = "",
-                        sizeBytes = content.fileSize,
-                        durationSecs = content.duration,
-                        width = content.length,
-                        height = content.length,
-                        thumbRemoteId = content.thumbnail?.remoteId,
-                        thumbnailWidth = content.thumbnail?.width,
-                        thumbnailHeight = content.thumbnail?.height,
-                        minithumbnailBytes = content.minithumbnail?.data,
-                        minithumbnailWidth = content.minithumbnail?.width,
-                        minithumbnailHeight = content.minithumbnail?.height,
-                        date = timestampMs
-                )
-        is TgContent.VoiceNote ->
-                TelegramMediaItem(
-                        id = id,
-                        chatId = chatId,
-                        messageId = id,
-                        mediaType = TelegramMediaType.AUDIO,
-                        remoteId = content.remoteId,
-                        title = content.caption ?: "",
-                        caption = content.caption,
-                        mimeType = content.mimeType,
-                        sizeBytes = content.fileSize,
-                        durationSecs = content.duration,
-                        minithumbnailBytes = null,
-                        minithumbnailWidth = null,
-                        minithumbnailHeight = null,
-                        date = timestampMs
-                )
-        is TgContent.Text, is TgContent.Unknown -> null
-    }
 }

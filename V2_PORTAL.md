@@ -110,6 +110,8 @@ Pipelines:
 
 #### Telegram Transport Status
 
+> **✅ FINALIZED (December 2025)** — See `docs/v2/architecture/TELEGRAM_TRANSPORT_SSOT.md`
+
 The v2 Telegram transport architecture uses typed interfaces instead of exposing TDLib directly:
 
 | Interface | Purpose | Status |
@@ -118,6 +120,12 @@ The v2 Telegram transport architecture uses typed interfaces instead of exposing
 | `TelegramHistoryClient` | Chat history, message fetching | ✅ Complete |
 | `TelegramFileClient` | File download operations | ✅ Complete |
 | `TelegramThumbFetcher` | Thumbnail fetching for Coil | ✅ Complete |
+
+**SSOT Architecture:**
+- ONE `TelegramClient` unified interface
+- ONE `DefaultTelegramClient` implementation (internal)
+- ONE `TdlClient` instance per process
+- ALL typed interfaces resolve to SAME singleton
 
 **Implementation:**
 - `DefaultTelegramClient` in `transport-telegram` owns TDLib state

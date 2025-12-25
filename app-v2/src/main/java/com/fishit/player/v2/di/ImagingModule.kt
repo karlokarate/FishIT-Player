@@ -4,8 +4,6 @@ import android.content.Context
 import coil3.ImageLoader
 import com.fishit.player.core.imaging.GlobalImageLoader
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import com.fishit.player.v2.di.TelegramThumbFetcherImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,6 +12,7 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import javax.inject.Provider
 import javax.inject.Singleton
+import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher as TransportThumbFetcher
 
 /**
  * Hilt module for image loading configuration.
@@ -40,11 +39,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ImagingModule {
     /**
-     * Provides the shared OkHttpClient for image loading.
-     * Uses GlobalImageLoader defaults optimized for TV/mobile.
+     * Provides the shared OkHttpClient for image loading. Uses GlobalImageLoader defaults optimized
+     * for TV/mobile.
      *
-     * Qualified with [@ImageOkHttpClient] to avoid conflicts with other
-     * OkHttpClient bindings (e.g., XtreamTransportModule).
+     * Qualified with [@ImageOkHttpClient] to avoid conflicts with other OkHttpClient bindings
+     * (e.g., XtreamTransportModule).
      */
     @Provides
     @Singleton
@@ -53,13 +52,15 @@ object ImagingModule {
 
     /**
      * Provides the TelegramThumbFetcher.Factory implementation.
+     *
+     * Uses the transport-layer TelegramThumbFetcher (typed interface) instead of the deprecated
+     * TelegramTransportClient.
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcherFactory(telegramClientProvider: Provider<TelegramTransportClient>): TelegramThumbFetcher.Factory? =
-        runCatching {
-            TelegramThumbFetcherImpl.Factory(telegramClientProvider.get())
-        }.getOrNull()
+    fun provideTelegramThumbFetcherFactory(transportThumbFetcher: Provider<TransportThumbFetcher>): TelegramThumbFetcher.Factory? =
+        runCatching { TelegramThumbFetcherImpl.Factory(transportThumbFetcher.get()) }
+            .getOrNull()
 
     /**
      * Provides the configured ImageLoader singleton.
@@ -73,8 +74,8 @@ object ImagingModule {
      * 1. Direct injection (@Inject lateinit var imageLoader: ImageLoader)
      * 2. Coil's SingletonImageLoader (via Application.newImageLoader())
      *
-     * The Application implements SingletonImageLoader.Factory and delegates
-     * to this DI-provided instance for proper initialization order.
+     * The Application implements SingletonImageLoader.Factory and delegates to this DI-provided
+     * instance for proper initialization order.
      */
     @Provides
     @Singleton

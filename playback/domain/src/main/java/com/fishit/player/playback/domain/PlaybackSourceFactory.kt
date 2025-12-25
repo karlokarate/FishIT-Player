@@ -18,7 +18,7 @@ import com.fishit.player.core.playermodel.SourceType
  * **Example Implementation:**
  * ```kotlin
  * class TelegramPlaybackSourceFactoryImpl @Inject constructor(
- *     private val transportClient: TelegramTransportClient
+ *     private val fileClient: TelegramFileClient
  * ) : PlaybackSourceFactory {
  *     override fun supports(sourceType: SourceType) = sourceType == SourceType.TELEGRAM
  *

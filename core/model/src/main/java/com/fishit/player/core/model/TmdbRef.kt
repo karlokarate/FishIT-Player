@@ -81,10 +81,11 @@ data class TmdbRef(
      *
      * @return The canonical ID string suitable for deduplication
      */
-    fun toCanonicalIdString(): String = when (type) {
-        TmdbMediaType.MOVIE -> "tmdb:movie:$id"
-        TmdbMediaType.TV -> "tmdb:tv:$id"
-    }
+    fun toCanonicalIdString(): String =
+        when (type) {
+            TmdbMediaType.MOVIE -> "tmdb:movie:$id"
+            TmdbMediaType.TV -> "tmdb:tv:$id"
+        }
 
     override fun toString(): String = toCanonicalIdString()
 
@@ -121,8 +122,7 @@ data class TmdbRef(
          *
          * @return true if this is a legacy untyped TMDB canonical ID
          */
-        fun isLegacyUntypedCanonicalId(canonicalId: String): Boolean =
-            LEGACY_TMDB_PATTERN.matches(canonicalId)
+        fun isLegacyUntypedCanonicalId(canonicalId: String): Boolean = LEGACY_TMDB_PATTERN.matches(canonicalId)
 
         /**
          * Parse a legacy untyped canonical ID and determine type from MediaType context.
@@ -133,15 +133,19 @@ data class TmdbRef(
          * @param mediaType MediaType to infer TMDB type from
          * @return Typed TmdbRef or null if cannot be determined
          */
-        fun migrateLegacyCanonicalId(canonicalId: String, mediaType: MediaType): TmdbRef? {
+        fun migrateLegacyCanonicalId(
+            canonicalId: String,
+            mediaType: MediaType,
+        ): TmdbRef? {
             val match = LEGACY_TMDB_PATTERN.matchEntire(canonicalId) ?: return null
             val id = match.groupValues[1].toIntOrNull() ?: return null
 
-            val type = when (mediaType) {
-                MediaType.MOVIE -> TmdbMediaType.MOVIE
-                MediaType.SERIES, MediaType.SERIES_EPISODE -> TmdbMediaType.TV
-                else -> return null // Cannot determine type for LIVE, UNKNOWN, etc.
-            }
+            val type =
+                when (mediaType) {
+                    MediaType.MOVIE -> TmdbMediaType.MOVIE
+                    MediaType.SERIES, MediaType.SERIES_EPISODE -> TmdbMediaType.TV
+                    else -> return null // Cannot determine type for LIVE, UNKNOWN, etc.
+                }
 
             return TmdbRef(type, id)
         }

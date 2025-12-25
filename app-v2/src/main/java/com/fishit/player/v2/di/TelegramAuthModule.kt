@@ -3,9 +3,7 @@ package com.fishit.player.v2.di
 import android.content.Context
 import android.os.Build
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
-import com.fishit.player.infra.transport.telegram.auth.TdlibAuthSession
 import com.fishit.player.v2.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -13,18 +11,29 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.g000sha256.tdl.TdlClient
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import java.io.File
-import javax.inject.Named
 import javax.inject.Singleton
 
+/**
+ * Hilt module for Telegram configuration and TdlClient.
+ *
+ * **SSOT Architecture:**
+ * - This module provides ONLY the configuration and TdlClient
+ * - TelegramTransportModule provides ALL typed interfaces (Auth, History, File, Thumb)
+ * - All interfaces resolve to the SAME TelegramClient instance
+ *
+ * **Why separate from TelegramTransportModule?**
+ * - TelegramSessionConfig requires Android Context (app-v2 module)
+ * - TelegramTransportModule is in infra:transport-telegram (no Context access)
+ *
+ * **Consumers:**
+ * - TelegramTransportModule consumes TdlClient + TelegramSessionConfig
+ * - All Telegram interfaces come from TelegramTransportModule
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object TelegramAuthModule {
     private const val TAG = "TelegramAuthModule"
-    private const val TELEGRAM_AUTH_SCOPE = "TelegramAuthScope"
 
     @Provides
     @Singleton
@@ -56,11 +65,6 @@ object TelegramAuthModule {
         )
     }
 
-    @Provides
-    @Singleton
-    @Named(TELEGRAM_AUTH_SCOPE)
-    fun provideTelegramAuthScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     /**
      * Provides the shared TdlClient instance for the entire app.
      *
@@ -69,22 +73,9 @@ object TelegramAuthModule {
      * - This replaces the v1 TdlibClientProvider pattern
      *
      * **Consumers:**
-     * - TelegramTransportModule (via TelegramTransportClient)
-     * - TelegramAuthClient (via TdlibAuthSession)
+     * - TelegramTransportModule (creates unified TelegramClient)
      */
     @Provides
     @Singleton
-    fun provideTdlClient(): TdlClient {
-        return TdlClient.create()
-    }
-
-    @Provides
-    @Singleton
-    fun provideTelegramAuthClient(
-        tdlClient: TdlClient,
-        sessionConfig: TelegramSessionConfig,
-        @Named(TELEGRAM_AUTH_SCOPE) scope: CoroutineScope,
-    ): TelegramAuthClient {
-        return TdlibAuthSession(tdlClient, sessionConfig, scope)
-    }
+    fun provideTdlClient(): TdlClient = TdlClient.create()
 }

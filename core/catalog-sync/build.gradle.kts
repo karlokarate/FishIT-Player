@@ -29,11 +29,11 @@ dependencies {
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":core:persistence")) // For CanonicalMediaRepository
     implementation(project(":infra:logging"))
-    
+
     // Data layer repositories (for persisting catalog data)
     implementation(project(":infra:data-telegram"))
     implementation(project(":infra:data-xtream"))
-    
+
     // Pipeline events (for consuming catalog events)
     implementation(project(":pipeline:telegram"))
     implementation(project(":pipeline:xtream"))

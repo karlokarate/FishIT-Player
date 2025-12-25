@@ -266,6 +266,25 @@ See **`/legacy/gold/EXTRACTION_SUMMARY.md`** for complete porting guidance and *
 - g00sha TDLib internals
 - `DefaultTelegramClient` implementation details
 
+4.3.2. Telegram Transport SSOT (BINDING)
+
+> **Hard Rule:** Telegram transport MUST be accessed only via typed interfaces backed by a single `TelegramClient` instance.
+
+**SSOT Principle:**
+- ONE `DefaultTelegramClient` implementation
+- ONE `TdlClient` instance per process
+- ALL typed interfaces (`TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`, `TelegramThumbFetcher`) resolve to the SAME singleton
+
+**Contract Violations:**
+| Violation | Why It's Forbidden |
+|-----------|-------------------|
+| Creating additional TDLib wrappers | Resource leaks, auth conflicts |
+| Direct TDLib access outside `infra:transport-telegram` | Breaks encapsulation |
+| Using deprecated `TelegramTransportClient` | Legacy, marked for removal |
+| Parallel transport sessions | Violates SSOT, undefined behavior |
+
+**Reference:** `docs/v2/architecture/TELEGRAM_TRANSPORT_SSOT.md`
+
 4.4. No global mutable Singletons (hard clause)
 
 > Do not introduce new global singletons with mutable state.

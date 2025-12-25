@@ -32,77 +32,85 @@ import javax.inject.Singleton
  * - Activation triggers sync scheduling via SourceActivationObserver
  */
 @Singleton
-class TelegramActivationObserver @Inject constructor(
-    private val telegramAuthRepository: TelegramAuthRepository,
-    private val sourceActivationStore: SourceActivationStore,
-    @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
-    private val appScope: CoroutineScope,
-) {
-    private val hasStarted = AtomicBoolean(false)
-    
-    fun start() {
-        if (!hasStarted.compareAndSet(false, true)) return
-        
-        UnifiedLog.i(TAG) { "TelegramActivationObserver starting" }
-        
-        appScope.launch {
-            telegramAuthRepository.authState
-                .map { state -> mapToActivation(state) }
-                .distinctUntilChanged()
-                .collect { activation ->
-                    handleActivation(activation)
+class TelegramActivationObserver
+    @Inject
+    constructor(
+        private val telegramAuthRepository: TelegramAuthRepository,
+        private val sourceActivationStore: SourceActivationStore,
+        @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
+        private val appScope: CoroutineScope,
+    ) {
+        private val hasStarted = AtomicBoolean(false)
+
+        fun start() {
+            if (!hasStarted.compareAndSet(false, true)) return
+
+            UnifiedLog.i(TAG) { "TelegramActivationObserver starting" }
+
+            appScope.launch {
+                telegramAuthRepository.authState
+                    .map { state -> mapToActivation(state) }
+                    .distinctUntilChanged()
+                    .collect { activation ->
+                        handleActivation(activation)
+                    }
+            }
+        }
+
+        private sealed interface TelegramActivation {
+            data object Active : TelegramActivation
+
+            data object Inactive : TelegramActivation
+
+            data class Error(
+                val reason: SourceErrorReason,
+            ) : TelegramActivation
+        }
+
+        private fun mapToActivation(state: TelegramAuthState): TelegramActivation {
+            val activation =
+                when (state) {
+                    is TelegramAuthState.Connected -> TelegramActivation.Active
+
+                    // Logged out/disconnected = inactive, no error
+                    is TelegramAuthState.Disconnected -> TelegramActivation.Inactive
+
+                    // Waiting for user input = login required
+                    is TelegramAuthState.WaitingForPhone,
+                    is TelegramAuthState.WaitingForCode,
+                    is TelegramAuthState.WaitingForPassword,
+                    -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
+
+                    // Idle state = still inactive
+                    is TelegramAuthState.Idle -> TelegramActivation.Inactive
+
+                    // Error state = inactive with error
+                    is TelegramAuthState.Error -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
                 }
+
+            UnifiedLog.d(TAG) { "Auth state mapped: $state → $activation" }
+            return activation
         }
-    }
-    
-    private sealed interface TelegramActivation {
-        data object Active : TelegramActivation
-        data object Inactive : TelegramActivation
-        data class Error(val reason: SourceErrorReason) : TelegramActivation
-    }
-    
-    private fun mapToActivation(state: TelegramAuthState): TelegramActivation {
-        val activation = when (state) {
-            is TelegramAuthState.Connected -> TelegramActivation.Active
-            
-            // Logged out/disconnected = inactive, no error
-            is TelegramAuthState.Disconnected -> TelegramActivation.Inactive
-            
-            // Waiting for user input = login required
-            is TelegramAuthState.WaitingForPhone,
-            is TelegramAuthState.WaitingForCode,
-            is TelegramAuthState.WaitingForPassword -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
-            
-            // Idle state = still inactive
-            is TelegramAuthState.Idle -> TelegramActivation.Inactive
-            
-            // Error state = inactive with error
-            is TelegramAuthState.Error -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
-        }
-        
-        UnifiedLog.d(TAG) { "Auth state mapped: $state → $activation" }
-        return activation
-    }
-    
-    private suspend fun handleActivation(activation: TelegramActivation) {
-        when (activation) {
-            is TelegramActivation.Active -> {
-                UnifiedLog.i(TAG) { "✅ Telegram auth ready → calling sourceActivationStore.setTelegramActive()" }
-                sourceActivationStore.setTelegramActive()
-                UnifiedLog.i(TAG) { "✅ Telegram source marked ACTIVE - workers should be scheduled" }
-            }
-            is TelegramActivation.Inactive -> {
-                UnifiedLog.i(TAG) { "⚠️ Telegram inactive → setting INACTIVE" }
-                sourceActivationStore.setTelegramInactive()
-            }
-            is TelegramActivation.Error -> {
-                UnifiedLog.i(TAG) { "❌ Telegram error: ${activation.reason} → setting INACTIVE with reason" }
-                sourceActivationStore.setTelegramInactive(activation.reason)
+
+        private suspend fun handleActivation(activation: TelegramActivation) {
+            when (activation) {
+                is TelegramActivation.Active -> {
+                    UnifiedLog.i(TAG) { "✅ Telegram auth ready → calling sourceActivationStore.setTelegramActive()" }
+                    sourceActivationStore.setTelegramActive()
+                    UnifiedLog.i(TAG) { "✅ Telegram source marked ACTIVE - workers should be scheduled" }
+                }
+                is TelegramActivation.Inactive -> {
+                    UnifiedLog.i(TAG) { "⚠️ Telegram inactive → setting INACTIVE" }
+                    sourceActivationStore.setTelegramInactive()
+                }
+                is TelegramActivation.Error -> {
+                    UnifiedLog.i(TAG) { "❌ Telegram error: ${activation.reason} → setting INACTIVE with reason" }
+                    sourceActivationStore.setTelegramInactive(activation.reason)
+                }
             }
         }
+
+        private companion object {
+            private const val TAG = "TelegramActivationObserver"
+        }
     }
-    
-    private companion object {
-        private const val TAG = "TelegramActivationObserver"
-    }
-}

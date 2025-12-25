@@ -1,34 +1,39 @@
 package com.fishit.player.infra.transport.telegram
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.AuthorizationStateClosed
 import dev.g000sha256.tdl.dto.AuthorizationStateReady
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.withTimeout
-import java.io.File
 
 /**
- * Factory for creating TelegramTransportClient from existing sessions.
+ * Factory for creating Telegram clients from existing sessions.
  *
- * **Purpose:**
- * Creates TelegramTransportClient instances for CLI and test usage without
- * requiring Android Context or interactive authentication.
+ * **Purpose:** Creates TelegramClient instances for CLI and test usage without requiring Android
+ * Context or interactive authentication.
  *
  * **Codespace/CI Usage:**
  * ```kotlin
  * val config = TelegramSessionConfig.fromEnvironment()
  *     ?: error("Missing TG_API_ID or TG_API_HASH")
- * val client = TelegramClientFactory.fromExistingSession(config)
+ * val client = TelegramClientFactory.createUnifiedClient(config)
  * ```
  *
  * **IMPORTANT:**
  * - Session directories must contain a valid, pre-authenticated TDLib session
  * - No interactive auth prompts are triggered
  * - If session is invalid, an exception is thrown
+ *
+ * **SSOT Architecture:**
+ * - Use [createUnifiedClient] to create a unified [TelegramClient] instance
+ * - The returned client implements all typed interfaces (Auth, History, File, Thumb)
+ * - App DI uses [TelegramTransportModule] which also creates via [DefaultTelegramClient]
  */
 object TelegramClientFactory {
 
@@ -36,21 +41,22 @@ object TelegramClientFactory {
     private const val AUTH_TIMEOUT_MS = 30_000L
 
     /**
-     * Create a TelegramTransportClient from an existing TDLib session.
+     * Create unified TelegramClient from an existing TDLib session.
      *
-     * The session directories must already contain valid TDLib database files
-     * from a previously authenticated session.
+     * This is the preferred method for v2 code. The returned client implements all typed
+     * interfaces: [TelegramAuthClient], [TelegramHistoryClient], [TelegramFileClient],
+     * [TelegramThumbFetcher].
      *
      * @param config Session configuration with paths and API credentials
      * @param scope CoroutineScope for the client (default: IO dispatcher)
-     * @return Fully initialized TelegramTransportClient
+     * @return Fully initialized TelegramClient
      * @throws TelegramSessionException if session is invalid or auth fails
      */
-    suspend fun fromExistingSession(
-        config: TelegramSessionConfig,
-        scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    ): TelegramTransportClient {
-        UnifiedLog.i(TAG, "Creating client from existing session: db=${config.databaseDir}")
+    suspend fun createUnifiedClient(
+            config: TelegramSessionConfig,
+            scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    ): TelegramClient {
+        UnifiedLog.i(TAG, "Creating unified client from session: db=${config.databaseDir}")
 
         // Validate directories exist
         validateSessionDirectories(config)
@@ -58,32 +64,33 @@ object TelegramClientFactory {
         // Create TdlClient
         val tdlClient = createTdlClient()
 
-        // Verify session is valid before creating transport client
+        // Verify session is valid before creating client
         verifySession(tdlClient)
 
-        // Create transport client
-        val transportClient = DefaultTelegramTransportClient(
-            tdlClient = tdlClient,
-            scope = scope,
-        )
+        // Create unified client
+        val client =
+                DefaultTelegramClient(
+                        tdlClient = tdlClient,
+                        sessionConfig = config,
+                        authScope = scope,
+                        fileScope = scope,
+                )
 
         // Ensure authorized
         try {
-            withTimeout(AUTH_TIMEOUT_MS) {
-                transportClient.ensureAuthorized()
-            }
+            withTimeout(AUTH_TIMEOUT_MS) { client.ensureAuthorized() }
             UnifiedLog.i(TAG, "Session authenticated successfully")
         } catch (e: Exception) {
             UnifiedLog.e(TAG, "Session authentication failed", e)
             throw TelegramSessionException("Session authentication failed: ${e.message}", e)
         }
 
-        return transportClient
+        return client
     }
 
     /**
-     * Verify that the TDLib session is valid.
-     * For existing sessions, we check auth state but don't trigger interactive auth.
+     * Verify that the TDLib session is valid. For existing sessions, we check auth state but don't
+     * trigger interactive auth.
      */
     private suspend fun verifySession(client: TdlClient) {
         UnifiedLog.d(TAG, "Verifying TDLib session...")
@@ -106,7 +113,7 @@ object TelegramClientFactory {
             }
             is TdlResult.Failure -> {
                 throw TelegramSessionException(
-                    "Failed to get auth state: ${authResult.code} - ${authResult.message}"
+                        "Failed to get auth state: ${authResult.code} - ${authResult.message}"
                 )
             }
         }
@@ -118,7 +125,7 @@ object TelegramClientFactory {
 
         if (!dbDir.exists()) {
             throw TelegramSessionException(
-                "TDLib database directory does not exist: ${config.databaseDir}"
+                    "TDLib database directory does not exist: ${config.databaseDir}"
             )
         }
 
@@ -134,10 +141,8 @@ object TelegramClientFactory {
     }
 }
 
-/**
- * Exception thrown when TDLib session operations fail.
- */
+/** Exception thrown when TDLib session operations fail. */
 class TelegramSessionException(
-    message: String,
-    cause: Throwable? = null,
+        message: String,
+        cause: Throwable? = null,
 ) : Exception(message, cause)

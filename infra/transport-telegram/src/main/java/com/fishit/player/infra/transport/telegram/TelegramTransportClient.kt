@@ -2,35 +2,36 @@ package com.fishit.player.infra.transport.telegram
 
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
-import com.fishit.player.infra.transport.telegram.api.TgContent
+import com.fishit.player.infra.transport.telegram.api.TgChat
 import com.fishit.player.infra.transport.telegram.api.TgFile
 import com.fishit.player.infra.transport.telegram.api.TgMessage
-import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Telegram Transport Client Interface (v2 Architecture)
  *
- * Low-level TDLib operations abstracted for reuse across layers. This interface exposes ONLY
- * transport-level operations - no media-specific logic.
+ * **DEPRECATED:** This monolithic interface is deprecated in favor of typed interfaces:
+ * - [TelegramAuthClient] for authentication
+ * - [TelegramHistoryClient] for chat/message operations
+ * - [TelegramFileClient] for file downloads
+ * - [TelegramThumbFetcher] for thumbnail loading
  *
- * **Module Boundary:**
- * - Transport layer provides raw TDLib access (auth, messages, files)
- * - Pipeline layer consumes transport and produces RawMediaMetadata
- * - Data layer consumes pipeline events and persists to DB
+ * Use [TelegramClient] if you need a unified facade.
  *
- * **Design Principles:**
- * - Returns raw TDLib wrapper types (TgMessage, TgFile, TgChat)
- * - No knowledge of RawMediaMetadata or pipeline models
- * - Flow-based reactive APIs for state and updates
- * - Manages connection and authorization internally
- *
- * **NOT included:**
- * - Media classification/parsing (belongs in pipeline)
- * - Normalization (belongs in :core:metadata-normalizer)
- * - Persistence (belongs in :infra:data-telegram)
- * - Playback (belongs in :playback:telegram)
+ * **Migration Guide:**
+ * - Auth operations → `TelegramAuthClient`
+ * - `getChats()`, `fetchMessages()` → `TelegramHistoryClient`
+ * - `resolveFile()`, `requestFileDownload()` → `TelegramFileClient`
  */
+@Deprecated(
+        message =
+                "Use typed interfaces (TelegramAuthClient, TelegramHistoryClient, TelegramFileClient) instead",
+        replaceWith =
+                ReplaceWith(
+                        "TelegramClient",
+                        "com.fishit.player.infra.transport.telegram.TelegramClient"
+                )
+)
 interface TelegramTransportClient {
 
         /** Current authorization state. Emits updates when auth state changes. */
@@ -114,41 +115,3 @@ interface TelegramTransportClient {
         /** Close the client and release resources. */
         suspend fun close()
 }
-
-// ============================================================================
-// Transport-Level Types
-// ============================================================================
-// DTOs are now in api/ package:
-// - TgMessage, TgContent, TgPhotoSize (api/TgMessage.kt, api/TgContent.kt)
-// - TgFile (api/TgFile.kt)
-// - TgChat, TgChatType are still inline below (not yet migrated)
-
-/** Wrapper for TDLib Chat. Exposes only fields needed by transport consumers. */
-data class TgChat(
-        val id: Long,
-        val title: String,
-        val type: TgChatType,
-        val photoSmallFileId: Int?,
-        val photoBigFileId: Int?,
-        val memberCount: Int?
-)
-
-/** Simplified chat type enum. */
-enum class TgChatType {
-        PRIVATE,
-        BASIC_GROUP,
-        SUPERGROUP,
-        CHANNEL,
-        SECRET,
-        UNKNOWN
-}
-
-// ============================================================================
-// Exceptions
-// ============================================================================
-
-/** Exception thrown during Telegram authentication. */
-class TelegramAuthException(message: String, cause: Throwable? = null) : Exception(message, cause)
-
-/** Exception thrown during Telegram file operations. */
-class TelegramFileException(message: String, cause: Throwable? = null) : Exception(message, cause)

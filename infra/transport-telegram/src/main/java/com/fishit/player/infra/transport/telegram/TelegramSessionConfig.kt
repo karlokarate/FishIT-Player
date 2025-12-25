@@ -3,7 +3,7 @@ package com.fishit.player.infra.transport.telegram
 /**
  * Configuration for a TDLib session.
  *
- * Used by [TelegramClientFactory] to create a [TelegramTransportClient].
+ * Used by [TelegramClientFactory] to create a [TelegramClient].
  * Can be used for:
  * - Pre-authenticated sessions (Codespaces/CI)
  * - Interactive auth flows (production app)

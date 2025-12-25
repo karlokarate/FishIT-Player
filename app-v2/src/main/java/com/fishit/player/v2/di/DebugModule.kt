@@ -16,10 +16,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DebugModule {
-
     @Binds
     @Singleton
-    abstract fun bindDebugInfoProvider(
-        impl: DefaultDebugInfoProvider
-    ): DebugInfoProvider
+    abstract fun bindDebugInfoProvider(impl: DefaultDebugInfoProvider): DebugInfoProvider
 }

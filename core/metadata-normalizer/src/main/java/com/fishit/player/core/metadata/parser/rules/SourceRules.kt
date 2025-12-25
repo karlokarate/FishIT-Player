@@ -27,39 +27,94 @@ data class SourceResult(
  * - CAM/TS: CAM, HDCAM, TS, TELESYNC, TC, TELECINE
  */
 object SourceRules {
-
     // BluRay source tokens
-    private val blurayTokens = setOf(
-        "bluray", "blu-ray", "bdrip", "brrip", "bd25", "bd50", "bd",
-        "hddvd", "hd-dvd",
-    )
+    private val blurayTokens =
+        setOf(
+            "bluray",
+            "blu-ray",
+            "bdrip",
+            "brrip",
+            "bd25",
+            "bd50",
+            "bd",
+            "hddvd",
+            "hd-dvd",
+        )
 
     // Web source tokens (including streaming services)
-    private val webTokens = setOf(
-        "webdl", "web-dl", "webrip", "web", "webhd",
-        // Streaming services
-        "amzn", "amazon", "nf", "netflix", "dsnp", "disneyplus", "disney+",
-        "hmax", "hbomax", "atvp", "appletv", "pcok", "peacock",
-        "hulu", "stan", "it", "red", "crav", "crave",
-        "pmtp", "paramount+", "paramount",
-    )
+    private val webTokens =
+        setOf(
+            "webdl",
+            "web-dl",
+            "webrip",
+            "web",
+            "webhd",
+            // Streaming services
+            "amzn",
+            "amazon",
+            "nf",
+            "netflix",
+            "dsnp",
+            "disneyplus",
+            "disney+",
+            "hmax",
+            "hbomax",
+            "atvp",
+            "appletv",
+            "pcok",
+            "peacock",
+            "hulu",
+            "stan",
+            "it",
+            "red",
+            "crav",
+            "crave",
+            "pmtp",
+            "paramount+",
+            "paramount",
+        )
 
     // HDTV source tokens
-    private val hdtvTokens = setOf(
-        "hdtv", "pdtv", "sdtv", "tvrip", "dsr", "dthrip", "dvbrip",
-        "satrip", "hdtvrip",
-    )
+    private val hdtvTokens =
+        setOf(
+            "hdtv",
+            "pdtv",
+            "sdtv",
+            "tvrip",
+            "dsr",
+            "dthrip",
+            "dvbrip",
+            "satrip",
+            "hdtvrip",
+        )
 
     // DVD source tokens
-    private val dvdTokens = setOf(
-        "dvd", "dvdrip", "dvdscr", "dvd-r", "dvdr", "r5", "r6",
-    )
+    private val dvdTokens =
+        setOf(
+            "dvd",
+            "dvdrip",
+            "dvdscr",
+            "dvd-r",
+            "dvdr",
+            "r5",
+            "r6",
+        )
 
     // CAM/TS source tokens (low quality)
-    private val camTokens = setOf(
-        "cam", "hdcam", "ts", "telesync", "tc", "telecine", "hdts",
-        "scr", "screener", "dvdscr", "bdscr",
-    )
+    private val camTokens =
+        setOf(
+            "cam",
+            "hdcam",
+            "ts",
+            "telesync",
+            "tc",
+            "telecine",
+            "hdts",
+            "scr",
+            "screener",
+            "dvdscr",
+            "bdscr",
+        )
 
     /**
      * Detect source from tokens.
@@ -95,7 +150,5 @@ object SourceRules {
     /**
      * Get all known source tokens (for tech boundary detection).
      */
-    fun getAllSourceTokens(): Set<String> {
-        return blurayTokens + webTokens + hdtvTokens + dvdTokens + camTokens
-    }
+    fun getAllSourceTokens(): Set<String> = blurayTokens + webTokens + hdtvTokens + dvdTokens + camTokens
 }

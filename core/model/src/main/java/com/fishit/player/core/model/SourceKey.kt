@@ -17,8 +17,8 @@ import com.fishit.player.core.model.ids.PipelineItemId
  * @property sourceId Pipeline-local unique identifier (format varies by pipeline)
  */
 data class SourceKey(
-        val pipeline: PipelineIdTag,
-        val sourceId: PipelineItemId,
+    val pipeline: PipelineIdTag,
+    val sourceId: PipelineItemId,
 ) {
     /**
      * Serialized form for storage/comparison.
@@ -42,8 +42,8 @@ data class SourceKey(
             val sourceId = serialized.substring(firstColon + 1)
 
             return SourceKey(
-                    pipeline = PipelineIdTag.fromCode(pipelineCode),
-                    sourceId = PipelineItemId(sourceId),
+                pipeline = PipelineIdTag.fromCode(pipelineCode),
+                sourceId = PipelineItemId(sourceId),
             )
         }
     }

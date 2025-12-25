@@ -9,7 +9,6 @@ import org.junit.Test
 
 /** Tests for MediaSourceRef and related quality/language parsing. */
 class MediaSourceRefTest {
-
     // ========== MediaQuality.fromFilename Tests ==========
 
     @Test
@@ -177,13 +176,13 @@ class MediaSourceRefTest {
     @Test
     fun `creates Telegram source ref correctly`() {
         val ref =
-                createTelegramSourceRef(
-                        chatId = 123L,
-                        messageId = 456L,
-                        chatName = "Movie Group",
-                        filename = "Movie.2020.German.1080p.BluRay.mkv",
-                        sizeBytes = 5_000_000_000L,
-                )
+            createTelegramSourceRef(
+                chatId = 123L,
+                messageId = 456L,
+                chatName = "Movie Group",
+                filename = "Movie.2020.German.1080p.BluRay.mkv",
+                sizeBytes = 5_000_000_000L,
+            )
 
         assertEquals(SourceType.TELEGRAM, ref.sourceType)
         assertEquals("telegram:123:456", ref.sourceId.value)
@@ -197,12 +196,12 @@ class MediaSourceRefTest {
     @Test
     fun `creates Xtream VOD source ref correctly`() {
         val ref =
-                createXtreamVodSourceRef(
-                        vodId = 789,
-                        providerName = "Provider A",
-                        title = "Movie.2020.4K.HDR",
-                        containerExt = "mkv",
-                )
+            createXtreamVodSourceRef(
+                vodId = 789,
+                providerName = "Provider A",
+                title = "Movie.2020.4K.HDR",
+                containerExt = "mkv",
+            )
 
         assertEquals(SourceType.XTREAM, ref.sourceType)
         assertEquals("xtream:vod:789", ref.sourceId.value)
@@ -212,11 +211,11 @@ class MediaSourceRefTest {
     @Test
     fun `creates IO source ref correctly`() {
         val ref =
-                createIoSourceRef(
-                        uri = "file:///storage/movies/test.mkv",
-                        filename = "Movie.2020.German.DL.1080p.BluRay.x264.mkv",
-                        sizeBytes = 4_500_000_000L,
-                )
+            createIoSourceRef(
+                uri = "file:///storage/movies/test.mkv",
+                filename = "Movie.2020.German.DL.1080p.BluRay.x264.mkv",
+                sizeBytes = 4_500_000_000L,
+            )
 
         assertEquals(SourceType.IO, ref.sourceType)
         assertTrue(ref.sourceId.value.startsWith("io:file:"))
@@ -273,12 +272,12 @@ class MediaSourceRefTest {
     @Test
     fun `generates correct display label for quality`() {
         val quality =
-                MediaQuality(
-                        resolution = 2160,
-                        resolutionLabel = "4K",
-                        hdr = "HDR10",
-                        codec = "HEVC",
-                )
+            MediaQuality(
+                resolution = 2160,
+                resolutionLabel = "4K",
+                hdr = "HDR10",
+                codec = "HEVC",
+            )
         val label = quality.toDisplayLabel()
         assertTrue(label.contains("4K"))
         assertTrue(label.contains("HDR10"))
@@ -288,16 +287,16 @@ class MediaSourceRefTest {
     @Test
     fun `generates correct display label for source ref`() {
         val ref =
-                MediaSourceRef(
-                        sourceType = SourceType.TELEGRAM,
-                        sourceId = PipelineItemId("telegram:123:456"),
-                        sourceLabel = "Telegram: Movies",
-                        quality = MediaQuality(resolution = 1080),
-                        languages =
-                                LanguageInfo(audioLanguages = listOf("de", "en"), isMulti = true),
-                        format = MediaFormat(container = "mkv"),
-                        sizeBytes = 4_500_000_000L,
-                )
+            MediaSourceRef(
+                sourceType = SourceType.TELEGRAM,
+                sourceId = PipelineItemId("telegram:123:456"),
+                sourceLabel = "Telegram: Movies",
+                quality = MediaQuality(resolution = 1080),
+                languages =
+                    LanguageInfo(audioLanguages = listOf("de", "en"), isMulti = true),
+                format = MediaFormat(container = "mkv"),
+                sizeBytes = 4_500_000_000L,
+            )
 
         val label = ref.toDisplayLabel()
         assertTrue(label.contains("1080"))

@@ -36,28 +36,28 @@ package com.fishit.player.core.model
  * loads)
  */
 data class NormalizedMediaMetadata(
-        val canonicalTitle: String,
-        val mediaType: MediaType = MediaType.UNKNOWN,
-        val year: Int? = null,
-        val season: Int? = null,
-        val episode: Int? = null,
-        /**
-         * Typed TMDB reference from resolver or trusted upstream source.
-         *
-         * Use directly for TMDB API calls:
-         * - MOVIE → GET /movie/{id}
-         * - TV → GET /tv/{id}
-         * - Episode: GET /tv/{id}/season/{season}/episode/{episode}
-         */
-        val tmdb: TmdbRef? = null,
-        val externalIds: ExternalIds = ExternalIds(),
-        // === Imaging Fields (v2) ===
-        val poster: ImageRef? = null,
-        val backdrop: ImageRef? = null,
-        val thumbnail: ImageRef? = null,
-        /**
-         * Minithumbnail (inline JPEG bytes) for instant blur placeholder before full thumbnail
-         * loads
-         */
-        val placeholderThumbnail: ImageRef? = null,
+    val canonicalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
+    val year: Int? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    /**
+     * Typed TMDB reference from resolver or trusted upstream source.
+     *
+     * Use directly for TMDB API calls:
+     * - MOVIE → GET /movie/{id}
+     * - TV → GET /tv/{id}
+     * - Episode: GET /tv/{id}/season/{season}/episode/{episode}
+     */
+    val tmdb: TmdbRef? = null,
+    val externalIds: ExternalIds = ExternalIds(),
+    // === Imaging Fields (v2) ===
+    val poster: ImageRef? = null,
+    val backdrop: ImageRef? = null,
+    val thumbnail: ImageRef? = null,
+    /**
+     * Minithumbnail (inline JPEG bytes) for instant blur placeholder before full thumbnail
+     * loads
+     */
+    val placeholderThumbnail: ImageRef? = null,
 )

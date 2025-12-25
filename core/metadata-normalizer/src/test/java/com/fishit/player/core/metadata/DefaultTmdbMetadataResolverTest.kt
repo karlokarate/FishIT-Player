@@ -9,7 +9,6 @@ import com.fishit.player.core.model.TmdbRef
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertSame
 
 /**
  * Tests for DefaultTmdbMetadataResolver.
@@ -23,11 +22,11 @@ import kotlin.test.assertSame
  * Full integration tests would require a real API key.
  */
 class DefaultTmdbMetadataResolverTest {
-
     /** Config provider that returns DISABLED config (no API key) */
-    private val disabledConfigProvider = object : TmdbConfigProvider {
-        override fun getConfig(): TmdbConfig = TmdbConfig.DISABLED
-    }
+    private val disabledConfigProvider =
+        object : TmdbConfigProvider {
+            override fun getConfig(): TmdbConfig = TmdbConfig.DISABLED
+        }
 
     private val resolver = DefaultTmdbMetadataResolver(disabledConfigProvider)
 

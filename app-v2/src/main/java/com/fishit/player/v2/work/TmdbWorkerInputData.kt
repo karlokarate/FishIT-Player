@@ -1,6 +1,5 @@
 package com.fishit.player.v2.work
 
-import android.content.Context
 import androidx.work.Data
 import androidx.work.WorkerParameters
 import java.util.UUID
@@ -29,7 +28,6 @@ data class TmdbWorkerInputData(
     /** Maximum runtime in ms */
     val maxRuntimeMs: Long,
 ) {
-
     /** Returns true if this is a FireTV low-RAM device */
     val isFireTvLowRam: Boolean
         get() = deviceClass == WorkerConstants.DEVICE_CLASS_FIRETV_LOW_RAM
@@ -41,58 +39,67 @@ data class TmdbWorkerInputData(
      * Normal devices: clamp to 50-150
      */
     val effectiveBatchSize: Int
-        get() = if (isFireTvLowRam) {
-            batchSizeHint.coerceIn(
-                WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MIN,
-                WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MAX
-            )
-        } else {
-            batchSizeHint.coerceIn(
-                WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MIN,
-                WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MAX
-            )
-        }
+        get() =
+            if (isFireTvLowRam) {
+                batchSizeHint.coerceIn(
+                    WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MIN,
+                    WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MAX,
+                )
+            } else {
+                batchSizeHint.coerceIn(
+                    WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MIN,
+                    WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MAX,
+                )
+            }
 
     /** Returns retry limit based on force refresh mode */
     val retryLimit: Int
-        get() = if (forceRefresh) {
-            WorkerConstants.RETRY_LIMIT_EXPERT
-        } else {
-            WorkerConstants.RETRY_LIMIT_AUTO
-        }
+        get() =
+            if (forceRefresh) {
+                WorkerConstants.RETRY_LIMIT_EXPERT
+            } else {
+                WorkerConstants.RETRY_LIMIT_AUTO
+            }
 
     companion object {
         /**
          * Parse InputData from WorkerParameters.
          */
-        fun from(workerParams: WorkerParameters): TmdbWorkerInputData =
-            from(workerParams.inputData)
+        fun from(workerParams: WorkerParameters): TmdbWorkerInputData = from(workerParams.inputData)
 
         /**
          * Parse InputData from Data directly.
          */
         fun from(data: Data): TmdbWorkerInputData {
-            val deviceClass = data.getString(WorkerConstants.KEY_DEVICE_CLASS)
-                ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET
+            val deviceClass =
+                data.getString(WorkerConstants.KEY_DEVICE_CLASS)
+                    ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET
             val isFireTv = deviceClass == WorkerConstants.DEVICE_CLASS_FIRETV_LOW_RAM
 
             return TmdbWorkerInputData(
-                runId = data.getString(WorkerConstants.KEY_SYNC_RUN_ID)
-                    ?: UUID.randomUUID().toString(),
-                tmdbScope = data.getString(WorkerConstants.KEY_TMDB_SCOPE)
-                    ?: WorkerConstants.TMDB_SCOPE_BOTH,
+                runId =
+                    data.getString(WorkerConstants.KEY_SYNC_RUN_ID)
+                        ?: UUID.randomUUID().toString(),
+                tmdbScope =
+                    data.getString(WorkerConstants.KEY_TMDB_SCOPE)
+                        ?: WorkerConstants.TMDB_SCOPE_BOTH,
                 forceRefresh = data.getBoolean(WorkerConstants.KEY_TMDB_FORCE_REFRESH, false),
-                batchSizeHint = data.getInt(
-                    WorkerConstants.KEY_TMDB_BATCH_SIZE_HINT,
-                    if (isFireTv) WorkerConstants.TMDB_FIRETV_BATCH_SIZE_DEFAULT
-                    else WorkerConstants.TMDB_NORMAL_BATCH_SIZE_DEFAULT
-                ),
+                batchSizeHint =
+                    data.getInt(
+                        WorkerConstants.KEY_TMDB_BATCH_SIZE_HINT,
+                        if (isFireTv) {
+                            WorkerConstants.TMDB_FIRETV_BATCH_SIZE_DEFAULT
+                        } else {
+                            WorkerConstants.TMDB_NORMAL_BATCH_SIZE_DEFAULT
+                        },
+                    ),
                 batchCursor = data.getString(WorkerConstants.KEY_TMDB_BATCH_CURSOR),
                 deviceClass = deviceClass,
-                maxRuntimeMs = data.getLong(
-                    WorkerConstants.KEY_MAX_RUNTIME_MS,
-                    WorkerConstants.DEFAULT_MAX_RUNTIME_MS
-                ),
+                maxRuntimeMs =
+                    data.getLong(
+                        WorkerConstants.KEY_MAX_RUNTIME_MS,
+                        WorkerConstants.DEFAULT_MAX_RUNTIME_MS,
+                    ),
             )
         }
 
@@ -109,13 +116,15 @@ data class TmdbWorkerInputData(
             maxRuntimeMs: Long = WorkerConstants.DEFAULT_MAX_RUNTIME_MS,
         ): Data {
             val isFireTv = deviceClass == WorkerConstants.DEVICE_CLASS_FIRETV_LOW_RAM
-            val defaultBatchSize = if (isFireTv) {
-                WorkerConstants.TMDB_FIRETV_BATCH_SIZE_DEFAULT
-            } else {
-                WorkerConstants.TMDB_NORMAL_BATCH_SIZE_DEFAULT
-            }
+            val defaultBatchSize =
+                if (isFireTv) {
+                    WorkerConstants.TMDB_FIRETV_BATCH_SIZE_DEFAULT
+                } else {
+                    WorkerConstants.TMDB_NORMAL_BATCH_SIZE_DEFAULT
+                }
 
-            return Data.Builder()
+            return Data
+                .Builder()
                 .putString(WorkerConstants.KEY_SYNC_RUN_ID, runId)
                 .putString(WorkerConstants.KEY_TMDB_SCOPE, tmdbScope)
                 .putBoolean(WorkerConstants.KEY_TMDB_FORCE_REFRESH, forceRefresh)
@@ -126,8 +135,7 @@ data class TmdbWorkerInputData(
                     if (batchCursor != null) {
                         putString(WorkerConstants.KEY_TMDB_BATCH_CURSOR, batchCursor)
                     }
-                }
-                .build()
+                }.build()
         }
     }
 }

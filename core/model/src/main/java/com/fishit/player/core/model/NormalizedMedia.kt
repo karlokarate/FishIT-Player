@@ -42,41 +42,41 @@ import com.fishit.player.core.model.ids.PipelineItemId
  * @property variants All available playback variants, ordered by preference (best first)
  */
 data class NormalizedMedia(
-        val canonicalId: CanonicalId?,
-        val title: String,
-        val year: Int?,
-        val mediaType: MediaType,
-        /**
-         * Season number for episodes.
-         *
-         * For TMDB episodes, combine with [tmdb] (TV type) and [episode] for API calls:
-         * GET /tv/{tmdb.id}/season/{season}/episode/{episode}
-         *
-         * Null for movies and non-episodic content.
-         */
-        val season: Int? = null,
-        /**
-         * Episode number for episodes.
-         *
-         * For TMDB episodes, combine with [tmdb] (TV type) and [season] for API calls:
-         * GET /tv/{tmdb.id}/season/{season}/episode/{episode}
-         *
-         * Null for movies and non-episodic content.
-         */
-        val episode: Int? = null,
-        /**
-         * Typed TMDB reference for direct API calls.
-         *
-         * - For movies: TmdbRef(MOVIE, movieId) → GET /movie/{id}
-         * - For TV shows: TmdbRef(TV, seriesId) → GET /tv/{id}
-         * - For episodes: TmdbRef(TV, seriesId) + season/episode → GET /tv/{id}/season/{s}/episode/{e}
-         *
-         * Null if no TMDB identity is available.
-         */
-        val tmdb: TmdbRef? = null,
-        val primaryPipelineIdTag: PipelineIdTag,
-        val primarySourceId: PipelineItemId,
-        val variants: MutableList<MediaVariant>,
+    val canonicalId: CanonicalId?,
+    val title: String,
+    val year: Int?,
+    val mediaType: MediaType,
+    /**
+     * Season number for episodes.
+     *
+     * For TMDB episodes, combine with [tmdb] (TV type) and [episode] for API calls:
+     * GET /tv/{tmdb.id}/season/{season}/episode/{episode}
+     *
+     * Null for movies and non-episodic content.
+     */
+    val season: Int? = null,
+    /**
+     * Episode number for episodes.
+     *
+     * For TMDB episodes, combine with [tmdb] (TV type) and [season] for API calls:
+     * GET /tv/{tmdb.id}/season/{season}/episode/{episode}
+     *
+     * Null for movies and non-episodic content.
+     */
+    val episode: Int? = null,
+    /**
+     * Typed TMDB reference for direct API calls.
+     *
+     * - For movies: TmdbRef(MOVIE, movieId) → GET /movie/{id}
+     * - For TV shows: TmdbRef(TV, seriesId) → GET /tv/{id}
+     * - For episodes: TmdbRef(TV, seriesId) + season/episode → GET /tv/{id}/season/{s}/episode/{e}
+     *
+     * Null if no TMDB identity is available.
+     */
+    val tmdb: TmdbRef? = null,
+    val primaryPipelineIdTag: PipelineIdTag,
+    val primarySourceId: PipelineItemId,
+    val variants: MutableList<MediaVariant>,
 ) {
     init {
         require(variants.isNotEmpty()) { "NormalizedMedia must have at least one variant" }
@@ -122,8 +122,8 @@ data class NormalizedMedia(
     fun syncPrimaryFromVariants(): NormalizedMedia {
         val best = variants.firstOrNull { it.available } ?: variants.first()
         return copy(
-                primaryPipelineIdTag = best.sourceKey.pipeline,
-                primarySourceId = best.sourceKey.sourceId,
+            primaryPipelineIdTag = best.sourceKey.pipeline,
+            primarySourceId = best.sourceKey.sourceId,
         )
     }
 }

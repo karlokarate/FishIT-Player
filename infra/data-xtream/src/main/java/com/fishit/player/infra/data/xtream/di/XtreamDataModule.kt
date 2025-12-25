@@ -64,7 +64,12 @@ abstract class XtreamDataModule {
      * Binds [LibraryContentRepositoryAdapter] as the implementation for [LibraryContentRepository].
      *
      * Provides VOD/Series content for the Library feature screen.
-     * Maps RawMediaMetadata → LibraryMediaItem domain models.
+     * Maps ObxVod/ObxSeries entities → LibraryMediaItem domain models (direct entity mapping).
+     *
+     * Direct entity mapping provides access to:
+     * - categoryId, categoryName (via lookup)
+     * - genres (parsed from entity)
+     * - description/plot
      */
     @Binds
     @Singleton
@@ -76,7 +81,12 @@ abstract class XtreamDataModule {
      * Binds [LiveContentRepositoryAdapter] as the implementation for [LiveContentRepository].
      *
      * Provides live TV channels for the Live feature screen.
-     * Maps RawMediaMetadata → LiveChannel domain models.
+     * Maps ObxLive entities → LiveChannel domain models (direct entity mapping).
+     *
+     * Direct entity mapping provides access to:
+     * - categoryId, categoryName (via lookup)
+     * - channelNumber (from streamId)
+     * - EPG data (from ObxEpgNowNext)
      */
     @Binds
     @Singleton

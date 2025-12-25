@@ -18,25 +18,26 @@ package com.fishit.player.core.model
  * @property available False if this variant is known to be dead/unavailable
  */
 data class MediaVariant(
-        val sourceKey: SourceKey,
-        val qualityTag: String,
-        val resolutionHeight: Int? = null,
-        val language: String? = null,
-        val isOmu: Boolean = false,
-        val sourceUrl: String? = null,
-        var available: Boolean = true,
+    val sourceKey: SourceKey,
+    val qualityTag: String,
+    val resolutionHeight: Int? = null,
+    val language: String? = null,
+    val isOmu: Boolean = false,
+    val sourceUrl: String? = null,
+    var available: Boolean = true,
 ) {
     /**
      * Human-readable label for UI display.
      *
      * Example: "FHD – de (Xtream)", "HD – en OmU (Telegram)"
      */
-    fun toDisplayLabel(): String = buildString {
-        append(qualityTag)
-        language?.let { append(" – $it") }
-        if (isOmu) append(" OmU")
-        append(" (${sourceKey.pipeline.name.lowercase().replaceFirstChar { it.uppercase() }})")
-    }
+    fun toDisplayLabel(): String =
+        buildString {
+            append(qualityTag)
+            language?.let { append(" – $it") }
+            if (isOmu) append(" OmU")
+            append(" (${sourceKey.pipeline.name.lowercase().replaceFirstChar { it.uppercase() }})")
+        }
 }
 
 /** Quality tag constants for consistency. */
@@ -51,11 +52,11 @@ object QualityTags {
 
     /** Derive quality tag from resolution height. */
     fun fromResolutionHeight(height: Int?): String =
-            when {
-                height == null -> SD
-                height >= 2160 -> UHD
-                height >= 1080 -> FHD
-                height >= 720 -> HD
-                else -> SD
-            }
+        when {
+            height == null -> SD
+            height >= 2160 -> UHD
+            height >= 1080 -> FHD
+            height >= 720 -> HD
+            else -> SD
+        }
 }

@@ -86,7 +86,10 @@ fun collapseWhitespace(input: String): String {
 /**
  * Check if character at position is surrounded by letters (for hyphen preservation).
  */
-fun isHyphenBetweenLetters(input: String, pos: Int): Boolean {
+fun isHyphenBetweenLetters(
+    input: String,
+    pos: Int,
+): Boolean {
     if (pos <= 0 || pos >= input.length - 1) return false
     return input[pos - 1].isLetter() && input[pos + 1].isLetter()
 }
@@ -141,14 +144,18 @@ fun trimTrailingSeparators(input: String): String {
  * Check if a string contains a substring (case-insensitive).
  * Linear time O(n*m), but still no regex overhead.
  */
-fun containsIgnoreCase(haystack: String, needle: String): Boolean {
-    return haystack.lowercase().contains(needle.lowercase())
-}
+fun containsIgnoreCase(
+    haystack: String,
+    needle: String,
+): Boolean = haystack.lowercase().contains(needle.lowercase())
 
 /**
  * Check if a string equals any of the given values (case-insensitive).
  */
-fun equalsAnyIgnoreCase(value: String, vararg options: String): Boolean {
+fun equalsAnyIgnoreCase(
+    value: String,
+    vararg options: String,
+): Boolean {
     val lower = value.lowercase()
     return options.any { it.lowercase() == lower }
 }
@@ -156,7 +163,10 @@ fun equalsAnyIgnoreCase(value: String, vararg options: String): Boolean {
 /**
  * Check if a string starts with any of the given prefixes (case-insensitive).
  */
-fun startsWithAnyIgnoreCase(value: String, vararg prefixes: String): Boolean {
+fun startsWithAnyIgnoreCase(
+    value: String,
+    vararg prefixes: String,
+): Boolean {
     val lower = value.lowercase()
     return prefixes.any { lower.startsWith(it.lowercase()) }
 }
@@ -164,7 +174,10 @@ fun startsWithAnyIgnoreCase(value: String, vararg prefixes: String): Boolean {
 /**
  * Check if a string ends with any of the given suffixes (case-insensitive).
  */
-fun endsWithAnyIgnoreCase(value: String, vararg suffixes: String): Boolean {
+fun endsWithAnyIgnoreCase(
+    value: String,
+    vararg suffixes: String,
+): Boolean {
     val lower = value.lowercase()
     return suffixes.any { lower.endsWith(it.lowercase()) }
 }

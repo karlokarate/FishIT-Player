@@ -7,93 +7,55 @@ import coil3.fetch.SourceFetchResult
 import coil3.request.Options
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
 import com.fishit.player.core.model.ImageRef
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import java.io.File
-import java.io.IOException
-import kotlinx.coroutines.withTimeout
+import com.fishit.player.infra.transport.telegram.TgThumbnailRef
 import okio.buffer
 import okio.source
+import java.io.File
+import java.io.IOException
+import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher as TransportThumbFetcher
 
 /**
- * TelegramThumbFetcher implementation using TelegramTransportClient.
+ * Coil TelegramThumbFetcher implementation using typed transport interface.
  *
  * **Purpose:**
- * - Resolves [ImageRef.TelegramThumb] references via TDLib
- * - Downloads thumbnail files if not cached locally
+ * - Bridges Coil's [TelegramThumbFetcher] interface with transport layer's [TransportThumbFetcher]
+ * - Converts [ImageRef.TelegramThumb] to [TgThumbnailRef] for transport layer
  * - Returns local file path for Coil to decode
  *
  * **Architecture:**
- * - core:ui-imaging defines the [TelegramThumbFetcher] interface
- * - This implementation lives in app-v2 (the only module with both dependencies)
- * - Wired via [ImagingModule] DI
+ * - core:ui-imaging defines the [TelegramThumbFetcher] interface (Coil-facing)
+ * - infra:transport-telegram provides [TransportThumbFetcher] (TDLib-facing)
+ * - This implementation bridges the two, lives in app-v2 for DI wiring
  *
- * **Download Strategy:**
- * 1. Check if file is already downloaded (localPath available)
- * 2. If not, request download via TelegramTransportClient
- * 3. Wait for download completion (with timeout)
- * 4. Return SourceFetchResult with local file
+ * **v2 Migration:**
+ * - No longer uses deprecated TelegramTransportClient
+ * - Uses typed TransportThumbFetcher which internally uses TelegramFileClient
  */
 class TelegramThumbFetcherImpl(
-        private val telegramClient: TelegramTransportClient,
-        private val ref: ImageRef.TelegramThumb,
-        private val options: Options,
+    private val transportFetcher: TransportThumbFetcher,
+    private val ref: ImageRef.TelegramThumb,
+    private val options: Options,
 ) : TelegramThumbFetcher {
-    companion object {
-        /** Timeout for thumbnail download (thumbnails are small, should be fast) */
-        private const val DOWNLOAD_TIMEOUT_MS = 15_000L
-
-        /** Retry delay between download checks */
-        private const val RETRY_DELAY_MS = 100L
-
-        /** Maximum retries for download completion check */
-        private const val MAX_RETRIES = 50
-    }
-
     override suspend fun fetch(
-            ref: ImageRef.TelegramThumb,
-            options: Options,
+        ref: ImageRef.TelegramThumb,
+        options: Options,
     ): FetchResult {
-        return withTimeout(DOWNLOAD_TIMEOUT_MS) {
-            // Step 1: Resolve file by remoteId first
-            val resolvedFile = telegramClient.resolveFileByRemoteId(ref.remoteId)
-
-            // Step 2: Check if already downloaded
-            val initialPath = resolvedFile.localPath
-            if (resolvedFile.isDownloadingCompleted && !initialPath.isNullOrBlank()) {
-                return@withTimeout createResult(initialPath)
-            }
-
-            // Step 3: Request download using resolved fileId
-            telegramClient.requestFileDownload(
-                    fileId = resolvedFile.id,
-                    priority = 24, // High priority for thumbnails
+        // Convert ImageRef.TelegramThumb to TgThumbnailRef for transport layer
+        val thumbRef =
+            TgThumbnailRef(
+                remoteId = ref.remoteId,
+                width = ref.preferredWidth ?: 320,
+                height = ref.preferredHeight ?: 320,
             )
 
-            // Step 4: Poll for download completion
-            var retries = 0
-            while (retries < MAX_RETRIES) {
-                kotlinx.coroutines.delay(RETRY_DELAY_MS)
+        // Use transport layer to fetch thumbnail
+        val localPath =
+            transportFetcher.fetchThumbnail(thumbRef)
+                ?: throw IOException(
+                    "Failed to fetch Telegram thumbnail for remoteId=${ref.remoteId}",
+                )
 
-                val updated = telegramClient.resolveFile(resolvedFile.id)
-                val updatedPath = updated.localPath
-
-                if (updated.isDownloadingCompleted && !updatedPath.isNullOrBlank()) {
-                    return@withTimeout createResult(updatedPath)
-                }
-
-                if (!updated.isDownloadingActive && updatedPath.isNullOrBlank()) {
-                    throw IOException(
-                            "Telegram thumbnail download failed for remoteId=${ref.remoteId}",
-                    )
-                }
-
-                retries++
-            }
-
-            throw IOException(
-                    "Telegram thumbnail download timeout for remoteId=${ref.remoteId}",
-            )
-        }
+        return createResult(localPath)
     }
 
     private fun createResult(localPath: String): FetchResult {
@@ -108,13 +70,13 @@ class TelegramThumbFetcherImpl(
         }
 
         return SourceFetchResult(
-                source =
-                        ImageSource(
-                                source = file.inputStream().source().buffer(),
-                                fileSystem = options.fileSystem,
-                        ),
-                mimeType = guessMimeType(localPath),
-                dataSource = DataSource.DISK,
+            source =
+                ImageSource(
+                    source = file.inputStream().source().buffer(),
+                    fileSystem = options.fileSystem,
+                ),
+            mimeType = guessMimeType(localPath),
+            dataSource = DataSource.DISK,
         )
     }
 
@@ -130,11 +92,11 @@ class TelegramThumbFetcherImpl(
 
     /** Factory for creating [TelegramThumbFetcherImpl] instances. */
     class Factory(
-            private val telegramClient: TelegramTransportClient,
+        private val transportFetcher: TransportThumbFetcher,
     ) : TelegramThumbFetcher.Factory {
         override fun create(
-                ref: ImageRef.TelegramThumb,
-                options: Options,
-        ): TelegramThumbFetcher = TelegramThumbFetcherImpl(telegramClient, ref, options)
+            ref: ImageRef.TelegramThumb,
+            options: Options,
+        ): TelegramThumbFetcher = TelegramThumbFetcherImpl(transportFetcher, ref, options)
     }
 }

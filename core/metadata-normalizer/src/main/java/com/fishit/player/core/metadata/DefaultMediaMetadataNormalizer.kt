@@ -20,21 +20,21 @@ import com.fishit.player.core.model.SourceType
  */
 class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
     override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata =
-            NormalizedMediaMetadata(
-                    canonicalTitle = raw.originalTitle, // No cleaning - pass through
-                    mediaType = raw.mediaType, // Pass through media type
-                    year = raw.year,
-                    season = raw.season,
-                    episode = raw.episode,
-                    tmdb = raw.externalIds.tmdb, // Pass through typed TMDB ref if provided
-                    externalIds = raw.externalIds,
-                    // === Pass through ImageRefs from pipeline ===
-                    poster = raw.poster,
-                    backdrop = raw.backdrop,
-                    thumbnail = raw.thumbnail,
-                    placeholderThumbnail =
-                            raw.placeholderThumbnail, // Minithumbnail for blur placeholder
-            )
+        NormalizedMediaMetadata(
+            canonicalTitle = raw.originalTitle, // No cleaning - pass through
+            mediaType = raw.mediaType, // Pass through media type
+            year = raw.year,
+            season = raw.season,
+            episode = raw.episode,
+            tmdb = raw.externalIds.tmdb, // Pass through typed TMDB ref if provided
+            externalIds = raw.externalIds,
+            // === Pass through ImageRefs from pipeline ===
+            poster = raw.poster,
+            backdrop = raw.backdrop,
+            thumbnail = raw.thumbnail,
+            placeholderThumbnail =
+                raw.placeholderThumbnail, // Minithumbnail for blur placeholder
+        )
 }
 
 /**
@@ -58,7 +58,7 @@ class DefaultMediaMetadataNormalizer : MediaMetadataNormalizer {
  * @property sceneParser Parser for extracting metadata from filenames (RE2J by default)
  */
 class RegexMediaMetadataNormalizer(
-        private val sceneParser: SceneNameParser = Re2jSceneNameParser(),
+    private val sceneParser: SceneNameParser = Re2jSceneNameParser(),
 ) : MediaMetadataNormalizer {
     override suspend fun normalize(raw: RawMediaMetadata): NormalizedMediaMetadata {
         // Parse filename to extract metadata
@@ -75,30 +75,30 @@ class RegexMediaMetadataNormalizer(
 
         // Refine media type based on parsed metadata if UNKNOWN
         val mediaType =
-                if (raw.mediaType == MediaType.UNKNOWN && raw.sourceType != SourceType.XTREAM) {
-                    when {
-                        season != null && episode != null -> MediaType.SERIES_EPISODE
-                        year != null -> MediaType.MOVIE
-                        else -> MediaType.UNKNOWN
-                    }
-                } else {
-                    raw.mediaType
+            if (raw.mediaType == MediaType.UNKNOWN && raw.sourceType != SourceType.XTREAM) {
+                when {
+                    season != null && episode != null -> MediaType.SERIES_EPISODE
+                    year != null -> MediaType.MOVIE
+                    else -> MediaType.UNKNOWN
                 }
+            } else {
+                raw.mediaType
+            }
 
         return NormalizedMediaMetadata(
-                canonicalTitle = canonicalTitle,
-                mediaType = mediaType,
-                year = year,
-                season = season,
-                episode = episode,
-                tmdb = raw.externalIds.tmdb, // Pass through typed TMDB ref if provided
-                externalIds = raw.externalIds,
-                // === Pass through ImageRefs from pipeline ===
-                poster = raw.poster,
-                backdrop = raw.backdrop,
-                thumbnail = raw.thumbnail,
-                placeholderThumbnail =
-                        raw.placeholderThumbnail, // Minithumbnail for blur placeholder
+            canonicalTitle = canonicalTitle,
+            mediaType = mediaType,
+            year = year,
+            season = season,
+            episode = episode,
+            tmdb = raw.externalIds.tmdb, // Pass through typed TMDB ref if provided
+            externalIds = raw.externalIds,
+            // === Pass through ImageRefs from pipeline ===
+            poster = raw.poster,
+            backdrop = raw.backdrop,
+            thumbnail = raw.thumbnail,
+            placeholderThumbnail =
+                raw.placeholderThumbnail, // Minithumbnail for blur placeholder
         )
     }
 }

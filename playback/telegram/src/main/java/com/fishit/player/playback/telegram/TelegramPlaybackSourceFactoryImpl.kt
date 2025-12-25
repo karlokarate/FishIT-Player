@@ -3,7 +3,6 @@ package com.fishit.player.playback.telegram
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
 import com.fishit.player.playback.domain.PlaybackSourceException
@@ -14,8 +13,8 @@ import javax.inject.Singleton
 /**
  * Factory for creating Telegram playback sources.
  *
- * Converts a [PlaybackContext] with [SourceType.TELEGRAM] into a [PlaybackSource]
- * that uses the Telegram-specific DataSource for zero-copy streaming.
+ * Converts a [PlaybackContext] with [SourceType.TELEGRAM] into a [PlaybackSource] that uses the
+ * Telegram-specific DataSource for zero-copy streaming.
  *
  * **URL Format (tg:// scheme):**
  * ```
@@ -28,14 +27,12 @@ import javax.inject.Singleton
  * 3. Validate that we have enough info for playback
  *
  * **Architecture:**
- * - Uses [TelegramTransportClient] for file resolution
+ * - Pure URI builder - no transport dependencies required
  * - Returns [PlaybackSource] with [DataSourceType.TELEGRAM_FILE]
- * - Actual file download/streaming handled by [TelegramFileDataSource]
+ * - Actual file resolution/download handled by [TelegramFileDataSource] (uses TelegramFileClient)
  */
 @Singleton
-class TelegramPlaybackSourceFactoryImpl @Inject constructor(
-    private val transportClient: TelegramTransportClient
-) : PlaybackSourceFactory {
+class TelegramPlaybackSourceFactoryImpl @Inject constructor() : PlaybackSourceFactory {
 
     companion object {
         private const val TAG = "TelegramPlaybackFactory"
@@ -51,11 +48,12 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
         UnifiedLog.d(TAG) { "Creating source for: ${context.canonicalId}" }
 
         // Build or validate tg:// URI
-        val telegramUri = resolveTelegramUri(context)
-            ?: throw PlaybackSourceException(
-                message = "Cannot resolve Telegram URI for: ${context.canonicalId}",
-                sourceType = SourceType.TELEGRAM
-            )
+        val telegramUri =
+                resolveTelegramUri(context)
+                        ?: throw PlaybackSourceException(
+                                message = "Cannot resolve Telegram URI for: ${context.canonicalId}",
+                                sourceType = SourceType.TELEGRAM
+                        )
 
         UnifiedLog.d(TAG) { "Resolved Telegram URI: $telegramUri" }
 
@@ -63,9 +61,9 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
         val mimeType = context.extras["mimeType"]
 
         return PlaybackSource(
-            uri = telegramUri,
-            mimeType = mimeType,
-            dataSourceType = DataSourceType.TELEGRAM_FILE
+                uri = telegramUri,
+                mimeType = mimeType,
+                dataSourceType = DataSourceType.TELEGRAM_FILE
         )
     }
 
@@ -99,10 +97,10 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
 
         if (remoteId != null || (fileId != null && fileId > 0)) {
             return buildTelegramUri(
-                fileId = fileId ?: 0,
-                remoteId = remoteId,
-                chatId = chatId,
-                messageId = messageId
+                    fileId = fileId ?: 0,
+                    remoteId = remoteId,
+                    chatId = chatId,
+                    messageId = messageId
             )
         }
 
@@ -137,12 +135,18 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
                 UnifiedLog.w(TAG) { "Invalid sourceKey format: $sourceKey" }
                 null
             }
-        } ?: run {
-            // Fallback: try to use extras
-            val chatId = context.extras["chatId"]?.toLongOrNull()
-            val messageId = context.extras["messageId"]?.toLongOrNull()
-            buildTelegramUri(fileId = 0, remoteId = sourceKey, chatId = chatId, messageId = messageId)
         }
+                ?: run {
+                    // Fallback: try to use extras
+                    val chatId = context.extras["chatId"]?.toLongOrNull()
+                    val messageId = context.extras["messageId"]?.toLongOrNull()
+                    buildTelegramUri(
+                            fileId = 0,
+                            remoteId = sourceKey,
+                            chatId = chatId,
+                            messageId = messageId
+                    )
+                }
     }
 
     /**
@@ -151,10 +155,10 @@ class TelegramPlaybackSourceFactoryImpl @Inject constructor(
      * Format: tg://file/<fileId>?remoteId=<remoteId>&chatId=<chatId>&messageId=<messageId>
      */
     private fun buildTelegramUri(
-        fileId: Int,
-        remoteId: String?,
-        chatId: Long?,
-        messageId: Long?
+            fileId: Int,
+            remoteId: String?,
+            chatId: Long?,
+            messageId: Long?
     ): String {
         val sb = StringBuilder("$TG_SCHEME://$TG_HOST/$fileId")
         val params = mutableListOf<String>()

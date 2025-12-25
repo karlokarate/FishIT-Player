@@ -1,8 +1,8 @@
 package com.fishit.player.core.appstartup
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramClientFactory
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamParallelism
@@ -23,41 +23,38 @@ import java.util.concurrent.TimeUnit
  * Creates and wires pipeline components for both Android app and CLI usage.
  *
  * **Pipeline Creation Flow:**
- * 1. Telegram: TelegramClientFactory → TelegramTransportClient → TelegramPipelineAdapter
+ * 1. Telegram: TelegramClientFactory → TelegramClient → TelegramPipelineAdapter
  * 2. Xtream: DefaultXtreamApiClient → XtreamPipelineAdapter
  *
- * **Thread Safety:**
- * This class is NOT thread-safe. Call [startPipelines] once per application lifecycle.
+ * **Thread Safety:** This class is NOT thread-safe. Call [startPipelines] once per application
+ * lifecycle.
  *
  * @param scope CoroutineScope for pipeline operations (default: IO dispatcher)
  */
 class AppStartupImpl(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : AppStartup {
-
     companion object {
         private const val TAG = "AppStartup"
+
         /** Default parallelism for Xtream API calls (conservative for startup) */
         private const val DEFAULT_PARALLELISM = 3
     }
 
-    private var telegramClient: TelegramTransportClient? = null
+    private var telegramClient: TelegramClient? = null
     private var xtreamClient: XtreamApiClient? = null
 
     override suspend fun startPipelines(config: AppStartupConfig): Pipelines {
         UnifiedLog.i(TAG, "Starting pipelines...")
 
-        val telegramAdapter = config.telegram?.let { telegramConfig ->
-            initTelegramPipeline(telegramConfig)
-        }
+        val telegramAdapter =
+            config.telegram?.let { telegramConfig -> initTelegramPipeline(telegramConfig) }
 
-        val xtreamAdapter = config.xtream?.let { xtreamConfig ->
-            initXtreamPipeline(xtreamConfig)
-        }
+        val xtreamAdapter = config.xtream?.let { xtreamConfig -> initXtreamPipeline(xtreamConfig) }
 
         UnifiedLog.i(
             TAG,
-            "Pipelines started: telegram=${telegramAdapter != null}, xtream=${xtreamAdapter != null}"
+            "Pipelines started: telegram=${telegramAdapter != null}, xtream=${xtreamAdapter != null}",
         )
 
         return Pipelines(
@@ -66,24 +63,30 @@ class AppStartupImpl(
         )
     }
 
-    private suspend fun initTelegramPipeline(
-        config: TelegramPipelineConfig,
-    ): TelegramPipelineAdapter? {
-        return try {
+    private suspend fun initTelegramPipeline(config: TelegramPipelineConfig): TelegramPipelineAdapter? =
+        try {
             UnifiedLog.d(TAG, "Initializing Telegram pipeline...")
 
-            // Create transport client from existing session
-            val transportClient = TelegramClientFactory.fromExistingSession(
-                config = config.sessionConfig,
-                scope = scope,
-            )
-            telegramClient = transportClient
+            // Create unified client from existing session (v2 pattern)
+            val client =
+                TelegramClientFactory.createUnifiedClient(
+                    config = config.sessionConfig,
+                    scope = scope,
+                )
+            telegramClient = client
 
             // Create pipeline adapter with bundler and mapper
+            // TelegramClient implements TelegramAuthClient + TelegramHistoryClient
             val metadataExtractor = TelegramStructuredMetadataExtractor()
             val bundler = TelegramMessageBundler()
             val bundleMapper = TelegramBundleToMediaItemMapper(metadataExtractor)
-            val adapter = TelegramPipelineAdapter(transportClient, bundler, bundleMapper)
+            val adapter =
+                TelegramPipelineAdapter(
+                    authClient = client,
+                    historyClient = client,
+                    bundler = bundler,
+                    bundleMapper = bundleMapper,
+                )
 
             UnifiedLog.i(TAG, "Telegram pipeline initialized")
             adapter
@@ -91,33 +94,36 @@ class AppStartupImpl(
             UnifiedLog.e(TAG, "Failed to initialize Telegram pipeline", e)
             null
         }
-    }
 
-    private suspend fun initXtreamPipeline(
-        config: XtreamPipelineConfig,
-    ): XtreamPipelineAdapter? {
+    private suspend fun initXtreamPipeline(config: XtreamPipelineConfig): XtreamPipelineAdapter? {
         return try {
             UnifiedLog.d(TAG, "Initializing Xtream pipeline: ${config.baseUrl}")
 
             // Create HTTP client with reasonable timeouts
-            val httpClient = OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build()
+            val httpClient =
+                OkHttpClient
+                    .Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(60, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build()
 
             // Create API client with default parallelism (conservative for startup)
             val apiConfig = config.toApiConfig()
-            val apiClient = DefaultXtreamApiClient(
-                http = httpClient,
-                parallelism = XtreamParallelism(DEFAULT_PARALLELISM),
-            )
+            val apiClient =
+                DefaultXtreamApiClient(
+                    http = httpClient,
+                    parallelism = XtreamParallelism(DEFAULT_PARALLELISM),
+                )
             xtreamClient = apiClient
 
             // Initialize and authenticate
             val result = apiClient.initialize(apiConfig)
             if (result.isFailure) {
-                UnifiedLog.e(TAG, "Xtream initialization failed: ${result.exceptionOrNull()?.message}")
+                UnifiedLog.e(
+                    TAG,
+                    "Xtream initialization failed: ${result.exceptionOrNull()?.message}",
+                )
                 return null
             }
 

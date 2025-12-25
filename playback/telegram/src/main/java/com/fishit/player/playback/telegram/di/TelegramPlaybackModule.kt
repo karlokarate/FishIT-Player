@@ -1,7 +1,6 @@
 package com.fishit.player.playback.telegram.di
 
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import com.fishit.player.playback.telegram.TelegramFileDataSourceFactory
 import com.fishit.player.playback.telegram.TelegramPlaybackSourceFactoryImpl
@@ -22,12 +21,10 @@ import javax.inject.Singleton
  * - [TelegramFileReadyEnsurer] for streaming readiness validation
  * - [TelegramFileDataSourceFactory] for Media3 DataSource creation
  *
- * **Usage:**
- * The [PlaybackSourceFactory] set is injected into [PlaybackSourceResolver]
- * which uses it to resolve playback sources based on [SourceType].
+ * **Usage:** The [PlaybackSourceFactory] set is injected into [PlaybackSourceResolver] which uses
+ * it to resolve playback sources based on [SourceType].
  *
  * **Dependencies:**
- * - [TelegramTransportClient] from `:infra:transport-telegram`
  * - [TelegramFileClient] from `:infra:transport-telegram`
  */
 @Module
@@ -37,14 +34,14 @@ abstract class TelegramPlaybackModule {
     /**
      * Binds the Telegram factory into the set of PlaybackSourceFactory.
      *
-     * The @IntoSet annotation allows multiple factories to be collected
-     * and injected as Set<PlaybackSourceFactory>.
+     * The @IntoSet annotation allows multiple factories to be collected and injected as
+     * Set<PlaybackSourceFactory>.
      */
     @Binds
     @IntoSet
     @Singleton
     abstract fun bindTelegramPlaybackSourceFactory(
-        impl: TelegramPlaybackSourceFactoryImpl
+            impl: TelegramPlaybackSourceFactoryImpl
     ): PlaybackSourceFactory
 
     companion object {
@@ -59,7 +56,7 @@ abstract class TelegramPlaybackModule {
         @Provides
         @Singleton
         fun provideTelegramFileReadyEnsurer(
-            fileClient: TelegramFileClient
+                fileClient: TelegramFileClient
         ): TelegramFileReadyEnsurer {
             return TelegramFileReadyEnsurer(fileClient)
         }
@@ -67,17 +64,16 @@ abstract class TelegramPlaybackModule {
         /**
          * Provides the TelegramFileDataSourceFactory for Media3 integration.
          *
-         * This factory creates TelegramFileDataSource instances for
-         * handling tg:// URIs during playback.
+         * This factory creates TelegramFileDataSource instances for handling tg:// URIs during
+         * playback.
          */
         @Provides
         @Singleton
         fun provideTelegramFileDataSourceFactory(
-            transportClient: TelegramTransportClient,
-            fileClient: TelegramFileClient,
-            readyEnsurer: TelegramFileReadyEnsurer
+                fileClient: TelegramFileClient,
+                readyEnsurer: TelegramFileReadyEnsurer,
         ): TelegramFileDataSourceFactory {
-            return TelegramFileDataSourceFactory(transportClient, fileClient, readyEnsurer)
+            return TelegramFileDataSourceFactory(fileClient, readyEnsurer)
         }
     }
 }
