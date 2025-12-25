@@ -28,59 +28,102 @@ data class LanguageResult(
  * - Other European languages
  */
 object LanguageRules {
-
     // German language tokens
-    private val germanTokens = setOf(
-        "german", "ger", "deutsch", "deu",
-    )
+    private val germanTokens =
+        setOf(
+            "german",
+            "ger",
+            "deutsch",
+            "deu",
+        )
 
     // English language tokens
-    private val englishTokens = setOf(
-        "english", "eng", "en",
-    )
+    private val englishTokens =
+        setOf(
+            "english",
+            "eng",
+            "en",
+        )
 
     // French language tokens
-    private val frenchTokens = setOf(
-        "french", "fra", "fre", "fr", "vff", "vf", "vfq", "truefrench",
-    )
+    private val frenchTokens =
+        setOf(
+            "french",
+            "fra",
+            "fre",
+            "fr",
+            "vff",
+            "vf",
+            "vfq",
+            "truefrench",
+        )
 
     // Spanish language tokens
-    private val spanishTokens = setOf(
-        "spanish", "spa", "es", "esp", "castellano", "latino",
-    )
+    private val spanishTokens =
+        setOf(
+            "spanish",
+            "spa",
+            "es",
+            "esp",
+            "castellano",
+            "latino",
+        )
 
     // Italian language tokens
-    private val italianTokens = setOf(
-        "italian", "ita", "it",
-    )
+    private val italianTokens =
+        setOf(
+            "italian",
+            "ita",
+            "it",
+        )
 
     // Russian language tokens
-    private val russianTokens = setOf(
-        "russian", "rus", "ru",
-    )
+    private val russianTokens =
+        setOf(
+            "russian",
+            "rus",
+            "ru",
+        )
 
     // Japanese language tokens
-    private val japaneseTokens = setOf(
-        "japanese", "jpn", "jp", "jap",
-    )
+    private val japaneseTokens =
+        setOf(
+            "japanese",
+            "jpn",
+            "jp",
+            "jap",
+        )
 
     // Korean language tokens
-    private val koreanTokens = setOf(
-        "korean", "kor", "kr",
-    )
+    private val koreanTokens =
+        setOf(
+            "korean",
+            "kor",
+            "kr",
+        )
 
     // Chinese language tokens
-    private val chineseTokens = setOf(
-        "chinese", "chi", "zho", "cn", "mandarin", "cantonese",
-    )
+    private val chineseTokens =
+        setOf(
+            "chinese",
+            "chi",
+            "zho",
+            "cn",
+            "mandarin",
+            "cantonese",
+        )
 
     // Multi/Dual language tokens
-    private val multiTokens = setOf(
-        "multi", "ml",
-    )
-    private val dualTokens = setOf(
-        "dual", "dl",
-    )
+    private val multiTokens =
+        setOf(
+            "multi",
+            "ml",
+        )
+    private val dualTokens =
+        setOf(
+            "dual",
+            "dl",
+        )
 
     /**
      * Detect language from tokens.
@@ -106,18 +149,19 @@ object LanguageRules {
 
             // Only set language once (first match wins)
             if (detectedLang == null) {
-                detectedLang = when {
-                    lower in germanTokens -> "de"
-                    lower in englishTokens -> "en"
-                    lower in frenchTokens -> "fr"
-                    lower in spanishTokens -> "es"
-                    lower in italianTokens -> "it"
-                    lower in russianTokens -> "ru"
-                    lower in japaneseTokens -> "ja"
-                    lower in koreanTokens -> "ko"
-                    lower in chineseTokens -> "zh"
-                    else -> null
-                }
+                detectedLang =
+                    when {
+                        lower in germanTokens -> "de"
+                        lower in englishTokens -> "en"
+                        lower in frenchTokens -> "fr"
+                        lower in spanishTokens -> "es"
+                        lower in italianTokens -> "it"
+                        lower in russianTokens -> "ru"
+                        lower in japaneseTokens -> "ja"
+                        lower in koreanTokens -> "ko"
+                        lower in chineseTokens -> "zh"
+                        else -> null
+                    }
                 if (detectedLang != null && tokenIdx < 0) {
                     tokenIdx = index
                 }
@@ -153,8 +197,8 @@ object LanguageRules {
     /**
      * Get all known language tokens.
      */
-    fun getAllLanguageTokens(): Set<String> {
-        return germanTokens +
+    fun getAllLanguageTokens(): Set<String> =
+        germanTokens +
             englishTokens +
             frenchTokens +
             spanishTokens +
@@ -165,5 +209,4 @@ object LanguageRules {
             chineseTokens +
             multiTokens +
             dualTokens
-    }
 }

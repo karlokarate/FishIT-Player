@@ -22,6 +22,7 @@ import dev.g000sha256.tdl.dto.MessageAudio
 import dev.g000sha256.tdl.dto.MessageContent
 import dev.g000sha256.tdl.dto.MessageDocument
 import dev.g000sha256.tdl.dto.MessagePhoto
+import dev.g000sha256.tdl.dto.MessageText
 import dev.g000sha256.tdl.dto.MessageVideo
 import dev.g000sha256.tdl.dto.MessageVideoNote
 import dev.g000sha256.tdl.dto.MessageVoiceNote
@@ -352,7 +353,7 @@ class TelegramChatBrowser(
      * For now, we return cached values or 0 and populate asynchronously. Full implementation
      * requires async fetching of full group info.
      */
-    private fun getMemberCount(chat: Chat): Int {
+    private fun getMemberCount(chat: Chat): Int? {
         // Check cache first
         memberCountCache[chat.id]?.let {
             return it
@@ -364,7 +365,7 @@ class TelegramChatBrowser(
         // These would be fetched lazily or on demand
         //
         // BUG FIX: Previously returned basicGroupId.toInt() which is the group ID, not count!
-        return 0
+        return null
     }
 
     private fun mapMessage(message: Message): TgMessage {
@@ -461,6 +462,10 @@ class TelegramChatBrowser(
                             mimeType = content.voiceNote.mimeType,
                             fileSize = content.voiceNote.voice.size,
                             caption = content.caption.text
+                    )
+            is MessageText ->
+                    TgContent.Text(
+                            text = content.text.text
                     )
             else -> null
         }

@@ -9,8 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,7 +79,7 @@ fun FishTile(
     topEndBadge: (@Composable () -> Unit)? = null,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
     onFocusChanged: ((Boolean) -> Unit)? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val dimens = LocalFishDimens.current
     var isFocused by remember { mutableStateOf(false) }
@@ -90,60 +88,62 @@ fun FishTile(
     val scale by animateFloatAsState(
         targetValue = if (isFocused) dimens.focusScale else 1f,
         animationSpec = tween(durationMillis = FishTheme.motion.focusScaleDurationMs),
-        label = "tileScale"
+        label = "tileScale",
     )
 
     // Border color based on sources
-    val borderBrush = remember(sourceColors) {
-        when {
-            sourceColors.isEmpty() -> Brush.linearGradient(
-                listOf(Color.Transparent, Color.Transparent)
-            )
-            sourceColors.size == 1 -> Brush.linearGradient(
-                listOf(sourceColors.first(), sourceColors.first())
-            )
-            else -> Brush.linearGradient(sourceColors)
+    val borderBrush =
+        remember(sourceColors) {
+            when {
+                sourceColors.isEmpty() ->
+                    Brush.linearGradient(
+                        listOf(Color.Transparent, Color.Transparent),
+                    )
+                sourceColors.size == 1 ->
+                    Brush.linearGradient(
+                        listOf(sourceColors.first(), sourceColors.first()),
+                    )
+                else -> Brush.linearGradient(sourceColors)
+            }
         }
-    }
 
-    val focusBorder = if (isFocused && sourceColors.isEmpty()) {
-        BorderStroke(dimens.focusBorderWidth, FishColors.Primary)
-    } else {
-        null
-    }
+    val focusBorder =
+        if (isFocused && sourceColors.isEmpty()) {
+            BorderStroke(dimens.focusBorderWidth, FishColors.Primary)
+        } else {
+            null
+        }
 
     Box(
-        modifier = modifier
-            .width(dimens.tileWidth)
-            .aspectRatio(aspectRatio)
-            .scale(scale)
-            .then(
-                if (sourceColors.isNotEmpty()) {
-                    Modifier.border(
-                        width = dimens.focusBorderWidth,
-                        brush = borderBrush,
-                        shape = FishShapes.Tile
-                    )
-                } else if (focusBorder != null) {
-                    Modifier.border(focusBorder, FishShapes.Tile)
-                } else {
-                    Modifier
-                }
-            )
-            .shadow(
-                elevation = if (isFocused && dimens.enableGlow) 8.dp else 2.dp,
-                shape = FishShapes.Tile,
-                ambientColor = if (isFocused) FishColors.FocusGlow else Color.Transparent,
-                spotColor = if (isFocused) FishColors.FocusGlow else Color.Transparent
-            )
-            .clip(FishShapes.Tile)
-            .background(FishColors.SurfaceVariant)
-            .focusable()
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-                onFocusChanged?.invoke(focusState.isFocused)
-            }
-            .tvClickable(onClick = onClick)
+        modifier =
+            modifier
+                .width(dimens.tileWidth)
+                .aspectRatio(aspectRatio)
+                .scale(scale)
+                .then(
+                    if (sourceColors.isNotEmpty()) {
+                        Modifier.border(
+                            width = dimens.focusBorderWidth,
+                            brush = borderBrush,
+                            shape = FishShapes.Tile,
+                        )
+                    } else if (focusBorder != null) {
+                        Modifier.border(focusBorder, FishShapes.Tile)
+                    } else {
+                        Modifier
+                    },
+                ).shadow(
+                    elevation = if (isFocused && dimens.enableGlow) 8.dp else 2.dp,
+                    shape = FishShapes.Tile,
+                    ambientColor = if (isFocused) FishColors.FocusGlow else Color.Transparent,
+                    spotColor = if (isFocused) FishColors.FocusGlow else Color.Transparent,
+                ).clip(FishShapes.Tile)
+                .background(FishColors.SurfaceVariant)
+                .focusable()
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
+                    onFocusChanged?.invoke(focusState.isFocused)
+                }.tvClickable(onClick = onClick),
     ) {
         // Poster Image
         if (placeholder != null) {
@@ -152,29 +152,30 @@ fun FishTile(
                 imageRef = poster,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         } else {
             FishImage(
                 imageRef = poster,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
         // Gradient scrim for title readability
         if (showTitle && title != null) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
-                        )
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            ),
+                        ),
             )
 
             Text(
@@ -183,32 +184,36 @@ fun FishTile(
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(8.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp),
             )
         }
 
         // Progress bar
         if (resumeFraction != null && resumeFraction > 0f) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(dimens.progressBarHeight)
-                    .align(Alignment.BottomCenter)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(dimens.progressBarHeight)
+                        .align(Alignment.BottomCenter),
             ) {
                 // Background
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White.copy(alpha = 0.3f))
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.White.copy(alpha = 0.3f)),
                 )
                 // Progress
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth(resumeFraction)
-                        .height(dimens.progressBarHeight)
-                        .background(FishColors.Primary)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(resumeFraction)
+                            .height(dimens.progressBarHeight)
+                            .background(FishColors.Primary),
                 )
             }
         }
@@ -216,9 +221,10 @@ fun FishTile(
         // Badges
         topStartBadge?.let {
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(6.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp),
             ) {
                 it()
             }
@@ -226,9 +232,10 @@ fun FishTile(
 
         topEndBadge?.let {
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp),
             ) {
                 it()
             }
@@ -237,9 +244,10 @@ fun FishTile(
         // "NEW" badge
         if (isNew) {
             NewBadge(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp),
             )
         }
 
@@ -254,17 +262,17 @@ fun FishTile(
 @Composable
 fun NewBadge(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .background(
-                color = FishColors.Accent,
-                shape = FishShapes.ButtonSmall
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+        modifier =
+            modifier
+                .background(
+                    color = FishColors.Accent,
+                    shape = FishShapes.ButtonSmall,
+                ).padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
             text = "NEW",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.Black
+            color = Color.Black,
         )
     }
 }
@@ -274,10 +282,11 @@ fun NewBadge(modifier: Modifier = Modifier) {
  */
 fun Modifier.tvClickable(
     enabled: Boolean = true,
-    onClick: () -> Unit
-): Modifier = this.then(
-    Modifier.clickable(
-        enabled = enabled,
-        onClick = onClick
+    onClick: () -> Unit,
+): Modifier =
+    this.then(
+        Modifier.clickable(
+            enabled = enabled,
+            onClick = onClick,
+        ),
     )
-)

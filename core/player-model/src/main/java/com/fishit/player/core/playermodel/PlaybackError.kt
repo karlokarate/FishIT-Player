@@ -43,33 +43,46 @@ data class PlaybackError(
     }
 
     companion object {
-        fun network(message: String, isRetryable: Boolean = true) = PlaybackError(
+        fun network(
+            message: String,
+            isRetryable: Boolean = true,
+        ) = PlaybackError(
             type = ErrorType.NETWORK,
             message = message,
             isRetryable = isRetryable,
         )
 
-        fun decoder(message: String, code: Int? = null) = PlaybackError(
+        fun decoder(
+            message: String,
+            code: Int? = null,
+        ) = PlaybackError(
             type = ErrorType.DECODER,
             message = message,
             code = code,
             isRetryable = false,
         )
 
-        fun sourceNotFound(message: String, sourceType: SourceType? = null) = PlaybackError(
+        fun sourceNotFound(
+            message: String,
+            sourceType: SourceType? = null,
+        ) = PlaybackError(
             type = ErrorType.SOURCE_NOT_FOUND,
             message = message,
             sourceType = sourceType,
             isRetryable = false,
         )
 
-        fun timeout(message: String) = PlaybackError(
-            type = ErrorType.TIMEOUT,
-            message = message,
-            isRetryable = true,
-        )
+        fun timeout(message: String) =
+            PlaybackError(
+                type = ErrorType.TIMEOUT,
+                message = message,
+                isRetryable = true,
+            )
 
-        fun unknown(message: String, code: Int? = null) = PlaybackError(
+        fun unknown(
+            message: String,
+            code: Int? = null,
+        ) = PlaybackError(
             type = ErrorType.UNKNOWN,
             message = message,
             code = code,

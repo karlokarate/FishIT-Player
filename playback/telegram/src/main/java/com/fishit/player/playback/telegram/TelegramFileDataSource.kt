@@ -8,8 +8,7 @@ import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
-import com.fishit.player.infra.transport.telegram.TelegramFileException
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
+import com.fishit.player.infra.transport.telegram.api.TelegramFileException
 import com.fishit.player.playback.telegram.config.TelegramFileReadyEnsurer
 import com.fishit.player.playback.telegram.config.TelegramStreamingException
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * **v2 Architecture:**
  * - Belongs in `:playback:telegram` (NOT in player:internal)
- * - Uses `TelegramTransportClient` and `TelegramFileClient` from transport layer
+ * - Uses `TelegramFileClient` from transport layer
  * - Delegates to FileDataSource for actual I/O (zero-copy)
  * - Uses `TelegramFileReadyEnsurer` for non-blocking file readiness
  *
@@ -56,12 +55,10 @@ import java.util.concurrent.atomic.AtomicReference
  * - We use a dedicated IO coroutine scope to avoid blocking the main thread
  * - The latch-based approach allows ExoPlayer's thread to wait without runBlocking
  *
- * @param transportClient Transport layer client for TDLib file resolution
  * @param fileClient Transport layer client for TDLib file downloads
  * @param readyEnsurer Playback layer component for streaming readiness
  */
 class TelegramFileDataSource(
-    private val transportClient: TelegramTransportClient,
     private val fileClient: TelegramFileClient,
     private val readyEnsurer: TelegramFileReadyEnsurer,
 ) : DataSource {
@@ -262,7 +259,8 @@ class TelegramFileDataSource(
             }
             remoteId != null && remoteId.isNotEmpty() -> {
                 UnifiedLog.d(TAG) { "Resolving fileId via remoteId: $remoteId" }
-                val resolvedFile = transportClient.resolveFileByRemoteId(remoteId)
+                val resolvedFile = fileClient.resolveRemoteId(remoteId)
+                    ?: throw TelegramFileException("Failed to resolve remoteId: $remoteId")
                 resolvedFile.id
             }
             else -> {
@@ -310,12 +308,11 @@ class TelegramFileDataSource(
  * to handle tg:// URIs.
  */
 class TelegramFileDataSourceFactory(
-    private val transportClient: TelegramTransportClient,
     private val fileClient: TelegramFileClient,
     private val readyEnsurer: TelegramFileReadyEnsurer,
 ) : DataSource.Factory {
 
     override fun createDataSource(): DataSource {
-        return TelegramFileDataSource(transportClient, fileClient, readyEnsurer)
+        return TelegramFileDataSource(fileClient, readyEnsurer)
     }
 }

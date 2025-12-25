@@ -6,13 +6,12 @@ import org.junit.Test
 
 /**
  * Tests for TMDB-specific worker constants.
- * 
+ *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
  * - W-17: FireTV Safety - batch size ranges
  * - W-22: TMDB Scope definitions
  */
 class WorkerConstantsTest {
-
     // ========== Work Names ==========
 
     @Test
@@ -36,8 +35,10 @@ class WorkerConstantsTest {
     fun `FireTV batch size range is valid`() {
         assertTrue(WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MIN > 0)
         assertTrue(WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MAX >= WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MIN)
-        assertTrue(WorkerConstants.TMDB_FIRETV_BATCH_SIZE_DEFAULT in 
-            WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MIN..WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MAX)
+        assertTrue(
+            WorkerConstants.TMDB_FIRETV_BATCH_SIZE_DEFAULT in
+                WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MIN..WorkerConstants.TMDB_FIRETV_BATCH_SIZE_MAX,
+        )
     }
 
     @Test
@@ -50,8 +51,10 @@ class WorkerConstantsTest {
     fun `Normal device batch size range is valid`() {
         assertTrue(WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MIN > 0)
         assertTrue(WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MAX >= WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MIN)
-        assertTrue(WorkerConstants.TMDB_NORMAL_BATCH_SIZE_DEFAULT in 
-            WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MIN..WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MAX)
+        assertTrue(
+            WorkerConstants.TMDB_NORMAL_BATCH_SIZE_DEFAULT in
+                WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MIN..WorkerConstants.TMDB_NORMAL_BATCH_SIZE_MAX,
+        )
     }
 
     @Test

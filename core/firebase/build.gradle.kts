@@ -24,12 +24,12 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
-    
+
     // Firebase (optional at runtime)
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-config-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 }

@@ -4,7 +4,7 @@ import android.content.Context
 import coil3.ImageLoader
 import com.fishit.player.core.imaging.GlobalImageLoader
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
+import com.fishit.player.infra.transport.telegram.TelegramFileClient
 import com.fishit.player.v2.di.TelegramThumbFetcherImpl
 import dagger.Module
 import dagger.Provides
@@ -56,7 +56,7 @@ object ImagingModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcherFactory(telegramClientProvider: Provider<TelegramTransportClient>): TelegramThumbFetcher.Factory? =
+    fun provideTelegramThumbFetcherFactory(telegramClientProvider: Provider<TelegramFileClient>): TelegramThumbFetcher.Factory? =
         runCatching {
             TelegramThumbFetcherImpl.Factory(telegramClientProvider.get())
         }.getOrNull()

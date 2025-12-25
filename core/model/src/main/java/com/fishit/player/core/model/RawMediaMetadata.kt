@@ -33,86 +33,81 @@ package com.fishit.player.core.model
  * loads)
  */
 data class RawMediaMetadata(
-        val originalTitle: String,
-        val mediaType: MediaType = MediaType.UNKNOWN,
-        val year: Int? = null,
-        val season: Int? = null,
-        val episode: Int? = null,
-        /**
-         * Media runtime in **milliseconds**.
-         *
-         * **v2 Standard:** All durations in RawMediaMetadata are stored as milliseconds.
-         * Pipelines MUST convert from source units:
-         * - Telegram: `durationSecs * 1000L`
-         * - Xtream: depends on source (usually not available in list API)
-         * - IO: `durationMs` from MediaStore or FFmpeg probe
-         *
-         * UI/Player can convert to display format (e.g., "1h 32m") as needed.
-         */
-        val durationMs: Long? = null,
-        val externalIds: ExternalIds = ExternalIds(),
-        val sourceType: SourceType,
-        val sourceLabel: String,
-        val sourceId: String,
-        // === Pipeline Identity (v2) ===
-        /** Pipeline that produced this metadata */
-        val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
-        /**
-         * Canonical identity key for cross-pipeline deduplication.
-         *
-         * **PIPELINE CONTRACT:** Pipelines MUST leave this empty (""). Canonical identity is
-         * assigned centrally by `:core:metadata-normalizer` during unification.
-         *
-         * Format when set by normalizer: contract canonical key (`tmdb:<id>` or
-         * `movie:<title>[:<year>]` / `episode:<title>:SxxExx`).
-         *
-         * @see com.fishit.player.core.metadata.FallbackCanonicalKeyGenerator for generation logic
-         */
-        val globalId: String = "",
-        // === Timing Fields (v2) ===
-        /**
-         * Unix epoch timestamp (seconds) when this item was added to the source.
-         *
-         * Used for:
-         * - "Recently Added" sorting
-         * - New content discovery
-         * - Catalog freshness detection
-         *
-         * Pipelines should extract this from source (e.g., Xtream "added" field). Null if not
-         * available from source.
-         */
-        val addedTimestamp: Long? = null,
-        // === Imaging Fields (v2) ===
-        val poster: ImageRef? = null,
-        val backdrop: ImageRef? = null,
-        val thumbnail: ImageRef? = null,
-        /**
-         * Minithumbnail (inline JPEG bytes) for instant blur placeholder before full thumbnail
-         * loads
-         */
-        val placeholderThumbnail: ImageRef? = null,
-        // === Rating Fields (v2) ===
-        /**
-         * User rating from source (0.0-10.0 scale).
-         *
-         * Xtream provides this directly from TMDB scraping. Used for sorting and display before
-         * normalization.
-         */
-        val rating: Double? = null,
-        // === Age Rating Fields (v2 - Structured Bundles) ===
-        /**
-         * Age rating from source (FSK/MPAA/etc.) for Kids filter.
-         *
-         * Structured Telegram bundles provide this directly (fsk field).
-         * Range: 0-21 (per Schema Guards in TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md R4).
-         * 0 = FSK 0 (all ages), 6/12/16/18 = FSK ratings, 21 = explicit adult.
-         *
-         * Used for:
-         * - Kids profile content filtering
-         * - Age gate enforcement
-         * - Parental controls
-         */
-        val ageRating: Int? = null,
+    val originalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
+    val year: Int? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    /**
+     * Media runtime in **milliseconds**.
+     *
+     * **v2 Standard:** All durations in RawMediaMetadata are stored as milliseconds.
+     * Pipelines MUST convert from source units:
+     * - Telegram: `durationSecs * 1000L`
+     * - Xtream: depends on source (usually not available in list API)
+     * - IO: `durationMs` from MediaStore or FFmpeg probe
+     *
+     * UI/Player can convert to display format (e.g., "1h 32m") as needed.
+     */
+    val durationMs: Long? = null,
+    val externalIds: ExternalIds = ExternalIds(),
+    val sourceType: SourceType,
+    val sourceLabel: String,
+    val sourceId: String,
+    /** Pipeline that produced this metadata */
+    val pipelineIdTag: PipelineIdTag = PipelineIdTag.UNKNOWN,
+    /**
+     * Canonical identity key for cross-pipeline deduplication.
+     *
+     * **PIPELINE CONTRACT:** Pipelines MUST leave this empty (""). Canonical identity is
+     * assigned centrally by `:core:metadata-normalizer` during unification.
+     *
+     * Format when set by normalizer: contract canonical key (`tmdb:<id>` or
+     * `movie:<title>[:<year>]` / `episode:<title>:SxxExx`).
+     *
+     * @see com.fishit.player.core.metadata.FallbackCanonicalKeyGenerator for generation logic
+     */
+    val globalId: String = "",
+    /**
+     * Unix epoch timestamp (seconds) when this item was added to the source.
+     *
+     * Used for:
+     * - "Recently Added" sorting
+     * - New content discovery
+     * - Catalog freshness detection
+     *
+     * Pipelines should extract this from source (e.g., Xtream "added" field). Null if not
+     * available from source.
+     */
+    val addedTimestamp: Long? = null,
+    val poster: ImageRef? = null,
+    val backdrop: ImageRef? = null,
+    val thumbnail: ImageRef? = null,
+    /**
+     * Minithumbnail (inline JPEG bytes) for instant blur placeholder before full thumbnail
+     * loads
+     */
+    val placeholderThumbnail: ImageRef? = null,
+    /**
+     * User rating from source (0.0-10.0 scale).
+     *
+     * Xtream provides this directly from TMDB scraping. Used for sorting and display before
+     * normalization.
+     */
+    val rating: Double? = null,
+    /**
+     * Age rating from source (FSK/MPAA/etc.) for Kids filter.
+     *
+     * Structured Telegram bundles provide this directly (fsk field).
+     * Range: 0-21 (per Schema Guards in TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md R4).
+     * 0 = FSK 0 (all ages), 6/12/16/18 = FSK ratings, 21 = explicit adult.
+     *
+     * Used for:
+     * - Kids profile content filtering
+     * - Age gate enforcement
+     * - Parental controls
+     */
+    val ageRating: Int? = null,
 )
 
 /**
@@ -131,26 +126,26 @@ data class RawMediaMetadata(
  * @property tvdbId TheTVDB ID
  */
 data class ExternalIds(
-        /**
-         * Typed TMDB reference.
-         *
-         * - For movies: TmdbRef(MOVIE, movieId)
-         * - For TV shows/series: TmdbRef(TV, seriesId)
-         * - For episodes: TmdbRef(TV, seriesId) + season/episode from RawMediaMetadata
-         *
-         * Never use EPISODE type (TMDB has no episode root type).
-         */
-        val tmdb: TmdbRef? = null,
-        /**
-         * DEPRECATED: Legacy untyped TMDB ID.
-         *
-         * Kept only for migration of existing stored data. New code MUST use [tmdb] field.
-         * Migration: Convert to typed [tmdb] using MediaType context.
-         */
-        @Deprecated("Use tmdb (typed TmdbRef) instead", replaceWith = ReplaceWith("tmdb"))
-        val legacyTmdbId: Int? = null,
-        val imdbId: String? = null,
-        val tvdbId: String? = null,
+    /**
+     * Typed TMDB reference.
+     *
+     * - For movies: TmdbRef(MOVIE, movieId)
+     * - For TV shows/series: TmdbRef(TV, seriesId)
+     * - For episodes: TmdbRef(TV, seriesId) + season/episode from RawMediaMetadata
+     *
+     * Never use EPISODE type (TMDB has no episode root type).
+     */
+    val tmdb: TmdbRef? = null,
+    /**
+     * DEPRECATED: Legacy untyped TMDB ID.
+     *
+     * Kept only for migration of existing stored data. New code MUST use [tmdb] field.
+     * Migration: Convert to typed [tmdb] using MediaType context.
+     */
+    @Deprecated("Use tmdb (typed TmdbRef) instead", replaceWith = ReplaceWith("tmdb"))
+    val legacyTmdbId: Int? = null,
+    val imdbId: String? = null,
+    val tvdbId: String? = null,
 ) {
     /**
      * Get the effective TMDB ID (from typed or legacy field).
@@ -176,12 +171,16 @@ data class ExternalIds(
          * @param mediaType MediaType to determine TMDB type
          * @return ExternalIds with typed tmdb field if type can be determined
          */
-        fun fromLegacyTmdbId(tmdbId: Int, mediaType: MediaType): ExternalIds {
-            val tmdbRef = when (mediaType) {
-                MediaType.MOVIE -> TmdbRef(TmdbMediaType.MOVIE, tmdbId)
-                MediaType.SERIES, MediaType.SERIES_EPISODE -> TmdbRef(TmdbMediaType.TV, tmdbId)
-                else -> null // Cannot determine type, store as legacy
-            }
+        fun fromLegacyTmdbId(
+            tmdbId: Int,
+            mediaType: MediaType,
+        ): ExternalIds {
+            val tmdbRef =
+                when (mediaType) {
+                    MediaType.MOVIE -> TmdbRef(TmdbMediaType.MOVIE, tmdbId)
+                    MediaType.SERIES, MediaType.SERIES_EPISODE -> TmdbRef(TmdbMediaType.TV, tmdbId)
+                    else -> null // Cannot determine type, store as legacy
+                }
             return if (tmdbRef != null) {
                 ExternalIds(tmdb = tmdbRef)
             } else {
@@ -201,27 +200,27 @@ data class ExternalIds(
  * Use OTHER only when the source doesn't fit any specific category.
  */
 enum class SourceType {
-        /** Xtream Codes API provider (IPTV, VOD, Series) */
-        XTREAM,
+    /** Xtream Codes API provider (IPTV, VOD, Series) */
+    XTREAM,
 
-        /** Telegram media integration via TDLib */
-        TELEGRAM,
+    /** Telegram media integration via TDLib */
+    TELEGRAM,
 
-        /** Local file system, SAF, SMB, ContentResolver */
-        IO,
+    /** Local file system, SAF, SMB, ContentResolver */
+    IO,
 
-        /** Audiobook-specific pipeline */
-        AUDIOBOOK,
+    /** Audiobook-specific pipeline */
+    AUDIOBOOK,
 
-        /** Local media library scanner */
-        LOCAL,
+    /** Local media library scanner */
+    LOCAL,
 
-        /** Plex Media Server integration */
-        PLEX,
+    /** Plex Media Server integration */
+    PLEX,
 
-        /** Other/unknown source types */
-        OTHER,
+    /** Other/unknown source types */
+    OTHER,
 
-        /** Unknown source type */
-        UNKNOWN,
+    /** Unknown source type */
+    UNKNOWN,
 }

@@ -25,10 +25,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class CatalogSyncModule {
-
     @Binds
     @Singleton
-    abstract fun bindCatalogSyncService(
-        impl: DefaultCatalogSyncService
-    ): CatalogSyncService
+    abstract fun bindCatalogSyncService(impl: DefaultCatalogSyncService): CatalogSyncService
 }

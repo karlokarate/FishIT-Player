@@ -163,7 +163,7 @@
 | File Path | Module | Package | Role | Category | Rename Suggestion |
 |-----------|--------|---------|------|----------|-------------------|
 | `infra/transport-telegram/.../TelegramTransportClient.kt` | `:infra:transport-telegram` | `infra.transport.telegram` | Transport client interface | InfraTransport | |
-| `infra/transport-telegram/.../DefaultTelegramTransportClient.kt` | `:infra:transport-telegram` | `infra.transport.telegram` | Default transport implementation | InfraTransport | |
+| `infra/transport-telegram/.../DefaultTelegramClient.kt` | `:infra:transport-telegram` | `infra.transport.telegram` | Default transport implementation | InfraTransport | |
 | `infra/transport-telegram/.../TdlibClientProvider.kt` | `:infra:transport-telegram` | `infra.transport.telegram` | TDLib client provider (⚠️ internal only, v1 legacy) | InfraTransport | |
 | `infra/transport-telegram/.../TelegramClientFactory.kt` | `:infra:transport-telegram` | `infra.transport.telegram` | Client factory | InfraTransport | |
 | `infra/transport-telegram/.../TelegramLoggingConfig.kt` | `:infra:transport-telegram` | `infra.transport.telegram` | Logging configuration | InfraTransport | |

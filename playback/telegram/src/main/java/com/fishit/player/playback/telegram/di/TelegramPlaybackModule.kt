@@ -1,7 +1,6 @@
 package com.fishit.player.playback.telegram.di
 
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import com.fishit.player.playback.telegram.TelegramFileDataSourceFactory
 import com.fishit.player.playback.telegram.TelegramPlaybackSourceFactoryImpl
@@ -27,7 +26,6 @@ import javax.inject.Singleton
  * which uses it to resolve playback sources based on [SourceType].
  *
  * **Dependencies:**
- * - [TelegramTransportClient] from `:infra:transport-telegram`
  * - [TelegramFileClient] from `:infra:transport-telegram`
  */
 @Module
@@ -73,11 +71,10 @@ abstract class TelegramPlaybackModule {
         @Provides
         @Singleton
         fun provideTelegramFileDataSourceFactory(
-            transportClient: TelegramTransportClient,
             fileClient: TelegramFileClient,
             readyEnsurer: TelegramFileReadyEnsurer
         ): TelegramFileDataSourceFactory {
-            return TelegramFileDataSourceFactory(transportClient, fileClient, readyEnsurer)
+            return TelegramFileDataSourceFactory(fileClient, readyEnsurer)
         }
     }
 }

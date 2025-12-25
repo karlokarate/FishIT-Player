@@ -1,6 +1,7 @@
 package com.fishit.player.tools.cli
 
-import com.fishit.player.infra.transport.telegram.DefaultTelegramTransportClient
+import com.fishit.player.infra.transport.telegram.TelegramClientFactory
+import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
@@ -48,9 +49,20 @@ object CliPipelineInitializer {
         val tdlClient = TdlClient.create()
 
         // Create transport client
-        val transportClient = DefaultTelegramTransportClient(
-            tdlClient = tdlClient,
-            scope = CoroutineScope(Dispatchers.IO),
+        val sessionConfig = TelegramSessionConfig(
+            apiId = config.apiId,
+            apiHash = config.apiHash,
+            databaseDir = config.databaseDir,
+            filesDir = config.filesDir,
+            deviceModel = "CLI",
+            systemVersion = "CLI",
+            appVersion = "cli",
+        )
+
+        val scope = CoroutineScope(Dispatchers.IO)
+        val transportClient = TelegramClientFactory.fromExistingSession(
+            config = sessionConfig,
+            scope = scope,
         )
 
         // Create pipeline dependencies (manual instantiation for CLI)

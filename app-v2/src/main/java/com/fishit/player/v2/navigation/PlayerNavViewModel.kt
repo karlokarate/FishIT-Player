@@ -89,10 +89,11 @@ class PlayerNavViewModel
             title: String,
         ): PlaybackContext? {
             val parsed = parseXtreamVodSourceId(sourceId) ?: return null
-            val extras = mutableMapOf(
-                XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE to XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD,
-                XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID to parsed.id.toString(),
-            )
+            val extras =
+                mutableMapOf(
+                    XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE to XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD,
+                    XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID to parsed.id.toString(),
+                )
             // Add containerExtension if present in sourceId
             parsed.extension?.let { ext ->
                 extras[XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT] = ext
@@ -113,7 +114,7 @@ class PlayerNavViewModel
         private fun parseXtreamVodSourceId(sourceId: String): XtreamSourceIdParts? {
             val prefix = "xtream:vod:"
             if (!sourceId.startsWith(prefix)) return null
-            
+
             val remainder = sourceId.removePrefix(prefix)
             val parts = remainder.split(":")
             val id = parts.getOrNull(0)?.toIntOrNull() ?: return null
@@ -122,7 +123,10 @@ class PlayerNavViewModel
         }
 
         /** Parsed components of Xtream sourceId */
-        private data class XtreamSourceIdParts(val id: Int, val extension: String?)
+        private data class XtreamSourceIdParts(
+            val id: Int,
+            val extension: String?,
+        )
 
         private companion object {
             const val TAG = "PlayerNavViewModel"

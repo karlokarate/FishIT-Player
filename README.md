@@ -102,6 +102,9 @@ When porting behavior from v1 or researching historical decisions:
 
 # Quality checks
 ./gradlew ktlintCheck detekt lintDebug test
+
+# Dependency analysis (fails on unused/misdeclared deps)
+./gradlew buildHealth
 ```
 
 For detailed build instructions, see **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)**.
@@ -128,4 +131,3 @@ For detailed build instructions, see **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)*
 ## License
 
 See [LICENSE](LICENSE) for details.
-

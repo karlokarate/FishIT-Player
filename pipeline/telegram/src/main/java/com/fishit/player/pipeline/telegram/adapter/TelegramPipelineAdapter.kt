@@ -4,12 +4,11 @@ import com.fishit.player.core.model.MimeDecider
 import com.fishit.player.core.model.MimeMediaKind
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import com.fishit.player.infra.transport.telegram.TgChat
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
+import com.fishit.player.infra.transport.telegram.api.TgChat
 import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgMessage
-import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
 import com.fishit.player.pipeline.telegram.grouper.TelegramMessageBundler
 import com.fishit.player.pipeline.telegram.mapper.TelegramBundleToMediaItemMapper
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
@@ -166,7 +165,7 @@ data class TelegramChatInfo(
 // ============================================================================
 
 private fun TgChat.toChatInfo(): TelegramChatInfo =
-        TelegramChatInfo(chatId = id, title = title, type = type.name, memberCount = memberCount)
+        TelegramChatInfo(chatId = chatId, title = title.orEmpty(), type = type, memberCount = memberCount)
 
 /**
  * Convert TgMessage to TelegramMediaItem if it contains media. Returns null for non-media messages.

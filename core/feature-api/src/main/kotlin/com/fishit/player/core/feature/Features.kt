@@ -2,7 +2,7 @@
 
 package com.fishit.player.core.feature
 
-/**
+/*
  * Central catalog of all v2 feature IDs, grouped by domain.
  *
  * See: docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md

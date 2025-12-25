@@ -36,7 +36,7 @@ import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
  * Start -> Home -> Detail -> Player
  *               -> Debug -> DebugPlayback (test player)
  *               -> Settings
- * 
+ *
  * Contract S-3: Bootstraps are started in Application.onCreate() ONLY.
  * No bootstrap triggers in navigation or UI layers.
  */

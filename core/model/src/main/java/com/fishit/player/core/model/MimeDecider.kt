@@ -7,55 +7,54 @@ package com.fishit.player.core.model
  * dependencies.
  */
 object MimeDecider {
-
     /** Video file extensions (lowercase). */
     private val videoExtensions =
-            setOf(
-                    "mp4",
-                    "mkv",
-                    "avi",
-                    "mov",
-                    "wmv",
-                    "flv",
-                    "webm",
-                    "m4v",
-                    "mpg",
-                    "mpeg",
-                    "3gp",
-                    "3g2",
-                    "ts",
-                    "mts",
-                    "m2ts",
-                    "vob",
-                    "ogv",
-                    "divx",
-                    "xvid",
-                    "rm",
-                    "rmvb",
-            )
+        setOf(
+            "mp4",
+            "mkv",
+            "avi",
+            "mov",
+            "wmv",
+            "flv",
+            "webm",
+            "m4v",
+            "mpg",
+            "mpeg",
+            "3gp",
+            "3g2",
+            "ts",
+            "mts",
+            "m2ts",
+            "vob",
+            "ogv",
+            "divx",
+            "xvid",
+            "rm",
+            "rmvb",
+        )
 
     /** Audio file extensions (lowercase). */
     private val audioExtensions =
-            setOf(
-                    "mp3",
-                    "m4a",
-                    "aac",
-                    "flac",
-                    "ogg",
-                    "opus",
-                    "wav",
-                    "wma",
-                    "alac",
-                    "aiff",
-                    "ape",
-                    "mka",
-                    "ac3",
-                    "dts",
-                    "m4b",
-                    "m4p",
-                    "mid",
-                    "midi",
-            )
+        setOf(
+            "mp3",
+            "m4a",
+            "aac",
+            "flac",
+            "ogg",
+            "opus",
+            "wav",
+            "wma",
+            "alac",
+            "aiff",
+            "ape",
+            "mka",
+            "ac3",
+            "dts",
+            "m4b",
+            "m4p",
+            "mid",
+            "midi",
+        )
 
     /**
      * Infer media kind from MIME type and/or filename.
@@ -64,7 +63,10 @@ object MimeDecider {
      * @param fileName Filename with extension (e.g., "movie.mkv")
      * @return "video", "audio", or null if not media
      */
-    fun inferKind(mimeType: String?, fileName: String?): MimeMediaKind? {
+    fun inferKind(
+        mimeType: String?,
+        fileName: String?,
+    ): MimeMediaKind? {
         // First check MIME type (most reliable)
         mimeType?.lowercase()?.let { mime ->
             when {
@@ -92,9 +94,10 @@ object MimeDecider {
      * @param fileName Filename
      * @return true if video or audio
      */
-    fun isPlayableMedia(mimeType: String?, fileName: String?): Boolean {
-        return inferKind(mimeType, fileName) != null
-    }
+    fun isPlayableMedia(
+        mimeType: String?,
+        fileName: String?,
+    ): Boolean = inferKind(mimeType, fileName) != null
 }
 
 /**

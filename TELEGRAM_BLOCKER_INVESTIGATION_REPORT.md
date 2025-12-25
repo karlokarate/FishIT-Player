@@ -42,11 +42,11 @@ This investigation traced the complete Telegram integration pipeline from UI onb
 ┌─────────────────────────────────────────────────────────────────────┐
 │ TelegramAuthClient (transport interface)                            │
 │   Location: infra/transport-telegram/.../TelegramAuthClient.kt      │
-│   Implemented by: DefaultTelegramTransportClient                    │
+│   Implemented by: DefaultTelegramClient                             │
 └────────────────────┬────────────────────────────────────────────────┘
                      ↓
 ┌─────────────────────────────────────────────────────────────────────┐
-│ DefaultTelegramTransportClient (transport impl)                     │
+│ DefaultTelegramClient (transport impl)                              │
 │   Wraps TDLib client, manages internal state                        │
 └─────────────────────────────────────────────────────────────────────┘
 

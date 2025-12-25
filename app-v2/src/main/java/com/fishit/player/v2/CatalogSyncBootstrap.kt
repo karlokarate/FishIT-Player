@@ -4,10 +4,6 @@ import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.v2.di.AppScopeModule
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -15,6 +11,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
 
 /**
  * Bootstraps catalog synchronization once per app session after at least one source is active.
@@ -49,7 +49,8 @@ class CatalogSyncBootstrap
                 try {
                     // Contract T-1: Wait for at least one active source
                     // Uses SourceActivationStore (SSOT) which includes Xtream, Telegram, and IO
-                    sourceActivationStore.observeStates()
+                    sourceActivationStore
+                        .observeStates()
                         .map { snapshot -> snapshot.activeSources }
                         .distinctUntilChanged()
                         .first { activeSources ->

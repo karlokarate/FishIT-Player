@@ -352,16 +352,13 @@ Constructor and `copy()` must expose all fields.
 
 * `infra/transport-telegram/build.gradle.kts`
 * `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramTransportClient.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TgChat.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TgMessage.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TgContent.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TgFile.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TgThumbnail.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TgPhotoSize.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramAuthState.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramConnectionState.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramAuthException.kt`
-* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramFileException.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TgChat.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TgMessage.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TgContent.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TgFile.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TdlibAuthState.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TelegramConnectionState.kt`
+* `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TelegramFileException.kt`
 * `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/TdLibEngine.kt`
 * `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/TdAuthController.kt`
 * `infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/TdConnectionController.kt`

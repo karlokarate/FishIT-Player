@@ -13,7 +13,6 @@ package com.fishit.player.core.catalogsync
  * TODO(EPG): Implement epg_sync_global and EPG normalization per upcoming EPG contract.
  */
 interface EpgSyncService {
-
     /**
      * Request an EPG refresh.
      *

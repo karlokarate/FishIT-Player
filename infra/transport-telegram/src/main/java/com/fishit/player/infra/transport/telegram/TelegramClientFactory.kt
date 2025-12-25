@@ -1,6 +1,7 @@
 package com.fishit.player.infra.transport.telegram
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.AuthorizationStateClosed
@@ -12,10 +13,10 @@ import kotlinx.coroutines.withTimeout
 import java.io.File
 
 /**
- * Factory for creating TelegramTransportClient from existing sessions.
+ * Factory for creating TelegramClient from existing sessions.
  *
  * **Purpose:**
- * Creates TelegramTransportClient instances for CLI and test usage without
+ * Creates TelegramClient instances for CLI and test usage without
  * requiring Android Context or interactive authentication.
  *
  * **Codespace/CI Usage:**
@@ -36,20 +37,20 @@ object TelegramClientFactory {
     private const val AUTH_TIMEOUT_MS = 30_000L
 
     /**
-     * Create a TelegramTransportClient from an existing TDLib session.
+     * Create a TelegramClient from an existing TDLib session.
      *
      * The session directories must already contain valid TDLib database files
      * from a previously authenticated session.
      *
      * @param config Session configuration with paths and API credentials
      * @param scope CoroutineScope for the client (default: IO dispatcher)
-     * @return Fully initialized TelegramTransportClient
+     * @return Fully initialized TelegramClient
      * @throws TelegramSessionException if session is invalid or auth fails
      */
     suspend fun fromExistingSession(
         config: TelegramSessionConfig,
         scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    ): TelegramTransportClient {
+    ): TelegramClient {
         UnifiedLog.i(TAG, "Creating client from existing session: db=${config.databaseDir}")
 
         // Validate directories exist
@@ -62,9 +63,11 @@ object TelegramClientFactory {
         verifySession(tdlClient)
 
         // Create transport client
-        val transportClient = DefaultTelegramTransportClient(
+        val transportClient = DefaultTelegramClient(
             tdlClient = tdlClient,
-            scope = scope,
+            sessionConfig = config,
+            authScope = scope,
+            fileScope = scope,
         )
 
         // Ensure authorized

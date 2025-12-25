@@ -24,23 +24,24 @@ import javax.inject.Singleton
  * - If apiKey is blank → resolver is disabled (no crash, no API calls)
  */
 @Singleton
-class BuildConfigTmdbConfigProvider @Inject constructor() : TmdbConfigProvider {
+class BuildConfigTmdbConfigProvider
+    @Inject
+    constructor() : TmdbConfigProvider {
+        override fun getConfig(): TmdbConfig {
+            val apiKey = BuildConfig.TMDB_API_KEY
 
-    override fun getConfig(): TmdbConfig {
-        val apiKey = BuildConfig.TMDB_API_KEY
+            // Return disabled config if API key is not configured
+            if (apiKey.isBlank()) {
+                return TmdbConfig.DISABLED
+            }
 
-        // Return disabled config if API key is not configured
-        if (apiKey.isBlank()) {
-            return TmdbConfig.DISABLED
+            // Use device locale for language preference
+            val language = Locale.getDefault().language.ifBlank { "de" }
+
+            return TmdbConfig(
+                apiKey = apiKey,
+                language = language,
+                region = null,
+            )
         }
-
-        // Use device locale for language preference
-        val language = Locale.getDefault().language.ifBlank { "de" }
-
-        return TmdbConfig(
-            apiKey = apiKey,
-            language = language,
-            region = null,
-        )
     }
-}

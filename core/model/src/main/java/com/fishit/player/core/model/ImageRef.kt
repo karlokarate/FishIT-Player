@@ -40,10 +40,10 @@ sealed interface ImageRef {
      * @property headers Optional headers for auth/cookies (e.g., Xtream panel auth)
      */
     data class Http(
-            val url: String,
-            val headers: Map<String, String> = emptyMap(),
-            override val preferredWidth: Int? = null,
-            override val preferredHeight: Int? = null,
+        val url: String,
+        val headers: Map<String, String> = emptyMap(),
+        override val preferredWidth: Int? = null,
+        override val preferredHeight: Int? = null,
     ) : ImageRef
 
     /**
@@ -76,11 +76,11 @@ sealed interface ImageRef {
      * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
      */
     data class TelegramThumb(
-            val remoteId: String,
-            val chatId: Long? = null,
-            val messageId: Long? = null,
-            override val preferredWidth: Int? = null,
-            override val preferredHeight: Int? = null,
+        val remoteId: String,
+        val chatId: Long? = null,
+        val messageId: Long? = null,
+        override val preferredWidth: Int? = null,
+        override val preferredHeight: Int? = null,
     ) : ImageRef
 
     /**
@@ -96,9 +96,9 @@ sealed interface ImageRef {
      * @property path Absolute path to the local file
      */
     data class LocalFile(
-            val path: String,
-            override val preferredWidth: Int? = null,
-            override val preferredHeight: Int? = null,
+        val path: String,
+        override val preferredWidth: Int? = null,
+        override val preferredHeight: Int? = null,
     ) : ImageRef
 
     /**
@@ -118,18 +118,18 @@ sealed interface ImageRef {
      * @property mimeType MIME type (default: image/jpeg for TDLib minithumbnails)
      */
     data class InlineBytes(
-            val bytes: ByteArray,
-            val mimeType: String = "image/jpeg",
-            override val preferredWidth: Int? = null,
-            override val preferredHeight: Int? = null,
+        val bytes: ByteArray,
+        val mimeType: String = "image/jpeg",
+        override val preferredWidth: Int? = null,
+        override val preferredHeight: Int? = null,
     ) : ImageRef {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is InlineBytes) return false
             return bytes.contentEquals(other.bytes) &&
-                    mimeType == other.mimeType &&
-                    preferredWidth == other.preferredWidth &&
-                    preferredHeight == other.preferredHeight
+                mimeType == other.mimeType &&
+                preferredWidth == other.preferredWidth &&
+                preferredHeight == other.preferredHeight
         }
 
         override fun hashCode(): Int {
@@ -164,7 +164,7 @@ sealed interface ImageRef {
                 urlOrPath.startsWith("file://") -> LocalFile(urlOrPath.removePrefix("file://"))
                 urlOrPath.startsWith("/") -> LocalFile(urlOrPath)
                 urlOrPath.startsWith("http://") || urlOrPath.startsWith("https://") ->
-                        Http(urlOrPath)
+                    Http(urlOrPath)
                 else -> null
             }
         }
@@ -181,7 +181,7 @@ sealed interface ImageRef {
             // Format: tg://thumb/<remoteId>?chatId=123&messageId=456
             val path = uri.removePrefix("tg://thumb/")
             val parts = path.split("?", limit = 2)
-            
+
             // remoteId is the path component (URL-decoded)
             val remoteId = java.net.URLDecoder.decode(parts[0], "UTF-8")
             if (remoteId.isBlank()) return null
@@ -191,18 +191,18 @@ sealed interface ImageRef {
 
             if (parts.size > 1) {
                 val params =
-                        parts[1].split("&").associate {
-                            val kv = it.split("=", limit = 2)
-                            kv[0] to kv.getOrElse(1) { "" }
-                        }
+                    parts[1].split("&").associate {
+                        val kv = it.split("=", limit = 2)
+                        kv[0] to kv.getOrElse(1) { "" }
+                    }
                 chatId = params["chatId"]?.toLongOrNull()
                 messageId = params["messageId"]?.toLongOrNull()
             }
 
             return TelegramThumb(
-                    remoteId = remoteId,
-                    chatId = chatId,
-                    messageId = messageId,
+                remoteId = remoteId,
+                chatId = chatId,
+                messageId = messageId,
             )
         }
     }
@@ -219,29 +219,32 @@ sealed interface ImageRef {
  * @return URI string representation
  */
 fun ImageRef.toUriString(): String =
-        when (this) {
-            is ImageRef.Http -> url
-            is ImageRef.TelegramThumb ->
-                    buildString {
-                        append("tg://thumb/")
-                        append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
-                        val params = mutableListOf<String>()
-                        chatId?.let { params.add("chatId=$it") }
-                        messageId?.let { params.add("messageId=$it") }
-                        if (params.isNotEmpty()) {
-                            append("?")
-                            append(params.joinToString("&"))
-                        }
-                    }
-            is ImageRef.LocalFile -> "file://$path"
-            is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
-        }
+    when (this) {
+        is ImageRef.Http -> url
+        is ImageRef.TelegramThumb ->
+            buildString {
+                append("tg://thumb/")
+                append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
+                val params = mutableListOf<String>()
+                chatId?.let { params.add("chatId=$it") }
+                messageId?.let { params.add("messageId=$it") }
+                if (params.isNotEmpty()) {
+                    append("?")
+                    append(params.joinToString("&"))
+                }
+            }
+        is ImageRef.LocalFile -> "file://$path"
+        is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
+    }
 
 /** Create a copy with preferred dimensions. */
-fun ImageRef.withPreferredSize(width: Int? = null, height: Int? = null): ImageRef =
-        when (this) {
-            is ImageRef.Http -> copy(preferredWidth = width, preferredHeight = height)
-            is ImageRef.TelegramThumb -> copy(preferredWidth = width, preferredHeight = height)
-            is ImageRef.LocalFile -> copy(preferredWidth = width, preferredHeight = height)
-            is ImageRef.InlineBytes -> copy(preferredWidth = width, preferredHeight = height)
-        }
+fun ImageRef.withPreferredSize(
+    width: Int? = null,
+    height: Int? = null,
+): ImageRef =
+    when (this) {
+        is ImageRef.Http -> copy(preferredWidth = width, preferredHeight = height)
+        is ImageRef.TelegramThumb -> copy(preferredWidth = width, preferredHeight = height)
+        is ImageRef.LocalFile -> copy(preferredWidth = width, preferredHeight = height)
+        is ImageRef.InlineBytes -> copy(preferredWidth = width, preferredHeight = height)
+    }

@@ -15,7 +15,7 @@
 - Pipeline DTOs (`TelegramMediaItem`, `TelegramChatSummary`)
 - Transport DTOs (`TgMessage`, `TgContent`)
 - TDLib types (`TdApi.*`)
-- Transport internals/impl (`infra/transport-telegram/internal`, `DefaultTelegramTransportClient`, `TdlibAuthSession`)
+- Transport internals/impl (`infra/transport-telegram/internal`, `DefaultTelegramClient`, `TdlibAuthSession`)
 - UI imports (`feature/*/ui`, `feature/*/presentation`)
 - Playback logic
 - Network calls

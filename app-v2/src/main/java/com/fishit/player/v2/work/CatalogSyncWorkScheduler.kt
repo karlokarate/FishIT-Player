@@ -32,73 +32,76 @@ private const val KEY_DEVICE_CLASS = "device_class"
  * - No UI/ViewModel may call CatalogSyncService directly
  */
 @Singleton
-class CatalogSyncWorkSchedulerImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : CatalogSyncWorkScheduler {
+class CatalogSyncWorkSchedulerImpl
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : CatalogSyncWorkScheduler {
+        // ========== Interface Implementation ==========
 
-    // ========== Interface Implementation ==========
-
-    override fun enqueueAutoSync() {
-        schedule(
-            CatalogSyncWorkRequest(
-                syncRunId = UUID.randomUUID().toString(),
-                mode = CatalogSyncWorkMode.AUTO,
+        override fun enqueueAutoSync() {
+            schedule(
+                CatalogSyncWorkRequest(
+                    syncRunId = UUID.randomUUID().toString(),
+                    mode = CatalogSyncWorkMode.AUTO,
+                ),
             )
-        )
-    }
+        }
 
-    override fun enqueueExpertSyncNow() {
-        schedule(
-            CatalogSyncWorkRequest(
-                syncRunId = UUID.randomUUID().toString(),
-                mode = CatalogSyncWorkMode.EXPERT_NOW,
+        override fun enqueueExpertSyncNow() {
+            schedule(
+                CatalogSyncWorkRequest(
+                    syncRunId = UUID.randomUUID().toString(),
+                    mode = CatalogSyncWorkMode.EXPERT_NOW,
+                ),
             )
-        )
-    }
+        }
 
-    override fun enqueueForceRescan() {
-        schedule(
-            CatalogSyncWorkRequest(
-                syncRunId = UUID.randomUUID().toString(),
-                mode = CatalogSyncWorkMode.FORCE_RESCAN,
+        override fun enqueueForceRescan() {
+            schedule(
+                CatalogSyncWorkRequest(
+                    syncRunId = UUID.randomUUID().toString(),
+                    mode = CatalogSyncWorkMode.FORCE_RESCAN,
+                ),
             )
-        )
+        }
+
+        override fun cancelSync() {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        }
+
+        // ========== Internal Implementation ==========
+
+        private fun schedule(request: CatalogSyncWorkRequest) {
+            WorkManager
+                .getInstance(context)
+                .enqueueUniqueWork(
+                    WORK_NAME,
+                    request.mode.workPolicy,
+                    buildRequest(request),
+                )
+        }
+
+        private fun buildRequest(request: CatalogSyncWorkRequest): OneTimeWorkRequest {
+            val inputData =
+                Data
+                    .Builder()
+                    .putString(KEY_SYNC_RUN_ID, request.syncRunId)
+                    .putString(KEY_SYNC_MODE, request.mode.storageValue)
+                    .putStringArray(KEY_ACTIVE_SOURCES, request.activeSources.toTypedArray())
+                    .putBoolean(KEY_WIFI_ONLY, request.wifiOnly)
+                    .putLong(KEY_MAX_RUNTIME_MS, request.maxRuntimeMs ?: 0L)
+                    .putString(KEY_DEVICE_CLASS, request.deviceClass.orEmpty())
+                    .build()
+
+            return OneTimeWorkRequestBuilder<CatalogSyncOrchestratorWorker>()
+                .setInputData(inputData)
+                .addTag(CATALOG_SYNC_TAG)
+                .addTag(request.mode.tagValue)
+                .addTag(WORKER_TAG)
+                .build()
+        }
     }
-
-    override fun cancelSync() {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-    }
-
-    // ========== Internal Implementation ==========
-
-    private fun schedule(request: CatalogSyncWorkRequest) {
-        WorkManager
-            .getInstance(context)
-            .enqueueUniqueWork(
-                WORK_NAME,
-                request.mode.workPolicy,
-                buildRequest(request),
-            )
-    }
-
-    private fun buildRequest(request: CatalogSyncWorkRequest): OneTimeWorkRequest {
-        val inputData = Data.Builder()
-            .putString(KEY_SYNC_RUN_ID, request.syncRunId)
-            .putString(KEY_SYNC_MODE, request.mode.storageValue)
-            .putStringArray(KEY_ACTIVE_SOURCES, request.activeSources.toTypedArray())
-            .putBoolean(KEY_WIFI_ONLY, request.wifiOnly)
-            .putLong(KEY_MAX_RUNTIME_MS, request.maxRuntimeMs ?: 0L)
-            .putString(KEY_DEVICE_CLASS, request.deviceClass.orEmpty())
-            .build()
-
-        return OneTimeWorkRequestBuilder<CatalogSyncOrchestratorWorker>()
-            .setInputData(inputData)
-            .addTag(CATALOG_SYNC_TAG)
-            .addTag(request.mode.tagValue)
-            .addTag(WORKER_TAG)
-            .build()
-    }
-}
 
 data class CatalogSyncWorkRequest(
     val syncRunId: String,

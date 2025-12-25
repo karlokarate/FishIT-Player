@@ -9,12 +9,12 @@ import coil3.fetch.SourceFetchResult
 import coil3.key.Keyer
 import coil3.request.Options
 import com.fishit.player.core.model.ImageRef
-import java.io.File
-import java.io.IOException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.buffer
 import okio.source
+import java.io.File
+import java.io.IOException
 
 /**
  * Coil 3 Fetcher for [ImageRef] sealed interface.
@@ -36,20 +36,18 @@ import okio.source
  * - LocalFile uses absolute path as cache key
  */
 class ImageRefFetcher(
-        private val imageRef: ImageRef,
-        private val options: Options,
-        private val okHttpClient: OkHttpClient,
-        private val telegramThumbFetcher: TelegramThumbFetcher.Factory?,
+    private val imageRef: ImageRef,
+    private val options: Options,
+    private val okHttpClient: OkHttpClient,
+    private val telegramThumbFetcher: TelegramThumbFetcher.Factory?,
 ) : Fetcher {
-
-    override suspend fun fetch(): FetchResult {
-        return when (imageRef) {
+    override suspend fun fetch(): FetchResult =
+        when (imageRef) {
             is ImageRef.Http -> fetchHttp(imageRef)
             is ImageRef.TelegramThumb -> fetchTelegramThumb(imageRef)
             is ImageRef.LocalFile -> fetchLocalFile(imageRef)
             is ImageRef.InlineBytes -> fetchInlineBytes(imageRef)
         }
-    }
 
     /** Fetch HTTP/HTTPS image via OkHttp. */
     private suspend fun fetchHttp(ref: ImageRef.Http): FetchResult {
@@ -68,23 +66,23 @@ class ImageRefFetcher(
         val body = response.body
 
         return SourceFetchResult(
-                source =
-                        ImageSource(
-                                source = body.source(),
-                                fileSystem = options.fileSystem,
-                        ),
-                mimeType = response.header("Content-Type"),
-                dataSource = DataSource.NETWORK,
+            source =
+                ImageSource(
+                    source = body.source(),
+                    fileSystem = options.fileSystem,
+                ),
+            mimeType = response.header("Content-Type"),
+            dataSource = DataSource.NETWORK,
         )
     }
 
     /** Fetch Telegram thumbnail via [TelegramThumbFetcher]. */
     private suspend fun fetchTelegramThumb(ref: ImageRef.TelegramThumb): FetchResult {
         val factory =
-                telegramThumbFetcher
-                        ?: throw IOException(
-                                "TelegramThumbFetcher.Factory not configured; Telegram thumbnails disabled"
-                        )
+            telegramThumbFetcher
+                ?: throw IOException(
+                    "TelegramThumbFetcher.Factory not configured; Telegram thumbnails disabled",
+                )
 
         val fetcher = factory.create(ref, options)
         return fetcher.fetch(ref, options)
@@ -103,13 +101,13 @@ class ImageRefFetcher(
         }
 
         return SourceFetchResult(
-                source =
-                        ImageSource(
-                                source = file.inputStream().source().buffer(),
-                                fileSystem = options.fileSystem,
-                        ),
-                mimeType = guessMimeType(ref.path),
-                dataSource = DataSource.DISK,
+            source =
+                ImageSource(
+                    source = file.inputStream().source().buffer(),
+                    fileSystem = options.fileSystem,
+                ),
+            mimeType = guessMimeType(ref.path),
+            dataSource = DataSource.DISK,
         )
     }
 
@@ -125,13 +123,13 @@ class ImageRefFetcher(
         }
 
         return SourceFetchResult(
-                source =
-                        ImageSource(
-                                source = okio.Buffer().write(ref.bytes),
-                                fileSystem = options.fileSystem,
-                        ),
-                mimeType = ref.mimeType,
-                dataSource = DataSource.MEMORY, // Already in memory - instant
+            source =
+                ImageSource(
+                    source = okio.Buffer().write(ref.bytes),
+                    fileSystem = options.fileSystem,
+                ),
+            mimeType = ref.mimeType,
+            dataSource = DataSource.MEMORY, // Already in memory - instant
         )
     }
 
@@ -156,22 +154,20 @@ class ImageRefFetcher(
      * Registered with Coil ImageLoader to handle [ImageRef] types.
      */
     class Factory(
-            private val okHttpClient: OkHttpClient,
-            private val telegramThumbFetcher: TelegramThumbFetcher.Factory?,
+        private val okHttpClient: OkHttpClient,
+        private val telegramThumbFetcher: TelegramThumbFetcher.Factory?,
     ) : Fetcher.Factory<ImageRef> {
-
         override fun create(
-                data: ImageRef,
-                options: Options,
-                imageLoader: ImageLoader,
-        ): Fetcher {
-            return ImageRefFetcher(
-                    imageRef = data,
-                    options = options,
-                    okHttpClient = okHttpClient,
-                    telegramThumbFetcher = telegramThumbFetcher,
+            data: ImageRef,
+            options: Options,
+            imageLoader: ImageLoader,
+        ): Fetcher =
+            ImageRefFetcher(
+                imageRef = data,
+                options = options,
+                okHttpClient = okHttpClient,
+                telegramThumbFetcher = telegramThumbFetcher,
             )
-        }
     }
 }
 
@@ -198,12 +194,14 @@ class ImageRefFetcher(
  * ```
  */
 class ImageRefKeyer : Keyer<ImageRef> {
-    override fun key(data: ImageRef, options: Options): String {
-        return when (data) {
+    override fun key(
+        data: ImageRef,
+        options: Options,
+    ): String =
+        when (data) {
             is ImageRef.Http -> data.url
             is ImageRef.TelegramThumb -> "tg:${data.remoteId}"
             is ImageRef.LocalFile -> "file:${data.path}"
             is ImageRef.InlineBytes -> "inline:${data.bytes.contentHashCode()}"
         }
-    }
 }

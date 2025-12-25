@@ -1,11 +1,12 @@
 package com.fishit.player.infra.transport.telegram
 
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
-import com.fishit.player.infra.transport.telegram.api.TgContent
+import com.fishit.player.infra.transport.telegram.api.TelegramFileException
+import com.fishit.player.infra.transport.telegram.api.TgChat
 import com.fishit.player.infra.transport.telegram.api.TgFile
 import com.fishit.player.infra.transport.telegram.api.TgMessage
-import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -114,41 +115,3 @@ interface TelegramTransportClient {
         /** Close the client and release resources. */
         suspend fun close()
 }
-
-// ============================================================================
-// Transport-Level Types
-// ============================================================================
-// DTOs are now in api/ package:
-// - TgMessage, TgContent, TgPhotoSize (api/TgMessage.kt, api/TgContent.kt)
-// - TgFile (api/TgFile.kt)
-// - TgChat, TgChatType are still inline below (not yet migrated)
-
-/** Wrapper for TDLib Chat. Exposes only fields needed by transport consumers. */
-data class TgChat(
-        val id: Long,
-        val title: String,
-        val type: TgChatType,
-        val photoSmallFileId: Int?,
-        val photoBigFileId: Int?,
-        val memberCount: Int?
-)
-
-/** Simplified chat type enum. */
-enum class TgChatType {
-        PRIVATE,
-        BASIC_GROUP,
-        SUPERGROUP,
-        CHANNEL,
-        SECRET,
-        UNKNOWN
-}
-
-// ============================================================================
-// Exceptions
-// ============================================================================
-
-/** Exception thrown during Telegram authentication. */
-class TelegramAuthException(message: String, cause: Throwable? = null) : Exception(message, cause)
-
-/** Exception thrown during Telegram file operations. */
-class TelegramFileException(message: String, cause: Throwable? = null) : Exception(message, cause)

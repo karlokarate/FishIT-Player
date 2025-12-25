@@ -51,7 +51,10 @@ class TmdbLruCache<K : Any, V : Any>(
     /**
      * Put value into cache with TTL.
      */
-    fun put(key: K, value: V) {
+    fun put(
+        key: K,
+        value: V,
+    ) {
         val now = System.currentTimeMillis()
         val expiresAt = now + ttlMs
 

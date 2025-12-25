@@ -3,18 +3,13 @@ package com.fishit.player.internal.di
 import android.content.Context
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
-import com.fishit.player.infra.transport.telegram.TelegramFileClient
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.telegram.TelegramFileDataSourceFactory
-import com.fishit.player.playback.telegram.config.TelegramFileReadyEnsurer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import dagger.multibindings.IntoMap
-import dagger.multibindings.StringKey
 import javax.inject.Singleton
 
 /**
@@ -53,18 +48,4 @@ object PlayerDataSourceModule {
         )
     }
 
-    /**
-     * Provides the Telegram file DataSource factory.
-     *
-     * Uses [TelegramTransportClient] for zero-copy file streaming via TDLib.
-     */
-    @Provides
-    @Singleton
-    fun provideTelegramFileDataSourceFactory(
-        transportClient: TelegramTransportClient,
-        fileClient: TelegramFileClient,
-        readyEnsurer: TelegramFileReadyEnsurer,
-    ): TelegramFileDataSourceFactory {
-        return TelegramFileDataSourceFactory(transportClient, fileClient, readyEnsurer)
-    }
 }

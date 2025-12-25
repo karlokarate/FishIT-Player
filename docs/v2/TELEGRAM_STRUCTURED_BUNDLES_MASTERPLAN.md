@@ -82,7 +82,7 @@ Timestamp: 1731704712 (identical for all 3 messages)
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  transport-telegram                                                   │
-│  DefaultTelegramTransportClient                                       │
+│  DefaultTelegramClient                                                │
 │  TdApi.Message → TgMessage, TgContent (DTOs)                          │
 └───────────────────────────┬──────────────────────────────────────────┘
                             ▼

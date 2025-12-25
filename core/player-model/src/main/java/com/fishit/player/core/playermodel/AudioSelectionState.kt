@@ -12,10 +12,10 @@ package com.fishit.player.core.playermodel
  * @property preferSurroundSound Whether user prefers surround sound over stereo when available.
  */
 data class AudioSelectionState(
-        val availableTracks: List<AudioTrack> = emptyList(),
-        val selectedTrackId: AudioTrackId = AudioTrackId.DEFAULT,
-        val preferredLanguage: String? = null,
-        val preferSurroundSound: Boolean = true
+    val availableTracks: List<AudioTrack> = emptyList(),
+    val selectedTrackId: AudioTrackId = AudioTrackId.DEFAULT,
+    val preferredLanguage: String? = null,
+    val preferSurroundSound: Boolean = true,
 ) {
     /**
      * Returns the currently selected audio track, or null if none selected or the selected ID
@@ -34,7 +34,7 @@ data class AudioSelectionState(
 
     /** Returns audio tracks for a specific language. */
     fun tracksForLanguage(language: String): List<AudioTrack> =
-            availableTracks.filter { it.language?.startsWith(language, ignoreCase = true) == true }
+        availableTracks.filter { it.language?.startsWith(language, ignoreCase = true) == true }
 
     /**
      * Returns the best track for user preferences.
@@ -71,9 +71,9 @@ data class AudioSelectionState(
             // If prefer surround and default is not surround, try to find surround alternative
             if (preferSurroundSound && !defaultTrack.channelLayout.isSurround) {
                 val sameLangSurround =
-                        availableTracks.find {
-                            it.language == defaultTrack.language && it.channelLayout.isSurround
-                        }
+                    availableTracks.find {
+                        it.language == defaultTrack.language && it.channelLayout.isSurround
+                    }
                 if (sameLangSurround != null) return sameLangSurround
             }
             return defaultTrack
@@ -99,9 +99,10 @@ data class AudioSelectionState(
 /** Extension property to check if channel layout is surround sound. */
 private val AudioChannelLayout.isSurround: Boolean
     get() =
-            when (this) {
-                AudioChannelLayout.SURROUND_5_1,
-                AudioChannelLayout.SURROUND_7_1,
-                AudioChannelLayout.ATMOS -> true
-                else -> false
-            }
+        when (this) {
+            AudioChannelLayout.SURROUND_5_1,
+            AudioChannelLayout.SURROUND_7_1,
+            AudioChannelLayout.ATMOS,
+            -> true
+            else -> false
+        }

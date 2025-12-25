@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename", "ktlint:standard:no-empty-file")
+
 /**
  * Audiobooks Feature module for FishIT Player v2.
  *

@@ -64,10 +64,12 @@ interface TmdbConfigProvider {
  * If no key is provided, returns [TmdbConfig.DISABLED].
  */
 @Singleton
-class DefaultTmdbConfigProvider @Inject constructor() : TmdbConfigProvider {
-    override fun getConfig(): TmdbConfig {
-        // TODO: Read from BuildConfig.TMDB_API_KEY when configured
-        // For now, return disabled config until API key is configured
-        return TmdbConfig.DISABLED
+class DefaultTmdbConfigProvider
+    @Inject
+    constructor() : TmdbConfigProvider {
+        override fun getConfig(): TmdbConfig {
+            // TODO: Read from BuildConfig.TMDB_API_KEY when configured
+            // For now, return disabled config until API key is configured
+            return TmdbConfig.DISABLED
+        }
     }
-}

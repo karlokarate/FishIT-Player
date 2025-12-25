@@ -1,11 +1,14 @@
 package com.fishit.player.infra.transport.telegram.di
 
-import com.fishit.player.infra.transport.telegram.DefaultTelegramTransportClient
+import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.TelegramAuthClient
+import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
+import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
+import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
 import com.fishit.player.infra.transport.telegram.TelegramTransportClient
-import com.fishit.player.infra.transport.telegram.file.TelegramFileDownloadManager
-import com.fishit.player.infra.transport.telegram.imaging.TelegramThumbFetcherImpl
+import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,8 +38,19 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object TelegramTransportModule {
+    private const val TAG = "TelegramTransportModule"
 
+    private const val TELEGRAM_AUTH_SCOPE = "TelegramAuthScope"
     private const val TELEGRAM_FILE_SCOPE = "TelegramFileScope"
+
+    /**
+     * Provides a dedicated coroutine scope for Telegram auth operations.
+     */
+    @Provides
+    @Singleton
+    @Named(TELEGRAM_AUTH_SCOPE)
+    fun provideTelegramAuthScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * Provides a dedicated coroutine scope for Telegram file operations.
@@ -48,50 +62,40 @@ object TelegramTransportModule {
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
-     * Provides the TelegramTransportClient singleton.
+     * Provides the singleton Telegram client facade.
      *
      * The TdlClient is expected to be provided by the app module
      * via a separate @Provides method (created after TDLib parameter setup).
      */
     @Provides
     @Singleton
-    fun provideTelegramTransportClient(
-        tdlClient: TdlClient
-    ): TelegramTransportClient {
-        return DefaultTelegramTransportClient(tdlClient)
-    }
-
-    /**
-     * Provides the TelegramFileClient for file download operations.
-     *
-     * Features:
-     * - Priority-based download queue (streaming priority=32)
-     * - Bounded concurrency (max 4 concurrent downloads)
-     * - RemoteId resolution for stale file recovery
-     * - Storage statistics and optimization
-     */
-    @Provides
-    @Singleton
-    fun provideTelegramFileClient(
+    fun provideTelegramClient(
         tdlClient: TdlClient,
-        @Named(TELEGRAM_FILE_SCOPE) scope: CoroutineScope
-    ): TelegramFileClient {
-        return TelegramFileDownloadManager(tdlClient, scope)
+        sessionConfig: TelegramSessionConfig,
+        @Named(TELEGRAM_AUTH_SCOPE) authScope: CoroutineScope,
+        @Named(TELEGRAM_FILE_SCOPE) fileScope: CoroutineScope,
+    ): TelegramClient {
+        UnifiedLog.d(TAG) { "Initializing Telegram transport client" }
+        return DefaultTelegramClient(tdlClient, sessionConfig, authScope, fileScope)
     }
 
-    /**
-     * Provides the TelegramThumbFetcher for thumbnail loading.
-     *
-     * Features:
-     * - RemoteId-first design (no fileId stored)
-     * - Bounded failed cache (prevents retry spam)
-     * - Prefetch support for scroll-ahead
-     */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcher(
-        fileClient: TelegramFileClient
-    ): TelegramThumbFetcher {
-        return TelegramThumbFetcherImpl(fileClient)
-    }
+    fun provideTelegramAuthClient(client: TelegramClient): TelegramAuthClient = client
+
+    @Provides
+    @Singleton
+    fun provideTelegramHistoryClient(client: TelegramClient): TelegramHistoryClient = client
+
+    @Provides
+    @Singleton
+    fun provideTelegramFileClient(client: TelegramClient): TelegramFileClient = client
+
+    @Provides
+    @Singleton
+    fun provideTelegramThumbFetcher(client: TelegramClient): TelegramThumbFetcher = client
+
+    @Provides
+    @Singleton
+    fun provideTelegramTransportClient(client: TelegramClient): TelegramTransportClient = client
 }

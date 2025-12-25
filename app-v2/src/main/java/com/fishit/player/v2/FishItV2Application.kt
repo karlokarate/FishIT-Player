@@ -12,10 +12,10 @@ import com.fishit.player.infra.work.SourceActivationObserver
 import com.fishit.player.v2.di.AppScopeModule
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Provider
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * FishIT Player v2 Application.
@@ -47,20 +47,20 @@ class FishItV2Application :
 
     @Inject
     lateinit var workConfiguration: Configuration
-    
+
     // Bootstrap components
     @Inject
     lateinit var xtreamSessionBootstrap: XtreamSessionBootstrap
-    
+
     @Inject
     lateinit var catalogSyncBootstrap: CatalogSyncBootstrap
-    
+
     @Inject
     lateinit var telegramActivationObserver: TelegramActivationObserver
-    
+
     @Inject
     lateinit var sourceActivationObserver: SourceActivationObserver
-    
+
     @Inject
     @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
     lateinit var appScope: CoroutineScope
@@ -81,7 +81,7 @@ class FishItV2Application :
         // Contract S-2: Start lightweight observers (no heavy work)
         sourceActivationObserver.start(appScope)
         telegramActivationObserver.start()
-        
+
         // Contract S-3: Bootstraps started here ONLY (not in MainActivity or AppNavHost)
         xtreamSessionBootstrap.start()
         catalogSyncBootstrap.start()

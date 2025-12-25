@@ -3,7 +3,6 @@ package com.fishit.player.playback.telegram
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramTransportClient
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
 import com.fishit.player.playback.domain.PlaybackSourceException
@@ -28,14 +27,11 @@ import javax.inject.Singleton
  * 3. Validate that we have enough info for playback
  *
  * **Architecture:**
- * - Uses [TelegramTransportClient] for file resolution
  * - Returns [PlaybackSource] with [DataSourceType.TELEGRAM_FILE]
  * - Actual file download/streaming handled by [TelegramFileDataSource]
  */
 @Singleton
-class TelegramPlaybackSourceFactoryImpl @Inject constructor(
-    private val transportClient: TelegramTransportClient
-) : PlaybackSourceFactory {
+class TelegramPlaybackSourceFactoryImpl @Inject constructor() : PlaybackSourceFactory {
 
     companion object {
         private const val TAG = "TelegramPlaybackFactory"

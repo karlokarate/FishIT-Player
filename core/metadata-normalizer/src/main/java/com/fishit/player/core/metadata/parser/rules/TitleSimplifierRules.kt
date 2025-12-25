@@ -28,12 +28,19 @@ data class TitleResult(
  * - Find where title ends (before technical tags)
  */
 object TitleSimplifierRules {
-
     // Noise tokens to remove from title
-    private val noiseTokens = setOf(
-        "proper", "real", "readnfo", "read", "nfo", "internal",
-        "limited", "festival", "complete",
-    )
+    private val noiseTokens =
+        setOf(
+            "proper",
+            "real",
+            "readnfo",
+            "read",
+            "nfo",
+            "internal",
+            "limited",
+            "festival",
+            "complete",
+        )
 
     // Provider prefixes to remove (e.g., "N|", "UHD|", "D|")
     private val providerPrefixPattern = Re2Pattern.compile("^[A-Z]+\\|")
@@ -57,7 +64,10 @@ object TitleSimplifierRules {
      * @param techBoundaryIndex Index of first technical token (or tokens.size if none)
      * @return Cleaned title result
      */
-    fun extractTitle(tokens: List<Token>, techBoundaryIndex: Int): TitleResult {
+    fun extractTitle(
+        tokens: List<Token>,
+        techBoundaryIndex: Int,
+    ): TitleResult {
         val titleTokens = mutableListOf<String>()
         var endIndex = minOf(techBoundaryIndex, tokens.size)
 
@@ -111,16 +121,12 @@ object TitleSimplifierRules {
     /**
      * Check if a token is a noise token.
      */
-    fun isNoiseToken(token: Token): Boolean {
-        return token.lowerValue in noiseTokens
-    }
+    fun isNoiseToken(token: Token): Boolean = token.lowerValue in noiseTokens
 
     /**
      * Get all noise tokens.
      */
-    fun getNoiseTokens(): Set<String> {
-        return noiseTokens
-    }
+    fun getNoiseTokens(): Set<String> = noiseTokens
 
     /**
      * Remove anime subgroup prefix [SubGroup] from start of string.
@@ -140,7 +146,6 @@ object TitleSimplifierRules {
  * Combined tech boundary detection using all rule packs.
  */
 object TechBoundaryDetector {
-
     /**
      * Find the index of the first technical token.
      *
@@ -166,13 +171,12 @@ object TechBoundaryDetector {
     /**
      * Check if a token is a technical token.
      */
-    fun isTechToken(token: Token): Boolean {
-        return ResolutionRules.isResolutionToken(token) ||
+    fun isTechToken(token: Token): Boolean =
+        ResolutionRules.isResolutionToken(token) ||
             SourceRules.isSourceToken(token) ||
             VideoCodecRules.isCodecToken(token) ||
             AudioCodecRules.isAudioToken(token) ||
             LanguageRules.isLanguageToken(token) ||
             EditionRules.isEditionToken(token) ||
             TitleSimplifierRules.isNoiseToken(token)
-    }
 }

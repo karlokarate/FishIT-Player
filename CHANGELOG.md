@@ -471,7 +471,7 @@ Status: COMPLETED
 
 - **feat(transport-telegram)**: Created `infra:transport-telegram` module
   - `TelegramTransportClient` interface for TDLib operations
-  - `DefaultTelegramTransportClient` TDLib adapter implementation
+  - `DefaultTelegramClient` TDLib adapter implementation
   - `TdlibClientProvider` for TDLib client lifecycle
   - `TelegramTransportModule` Hilt DI binding
 - **feat(transport-xtream)**: Created `infra:transport-xtream` module

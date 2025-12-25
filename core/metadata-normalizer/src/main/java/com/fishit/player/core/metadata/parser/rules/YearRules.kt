@@ -26,7 +26,6 @@ data class YearResult(
  * - Version numbers
  */
 object YearRules {
-
     // Year pattern with word boundaries
     private val yearPattern = Re2Pattern.compile("(?:^|[._ \\-\\(\\[])((19|20)\\d{2})(?:[._ \\-\\)\\]]|$)")
 
@@ -68,7 +67,10 @@ object YearRules {
      * @param techBoundary Position where tech tags start (or input.length)
      * @return YearResult with extracted year
      */
-    fun extract(input: String, techBoundary: Int = input.length): YearResult {
+    fun extract(
+        input: String,
+        techBoundary: Int = input.length,
+    ): YearResult {
         // Skip if timestamp found
         if (timestampPattern.matcher(input).find()) {
             return YearResult()

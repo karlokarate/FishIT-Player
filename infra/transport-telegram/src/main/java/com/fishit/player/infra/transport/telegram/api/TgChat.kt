@@ -40,7 +40,7 @@ enum class TgChatType {
  * @property chatId Unique chat identifier (use [id] alias)
  * @property title Chat title (may be null for private chats without names)
  * @property type Chat type as string (private, basicGroup, supergroup, channel, secret)
- * @property memberCount Member count (0 until full info is fetched)
+ * @property memberCount Member count (null until full info is fetched)
  * @property lastMessageId ID of last message (for navigation)
  * @property lastMessageDate Timestamp of last message (epoch seconds), for ordering
  */
@@ -48,7 +48,7 @@ data class TgChat(
     val chatId: Long,
     val title: String?,
     val type: String,
-    val memberCount: Int = 0,
+    val memberCount: Int? = null,
     val lastMessageId: Long? = null,
     val lastMessageDate: Long? = null
 ) {

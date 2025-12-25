@@ -12,7 +12,7 @@ data class FishSkin(
     val name: String,
     val dimens: FishDimens,
     val motion: FishMotion,
-    val isExperience: Boolean = false
+    val isExperience: Boolean = false,
 ) {
     companion object {
         /**
@@ -23,12 +23,13 @@ data class FishSkin(
          * - Matte, subtle colors
          * - No parallax, no glow
          */
-        val Classic = FishSkin(
-            name = "Classic",
-            dimens = FishDimensPresets.Classic,
-            motion = FishMotionPresets.Classic,
-            isExperience = false
-        )
+        val Classic =
+            FishSkin(
+                name = "Classic",
+                dimens = FishDimensPresets.Classic,
+                motion = FishMotionPresets.Classic,
+                isExperience = false,
+            )
 
         /**
          * Experience Skin (Optional)
@@ -38,11 +39,12 @@ data class FishSkin(
          * - Richer transitions
          * - Cinematic and futuristic feel
          */
-        val Experience = FishSkin(
-            name = "Experience",
-            dimens = FishDimensPresets.Experience,
-            motion = FishMotionPresets.Experience,
-            isExperience = true
-        )
+        val Experience =
+            FishSkin(
+                name = "Experience",
+                dimens = FishDimensPresets.Experience,
+                motion = FishMotionPresets.Experience,
+                isExperience = true,
+            )
     }
 }

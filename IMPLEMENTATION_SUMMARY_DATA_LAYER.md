@@ -9,7 +9,7 @@
 Both transport layers were **already fully implemented**:
 
 - **`infra/transport-telegram/`**
-  - `DefaultTelegramTransportClient.kt` - Full TDLib integration
+  - `DefaultTelegramClient.kt` - Full TDLib integration
   - DTOs: `TgMessage`, `TgChat`, `TgContent` (sealed class)
   - Auth/connection state flows
 
@@ -178,4 +178,3 @@ BUILD SUCCESSFUL in 18s
 - `infra/data-telegram/build.gradle.kts` - Removed forbidden deps
 - `infra/data-xtream/build.gradle.kts` - Removed forbidden deps
 - `settings.gradle.kts` - Added catalog-sync module
-

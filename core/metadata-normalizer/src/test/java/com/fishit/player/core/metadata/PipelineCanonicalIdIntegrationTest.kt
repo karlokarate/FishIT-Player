@@ -11,14 +11,13 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Integration tests verifying that both Telegram and Xtream pipelines produce correct 
+ * Integration tests verifying that both Telegram and Xtream pipelines produce correct
  * CanonicalIds through the Normalizer for movies and series.
  *
  * This test suite validates the end-to-end flow:
  * Pipeline → RawMediaMetadata → Normalizer → NormalizedMedia with CanonicalId
  */
 class PipelineCanonicalIdIntegrationTest {
-
     // ===================================================================================
     // TELEGRAM PIPELINE: Movies
     // ===================================================================================
@@ -28,17 +27,18 @@ class PipelineCanonicalIdIntegrationTest {
         // Simulates TelegramMediaItem.toRawMediaMetadata() output
         // Note: Scene tags in title produce slugs including the year,
         // so "Inception.2010..." becomes "inception-2010" + ":2010" suffix
-        val raw = RawMediaMetadata(
-            originalTitle = "Inception.2010.1080p.BluRay.x264",
-            mediaType = MediaType.MOVIE,
-            year = 2010,
-            season = null,
-            episode = null,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: Movies HD",
-            sourceId = "msg:123456:789",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Inception.2010.1080p.BluRay.x264",
+                mediaType = MediaType.MOVIE,
+                year = 2010,
+                season = null,
+                episode = null,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: Movies HD",
+                sourceId = "msg:123456:789",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -52,17 +52,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `telegram movie without year produces canonicalId without year suffix`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "Fight Club 1080p BluRay",
-            mediaType = MediaType.MOVIE,
-            year = null,
-            season = null,
-            episode = null,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: Movies",
-            sourceId = "msg:111:222",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Fight Club 1080p BluRay",
+                mediaType = MediaType.MOVIE,
+                year = null,
+                season = null,
+                episode = null,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: Movies",
+                sourceId = "msg:111:222",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -78,17 +79,18 @@ class PipelineCanonicalIdIntegrationTest {
     @Test
     fun `telegram series episode produces correct canonicalId`() {
         // Simulates TelegramMediaItem with isSeries=true, seasonNumber, episodeNumber
-        val raw = RawMediaMetadata(
-            originalTitle = "Breaking Bad S05E16",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 5,
-            episode = 16,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: Series",
-            sourceId = "msg:555:666",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Breaking Bad S05E16",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 5,
+                episode = 16,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: Series",
+                sourceId = "msg:555:666",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -101,17 +103,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `telegram series episode with scene tags produces clean canonicalId`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "Game.of.Thrones.S03E09.1080p.BluRay.x264-GROUP",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 3,
-            episode = 9,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: Series HD",
-            sourceId = "msg:777:888",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Game.of.Thrones.S03E09.1080p.BluRay.x264-GROUP",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 3,
+                episode = 9,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: Series HD",
+                sourceId = "msg:777:888",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -126,17 +129,18 @@ class PipelineCanonicalIdIntegrationTest {
     @Test
     fun `telegram series episode without season and episode numbers produces null canonicalId`() {
         // Edge case: marked as SERIES_EPISODE but missing numbers
-        val raw = RawMediaMetadata(
-            originalTitle = "Some Series Episode",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = null,
-            episode = null,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram",
-            sourceId = "msg:999:000",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Some Series Episode",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = null,
+                episode = null,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram",
+                sourceId = "msg:999:000",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -151,17 +155,18 @@ class PipelineCanonicalIdIntegrationTest {
     @Test
     fun `xtream vod movie produces correct canonicalId`() {
         // Simulates XtreamVodItem.toRawMediaMetadata() output
-        val raw = RawMediaMetadata(
-            originalTitle = "The Matrix",
-            mediaType = MediaType.MOVIE,
-            year = 1999,
-            season = null,
-            episode = null,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream VOD",
-            sourceId = "xtream:vod:12345:mkv",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "The Matrix",
+                mediaType = MediaType.MOVIE,
+                year = 1999,
+                season = null,
+                episode = null,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream VOD",
+                sourceId = "xtream:vod:12345:mkv",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -173,17 +178,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `xtream vod movie without year produces canonicalId without year`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "Pulp Fiction",
-            mediaType = MediaType.MOVIE,
-            year = null,
-            season = null,
-            episode = null,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream VOD",
-            sourceId = "xtream:vod:67890",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Pulp Fiction",
+                mediaType = MediaType.MOVIE,
+                year = null,
+                season = null,
+                episode = null,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream VOD",
+                sourceId = "xtream:vod:67890",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -199,17 +205,18 @@ class PipelineCanonicalIdIntegrationTest {
     fun `xtream series container produces null canonicalId`() {
         // Series container (not episode) should not have canonicalId
         // Only episodes get linked
-        val raw = RawMediaMetadata(
-            originalTitle = "Stranger Things",
-            mediaType = MediaType.SERIES, // Container, not episode
-            year = 2016,
-            season = null,
-            episode = null,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream Series",
-            sourceId = "xtream:series:111",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Stranger Things",
+                mediaType = MediaType.SERIES, // Container, not episode
+                year = 2016,
+                season = null,
+                episode = null,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream Series",
+                sourceId = "xtream:series:111",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -224,17 +231,18 @@ class PipelineCanonicalIdIntegrationTest {
     @Test
     fun `xtream episode produces correct canonicalId`() {
         // Simulates XtreamEpisode.toRawMediaMetadata() output
-        val raw = RawMediaMetadata(
-            originalTitle = "The One Where Everybody Finds Out",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 5,
-            episode = 14,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream: Friends",
-            sourceId = "xtream:episode:222:mp4",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "The One Where Everybody Finds Out",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 5,
+                episode = 14,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream: Friends",
+                sourceId = "xtream:episode:222:mp4",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -246,23 +254,30 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `xtream episode with single digit season and episode pads correctly`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "Pilot",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 1,
-            episode = 1,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream: Lost",
-            sourceId = "xtream:episode:333",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Pilot",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 1,
+                episode = 1,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream: Lost",
+                sourceId = "xtream:episode:333",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
         assertEquals(1, normalized.size)
         // Season and episode should be zero-padded: S01E01
-        assertTrue(normalized.first().canonicalId!!.value.endsWith(":S01E01"))
+        assertTrue(
+            normalized
+                .first()
+                .canonicalId!!
+                .value
+                .endsWith(":S01E01"),
+        )
     }
 
     // ===================================================================================
@@ -271,29 +286,31 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `same movie from telegram and xtream produces matching canonicalIds`() {
-        val telegramRaw = RawMediaMetadata(
-            originalTitle = "Interstellar.2014.1080p.BluRay",
-            mediaType = MediaType.MOVIE,
-            year = 2014,
-            season = null,
-            episode = null,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: Movies",
-            sourceId = "msg:aaa:bbb",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val telegramRaw =
+            RawMediaMetadata(
+                originalTitle = "Interstellar.2014.1080p.BluRay",
+                mediaType = MediaType.MOVIE,
+                year = 2014,
+                season = null,
+                episode = null,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: Movies",
+                sourceId = "msg:aaa:bbb",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
-        val xtreamRaw = RawMediaMetadata(
-            originalTitle = "Interstellar",
-            mediaType = MediaType.MOVIE,
-            year = 2014,
-            season = null,
-            episode = null,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream VOD",
-            sourceId = "xtream:vod:444",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val xtreamRaw =
+            RawMediaMetadata(
+                originalTitle = "Interstellar",
+                mediaType = MediaType.MOVIE,
+                year = 2014,
+                season = null,
+                episode = null,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream VOD",
+                sourceId = "xtream:vod:444",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val telegramNormalized = Normalizer.normalize(listOf(telegramRaw))
         val xtreamNormalized = Normalizer.normalize(listOf(xtreamRaw))
@@ -302,45 +319,47 @@ class PipelineCanonicalIdIntegrationTest {
         assertEquals(
             "movie:interstellar:2014",
             telegramNormalized.first().canonicalId?.value,
-            "Telegram movie canonicalId mismatch"
+            "Telegram movie canonicalId mismatch",
         )
         assertEquals(
             "movie:interstellar:2014",
             xtreamNormalized.first().canonicalId?.value,
-            "Xtream movie canonicalId mismatch"
+            "Xtream movie canonicalId mismatch",
         )
         assertEquals(
             telegramNormalized.first().canonicalId,
             xtreamNormalized.first().canonicalId,
-            "Same movie from different sources should have matching canonicalIds"
+            "Same movie from different sources should have matching canonicalIds",
         )
     }
 
     @Test
     fun `same episode from telegram and xtream produces matching canonicalIds`() {
-        val telegramRaw = RawMediaMetadata(
-            originalTitle = "The Rains of Castamere",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 3,
-            episode = 9,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: GoT",
-            sourceId = "msg:ccc:ddd",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val telegramRaw =
+            RawMediaMetadata(
+                originalTitle = "The Rains of Castamere",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 3,
+                episode = 9,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: GoT",
+                sourceId = "msg:ccc:ddd",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
-        val xtreamRaw = RawMediaMetadata(
-            originalTitle = "The Rains of Castamere",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 3,
-            episode = 9,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream: Game of Thrones",
-            sourceId = "xtream:episode:555",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val xtreamRaw =
+            RawMediaMetadata(
+                originalTitle = "The Rains of Castamere",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 3,
+                episode = 9,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream: Game of Thrones",
+                sourceId = "xtream:episode:555",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val telegramNormalized = Normalizer.normalize(listOf(telegramRaw))
         val xtreamNormalized = Normalizer.normalize(listOf(xtreamRaw))
@@ -348,11 +367,15 @@ class PipelineCanonicalIdIntegrationTest {
         assertEquals(
             telegramNormalized.first().canonicalId,
             xtreamNormalized.first().canonicalId,
-            "Same episode from different sources should have matching canonicalIds"
+            "Same episode from different sources should have matching canonicalIds",
         )
         assertTrue(
-            telegramNormalized.first().canonicalId!!.value.endsWith(":S03E09"),
-            "CanonicalId should end with S03E09"
+            telegramNormalized
+                .first()
+                .canonicalId!!
+                .value
+                .endsWith(":S03E09"),
+            "CanonicalId should end with S03E09",
         )
     }
 
@@ -362,17 +385,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `telegram live channel produces null canonicalId`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "RTL HD Live",
-            mediaType = MediaType.LIVE,
-            year = null,
-            season = null,
-            episode = null,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram Live",
-            sourceId = "msg:live:123",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "RTL HD Live",
+                mediaType = MediaType.LIVE,
+                year = null,
+                season = null,
+                episode = null,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram Live",
+                sourceId = "msg:live:123",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -381,17 +405,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `xtream live channel produces null canonicalId`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "DE: ProSieben HD",
-            mediaType = MediaType.LIVE,
-            year = null,
-            season = null,
-            episode = null,
-            sourceType = SourceType.XTREAM,
-            sourceLabel = "Xtream Live",
-            sourceId = "xtream:live:999",
-            pipelineIdTag = PipelineIdTag.XTREAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "DE: ProSieben HD",
+                mediaType = MediaType.LIVE,
+                year = null,
+                season = null,
+                episode = null,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = "Xtream Live",
+                sourceId = "xtream:live:999",
+                pipelineIdTag = PipelineIdTag.XTREAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -404,17 +429,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `movie with special characters produces valid slug`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "Amélie (2001) [French]",
-            mediaType = MediaType.MOVIE,
-            year = 2001,
-            season = null,
-            episode = null,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram",
-            sourceId = "msg:french:001",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "Amélie (2001) [French]",
+                mediaType = MediaType.MOVIE,
+                year = 2001,
+                season = null,
+                episode = null,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram",
+                sourceId = "msg:french:001",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 
@@ -427,17 +453,18 @@ class PipelineCanonicalIdIntegrationTest {
 
     @Test
     fun `episode with scene release format strips technical tags`() {
-        val raw = RawMediaMetadata(
-            originalTitle = "The.Office.US.S02E04.The.Fire.720p.WEB-DL.DD5.1.H.264-CtrlHD",
-            mediaType = MediaType.SERIES_EPISODE,
-            year = null,
-            season = 2,
-            episode = 4,
-            sourceType = SourceType.TELEGRAM,
-            sourceLabel = "Telegram: The Office",
-            sourceId = "msg:office:004",
-            pipelineIdTag = PipelineIdTag.TELEGRAM,
-        )
+        val raw =
+            RawMediaMetadata(
+                originalTitle = "The.Office.US.S02E04.The.Fire.720p.WEB-DL.DD5.1.H.264-CtrlHD",
+                mediaType = MediaType.SERIES_EPISODE,
+                year = null,
+                season = 2,
+                episode = 4,
+                sourceType = SourceType.TELEGRAM,
+                sourceLabel = "Telegram: The Office",
+                sourceId = "msg:office:004",
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+            )
 
         val normalized = Normalizer.normalize(listOf(raw))
 

@@ -1,6 +1,5 @@
 package com.fishit.player.core.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -29,62 +28,57 @@ val LocalFishMotion = staticCompositionLocalOf { FishMotion() }
 @Composable
 fun FishTheme(
     skin: FishSkin = FishSkin.Classic,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = darkColorScheme(
-        // Primary
-        primary = FishColors.Primary,
-        onPrimary = FishColors.OnPrimary,
-        primaryContainer = FishColors.PrimaryContainer,
-        onPrimaryContainer = FishColors.OnPrimaryContainer,
-
-        // Secondary
-        secondary = FishColors.Secondary,
-        onSecondary = FishColors.OnSecondary,
-        secondaryContainer = FishColors.SecondaryContainer,
-        onSecondaryContainer = FishColors.OnSecondaryContainer,
-
-        // Tertiary
-        tertiary = FishColors.Tertiary,
-        onTertiary = FishColors.OnTertiary,
-        tertiaryContainer = FishColors.TertiaryContainer,
-        onTertiaryContainer = FishColors.OnTertiaryContainer,
-
-        // Background & Surface
-        background = FishColors.Background,
-        onBackground = FishColors.OnBackground,
-        surface = FishColors.Surface,
-        onSurface = FishColors.OnSurface,
-        surfaceVariant = FishColors.SurfaceVariant,
-        onSurfaceVariant = FishColors.OnSurfaceVariant,
-        surfaceContainer = FishColors.SurfaceContainer,
-        surfaceContainerHigh = FishColors.SurfaceContainerHigh,
-        surfaceContainerHighest = FishColors.SurfaceContainerHighest,
-        surfaceDim = FishColors.SurfaceDim,
-
-        // Outline
-        outline = FishColors.Outline,
-        outlineVariant = FishColors.OutlineVariant,
-
-        // Error
-        error = FishColors.Error,
-        onError = FishColors.OnError,
-        errorContainer = FishColors.ErrorContainer,
-        onErrorContainer = FishColors.OnErrorContainer,
-
-        // Scrim
-        scrim = FishColors.Scrim
-    )
+    val colorScheme =
+        darkColorScheme(
+            // Primary
+            primary = FishColors.Primary,
+            onPrimary = FishColors.OnPrimary,
+            primaryContainer = FishColors.PrimaryContainer,
+            onPrimaryContainer = FishColors.OnPrimaryContainer,
+            // Secondary
+            secondary = FishColors.Secondary,
+            onSecondary = FishColors.OnSecondary,
+            secondaryContainer = FishColors.SecondaryContainer,
+            onSecondaryContainer = FishColors.OnSecondaryContainer,
+            // Tertiary
+            tertiary = FishColors.Tertiary,
+            onTertiary = FishColors.OnTertiary,
+            tertiaryContainer = FishColors.TertiaryContainer,
+            onTertiaryContainer = FishColors.OnTertiaryContainer,
+            // Background & Surface
+            background = FishColors.Background,
+            onBackground = FishColors.OnBackground,
+            surface = FishColors.Surface,
+            onSurface = FishColors.OnSurface,
+            surfaceVariant = FishColors.SurfaceVariant,
+            onSurfaceVariant = FishColors.OnSurfaceVariant,
+            surfaceContainer = FishColors.SurfaceContainer,
+            surfaceContainerHigh = FishColors.SurfaceContainerHigh,
+            surfaceContainerHighest = FishColors.SurfaceContainerHighest,
+            surfaceDim = FishColors.SurfaceDim,
+            // Outline
+            outline = FishColors.Outline,
+            outlineVariant = FishColors.OutlineVariant,
+            // Error
+            error = FishColors.Error,
+            onError = FishColors.OnError,
+            errorContainer = FishColors.ErrorContainer,
+            onErrorContainer = FishColors.OnErrorContainer,
+            // Scrim
+            scrim = FishColors.Scrim,
+        )
 
     CompositionLocalProvider(
         LocalFishSkin provides skin,
         LocalFishDimens provides skin.dimens,
-        LocalFishMotion provides skin.motion
+        LocalFishMotion provides skin.motion,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
             shapes = FishShapes.M3Shapes,
-            content = content
+            content = content,
         )
     }
 }
@@ -93,7 +87,6 @@ fun FishTheme(
  * Accessor object for theme values within Composables
  */
 object FishTheme {
-
     /**
      * Current skin configuration
      */

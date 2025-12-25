@@ -11,14 +11,13 @@ package com.fishit.player.core.model
  * @property preferXtream True to prefer Xtream sources (usually more reliable) over Telegram
  */
 data class VariantPreferences(
-        val preferredLanguage: String = "de",
-        val preferOmu: Boolean = false,
-        val preferXtream: Boolean = true,
+    val preferredLanguage: String = "de",
+    val preferOmu: Boolean = false,
+    val preferXtream: Boolean = true,
 ) {
     companion object {
         /** Default preferences using system language. */
-        fun default(systemLanguage: String = "de"): VariantPreferences =
-                VariantPreferences(preferredLanguage = systemLanguage)
+        fun default(systemLanguage: String = "de"): VariantPreferences = VariantPreferences(preferredLanguage = systemLanguage)
     }
 }
 
@@ -46,7 +45,6 @@ data class VariantPreferences(
  * ```
  */
 object VariantSelector {
-
     /**
      * Sort variants by preference, returning a new list with best variants first.
      *
@@ -55,11 +53,9 @@ object VariantSelector {
      * @return New list sorted by descending score (stable sort)
      */
     fun sortByPreference(
-            variants: List<MediaVariant>,
-            prefs: VariantPreferences,
-    ): List<MediaVariant> {
-        return variants.sortedByDescending { variant -> calculateScore(variant, prefs) }
-    }
+        variants: List<MediaVariant>,
+        prefs: VariantPreferences,
+    ): List<MediaVariant> = variants.sortedByDescending { variant -> calculateScore(variant, prefs) }
 
     /**
      * Get the best available variant.
@@ -69,11 +65,9 @@ object VariantSelector {
      * @return Best variant, or null if all unavailable
      */
     fun selectBest(
-            variants: List<MediaVariant>,
-            prefs: VariantPreferences,
-    ): MediaVariant? {
-        return sortByPreference(variants, prefs).firstOrNull { it.available }
-    }
+        variants: List<MediaVariant>,
+        prefs: VariantPreferences,
+    ): MediaVariant? = sortByPreference(variants, prefs).firstOrNull { it.available }
 
     /**
      * Calculate the preference score for a variant.
@@ -81,8 +75,8 @@ object VariantSelector {
      * Higher score = better match.
      */
     internal fun calculateScore(
-            variant: MediaVariant,
-            prefs: VariantPreferences,
+        variant: MediaVariant,
+        prefs: VariantPreferences,
     ): Int {
         var score = 0
 

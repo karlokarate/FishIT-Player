@@ -78,7 +78,6 @@ data class ScoredTmdbResult<T>(
  * Per TMDB_ENRICHMENT_CONTRACT.md T-8, T-9.
  */
 object TmdbScoring {
-
     // ========== Decision Thresholds (T-9) ==========
 
     /** Minimum score for ACCEPT decision */
@@ -149,7 +148,10 @@ object TmdbScoring {
      *
      * Uses Jaro-Winkler similarity, normalized to 0..60.
      */
-    fun calculateTitleScore(queryTitle: String, resultTitle: String): Int {
+    fun calculateTitleScore(
+        queryTitle: String,
+        resultTitle: String,
+    ): Int {
         val normalizedQuery = normalizeTitle(queryTitle)
         val normalizedResult = normalizeTitle(resultTitle)
 
@@ -177,7 +179,10 @@ object TmdbScoring {
      * - ±2 years: 10
      * - Otherwise: 0
      */
-    fun calculateYearScore(queryYear: Int?, resultYear: Int?): Int {
+    fun calculateYearScore(
+        queryYear: Int?,
+        resultYear: Int?,
+    ): Int {
         if (queryYear == null || resultYear == null) {
             // No year to compare - give partial credit
             return 5
@@ -185,10 +190,10 @@ object TmdbScoring {
 
         val diff = abs(queryYear - resultYear)
         return when (diff) {
-            0 -> MAX_YEAR_SCORE      // Exact: 20
-            1 -> 15                   // ±1: 15
-            2 -> 10                   // ±2: 10
-            else -> 0                 // >±2: 0
+            0 -> MAX_YEAR_SCORE // Exact: 20
+            1 -> 15 // ±1: 15
+            2 -> 10 // ±2: 10
+            else -> 0 // >±2: 0
         }
     }
 
@@ -210,10 +215,12 @@ object TmdbScoring {
         }
 
         val expectsMovie = queryMediaType == MediaType.MOVIE
-        val expectsTv = queryMediaType in setOf(
-            MediaType.SERIES,
-            MediaType.SERIES_EPISODE,
-        )
+        val expectsTv =
+            queryMediaType in
+                setOf(
+                    MediaType.SERIES,
+                    MediaType.SERIES_EPISODE,
+                )
 
         return when {
             expectsMovie && isResultMovie -> MAX_KIND_SCORE
@@ -275,14 +282,13 @@ object TmdbScoring {
         isResultTv: Boolean,
         resultSeason: Int? = null,
         resultEpisode: Int? = null,
-    ): TmdbMatchScore {
-        return TmdbMatchScore(
+    ): TmdbMatchScore =
+        TmdbMatchScore(
             titleSimilarity = calculateTitleScore(queryTitle, resultTitle),
             yearScore = calculateYearScore(queryYear, resultYear),
             kindAgreement = calculateKindScore(queryMediaType, isResultMovie, isResultTv),
             episodeExact = calculateEpisodeScore(querySeason, queryEpisode, resultSeason, resultEpisode),
         )
-    }
 
     /**
      * Convenience method to score a movie search result.
@@ -298,14 +304,13 @@ object TmdbScoring {
         movieYear: Int?,
         queryTitle: String,
         queryYear: Int?,
-    ): TmdbMatchScore {
-        return TmdbMatchScore(
+    ): TmdbMatchScore =
+        TmdbMatchScore(
             titleSimilarity = calculateTitleScore(queryTitle, movieTitle),
             yearScore = calculateYearScore(queryYear, movieYear),
             kindAgreement = MAX_KIND_SCORE, // It's a movie, we're searching for movies
             episodeExact = 0, // Not applicable for movies
         )
-    }
 
     /**
      * Convenience method to score a TV show search result.
@@ -325,14 +330,13 @@ object TmdbScoring {
         queryYear: Int?,
         querySeason: Int? = null,
         queryEpisode: Int? = null,
-    ): TmdbMatchScore {
-        return TmdbMatchScore(
+    ): TmdbMatchScore =
+        TmdbMatchScore(
             titleSimilarity = calculateTitleScore(queryTitle, showTitle),
             yearScore = calculateYearScore(queryYear, showYear),
             kindAgreement = MAX_KIND_SCORE, // It's a TV show, we're searching for TV shows
             episodeExact = 0, // Episode matching is done later when fetching episode details
         )
-    }
 
     // ========== Helper Functions ==========
 
@@ -344,21 +348,23 @@ object TmdbScoring {
      * - Remove punctuation
      * - Collapse whitespace
      */
-    private fun normalizeTitle(title: String): String {
-        return title
+    private fun normalizeTitle(title: String): String =
+        title
             .lowercase()
             .replace(Regex("^(the|a|an|der|die|das|ein|eine)\\s+"), "")
             .replace(Regex("[^a-z0-9\\s]"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
-    }
 
     /**
      * Calculate Jaro-Winkler similarity between two strings.
      *
      * Returns value between 0.0 (no similarity) and 1.0 (identical).
      */
-    private fun jaroWinklerSimilarity(s1: String, s2: String): Double {
+    private fun jaroWinklerSimilarity(
+        s1: String,
+        s2: String,
+    ): Double {
         if (s1 == s2) return 1.0
         if (s1.isEmpty() || s2.isEmpty()) return 0.0
 
@@ -376,7 +382,10 @@ object TmdbScoring {
     /**
      * Calculate Jaro similarity between two strings.
      */
-    private fun jaroSimilarity(s1: String, s2: String): Double {
+    private fun jaroSimilarity(
+        s1: String,
+        s2: String,
+    ): Double {
         if (s1 == s2) return 1.0
         if (s1.isEmpty() || s2.isEmpty()) return 0.0
 
@@ -418,6 +427,6 @@ object TmdbScoring {
             matches.toDouble() / s1.length +
                 matches.toDouble() / s2.length +
                 (matches - transpositions / 2.0) / matches
-            ) / 3.0
+        ) / 3.0
     }
 }

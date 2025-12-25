@@ -21,7 +21,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class TmdbModule {
-
     /**
      * Binds the default TMDB metadata resolver.
      *
@@ -32,7 +31,5 @@ abstract class TmdbModule {
      */
     @Binds
     @Singleton
-    abstract fun bindTmdbMetadataResolver(
-        impl: DefaultTmdbMetadataResolver,
-    ): TmdbMetadataResolver
+    abstract fun bindTmdbMetadataResolver(impl: DefaultTmdbMetadataResolver): TmdbMetadataResolver
 }

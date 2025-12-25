@@ -1,6 +1,5 @@
 package com.fishit.player.core.catalogsync
 
-import com.fishit.player.core.model.RawMediaMetadata
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
  * and handle completion/errors.
  */
 sealed interface SyncStatus {
-
     /**
      * Sync has started.
      *
@@ -117,7 +115,6 @@ data class SyncConfig(
  * - ObjectBox/DB access directly (use Data repositories)
  */
 interface CatalogSyncService {
-
     /**
      * Synchronize Telegram catalog to local storage.
      *

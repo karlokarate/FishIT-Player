@@ -12,7 +12,6 @@ import org.junit.Test
  * Covers MIME-based and extension-based detection of video/audio.
  */
 class MimeDeciderTest {
-
     // ========== MIME-Type Based Detection ==========
 
     @Test

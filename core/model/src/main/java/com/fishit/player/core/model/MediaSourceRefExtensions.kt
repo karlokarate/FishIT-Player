@@ -2,7 +2,7 @@ package com.fishit.player.core.model
 
 import com.fishit.player.core.model.ids.PipelineItemId
 
-/**
+/*
  * Extension functions for creating MediaSourceRef from various pipeline items.
  *
  * Each pipeline should use these helpers to create consistent source references when linking items
@@ -19,27 +19,28 @@ import com.fishit.player.core.model.ids.PipelineItemId
  * @param sizeBytes File size in bytes
  */
 fun createTelegramSourceRef(
-        chatId: Long,
-        messageId: Long,
-        chatName: String,
-        filename: String?,
-        sizeBytes: Long? = null,
-        width: Int? = null,
-        height: Int? = null,
-        priority: Int = 0,
+    chatId: Long,
+    messageId: Long,
+    chatName: String,
+    filename: String?,
+    sizeBytes: Long? = null,
+    width: Int? = null,
+    height: Int? = null,
+    priority: Int = 0,
 ): MediaSourceRef {
     val sourceId = "telegram:$chatId:$messageId"
 
     return MediaSourceRef(
-            sourceType = SourceType.TELEGRAM,
-            sourceId = PipelineItemId(sourceId),
-            sourceLabel = "Telegram: $chatName",
-            quality = filename?.let { MediaQuality.fromFilename(it) }
-                            ?: MediaQuality.fromDimensions(width, height),
-            languages = filename?.let { LanguageInfo.fromFilename(it) },
-            format = filename?.let { MediaFormat.fromFilename(it) },
-            sizeBytes = sizeBytes,
-            priority = priority,
+        sourceType = SourceType.TELEGRAM,
+        sourceId = PipelineItemId(sourceId),
+        sourceLabel = "Telegram: $chatName",
+        quality =
+            filename?.let { MediaQuality.fromFilename(it) }
+                ?: MediaQuality.fromDimensions(width, height),
+        languages = filename?.let { LanguageInfo.fromFilename(it) },
+        format = filename?.let { MediaFormat.fromFilename(it) },
+        sizeBytes = sizeBytes,
+        priority = priority,
     )
 }
 
@@ -51,24 +52,24 @@ fun createTelegramSourceRef(
  * @param containerExt Container extension (e.g., "mkv", "mp4")
  */
 fun createXtreamVodSourceRef(
-        vodId: Int,
-        providerName: String,
-        title: String? = null,
-        containerExt: String? = null,
-        sizeBytes: Long? = null,
-        priority: Int = 0,
+    vodId: Int,
+    providerName: String,
+    title: String? = null,
+    containerExt: String? = null,
+    sizeBytes: Long? = null,
+    priority: Int = 0,
 ): MediaSourceRef {
     val sourceId = "xtream:vod:$vodId"
 
     return MediaSourceRef(
-            sourceType = SourceType.XTREAM,
-            sourceId = PipelineItemId(sourceId),
-            sourceLabel = "Xtream: $providerName",
-            quality = title?.let { MediaQuality.fromFilename(it) },
-            languages = title?.let { LanguageInfo.fromFilename(it) },
-            format = containerExt?.let { MediaFormat(container = it) },
-            sizeBytes = sizeBytes,
-            priority = priority,
+        sourceType = SourceType.XTREAM,
+        sourceId = PipelineItemId(sourceId),
+        sourceLabel = "Xtream: $providerName",
+        quality = title?.let { MediaQuality.fromFilename(it) },
+        languages = title?.let { LanguageInfo.fromFilename(it) },
+        format = containerExt?.let { MediaFormat(container = it) },
+        sizeBytes = sizeBytes,
+        priority = priority,
     )
 }
 
@@ -81,24 +82,24 @@ fun createXtreamVodSourceRef(
  * @param providerName Xtream provider name
  */
 fun createXtreamEpisodeSourceRef(
-        seriesId: Int,
-        season: Int,
-        episode: Int,
-        providerName: String,
-        title: String? = null,
-        containerExt: String? = null,
-        priority: Int = 0,
+    seriesId: Int,
+    season: Int,
+    episode: Int,
+    providerName: String,
+    title: String? = null,
+    containerExt: String? = null,
+    priority: Int = 0,
 ): MediaSourceRef {
-    val sourceId = "xtream:series:$seriesId:S${season}E${episode}"
+    val sourceId = "xtream:series:$seriesId:S${season}E$episode"
 
     return MediaSourceRef(
-            sourceType = SourceType.XTREAM,
-            sourceId = PipelineItemId(sourceId),
-            sourceLabel = "Xtream: $providerName",
-            quality = title?.let { MediaQuality.fromFilename(it) },
-            languages = title?.let { LanguageInfo.fromFilename(it) },
-            format = containerExt?.let { MediaFormat(container = it) },
-            priority = priority,
+        sourceType = SourceType.XTREAM,
+        sourceId = PipelineItemId(sourceId),
+        sourceLabel = "Xtream: $providerName",
+        quality = title?.let { MediaQuality.fromFilename(it) },
+        languages = title?.let { LanguageInfo.fromFilename(it) },
+        format = containerExt?.let { MediaFormat(container = it) },
+        priority = priority,
     )
 }
 
@@ -110,22 +111,22 @@ fun createXtreamEpisodeSourceRef(
  * @param sizeBytes File size in bytes
  */
 fun createIoSourceRef(
-        uri: String,
-        filename: String,
-        sizeBytes: Long? = null,
-        priority: Int = 0,
+    uri: String,
+    filename: String,
+    sizeBytes: Long? = null,
+    priority: Int = 0,
 ): MediaSourceRef {
     val sourceId = "io:file:$uri"
 
     return MediaSourceRef(
-            sourceType = SourceType.IO,
-            sourceId = PipelineItemId(sourceId),
-            sourceLabel = "Local: $filename",
-            quality = MediaQuality.fromFilename(filename),
-            languages = LanguageInfo.fromFilename(filename),
-            format = MediaFormat.fromFilename(filename),
-            sizeBytes = sizeBytes,
-            priority = priority,
+        sourceType = SourceType.IO,
+        sourceId = PipelineItemId(sourceId),
+        sourceLabel = "Local: $filename",
+        quality = MediaQuality.fromFilename(filename),
+        languages = LanguageInfo.fromFilename(filename),
+        format = MediaFormat.fromFilename(filename),
+        sizeBytes = sizeBytes,
+        priority = priority,
     )
 }
 
@@ -137,29 +138,29 @@ fun createIoSourceRef(
  * @param resolution Video resolution
  */
 fun createPlexSourceRef(
-        ratingKey: String,
-        serverName: String,
-        title: String? = null,
-        resolution: Int? = null,
-        codec: String? = null,
-        audioCodec: String? = null,
-        sizeBytes: Long? = null,
-        priority: Int = 0,
+    ratingKey: String,
+    serverName: String,
+    title: String? = null,
+    resolution: Int? = null,
+    codec: String? = null,
+    audioCodec: String? = null,
+    sizeBytes: Long? = null,
+    priority: Int = 0,
 ): MediaSourceRef {
     val sourceId = "plex:$ratingKey"
 
     return MediaSourceRef(
-            sourceType = SourceType.PLEX,
-            sourceId = PipelineItemId(sourceId),
-            sourceLabel = "Plex: $serverName",
-            quality =
-                    MediaQuality(
-                            resolution = resolution,
-                            codec = codec,
-                    ),
-            format = audioCodec?.let { MediaFormat(container = "plex", audioCodec = it) },
-            sizeBytes = sizeBytes,
-            priority = priority,
+        sourceType = SourceType.PLEX,
+        sourceId = PipelineItemId(sourceId),
+        sourceLabel = "Plex: $serverName",
+        quality =
+            MediaQuality(
+                resolution = resolution,
+                codec = codec,
+            ),
+        format = audioCodec?.let { MediaFormat(container = "plex", audioCodec = it) },
+        sizeBytes = sizeBytes,
+        priority = priority,
     )
 }
 
@@ -171,21 +172,21 @@ fun createPlexSourceRef(
  * @param format Audio format (e.g., "mp3", "m4b")
  */
 fun createAudiobookSourceRef(
-        bookId: String,
-        libraryName: String,
-        format: String? = null,
-        sizeBytes: Long? = null,
-        priority: Int = 0,
+    bookId: String,
+    libraryName: String,
+    format: String? = null,
+    sizeBytes: Long? = null,
+    priority: Int = 0,
 ): MediaSourceRef {
     val sourceId = "audiobook:$bookId"
 
     return MediaSourceRef(
-            sourceType = SourceType.AUDIOBOOK,
-            sourceId = PipelineItemId(sourceId),
-            sourceLabel = "Audiobook: $libraryName",
-            format = format?.let { MediaFormat(container = it) },
-            sizeBytes = sizeBytes,
-            priority = priority,
+        sourceType = SourceType.AUDIOBOOK,
+        sourceId = PipelineItemId(sourceId),
+        sourceLabel = "Audiobook: $libraryName",
+        format = format?.let { MediaFormat(container = it) },
+        sizeBytes = sizeBytes,
+        priority = priority,
     )
 }
 
@@ -205,18 +206,16 @@ object SourceIdParser {
     }
 
     /** Check if source ID is from Telegram. */
-    fun isTelegram(sourceId: String): Boolean =
-            sourceId.startsWith("telegram:") || sourceId.startsWith("tg:")
+    fun isTelegram(sourceId: String): Boolean = sourceId.startsWith("telegram:") || sourceId.startsWith("tg:")
 
     /** Check if source ID is from Xtream. */
-    fun isXtream(sourceId: String): Boolean =
-            sourceId.startsWith("xtream:") || sourceId.startsWith("xc:")
+    fun isXtream(sourceId: String): Boolean = sourceId.startsWith("xtream:") || sourceId.startsWith("xc:")
 
     /** Check if source ID is from local IO. */
     fun isIo(sourceId: String): Boolean =
-            sourceId.startsWith("io:") ||
-                    sourceId.startsWith("file:") ||
-                    sourceId.startsWith("local:")
+        sourceId.startsWith("io:") ||
+            sourceId.startsWith("file:") ||
+            sourceId.startsWith("local:")
 
     /**
      * Extract Telegram chat ID and message ID from source ID. e.g., "telegram:123:456" → Pair(123L,
@@ -255,9 +254,9 @@ object SourceIdParser {
 
         return try {
             Triple(
-                    match.groupValues[1].toInt(),
-                    match.groupValues[2].toInt(),
-                    match.groupValues[3].toInt()
+                match.groupValues[1].toInt(),
+                match.groupValues[2].toInt(),
+                match.groupValues[3].toInt(),
             )
         } catch (e: Exception) {
             null

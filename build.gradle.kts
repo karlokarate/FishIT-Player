@@ -8,7 +8,8 @@ plugins {
     id("com.google.dagger.hilt.android") version "2.56.1" apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
-    id("com.github.ben-manes.versions") version "0.51.0" apply true
+    id("com.autonomousapps.dependency-analysis") version "3.5.1" apply false
+    id("com.github.ben-manes.versions") version "0.53.0" apply true
     id("org.jetbrains.kotlinx.kover") version "0.9.0" apply true
     id("com.osacky.doctor") version "0.10.0" apply true
     
@@ -19,9 +20,30 @@ plugins {
 }
 
 // Apply quality plugins to all subprojects
+fun Project.isV2Module(): Boolean {
+    val v2Roots =
+        listOf(
+            "app-v2",
+            "core",
+            "infra",
+            "feature",
+            "player",
+            "playback",
+            "pipeline",
+        )
+    val projectPath = projectDir.toPath().normalize()
+    return v2Roots.any { root ->
+        projectPath.startsWith(rootDir.resolve(root).toPath())
+    }
+}
+
 subprojects {
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
+    if (isV2Module()) {
+        apply(plugin = "com.autonomousapps.dependency-analysis")
+    }
     
     configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         config.setFrom(rootProject.files("detekt-config.yml"))
@@ -35,11 +57,21 @@ subprojects {
         outputToConsole.set(true)
         outputColorName.set("RED")
         ignoreFailures.set(false)
-        
         filter {
             exclude("**/generated/**")
             exclude("**/build/**")
             exclude("**/reference/**")
+            exclude("**/*.kts")
+        }
+    }
+
+    if (isV2Module()) {
+        configure<com.autonomousapps.DependencyAnalysisSubExtension> {
+            issues {
+                onAny {
+                    severity("fail")
+                }
+            }
         }
     }
 }
