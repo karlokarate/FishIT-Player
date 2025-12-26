@@ -44,22 +44,28 @@ class XtreamPipelineAdapter @Inject constructor(private val apiClient: XtreamApi
     /**
      * Load all VOD items converted to pipeline format.
      *
+     * **CRITICAL:** Uses Int.MAX_VALUE to fetch ALL items from API.
+     * Default API limit (500) would truncate large catalogs.
+     *
      * @param categoryId Optional category filter
-     * @return List of XtreamVodItem
+     * @return List of XtreamVodItem (all items, not limited)
      */
     suspend fun loadVodItems(categoryId: String? = null): List<XtreamVodItem> {
-        val streams = apiClient.getVodStreams(categoryId = categoryId)
+        val streams = apiClient.getVodStreams(categoryId = categoryId, limit = Int.MAX_VALUE)
         return streams.map { it.toPipelineItem() }
     }
 
     /**
      * Load all series containers converted to pipeline format.
      *
+     * **CRITICAL:** Uses Int.MAX_VALUE to fetch ALL items from API.
+     * Default API limit (500) would truncate large catalogs.
+     *
      * @param categoryId Optional category filter
-     * @return List of XtreamSeriesItem
+     * @return List of XtreamSeriesItem (all items, not limited)
      */
     suspend fun loadSeriesItems(categoryId: String? = null): List<XtreamSeriesItem> {
-        val streams = apiClient.getSeries(categoryId = categoryId)
+        val streams = apiClient.getSeries(categoryId = categoryId, limit = Int.MAX_VALUE)
         return streams.map { it.toPipelineItem() }
     }
 
@@ -80,11 +86,14 @@ class XtreamPipelineAdapter @Inject constructor(private val apiClient: XtreamApi
     /**
      * Load all live TV channels converted to pipeline format.
      *
+     * **CRITICAL:** Uses Int.MAX_VALUE to fetch ALL items from API.
+     * Default API limit (500) would truncate large catalogs.
+     *
      * @param categoryId Optional category filter
-     * @return List of XtreamChannel
+     * @return List of XtreamChannel (all items, not limited)
      */
     suspend fun loadLiveChannels(categoryId: String? = null): List<XtreamChannel> {
-        val streams = apiClient.getLiveStreams(categoryId = categoryId)
+        val streams = apiClient.getLiveStreams(categoryId = categoryId, limit = Int.MAX_VALUE)
         return streams.map { it.toPipelineItem() }
     }
 
