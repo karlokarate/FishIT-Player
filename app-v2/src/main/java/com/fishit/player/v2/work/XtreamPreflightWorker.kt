@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.fishit.player.core.catalogsync.SourceActivationStore
-import com.fishit.player.core.catalogsync.SourceId
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.feature.onboarding.domain.XtreamAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamConnectionState

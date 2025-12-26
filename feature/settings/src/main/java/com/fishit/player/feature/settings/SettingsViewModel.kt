@@ -3,12 +3,12 @@ package com.fishit.player.feature.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
-import com.fishit.player.core.catalogsync.SourceActivationSnapshot
-import com.fishit.player.core.catalogsync.SourceActivationState
-import com.fishit.player.core.catalogsync.SourceActivationStore
-import com.fishit.player.core.catalogsync.SourceErrorReason
-import com.fishit.player.core.catalogsync.SourceId
 import com.fishit.player.core.catalogsync.SyncStateObserver
+import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
+import com.fishit.player.core.sourceactivation.SourceActivationState
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceErrorReason
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
 import com.fishit.player.core.metadata.tmdb.TmdbConfigProvider
 import com.fishit.player.infra.cache.CacheManager

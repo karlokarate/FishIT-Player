@@ -3,6 +3,7 @@ package com.fishit.player.infra.data.xtream
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
@@ -309,8 +310,16 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
     // Mapping: ObxVod/ObxSeries/ObxEpisode ↔ RawMediaMetadata
     // ========================================================================
 
-    private fun ObxVod.toRawMediaMetadata(): RawMediaMetadata =
-            RawMediaMetadata(
+    private fun ObxVod.toRawMediaMetadata(): RawMediaMetadata {
+            // Build playback hints for VOD URL construction
+            val hints = buildMap {
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
+                    put(PlaybackHintKeys.Xtream.VOD_ID, vodId.toString())
+                    containerExt?.takeIf { it.isNotBlank() }?.let {
+                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                    }
+            }
+            return RawMediaMetadata(
                     originalTitle = name,
                     mediaType = MediaType.MOVIE,
                     year = year,
@@ -324,8 +333,10 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                             tmdbId?.toIntOrNull()?.let { id ->
                                 ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, id))
                             }
-                                    ?: ExternalIds()
+                                    ?: ExternalIds(),
+                    playbackHints = hints,
             )
+    }
 
     private fun ObxSeries.toRawMediaMetadata(): RawMediaMetadata =
             RawMediaMetadata(
@@ -344,8 +355,22 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                                     ?: ExternalIds()
             )
 
-    private fun ObxEpisode.toRawMediaMetadata(): RawMediaMetadata =
-            RawMediaMetadata(
+    private fun ObxEpisode.toRawMediaMetadata(): RawMediaMetadata {
+            // Build playback hints from stored episode data
+            val hints = buildMap {
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                    put(PlaybackHintKeys.Xtream.SERIES_ID, seriesId.toString())
+                    put(PlaybackHintKeys.Xtream.SEASON_NUMBER, season.toString())
+                    put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episodeNum.toString())
+                    // Episode ID (stream ID) - CRITICAL for URL construction
+                    if (episodeId != 0) {
+                            put(PlaybackHintKeys.Xtream.EPISODE_ID, episodeId.toString())
+                    }
+                    playExt?.takeIf { it.isNotBlank() }?.let {
+                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                    }
+            }
+            return RawMediaMetadata(
                     originalTitle = title ?: "Episode $episodeNum",
                     mediaType = MediaType.SERIES_EPISODE,
                     season = season,
@@ -354,8 +379,10 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     sourceType = SourceType.XTREAM,
                     sourceLabel = "Xtream Episode",
                     sourceId = "xtream:episode:$seriesId:$season:$episodeNum",
-                    thumbnail = imageUrl?.let { ImageRef.Http(it) }
+                    thumbnail = imageUrl?.let { ImageRef.Http(it) },
+                    playbackHints = hints,
             )
+    }
 
     private fun RawMediaMetadata.toObxVod(): ObxVod? {
         // Accept both legacy and current formats:
@@ -364,6 +391,8 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         val vodId =
                 sourceId.removePrefix("xtream:vod:").split(":").firstOrNull()?.toIntOrNull()
                         ?: return null
+        // Extract containerExt from playbackHints
+        val containerExt = playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
         return ObxVod(
                 vodId = vodId,
                 name = originalTitle,
@@ -373,6 +402,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 durationSecs = durationMs?.let { (it / 1000).toInt() },
                 poster = (poster as? ImageRef.Http)?.url,
                 tmdbId = externalIds.tmdb?.id?.toString(),
+                containerExt = containerExt,
                 updatedAt = System.currentTimeMillis()
         )
     }
@@ -398,13 +428,19 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         val seasonNum = parts[1].toIntOrNull() ?: return null
         val episodeNum = parts[2].toIntOrNull() ?: return null
 
+        // Extract episodeId and playExt from playbackHints
+        val episodeStreamId = playbackHints[PlaybackHintKeys.Xtream.EPISODE_ID]?.toIntOrNull() ?: 0
+        val containerExt = playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+
         return ObxEpisode(
                 seriesId = seriesId,
                 season = seasonNum,
                 episodeNum = episodeNum,
+                episodeId = episodeStreamId,
                 title = originalTitle,
                 durationSecs = durationMs?.let { (it / 1000).toInt() },
-                imageUrl = (thumbnail as? ImageRef.Http)?.url
+                imageUrl = (thumbnail as? ImageRef.Http)?.url,
+                playExt = containerExt,
         )
     }
 }

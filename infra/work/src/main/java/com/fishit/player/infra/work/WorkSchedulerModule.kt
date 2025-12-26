@@ -1,6 +1,6 @@
 package com.fishit.player.infra.work
 
-import com.fishit.player.core.catalogsync.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceActivationStore
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

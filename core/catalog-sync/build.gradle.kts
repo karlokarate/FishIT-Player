@@ -26,6 +26,7 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:source-activation-api"))
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":core:persistence")) // For CanonicalMediaRepository
     implementation(project(":infra:logging"))

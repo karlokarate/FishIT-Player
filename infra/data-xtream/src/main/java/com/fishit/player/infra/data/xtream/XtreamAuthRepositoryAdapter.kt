@@ -1,5 +1,7 @@
 package com.fishit.player.infra.data.xtream
 
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamConfig as DomainConfig
@@ -53,6 +55,7 @@ import javax.inject.Singleton
 class XtreamAuthRepositoryAdapter @Inject constructor(
     private val apiClient: XtreamApiClient,
     private val credentialsStore: XtreamCredentialsStore,
+    private val sourceActivationStore: SourceActivationStore,
     @Named("AppLifecycleScope") private val appScope: CoroutineScope,
 ) : XtreamAuthRepository {
 
@@ -77,6 +80,9 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
                 UnifiedLog.d(TAG) { "initialize: API client initialized successfully with capabilities: ${caps.baseUrl}" }
                 // Start observing transport state changes
                 observeTransportStates()
+                // CRITICAL: Set XTREAM as ACTIVE source after successful connection
+                sourceActivationStore.setXtreamActive()
+                UnifiedLog.i(TAG) { "initialize: XTREAM source activated" }
                 Unit
             }
             .onFailure { error ->
@@ -85,6 +91,8 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
                     error.message ?: "Unknown error"
                 )
                 _authState.value = DomainAuthState.Failed(error.message ?: "Unknown error")
+                // Deactivate XTREAM on failure
+                sourceActivationStore.setXtreamInactive(SourceErrorReason.TRANSPORT_ERROR)
             }
     }
 
@@ -98,6 +106,9 @@ class XtreamAuthRepositoryAdapter @Inject constructor(
         apiClient.close()
         _connectionState.value = DomainConnectionState.Disconnected
         _authState.value = DomainAuthState.Idle
+        // Deactivate XTREAM when disconnecting
+        sourceActivationStore.setXtreamInactive()
+        UnifiedLog.i(TAG) { "close: XTREAM source deactivated" }
     }
 
     override suspend fun saveCredentials(config: DomainConfig) {

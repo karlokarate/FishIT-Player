@@ -53,7 +53,17 @@ This section defines the canonical terms used in the v2 codebase. Use these defi
 | **Tooling** | Development and debugging utilities. Lives in `infra/tooling`. | Tooling | Debug services, test utilities |
 | **Logging** | Unified logging infrastructure. Lives in `infra/logging`. | Logging | `UnifiedLog`, `UnifiedLogInitializer` |
 
-### 1.5 Player Terms
+### 1.5 Source Activation Terms
+
+| Term | Definition | Scope | Examples |
+|------|------------|-------|----------|
+| **SourceId** | Enum identifying a source for activation purposes: `XTREAM`, `TELEGRAM`, `IO`. **Note:** This is distinct from `PipelineIdTag` which includes `AUDIOBOOK`. SourceId is for activation state tracking only. | CoreSourceActivation | `SourceId.XTREAM`, `SourceId.TELEGRAM` |
+| **SourceActivationState** | Sealed interface representing source activation: `Inactive`, `Active`, `Error(reason)`. | CoreSourceActivation | `SourceActivationState.Active` |
+| **SourceActivationStore** | Interface for observing and modifying source activation state. Lives in `core/source-activation-api`, implementation in `infra/work`. | CoreSourceActivation | `DefaultSourceActivationStore` |
+| **SourceActivationSnapshot** | Data class containing activation state for all sources (xtream, telegram, io) with computed `activeSources` and `hasActiveSources`. | CoreSourceActivation | `SourceActivationSnapshot.EMPTY` |
+| **SourceErrorReason** | Enum for activation errors: `LOGIN_REQUIRED`, `INVALID_CREDENTIALS`, `PERMISSION_MISSING`, `TRANSPORT_ERROR`. | CoreSourceActivation | Used in `SourceActivationState.Error` |
+
+### 1.6 Player Terms
 
 | Term | Definition | Scope | Examples |
 |------|------------|-------|----------|
@@ -103,9 +113,10 @@ core/                            # Shared core modules (pure Kotlin/Android)
 ├── feature-api/                 # FeatureId, FeatureProvider, FeatureRegistry
 ├── firebase/                    # Firebase integration
 ├── metadata-normalizer/         # Normalizer, TMDB resolver
-├── model/                       # Canonical data classes
+├── model/                       # Canonical data classes (pure data, no store interfaces)
 ├── persistence/                 # ObjectBox entities and setup
 ├── player-model/                # PlaybackContext, PlaybackState, PlaybackError
+├── source-activation-api/       # SourceActivationStore, SourceId, SourceActivationState (API contracts)
 └── ui-imaging/                  # Coil image loading
 
 feature/                         # User-facing feature modules

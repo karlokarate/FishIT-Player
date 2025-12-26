@@ -8,6 +8,19 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### SourceActivation API Module (2025-01-13)
+
+- **refactor(core)**: Extract SourceActivation API to dedicated module `core:source-activation-api`
+  - Created new module `core:source-activation-api` with package `com.fishit.player.core.sourceactivation`
+  - Moved `SourceId`, `SourceErrorReason`, `SourceActivationState`, `SourceActivationStore` from `core:model`
+  - Added `SourceActivationSnapshot` data class for atomic state observation
+  - Removed all typealias re-export shims from `core:catalog-sync`
+  - **Breaking**: Import paths changed from `core.model.source.*` to `core.sourceactivation.*`
+  - **Architectural**: Permanently fixes circular dependency between `catalog-sync` ↔ `data-xtream`
+  - **Architectural**: `core:model` now contains only pure data classes (no store/state interfaces)
+  - Added regression test `SourceActivationStoreTest` for API contract validation
+  - Updated dependencies in: `infra:data-xtream`, `infra:work`, `feature:home`, `feature:settings`, `app-v2`, `core:catalog-sync`
+
 ### SSOT Ingest Worker Bodies (2025-12-19)
 
 - **feat(app-v2/work)**: Implemented full worker chain for catalog_sync_global

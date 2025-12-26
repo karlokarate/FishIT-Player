@@ -1,11 +1,11 @@
 package com.fishit.player.v2.integration
 
-import com.fishit.player.core.catalogsync.SourceActivationSnapshot
-import com.fishit.player.core.catalogsync.SourceActivationState
-import com.fishit.player.core.catalogsync.SourceActivationStore
-import com.fishit.player.core.catalogsync.SourceId
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
+import com.fishit.player.core.sourceactivation.SourceActivationState
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType

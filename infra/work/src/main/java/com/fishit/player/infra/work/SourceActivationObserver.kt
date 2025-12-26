@@ -1,8 +1,8 @@
 package com.fishit.player.infra.work
 
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
-import com.fishit.player.core.catalogsync.SourceActivationSnapshot
-import com.fishit.player.core.catalogsync.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
+import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged

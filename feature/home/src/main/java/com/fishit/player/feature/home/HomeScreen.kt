@@ -69,9 +69,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.fishit.player.core.catalogsync.SourceActivationSnapshot
-import com.fishit.player.core.catalogsync.SourceId
 import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.ui.layout.FishRow

@@ -142,6 +142,26 @@ data class RawMediaMetadata(
      * Example: "Tom Hanks, Robin Wright, Gary Sinise"
      */
     val cast: String? = null,
+    // === Playback Hints (v2) ===
+    /**
+     * Source-specific hints required for playback but NOT part of media identity.
+     *
+     * **Contract:**
+     * - Contains data needed by PlaybackSourceFactory to build playback URL/source
+     * - Does NOT affect canonical identity or deduplication
+     * - Keys are defined in [PlaybackHintKeys] for type-safety
+     * - Values are always strings (factory converts as needed)
+     *
+     * **Use Cases:**
+     * - Xtream episodeId (stream ID distinct from episode number)
+     * - Xtream containerExtension (mp4, mkv, ts)
+     * - Telegram fileId, chatId, messageId
+     *
+     * **Flow:** Pipeline → RawMediaMetadata → MediaSourceRef → PlaybackContext.extras
+     *
+     * @see PlaybackHintKeys
+     */
+    val playbackHints: Map<String, String> = emptyMap(),
 )
 
 /**

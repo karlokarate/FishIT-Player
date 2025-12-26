@@ -2,9 +2,9 @@ package com.fishit.player.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fishit.player.core.catalogsync.SourceActivationSnapshot
-import com.fishit.player.core.catalogsync.SourceActivationStore
 import com.fishit.player.core.catalogsync.SyncStateObserver
+import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
+import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType

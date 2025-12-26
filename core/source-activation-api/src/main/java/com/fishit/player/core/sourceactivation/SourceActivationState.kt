@@ -1,39 +1,11 @@
-package com.fishit.player.core.catalogsync
-
-/**
- * Source identifiers for the three supported pipeline sources.
- *
- * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2 (W-1)
- * - Sources are independent: Xtream, Telegram, IO can be ACTIVE/INACTIVE separately
- * - No source is ever required
- */
-enum class SourceId {
-    XTREAM,
-    TELEGRAM,
-    IO,
-}
-
-/**
- * Error reasons for source activation failures.
- *
- * These map to specific failure conditions that can be surfaced to the UI.
- */
-enum class SourceErrorReason {
-    /** User must log in again */
-    LOGIN_REQUIRED,
-
-    /** Credentials are invalid or expired */
-    INVALID_CREDENTIALS,
-
-    /** Required permission (e.g., storage) is missing */
-    PERMISSION_MISSING,
-
-    /** Network or transport-level error */
-    TRANSPORT_ERROR,
-}
+package com.fishit.player.core.sourceactivation
 
 /**
  * Activation state for a single source.
+ *
+ * **Location:** This interface lives in `core:source-activation-api` to allow both
+ * `catalog-sync` (implementation) and `data-*` modules (activation calls)
+ * to share it without circular dependencies.
  */
 sealed interface SourceActivationState {
     /** Source is not active (user has not configured/enabled it) */

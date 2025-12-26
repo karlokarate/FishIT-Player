@@ -33,6 +33,8 @@ afterEvaluate {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:source-activation-api"))
+    // NOTE: NO dependency on core:catalog-sync - cycle permanently broken.
     // Use api() for persistence to expose generated ObjectBox cursor classes (ObxVod_, ObxSeries_, etc.)
     api(project(":core:persistence"))
     implementation(project(":infra:logging"))

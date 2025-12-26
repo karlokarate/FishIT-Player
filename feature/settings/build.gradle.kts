@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
     implementation(project(":core:firebase"))
+    implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":playback:domain"))

@@ -2,6 +2,7 @@ package com.fishit.player.feature.detail
 
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.playermodel.PlaybackContext
@@ -125,10 +126,19 @@ constructor(
      *
      * The factory uses these to build the stream URL without storing credentials.
      *
+     * **Primary Source: playbackHints**
+     * PlaybackHints are populated by the pipeline during catalog sync and preserved
+     * through the persistence layer. They contain source-specific data needed for
+     * playback URL construction (e.g., episodeId, containerExtension).
+     *
+     * **Fallback: sourceId parsing**
+     * For backwards compatibility with data created before playbackHints were introduced,
+     * we also parse the sourceId to extract identifiers.
+     *
      * **Xtream Extras:**
      * - contentType: "live" | "vod" | "series"
      * - vodId / streamId / seriesId: Content identifier
-     * - episodeId: For series episodes
+     * - episodeId: For series episodes (CRITICAL - from playbackHints)
      * - containerExtension: File extension hint
      *
      * **Telegram Extras:**
@@ -137,13 +147,17 @@ constructor(
      */
     private fun buildExtrasForSource(source: MediaSourceRef): Map<String, String> = buildMap {
         val sourceIdValue = source.sourceId.value
+        val hints = source.playbackHints
 
         when (source.sourceType) {
             SourceType.XTREAM -> {
-                // Parse Xtream source ID: xtream:vod:123, xtream:series:123, xtream:live:123
+                // First, add all playbackHints (authoritative source)
+                putAll(hints)
+
+                // Parse sourceId for backwards compatibility and fill in missing data
                 when {
                     sourceIdValue.startsWith("xtream:vod:") -> {
-                        put("contentType", "vod")
+                        putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
                         // Accept legacy format: xtream:vod:{id}:{ext}
                         val vodId =
                                 sourceIdValue
@@ -151,38 +165,44 @@ constructor(
                                         .split(":")
                                         .firstOrNull()
                                         .orEmpty()
-                        put("vodId", vodId)
+                        putIfAbsent(PlaybackHintKeys.Xtream.VOD_ID, vodId)
                     }
                     sourceIdValue.startsWith("xtream:series:") -> {
-                        put("contentType", "series")
-                        put("seriesId", sourceIdValue.removePrefix("xtream:series:"))
+                        putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                        putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, sourceIdValue.removePrefix("xtream:series:"))
                     }
                     sourceIdValue.startsWith("xtream:episode:") -> {
                         // Format: xtream:episode:seriesId:season:episode
                         val parts = sourceIdValue.removePrefix("xtream:episode:").split(":")
                         if (parts.size >= 3) {
-                            put("contentType", "series")
-                            put("seriesId", parts[0])
-                            put("seasonNumber", parts[1])
-                            put("episodeNumber", parts[2])
+                            putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                            putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, parts[0])
+                            putIfAbsent(PlaybackHintKeys.Xtream.SEASON_NUMBER, parts[1])
+                            putIfAbsent(PlaybackHintKeys.Xtream.EPISODE_NUMBER, parts[2])
+                            // NOTE: episodeId is NOT in sourceId - it MUST come from playbackHints
                         }
                     }
                     sourceIdValue.startsWith("xtream:live:") -> {
-                        put("contentType", "live")
-                        put("streamId", sourceIdValue.removePrefix("xtream:live:"))
+                        putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
+                        putIfAbsent(PlaybackHintKeys.Xtream.STREAM_ID, sourceIdValue.removePrefix("xtream:live:"))
                     }
                 }
 
-                // Add container extension if available from format
-                source.format?.container?.let { put("containerExtension", it) }
+                // Add container extension if available from format (lowest priority)
+                if (!containsKey(PlaybackHintKeys.Xtream.CONTAINER_EXT)) {
+                    source.format?.container?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
+                }
             }
             SourceType.TELEGRAM -> {
-                // Parse Telegram source ID: msg:chatId:messageId
+                // First, add all playbackHints
+                putAll(hints)
+                
+                // Parse Telegram source ID: msg:chatId:messageId (fallback)
                 if (sourceIdValue.startsWith("msg:")) {
                     val parts = sourceIdValue.removePrefix("msg:").split(":")
                     if (parts.size >= 2) {
-                        put("chatId", parts[0])
-                        put("messageId", parts[1])
+                        putIfAbsent(PlaybackHintKeys.Telegram.CHAT_ID, parts[0])
+                        putIfAbsent(PlaybackHintKeys.Telegram.MESSAGE_ID, parts[1])
                     }
                 }
             }
@@ -198,6 +218,13 @@ constructor(
                 // Unknown source types: pass sourceId as generic identifier
                 put("sourceId", sourceIdValue)
             }
+        }
+    }
+
+    /** Helper to put value only if key is absent. */
+    private fun MutableMap<String, String>.putIfAbsent(key: String, value: String) {
+        if (!containsKey(key)) {
+            put(key, value)
         }
     }
 

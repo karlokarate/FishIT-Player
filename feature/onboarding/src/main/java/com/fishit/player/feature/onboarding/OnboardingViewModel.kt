@@ -187,7 +187,11 @@ class OnboardingViewModel
 
         fun connectXtream() {
             val url = _state.value.xtreamUrl
-            UnifiedLog.d(TAG) { "connectXtream: Starting with URL: $url" }
+            // Log only host/port, never credentials (LOGGING_CONTRACT_V2)
+            val safeUrlPreview = runCatching { 
+                java.net.URI(url.trim()).let { uri -> "${uri.scheme ?: "http"}://${uri.host ?: "?"}:${uri.port.takeIf { it > 0 } ?: 80}" }
+            }.getOrElse { "<malformed>" }
+            UnifiedLog.d(TAG) { "connectXtream: Starting with URL host: $safeUrlPreview" }
             
             if (url.isBlank()) {
                 UnifiedLog.w(TAG) { "connectXtream: URL is blank" }
@@ -200,9 +204,9 @@ class OnboardingViewModel
             // Parse credentials from URL
             val credentials = parseXtreamUrl(url)
             if (credentials == null) {
-                UnifiedLog.e(TAG) { "connectXtream: Failed to parse URL: $url" }
+                UnifiedLog.e(TAG) { "connectXtream: Failed to parse URL (host: $safeUrlPreview)" }
                 _state.update {
-                    it.copy(xtreamError = "Invalid Xtream URL. Expected format: http://host:port/get.php?username=X&password=Y")
+                    it.copy(xtreamError = "Invalid Xtream URL. Expected format: http://host:port/get.php?username=X&password=Y or http://user:pass@host:port")
                 }
                 return
             }
@@ -272,10 +276,24 @@ class OnboardingViewModel
          * - http://host:port/get.php?username=X&password=Y&type=m3u_plus
          * - http://host:port/player_api.php?username=X&password=Y
          * - http://username:password@host:port
+         * 
+         * Also handles malformed URLs where '?' is missing (e.g., get.phpusername=...)
+         * by attempting to fix them before parsing.
          */
         fun parseXtreamUrl(url: String): XtreamCredentials? {
             return try {
-                val trimmed = url.trim()
+                var trimmed = url.trim()
+                
+                // Fix common malformed URL: missing '?' before query params
+                // e.g., "get.phpusername=" -> "get.php?username="
+                // e.g., "player_api.phpusername=" -> "player_api.php?username="
+                val malformedPattern = Regex("""(\.php)(username=)""", RegexOption.IGNORE_CASE)
+                if (malformedPattern.containsMatchIn(trimmed)) {
+                    trimmed = malformedPattern.replace(trimmed) { match ->
+                        "${match.groupValues[1]}?${match.groupValues[2]}"
+                    }
+                    UnifiedLog.d(TAG) { "parseXtreamUrl: Fixed malformed URL (added missing '?')" }
+                }
 
                 // Check for userinfo format: http://user:pass@host:port
                 val userinfoPattern = Regex("""^(https?)://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?""")

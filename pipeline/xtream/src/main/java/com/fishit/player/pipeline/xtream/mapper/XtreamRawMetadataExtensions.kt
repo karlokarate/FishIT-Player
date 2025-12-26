@@ -3,6 +3,7 @@ package com.fishit.player.pipeline.xtream.mapper
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
@@ -77,6 +78,14 @@ fun XtreamVodItem.toRawMediaMetadata(
         val externalIds =
                 tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
                         ?: ExternalIds()
+        // Build playback hints for VOD URL construction
+        val hints = buildMap {
+                put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
+                put(PlaybackHintKeys.Xtream.VOD_ID, id.toString())
+                containerExtension?.takeIf { it.isNotBlank() }?.let {
+                        put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                }
+        }
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.MOVIE,
@@ -98,6 +107,8 @@ fun XtreamVodItem.toRawMediaMetadata(
                 poster = toPosterImageRef(authHeaders),
                 backdrop = null, // VOD list doesn't provide backdrop
                 thumbnail = null, // Use poster as fallback in UI
+                // === Playback Hints (v2) ===
+                playbackHints = hints,
         )
 }
 
@@ -180,6 +191,19 @@ fun XtreamEpisode.toRawMediaMetadata(
         val externalIds =
                 seriesTmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) }
                         ?: ExternalIds()
+        // Build playback hints for episode URL construction
+        // **Critical:** episodeId (this.id) is the stream ID needed for playback URL
+        val hints = buildMap {
+                put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                put(PlaybackHintKeys.Xtream.SERIES_ID, seriesId.toString())
+                put(PlaybackHintKeys.Xtream.SEASON_NUMBER, seasonNumber.toString())
+                put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episodeNumber.toString())
+                // Episode ID (stream ID) - CRITICAL for URL construction
+                put(PlaybackHintKeys.Xtream.EPISODE_ID, id.toString())
+                containerExtension?.takeIf { it.isNotBlank() }?.let {
+                        put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                }
+        }
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.SERIES_EPISODE,
@@ -201,6 +225,8 @@ fun XtreamEpisode.toRawMediaMetadata(
                 poster = null, // Episodes don't have poster; inherit from series
                 backdrop = null,
                 thumbnail = toThumbnailImageRef(authHeaders),
+                // === Playback Hints (v2) ===
+                playbackHints = hints,
         )
 }
 
@@ -220,6 +246,14 @@ fun XtreamChannel.toRawMediaMetadata(
 ): RawMediaMetadata {
         // Clean Unicode decorators from live channel names
         val rawTitle = cleanLiveChannelName(name)
+        // Build playback hints for live stream URL construction
+        val hints = buildMap {
+                put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
+                put(PlaybackHintKeys.Xtream.STREAM_ID, id.toString())
+                containerExtension?.takeIf { it.isNotBlank() }?.let {
+                        put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                }
+        }
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = MediaType.LIVE, // Live channels - NO year/scene parsing needed
@@ -239,6 +273,8 @@ fun XtreamChannel.toRawMediaMetadata(
                 poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
                 backdrop = null,
                 thumbnail = toLogoImageRef(authHeaders), // Thumbnail same as logo
+                // === Playback Hints (v2) ===
+                playbackHints = hints,
         )
 }
 
@@ -339,6 +375,16 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 genres = genres,
                 director = director,
                 cast = cast,
+                // === Playback Hints (v2) ===
+                playbackHints = buildMap {
+                        put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
+                        put(PlaybackHintKeys.Xtream.VOD_ID, streamId.toString())
+                        movieData?.containerExtension?.takeIf { it.isNotBlank() }?.let {
+                                put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                        } ?: vodItem.containerExtension?.takeIf { it.isNotBlank() }?.let {
+                                put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                        }
+                },
         )
 }
 

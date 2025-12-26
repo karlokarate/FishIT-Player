@@ -25,6 +25,7 @@ android {
 
 dependencies {
     // Core dependencies
+    implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
     implementation(project(":infra:logging"))
 

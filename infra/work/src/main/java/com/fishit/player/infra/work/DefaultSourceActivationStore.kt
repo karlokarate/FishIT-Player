@@ -6,11 +6,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.fishit.player.core.catalogsync.SourceActivationSnapshot
-import com.fishit.player.core.catalogsync.SourceActivationState
-import com.fishit.player.core.catalogsync.SourceActivationStore
-import com.fishit.player.core.catalogsync.SourceErrorReason
-import com.fishit.player.core.catalogsync.SourceId
+import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
+import com.fishit.player.core.sourceactivation.SourceActivationState
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceErrorReason
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow

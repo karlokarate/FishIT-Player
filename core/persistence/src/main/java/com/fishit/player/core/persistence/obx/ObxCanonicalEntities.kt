@@ -194,6 +194,21 @@ data class ObxMediaSourceRef(
         var playbackUri: String? = null,
         /** Original poster URL from this source */
         var posterUrl: String? = null,
+        /**
+         * JSON-serialized playback hints (source-specific data for URL construction).
+         *
+         * Contains data needed by PlaybackSourceFactory that is NOT part of media identity.
+         * Examples:
+         * - Xtream episodeId (stream ID different from episode number)
+         * - Xtream containerExtension (mp4, mkv, ts)
+         * - Telegram fileId, chatId, messageId
+         *
+         * Format: {"key":"value",...} using keys from PlaybackHintKeys
+         * Empty map serialized as null to save space.
+         *
+         * @see com.fishit.player.core.model.PlaybackHintKeys
+         */
+        var playbackHintsJson: String? = null,
         // === Timestamps ===
         @Index var addedAt: Long = System.currentTimeMillis(),
 ) {

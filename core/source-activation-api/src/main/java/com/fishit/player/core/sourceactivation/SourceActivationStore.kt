@@ -1,4 +1,4 @@
-package com.fishit.player.core.catalogsync
+package com.fishit.player.core.sourceactivation
 
 import kotlinx.coroutines.flow.Flow
 
@@ -15,7 +15,11 @@ import kotlinx.coroutines.flow.Flow
  * the catalog sync scheduler should be notified to enqueue/cancel work accordingly.
  *
  * **Important:** This store does NOT trigger syncs directly. It only maintains state.
- * Scheduling logic belongs in [SourceActivationObserver] which reacts to state changes.
+ * Scheduling logic belongs in SourceActivationObserver which reacts to state changes.
+ *
+ * **Location:** This interface lives in `core:source-activation-api` to allow both
+ * `catalog-sync` (implementation) and `data-*` modules (activation calls)
+ * to share it without circular dependencies. The implementation lives in `infra:work`.
  */
 interface SourceActivationStore {
     /**

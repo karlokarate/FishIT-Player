@@ -44,6 +44,15 @@ data class MediaSourceRef(
     val durationMs: Long? = null, // Source-specific duration!
     val addedAt: Long = System.currentTimeMillis(),
     val priority: Int = 0,
+    /**
+     * Source-specific hints required for playback.
+     *
+     * Copied from [RawMediaMetadata.playbackHints] during source linking.
+     * Used by PlaybackSourceFactory to build playback URL/source.
+     *
+     * @see PlaybackHintKeys
+     */
+    val playbackHints: Map<String, String> = emptyMap(),
 ) {
     /** Display badge for this source type. */
     val badge: SourceBadge
