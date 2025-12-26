@@ -69,9 +69,10 @@ fun XtreamVodItem.toRawMediaMetadata(
 ): RawMediaMetadata {
         val rawTitle = name
         val rawYear: Int? = null // Xtream VOD list doesn't include year; detail fetch required
-        // Encode containerExtension in sourceId for playback URL construction
-        // Format: xtream:vod:{id}:{ext} or xtream:vod:{id} if no extension
-        val sourceIdWithExt = containerExtension?.let { "xtream:vod:$id:$it" } ?: "xtream:vod:$id"
+        // Stable source ID format (contract): xtream:vod:{id}
+        // Container extension is *format*, not identity.
+        // Playback can infer a default extension or use detail fetch.
+        val sourceIdStable = "xtream:vod:$id"
         // Build typed TMDB reference for movies
         val externalIds =
                 tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
@@ -86,7 +87,7 @@ fun XtreamVodItem.toRawMediaMetadata(
                 externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream VOD",
-                sourceId = sourceIdWithExt,
+                sourceId = sourceIdStable,
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
                 // === Timing (v2) - for "Recently Added" sorting ===
@@ -171,10 +172,10 @@ fun XtreamEpisode.toRawMediaMetadata(
         val effectiveSeriesName = seriesName ?: seriesNameOverride
         val rawTitle = title.ifBlank { effectiveSeriesName ?: "Episode $episodeNumber" }
         val rawYear: Int? = null // Episodes typically don't have year; inherit from series
-        // Encode containerExtension in sourceId for playback URL construction
-        // Format: xtream:episode:{id}:{ext} or xtream:episode:{id} if no extension
-        val sourceIdWithExt =
-                containerExtension?.let { "xtream:episode:$id:$it" } ?: "xtream:episode:$id"
+        // Stable source ID format used across v2:
+        // xtream:episode:{seriesId}:{season}:{episode}
+        // (episode stream id is stored in provider tables, not in the identity string)
+        val sourceIdStable = "xtream:episode:$seriesId:$seasonNumber:$episodeNumber"
         // Build typed TMDB reference for episodes (uses series TMDB ID with TV type)
         val externalIds =
                 seriesTmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) }
@@ -189,7 +190,7 @@ fun XtreamEpisode.toRawMediaMetadata(
                 externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
-                sourceId = sourceIdWithExt,
+                sourceId = sourceIdStable,
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
                 // === Timing (v2) - for "Recently Added" sorting ===
@@ -255,8 +256,8 @@ fun XtreamChannel.toRawMediaMetadata(
  * - IMDB/TMDB IDs
  * - YouTube trailer URLs
  *
- * Use this for detail screens where full metadata is needed.
- * For list views, use XtreamVodItem.toRawMediaMetadata() instead.
+ * Use this for detail screens where full metadata is needed. For list views, use
+ * XtreamVodItem.toRawMediaMetadata() instead.
  *
  * @param vodItem The original VOD item (for stream_id and container_extension)
  * @param authHeaders Optional headers for image URL authentication
@@ -270,10 +271,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
         val movieData = movieData
 
         // Use info block title, fall back to movie_data name, then original vodItem name
-        val rawTitle = infoBlock?.name
-                ?: infoBlock?.originalName
-                ?: movieData?.name
-                ?: vodItem.name
+        val rawTitle = infoBlock?.name ?: infoBlock?.originalName ?: movieData?.name ?: vodItem.name
 
         // Extract year from info block
         val rawYear = infoBlock?.year?.toIntOrNull()
@@ -282,24 +280,23 @@ fun XtreamVodInfo.toRawMediaMetadata(
         val durationMs = infoBlock?.durationSecs?.let { it * 1000L }
 
         // Rating: prefer rating string parsed, fall back to rating5Based * 2
-        val rating = infoBlock?.rating?.toDoubleOrNull()
-                ?: infoBlock?.rating5Based?.let { it * 2.0 }
-                ?: vodItem.rating
+        val rating =
+                infoBlock?.rating?.toDoubleOrNull()
+                        ?: infoBlock?.rating5Based?.let { it * 2.0 } ?: vodItem.rating
 
-        // Build source ID with container extension
-        val containerExt = movieData?.containerExtension ?: vodItem.containerExtension
+        // Stable source ID format (contract): xtream:vod:{streamId}
+        // Container extension is *format*, not identity.
         val streamId = movieData?.streamId ?: vodItem.id
-        val sourceIdWithExt = containerExt?.let { "xtream:vod:$streamId:$it" } ?: "xtream:vod:$streamId"
+        val sourceIdStable = "xtream:vod:$streamId"
 
         // Build TMDB reference - prefer info block, fall back to vodItem
         val tmdbId = infoBlock?.tmdbId?.toIntOrNull() ?: vodItem.tmdbId
-        val externalIds = tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
-                ?: ExternalIds()
+        val externalIds =
+                tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
+                        ?: ExternalIds()
 
         // Rich metadata from info block
-        val plot = infoBlock?.plot
-                ?: infoBlock?.description
-                ?: infoBlock?.overview
+        val plot = infoBlock?.plot ?: infoBlock?.description ?: infoBlock?.overview
 
         val genres = infoBlock?.genre ?: infoBlock?.genres
 
@@ -308,10 +305,9 @@ fun XtreamVodInfo.toRawMediaMetadata(
         val cast = infoBlock?.cast ?: infoBlock?.actors
 
         // Images: use info block images if available, fall back to vodItem
-        val posterUrl = infoBlock?.movieImage
-                ?: infoBlock?.posterPath
-                ?: infoBlock?.cover
-                ?: infoBlock?.coverBig
+        val posterUrl =
+                infoBlock?.movieImage
+                        ?: infoBlock?.posterPath ?: infoBlock?.cover ?: infoBlock?.coverBig
 
         return RawMediaMetadata(
                 originalTitle = rawTitle,
@@ -323,7 +319,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream VOD",
-                sourceId = sourceIdWithExt,
+                sourceId = sourceIdStable,
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.XTREAM,
                 // === Timing (v2) ===
@@ -332,8 +328,11 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 rating = rating,
                 // === ImageRef ===
                 poster = posterUrl?.let { createImageRef(it, authHeaders) }
-                        ?: vodItem.toPosterImageRef(authHeaders),
-                backdrop = infoBlock?.backdropPath?.firstOrNull()?.let { createImageRef(it, authHeaders) },
+                                ?: vodItem.toPosterImageRef(authHeaders),
+                backdrop =
+                        infoBlock?.backdropPath?.firstOrNull()?.let {
+                                createImageRef(it, authHeaders)
+                        },
                 thumbnail = null,
                 // === Rich metadata (v2) ===
                 plot = plot,
@@ -344,10 +343,12 @@ fun XtreamVodInfo.toRawMediaMetadata(
 }
 
 /**
- * Creates an ImageRef from a URL string.
- * Helper for XtreamVodInfo mapping where we have raw URLs.
+ * Creates an ImageRef from a URL string. Helper for XtreamVodInfo mapping where we have raw URLs.
  */
-private fun createImageRef(url: String, authHeaders: Map<String, String>): com.fishit.player.core.model.ImageRef? {
+private fun createImageRef(
+        url: String,
+        authHeaders: Map<String, String>
+): com.fishit.player.core.model.ImageRef? {
         if (url.isBlank()) return null
         return com.fishit.player.core.model.ImageRef.Http(
                 url = url,

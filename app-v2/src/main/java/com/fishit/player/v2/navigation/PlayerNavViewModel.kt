@@ -91,7 +91,11 @@ class PlayerNavViewModel
                     when {
                         sourceIdValue.startsWith("xtream:vod:") -> {
                             put(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE, XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD)
-                            put(XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID, sourceIdValue.removePrefix("xtream:vod:"))
+                            // Accept legacy format: xtream:vod:{id}:{ext}
+                            put(
+                                XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID,
+                                sourceIdValue.removePrefix("xtream:vod:").split(":").firstOrNull().orEmpty(),
+                            )
                         }
                         sourceIdValue.startsWith("xtream:series:") -> {
                             put(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE, XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES)

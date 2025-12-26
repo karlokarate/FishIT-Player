@@ -519,8 +519,20 @@ class DefaultXtreamApiClient(
         }
 
     /**
-     * Fetch streams with intelligent category_id fallback. Order: category_id=* → category_id=0 →
-     * no category_id
+     * Fetch streams with intelligent category_id fallback.
+     *
+     * Some Xtream panels behave oddly depending on whether `category_id` is present. In practice
+     * we have seen:
+     * - `category_id=*` returning a truncated list (often exactly [DEFAULT_LIMIT] items)
+     * - `category_id=0` working on some panels
+     * - no `category_id` returning the full list on others
+     *
+     * Strategy:
+     * - If a concrete [categoryId] is provided → request that category only.
+     * - If no category is provided → try without `category_id` first.
+     *   - If we get a non-empty result AND it doesn't look suspiciously truncated, accept it.
+     *   - If the result is empty OR exactly [DEFAULT_LIMIT], probe `*` and `0` and use the
+     *     largest non-empty result.
      */
     private suspend fun <T> fetchStreamsWithCategoryFallback(
         action: String,
@@ -534,27 +546,26 @@ class DefaultXtreamApiClient(
             return parseJsonArray(body, mapper)
         }
 
-        // No category = try fallback sequence
-        // 1. Try category_id=*
-        val starUrl = buildPlayerApiUrl(action, mapOf("category_id" to "*"))
-        val starBody = runCatching { fetchRaw(starUrl, isEpg = false) }.getOrNull()
-        if (!starBody.isNullOrEmpty()) {
-            val result = parseJsonArray(starBody, mapper)
-            if (result.isNotEmpty()) return result
+        suspend fun fetchAndParse(params: Map<String, String>?): List<T> {
+            val url = if (params == null) buildPlayerApiUrl(action) else buildPlayerApiUrl(action, params)
+            val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
+            if (body.isNullOrEmpty()) return emptyList()
+            return parseJsonArray(body, mapper)
         }
 
-        // 2. Try category_id=0
-        val zeroUrl = buildPlayerApiUrl(action, mapOf("category_id" to "0"))
-        val zeroBody = runCatching { fetchRaw(zeroUrl, isEpg = false) }.getOrNull()
-        if (!zeroBody.isNullOrEmpty()) {
-            val result = parseJsonArray(zeroBody, mapper)
-            if (result.isNotEmpty()) return result
-        }
+        // 1) Prefer plain request (no category_id)
+        val plain = fetchAndParse(null)
+        // If it's clearly non-empty and not a classic truncation size, accept immediately.
+        if (plain.isNotEmpty() && plain.size != DEFAULT_LIMIT) return plain
 
-        // 3. Try without category_id
-        val plainUrl = buildPlayerApiUrl(action)
-        val plainBody = fetchRaw(plainUrl, isEpg = false) ?: return emptyList()
-        return parseJsonArray(plainBody, mapper)
+        // 2) Probe fallbacks when empty OR suspiciously truncated
+        val star = fetchAndParse(mapOf("category_id" to "*"))
+        val zero = fetchAndParse(mapOf("category_id" to "0"))
+
+        return listOf(plain, star, zero)
+            .filter { it.isNotEmpty() }
+            .maxByOrNull { it.size }
+            ?: emptyList()
     }
 
     // =========================================================================

@@ -33,7 +33,7 @@ class XtreamRawMetadataExtensionsTest {
                 assertEquals("", raw.globalId)
                 assertEquals(MediaType.MOVIE, raw.mediaType)
                 assertEquals(SourceType.XTREAM, raw.sourceType)
-                assertEquals("xtream:vod:123:mkv", raw.sourceId)
+                assertEquals("xtream:vod:123", raw.sourceId)
                 assertEquals("Xtream VOD", raw.sourceLabel)
                 assertNull(raw.year) // Not available in list
                 assertNull(raw.season)
@@ -81,7 +81,7 @@ class XtreamRawMetadataExtensionsTest {
                 assertEquals("", raw.globalId)
                 assertEquals(MediaType.SERIES_EPISODE, raw.mediaType)
                 assertEquals(SourceType.XTREAM, raw.sourceType)
-                assertEquals("xtream:episode:789:mp4", raw.sourceId)
+                assertEquals("xtream:episode:456:1:5", raw.sourceId)
                 assertEquals("Xtream: Breaking Bad", raw.sourceLabel)
                 assertEquals(1, raw.season)
                 assertEquals(5, raw.episode)

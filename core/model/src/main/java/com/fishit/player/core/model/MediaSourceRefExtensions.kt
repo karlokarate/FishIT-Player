@@ -90,7 +90,9 @@ fun createXtreamEpisodeSourceRef(
     containerExt: String? = null,
     priority: Int = 0,
 ): MediaSourceRef {
-    val sourceId = "xtream:series:$seriesId:S${season}E$episode"
+    // Stable episode identity used across v2:
+    // xtream:episode:{seriesId}:{season}:{episode}
+    val sourceId = "xtream:episode:$seriesId:$season:$episode"
 
     return MediaSourceRef(
         sourceType = SourceType.XTREAM,
@@ -242,24 +244,43 @@ object SourceIdParser {
     }
 
     /**
-     * Extract Xtream series info from source ID. e.g., "xtream:series:123:S01E05" → Triple(123, 1,
-     * 5)
+     * Extract Xtream episode identity.
+     *
+     * Supported formats:
+     * - xtream:episode:{seriesId}:{season}:{episode}
+     * - xtream:episode:{seriesId}:{season}:{episode}:... (extra segments ignored)
+     * - (legacy) xtream:series:{seriesId}:S01E05
      */
     fun parseXtreamEpisodeId(sourceId: String): Triple<Int, Int, Int>? {
         if (!isXtream(sourceId)) return null
-        if (!sourceId.contains(":series:")) return null
 
-        val regex = Regex("""xtream:series:(\d+):S(\d+)E(\d+)""")
-        val match = regex.find(sourceId) ?: return null
-
-        return try {
-            Triple(
-                match.groupValues[1].toInt(),
-                match.groupValues[2].toInt(),
-                match.groupValues[3].toInt(),
-            )
-        } catch (e: Exception) {
-            null
+        // Preferred v2 format: xtream:episode:seriesId:season:episode
+        if (sourceId.contains(":episode:")) {
+            val parts = sourceId.split(":")
+            // [xtream, episode, seriesId, season, episode, ...]
+            if (parts.size >= 5) {
+                val seriesId = parts[2].toIntOrNull() ?: return null
+                val season = parts[3].toIntOrNull() ?: return null
+                val episode = parts[4].toIntOrNull() ?: return null
+                return Triple(seriesId, season, episode)
+            }
         }
+
+        // Legacy format: xtream:series:{seriesId}:S01E05
+        if (sourceId.contains(":series:")) {
+            val regex = Regex("""xtream:series:(\d+):S(\d+)E(\d+)""")
+            val match = regex.find(sourceId) ?: return null
+            return try {
+                Triple(
+                    match.groupValues[1].toInt(),
+                    match.groupValues[2].toInt(),
+                    match.groupValues[3].toInt(),
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        return null
     }
 }
