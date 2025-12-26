@@ -247,12 +247,10 @@ fun XtreamChannel.toRawMediaMetadata(
         // Clean Unicode decorators from live channel names
         val rawTitle = cleanLiveChannelName(name)
         // Build playback hints for live stream URL construction
+        // Note: Live channels don't have containerExtension - streams are typically .ts or .m3u8
         val hints = buildMap {
                 put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
                 put(PlaybackHintKeys.Xtream.STREAM_ID, id.toString())
-                containerExtension?.takeIf { it.isNotBlank() }?.let {
-                        put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
-                }
         }
         return RawMediaMetadata(
                 originalTitle = rawTitle,
