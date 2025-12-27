@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
@@ -428,13 +429,17 @@ class DefaultXtreamApiClient(
             withContext(io) {
                 val url = buildPlayerApiUrl(action)
                 val body = fetchRaw(url, isEpg = false) ?: return@withContext emptyList()
-                parseJsonArray(body) { obj ->
-                    XtreamCategory(
-                            categoryId = obj.stringOrNull("category_id"),
-                            categoryName = obj.stringOrNull("category_name"),
-                            parentId = obj.intOrNull("parent_id"),
-                    )
-                }
+                parseJsonArray(
+                        body,
+                        { obj ->
+                            XtreamCategory(
+                                    categoryId = obj.stringOrNull("category_id"),
+                                    categoryName = obj.stringOrNull("category_name"),
+                                    parentId = obj.intOrNull("parent_id"),
+                            )
+                        },
+                        action
+                )
             }
 
     // =========================================================================
@@ -555,12 +560,12 @@ class DefaultXtreamApiClient(
      * Strategy (ported from v1 XtreamClient.sliceArray):
      * - If a concrete [categoryId] is provided → request that category only.
      * - If no category is provided:
-     *   1. Try `category_id=*` first (works on most panels, returns ALL items)
-     *   2. If empty → try `category_id=0`
-     *   3. If still empty → try without `category_id` as last resort
+     * 1. Try `category_id=*` first (works on most panels, returns ALL items)
+     * 2. If empty → try `category_id=0`
+     * 3. If still empty → try without `category_id` as last resort
      *
-     * This order is CRITICAL: many panels truncate results when no category_id is provided,
-     * but return the full catalog with `category_id=*`.
+     * This order is CRITICAL: many panels truncate results when no category_id is provided, but
+     * return the full catalog with `category_id=*`.
      */
     private suspend fun <T> fetchStreamsWithCategoryFallback(
             action: String,
@@ -571,7 +576,7 @@ class DefaultXtreamApiClient(
             // Specific category requested
             val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
             val body = fetchRaw(url, isEpg = false) ?: return emptyList()
-            return parseJsonArray(body, mapper)
+            return parseJsonArray(body, mapper, action)
         }
 
         suspend fun fetchAndParse(params: Map<String, String>?): List<T> {
@@ -580,26 +585,32 @@ class DefaultXtreamApiClient(
                     else buildPlayerApiUrl(action, params)
             val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
             if (body.isNullOrEmpty()) return emptyList()
-            return parseJsonArray(body, mapper)
+            return parseJsonArray(body, mapper, action)
         }
 
         // 1) Try category_id=* first (works on most panels, returns ALL items)
         val star = fetchAndParse(mapOf("category_id" to "*"))
         if (star.isNotEmpty()) {
-            UnifiedLog.d(TAG) { "fetchStreamsWithCategoryFallback($action): got ${star.size} items with category_id=*" }
+            UnifiedLog.d(TAG) {
+                "fetchStreamsWithCategoryFallback($action): got ${star.size} items with category_id=*"
+            }
             return star
         }
 
         // 2) If empty → try category_id=0
         val zero = fetchAndParse(mapOf("category_id" to "0"))
         if (zero.isNotEmpty()) {
-            UnifiedLog.d(TAG) { "fetchStreamsWithCategoryFallback($action): got ${zero.size} items with category_id=0" }
+            UnifiedLog.d(TAG) {
+                "fetchStreamsWithCategoryFallback($action): got ${zero.size} items with category_id=0"
+            }
             return zero
         }
 
         // 3) As last resort → try without category_id
         val plain = fetchAndParse(null)
-        UnifiedLog.d(TAG) { "fetchStreamsWithCategoryFallback($action): got ${plain.size} items without category_id (fallback)" }
+        UnifiedLog.d(TAG) {
+            "fetchStreamsWithCategoryFallback($action): got ${plain.size} items without category_id (fallback)"
+        }
         return plain
     }
 
@@ -1169,29 +1180,169 @@ class DefaultXtreamApiClient(
     // Internal: JSON Parsing
     // =========================================================================
 
+    /**
+     * Parse JSON response into a list of objects.
+     *
+     * **Smart Response Handling:** Some Xtream panels return different JSON shapes for the same
+     * endpoint:
+     * - Standard: `[{item1}, {item2}, ...]` (direct array)
+     * - Alternative: `{"series": [{item1}, ...]}` or `{"vod": [...]}` (object with array field)
+     *
+     * This parser handles both cases by:
+     * 1. Trying to parse as direct array first
+     * 2. If it's an object, looking for common array field names
+     * 3. Logging the response shape for debugging
+     *
+     * @param body The raw JSON response body
+     * @param mapper Function to map each JSON object to the target type
+     * @param actionHint Optional action name for debug logging (e.g., "get_series")
+     * @return List of parsed items, empty if parsing fails
+     */
     private fun <T> parseJsonArray(
             body: String,
             mapper: (JsonObject) -> T,
+            actionHint: String? = null,
     ): List<T> {
-        val root = runCatching { json.parseToJsonElement(body) }.getOrNull() ?: return emptyList()
-        if (root !is JsonArray) return emptyList()
-        return root.mapNotNull { el ->
-            val obj = el.jsonObjectOrNull() ?: return@mapNotNull null
-            runCatching { mapper(obj) }.getOrNull()
+        val root = runCatching { json.parseToJsonElement(body) }.getOrNull()
+        if (root == null) {
+            UnifiedLog.w(TAG) { "parseJsonArray($actionHint): Failed to parse JSON" }
+            return emptyList()
         }
+
+        // Case 1: Direct array response (most common)
+        if (root is JsonArray) {
+            var successCount = 0
+            var failCount = 0
+            val results =
+                    root.mapNotNull { el ->
+                        val obj = el.jsonObjectOrNull() ?: return@mapNotNull null
+                        runCatching { mapper(obj) }
+                                .onFailure { e ->
+                                    failCount++
+                                    // Log first few failures to help debug parsing issues
+                                    if (failCount <= 3) {
+                                        val preview = obj.toString().take(200)
+                                        UnifiedLog.w(TAG) {
+                                            "parseJsonArray($actionHint): Mapper failed on item $failCount: ${e.message}, preview: $preview"
+                                        }
+                                    }
+                                }
+                                .onSuccess { successCount++ }
+                                .getOrNull()
+                    }
+            if (failCount > 0) {
+                UnifiedLog.w(TAG) {
+                    "parseJsonArray($actionHint): $failCount/${ root.size} items failed mapping, $successCount succeeded"
+                }
+            }
+            return results
+        }
+
+        // Case 2: Object response with array field
+        // Some panels wrap arrays in objects like {"series": [...]} or {"vod_streams": [...]}
+        if (root is JsonObject) {
+            // Log the response shape for debugging (first 300 chars, redacted)
+            val preview =
+                    body.take(300)
+                            .replace(Regex("""(username|password|api_key)[^,}\]]*"""), "$1=***")
+            UnifiedLog.d(TAG) {
+                "parseJsonArray($actionHint): Object response, shape preview: $preview${if (body.length > 300) "..." else ""}"
+            }
+
+            // Common array field names used by different panels
+            val arrayFieldCandidates =
+                    listOf(
+                            // Series-specific
+                            "series",
+                            "series_list",
+                            "series_streams",
+                            // VOD-specific
+                            "vod",
+                            "vod_streams",
+                            "movies",
+                            "movie_streams",
+                            // Live-specific
+                            "live",
+                            "live_streams",
+                            "channels",
+                            // Generic
+                            "streams",
+                            "data",
+                            "items",
+                            "list",
+                            "result",
+                            "results"
+                    )
+
+            for (fieldName in arrayFieldCandidates) {
+                val arrayField = root[fieldName]
+                if (arrayField is JsonArray && arrayField.isNotEmpty()) {
+                    UnifiedLog.i(TAG) {
+                        "parseJsonArray($actionHint): Found ${arrayField.size} items in '$fieldName' field"
+                    }
+                    return arrayField.mapNotNull { el ->
+                        val obj = el.jsonObjectOrNull() ?: return@mapNotNull null
+                        runCatching { mapper(obj) }.getOrNull()
+                    }
+                }
+            }
+
+            // Log available keys if no array field found
+            val keys = root.keys.take(10).joinToString(", ")
+            UnifiedLog.w(TAG) {
+                "parseJsonArray($actionHint): Object has no recognized array field. Keys: [$keys]"
+            }
+        }
+
+        UnifiedLog.w(TAG) {
+            "parseJsonArray($actionHint): Unexpected JSON type: ${root::class.simpleName}"
+        }
+        return emptyList()
     }
 
     private fun JsonElement.jsonObjectOrNull(): JsonObject? = runCatching { jsonObject }.getOrNull()
 
-    private fun JsonObject.stringOrNull(key: String): String? =
-            this[key]?.jsonPrimitive?.contentOrNull
+    /**
+     * Safe string extraction that handles edge cases gracefully.
+     *
+     * The Xtream API is inconsistent - some fields like `backdrop_path` can be either a string OR
+     * an array depending on the panel. This method:
+     * - Returns the string value if it's a primitive
+     * - Returns the first element if it's an array of strings
+     * - Returns null for objects, null values, or empty arrays
+     *
+     * This prevents parsing failures that would skip entire items.
+     */
+    private fun JsonObject.stringOrNull(key: String): String? {
+        val element = this[key] ?: return null
+        return when {
+            // Direct primitive string
+            element is JsonPrimitive -> element.contentOrNull
+            // Array of strings - take first element (common for backdrop_path)
+            element is JsonArray && element.isNotEmpty() -> {
+                element.firstOrNull()?.jsonPrimitive?.contentOrNull
+            }
+            else -> null
+        }
+    }
 
-    private fun JsonObject.intOrNull(key: String): Int? = this[key]?.jsonPrimitive?.intOrNull
+    /** Safe int extraction - only works with primitive values. */
+    private fun JsonObject.intOrNull(key: String): Int? {
+        val element = this[key] ?: return null
+        return if (element is JsonPrimitive) element.intOrNull else null
+    }
 
-    private fun JsonObject.longOrNull(key: String): Long? = this[key]?.jsonPrimitive?.longOrNull
+    /** Safe long extraction - only works with primitive values. */
+    private fun JsonObject.longOrNull(key: String): Long? {
+        val element = this[key] ?: return null
+        return if (element is JsonPrimitive) element.longOrNull else null
+    }
 
-    private fun JsonObject.doubleOrNull(key: String): Double? =
-            this[key]?.jsonPrimitive?.doubleOrNull
+    /** Safe double extraction - only works with primitive values. */
+    private fun JsonObject.doubleOrNull(key: String): Double? {
+        val element = this[key] ?: return null
+        return if (element is JsonPrimitive) element.doubleOrNull else null
+    }
 
     // =========================================================================
     // Internal: Discovery

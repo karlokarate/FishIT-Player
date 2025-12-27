@@ -358,58 +358,112 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         }
 
     // ========================================================================
-    // Private Upsert Helpers
+    // Private Upsert Helpers (Batch-Optimized)
     // ========================================================================
 
+    /**
+     * Batch upsert VOD items with optimized ID lookup.
+     *
+     * **Performance Optimization:**
+     * Instead of N queries (one per item), we:
+     * 1. Collect all vodIds from the batch
+     * 2. Load ALL existing entities with those IDs in ONE query
+     * 3. Build a lookup map for O(1) access
+     * 4. Map new items to preserve existing ObjectBox IDs
+     * 5. Put all in one batch
+     *
+     * This reduces 43,000 queries to 1 query for a 43k VOD catalog.
+     */
     private fun upsertVods(vods: List<ObxVod>) {
-        val toUpsert =
-                vods.map { vod ->
-                    val existing =
-                            vodBox.query(ObxVod_.vodId.equal(vod.vodId.toLong()))
-                                    .build()
-                                    .findFirst()
-                    if (existing != null) vod.copy(id = existing.id) else vod
-                }
+        if (vods.isEmpty()) return
+        
+        // Step 1: Collect all vodIds we need to check
+        val vodIds = vods.map { it.vodId.toLong() }.toLongArray()
+        
+        // Step 2: Load all existing entities in ONE query
+        val existingEntities = vodBox.query(ObxVod_.vodId.oneOf(vodIds))
+            .build()
+            .find()
+        
+        // Step 3: Build lookup map (vodId → ObjectBox entity id)
+        val existingIdMap = existingEntities.associateBy({ it.vodId }, { it.id })
+        
+        // Step 4: Map new items, preserving existing IDs for upsert
+        val toUpsert = vods.map { vod ->
+            val existingId = existingIdMap[vod.vodId]
+            if (existingId != null && existingId > 0) {
+                vod.copy(id = existingId)
+            } else {
+                vod
+            }
+        }
+        
+        // Step 5: Batch put
         vodBox.put(toUpsert)
+        UnifiedLog.d(TAG, "upsertVods: ${vods.size} items (${existingEntities.size} updates, ${vods.size - existingEntities.size} inserts)")
     }
 
+    /**
+     * Batch upsert Series items with optimized ID lookup.
+     */
     private fun upsertSeriesEntities(series: List<ObxSeries>) {
-        val toUpsert =
-                series.map { s ->
-                    val existing =
-                            seriesBox
-                                    .query(ObxSeries_.seriesId.equal(s.seriesId.toLong()))
-                                    .build()
-                                    .findFirst()
-                    if (existing != null) s.copy(id = existing.id) else s
-                }
+        if (series.isEmpty()) return
+        
+        val seriesIds = series.map { it.seriesId.toLong() }.toLongArray()
+        val existingEntities = seriesBox.query(ObxSeries_.seriesId.oneOf(seriesIds))
+            .build()
+            .find()
+        val existingIdMap = existingEntities.associateBy({ it.seriesId }, { it.id })
+        
+        val toUpsert = series.map { s ->
+            val existingId = existingIdMap[s.seriesId]
+            if (existingId != null && existingId > 0) {
+                s.copy(id = existingId)
+            } else {
+                s
+            }
+        }
+        
         seriesBox.put(toUpsert)
+        UnifiedLog.d(TAG, "upsertSeriesEntities: ${series.size} items (${existingEntities.size} updates, ${series.size - existingEntities.size} inserts)")
     }
 
+    /**
+     * Batch upsert Episode items with optimized lookup.
+     *
+     * Episodes are identified by composite key (seriesId, season, episodeNum).
+     * We use a composite string key for the lookup map.
+     */
     private fun upsertEpisodes(episodes: List<ObxEpisode>) {
-        val toUpsert =
-                episodes.map { ep ->
-                    val existing =
-                            episodeBox
-                                    .query(
-                                            ObxEpisode_.seriesId
-                                                    .equal(ep.seriesId.toLong())
-                                                    .and(
-                                                            ObxEpisode_.season.equal(
-                                                                    ep.season.toLong()
-                                                            )
-                                                    )
-                                                    .and(
-                                                            ObxEpisode_.episodeNum.equal(
-                                                                    ep.episodeNum.toLong()
-                                                            )
-                                                    )
-                                    )
-                                    .build()
-                                    .findFirst()
-                    if (existing != null) ep.copy(id = existing.id) else ep
-                }
+        if (episodes.isEmpty()) return
+        
+        // For episodes, we need to match on (seriesId, season, episodeNum)
+        // Load all series IDs involved in this batch
+        val seriesIds = episodes.map { it.seriesId.toLong() }.distinct().toLongArray()
+        
+        // Load all existing episodes for these series in ONE query
+        val existingEpisodes = episodeBox.query(ObxEpisode_.seriesId.oneOf(seriesIds))
+            .build()
+            .find()
+        
+        // Build lookup map with composite key "seriesId:season:episodeNum"
+        val existingIdMap = existingEpisodes.associateBy(
+            { "${it.seriesId}:${it.season}:${it.episodeNum}" },
+            { it.id }
+        )
+        
+        val toUpsert = episodes.map { ep ->
+            val key = "${ep.seriesId}:${ep.season}:${ep.episodeNum}"
+            val existingId = existingIdMap[key]
+            if (existingId != null && existingId > 0) {
+                ep.copy(id = existingId)
+            } else {
+                ep
+            }
+        }
+        
         episodeBox.put(toUpsert)
+        UnifiedLog.d(TAG, "upsertEpisodes: ${episodes.size} items (${existingEpisodes.size} existing)")
     }
 
     // ========================================================================
@@ -509,6 +563,10 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 poster = (poster as? ImageRef.Http)?.url,
                 tmdbId = externalIds.tmdb?.id?.toString(),
                 containerExt = containerExt,
+                // Rich metadata from provider
+                rating = rating,
+                plot = plot,
+                genre = genres,
                 updatedAt = System.currentTimeMillis()
         )
     }
@@ -523,6 +581,12 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 year = year,
                 imagesJson = (poster as? ImageRef.Http)?.url,
                 tmdbId = externalIds.tmdb?.id?.toString(),
+                // Rich metadata from provider
+                rating = rating,
+                plot = plot,
+                genre = genres,
+                director = director,
+                cast = cast,
                 updatedAt = System.currentTimeMillis()
         )
     }

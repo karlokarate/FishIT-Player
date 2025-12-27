@@ -31,4 +31,9 @@ data class XtreamVodItem(
          * Maps to ExternalIds.tmdb = TmdbRef(MOVIE, tmdbId).
          */
         val tmdbId: Int? = null,
+        // Quick info fields (some panels include these in list response)
+        val year: String? = null,
+        val genre: String? = null,
+        val plot: String? = null,
+        val duration: String? = null,
 )

@@ -57,6 +57,53 @@ private fun cleanLiveChannelName(name: String): String {
 }
 
 /**
+ * Parse duration string to milliseconds.
+ *
+ * Handles various formats from Xtream panels:
+ * - "01:30:00" → 5400000 (HH:MM:SS)
+ * - "90:00" → 5400000 (MM:SS)
+ * - "90" → 5400000 (minutes as number)
+ * - "90 min" → 5400000 (with unit suffix)
+ * - null/empty → null
+ */
+private fun parseDurationToMs(duration: String?): Long? {
+        if (duration.isNullOrBlank()) return null
+        val cleaned = duration.trim().lowercase()
+        
+        // Try HH:MM:SS or MM:SS format
+        val parts = cleaned.split(":")
+        if (parts.size >= 2) {
+                return try {
+                        when (parts.size) {
+                                3 -> { // HH:MM:SS
+                                        val hours = parts[0].toInt()
+                                        val minutes = parts[1].toInt()
+                                        val seconds = parts[2].toInt()
+                                        ((hours * 3600L + minutes * 60L + seconds) * 1000L)
+                                }
+                                2 -> { // MM:SS
+                                        val minutes = parts[0].toInt()
+                                        val seconds = parts[1].toInt()
+                                        ((minutes * 60L + seconds) * 1000L)
+                                }
+                                else -> null
+                        }
+                } catch (e: NumberFormatException) {
+                        null
+                }
+        }
+        
+        // Try plain number (minutes) or "90 min" format
+        val numberMatch = Regex("^(\\d+)").find(cleaned)
+        if (numberMatch != null) {
+                val minutes = numberMatch.groupValues[1].toLongOrNull() ?: return null
+                return minutes * 60L * 1000L
+        }
+        
+        return null
+}
+
+/**
  * Converts an XtreamVodItem to RawMediaMetadata.
  *
  * Per Gold Decision (Dec 2025):
@@ -69,7 +116,10 @@ fun XtreamVodItem.toRawMediaMetadata(
         authHeaders: Map<String, String> = emptyMap(),
 ): RawMediaMetadata {
         val rawTitle = name
-        val rawYear: Int? = null // Xtream VOD list doesn't include year; detail fetch required
+        // Parse year from quick info field if available
+        val rawYear: Int? = year?.toIntOrNull()
+        // Parse duration - format varies: "01:30:00", "90", "90 min", etc.
+        val durationMs: Long? = parseDurationToMs(duration)
         // Stable source ID format (contract): xtream:vod:{id}
         // Container extension is *format*, not identity.
         // Playback can infer a default extension or use detail fetch.
@@ -92,7 +142,7 @@ fun XtreamVodItem.toRawMediaMetadata(
                 year = rawYear,
                 season = null,
                 episode = null,
-                durationMs = null, // Xtream VOD list doesn't include duration
+                durationMs = durationMs,
                 externalIds = externalIds,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream VOD",
@@ -109,6 +159,9 @@ fun XtreamVodItem.toRawMediaMetadata(
                 thumbnail = null, // Use poster as fallback in UI
                 // === Playback Hints (v2) ===
                 playbackHints = hints,
+                // === Rich metadata (v2) - from provider TMDB scraping ===
+                plot = plot,
+                genres = genre, // Xtream uses "genre" singular
         )
 }
 

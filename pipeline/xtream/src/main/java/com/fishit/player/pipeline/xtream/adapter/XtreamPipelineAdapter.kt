@@ -139,6 +139,11 @@ private fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
                 added = added?.toLongOrNull(),
                 rating = rating?.toDoubleOrNull(),
                 rating5Based = rating5Based,
+                // Quick info fields (some panels include these in list)
+                year = year,
+                genre = genre,
+                plot = plot,
+                duration = duration,
         )
 
 private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =

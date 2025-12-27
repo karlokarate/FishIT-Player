@@ -104,22 +104,33 @@ class ObxTelegramContentRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             UnifiedLog.d(TAG, "upsertAll(${items.size} items)")
             val entities = items.mapNotNull { it.toObxEntity() }
+            if (entities.isEmpty()) return@withContext
             
-            // Find existing entities by chatId + messageId and update their IDs
+            // Batch-optimized upsert: load all potential matches in fewer queries
+            // Group by chatId for efficient querying
+            val chatIds = entities.map { it.chatId }.distinct().toLongArray()
+            val existingEntities = box.query(ObxTelegramMessage_.chatId.oneOf(chatIds))
+                .build()
+                .find()
+            
+            // Build lookup map with composite key "chatId:messageId"
+            val existingIdMap = existingEntities.associateBy(
+                { "${it.chatId}:${it.messageId}" },
+                { it.id }
+            )
+            
             val toUpsert = entities.map { entity ->
-                val existing = box.query(
-                    ObxTelegramMessage_.chatId.equal(entity.chatId)
-                        .and(ObxTelegramMessage_.messageId.equal(entity.messageId))
-                ).build().findFirst()
-                
-                if (existing != null) {
-                    entity.copy(id = existing.id)
+                val key = "${entity.chatId}:${entity.messageId}"
+                val existingId = existingIdMap[key]
+                if (existingId != null && existingId > 0) {
+                    entity.copy(id = existingId)
                 } else {
                     entity
                 }
             }
             
             box.put(toUpsert)
+            UnifiedLog.d(TAG, "upsertAll: ${entities.size} items (${existingEntities.size} existing in chats)")
         }
 
     override suspend fun upsert(item: RawMediaMetadata) =

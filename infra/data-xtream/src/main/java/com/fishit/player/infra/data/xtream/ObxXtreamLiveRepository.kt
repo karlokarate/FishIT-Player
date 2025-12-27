@@ -86,15 +86,26 @@ class ObxXtreamLiveRepository @Inject constructor(
             UnifiedLog.d(TAG, "upsertAll(${items.size} items)")
             
             val entities = items.mapNotNull { it.toObxLive() }
+            if (entities.isEmpty()) return@withContext
+            
+            // Batch-optimized upsert: ONE query instead of N queries
+            val streamIds = entities.map { it.streamId.toLong() }.toLongArray()
+            val existingEntities = liveBox.query(ObxLive_.streamId.oneOf(streamIds))
+                .build()
+                .find()
+            val existingIdMap = existingEntities.associateBy({ it.streamId }, { it.id })
             
             val toUpsert = entities.map { live ->
-                val existing = liveBox.query(ObxLive_.streamId.equal(live.streamId.toLong()))
-                    .build()
-                    .findFirst()
-                if (existing != null) live.copy(id = existing.id) else live
+                val existingId = existingIdMap[live.streamId]
+                if (existingId != null && existingId > 0) {
+                    live.copy(id = existingId)
+                } else {
+                    live
+                }
             }
             
             liveBox.put(toUpsert)
+            UnifiedLog.d(TAG, "upsertAll: ${entities.size} items (${existingEntities.size} updates, ${entities.size - existingEntities.size} inserts)")
         }
 
     override suspend fun upsert(item: RawMediaMetadata) {
