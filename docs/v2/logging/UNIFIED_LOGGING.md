@@ -1,7 +1,7 @@
 # Unified Logging System (v2)
 
-**Version:** 1.1  
-**Last Updated:** 2025-12-11
+**Version:** 1.2  
+**Last Updated:** 2025-12-27
 
 This document describes the logging system for FishIT-Player v2 and provides usage guidelines for all modules.
 
@@ -174,10 +174,54 @@ The `UnifiedLog` façade is designed to support:
 
 - **Structured logging** – attach key-value metadata to log events
 - **External sinks** – forward logs to OpenSearch, Loki, Sentry, Crashlytics
-- **Ring buffer** – in-memory log buffer for debugging UI
+- ~~**Ring buffer** – in-memory log buffer for debugging UI~~ ✅ **Implemented** via `LogBufferProvider`
 - **Kotlin Multiplatform** – swap Timber for Kermit or custom backend
 
 Lazy evaluation via lambdas helps minimize overhead when logs are forwarded to external tools.
+
+---
+
+## Log Viewer & Export (Debug Screen)
+
+The Debug Screen (`feature/settings/DebugScreen.kt`) provides a built-in log viewer with the following capabilities:
+
+### Viewing Logs
+
+- Displays recent logs from the in-memory ring buffer (`LogBufferProvider`)
+- Each entry shows timestamp (HH:mm:ss.SSS), log level icon/color, tag, and message
+- Supports loading more logs via "Load More" button
+
+### Selection Mode
+
+- **Select** button toggles multi-select mode
+- Checkboxes appear next to each log entry
+- **All** / **None** buttons for quick selection
+- **Copy** button copies selected entries to clipboard
+
+### Quick Actions
+
+- **Long-press** any log entry to copy it to clipboard (works in both normal and selection mode)
+- In selection mode, long-pressing a selected entry copies the entire selection
+
+### Export All Logs
+
+- **Export** button launches the Android Storage Access Framework (SAF) file picker
+- User selects a destination for `fishit_logs_YYYY-MM-DD_HHmmss.txt`
+- All buffered logs are exported with full timestamps (`yyyy-MM-dd HH:mm:ss.SSS`)
+
+### Clear Logs
+
+- **Clear** button removes all logs from the in-memory buffer
+- This is useful after exporting or when debugging a specific issue
+
+### Export Format
+
+Exported logs use the following format per line:
+
+```
+2025-12-27 14:32:15.123 INFO TelegramRepo: Fetched 42 items from chat 12345
+2025-12-27 14:32:16.456 ERROR SIPPlayer: Playback failed java.io.IOException: ...
+```
 
 ---
 

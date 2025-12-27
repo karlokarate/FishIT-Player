@@ -1,100 +1,114 @@
 package com.fishit.player.feature.settings
 
-import android.util.Log
+import android.content.Context
+import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
+import com.fishit.player.feature.settings.debug.LeakDiagnostics
+import com.fishit.player.feature.settings.debug.LeakSummary
 import com.fishit.player.infra.logging.BufferedLogEntry
 import com.fishit.player.infra.logging.LogBufferProvider
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-/**
- * Debug screen state
- */
+/** Debug screen state */
 data class DebugState(
-    // System info
-    val appVersion: String = "2.0.0-dev",
-    val buildType: String = "debug",
-    val deviceModel: String = "",
-    val androidVersion: String = "",
+        // System info
+        val appVersion: String = "2.0.0-dev",
+        val buildType: String = "debug",
+        val deviceModel: String = "",
+        val androidVersion: String = "",
 
-    // Connection status
-    val telegramConnected: Boolean = false,
-    val telegramUser: String? = null,
-    val xtreamConnected: Boolean = false,
-    val xtreamServer: String? = null,
-    
-    // API credential status (separate from connection status!)
-    val telegramCredentialsConfigured: Boolean = false,
-    val telegramCredentialStatus: String = "Unknown",
-    val tmdbApiKeyConfigured: Boolean = false,
+        // Connection status
+        val telegramConnected: Boolean = false,
+        val telegramUser: String? = null,
+        val xtreamConnected: Boolean = false,
+        val xtreamServer: String? = null,
 
-    // Cache info
-    val telegramCacheSize: String = "0 MB",
-    val imageCacheSize: String = "0 MB",
-    val dbSize: String = "0 MB",
+        // API credential status (separate from connection status!)
+        val telegramCredentialsConfigured: Boolean = false,
+        val telegramCredentialStatus: String = "Unknown",
+        val tmdbApiKeyConfigured: Boolean = false,
 
-    // Pipeline stats
-    val telegramMediaCount: Int = 0,
-    val xtreamVodCount: Int = 0,
-    val xtreamSeriesCount: Int = 0,
-    val xtreamLiveCount: Int = 0,
+        // Cache info
+        val telegramCacheSize: String = "0 MB",
+        val imageCacheSize: String = "0 MB",
+        val dbSize: String = "0 MB",
 
-    // Logs
-    val recentLogs: List<LogEntry> = emptyList(),
-    val isLoadingLogs: Boolean = false,
+        // Pipeline stats
+        val telegramMediaCount: Int = 0,
+        val xtreamVodCount: Int = 0,
+        val xtreamSeriesCount: Int = 0,
+        val xtreamLiveCount: Int = 0,
 
-    // Actions
-    val isClearingCache: Boolean = false,
-    val lastActionResult: String? = null,
-    
-    // === Catalog Sync (SSOT via WorkManager) ===
-    val syncState: SyncUiState = SyncUiState.Idle,
+        // Logs
+        val recentLogs: List<LogEntry> = emptyList(),
+        val isLoadingLogs: Boolean = false,
+
+        // Actions
+        val isClearingCache: Boolean = false,
+        val lastActionResult: String? = null,
+
+        // === Catalog Sync (SSOT via WorkManager) ===
+        val syncState: SyncUiState = SyncUiState.Idle,
+
+        // === LeakCanary (Memory Diagnostics) ===
+        val leakSummary: LeakSummary = LeakSummary(0, null, null),
+        val isLeakCanaryAvailable: Boolean = false,
 )
 
-/**
- * Simple log entry for display
- */
-data class LogEntry(
-    val timestamp: Long,
-    val level: LogLevel,
-    val tag: String,
-    val message: String
-)
+/** Simple log entry for display */
+data class LogEntry(val timestamp: Long, val level: LogLevel, val tag: String, val message: String)
 
 enum class LogLevel {
-    DEBUG, INFO, WARN, ERROR
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR
 }
 
 /**
  * Debug ViewModel - Manages debug/diagnostics screen
- * 
+ *
  * **REAL DATA SOURCES:**
  * - [LogBufferProvider] for in-memory log buffer
  * - [DebugInfoProvider] for connection status, cache sizes, content counts
  * - [SyncStateObserver] for catalog sync state (WorkManager)
- * 
- * Uses CatalogSyncWorkScheduler (SSOT) for all sync triggers.
- * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+ * - [LeakDiagnostics] for memory leak detection (LeakCanary in debug builds)
+ *
+ * Uses CatalogSyncWorkScheduler (SSOT) for all sync triggers. Contract:
+ * CATALOG_SYNC_WORKERS_CONTRACT_V2
  */
 @HiltViewModel
-class DebugViewModel @Inject constructor(
-    private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
-    private val syncStateObserver: SyncStateObserver,
-    private val tmdbEnrichmentScheduler: TmdbEnrichmentScheduler,
-    private val logBufferProvider: LogBufferProvider,
-    private val debugInfoProvider: DebugInfoProvider,
+class DebugViewModel
+@Inject
+constructor(
+        private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
+        private val syncStateObserver: SyncStateObserver,
+        private val tmdbEnrichmentScheduler: TmdbEnrichmentScheduler,
+        private val logBufferProvider: LogBufferProvider,
+        private val debugInfoProvider: DebugInfoProvider,
+        private val leakDiagnostics: LeakDiagnostics,
+        @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DebugState())
@@ -103,16 +117,17 @@ class DebugViewModel @Inject constructor(
     init {
         loadSystemInfo()
         loadCredentialStatus()
+        loadLeakSummary()
         observeSyncState()
         observeConnectionStatus()
         observeContentCounts()
         observeLogs()
         loadCacheSizes()
     }
-    
+
     /**
      * Load API credential configuration status.
-     * 
+     *
      * **Important:** This is separate from connection status!
      * - Credentials = BuildConfig values (TG_API_ID, TG_API_HASH, TMDB_API_KEY)
      * - Connection = Runtime auth state (logged in or not)
@@ -120,19 +135,28 @@ class DebugViewModel @Inject constructor(
     private fun loadCredentialStatus() {
         val telegramStatus = debugInfoProvider.getTelegramCredentialStatus()
         val tmdbConfigured = debugInfoProvider.isTmdbApiKeyConfigured()
-        
+
         _state.update {
             it.copy(
-                telegramCredentialsConfigured = telegramStatus.isConfigured,
-                telegramCredentialStatus = telegramStatus.statusMessage,
-                tmdbApiKeyConfigured = tmdbConfigured
+                    telegramCredentialsConfigured = telegramStatus.isConfigured,
+                    telegramCredentialStatus = telegramStatus.statusMessage,
+                    tmdbApiKeyConfigured = tmdbConfigured
             )
         }
     }
-    
-    /**
-     * Observe sync state from WorkManager via SyncStateObserver.
-     */
+
+    /** Load LeakCanary summary. */
+    private fun loadLeakSummary() {
+        val summary = leakDiagnostics.getSummary()
+        _state.update {
+            it.copy(
+                    leakSummary = summary,
+                    isLeakCanaryAvailable = leakDiagnostics.isAvailable
+            )
+        }
+    }
+
+    /** Observe sync state from WorkManager via SyncStateObserver. */
     private fun observeSyncState() {
         viewModelScope.launch {
             syncStateObserver.observeSyncState().collect { syncState ->
@@ -141,62 +165,53 @@ class DebugViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Load static system info.
-     */
+    /** Load static system info. */
     private fun loadSystemInfo() {
         _state.update {
             it.copy(
-                deviceModel = android.os.Build.MODEL,
-                androidVersion = "Android ${android.os.Build.VERSION.RELEASE}",
+                    deviceModel = android.os.Build.MODEL,
+                    androidVersion = "Android ${android.os.Build.VERSION.RELEASE}",
             )
         }
     }
 
-    /**
-     * Observe real connection status from auth repositories.
-     */
+    /** Observe real connection status from auth repositories. */
     private fun observeConnectionStatus() {
         viewModelScope.launch {
             combine(
-                debugInfoProvider.observeTelegramConnection(),
-                debugInfoProvider.observeXtreamConnection()
-            ) { telegram, xtream ->
-                Pair(telegram, xtream)
-            }.collect { (telegram, xtream) ->
-                _state.update {
-                    it.copy(
-                        telegramConnected = telegram.isConnected,
-                        telegramUser = telegram.details,
-                        xtreamConnected = xtream.isConnected,
-                        xtreamServer = xtream.details
-                    )
-                }
-            }
+                            debugInfoProvider.observeTelegramConnection(),
+                            debugInfoProvider.observeXtreamConnection()
+                    ) { telegram, xtream -> Pair(telegram, xtream) }
+                    .collect { (telegram, xtream) ->
+                        _state.update {
+                            it.copy(
+                                    telegramConnected = telegram.isConnected,
+                                    telegramUser = telegram.details,
+                                    xtreamConnected = xtream.isConnected,
+                                    xtreamServer = xtream.details
+                            )
+                        }
+                    }
         }
     }
 
-    /**
-     * Observe real content counts from data repositories.
-     */
+    /** Observe real content counts from data repositories. */
     private fun observeContentCounts() {
         viewModelScope.launch {
             debugInfoProvider.observeContentCounts().collect { counts ->
                 _state.update {
                     it.copy(
-                        telegramMediaCount = counts.telegramMediaCount,
-                        xtreamVodCount = counts.xtreamVodCount,
-                        xtreamSeriesCount = counts.xtreamSeriesCount,
-                        xtreamLiveCount = counts.xtreamLiveCount
+                            telegramMediaCount = counts.telegramMediaCount,
+                            xtreamVodCount = counts.xtreamVodCount,
+                            xtreamSeriesCount = counts.xtreamSeriesCount,
+                            xtreamLiveCount = counts.xtreamLiveCount
                     )
                 }
             }
         }
     }
 
-    /**
-     * Observe real logs from LogBufferProvider.
-     */
+    /** Observe real logs from LogBufferProvider. */
     private fun observeLogs() {
         viewModelScope.launch {
             logBufferProvider.observeLogs(limit = 100).collect { bufferedLogs ->
@@ -206,9 +221,7 @@ class DebugViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Load real cache sizes.
-     */
+    /** Load real cache sizes. */
     private fun loadCacheSizes() {
         viewModelScope.launch {
             val telegramSize = debugInfoProvider.getTelegramCacheSize()
@@ -217,9 +230,9 @@ class DebugViewModel @Inject constructor(
 
             _state.update {
                 it.copy(
-                    telegramCacheSize = telegramSize?.formatAsSize() ?: "N/A",
-                    imageCacheSize = imageSize?.formatAsSize() ?: "N/A",
-                    dbSize = dbSize?.formatAsSize() ?: "N/A"
+                        telegramCacheSize = telegramSize?.formatAsSize() ?: "N/A",
+                        imageCacheSize = imageSize?.formatAsSize() ?: "N/A",
+                        dbSize = dbSize?.formatAsSize() ?: "N/A"
                 )
             }
         }
@@ -236,8 +249,9 @@ class DebugViewModel @Inject constructor(
             loadCacheSizes() // Refresh sizes
             _state.update {
                 it.copy(
-                    isClearingCache = false,
-                    lastActionResult = if (success) "Telegram cache cleared" else "Failed to clear cache"
+                        isClearingCache = false,
+                        lastActionResult =
+                                if (success) "Telegram cache cleared" else "Failed to clear cache"
                 )
             }
         }
@@ -250,8 +264,9 @@ class DebugViewModel @Inject constructor(
             loadCacheSizes() // Refresh sizes
             _state.update {
                 it.copy(
-                    isClearingCache = false,
-                    lastActionResult = if (success) "Image cache cleared" else "Failed to clear cache"
+                        isClearingCache = false,
+                        lastActionResult =
+                                if (success) "Image cache cleared" else "Failed to clear cache"
                 )
             }
         }
@@ -265,8 +280,10 @@ class DebugViewModel @Inject constructor(
             loadCacheSizes() // Refresh sizes
             _state.update {
                 it.copy(
-                    isClearingCache = false,
-                    lastActionResult = if (telegramOk && imageOk) "All caches cleared" else "Some caches failed to clear"
+                        isClearingCache = false,
+                        lastActionResult =
+                                if (telegramOk && imageOk) "All caches cleared"
+                                else "Some caches failed to clear"
                 )
             }
         }
@@ -282,6 +299,52 @@ class DebugViewModel @Inject constructor(
         _state.update { it.copy(lastActionResult = "Logs cleared") }
     }
 
+    /**
+     * Export all currently buffered logs to a user-selected destination Uri.
+     *
+     * Note: This exports the in-memory ring buffer (LogBufferTree). This is the set of "saved logs"
+     * available in v2 right now.
+     */
+    fun exportAllLogs(destinationUri: Uri) {
+        viewModelScope.launch {
+            val total = logBufferProvider.getLogCount()
+            val logs = logBufferProvider.getLogs(limit = total)
+            val exportText = logs.joinToString(separator = "\n") { it.toExportLine() }
+
+            try {
+                val resolver = appContext.contentResolver
+                resolver.openOutputStream(destinationUri, "w")?.use { out ->
+                    out.write(exportText.toByteArray(Charsets.UTF_8))
+                    out.flush()
+                }
+                        ?: run {
+                            _state.update {
+                                it.copy(
+                                        lastActionResult =
+                                                "Export failed: could not open output stream"
+                                )
+                            }
+                            return@launch
+                        }
+
+                _state.update { it.copy(lastActionResult = "Exported ${logs.size} log(s)") }
+            } catch (e: SecurityException) {
+                UnifiedLog.w(TAG) { "exportAllLogs: security exception while writing logs" }
+                _state.update { it.copy(lastActionResult = "Export failed: permission denied") }
+            } catch (e: IOException) {
+                UnifiedLog.w(TAG) { "exportAllLogs: IO error while writing logs" }
+                _state.update { it.copy(lastActionResult = "Export failed: IO error") }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "exportAllLogs: unexpected error while writing logs" }
+                _state.update { it.copy(lastActionResult = "Export failed: unexpected error") }
+            }
+        }
+    }
+
+    fun setActionResult(message: String) {
+        _state.update { it.copy(lastActionResult = message) }
+    }
+
     fun dismissActionResult() {
         _state.update { it.copy(lastActionResult = null) }
     }
@@ -290,84 +353,227 @@ class DebugViewModel @Inject constructor(
 
     /**
      * Trigger manual catalog sync for all configured sources.
-     * 
-     * Uses WorkManager via CatalogSyncWorkScheduler (SSOT).
-     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
+     *
+     * Uses WorkManager via CatalogSyncWorkScheduler (SSOT). Contract:
+     * CATALOG_SYNC_WORKERS_CONTRACT_V2
      */
     fun syncAll() {
         UnifiedLog.i(TAG) { "User triggered: Sync All (enqueueExpertSyncNow)" }
         catalogSyncWorkScheduler.enqueueExpertSyncNow()
-        _state.update { 
-            it.copy(lastActionResult = "Catalog sync enqueued")
-        }
+        _state.update { it.copy(lastActionResult = "Catalog sync enqueued") }
     }
 
-    /**
-     * Force rescan - cancels any running sync and starts fresh.
-     */
+    /** Force rescan - cancels any running sync and starts fresh. */
     fun forceRescan() {
         UnifiedLog.i(TAG) { "User triggered: Force Rescan (enqueueForceRescan)" }
         catalogSyncWorkScheduler.enqueueForceRescan()
-        _state.update { 
-            it.copy(lastActionResult = "Force rescan started")
-        }
+        _state.update { it.copy(lastActionResult = "Force rescan started") }
     }
 
-    /**
-     * Cancel any running catalog sync.
-     */
+    /** Cancel any running catalog sync. */
     fun cancelSync() {
         UnifiedLog.i(TAG) { "User triggered: Cancel Sync" }
         catalogSyncWorkScheduler.cancelSync()
-        _state.update { 
-            it.copy(lastActionResult = "Sync cancelled")
-        }
+        _state.update { it.copy(lastActionResult = "Sync cancelled") }
     }
 
     // ========== TMDB Enrichment Actions ==========
 
     /**
      * Trigger TMDB enrichment.
-     * 
-     * Uses WorkManager via TmdbEnrichmentScheduler (SSOT).
-     * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2 (W-22)
+     *
+     * Uses WorkManager via TmdbEnrichmentScheduler (SSOT). Contract:
+     * CATALOG_SYNC_WORKERS_CONTRACT_V2 (W-22)
      */
     fun enqueueTmdbEnrichment() {
         UnifiedLog.i(TAG) { "User triggered: TMDB Enrichment" }
         tmdbEnrichmentScheduler.enqueueEnrichment()
-        _state.update { 
-            it.copy(lastActionResult = "TMDB enrichment enqueued")
-        }
+        _state.update { it.copy(lastActionResult = "TMDB enrichment enqueued") }
     }
 
-    /**
-     * Force TMDB refresh - re-enriches all items.
-     */
+    /** Force TMDB refresh - re-enriches all items. */
     fun forceTmdbRefresh() {
         UnifiedLog.i(TAG) { "User triggered: Force TMDB Refresh" }
         tmdbEnrichmentScheduler.enqueueForceRefresh()
-        _state.update { 
-            it.copy(lastActionResult = "TMDB force refresh started")
+        _state.update { it.copy(lastActionResult = "TMDB force refresh started") }
+    }
+
+    // ========== LeakCanary Actions ==========
+
+    /** Open LeakCanary UI. Returns true if successfully opened. */
+    fun openLeakCanaryUi(): Boolean {
+        val success = leakDiagnostics.openLeakUi(appContext)
+        if (!success) {
+            _state.update { it.copy(lastActionResult = "Could not open LeakCanary UI") }
+        }
+        return success
+    }
+
+    /** Refresh leak summary. */
+    fun refreshLeakSummary() {
+        loadLeakSummary()
+    }
+
+    /** Export leak report to SAF destination. */
+    fun exportLeakReport(destinationUri: Uri) {
+        viewModelScope.launch {
+            val result = leakDiagnostics.exportLeakReport(appContext, destinationUri)
+            result.fold(
+                    onSuccess = {
+                        _state.update { it.copy(lastActionResult = "Leak report exported") }
+                        UnifiedLog.i(TAG) { "Leak report exported successfully" }
+                    },
+                    onFailure = { e ->
+                        _state.update { it.copy(lastActionResult = "Export failed: ${e.message}") }
+                        UnifiedLog.w(TAG) { "Leak report export failed: ${e.message}" }
+                    }
+            )
         }
     }
-    
+
+    // ========== Debug Bundle Export ==========
+
+    /**
+     * Export a debug bundle (ZIP) containing:
+     * - logs.txt (all buffered logs)
+     * - leaks.txt (leak report from LeakCanary)
+     * - device_info.txt (device and app info)
+     */
+    fun exportDebugBundle(destinationUri: Uri) {
+        viewModelScope.launch {
+            try {
+                val resolver = appContext.contentResolver
+                resolver.openOutputStream(destinationUri, "w")?.use { out ->
+                    ZipOutputStream(out).use { zip ->
+                        // 1. logs.txt
+                        val logsContent = buildLogsContent()
+                        zip.putNextEntry(ZipEntry("logs.txt"))
+                        zip.write(logsContent.toByteArray(Charsets.UTF_8))
+                        zip.closeEntry()
+
+                        // 2. leaks.txt (if LeakCanary available)
+                        val leaksContent = buildLeaksContent()
+                        zip.putNextEntry(ZipEntry("leaks.txt"))
+                        zip.write(leaksContent.toByteArray(Charsets.UTF_8))
+                        zip.closeEntry()
+
+                        // 3. device_info.txt
+                        val deviceInfoContent = buildDeviceInfoContent()
+                        zip.putNextEntry(ZipEntry("device_info.txt"))
+                        zip.write(deviceInfoContent.toByteArray(Charsets.UTF_8))
+                        zip.closeEntry()
+                    }
+                } ?: run {
+                    _state.update { it.copy(lastActionResult = "Export failed: could not open output") }
+                    return@launch
+                }
+
+                _state.update { it.copy(lastActionResult = "Debug bundle exported") }
+                UnifiedLog.i(TAG) { "Debug bundle exported successfully" }
+            } catch (e: SecurityException) {
+                UnifiedLog.w(TAG) { "exportDebugBundle: security exception" }
+                _state.update { it.copy(lastActionResult = "Export failed: permission denied") }
+            } catch (e: IOException) {
+                UnifiedLog.w(TAG) { "exportDebugBundle: IO error" }
+                _state.update { it.copy(lastActionResult = "Export failed: IO error") }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "exportDebugBundle: unexpected error: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Export failed: ${e.message}") }
+            }
+        }
+    }
+
+    private fun buildLogsContent(): String {
+        val total = logBufferProvider.getLogCount()
+        val logs = logBufferProvider.getLogs(limit = total)
+        return logs.joinToString(separator = "\n") { it.toExportLine() }
+    }
+
+    private fun buildLeaksContent(): String {
+        val summary = leakDiagnostics.getSummary()
+        return buildString {
+            appendLine("FishIT Player - Leak Summary")
+            appendLine("=" .repeat(40))
+            appendLine()
+            appendLine("LeakCanary Available: ${leakDiagnostics.isAvailable}")
+            appendLine("Leaks Detected: ${summary.leakCount}")
+            summary.lastLeakUptimeMs?.let { appendLine("Last Leak (uptime): ${it}ms") }
+            summary.note?.let { appendLine("Note: $it") }
+            appendLine()
+            if (!leakDiagnostics.isAvailable) {
+                appendLine("(Full leak details not available in release builds)")
+            }
+        }
+    }
+
+    private fun buildDeviceInfoContent(): String {
+        val packageInfo = try {
+            appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+        } catch (e: Exception) {
+            null
+        }
+        val versionName = packageInfo?.versionName ?: "unknown"
+        @Suppress("DEPRECATION")
+        val versionCode = packageInfo?.versionCode ?: 0
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+        val now = dateFormat.format(Date())
+
+        return buildString {
+            appendLine("FishIT Player - Device Info")
+            appendLine("=" .repeat(40))
+            appendLine()
+            appendLine("Generated: $now")
+            appendLine()
+            appendLine("App Info")
+            appendLine("-".repeat(30))
+            appendLine("Version: $versionName ($versionCode)")
+            appendLine("Package: ${appContext.packageName}")
+            appendLine()
+            appendLine("Device Info")
+            appendLine("-".repeat(30))
+            appendLine("Model: ${Build.MODEL}")
+            appendLine("Manufacturer: ${Build.MANUFACTURER}")
+            appendLine("Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+            appendLine("Device: ${Build.DEVICE}")
+            appendLine("Product: ${Build.PRODUCT}")
+            appendLine("Board: ${Build.BOARD}")
+            appendLine("Hardware: ${Build.HARDWARE}")
+        }
+    }
+
     private companion object {
         private const val TAG = "DebugViewModel"
     }
 }
 
-/**
- * Convert BufferedLogEntry to UI LogEntry.
- */
-private fun BufferedLogEntry.toLogEntry(): LogEntry = LogEntry(
-    timestamp = timestamp,
-    level = when (priority) {
-        Log.DEBUG -> LogLevel.DEBUG
-        Log.INFO -> LogLevel.INFO
-        Log.WARN -> LogLevel.WARN
-        Log.ERROR -> LogLevel.ERROR
-        else -> LogLevel.DEBUG
-    },
-    tag = tag ?: "Unknown",
-    message = message
-)
+/** Convert BufferedLogEntry to UI LogEntry. */
+private fun BufferedLogEntry.toLogEntry(): LogEntry =
+        LogEntry(
+                timestamp = timestamp,
+                level =
+                        when (priorityString()) {
+                            "INFO" -> LogLevel.INFO
+                            "WARN" -> LogLevel.WARN
+                            "ERROR" -> LogLevel.ERROR
+                            else -> LogLevel.DEBUG
+                        },
+                tag = tag ?: "Unknown",
+                message =
+                        buildString {
+                            append(message)
+                            throwableInfo?.let { info ->
+                                append(" ")
+                                append(info.toString())
+                            }
+                        }
+        )
+
+private fun BufferedLogEntry.toExportLine(): String {
+    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    val ts = formatter.format(Date(timestamp))
+    val level = priorityString()
+    val safeTag = tag ?: "Unknown"
+    val base = "$ts $level $safeTag: $message"
+    return throwableInfo?.let { "$base ${it}" } ?: base
+}

@@ -548,18 +548,19 @@ class DefaultXtreamApiClient(
      *
      * Some Xtream panels behave oddly depending on whether `category_id` is present. In practice we
      * have seen:
-     * - `category_id=*` returning a truncated list (often exactly [DEFAULT_LIMIT] items)
+     * - `category_id=*` returning the FULL list on most panels (preferred)
      * - `category_id=0` working on some panels
-     * - no `category_id` returning the full list on others
+     * - no `category_id` returning a truncated/limited list on many panels
      *
-     * Strategy:
+     * Strategy (ported from v1 XtreamClient.sliceArray):
      * - If a concrete [categoryId] is provided → request that category only.
-     * - If no category is provided → try without `category_id` first.
-     * - If we get a non-empty result AND it doesn't look suspiciously truncated, accept it.
-     * - If the result is empty OR exactly [DEFAULT_LIMIT], probe `*` and `0` and use the
-     * ```
-     *     largest non-empty result.
-     * ```
+     * - If no category is provided:
+     *   1. Try `category_id=*` first (works on most panels, returns ALL items)
+     *   2. If empty → try `category_id=0`
+     *   3. If still empty → try without `category_id` as last resort
+     *
+     * This order is CRITICAL: many panels truncate results when no category_id is provided,
+     * but return the full catalog with `category_id=*`.
      */
     private suspend fun <T> fetchStreamsWithCategoryFallback(
             action: String,
@@ -582,17 +583,24 @@ class DefaultXtreamApiClient(
             return parseJsonArray(body, mapper)
         }
 
-        // 1) Prefer plain request (no category_id)
-        val plain = fetchAndParse(null)
-        // If it's clearly non-empty and not a classic truncation size, accept immediately.
-        if (plain.isNotEmpty() && plain.size != DEFAULT_LIMIT) return plain
-
-        // 2) Probe fallbacks when empty OR suspiciously truncated
+        // 1) Try category_id=* first (works on most panels, returns ALL items)
         val star = fetchAndParse(mapOf("category_id" to "*"))
-        val zero = fetchAndParse(mapOf("category_id" to "0"))
+        if (star.isNotEmpty()) {
+            UnifiedLog.d(TAG) { "fetchStreamsWithCategoryFallback($action): got ${star.size} items with category_id=*" }
+            return star
+        }
 
-        return listOf(plain, star, zero).filter { it.isNotEmpty() }.maxByOrNull { it.size }
-                ?: emptyList()
+        // 2) If empty → try category_id=0
+        val zero = fetchAndParse(mapOf("category_id" to "0"))
+        if (zero.isNotEmpty()) {
+            UnifiedLog.d(TAG) { "fetchStreamsWithCategoryFallback($action): got ${zero.size} items with category_id=0" }
+            return zero
+        }
+
+        // 3) As last resort → try without category_id
+        val plain = fetchAndParse(null)
+        UnifiedLog.d(TAG) { "fetchStreamsWithCategoryFallback($action): got ${plain.size} items without category_id (fallback)" }
+        return plain
     }
 
     // =========================================================================

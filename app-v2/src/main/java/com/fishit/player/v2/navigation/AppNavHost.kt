@@ -35,6 +35,10 @@ import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.feature.settings.SettingsScreen
+import com.fishit.player.feature.settings.dbinspector.DbInspectorDetailScreen
+import com.fishit.player.feature.settings.dbinspector.DbInspectorEntityTypesScreen
+import com.fishit.player.feature.settings.dbinspector.DbInspectorNavArgs
+import com.fishit.player.feature.settings.dbinspector.DbInspectorRowsScreen
 import com.fishit.player.ui.PlayerScreen
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
 import kotlinx.coroutines.launch
@@ -180,6 +184,42 @@ fun AppNavHost(
                 DebugScreen(
                     onBack = { navController.popBackStack() },
                     onDebugPlayback = { navController.navigate(Routes.DEBUG_PLAYBACK) },
+                    onDatabaseInspector = { navController.navigate(Routes.DB_INSPECTOR) },
+                )
+            }
+
+            // ObjectBox DB Inspector (debug/power-user)
+            composable(Routes.DB_INSPECTOR) {
+                DbInspectorEntityTypesScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEntity = { entityTypeId -> navController.navigate(Routes.dbInspectorEntity(entityTypeId)) },
+                )
+            }
+
+            composable(
+                route = Routes.DB_INSPECTOR_ENTITY_PATTERN,
+                arguments =
+                    listOf(
+                        navArgument(DbInspectorNavArgs.ARG_ENTITY_TYPE) { type = NavType.StringType },
+                    ),
+            ) { backStackEntry ->
+                val entityTypeId = backStackEntry.arguments?.getString(DbInspectorNavArgs.ARG_ENTITY_TYPE) ?: return@composable
+                DbInspectorRowsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenRow = { rowId -> navController.navigate(Routes.dbInspectorEntityDetail(entityTypeId, rowId)) },
+                )
+            }
+
+            composable(
+                route = Routes.DB_INSPECTOR_ENTITY_DETAIL_PATTERN,
+                arguments =
+                    listOf(
+                        navArgument(DbInspectorNavArgs.ARG_ENTITY_TYPE) { type = NavType.StringType },
+                        navArgument(DbInspectorNavArgs.ARG_ROW_ID) { type = NavType.LongType },
+                    ),
+            ) {
+                DbInspectorDetailScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
 
@@ -273,6 +313,12 @@ object Routes {
     const val DEBUG_SKELETON = "debug_skeleton"
     const val SETTINGS = "settings"
 
+    // Database Inspector (ObjectBox) - debug/power-user
+    const val DB_INSPECTOR = "db_inspector"
+    const val DB_INSPECTOR_ENTITY_PATTERN = "$DB_INSPECTOR/{${DbInspectorNavArgs.ARG_ENTITY_TYPE}}"
+    const val DB_INSPECTOR_ENTITY_DETAIL_PATTERN =
+        "$DB_INSPECTOR/{${DbInspectorNavArgs.ARG_ENTITY_TYPE}}/{${DbInspectorNavArgs.ARG_ROW_ID}}"
+
     // Detail route with arguments
     const val ARG_MEDIA_ID = "mediaId"
     const val ARG_SOURCE_TYPE = "sourceType"
@@ -288,4 +334,11 @@ object Routes {
         mediaId: String,
         sourceType: String,
     ): String = "player/$mediaId/$sourceType"
+
+    fun dbInspectorEntity(entityTypeId: String): String = "$DB_INSPECTOR/$entityTypeId"
+
+    fun dbInspectorEntityDetail(
+        entityTypeId: String,
+        rowId: Long,
+    ): String = "$DB_INSPECTOR/$entityTypeId/$rowId"
 }

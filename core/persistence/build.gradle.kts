@@ -50,6 +50,7 @@ tasks.matching { it.name == "compileReleaseJavaWithJavac" }.configureEach {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":infra:logging"))
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")

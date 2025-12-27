@@ -5,6 +5,8 @@ import com.fishit.player.core.model.repository.ContentRepository
 import com.fishit.player.core.model.repository.ProfileRepository
 import com.fishit.player.core.model.repository.ResumeRepository
 import com.fishit.player.core.model.repository.ScreenTimeRepository
+import com.fishit.player.core.persistence.inspector.DefaultObxDatabaseInspector
+import com.fishit.player.core.persistence.inspector.ObxDatabaseInspector
 import com.fishit.player.core.persistence.repository.ObxCanonicalMediaRepository
 import com.fishit.player.core.persistence.repository.ObxContentRepository
 import com.fishit.player.core.persistence.repository.ObxProfileRepository
@@ -47,4 +49,9 @@ abstract class PersistenceModule {
     @Binds
     @Singleton
     abstract fun bindCanonicalMediaRepository(impl: ObxCanonicalMediaRepository): CanonicalMediaRepository
+
+    // Debug / power-user tooling
+    @Binds
+    @Singleton
+    abstract fun bindObxDatabaseInspector(impl: DefaultObxDatabaseInspector): ObxDatabaseInspector
 }
