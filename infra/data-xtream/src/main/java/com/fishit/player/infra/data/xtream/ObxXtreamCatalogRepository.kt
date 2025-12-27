@@ -252,6 +252,112 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
             }
 
     // ========================================================================
+    // Info Backfill Support
+    // ========================================================================
+
+    override suspend fun getVodIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
+        withContext(Dispatchers.IO) {
+            // Find VOD items where plot is null/empty (indicates missing info)
+            vodBox.query()
+                .apply {
+                    if (afterId > 0) {
+                        greater(ObxVod_.vodId, afterId.toLong())
+                    }
+                }
+                .isNull(ObxVod_.plot)
+                .order(ObxVod_.vodId)
+                .build()
+                .find(0, limit.toLong())
+                .map { it.vodId }
+        }
+
+    override suspend fun getSeriesIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
+        withContext(Dispatchers.IO) {
+            // Find series items where plot is null/empty (indicates missing info)
+            seriesBox.query()
+                .apply {
+                    if (afterId > 0) {
+                        greater(ObxSeries_.seriesId, afterId.toLong())
+                    }
+                }
+                .isNull(ObxSeries_.plot)
+                .order(ObxSeries_.seriesId)
+                .build()
+                .find(0, limit.toLong())
+                .map { it.seriesId }
+        }
+
+    override suspend fun updateVodInfo(
+        vodId: Int,
+        plot: String?,
+        director: String?,
+        cast: String?,
+        genre: String?,
+        rating: Double?,
+        durationSecs: Int?,
+        trailer: String?,
+    ) = withContext(Dispatchers.IO) {
+        val existing = vodBox.query(ObxVod_.vodId.equal(vodId.toLong()))
+            .build()
+            .findFirst() ?: return@withContext
+
+        val updated = existing.copy(
+            plot = plot ?: existing.plot,
+            director = director ?: existing.director,
+            cast = cast ?: existing.cast,
+            genre = genre ?: existing.genre,
+            rating = rating ?: existing.rating,
+            durationSecs = durationSecs ?: existing.durationSecs,
+            trailer = trailer ?: existing.trailer,
+            updatedAt = System.currentTimeMillis(),
+        )
+        vodBox.put(updated)
+        UnifiedLog.d(TAG) { "Updated VOD info: vodId=$vodId" }
+    }
+
+    override suspend fun updateSeriesInfo(
+        seriesId: Int,
+        plot: String?,
+        director: String?,
+        cast: String?,
+        genre: String?,
+        rating: Double?,
+        trailer: String?,
+    ) = withContext(Dispatchers.IO) {
+        val existing = seriesBox.query(ObxSeries_.seriesId.equal(seriesId.toLong()))
+            .build()
+            .findFirst() ?: return@withContext
+
+        val updated = existing.copy(
+            plot = plot ?: existing.plot,
+            director = director ?: existing.director,
+            cast = cast ?: existing.cast,
+            genre = genre ?: existing.genre,
+            rating = rating ?: existing.rating,
+            trailer = trailer ?: existing.trailer,
+            updatedAt = System.currentTimeMillis(),
+        )
+        seriesBox.put(updated)
+        UnifiedLog.d(TAG) { "Updated series info: seriesId=$seriesId" }
+    }
+
+    override suspend fun countVodNeedingInfoBackfill(): Long =
+        withContext(Dispatchers.IO) {
+            vodBox.query()
+                .isNull(ObxVod_.plot)
+                .build()
+                .count()
+        }
+
+    override suspend fun countSeriesNeedingInfoBackfill(): Long =
+        withContext(Dispatchers.IO) {
+            seriesBox.query()
+                .isNull(ObxSeries_.plot)
+                .build()
+                .count()
+        }
+
+    // ========================================================================
     // Private Upsert Helpers
     // ========================================================================
 

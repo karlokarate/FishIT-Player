@@ -124,7 +124,8 @@ class CatalogSyncOrchestratorWorker
                     }
                 UnifiedLog.i(TAG) { "✅ Enqueued ${telegramChain.size} Telegram workers (preflight + scan)" }
             } else {
-                UnifiedLog.w(TAG) { "⚠️ Telegram is NOT ACTIVE - skipping Telegram workers" }
+                // Use DEBUG level - Telegram might just be initializing, not an error
+                UnifiedLog.d(TAG) { "Telegram not in active sources - skipping Telegram workers" }
             }
 
             // 3. IO (if active)

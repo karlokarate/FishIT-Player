@@ -57,16 +57,12 @@ data class HomeState(
     val isLoading: Boolean = true,
     val continueWatchingItems: List<HomeMediaItem> = emptyList(),
     val recentlyAddedItems: List<HomeMediaItem> = emptyList(),
-    // Cross-pipeline unified rows
+    // Cross-pipeline unified rows (canonical system)
     val moviesItems: List<HomeMediaItem> = emptyList(),
     val seriesItems: List<HomeMediaItem> = emptyList(),
     val clipsItems: List<HomeMediaItem> = emptyList(),
-    // Source-specific rows
+    // Source-specific rows (Live is intentionally outside canonical - ephemeral streams, EPG-based)
     val xtreamLiveItems: List<HomeMediaItem> = emptyList(),
-    // Legacy rows (for backward compatibility)
-    val telegramMediaItems: List<HomeMediaItem> = emptyList(),
-    val xtreamVodItems: List<HomeMediaItem> = emptyList(),
-    val xtreamSeriesItems: List<HomeMediaItem> = emptyList(),
     val error: String? = null,
     val hasTelegramSource: Boolean = false,
     val hasXtreamSource: Boolean = false,
@@ -249,10 +245,6 @@ class HomeViewModel @Inject constructor(
             seriesItems = content.series,
             clipsItems = content.clips,
             xtreamLiveItems = content.xtreamLive,
-            // Legacy fields for backward compatibility
-            telegramMediaItems = emptyList(),
-            xtreamVodItems = emptyList(),
-            xtreamSeriesItems = emptyList(),
             error = error,
             hasTelegramSource = content.clips.isNotEmpty() || 
                               content.movies.any { it.sourceTypes.contains(SourceType.TELEGRAM) },

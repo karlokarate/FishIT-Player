@@ -106,4 +106,84 @@ interface XtreamCatalogRepository {
      * Delete all stored catalog items.
      */
     suspend fun deleteAll()
+
+    // =========================================================================
+    // Info Backfill Support
+    // =========================================================================
+
+    /**
+     * Get VOD IDs that need info backfill (missing plot/cast/director).
+     *
+     * @param limit Maximum IDs to return
+     * @param afterId Cursor for pagination (return IDs > this)
+     * @return List of VOD IDs needing backfill
+     */
+    suspend fun getVodIdsNeedingInfoBackfill(limit: Int = 50, afterId: Int = 0): List<Int>
+
+    /**
+     * Get series IDs that need info backfill (missing plot/cast).
+     *
+     * @param limit Maximum IDs to return
+     * @param afterId Cursor for pagination (return IDs > this)
+     * @return List of series IDs needing backfill
+     */
+    suspend fun getSeriesIdsNeedingInfoBackfill(limit: Int = 50, afterId: Int = 0): List<Int>
+
+    /**
+     * Update VOD with detailed info from get_vod_info API.
+     *
+     * @param vodId The VOD ID
+     * @param plot Plot/description
+     * @param director Director name(s)
+     * @param cast Cast list
+     * @param genre Genre(s)
+     * @param rating Rating value
+     * @param durationSecs Duration in seconds
+     * @param trailer Trailer URL
+     */
+    suspend fun updateVodInfo(
+        vodId: Int,
+        plot: String?,
+        director: String?,
+        cast: String?,
+        genre: String?,
+        rating: Double?,
+        durationSecs: Int?,
+        trailer: String?,
+    )
+
+    /**
+     * Update series with detailed info from get_series_info API.
+     *
+     * @param seriesId The series ID
+     * @param plot Plot/description
+     * @param director Director name(s)
+     * @param cast Cast list
+     * @param genre Genre(s)
+     * @param rating Rating value
+     * @param trailer Trailer URL
+     */
+    suspend fun updateSeriesInfo(
+        seriesId: Int,
+        plot: String?,
+        director: String?,
+        cast: String?,
+        genre: String?,
+        rating: Double?,
+        trailer: String?,
+    )
+
+    /**
+     * Count VOD items still needing info backfill.
+     *
+     * @return Number of VOD items without plot/cast/director
+     */
+    suspend fun countVodNeedingInfoBackfill(): Long
+
+    /**
+     * Count series items still needing info backfill.
+     *
+     * @return Number of series items without plot/cast
+     */
+    suspend fun countSeriesNeedingInfoBackfill(): Long
 }

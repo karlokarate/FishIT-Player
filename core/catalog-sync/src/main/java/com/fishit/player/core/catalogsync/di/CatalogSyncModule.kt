@@ -1,7 +1,9 @@
 package com.fishit.player.core.catalogsync.di
 
 import com.fishit.player.core.catalogsync.CatalogSyncService
+import com.fishit.player.core.catalogsync.DataStoreSyncCheckpointStore
 import com.fishit.player.core.catalogsync.DefaultCatalogSyncService
+import com.fishit.player.core.catalogsync.SyncCheckpointStore
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -28,4 +30,8 @@ abstract class CatalogSyncModule {
     @Binds
     @Singleton
     abstract fun bindCatalogSyncService(impl: DefaultCatalogSyncService): CatalogSyncService
+
+    @Binds
+    @Singleton
+    abstract fun bindSyncCheckpointStore(impl: DataStoreSyncCheckpointStore): SyncCheckpointStore
 }

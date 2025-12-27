@@ -58,10 +58,16 @@ class TelegramActivationObserver
         }
 
         private sealed interface TelegramActivation {
+            /** Telegram is authorized and ready */
             data object Active : TelegramActivation
 
+            /** Telegram is explicitly disconnected/logged out */
             data object Inactive : TelegramActivation
 
+            /** Telegram is initializing - do NOT change activation state */
+            data object Unchanged : TelegramActivation
+
+            /** Telegram has an error that prevents operation */
             data class Error(
                 val reason: SourceErrorReason,
             ) : TelegramActivation
@@ -70,25 +76,36 @@ class TelegramActivationObserver
         private fun mapToActivation(state: TelegramAuthState): TelegramActivation {
             val activation =
                 when (state) {
+                    // Authorized = ACTIVE
                     is TelegramAuthState.Connected -> TelegramActivation.Active
 
-                    // Logged out/disconnected = inactive, no error
+                    // Explicitly logged out/disconnected = INACTIVE
                     is TelegramAuthState.Disconnected -> TelegramActivation.Inactive
 
-                    // Waiting for user input = login required
+                    // Idle = TDLib initializing, do NOT change activation state
+                    // This prevents false INACTIVE at app startup
+                    is TelegramAuthState.Idle -> TelegramActivation.Unchanged
+
+                    // Waiting for user input = user is in auth flow, don't change state
+                    // (they might be re-authenticating while previously ACTIVE)
                     is TelegramAuthState.WaitingForPhone,
                     is TelegramAuthState.WaitingForCode,
                     is TelegramAuthState.WaitingForPassword,
-                    -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
+                    -> TelegramActivation.Unchanged
 
-                    // Idle state = still inactive
-                    is TelegramAuthState.Idle -> TelegramActivation.Inactive
-
-                    // Error state = inactive with error
+                    // Error state = inactive with LOGIN_REQUIRED
                     is TelegramAuthState.Error -> TelegramActivation.Error(SourceErrorReason.LOGIN_REQUIRED)
                 }
 
-            UnifiedLog.d(TAG) { "Auth state mapped: $state → $activation" }
+            // Only log state transitions at appropriate levels
+            when (activation) {
+                is TelegramActivation.Unchanged -> {
+                    UnifiedLog.d(TAG) { "Auth state=$state (initializing/in-progress) → leaving activation unchanged" }
+                }
+                else -> {
+                    UnifiedLog.d(TAG) { "Auth state mapped: $state → $activation" }
+                }
+            }
             return activation
         }
 
@@ -100,12 +117,16 @@ class TelegramActivationObserver
                     UnifiedLog.i(TAG) { "✅ Telegram source marked ACTIVE - workers should be scheduled" }
                 }
                 is TelegramActivation.Inactive -> {
-                    UnifiedLog.i(TAG) { "⚠️ Telegram inactive → setting INACTIVE" }
+                    UnifiedLog.i(TAG) { "Telegram disconnected → setting INACTIVE" }
                     sourceActivationStore.setTelegramInactive()
                 }
                 is TelegramActivation.Error -> {
-                    UnifiedLog.i(TAG) { "❌ Telegram error: ${activation.reason} → setting INACTIVE with reason" }
+                    UnifiedLog.w(TAG) { "❌ Telegram error: ${activation.reason} → setting INACTIVE with reason" }
                     sourceActivationStore.setTelegramInactive(activation.reason)
+                }
+                is TelegramActivation.Unchanged -> {
+                    // Do nothing - keep previous activation state
+                    // This prevents false INACTIVE at startup when TDLib is just initializing
                 }
             }
         }

@@ -57,9 +57,22 @@ data class WorkerInputData(
         /**
          * Parse InputData from Data directly.
          * Use this when accessing inputData from CoroutineWorker.
+         *
+         * **Runtime Budget Failsafe:**
+         * If max_runtime_ms is missing, 0, or negative, the default is applied.
+         * This guards against scheduling bugs that might write 0ms.
          */
-        fun from(data: Data): WorkerInputData =
-            WorkerInputData(
+        fun from(data: Data): WorkerInputData {
+            // Failsafe: treat missing, 0, or negative values as "use default"
+            // The key might be missing (not set) or explicitly set to an invalid value
+            val rawMaxRuntimeMs = data.getLong(WorkerConstants.KEY_MAX_RUNTIME_MS, 0L)
+            val effectiveMaxRuntimeMs = if (rawMaxRuntimeMs > 0) {
+                rawMaxRuntimeMs
+            } else {
+                WorkerConstants.DEFAULT_MAX_RUNTIME_MS
+            }
+
+            return WorkerInputData(
                 syncRunId = data.getString(WorkerConstants.KEY_SYNC_RUN_ID) ?: "",
                 syncMode = data.getString(WorkerConstants.KEY_SYNC_MODE) ?: WorkerConstants.SYNC_MODE_AUTO,
                 activeSources =
@@ -67,7 +80,7 @@ data class WorkerInputData(
                         .getStringArray(WorkerConstants.KEY_ACTIVE_SOURCES)
                         ?.toSet() ?: emptySet(),
                 wifiOnly = data.getBoolean(WorkerConstants.KEY_WIFI_ONLY, false),
-                maxRuntimeMs = data.getLong(WorkerConstants.KEY_MAX_RUNTIME_MS, WorkerConstants.DEFAULT_MAX_RUNTIME_MS),
+                maxRuntimeMs = effectiveMaxRuntimeMs,
                 deviceClass =
                     data.getString(WorkerConstants.KEY_DEVICE_CLASS)
                         ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET,
@@ -75,6 +88,7 @@ data class WorkerInputData(
                 telegramSyncKind = data.getString(WorkerConstants.KEY_TELEGRAM_SYNC_KIND),
                 ioSyncScope = data.getString(WorkerConstants.KEY_IO_SYNC_SCOPE),
             )
+        }
     }
 }
 

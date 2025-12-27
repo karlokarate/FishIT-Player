@@ -83,16 +83,23 @@ class CatalogSyncWorkSchedulerImpl
         }
 
         private fun buildRequest(request: CatalogSyncWorkRequest): OneTimeWorkRequest {
-            val inputData =
+            val builder =
                 Data
                     .Builder()
                     .putString(KEY_SYNC_RUN_ID, request.syncRunId)
                     .putString(KEY_SYNC_MODE, request.mode.storageValue)
                     .putStringArray(KEY_ACTIVE_SOURCES, request.activeSources.toTypedArray())
                     .putBoolean(KEY_WIFI_ONLY, request.wifiOnly)
-                    .putLong(KEY_MAX_RUNTIME_MS, request.maxRuntimeMs ?: 0L)
                     .putString(KEY_DEVICE_CLASS, request.deviceClass.orEmpty())
-                    .build()
+
+            // Only set max_runtime_ms if explicitly provided and > 0
+            // Otherwise, let the worker apply its DEFAULT_MAX_RUNTIME_MS
+            // This fixes the bug where null maxRuntimeMs was written as 0ms
+            request.maxRuntimeMs?.takeIf { it > 0 }?.let {
+                builder.putLong(KEY_MAX_RUNTIME_MS, it)
+            }
+
+            val inputData = builder.build()
 
             return OneTimeWorkRequestBuilder<CatalogSyncOrchestratorWorker>()
                 .setInputData(inputData)
