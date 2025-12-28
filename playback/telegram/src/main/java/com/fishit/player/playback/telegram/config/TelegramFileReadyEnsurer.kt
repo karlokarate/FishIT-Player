@@ -36,9 +36,8 @@ import kotlinx.coroutines.withTimeout
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md Section 5.2
  */
 class TelegramFileReadyEnsurer(
-        private val fileClient: TelegramFileClient,
+    private val fileClient: TelegramFileClient,
 ) {
-
     companion object {
         private const val TAG = "TelegramFileReadyEnsurer"
     }
@@ -61,10 +60,10 @@ class TelegramFileReadyEnsurer(
 
         // Start high-priority download
         fileClient.startDownload(
-                fileId = fileId,
-                priority = TelegramStreamingConfig.DOWNLOAD_PRIORITY_STREAMING,
-                offset = TelegramStreamingConfig.DOWNLOAD_OFFSET_START,
-                limit = TelegramStreamingConfig.DOWNLOAD_LIMIT_FULL,
+            fileId = fileId,
+            priority = TelegramStreamingConfig.DOWNLOAD_PRIORITY_STREAMING,
+            offset = TelegramStreamingConfig.DOWNLOAD_OFFSET_START,
+            limit = TelegramStreamingConfig.DOWNLOAD_LIMIT_FULL,
         )
 
         // Wait for readiness
@@ -84,15 +83,18 @@ class TelegramFileReadyEnsurer(
      * @return Local file path ready for seek
      * @throws TelegramStreamingException if fails or times out
      */
-    suspend fun ensureReadyForSeek(fileId: Int, seekPosition: Long): String {
+    suspend fun ensureReadyForSeek(
+        fileId: Int,
+        seekPosition: Long,
+    ): String {
         UnifiedLog.d(TAG) { "ensureReadyForSeek(fileId=$fileId, seekPosition=$seekPosition)" }
 
         // Start download at seek position with read-ahead
         fileClient.startDownload(
-                fileId = fileId,
-                priority = TelegramStreamingConfig.DOWNLOAD_PRIORITY_STREAMING,
-                offset = seekPosition,
-                limit = TelegramStreamingConfig.MIN_READ_AHEAD_BYTES,
+            fileId = fileId,
+            priority = TelegramStreamingConfig.DOWNLOAD_PRIORITY_STREAMING,
+            offset = seekPosition,
+            limit = TelegramStreamingConfig.MIN_READ_AHEAD_BYTES,
         )
 
         // Wait for minimum read-ahead at seek position (no moov validation)
@@ -129,17 +131,17 @@ class TelegramFileReadyEnsurer(
     // ========== Internal Methods ==========
 
     private suspend fun pollUntilReady(
-            fileId: Int,
-            validateMoov: Boolean,
-            minBytes: Long = TelegramStreamingConfig.MIN_PREFIX_FOR_VALIDATION_BYTES,
+        fileId: Int,
+        validateMoov: Boolean,
+        minBytes: Long = TelegramStreamingConfig.MIN_PREFIX_FOR_VALIDATION_BYTES,
     ): String {
         var lastLogTime = 0L
         var moovIncompleteStartTime: Long? = null
 
         while (true) {
             val file =
-                    fileClient.getFile(fileId)
-                            ?: throw TelegramStreamingException("File not found: $fileId")
+                fileClient.getFile(fileId)
+                    ?: throw TelegramStreamingException("File not found: $fileId")
 
             val prefixSize = file.downloadedPrefixSize
             val localPath = file.localPath
@@ -147,7 +149,7 @@ class TelegramFileReadyEnsurer(
             // Throttled logging
             val now = System.currentTimeMillis()
             if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
-                            now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
+                now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
             ) {
                 UnifiedLog.d(TAG) {
                     "Polling: prefix=${prefixSize / 1024}KB, target=${minBytes / 1024}KB"
@@ -187,23 +189,23 @@ class TelegramFileReadyEnsurer(
                                 "Moov found but incomplete, waiting for more data..."
                             }
                         } else if (now - moovIncompleteStartTime >=
-                                        Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
+                            Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
                         ) {
                             // Timeout waiting for moov to complete
                             throw TelegramStreamingException(
-                                    "Moov atom incomplete after ${Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS}ms " +
-                                            "(moovStart=${moovResult.moovStart}, moovSize=${moovResult.moovSize}, available=$prefixSize)"
+                                "Moov atom incomplete after ${Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS}ms " +
+                                    "(moovStart=${moovResult.moovStart}, moovSize=${moovResult.moovSize}, available=$prefixSize)",
                             )
                         }
                     }
                     !moovResult.found &&
-                            prefixSize >= TelegramStreamingConfig.MAX_PREFIX_SCAN_BYTES -> {
+                        prefixSize >= TelegramStreamingConfig.MAX_PREFIX_SCAN_BYTES -> {
                         // Scanned max prefix, moov not found
                         throw TelegramStreamingException(
-                                "Moov atom not found after ${prefixSize / 1024}KB - file may not support streaming"
+                            "Moov atom not found after ${prefixSize / 1024}KB - file may not support streaming",
                         )
                     }
-                // else: moov not found yet, continue polling
+                    // else: moov not found yet, continue polling
                 }
             }
 
@@ -217,14 +219,17 @@ class TelegramFileReadyEnsurer(
      * Uses correct check: downloadedPrefixSize >= seekPosition + MIN_READ_AHEAD_BYTES (not just
      * comparing against minBytes threshold).
      */
-    private suspend fun pollUntilReadyForSeek(fileId: Int, seekPosition: Long): String {
+    private suspend fun pollUntilReadyForSeek(
+        fileId: Int,
+        seekPosition: Long,
+    ): String {
         val requiredBytes = seekPosition + TelegramStreamingConfig.MIN_READ_AHEAD_BYTES
         var lastLogTime = 0L
 
         while (true) {
             val file =
-                    fileClient.getFile(fileId)
-                            ?: throw TelegramStreamingException("File not found: $fileId")
+                fileClient.getFile(fileId)
+                    ?: throw TelegramStreamingException("File not found: $fileId")
 
             val prefixSize = file.downloadedPrefixSize
             // Use expectedSize when size is 0 (file size not yet known)
@@ -234,7 +239,7 @@ class TelegramFileReadyEnsurer(
             // Throttled logging
             val now = System.currentTimeMillis()
             if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
-                            now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
+                now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
             ) {
                 UnifiedLog.d(TAG) {
                     "Seek poll: prefix=${prefixSize / 1024}KB, required=${requiredBytes / 1024}KB"
@@ -253,10 +258,10 @@ class TelegramFileReadyEnsurer(
                 // Either we have the required bytes, or we're at/past end of file
                 val hasEnoughBytes = prefixSize >= requiredBytes
                 val isNearEndOfFile =
-                        totalSize > 0 &&
-                                seekPosition + TelegramStreamingConfig.MIN_READ_AHEAD_BYTES >
-                                        totalSize &&
-                                prefixSize >= seekPosition
+                    totalSize > 0 &&
+                        seekPosition + TelegramStreamingConfig.MIN_READ_AHEAD_BYTES >
+                        totalSize &&
+                        prefixSize >= seekPosition
 
                 if (hasEnoughBytes || isNearEndOfFile) {
                     UnifiedLog.d(TAG) { "Seek ready at $seekPosition: $localPath" }
@@ -270,5 +275,7 @@ class TelegramFileReadyEnsurer(
 }
 
 /** Exception thrown when streaming readiness cannot be achieved. */
-class TelegramStreamingException(message: String, cause: Throwable? = null) :
-        Exception(message, cause)
+class TelegramStreamingException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
