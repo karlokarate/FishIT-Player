@@ -32,69 +32,75 @@ import javax.inject.Singleton
  * - Consumption is atomic (swap with null)
  */
 @Singleton
-class PlaybackPendingState @Inject constructor() {
+class PlaybackPendingState
+    @Inject
+    constructor() {
+        private val _pending = MutableStateFlow<PendingPlayback?>(null)
+        val pending: StateFlow<PendingPlayback?> = _pending.asStateFlow()
 
-    private val _pending = MutableStateFlow<PendingPlayback?>(null)
-    val pending: StateFlow<PendingPlayback?> = _pending.asStateFlow()
+        /**
+         * Sets the pending playback request.
+         *
+         * Called by navigation layer when DetailScreen emits StartPlayback.
+         */
+        fun setPendingPlayback(
+            canonicalId: CanonicalMediaId,
+            source: MediaSourceRef,
+            resumePositionMs: Long,
+            title: String? = null,
+            posterUrl: String? = null,
+        ) {
+            _pending.value =
+                PendingPlayback(
+                    canonicalId = canonicalId,
+                    source = source,
+                    resumePositionMs = resumePositionMs,
+                    title = title,
+                    posterUrl = posterUrl,
+                )
+        }
 
-    /**
-     * Sets the pending playback request.
-     *
-     * Called by navigation layer when DetailScreen emits StartPlayback.
-     */
-    fun setPendingPlayback(
-        canonicalId: CanonicalMediaId,
-        source: MediaSourceRef,
-        resumePositionMs: Long,
-        title: String? = null,
-        posterUrl: String? = null,
-    ) {
-        _pending.value = PendingPlayback(
-            canonicalId = canonicalId,
-            source = source,
-            resumePositionMs = resumePositionMs,
-            title = title,
-            posterUrl = posterUrl,
-        )
+        /**
+         * Sets the pending playback from a StartPlayback event.
+         */
+        fun setPendingPlayback(
+            event: UnifiedDetailEvent.StartPlayback,
+            title: String? = null,
+            posterUrl: String? = null,
+        ) {
+            setPendingPlayback(
+                canonicalId = event.canonicalId,
+                source = event.source,
+                resumePositionMs = event.resumePositionMs,
+                title = title,
+                posterUrl = posterUrl,
+            )
+        }
+
+        /**
+         * Consumes and clears the pending playback.
+         *
+         * Called by PlayerNavScreen/PlayerNavViewModel to retrieve the full context.
+         * Returns null if no pending playback exists (fallback to URL params).
+         */
+        fun consumePendingPlayback(): PendingPlayback? {
+            val current = _pending.value
+            _pending.value = null
+            return current
+        }
+
+        /**
+         * Checks if there's a pending playback without consuming it.
+         */
+        fun hasPendingPlayback(): Boolean = _pending.value != null
+
+        /**
+         * Clears any pending playback (e.g., on navigation back).
+         */
+        fun clearPending() {
+            _pending.value = null
+        }
     }
-
-    /**
-     * Sets the pending playback from a StartPlayback event.
-     */
-    fun setPendingPlayback(event: UnifiedDetailEvent.StartPlayback, title: String? = null, posterUrl: String? = null) {
-        setPendingPlayback(
-            canonicalId = event.canonicalId,
-            source = event.source,
-            resumePositionMs = event.resumePositionMs,
-            title = title,
-            posterUrl = posterUrl,
-        )
-    }
-
-    /**
-     * Consumes and clears the pending playback.
-     *
-     * Called by PlayerNavScreen/PlayerNavViewModel to retrieve the full context.
-     * Returns null if no pending playback exists (fallback to URL params).
-     */
-    fun consumePendingPlayback(): PendingPlayback? {
-        val current = _pending.value
-        _pending.value = null
-        return current
-    }
-
-    /**
-     * Checks if there's a pending playback without consuming it.
-     */
-    fun hasPendingPlayback(): Boolean = _pending.value != null
-
-    /**
-     * Clears any pending playback (e.g., on navigation back).
-     */
-    fun clearPending() {
-        _pending.value = null
-    }
-}
 
 /**
  * Pending playback data transferred between Detail and Player screens.

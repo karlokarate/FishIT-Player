@@ -12,14 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -30,9 +29,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.fishit.player.core.imaging.compose.FishImage
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 
 /**
@@ -50,9 +52,7 @@ import com.fishit.player.feature.telegram.domain.TelegramMediaItem
  * - Uses TelegramMediaItem (domain model), NOT RawMediaMetadata
  */
 @Composable
-fun TelegramMediaScreen(
-    viewModel: TelegramMediaViewModel = hiltViewModel(),
-) {
+fun TelegramMediaScreen(viewModel: TelegramMediaViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val mediaItems by viewModel.mediaItems.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -85,7 +85,7 @@ fun TelegramMediaScreen(
         // Snackbar for errors
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }
@@ -94,7 +94,7 @@ fun TelegramMediaScreen(
 private fun LoadingState() {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
@@ -108,18 +108,18 @@ private fun LoadingState() {
 private fun EmptyState() {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "No Telegram media found",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Sync your Telegram chats to see media",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -134,13 +134,13 @@ private fun MediaItemsList(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(items = items, key = { it.mediaId }) { item ->
             MediaItemCard(
                 item = item,
                 onClick = { onItemClick(item) },
-                enabled = !isPlaybackStarting
+                enabled = !isPlaybackStarting,
             )
         }
     }
@@ -153,45 +153,60 @@ private fun MediaItemCard(
     enabled: Boolean,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled, onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Placeholder for thumbnail
             Box(
-                modifier = Modifier
-                    .size(80.dp, 60.dp)
-                    .padding(end = 16.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(80.dp, 60.dp)
+                        .padding(end = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                // TODO: Add thumbnail image loading with Coil
-                Text(
-                    text = "🎬",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+                val imageRef = remember(item.posterUrl) { item.posterUrl?.let(ImageRef::fromString) }
+
+                if (imageRef != null) {
+                    FishImage(
+                        imageRef = imageRef,
+                        contentDescription = item.title,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(8.dp)),
+                    )
+                } else {
+                    Text(
+                        text = "🎬",
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                }
             }
 
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = item.sourceLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 item.durationMs?.let { durationMs ->
                     val durationMinutes = (durationMs / 60_000).toInt()
@@ -199,7 +214,7 @@ private fun MediaItemCard(
                     Text(
                         text = "${durationMinutes}m • ${item.mediaType.name}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

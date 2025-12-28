@@ -3,7 +3,6 @@ package com.fishit.player.v2
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
 import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
-import com.fishit.player.core.sourceactivation.SourceActivationState
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.core.sourceactivation.SourceId
@@ -18,7 +17,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Unit tests for [TelegramActivationObserver] auth state mapping.
@@ -30,7 +28,6 @@ import kotlin.test.assertTrue
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TelegramActivationObserverMappingTest {
-
     private lateinit var fakeAuthRepository: FakeTelegramAuthRepository
     private lateinit var fakeActivationStore: FakeSourceActivationStore
     private lateinit var testScope: TestScope
@@ -42,138 +39,173 @@ class TelegramActivationObserverMappingTest {
         fakeActivationStore = FakeSourceActivationStore()
         testScope = TestScope()
 
-        observer = TelegramActivationObserver(
-            telegramAuthRepository = fakeAuthRepository,
-            sourceActivationStore = fakeActivationStore,
-            appScope = testScope as CoroutineScope,
-        )
+        observer =
+            TelegramActivationObserver(
+                telegramAuthRepository = fakeAuthRepository,
+                sourceActivationStore = fakeActivationStore,
+                appScope = testScope as CoroutineScope,
+            )
     }
 
     @Test
-    fun `Idle state does NOT trigger setTelegramInactive`() = testScope.runTest {
-        // Given: initial state is Idle
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
+    fun `Idle state does NOT trigger setTelegramInactive`() =
+        testScope.runTest {
+            // Given: initial state is Idle
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
 
-        // When: observer starts
-        observer.start()
-        advanceUntilIdle()
+            // When: observer starts
+            observer.start()
+            advanceUntilIdle()
 
-        // Then: setTelegramInactive should NOT have been called
-        assertEquals(0, fakeActivationStore.setInactiveCalls.size,
-            "Idle should NOT call setTelegramInactive()")
-        assertEquals(0, fakeActivationStore.setActiveCalls,
-            "Idle should NOT call setTelegramActive()")
-    }
-
-    @Test
-    fun `Connected state triggers setTelegramActive`() = testScope.runTest {
-        // Given: initial state is Idle
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
-        observer.start()
-        advanceUntilIdle()
-
-        // When: state changes to Connected
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
-        advanceUntilIdle()
-
-        // Then: setTelegramActive should have been called once
-        assertEquals(1, fakeActivationStore.setActiveCalls,
-            "Connected should call setTelegramActive() exactly once")
-    }
+            // Then: setTelegramInactive should NOT have been called
+            assertEquals(
+                0,
+                fakeActivationStore.setInactiveCalls.size,
+                "Idle should NOT call setTelegramInactive()",
+            )
+            assertEquals(
+                0,
+                fakeActivationStore.setActiveCalls,
+                "Idle should NOT call setTelegramActive()",
+            )
+        }
 
     @Test
-    fun `Disconnected state triggers setTelegramInactive`() = testScope.runTest {
-        // Given: initial state is Connected
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
-        observer.start()
-        advanceUntilIdle()
-        fakeActivationStore.reset()
+    fun `Connected state triggers setTelegramActive`() =
+        testScope.runTest {
+            // Given: initial state is Idle
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
+            observer.start()
+            advanceUntilIdle()
 
-        // When: state changes to Disconnected
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Disconnected
-        advanceUntilIdle()
+            // When: state changes to Connected
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
+            advanceUntilIdle()
 
-        // Then: setTelegramInactive should have been called
-        assertEquals(1, fakeActivationStore.setInactiveCalls.size,
-            "Disconnected should call setTelegramInactive() exactly once")
-    }
-
-    @Test
-    fun `Error state triggers setTelegramInactive with reason`() = testScope.runTest {
-        // Given: initial state is Connected
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
-        observer.start()
-        advanceUntilIdle()
-        fakeActivationStore.reset()
-
-        // When: state changes to Error
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Error("Auth failed")
-        advanceUntilIdle()
-
-        // Then: setTelegramInactive should have been called with reason
-        assertEquals(1, fakeActivationStore.setInactiveCalls.size,
-            "Error should call setTelegramInactive() exactly once")
-        assertEquals(SourceErrorReason.LOGIN_REQUIRED, fakeActivationStore.setInactiveCalls.first(),
-            "Error should pass LOGIN_REQUIRED reason")
-    }
+            // Then: setTelegramActive should have been called once
+            assertEquals(
+                1,
+                fakeActivationStore.setActiveCalls,
+                "Connected should call setTelegramActive() exactly once",
+            )
+        }
 
     @Test
-    fun `WaitingForPhone does NOT change activation state`() = testScope.runTest {
-        // Given: Telegram was previously active
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
-        observer.start()
-        advanceUntilIdle()
-        fakeActivationStore.reset()
+    fun `Disconnected state triggers setTelegramInactive`() =
+        testScope.runTest {
+            // Given: initial state is Connected
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
+            observer.start()
+            advanceUntilIdle()
+            fakeActivationStore.reset()
 
-        // When: state changes to WaitingForPhone (re-auth scenario)
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.WaitingForPhone
-        advanceUntilIdle()
+            // When: state changes to Disconnected
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Disconnected
+            advanceUntilIdle()
 
-        // Then: no activation change should occur
-        assertEquals(0, fakeActivationStore.setActiveCalls,
-            "WaitingForPhone should NOT call setTelegramActive()")
-        assertEquals(0, fakeActivationStore.setInactiveCalls.size,
-            "WaitingForPhone should NOT call setTelegramInactive()")
-    }
-
-    @Test
-    fun `multiple Idle emissions do not spam setInactive`() = testScope.runTest {
-        // Given: initial state is Idle
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
-        observer.start()
-        advanceUntilIdle()
-
-        // When: Idle is emitted multiple times (simulated by re-setting same value)
-        // Note: distinctUntilChanged should prevent re-processing
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
-        advanceUntilIdle()
-
-        // Then: setTelegramInactive should never have been called
-        assertEquals(0, fakeActivationStore.setInactiveCalls.size,
-            "Multiple Idle emissions should not call setTelegramInactive()")
-    }
+            // Then: setTelegramInactive should have been called
+            assertEquals(
+                1,
+                fakeActivationStore.setInactiveCalls.size,
+                "Disconnected should call setTelegramInactive() exactly once",
+            )
+        }
 
     @Test
-    fun `full flow - Idle to Connected to Disconnected`() = testScope.runTest {
-        // Given: initial state is Idle
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
-        observer.start()
-        advanceUntilIdle()
+    fun `Error state triggers setTelegramInactive with reason`() =
+        testScope.runTest {
+            // Given: initial state is Connected
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
+            observer.start()
+            advanceUntilIdle()
+            fakeActivationStore.reset()
 
-        // Initial: no calls
-        assertEquals(0, fakeActivationStore.setActiveCalls, "No setActive on Idle")
-        assertEquals(0, fakeActivationStore.setInactiveCalls.size, "No setInactive on Idle")
+            // When: state changes to Error
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Error("Auth failed")
+            advanceUntilIdle()
 
-        // When: Connected
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
-        advanceUntilIdle()
-        assertEquals(1, fakeActivationStore.setActiveCalls, "setActive on Connected")
+            // Then: setTelegramInactive should have been called with reason
+            assertEquals(
+                1,
+                fakeActivationStore.setInactiveCalls.size,
+                "Error should call setTelegramInactive() exactly once",
+            )
+            assertEquals(
+                SourceErrorReason.LOGIN_REQUIRED,
+                fakeActivationStore.setInactiveCalls.first(),
+                "Error should pass LOGIN_REQUIRED reason",
+            )
+        }
 
-        // When: Disconnected
-        fakeAuthRepository.authStateFlow.value = TelegramAuthState.Disconnected
-        advanceUntilIdle()
-        assertEquals(1, fakeActivationStore.setInactiveCalls.size, "setInactive on Disconnected")
-    }
+    @Test
+    fun `WaitingForPhone does NOT change activation state`() =
+        testScope.runTest {
+            // Given: Telegram was previously active
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
+            observer.start()
+            advanceUntilIdle()
+            fakeActivationStore.reset()
+
+            // When: state changes to WaitingForPhone (re-auth scenario)
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.WaitingForPhone
+            advanceUntilIdle()
+
+            // Then: no activation change should occur
+            assertEquals(
+                0,
+                fakeActivationStore.setActiveCalls,
+                "WaitingForPhone should NOT call setTelegramActive()",
+            )
+            assertEquals(
+                0,
+                fakeActivationStore.setInactiveCalls.size,
+                "WaitingForPhone should NOT call setTelegramInactive()",
+            )
+        }
+
+    @Test
+    fun `multiple Idle emissions do not spam setInactive`() =
+        testScope.runTest {
+            // Given: initial state is Idle
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
+            observer.start()
+            advanceUntilIdle()
+
+            // When: Idle is emitted multiple times (simulated by re-setting same value)
+            // Note: distinctUntilChanged should prevent re-processing
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
+            advanceUntilIdle()
+
+            // Then: setTelegramInactive should never have been called
+            assertEquals(
+                0,
+                fakeActivationStore.setInactiveCalls.size,
+                "Multiple Idle emissions should not call setTelegramInactive()",
+            )
+        }
+
+    @Test
+    fun `full flow - Idle to Connected to Disconnected`() =
+        testScope.runTest {
+            // Given: initial state is Idle
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Idle
+            observer.start()
+            advanceUntilIdle()
+
+            // Initial: no calls
+            assertEquals(0, fakeActivationStore.setActiveCalls, "No setActive on Idle")
+            assertEquals(0, fakeActivationStore.setInactiveCalls.size, "No setInactive on Idle")
+
+            // When: Connected
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Connected
+            advanceUntilIdle()
+            assertEquals(1, fakeActivationStore.setActiveCalls, "setActive on Connected")
+
+            // When: Disconnected
+            fakeAuthRepository.authStateFlow.value = TelegramAuthState.Disconnected
+            advanceUntilIdle()
+            assertEquals(1, fakeActivationStore.setInactiveCalls.size, "setInactive on Disconnected")
+        }
 
     // --- Fake implementations ---
 
@@ -184,9 +216,13 @@ class TelegramActivationObserverMappingTest {
             get() = authStateFlow
 
         override suspend fun ensureAuthorized() {}
+
         override suspend fun sendPhoneNumber(phoneNumber: String) {}
+
         override suspend fun sendCode(code: String) {}
+
         override suspend fun sendPassword(password: String) {}
+
         override suspend fun logout() {}
     }
 
@@ -209,17 +245,29 @@ class TelegramActivationObserverMappingTest {
 
         // --- Unused methods for this test ---
         override fun observeStates(): Flow<SourceActivationSnapshot> = flowOf()
-        override fun getCurrentSnapshot(): SourceActivationSnapshot = SourceActivationSnapshot(
-            emptyMap(), emptySet()
-        )
+
+        override fun getCurrentSnapshot(): SourceActivationSnapshot =
+            SourceActivationSnapshot(
+                emptyMap(),
+                emptySet(),
+            )
+
         override fun getActiveSources(): Set<SourceId> = emptySet()
+
         override suspend fun setXtreamActive() {}
+
         override suspend fun setXtreamInactive(reason: SourceErrorReason?) {}
+
         override suspend fun setIoActive() {}
+
         override suspend fun setIoInactive(reason: SourceErrorReason?) {}
+
         override suspend fun setAudiobookActive() {}
+
         override suspend fun setAudiobookInactive(reason: SourceErrorReason?) {}
+
         override suspend fun markXtreamLoginRequired() {}
+
         override suspend fun clearXtreamError() {}
     }
 }

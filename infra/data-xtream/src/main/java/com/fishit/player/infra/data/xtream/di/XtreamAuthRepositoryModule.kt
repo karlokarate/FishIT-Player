@@ -17,10 +17,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamAuthRepositoryModule {
-
     @Binds
     @Singleton
-    abstract fun bindXtreamAuthRepository(
-        impl: XtreamAuthRepositoryAdapter
-    ): XtreamAuthRepository
+    abstract fun bindXtreamAuthRepository(impl: XtreamAuthRepositoryAdapter): XtreamAuthRepository
 }

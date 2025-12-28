@@ -52,7 +52,7 @@ constructor(
                             "live=${config.includeLive}",
             )
 
-            trySend(
+            send(
                     XtreamCatalogEvent.ScanStarted(
                             includesVod = config.includeVod,
                             includesSeries = config.includeSeries,
@@ -79,11 +79,11 @@ constructor(
                         if (!currentCoroutineContext().isActive) break
 
                         val catalogItem = mapper.fromVod(item, headers)
-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         vodCount++
 
                         if (vodCount % PROGRESS_LOG_INTERVAL == 0) {
-                            trySend(
+                            send(
                                     XtreamCatalogEvent.ScanProgress(
                                             vodCount = vodCount,
                                             seriesCount = seriesCount,
@@ -113,11 +113,11 @@ constructor(
                         if (!currentCoroutineContext().isActive) break
 
                         val catalogItem = mapper.fromSeries(item, headers)
-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         seriesCount++
 
                         if (seriesCount % PROGRESS_LOG_INTERVAL == 0) {
-                            trySend(
+                            send(
                                     XtreamCatalogEvent.ScanProgress(
                                             vodCount = vodCount,
                                             seriesCount = seriesCount,
@@ -147,11 +147,11 @@ constructor(
 
                         // seriesName is now embedded in episode from DefaultXtreamCatalogSource
                         val catalogItem = mapper.fromEpisode(episode, episode.seriesName, headers)
-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         episodeCount++
 
                         if (episodeCount % PROGRESS_LOG_INTERVAL == 0) {
-                            trySend(
+                            send(
                                     XtreamCatalogEvent.ScanProgress(
                                             vodCount = vodCount,
                                             seriesCount = seriesCount,
@@ -180,11 +180,11 @@ constructor(
                         if (!currentCoroutineContext().isActive) break
 
                         val catalogItem = mapper.fromChannel(channel, headers)
-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         liveCount++
 
                         if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
-                            trySend(
+                            send(
                                     XtreamCatalogEvent.ScanProgress(
                                             vodCount = vodCount,
                                             seriesCount = seriesCount,
@@ -205,7 +205,7 @@ constructor(
             // Check if cancelled
             if (!currentCoroutineContext().isActive) {
                 UnifiedLog.i(TAG, "Scan cancelled")
-                trySend(
+                send(
                         XtreamCatalogEvent.ScanCancelled(
                                 vodCount = vodCount,
                                 seriesCount = seriesCount,
@@ -226,7 +226,7 @@ constructor(
                             "in ${durationMs}ms",
             )
 
-            trySend(
+            send(
                     XtreamCatalogEvent.ScanCompleted(
                             vodCount = vodCount,
                             seriesCount = seriesCount,
@@ -240,7 +240,7 @@ constructor(
             throw ce
         } catch (t: Throwable) {
             UnifiedLog.e(TAG, "Xtream catalog scan failed", t)
-            trySend(
+            send(
                     XtreamCatalogEvent.ScanError(
                             reason = "unexpected_error",
                             message = t.message ?: "Unknown error",

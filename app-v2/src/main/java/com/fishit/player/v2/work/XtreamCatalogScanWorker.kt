@@ -46,8 +46,8 @@ import kotlinx.coroutines.isActive
  */
 @HiltWorker
 class XtreamCatalogScanWorker
-@AssistedInject
-constructor(
+    @AssistedInject
+    constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
         private val catalogSyncService: CatalogSyncService,
@@ -55,21 +55,20 @@ constructor(
         private val catalogRepository: XtreamCatalogRepository,
         private val liveRepository: XtreamLiveRepository,
         private val xtreamApiClient: XtreamApiClient,
-) : CoroutineWorker(context, workerParams) {
+    ) : CoroutineWorker(context, workerParams) {
+        companion object {
+            private const val TAG = "XtreamCatalogScanWorker"
+            private const val INFO_BACKFILL_BATCH_SIZE = 10
+            private const val INFO_BACKFILL_THROTTLE_MS = 200L
+        }
 
-    companion object {
-        private const val TAG = "XtreamCatalogScanWorker"
-        private const val INFO_BACKFILL_BATCH_SIZE = 10
-        private const val INFO_BACKFILL_THROTTLE_MS = 200L
-    }
+        override suspend fun doWork(): Result {
+            val input = WorkerInputData.from(inputData)
+            val startTimeMs = System.currentTimeMillis()
+            var itemsPersisted = 0L
 
-    override suspend fun doWork(): Result {
-        val input = WorkerInputData.from(inputData)
-        val startTimeMs = System.currentTimeMillis()
-        var itemsPersisted = 0L
-
-        // Load or create checkpoint
-        val initialCheckpoint =
+            // Load or create checkpoint
+            val initialCheckpoint =
                 if (input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN) {
                     // Force rescan: clear checkpoint and start fresh
                     checkpointStore.clearXtreamCheckpoint()
@@ -78,173 +77,176 @@ constructor(
                     val saved = checkpointStore.getXtreamCheckpoint()
                     XtreamSyncCheckpoint.decode(saved)
                 }
-        var currentCheckpoint = initialCheckpoint
+            var currentCheckpoint = initialCheckpoint
 
-        // Log runtime budget for debugging (W-17: no secrets in logs)
-        UnifiedLog.i(TAG) {
-            "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=XTREAM " +
+            // Log runtime budget for debugging (W-17: no secrets in logs)
+            UnifiedLog.i(TAG) {
+                "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=XTREAM " +
                     "scope=${input.xtreamSyncScope} runtimeBudgetMs=${input.maxRuntimeMs} " +
                     "checkpoint=${currentCheckpoint.encode()}"
-        }
-
-        // Check runtime guards (respects sync mode - manual syncs skip battery guards)
-        val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
-        if (guardReason != null) {
-            UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
-            return Result.retry()
-        }
-
-        // Helper to check if budget is exceeded
-        fun isBudgetExceeded(): Boolean {
-            val elapsed = System.currentTimeMillis() - startTimeMs
-            return elapsed > input.maxRuntimeMs
-        }
-
-        // Helper to save checkpoint and return retry
-        suspend fun saveAndRetry(checkpoint: XtreamSyncCheckpoint): Result {
-            val encoded = checkpoint.encode()
-            checkpointStore.saveXtreamCheckpoint(encoded)
-            val elapsed = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.i(TAG) {
-                "CHECKPOINT_SAVED cursor=$encoded elapsed=${elapsed}ms persisted=$itemsPersisted"
-            }
-            return Result.retry()
-        }
-
-        try {
-            // Process phases based on checkpoint
-            when (currentCheckpoint.phase) {
-                XtreamSyncPhase.VOD_LIST,
-                XtreamSyncPhase.SERIES_LIST,
-                XtreamSyncPhase.SERIES_EPISODES,
-                XtreamSyncPhase.LIVE_LIST -> {
-                    // Run catalog sync for list phases
-                    val result = runCatalogSync(input, currentCheckpoint, startTimeMs)
-                    itemsPersisted = result.itemsPersisted
-                    currentCheckpoint = result.checkpoint
-
-                    if (result.budgetExceeded) {
-                        return saveAndRetry(currentCheckpoint)
-                    }
-                }
-                XtreamSyncPhase.VOD_INFO -> {
-                    val result = runVodInfoBackfill(input, currentCheckpoint, startTimeMs)
-                    currentCheckpoint = result.checkpoint
-
-                    if (result.budgetExceeded) {
-                        return saveAndRetry(currentCheckpoint)
-                    }
-                }
-                XtreamSyncPhase.SERIES_INFO -> {
-                    val result = runSeriesInfoBackfill(input, currentCheckpoint, startTimeMs)
-                    currentCheckpoint = result.checkpoint
-
-                    if (result.budgetExceeded) {
-                        return saveAndRetry(currentCheckpoint)
-                    }
-                }
-                XtreamSyncPhase.COMPLETED -> {
-                    // Already completed - nothing to do
-                    UnifiedLog.i(TAG) { "Sync already completed, nothing to do" }
-                }
             }
 
-            // All phases completed successfully
-            val durationMs = System.currentTimeMillis() - startTimeMs
+            // Check runtime guards (respects sync mode - manual syncs skip battery guards)
+            val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+            if (guardReason != null) {
+                UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
+                return Result.retry()
+            }
 
-            // Log summary with counts
-            val vodCount = catalogRepository.count(MediaType.MOVIE)
-            val seriesCount = catalogRepository.count(MediaType.SERIES)
-            val episodeCount = catalogRepository.count(MediaType.SERIES_EPISODE)
-            val liveCount = liveRepository.count()
-            val vodBackfillRemaining = catalogRepository.countVodNeedingInfoBackfill()
-            val seriesBackfillRemaining = catalogRepository.countSeriesNeedingInfoBackfill()
+            // Helper to check if budget is exceeded
+            fun isBudgetExceeded(): Boolean {
+                val elapsed = System.currentTimeMillis() - startTimeMs
+                return elapsed > input.maxRuntimeMs
+            }
 
-            UnifiedLog.i(TAG) {
-                "SUCCESS duration_ms=$durationMs | " +
+            // Helper to save checkpoint and return retry
+            suspend fun saveAndRetry(checkpoint: XtreamSyncCheckpoint): Result {
+                val encoded = checkpoint.encode()
+                checkpointStore.saveXtreamCheckpoint(encoded)
+                val elapsed = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.i(TAG) {
+                    "CHECKPOINT_SAVED cursor=$encoded elapsed=${elapsed}ms persisted=$itemsPersisted"
+                }
+                return Result.retry()
+            }
+
+            try {
+                // Process phases based on checkpoint
+                when (currentCheckpoint.phase) {
+                    XtreamSyncPhase.VOD_LIST,
+                    XtreamSyncPhase.SERIES_LIST,
+                    XtreamSyncPhase.SERIES_EPISODES,
+                    XtreamSyncPhase.LIVE_LIST,
+                    -> {
+                        // Run catalog sync for list phases
+                        val result = runCatalogSync(input, currentCheckpoint, startTimeMs)
+                        itemsPersisted = result.itemsPersisted
+                        currentCheckpoint = result.checkpoint
+
+                        if (result.budgetExceeded) {
+                            return saveAndRetry(currentCheckpoint)
+                        }
+                    }
+                    XtreamSyncPhase.VOD_INFO -> {
+                        val result = runVodInfoBackfill(input, currentCheckpoint, startTimeMs)
+                        currentCheckpoint = result.checkpoint
+
+                        if (result.budgetExceeded) {
+                            return saveAndRetry(currentCheckpoint)
+                        }
+                    }
+                    XtreamSyncPhase.SERIES_INFO -> {
+                        val result = runSeriesInfoBackfill(input, currentCheckpoint, startTimeMs)
+                        currentCheckpoint = result.checkpoint
+
+                        if (result.budgetExceeded) {
+                            return saveAndRetry(currentCheckpoint)
+                        }
+                    }
+                    XtreamSyncPhase.COMPLETED -> {
+                        // Already completed - nothing to do
+                        UnifiedLog.i(TAG) { "Sync already completed, nothing to do" }
+                    }
+                }
+
+                // All phases completed successfully
+                val durationMs = System.currentTimeMillis() - startTimeMs
+
+                // Log summary with counts
+                val vodCount = catalogRepository.count(MediaType.MOVIE)
+                val seriesCount = catalogRepository.count(MediaType.SERIES)
+                val episodeCount = catalogRepository.count(MediaType.SERIES_EPISODE)
+                val liveCount = liveRepository.count()
+                val vodBackfillRemaining = catalogRepository.countVodNeedingInfoBackfill()
+                val seriesBackfillRemaining = catalogRepository.countSeriesNeedingInfoBackfill()
+
+                UnifiedLog.i(TAG) {
+                    "SUCCESS duration_ms=$durationMs | " +
                         "vod=$vodCount series=$seriesCount episodes=$episodeCount live=$liveCount | " +
                         "backfill_remaining: vod=$vodBackfillRemaining series=$seriesBackfillRemaining"
-            }
+                }
 
-            // Clear checkpoint on full completion
-            checkpointStore.clearXtreamCheckpoint()
+                // Clear checkpoint on full completion
+                checkpointStore.clearXtreamCheckpoint()
 
-            return Result.success(
+                return Result.success(
                     WorkerOutputData.success(
-                            itemsPersisted = itemsPersisted,
-                            durationMs = durationMs,
-                            checkpointCursor = null, // Cleared on success
+                        itemsPersisted = itemsPersisted,
+                        durationMs = durationMs,
+                        checkpointCursor = null, // Cleared on success
                     ),
-            )
-        } catch (e: CancellationException) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            val encoded = currentCheckpoint.encode()
-            checkpointStore.saveXtreamCheckpoint(encoded)
-            UnifiedLog.w(TAG) { "Cancelled after ${durationMs}ms, checkpoint=$encoded" }
-            // Return success so checkpoint is preserved (not a failure)
-            return Result.success(
+                )
+            } catch (e: CancellationException) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                val encoded = currentCheckpoint.encode()
+                checkpointStore.saveXtreamCheckpoint(encoded)
+                UnifiedLog.w(TAG) { "Cancelled after ${durationMs}ms, checkpoint=$encoded" }
+                // Return success so checkpoint is preserved (not a failure)
+                return Result.success(
                     WorkerOutputData.success(
-                            itemsPersisted = itemsPersisted,
-                            durationMs = durationMs,
-                            checkpointCursor = encoded,
+                        itemsPersisted = itemsPersisted,
+                        durationMs = durationMs,
+                        checkpointCursor = encoded,
                     ),
-            )
-        } catch (e: Exception) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            val encoded = currentCheckpoint.encode()
-            checkpointStore.saveXtreamCheckpoint(encoded)
-            UnifiedLog.e(TAG, e) {
-                "FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs checkpoint=$encoded"
+                )
+            } catch (e: Exception) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                val encoded = currentCheckpoint.encode()
+                checkpointStore.saveXtreamCheckpoint(encoded)
+                UnifiedLog.e(TAG, e) {
+                    "FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs checkpoint=$encoded"
+                }
+                // Transient error - retry with backoff
+                return Result.retry()
             }
-            // Transient error - retry with backoff
-            return Result.retry()
         }
-    }
 
-    /** Run catalog sync for list phases (VOD_LIST, SERIES_LIST, SERIES_EPISODES, LIVE_LIST). */
-    private suspend fun runCatalogSync(
+        /** Run catalog sync for list phases (VOD_LIST, SERIES_LIST, SERIES_EPISODES, LIVE_LIST). */
+        private suspend fun runCatalogSync(
             input: WorkerInputData,
             checkpoint: XtreamSyncCheckpoint,
             startTimeMs: Long,
-    ): SyncPhaseResult {
-        var itemsPersisted = 0L
-        var currentCheckpoint = checkpoint
-        var budgetExceeded = false
+        ): SyncPhaseResult {
+            var itemsPersisted = 0L
+            var currentCheckpoint = checkpoint
+            var budgetExceeded = false
 
-        // Determine what to include based on checkpoint phase
-        val includeVod = checkpoint.phase == XtreamSyncPhase.VOD_LIST
-        val includeSeries =
+            // Determine what to include based on checkpoint phase
+            val includeVod = checkpoint.phase == XtreamSyncPhase.VOD_LIST
+            val includeSeries =
                 checkpoint.phase in
-                        listOf(
-                                XtreamSyncPhase.VOD_LIST,
-                                XtreamSyncPhase.SERIES_LIST,
-                        )
-        val includeEpisodes =
+                    listOf(
+                        XtreamSyncPhase.VOD_LIST,
+                        XtreamSyncPhase.SERIES_LIST,
+                    )
+            val includeEpisodes =
                 checkpoint.phase in
-                        listOf(
-                                XtreamSyncPhase.VOD_LIST,
-                                XtreamSyncPhase.SERIES_LIST,
-                                XtreamSyncPhase.SERIES_EPISODES,
-                        ) &&
-                        (input.xtreamSyncScope == WorkerConstants.XTREAM_SCOPE_FULL ||
-                                input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN)
-        val includeLive = true // Always include live in list phases
+                    listOf(
+                        XtreamSyncPhase.VOD_LIST,
+                        XtreamSyncPhase.SERIES_LIST,
+                        XtreamSyncPhase.SERIES_EPISODES,
+                    ) &&
+                    (
+                        input.xtreamSyncScope == WorkerConstants.XTREAM_SCOPE_FULL ||
+                            input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN
+                    )
+            val includeLive = true // Always include live in list phases
 
-        val syncConfig =
+            val syncConfig =
                 SyncConfig(
-                        batchSize = input.batchSize,
-                        enableNormalization = true,
-                        emitProgressEvery = input.batchSize,
+                    batchSize = input.batchSize,
+                    enableNormalization = true,
+                    emitProgressEvery = input.batchSize,
                 )
 
-        catalogSyncService.syncXtream(
-                        includeVod = includeVod,
-                        includeSeries = includeSeries,
-                        includeEpisodes = includeEpisodes,
-                        includeLive = includeLive,
-                        syncConfig = syncConfig,
-                )
-                .collect { status ->
+            catalogSyncService
+                .syncXtream(
+                    includeVod = includeVod,
+                    includeSeries = includeSeries,
+                    includeEpisodes = includeEpisodes,
+                    includeLive = includeLive,
+                    syncConfig = syncConfig,
+                ).collect { status ->
                     // Check if worker is cancelled
                     if (!currentCoroutineContext().isActive) {
                         throw CancellationException("Worker cancelled")
@@ -268,27 +270,27 @@ constructor(
                             val phase = parsePhaseFromStatus(status.currentPhase)
                             if (phase != null) {
                                 currentCheckpoint =
-                                        XtreamSyncCheckpoint(
-                                                phase = phase,
-                                                offset = status.itemsPersisted.toInt(),
-                                        )
+                                    XtreamSyncCheckpoint(
+                                        phase = phase,
+                                        offset = status.itemsPersisted.toInt(),
+                                    )
                             }
 
                             UnifiedLog.d(TAG) {
                                 "PROGRESS discovered=${status.itemsDiscovered} " +
-                                        "persisted=$itemsPersisted phase=${status.currentPhase}"
+                                    "persisted=$itemsPersisted phase=${status.currentPhase}"
                             }
                         }
                         is SyncStatus.Completed -> {
                             itemsPersisted = status.totalItems
                             // Advance to info backfill phase
                             currentCheckpoint =
-                                    XtreamSyncCheckpoint(
-                                            phase = XtreamSyncPhase.VOD_INFO,
-                                    )
+                                XtreamSyncCheckpoint(
+                                    phase = XtreamSyncPhase.VOD_INFO,
+                                )
                             UnifiedLog.i(TAG) {
                                 "Catalog sync completed: ${status.totalItems} items, " +
-                                        "advancing to VOD_INFO phase"
+                                    "advancing to VOD_INFO phase"
                             }
                         }
                         is SyncStatus.Cancelled -> {
@@ -301,62 +303,62 @@ constructor(
                     }
                 }
 
-        return SyncPhaseResult(
+            return SyncPhaseResult(
                 itemsPersisted = itemsPersisted,
                 checkpoint = currentCheckpoint,
                 budgetExceeded = budgetExceeded,
-        )
-    }
+            )
+        }
 
-    /** Run VOD info backfill phase. */
-    private suspend fun runVodInfoBackfill(
+        /** Run VOD info backfill phase. */
+        private suspend fun runVodInfoBackfill(
             input: WorkerInputData,
             checkpoint: XtreamSyncCheckpoint,
             startTimeMs: Long,
-    ): SyncPhaseResult {
-        var currentCheckpoint = checkpoint
-        var processedCount = 0
+        ): SyncPhaseResult {
+            var currentCheckpoint = checkpoint
+            var processedCount = 0
 
-        UnifiedLog.i(TAG) {
-            "Starting VOD_INFO backfill from offset=${checkpoint.lastVodInfoId ?: 0}"
-        }
+            UnifiedLog.i(TAG) {
+                "Starting VOD_INFO backfill from offset=${checkpoint.lastVodInfoId ?: 0}"
+            }
 
-        while (currentCoroutineContext().isActive) {
-            // Check budget
-            val elapsedMs = System.currentTimeMillis() - startTimeMs
-            if (elapsedMs > input.maxRuntimeMs) {
-                return SyncPhaseResult(
+            while (currentCoroutineContext().isActive) {
+                // Check budget
+                val elapsedMs = System.currentTimeMillis() - startTimeMs
+                if (elapsedMs > input.maxRuntimeMs) {
+                    return SyncPhaseResult(
                         itemsPersisted = 0,
                         checkpoint = currentCheckpoint,
                         budgetExceeded = true,
-                )
-            }
+                    )
+                }
 
-            // Get next batch of VOD IDs needing info
-            val vodIds =
+                // Get next batch of VOD IDs needing info
+                val vodIds =
                     catalogRepository.getVodIdsNeedingInfoBackfill(
-                            limit = INFO_BACKFILL_BATCH_SIZE,
-                            afterId = currentCheckpoint.lastVodInfoId ?: 0,
+                        limit = INFO_BACKFILL_BATCH_SIZE,
+                        afterId = currentCheckpoint.lastVodInfoId ?: 0,
                     )
 
-            if (vodIds.isEmpty()) {
-                // No more VODs to process, advance to next phase
-                currentCheckpoint = currentCheckpoint.advancePhase()
-                UnifiedLog.i(TAG) {
-                    "VOD_INFO complete, processed=$processedCount, advancing to SERIES_INFO"
+                if (vodIds.isEmpty()) {
+                    // No more VODs to process, advance to next phase
+                    currentCheckpoint = currentCheckpoint.advancePhase()
+                    UnifiedLog.i(TAG) {
+                        "VOD_INFO complete, processed=$processedCount, advancing to SERIES_INFO"
+                    }
+                    break
                 }
-                break
-            }
 
-            // Process each VOD
-            for (vodId in vodIds) {
-                if (!currentCoroutineContext().isActive) break
+                // Process each VOD
+                for (vodId in vodIds) {
+                    if (!currentCoroutineContext().isActive) break
 
-                try {
-                    val vodInfo = xtreamApiClient.getVodInfo(vodId)
-                    if (vodInfo != null) {
-                        val info = vodInfo.info
-                        catalogRepository.updateVodInfo(
+                    try {
+                        val vodInfo = xtreamApiClient.getVodInfo(vodId)
+                        if (vodInfo != null) {
+                            val info = vodInfo.info
+                            catalogRepository.updateVodInfo(
                                 vodId = vodId,
                                 plot = info?.resolvedPlot,
                                 director = info?.director,
@@ -366,78 +368,78 @@ constructor(
                                 durationSecs = info?.resolvedDurationMins?.let { it * 60 },
                                 trailer = info?.resolvedTrailer,
                                 tmdbId = info?.tmdbId?.takeIf { it.isNotBlank() && it != "0" },
-                        )
-                        processedCount++
+                            )
+                            processedCount++
+                        }
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG) { "Failed to fetch VOD info for vodId=$vodId: ${e.message}" }
+                        // Continue with next item
                     }
-                } catch (e: Exception) {
-                    UnifiedLog.w(TAG) { "Failed to fetch VOD info for vodId=$vodId: ${e.message}" }
-                    // Continue with next item
+
+                    // Update checkpoint after each item
+                    currentCheckpoint = currentCheckpoint.withLastVodInfoId(vodId)
+
+                    // Throttle requests
+                    kotlinx.coroutines.delay(INFO_BACKFILL_THROTTLE_MS)
                 }
-
-                // Update checkpoint after each item
-                currentCheckpoint = currentCheckpoint.withLastVodInfoId(vodId)
-
-                // Throttle requests
-                kotlinx.coroutines.delay(INFO_BACKFILL_THROTTLE_MS)
             }
-        }
 
-        return SyncPhaseResult(
+            return SyncPhaseResult(
                 itemsPersisted = 0,
                 checkpoint = currentCheckpoint,
                 budgetExceeded = false,
-        )
-    }
+            )
+        }
 
-    /** Run Series info backfill phase. */
-    private suspend fun runSeriesInfoBackfill(
+        /** Run Series info backfill phase. */
+        private suspend fun runSeriesInfoBackfill(
             input: WorkerInputData,
             checkpoint: XtreamSyncCheckpoint,
             startTimeMs: Long,
-    ): SyncPhaseResult {
-        var currentCheckpoint = checkpoint
-        var processedCount = 0
+        ): SyncPhaseResult {
+            var currentCheckpoint = checkpoint
+            var processedCount = 0
 
-        UnifiedLog.i(TAG) {
-            "Starting SERIES_INFO backfill from offset=${checkpoint.lastSeriesInfoId ?: 0}"
-        }
+            UnifiedLog.i(TAG) {
+                "Starting SERIES_INFO backfill from offset=${checkpoint.lastSeriesInfoId ?: 0}"
+            }
 
-        while (currentCoroutineContext().isActive) {
-            // Check budget
-            val elapsedMs = System.currentTimeMillis() - startTimeMs
-            if (elapsedMs > input.maxRuntimeMs) {
-                return SyncPhaseResult(
+            while (currentCoroutineContext().isActive) {
+                // Check budget
+                val elapsedMs = System.currentTimeMillis() - startTimeMs
+                if (elapsedMs > input.maxRuntimeMs) {
+                    return SyncPhaseResult(
                         itemsPersisted = 0,
                         checkpoint = currentCheckpoint,
                         budgetExceeded = true,
-                )
-            }
+                    )
+                }
 
-            // Get next batch of series IDs needing info
-            val seriesIds =
+                // Get next batch of series IDs needing info
+                val seriesIds =
                     catalogRepository.getSeriesIdsNeedingInfoBackfill(
-                            limit = INFO_BACKFILL_BATCH_SIZE,
-                            afterId = currentCheckpoint.lastSeriesInfoId ?: 0,
+                        limit = INFO_BACKFILL_BATCH_SIZE,
+                        afterId = currentCheckpoint.lastSeriesInfoId ?: 0,
                     )
 
-            if (seriesIds.isEmpty()) {
-                // No more series to process, mark as completed
-                currentCheckpoint = currentCheckpoint.advancePhase()
-                UnifiedLog.i(TAG) {
-                    "SERIES_INFO complete, processed=$processedCount, sync COMPLETED"
+                if (seriesIds.isEmpty()) {
+                    // No more series to process, mark as completed
+                    currentCheckpoint = currentCheckpoint.advancePhase()
+                    UnifiedLog.i(TAG) {
+                        "SERIES_INFO complete, processed=$processedCount, sync COMPLETED"
+                    }
+                    break
                 }
-                break
-            }
 
-            // Process each series
-            for (seriesId in seriesIds) {
-                if (!currentCoroutineContext().isActive) break
+                // Process each series
+                for (seriesId in seriesIds) {
+                    if (!currentCoroutineContext().isActive) break
 
-                try {
-                    val seriesInfo = xtreamApiClient.getSeriesInfo(seriesId)
-                    if (seriesInfo != null) {
-                        val info = seriesInfo.info
-                        catalogRepository.updateSeriesInfo(
+                    try {
+                        val seriesInfo = xtreamApiClient.getSeriesInfo(seriesId)
+                        if (seriesInfo != null) {
+                            val info = seriesInfo.info
+                            catalogRepository.updateSeriesInfo(
                                 seriesId = seriesId,
                                 plot = info?.resolvedPlot,
                                 director = info?.director,
@@ -446,49 +448,49 @@ constructor(
                                 rating = info?.rating?.toDoubleOrNull(),
                                 trailer = info?.resolvedTrailer,
                                 tmdbId = info?.tmdbId?.takeIf { it.isNotBlank() && it != "0" },
-                        )
-                        processedCount++
+                            )
+                            processedCount++
+                        }
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG) {
+                            "Failed to fetch series info for seriesId=$seriesId: ${e.message}"
+                        }
+                        // Continue with next item
                     }
-                } catch (e: Exception) {
-                    UnifiedLog.w(TAG) {
-                        "Failed to fetch series info for seriesId=$seriesId: ${e.message}"
-                    }
-                    // Continue with next item
+
+                    // Update checkpoint after each item
+                    currentCheckpoint = currentCheckpoint.withLastSeriesInfoId(seriesId)
+
+                    // Throttle requests
+                    kotlinx.coroutines.delay(INFO_BACKFILL_THROTTLE_MS)
                 }
-
-                // Update checkpoint after each item
-                currentCheckpoint = currentCheckpoint.withLastSeriesInfoId(seriesId)
-
-                // Throttle requests
-                kotlinx.coroutines.delay(INFO_BACKFILL_THROTTLE_MS)
             }
-        }
 
-        return SyncPhaseResult(
+            return SyncPhaseResult(
                 itemsPersisted = 0,
                 checkpoint = currentCheckpoint,
                 budgetExceeded = false,
-        )
-    }
+            )
+        }
 
-    /** Parse XtreamSyncPhase from status phase string. */
-    private fun parsePhaseFromStatus(phaseString: String?): XtreamSyncPhase? {
-        if (phaseString == null) return null
-        return when {
-            phaseString.contains("VOD", ignoreCase = true) -> XtreamSyncPhase.VOD_LIST
-            phaseString.contains("SERIES", ignoreCase = true) &&
+        /** Parse XtreamSyncPhase from status phase string. */
+        private fun parsePhaseFromStatus(phaseString: String?): XtreamSyncPhase? {
+            if (phaseString == null) return null
+            return when {
+                phaseString.contains("VOD", ignoreCase = true) -> XtreamSyncPhase.VOD_LIST
+                phaseString.contains("SERIES", ignoreCase = true) &&
                     phaseString.contains("EPISODE", ignoreCase = true) ->
                     XtreamSyncPhase.SERIES_EPISODES
-            phaseString.contains("SERIES", ignoreCase = true) -> XtreamSyncPhase.SERIES_LIST
-            phaseString.contains("LIVE", ignoreCase = true) -> XtreamSyncPhase.LIVE_LIST
-            else -> null
+                phaseString.contains("SERIES", ignoreCase = true) -> XtreamSyncPhase.SERIES_LIST
+                phaseString.contains("LIVE", ignoreCase = true) -> XtreamSyncPhase.LIVE_LIST
+                else -> null
+            }
         }
-    }
 
-    /** Result from a sync phase. */
-    private data class SyncPhaseResult(
+        /** Result from a sync phase. */
+        private data class SyncPhaseResult(
             val itemsPersisted: Long,
             val checkpoint: XtreamSyncCheckpoint,
             val budgetExceeded: Boolean,
-    )
-}
+        )
+    }

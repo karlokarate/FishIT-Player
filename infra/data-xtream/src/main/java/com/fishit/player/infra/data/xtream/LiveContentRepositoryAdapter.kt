@@ -15,13 +15,13 @@ import com.fishit.player.feature.live.domain.LiveContentRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Adapter implementation of [LiveContentRepository] for the Live TV feature.
@@ -50,178 +50,202 @@ import kotlinx.coroutines.withContext
  */
 @Singleton
 class LiveContentRepositoryAdapter
-@Inject
-constructor(private val boxStore: BoxStore) :
-        LiveContentRepository {
-
-    companion object {
-        private const val TAG = "LiveContentRepoAdapter"
-    }
-
-    private val liveBox by lazy { boxStore.boxFor<ObxLive>() }
-    private val categoryBox by lazy { boxStore.boxFor<ObxCategory>() }
-    private val epgBox by lazy { boxStore.boxFor<ObxEpgNowNext>() }
-
-    // Category name cache to avoid repeated DB lookups
-    private val categoryNameCache = mutableMapOf<String, String?>()
-
-    // In-memory storage for favorites and recent (should be persisted later)
-    private val favoriteIds = mutableSetOf<String>()
-    private val recentChannelIds = mutableListOf<String>()
-    private val recentChannelCache = mutableMapOf<String, LiveChannel>()
-
-    override fun observeChannels(categoryId: String?): Flow<List<LiveChannel>> {
-        val query = if (categoryId != null) {
-            liveBox.query(ObxLive_.categoryId.equal(categoryId)).order(ObxLive_.nameLower).build()
-        } else {
-            liveBox.query().order(ObxLive_.nameLower).build()
-        }
-        return query.asFlow()
-            .map { entities -> entities.map { it.toLiveChannel() } }
-            .flowOn(Dispatchers.IO)
-    }
-
-    override fun observeCategories(): Flow<List<LiveCategory>> {
-        return categoryBox.query(ObxCategory_.kind.equal("live")).build()
-            .asFlow()
-            .map { categories ->
-                categories.map { category ->
-                    LiveCategory(
-                        id = category.categoryId,
-                        name = category.categoryName ?: category.categoryId,
-                        channelCount = liveBox.query(ObxLive_.categoryId.equal(category.categoryId))
-                            .build().count().toInt()
-                    )
-                }.sortedBy { it.name }
-            }
-            .flowOn(Dispatchers.IO)
-    }
-
-    override suspend fun search(query: String, limit: Int): List<LiveChannel> =
-        withContext(Dispatchers.IO) {
-            try {
-                val lowerQuery = query.lowercase()
-                liveBox.query(ObxLive_.nameLower.contains(lowerQuery))
-                    .build()
-                    .find(0, limit.toLong())
-                    .map { it.toLiveChannel() }
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG) { "Search error: ${e.message}" }
-                emptyList()
-            }
+    @Inject
+    constructor(
+        private val boxStore: BoxStore,
+    ) : LiveContentRepository {
+        companion object {
+            private const val TAG = "LiveContentRepoAdapter"
         }
 
-    override suspend fun getRecentChannels(limit: Int): List<LiveChannel> {
-        return recentChannelIds.take(limit).mapNotNull { recentChannelCache[it] }
-    }
+        private val liveBox by lazy { boxStore.boxFor<ObxLive>() }
+        private val categoryBox by lazy { boxStore.boxFor<ObxCategory>() }
+        private val epgBox by lazy { boxStore.boxFor<ObxEpgNowNext>() }
 
-    override fun observeFavorites(): Flow<List<LiveChannel>> {
-        return liveBox.query().order(ObxLive_.nameLower).build()
-            .asFlow()
-            .map { entities ->
-                entities.filter { favoriteIds.contains("xtream:live:${it.streamId}") }
-                    .map { it.toLiveChannel() }
-            }
-            .flowOn(Dispatchers.IO)
-    }
+        // Category name cache to avoid repeated DB lookups
+        private val categoryNameCache = mutableMapOf<String, String?>()
 
-    override suspend fun setFavorite(channelId: String, isFavorite: Boolean) {
-        if (isFavorite) {
-            favoriteIds.add(channelId)
-        } else {
-            favoriteIds.remove(channelId)
-        }
-        UnifiedLog.d(TAG) { "Set favorite $channelId = $isFavorite" }
-    }
+        // In-memory storage for favorites and recent (should be persisted later)
+        private val favoriteIds = mutableSetOf<String>()
+        private val recentChannelIds = mutableListOf<String>()
+        private val recentChannelCache = mutableMapOf<String, LiveChannel>()
 
-    override suspend fun recordWatched(channelId: String) {
-        // Move to front of recent list
-        recentChannelIds.remove(channelId)
-        recentChannelIds.add(0, channelId)
-
-        // Keep only last 20
-        while (recentChannelIds.size > 20) {
-            val removed = recentChannelIds.removeLast()
-            recentChannelCache.remove(removed)
+        override fun observeChannels(categoryId: String?): Flow<List<LiveChannel>> {
+            val query =
+                if (categoryId != null) {
+                    liveBox.query(ObxLive_.categoryId.equal(categoryId)).order(ObxLive_.nameLower).build()
+                } else {
+                    liveBox.query().order(ObxLive_.nameLower).build()
+                }
+            return query
+                .asFlow()
+                .map { entities -> entities.map { it.toLiveChannel() } }
+                .flowOn(Dispatchers.IO)
         }
 
-        // Cache the channel data
-        try {
+        override fun observeCategories(): Flow<List<LiveCategory>> =
+            categoryBox
+                .query(ObxCategory_.kind.equal("live"))
+                .build()
+                .asFlow()
+                .map { categories ->
+                    categories
+                        .map { category ->
+                            LiveCategory(
+                                id = category.categoryId,
+                                name = category.categoryName ?: category.categoryId,
+                                channelCount =
+                                    liveBox
+                                        .query(ObxLive_.categoryId.equal(category.categoryId))
+                                        .build()
+                                        .count()
+                                        .toInt(),
+                            )
+                        }.sortedBy { it.name }
+                }.flowOn(Dispatchers.IO)
+
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<LiveChannel> =
             withContext(Dispatchers.IO) {
-                val streamId = channelId.removePrefix("xtream:live:").toIntOrNull()
-                if (streamId != null) {
-                    liveBox.query(ObxLive_.streamId.equal(streamId.toLong()))
+                try {
+                    val lowerQuery = query.lowercase()
+                    liveBox
+                        .query(ObxLive_.nameLower.contains(lowerQuery))
                         .build()
-                        .findFirst()
-                        ?.let { entity ->
-                            recentChannelCache[channelId] = entity.toLiveChannel()
-                        }
+                        .find(0, limit.toLong())
+                        .map { it.toLiveChannel() }
+                } catch (e: Exception) {
+                    UnifiedLog.e(TAG) { "Search error: ${e.message}" }
+                    emptyList()
                 }
             }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG) { "Failed to cache recent channel: ${e.message}" }
+
+        override suspend fun getRecentChannels(limit: Int): List<LiveChannel> =
+            recentChannelIds.take(limit).mapNotNull { recentChannelCache[it] }
+
+        override fun observeFavorites(): Flow<List<LiveChannel>> =
+            liveBox
+                .query()
+                .order(ObxLive_.nameLower)
+                .build()
+                .asFlow()
+                .map { entities ->
+                    entities
+                        .filter { favoriteIds.contains("xtream:live:${it.streamId}") }
+                        .map { it.toLiveChannel() }
+                }.flowOn(Dispatchers.IO)
+
+        override suspend fun setFavorite(
+            channelId: String,
+            isFavorite: Boolean,
+        ) {
+            if (isFavorite) {
+                favoriteIds.add(channelId)
+            } else {
+                favoriteIds.remove(channelId)
+            }
+            UnifiedLog.d(TAG) { "Set favorite $channelId = $isFavorite" }
         }
-    }
 
-    // ========================================================================
-    // Mapping: ObxLive → LiveChannel
-    // ========================================================================
+        override suspend fun recordWatched(channelId: String) {
+            // Move to front of recent list
+            recentChannelIds.remove(channelId)
+            recentChannelIds.add(0, channelId)
 
-    /**
-     * Maps ObxLive entity to LiveChannel domain model.
-     *
-     * Direct entity mapping provides full access to:
-     * - categoryId (for filtering)
-     * - epgChannelId (for EPG lookup)
-     * - All other entity fields
-     *
-     * EPG data (current program) is fetched from ObxEpgNowNext table.
-     */
-    private fun ObxLive.toLiveChannel(): LiveChannel {
-        val sourceId = "xtream:live:$streamId"
-        val epg = epgChannelId?.let { lookupEpg(streamId, it) }
-        
-        return LiveChannel(
-            id = sourceId,
-            name = name,
-            channelNumber = streamId, // Use streamId as channel number
-            logo = logo?.let { ImageRef.Http(it) },
-            categoryId = categoryId,
-            categoryName = categoryId?.let { lookupCategoryName(it) },
-            currentProgram = epg?.nowTitle,
-            currentProgramDescription = null, // ObxEpgNowNext doesn't store description
-            programStart = epg?.nowStartMs,
-            programEnd = epg?.nowEndMs,
-            sourceType = SourceType.XTREAM,
-            isFavorite = favoriteIds.contains(sourceId),
-            lastWatched = if (recentChannelIds.contains(sourceId)) {
-                System.currentTimeMillis()
-            } else null
-        )
-    }
+            // Keep only last 20
+            while (recentChannelIds.size > 20) {
+                val removed = recentChannelIds.removeLast()
+                recentChannelCache.remove(removed)
+            }
 
-    /**
-     * Lookup EPG now/next data for a channel.
-     */
-    private fun lookupEpg(streamId: Int, epgChannelId: String): ObxEpgNowNext? {
-        // Try by streamId first, fall back to epgChannelId
-        return epgBox.query(ObxEpgNowNext_.streamId.equal(streamId.toLong()))
-            .build()
-            .findFirst()
-            ?: epgBox.query(ObxEpgNowNext_.channelId.equal(epgChannelId))
+            // Cache the channel data
+            try {
+                withContext(Dispatchers.IO) {
+                    val streamId = channelId.removePrefix("xtream:live:").toIntOrNull()
+                    if (streamId != null) {
+                        liveBox
+                            .query(ObxLive_.streamId.equal(streamId.toLong()))
+                            .build()
+                            .findFirst()
+                            ?.let { entity ->
+                                recentChannelCache[channelId] = entity.toLiveChannel()
+                            }
+                    }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG) { "Failed to cache recent channel: ${e.message}" }
+            }
+        }
+
+        // ========================================================================
+        // Mapping: ObxLive → LiveChannel
+        // ========================================================================
+
+        /**
+         * Maps ObxLive entity to LiveChannel domain model.
+         *
+         * Direct entity mapping provides full access to:
+         * - categoryId (for filtering)
+         * - epgChannelId (for EPG lookup)
+         * - All other entity fields
+         *
+         * EPG data (current program) is fetched from ObxEpgNowNext table.
+         */
+        private fun ObxLive.toLiveChannel(): LiveChannel {
+            val sourceId = "xtream:live:$streamId"
+            val epg = epgChannelId?.let { lookupEpg(streamId, it) }
+
+            return LiveChannel(
+                id = sourceId,
+                name = name,
+                channelNumber = streamId, // Use streamId as channel number
+                logo = logo?.let { ImageRef.Http(it) },
+                categoryId = categoryId,
+                categoryName = categoryId?.let { lookupCategoryName(it) },
+                currentProgram = epg?.nowTitle,
+                currentProgramDescription = null, // ObxEpgNowNext doesn't store description
+                programStart = epg?.nowStartMs,
+                programEnd = epg?.nowEndMs,
+                sourceType = SourceType.XTREAM,
+                isFavorite = favoriteIds.contains(sourceId),
+                lastWatched =
+                    if (recentChannelIds.contains(sourceId)) {
+                        System.currentTimeMillis()
+                    } else {
+                        null
+                    },
+            )
+        }
+
+        /**
+         * Lookup EPG now/next data for a channel.
+         */
+        private fun lookupEpg(
+            streamId: Int,
+            epgChannelId: String,
+        ): ObxEpgNowNext? {
+            // Try by streamId first, fall back to epgChannelId
+            return epgBox
+                .query(ObxEpgNowNext_.streamId.equal(streamId.toLong()))
                 .build()
                 .findFirst()
-    }
-
-    /**
-     * Lookup category name from ObxCategory table with caching.
-     */
-    private fun lookupCategoryName(categoryId: String): String? {
-        return categoryNameCache.getOrPut(categoryId) {
-            categoryBox.query(ObxCategory_.categoryId.equal(categoryId))
-                .build()
-                .findFirst()
-                ?.categoryName
+                ?: epgBox
+                    .query(ObxEpgNowNext_.channelId.equal(epgChannelId))
+                    .build()
+                    .findFirst()
         }
+
+        /**
+         * Lookup category name from ObxCategory table with caching.
+         */
+        private fun lookupCategoryName(categoryId: String): String? =
+            categoryNameCache.getOrPut(categoryId) {
+                categoryBox
+                    .query(ObxCategory_.categoryId.equal(categoryId))
+                    .build()
+                    .findFirst()
+                    ?.categoryName
+            }
     }
-}

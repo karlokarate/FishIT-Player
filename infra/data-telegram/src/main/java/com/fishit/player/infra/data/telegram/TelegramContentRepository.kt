@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.Flow
  * - Pipeline produces RawMediaMetadata, Data consumes it
  */
 interface TelegramContentRepository {
-
     /**
      * Observe all stored Telegram media as RawMediaMetadata.
      *
@@ -40,7 +39,10 @@ interface TelegramContentRepository {
      * @param offset Pagination offset
      * @return List of media items
      */
-    suspend fun getAll(limit: Int = 50, offset: Int = 0): List<RawMediaMetadata>
+    suspend fun getAll(
+        limit: Int = 50,
+        offset: Int = 0,
+    ): List<RawMediaMetadata>
 
     /**
      * Get media by source ID.
@@ -57,7 +59,10 @@ interface TelegramContentRepository {
      * @param limit Maximum results
      * @return Matching media items
      */
-    suspend fun search(query: String, limit: Int = 50): List<RawMediaMetadata>
+    suspend fun search(
+        query: String,
+        limit: Int = 50,
+    ): List<RawMediaMetadata>
 
     /**
      * Insert or update media items from catalog pipeline.

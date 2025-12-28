@@ -1,11 +1,11 @@
 package com.fishit.player.infra.data.telegram
 
 import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.toUriString
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
-import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -25,32 +25,35 @@ import javax.inject.Singleton
  * - Shields feature layer from pipeline concerns
  */
 @Singleton
-class TelegramMediaRepositoryAdapter @Inject constructor(
-    private val contentRepository: TelegramContentRepository,
-) : TelegramMediaRepository {
+class TelegramMediaRepositoryAdapter
+    @Inject
+    constructor(
+        private val contentRepository: TelegramContentRepository,
+    ) : TelegramMediaRepository {
+        override fun observeAll(): Flow<List<TelegramMediaItem>> =
+            contentRepository
+                .observeAll()
+                .map { rawItems -> rawItems.map { it.toTelegramMediaItem() } }
 
-    override fun observeAll(): Flow<List<TelegramMediaItem>> {
-        return contentRepository.observeAll()
-            .map { rawItems -> rawItems.map { it.toTelegramMediaItem() } }
-    }
+        override fun observeByChat(chatId: Long): Flow<List<TelegramMediaItem>> =
+            contentRepository
+                .observeByChat(chatId)
+                .map { rawItems -> rawItems.map { it.toTelegramMediaItem() } }
 
-    override fun observeByChat(chatId: Long): Flow<List<TelegramMediaItem>> {
-        return contentRepository.observeByChat(chatId)
-            .map { rawItems -> rawItems.map { it.toTelegramMediaItem() } }
-    }
+        override suspend fun getById(mediaId: String): TelegramMediaItem? = contentRepository.getBySourceId(mediaId)?.toTelegramMediaItem()
 
-    override suspend fun getById(mediaId: String): TelegramMediaItem? {
-        return contentRepository.getBySourceId(mediaId)?.toTelegramMediaItem()
-    }
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<TelegramMediaItem> =
+            contentRepository.search(query, limit).map {
+                it.toTelegramMediaItem()
+            }
 
-    override suspend fun search(query: String, limit: Int): List<TelegramMediaItem> {
-        return contentRepository.search(query, limit).map { it.toTelegramMediaItem() }
+        companion object {
+            private const val TAG = "TelegramMediaRepositoryAdapter"
+        }
     }
-
-    companion object {
-        private const val TAG = "TelegramMediaRepositoryAdapter"
-    }
-}
 
 /**
  * Maps RawMediaMetadata to TelegramMediaItem (domain model).
@@ -69,15 +72,23 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
     val chatId = parts.getOrNull(1)?.toLongOrNull()
     val messageId = parts.getOrNull(2)?.toLongOrNull()
 
+    // Prefer Telegram video thumbnails if poster is missing (videos usually have thumbnail, not poster)
+    val primaryImage = thumbnail ?: poster
+
     // Extract posterUrl from ImageRef using remoteId-first URI format
-    val posterUrl = poster?.let { imageRef ->
-        when (imageRef) {
-            is ImageRef.Http -> imageRef.url
-            is ImageRef.TelegramThumb -> imageRef.toUriString()
-            is ImageRef.LocalFile -> "file://${imageRef.path}"
-            else -> null
+    val posterUrl =
+        primaryImage?.let { imageRef ->
+            when (imageRef) {
+                is ImageRef.Http -> imageRef.url
+                is ImageRef.TelegramThumb -> imageRef.toUriString()
+                is ImageRef.LocalFile -> "file://${imageRef.path}"
+                else -> null
+            }
         }
-    }
+
+    // Playback-critical Telegram identifiers (v2): carried via playbackHints
+    val remoteId = playbackHints[PlaybackHintKeys.Telegram.REMOTE_ID]
+    val mimeType = playbackHints[PlaybackHintKeys.Telegram.MIME_TYPE]
 
     return TelegramMediaItem(
         mediaId = sourceId,
@@ -88,5 +99,7 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
         posterUrl = posterUrl,
         chatId = chatId,
         messageId = messageId,
+        remoteId = remoteId,
+        mimeType = mimeType,
     )
 }

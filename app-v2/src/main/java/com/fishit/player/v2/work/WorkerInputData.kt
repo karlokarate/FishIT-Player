@@ -18,15 +18,15 @@ import com.fishit.player.infra.logging.UnifiedLog
  * - W-17: FireTV Safety (MANDATORY)
  */
 data class WorkerInputData(
-        val syncRunId: String,
-        val syncMode: String,
-        val activeSources: Set<String>,
-        val wifiOnly: Boolean,
-        val maxRuntimeMs: Long,
-        val deviceClass: String,
-        val xtreamSyncScope: String?,
-        val telegramSyncKind: String?,
-        val ioSyncScope: String?,
+    val syncRunId: String,
+    val syncMode: String,
+    val activeSources: Set<String>,
+    val wifiOnly: Boolean,
+    val maxRuntimeMs: Long,
+    val deviceClass: String,
+    val xtreamSyncScope: String?,
+    val telegramSyncKind: String?,
+    val ioSyncScope: String?,
 ) {
     /** Returns true if this is a FireTV low-RAM device */
     val isFireTvLowRam: Boolean
@@ -35,19 +35,19 @@ data class WorkerInputData(
     /** Returns appropriate batch size based on device class (W-17) */
     val batchSize: Int
         get() =
-                if (isFireTvLowRam) {
-                    WorkerConstants.FIRETV_BATCH_SIZE
-                } else {
-                    WorkerConstants.NORMAL_BATCH_SIZE
-                }
+            if (isFireTvLowRam) {
+                WorkerConstants.FIRETV_BATCH_SIZE
+            } else {
+                WorkerConstants.NORMAL_BATCH_SIZE
+            }
 
     /** Returns retry limit based on sync mode (W-19) */
     val retryLimit: Int
         get() =
-                when (syncMode) {
-                    WorkerConstants.SYNC_MODE_AUTO -> WorkerConstants.RETRY_LIMIT_AUTO
-                    else -> WorkerConstants.RETRY_LIMIT_EXPERT
-                }
+            when (syncMode) {
+                WorkerConstants.SYNC_MODE_AUTO -> WorkerConstants.RETRY_LIMIT_AUTO
+                else -> WorkerConstants.RETRY_LIMIT_EXPERT
+            }
 
     companion object {
         /** Parse InputData from WorkerParameters. */
@@ -65,25 +65,28 @@ data class WorkerInputData(
             // The key might be missing (not set) or explicitly set to an invalid value
             val rawMaxRuntimeMs = data.getLong(WorkerConstants.KEY_MAX_RUNTIME_MS, 0L)
             val effectiveMaxRuntimeMs =
-                    if (rawMaxRuntimeMs > 0) {
-                        rawMaxRuntimeMs
-                    } else {
-                        WorkerConstants.DEFAULT_MAX_RUNTIME_MS
-                    }
+                if (rawMaxRuntimeMs > 0) {
+                    rawMaxRuntimeMs
+                } else {
+                    WorkerConstants.DEFAULT_MAX_RUNTIME_MS
+                }
 
             return WorkerInputData(
-                    syncRunId = data.getString(WorkerConstants.KEY_SYNC_RUN_ID) ?: "",
-                    syncMode = data.getString(WorkerConstants.KEY_SYNC_MODE)
-                                    ?: WorkerConstants.SYNC_MODE_AUTO,
-                    activeSources = data.getStringArray(WorkerConstants.KEY_ACTIVE_SOURCES)?.toSet()
-                                    ?: emptySet(),
-                    wifiOnly = data.getBoolean(WorkerConstants.KEY_WIFI_ONLY, false),
-                    maxRuntimeMs = effectiveMaxRuntimeMs,
-                    deviceClass = data.getString(WorkerConstants.KEY_DEVICE_CLASS)
-                                    ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET,
-                    xtreamSyncScope = data.getString(WorkerConstants.KEY_XTREAM_SYNC_SCOPE),
-                    telegramSyncKind = data.getString(WorkerConstants.KEY_TELEGRAM_SYNC_KIND),
-                    ioSyncScope = data.getString(WorkerConstants.KEY_IO_SYNC_SCOPE),
+                syncRunId = data.getString(WorkerConstants.KEY_SYNC_RUN_ID) ?: "",
+                syncMode =
+                    data.getString(WorkerConstants.KEY_SYNC_MODE)
+                        ?: WorkerConstants.SYNC_MODE_AUTO,
+                activeSources =
+                    data.getStringArray(WorkerConstants.KEY_ACTIVE_SOURCES)?.toSet()
+                        ?: emptySet(),
+                wifiOnly = data.getBoolean(WorkerConstants.KEY_WIFI_ONLY, false),
+                maxRuntimeMs = effectiveMaxRuntimeMs,
+                deviceClass =
+                    data.getString(WorkerConstants.KEY_DEVICE_CLASS)
+                        ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET,
+                xtreamSyncScope = data.getString(WorkerConstants.KEY_XTREAM_SYNC_SCOPE),
+                telegramSyncKind = data.getString(WorkerConstants.KEY_TELEGRAM_SYNC_KIND),
+                ioSyncScope = data.getString(WorkerConstants.KEY_IO_SYNC_SCOPE),
             )
         }
     }
@@ -125,7 +128,10 @@ object RuntimeGuards {
      * ```
      * null if guards pass, or a reason string if worker should defer.
      */
-    fun checkGuards(context: Context, syncMode: String?): String? {
+    fun checkGuards(
+        context: Context,
+        syncMode: String?,
+    ): String? {
         // Determine if this is a manual/expert sync (user explicitly requested)
         val isManualSync = syncMode != null && syncMode != WorkerConstants.SYNC_MODE_AUTO
 
@@ -154,10 +160,10 @@ object RuntimeGuards {
 
     private fun getBatteryLevel(context: Context): Int? {
         val batteryIntent =
-                context.registerReceiver(
-                        null,
-                        IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-                )
+            context.registerReceiver(
+                null,
+                IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            )
         return batteryIntent?.let { intent ->
             val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
@@ -177,8 +183,8 @@ object RuntimeGuards {
      */
     fun detectDeviceClass(context: Context): String {
         val isFireTv =
-                Build.MODEL.contains("AFT", ignoreCase = true) ||
-                        Build.MANUFACTURER.equals("Amazon", ignoreCase = true)
+            Build.MODEL.contains("AFT", ignoreCase = true) ||
+                Build.MANUFACTURER.equals("Amazon", ignoreCase = true)
 
         if (!isFireTv) {
             return WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET
@@ -186,7 +192,7 @@ object RuntimeGuards {
 
         // Check available memory
         val activityManager =
-                context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+            context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
         val memoryInfo = android.app.ActivityManager.MemoryInfo()
         activityManager?.getMemoryInfo(memoryInfo)
 
@@ -204,20 +210,19 @@ object RuntimeGuards {
 /** Builder for worker output data. */
 object WorkerOutputData {
     fun success(
-            itemsPersisted: Long,
-            durationMs: Long,
-            checkpointCursor: String? = null,
+        itemsPersisted: Long,
+        durationMs: Long,
+        checkpointCursor: String? = null,
     ): Data =
-            Data.Builder()
-                    .putLong(WorkerConstants.KEY_ITEMS_PERSISTED, itemsPersisted)
-                    .putLong(WorkerConstants.KEY_DURATION_MS, durationMs)
-                    .apply {
-                        if (checkpointCursor != null) {
-                            putString(WorkerConstants.KEY_CHECKPOINT_CURSOR, checkpointCursor)
-                        }
-                    }
-                    .build()
+        Data
+            .Builder()
+            .putLong(WorkerConstants.KEY_ITEMS_PERSISTED, itemsPersisted)
+            .putLong(WorkerConstants.KEY_DURATION_MS, durationMs)
+            .apply {
+                if (checkpointCursor != null) {
+                    putString(WorkerConstants.KEY_CHECKPOINT_CURSOR, checkpointCursor)
+                }
+            }.build()
 
-    fun failure(reason: String): Data =
-            Data.Builder().putString(WorkerConstants.KEY_FAILURE_REASON, reason).build()
+    fun failure(reason: String): Data = Data.Builder().putString(WorkerConstants.KEY_FAILURE_REASON, reason).build()
 }

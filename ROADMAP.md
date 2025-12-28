@@ -607,6 +607,62 @@ When fixing items from this list:
 
 ---
 
+## Release QA Checklist – catalog_fullsync_playback_telegram_images.patch
+
+This checklist validates the fixes from the catalog_fullsync_playback_telegram_images.patch:
+
+### A. Telegram Thumbnail Rendering
+
+- [ ] Telegram media items display thumbnails (not just 🎬 emoji placeholder)
+- [ ] FishImage correctly loads `tg://thumb/...` URIs via TelegramThumbFetcher
+- [ ] Fallback to poster image when thumbnail is not available
+- [ ] Log ImageRef type for Telegram items to verify thumbnail vs poster selection
+
+### B. Xtream VOD/Series Backfill Detection
+
+- [ ] Force Rescan detects VOD/Series items with blank metadata (not just null)
+- [ ] Backfill queue shows realistic counts for VOD and Series needing enrichment
+- [ ] After enrichment, metadata fields (plot, cast, director, genre, trailer) are populated
+- [ ] Blank strings are normalized to null in the database
+
+### C. Xtream VOD Playback URL Fix
+
+- [ ] Xtream VOD playback URLs use `/movie/...` path (not `/vod/...`)
+- [ ] Log one Xtream VOD playback URL and verify HTTP 200 response
+- [ ] Verify stream_id is prioritized over vod_id/movie_id for VOD item resolution
+
+### D. Catalog Full Sync (No Silent Drops)
+
+- [ ] Telegram scan: `discovered` count matches `persisted` count (no drops)
+- [ ] Xtream scan: VOD/Series/Episode/Live counts match server expectations
+- [ ] Pipeline events use `send()` instead of `trySend()` (backpressure, no data loss)
+- [ ] Large catalogs (>1000 items) sync completely
+
+### E. Instrumentation & Debug Counters
+
+- [ ] Debug dashboard displays pipeline discovered/persisted totals per source type
+- [ ] Playback URL logging shows resolved Xtream URLs
+- [ ] Telegram URI resolution logs include remoteId and mimeType
+- [ ] TelegramThumbFetcher execution is logged when loading thumbnails
+
+### Validation Commands
+
+```bash
+# Force Rescan and check logs
+adb logcat -s UnifiedLog:D | grep -E "backfill|discovered|persisted|playback"
+
+# Check Xtream VOD URL
+adb logcat -s XtreamPlayback:D | grep "buildVodUrl"
+
+# Verify Telegram thumbnails
+adb logcat -s TelegramThumbFetcher:D FishImage:D
+
+# Monitor pipeline events
+adb logcat -s TelegramCatalogPipelineImpl:D XtreamCatalogPipelineImpl:D
+```
+
+---
+
 ## Related Documents
 
 - [Changelog](CHANGELOG.md) – v2 changelog

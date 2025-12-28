@@ -1,5 +1,6 @@
 package com.fishit.player.feature.telegram
 
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
@@ -27,63 +28,66 @@ import javax.inject.Singleton
  * - Telegram-specific URI building happens in TelegramPlaybackSourceFactoryImpl
  */
 @Singleton
-class TelegramTapToPlayUseCase @Inject constructor(
-    private val playerEntry: PlayerEntryPoint,
-) {
+class TelegramTapToPlayUseCase
+    @Inject
+    constructor(
+        private val playerEntry: PlayerEntryPoint,
+    ) {
+        /**
+         * Initiates playback for a Telegram media item.
+         *
+         * Converts [TelegramMediaItem] to [PlaybackContext] and starts playback.
+         *
+         * @param item The Telegram media item to play (domain model)
+         */
+        suspend fun play(item: TelegramMediaItem) {
+            UnifiedLog.d(TAG) { "telegram.tap_to_play.requested: ${item.mediaId}" }
 
-    /**
-     * Initiates playback for a Telegram media item.
-     *
-     * Converts [TelegramMediaItem] to [PlaybackContext] and starts playback.
-     *
-     * @param item The Telegram media item to play (domain model)
-     */
-    suspend fun play(item: TelegramMediaItem) {
-        UnifiedLog.d(TAG) { "telegram.tap_to_play.requested: ${item.mediaId}" }
+            try {
+                // Build PlaybackContext with SourceType.TELEGRAM
+                val context = buildPlaybackContext(item)
 
-        try {
-            // Build PlaybackContext with SourceType.TELEGRAM
-            val context = buildPlaybackContext(item)
+                UnifiedLog.d(TAG) { "telegram.tap_to_play.started: canonicalId=${context.canonicalId}" }
 
-            UnifiedLog.d(TAG) { "telegram.tap_to_play.started: canonicalId=${context.canonicalId}" }
-
-            // Delegate to player entry point (abstraction)
-            playerEntry.start(context)
-
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "telegram.tap_to_play.failed: ${e.message}" }
-            throw e
-        }
-    }
-
-    /**
-     * Builds a [PlaybackContext] from Telegram [TelegramMediaItem].
-     *
-     * The context contains only non-secret identifiers.
-     * Actual tg:// URI construction happens in TelegramPlaybackSourceFactoryImpl.
-     */
-    private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
-        // Build extras map with non-secret identifiers
-        val extras = buildMap<String, String> {
-            item.chatId?.let { put("chatId", it.toString()) }
-            item.messageId?.let { put("messageId", it.toString()) }
+                // Delegate to player entry point (abstraction)
+                playerEntry.start(context)
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "telegram.tap_to_play.failed: ${e.message}" }
+                throw e
+            }
         }
 
-        return PlaybackContext(
-            canonicalId = item.mediaId,
-            sourceType = com.fishit.player.core.playermodel.SourceType.TELEGRAM,
-            sourceKey = item.mediaId, // Pass mediaId for factory resolution
-            title = item.title,
-            subtitle = item.sourceLabel,
-            posterUrl = item.posterUrl,
-            startPositionMs = 0L, // TODO: Add resume support later
-            isLive = false, // Telegram media is not live
-            isSeekable = true,
-            extras = extras,
-        )
-    }
+        /**
+         * Builds a [PlaybackContext] from Telegram [TelegramMediaItem].
+         *
+         * The context contains only non-secret identifiers.
+         * Actual tg:// URI construction happens in TelegramPlaybackSourceFactoryImpl.
+         */
+        private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
+            // Build extras map with non-secret identifiers
+            val extras =
+                buildMap<String, String> {
+                    item.chatId?.let { put(PlaybackHintKeys.Telegram.CHAT_ID, it.toString()) }
+                    item.messageId?.let { put(PlaybackHintKeys.Telegram.MESSAGE_ID, it.toString()) }
+                    item.remoteId?.let { put(PlaybackHintKeys.Telegram.REMOTE_ID, it) }
+                    item.mimeType?.let { put(PlaybackHintKeys.Telegram.MIME_TYPE, it) }
+                }
 
-    companion object {
-        private const val TAG = "TelegramTapToPlayUseCase"
+            return PlaybackContext(
+                canonicalId = item.mediaId,
+                sourceType = com.fishit.player.core.playermodel.SourceType.TELEGRAM,
+                sourceKey = item.mediaId, // Pass mediaId for factory resolution
+                title = item.title,
+                subtitle = item.sourceLabel,
+                posterUrl = item.posterUrl,
+                startPositionMs = 0L, // TODO: Add resume support later
+                isLive = false, // Telegram media is not live
+                isSeekable = true,
+                extras = extras,
+            )
+        }
+
+        companion object {
+            private const val TAG = "TelegramTapToPlayUseCase"
+        }
     }
-}

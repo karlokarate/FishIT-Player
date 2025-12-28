@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +40,6 @@ import com.fishit.player.feature.settings.dbinspector.DbInspectorNavArgs
 import com.fishit.player.feature.settings.dbinspector.DbInspectorRowsScreen
 import com.fishit.player.ui.PlayerScreen
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
-import kotlinx.coroutines.launch
 
 /**
  * Top-level navigation host for FishIT Player v2.
@@ -62,9 +60,7 @@ import kotlinx.coroutines.launch
  */
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun AppNavHost(
-    playbackPendingState: PlaybackPendingState,
-) {
+fun AppNavHost(playbackPendingState: PlaybackPendingState) {
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
 
@@ -143,7 +139,7 @@ fun AppNavHost(
                     onPlayback = { event ->
                         // Store full playback context in pending state
                         playbackPendingState.setPendingPlayback(event)
-                        
+
                         // Navigate to player with minimal route params (full context in pending state)
                         navController.navigate(
                             Routes.player(

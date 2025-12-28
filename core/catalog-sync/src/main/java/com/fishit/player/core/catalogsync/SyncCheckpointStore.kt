@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 // DataStore instance
 private val Context.syncCheckpointDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "sync_checkpoints"
+    name = "sync_checkpoints",
 )
 
 /**
@@ -77,55 +77,56 @@ interface SyncCheckpointStore {
  * DataStore-backed implementation of [SyncCheckpointStore].
  */
 @Singleton
-class DataStoreSyncCheckpointStore @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : SyncCheckpointStore {
+class DataStoreSyncCheckpointStore
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : SyncCheckpointStore {
+        companion object {
+            private val KEY_XTREAM_CHECKPOINT = stringPreferencesKey("xtream_checkpoint")
+            private val KEY_TELEGRAM_CHECKPOINT = stringPreferencesKey("telegram_checkpoint")
+        }
 
-    companion object {
-        private val KEY_XTREAM_CHECKPOINT = stringPreferencesKey("xtream_checkpoint")
-        private val KEY_TELEGRAM_CHECKPOINT = stringPreferencesKey("telegram_checkpoint")
-    }
+        override suspend fun getXtreamCheckpoint(): String? =
+            context.syncCheckpointDataStore.data
+                .map { prefs -> prefs[KEY_XTREAM_CHECKPOINT] }
+                .first()
 
-    override suspend fun getXtreamCheckpoint(): String? =
-        context.syncCheckpointDataStore.data
-            .map { prefs -> prefs[KEY_XTREAM_CHECKPOINT] }
-            .first()
+        override suspend fun saveXtreamCheckpoint(checkpoint: String) {
+            require(checkpoint.isNotBlank()) { "Checkpoint must not be blank" }
+            context.syncCheckpointDataStore.edit { prefs ->
+                prefs[KEY_XTREAM_CHECKPOINT] = checkpoint
+            }
+        }
 
-    override suspend fun saveXtreamCheckpoint(checkpoint: String) {
-        require(checkpoint.isNotBlank()) { "Checkpoint must not be blank" }
-        context.syncCheckpointDataStore.edit { prefs ->
-            prefs[KEY_XTREAM_CHECKPOINT] = checkpoint
+        override suspend fun clearXtreamCheckpoint() {
+            context.syncCheckpointDataStore.edit { prefs ->
+                prefs.remove(KEY_XTREAM_CHECKPOINT)
+            }
+        }
+
+        override suspend fun getTelegramCheckpoint(): String? =
+            context.syncCheckpointDataStore.data
+                .map { prefs -> prefs[KEY_TELEGRAM_CHECKPOINT] }
+                .first()
+
+        override suspend fun saveTelegramCheckpoint(checkpoint: String) {
+            require(checkpoint.isNotBlank()) { "Checkpoint must not be blank" }
+            context.syncCheckpointDataStore.edit { prefs ->
+                prefs[KEY_TELEGRAM_CHECKPOINT] = checkpoint
+            }
+        }
+
+        override suspend fun clearTelegramCheckpoint() {
+            context.syncCheckpointDataStore.edit { prefs ->
+                prefs.remove(KEY_TELEGRAM_CHECKPOINT)
+            }
+        }
+
+        override suspend fun clearAll() {
+            context.syncCheckpointDataStore.edit { prefs ->
+                prefs.remove(KEY_XTREAM_CHECKPOINT)
+                prefs.remove(KEY_TELEGRAM_CHECKPOINT)
+            }
         }
     }
-
-    override suspend fun clearXtreamCheckpoint() {
-        context.syncCheckpointDataStore.edit { prefs ->
-            prefs.remove(KEY_XTREAM_CHECKPOINT)
-        }
-    }
-
-    override suspend fun getTelegramCheckpoint(): String? =
-        context.syncCheckpointDataStore.data
-            .map { prefs -> prefs[KEY_TELEGRAM_CHECKPOINT] }
-            .first()
-
-    override suspend fun saveTelegramCheckpoint(checkpoint: String) {
-        require(checkpoint.isNotBlank()) { "Checkpoint must not be blank" }
-        context.syncCheckpointDataStore.edit { prefs ->
-            prefs[KEY_TELEGRAM_CHECKPOINT] = checkpoint
-        }
-    }
-
-    override suspend fun clearTelegramCheckpoint() {
-        context.syncCheckpointDataStore.edit { prefs ->
-            prefs.remove(KEY_TELEGRAM_CHECKPOINT)
-        }
-    }
-
-    override suspend fun clearAll() {
-        context.syncCheckpointDataStore.edit { prefs ->
-            prefs.remove(KEY_XTREAM_CHECKPOINT)
-            prefs.remove(KEY_TELEGRAM_CHECKPOINT)
-        }
-    }
-}
