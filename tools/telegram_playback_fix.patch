@@ -1,0 +1,151 @@
+--- a/core/model/src/main/java/com/fishit/player/core/model/PlaybackHintKeys.kt
++++ b/core/model/src/main/java/com/fishit/player/core/model/PlaybackHintKeys.kt
+@@ -78,5 +78,11 @@
+ 
+
+         /** File ID for download/streaming */
+
+         const val FILE_ID = "telegram.fileId"
+
++
+
++        /** Stable remote ID for the media file (preferred; resolves fileId at runtime). */
+
++        const val REMOTE_ID = "telegram.remoteId"
+
++
+
++        /** MIME type of the media file (optional hint for player). */
+
++        const val MIME_TYPE = "telegram.mimeType"
+
+     }
+
+ }
+
+--- a/pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramRawMetadataExtensions.kt
++++ b/pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramRawMetadataExtensions.kt
+@@ -88,7 +88,14 @@
+                 externalIds = externalIds,
+
+                 sourceType = SourceType.TELEGRAM,
+
+                 sourceLabel = buildTelegramSourceLabel(),
+
+-                sourceId = remoteId ?: "msg:$chatId:$messageId",
+
++                sourceId = "msg:$chatId:$messageId",
+
++                // === Playback Hints (SSOT) ===
+
++                playbackHints = buildMap {
+
++                    put(PlaybackHintKeys.Telegram.CHAT_ID, chatId.toString())
+
++                    put(PlaybackHintKeys.Telegram.MESSAGE_ID, messageId.toString())
+
++                    remoteId?.takeIf { it.isNotBlank() }?.let { put(PlaybackHintKeys.Telegram.REMOTE_ID, it) }
+
++                    mimeType?.takeIf { it.isNotBlank() }?.let { put(PlaybackHintKeys.Telegram.MIME_TYPE, it) }
+
++                },
+
+                 // === Pipeline Identity (v2) ===
+
+                 pipelineIdTag = PipelineIdTag.TELEGRAM,
+
+                 // === ImageRef from TelegramImageRefExtensions ===
+
+--- a/playback/telegram/src/main/java/com/fishit/player/playback/telegram/TelegramPlaybackSourceFactoryImpl.kt
++++ b/playback/telegram/src/main/java/com/fishit/player/playback/telegram/TelegramPlaybackSourceFactoryImpl.kt
+@@ -58,7 +58,7 @@
+         UnifiedLog.d(TAG) { "Resolved Telegram URI: $telegramUri" }
+
+ 
+
+         // Determine MIME type from context extras if available
+
+-        val mimeType = context.extras["mimeType"]
+
++        val mimeType = context.extras["mimeType"] ?: context.extras[PlaybackHintKeys.Telegram.MIME_TYPE]
+
+ 
+
+         return PlaybackSource(
+
+                 uri = telegramUri,
+
+@@ -90,10 +90,10 @@
+         }
+
+ 
+
+         // Case 3: Build from extras
+
+-        val remoteId = context.extras["remoteId"]
+
+-        val fileId = context.extras["fileId"]?.toIntOrNull()
+
+-        val chatId = context.extras["chatId"]?.toLongOrNull()
+
+-        val messageId = context.extras["messageId"]?.toLongOrNull()
+
++        val remoteId = context.extras["remoteId"] ?: context.extras[PlaybackHintKeys.Telegram.REMOTE_ID]
+
++        val fileId = (context.extras["fileId"] ?: context.extras[PlaybackHintKeys.Telegram.FILE_ID])?.toIntOrNull()
+
++        val chatId = (context.extras["chatId"] ?: context.extras[PlaybackHintKeys.Telegram.CHAT_ID])?.toLongOrNull()
+
++        val messageId = (context.extras["messageId"] ?: context.extras[PlaybackHintKeys.Telegram.MESSAGE_ID])?.toLongOrNull()
+
+ 
+
+         if (remoteId != null || (fileId != null && fileId > 0)) {
+
+             return buildTelegramUri(
+
+@@ -127,6 +127,12 @@
+                 val messageId = parts[3].toLongOrNull()
+
+                 buildTelegramUri(fileId, remoteId, chatId, messageId)
+
+             }
+
++            parts.size == 3 && parts[0] == "msg" -> {
+
++                val chatId = parts[1].toLongOrNull()
+
++                val messageId = parts[2].toLongOrNull()
+
++                // Do NOT build tg://file/0. Provide chat/message for runtime resolution.
+
++                buildTelegramUri(fileId = 0, remoteId = null, chatId = chatId, messageId = messageId)
+
++            }
+
+             parts.size == 1 && sourceKey.isNotBlank() -> {
+
+                 // Just remoteId
+
+                 buildTelegramUri(fileId = 0, remoteId = sourceKey, chatId = null, messageId = null)
+
+@@ -138,8 +144,8 @@
+         }
+
+                 ?: run {
+
+                     // Fallback: try to use extras
+
+-                    val chatId = context.extras["chatId"]?.toLongOrNull()
+
+-                    val messageId = context.extras["messageId"]?.toLongOrNull()
+
++        val chatId = (context.extras["chatId"] ?: context.extras[PlaybackHintKeys.Telegram.CHAT_ID])?.toLongOrNull()
+
++        val messageId = (context.extras["messageId"] ?: context.extras[PlaybackHintKeys.Telegram.MESSAGE_ID])?.toLongOrNull()
+
+                     buildTelegramUri(
+
+                             fileId = 0,
+
+                             remoteId = sourceKey,
