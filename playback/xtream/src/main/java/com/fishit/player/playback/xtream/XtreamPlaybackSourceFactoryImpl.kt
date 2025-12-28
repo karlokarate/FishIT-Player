@@ -1,5 +1,6 @@
 package com.fishit.player.playback.xtream
 
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
@@ -109,7 +110,11 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
             )
         }
 
-        val contentType = context.extras[EXTRA_CONTENT_TYPE] ?: guessContentType(context)
+        // v2 SSOT: PlaybackHintKeys.Xtream.* (namespaced). Keep legacy keys for compatibility.
+        val contentType =
+            context.extras[PlaybackHintKeys.Xtream.CONTENT_TYPE]
+                ?: context.extras[EXTRA_CONTENT_TYPE]
+                ?: guessContentType(context)
         val streamUrl = when (contentType) {
             CONTENT_TYPE_LIVE -> buildLiveUrlFromContext(context)
             CONTENT_TYPE_VOD -> buildVodUrlFromContext(context)
@@ -209,13 +214,17 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
      * Build live stream URL using XtreamApiClient.
      */
     private fun buildLiveUrlFromContext(context: PlaybackContext): String {
-        val streamId = context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
+        val streamId =
+            context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
+                ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
             ?: throw PlaybackSourceException(
                 message = "Missing streamId for live content",
                 sourceType = SourceType.XTREAM
             )
 
-        val extension = context.extras[EXTRA_CONTAINER_EXT]
+        val extension =
+            context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                ?: context.extras[EXTRA_CONTAINER_EXT]
         return xtreamApiClient.buildLiveUrl(streamId, extension)
     }
 
@@ -223,14 +232,19 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
      * Build VOD stream URL using XtreamApiClient.
      */
     private fun buildVodUrlFromContext(context: PlaybackContext): String {
-        val vodId = context.extras[EXTRA_VOD_ID]?.toIntOrNull()
-            ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
+        val vodId =
+            context.extras[PlaybackHintKeys.Xtream.VOD_ID]?.toIntOrNull()
+                ?: context.extras[EXTRA_VOD_ID]?.toIntOrNull()
+                ?: context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
+                ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
             ?: throw PlaybackSourceException(
                 message = "Missing vodId for VOD content",
                 sourceType = SourceType.XTREAM
             )
 
-        val extension = context.extras[EXTRA_CONTAINER_EXT]
+        val extension =
+            context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                ?: context.extras[EXTRA_CONTAINER_EXT]
         return xtreamApiClient.buildVodUrl(vodId, extension)
     }
 
@@ -238,16 +252,28 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
      * Build series episode URL using XtreamApiClient.
      */
     private fun buildSeriesUrlFromContext(context: PlaybackContext): String {
-        val seriesId = context.extras[EXTRA_SERIES_ID]?.toIntOrNull()
+        val seriesId =
+            context.extras[PlaybackHintKeys.Xtream.SERIES_ID]?.toIntOrNull()
+                ?: context.extras[EXTRA_SERIES_ID]?.toIntOrNull()
             ?: throw PlaybackSourceException(
                 message = "Missing seriesId for series content",
                 sourceType = SourceType.XTREAM
             )
 
-        val episodeId = context.extras[EXTRA_EPISODE_ID]?.toIntOrNull()
-        val seasonNumber = context.extras[EXTRA_SEASON_NUMBER]?.toIntOrNull() ?: 1
-        val episodeNumber = context.extras[EXTRA_EPISODE_NUMBER]?.toIntOrNull() ?: 1
-        val extension = context.extras[EXTRA_CONTAINER_EXT]
+        val episodeId =
+            context.extras[PlaybackHintKeys.Xtream.EPISODE_ID]?.toIntOrNull()
+                ?: context.extras[EXTRA_EPISODE_ID]?.toIntOrNull()
+        val seasonNumber =
+            context.extras[PlaybackHintKeys.Xtream.SEASON_NUMBER]?.toIntOrNull()
+                ?: context.extras[EXTRA_SEASON_NUMBER]?.toIntOrNull()
+                ?: 1
+        val episodeNumber =
+            context.extras[PlaybackHintKeys.Xtream.EPISODE_NUMBER]?.toIntOrNull()
+                ?: context.extras[EXTRA_EPISODE_NUMBER]?.toIntOrNull()
+                ?: 1
+        val extension =
+            context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                ?: context.extras[EXTRA_CONTAINER_EXT]
 
         return xtreamApiClient.buildSeriesEpisodeUrl(
             seriesId = seriesId,
@@ -263,9 +289,13 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
      */
     private fun guessContentType(context: PlaybackContext): String {
         return when {
-            context.extras.containsKey(EXTRA_STREAM_ID) -> CONTENT_TYPE_LIVE
-            context.extras.containsKey(EXTRA_VOD_ID) -> CONTENT_TYPE_VOD
-            context.extras.containsKey(EXTRA_SERIES_ID) || 
+            context.extras.containsKey(PlaybackHintKeys.Xtream.STREAM_ID) ||
+                context.extras.containsKey(EXTRA_STREAM_ID) -> CONTENT_TYPE_LIVE
+            context.extras.containsKey(PlaybackHintKeys.Xtream.VOD_ID) ||
+                context.extras.containsKey(EXTRA_VOD_ID) -> CONTENT_TYPE_VOD
+            context.extras.containsKey(PlaybackHintKeys.Xtream.SERIES_ID) ||
+                context.extras.containsKey(EXTRA_SERIES_ID) ||
+                context.extras.containsKey(PlaybackHintKeys.Xtream.EPISODE_ID) ||
                 context.extras.containsKey(EXTRA_EPISODE_ID) -> CONTENT_TYPE_SERIES
             context.isLive -> CONTENT_TYPE_LIVE
             else -> CONTENT_TYPE_VOD
@@ -280,7 +310,10 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
         context.extras["mimeType"]?.let { return it }
 
         // Determine from extension
-        val extension = context.extras[EXTRA_CONTAINER_EXT]?.lowercase()
+        val extension =
+            (context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                ?: context.extras[EXTRA_CONTAINER_EXT])
+                ?.lowercase()
         return when (extension) {
             "mp4" -> "video/mp4"
             "mkv" -> "video/x-matroska"
