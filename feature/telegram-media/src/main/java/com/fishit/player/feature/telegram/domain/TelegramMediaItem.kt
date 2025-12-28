@@ -21,6 +21,8 @@ import com.fishit.player.core.model.MediaType
  * @property posterUrl Poster/thumbnail URL if available
  * @property chatId Telegram chat ID (non-secret identifier)
  * @property messageId Telegram message ID (non-secret identifier)
+ * @property remoteId Telegram remote file identifier (needed for playback)
+ * @property mimeType Optional mime type hint
  */
 data class TelegramMediaItem(
     val mediaId: String,
@@ -31,4 +33,6 @@ data class TelegramMediaItem(
     val posterUrl: String? = null,
     val chatId: Long? = null,
     val messageId: Long? = null,
+    val remoteId: String? = null,
+    val mimeType: String? = null,
 )

@@ -1,5 +1,6 @@
 package com.fishit.player.feature.telegram
 
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
@@ -65,8 +66,10 @@ class TelegramTapToPlayUseCase @Inject constructor(
     private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
         // Build extras map with non-secret identifiers
         val extras = buildMap<String, String> {
-            item.chatId?.let { put("chatId", it.toString()) }
-            item.messageId?.let { put("messageId", it.toString()) }
+            item.chatId?.let { put(PlaybackHintKeys.Telegram.CHAT_ID, it.toString()) }
+            item.messageId?.let { put(PlaybackHintKeys.Telegram.MESSAGE_ID, it.toString()) }
+            item.remoteId?.let { put(PlaybackHintKeys.Telegram.REMOTE_ID, it) }
+            item.mimeType?.let { put(PlaybackHintKeys.Telegram.MIME_TYPE, it) }
         }
 
         return PlaybackContext(

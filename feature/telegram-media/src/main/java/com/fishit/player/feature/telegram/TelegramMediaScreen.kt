@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,9 +31,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.fishit.player.core.imaging.compose.FishImage
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
 
 /**
@@ -171,11 +175,22 @@ private fun MediaItemCard(
                     .padding(end = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // TODO: Add thumbnail image loading with Coil
-                Text(
-                    text = "🎬",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+                val imageRef = remember(item.posterUrl) { item.posterUrl?.let(ImageRef::fromString) }
+
+                if (imageRef != null) {
+                    FishImage(
+                        imageRef = imageRef,
+                        contentDescription = item.title,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                } else {
+                    Text(
+                        text = "🎬",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
             }
 
             Column(

@@ -339,7 +339,7 @@ data class XtreamVodStream(
 ) {
     /** Resolved VOD ID (handles different panel field names) */
     val resolvedId: Int
-        get() = vodId ?: movieId ?: streamId ?: id ?: 0
+        get() = streamId ?: vodId ?: movieId ?: id ?: 0
 
     /** Resolved poster URL */
     val resolvedPoster: String?

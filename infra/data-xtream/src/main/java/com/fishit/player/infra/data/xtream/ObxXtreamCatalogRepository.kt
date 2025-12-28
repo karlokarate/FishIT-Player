@@ -257,34 +257,84 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
 
     override suspend fun getVodIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
         withContext(Dispatchers.IO) {
-            // Find VOD items where plot is null/empty (indicates missing info)
-            vodBox.query()
-                .apply {
-                    if (afterId > 0) {
-                        greater(ObxVod_.vodId, afterId.toLong())
+            // Some panels persist missing strings as "" instead of null.
+            // We treat BOTH null and blank as "needs backfill".
+            val query =
+                vodBox.query()
+                    .apply {
+                        if (afterId > 0) {
+                            greater(ObxVod_.vodId, afterId.toLong())
+                        }
+                    }
+                    .order(ObxVod_.vodId)
+                    .build()
+
+            val result = ArrayList<Int>(limit)
+            var offset = 0L
+            val pageSize = maxOf(limit * 20, 500)
+
+            while (result.size < limit) {
+                val page = query.find(offset, pageSize.toLong())
+                if (page.isEmpty()) break
+
+                for (vod in page) {
+                    val needsBackfill =
+                        vod.plot.isNullOrBlank() ||
+                            vod.genre.isNullOrBlank() ||
+                            vod.cast.isNullOrBlank() ||
+                            vod.director.isNullOrBlank()
+
+                    if (needsBackfill) {
+                        result.add(vod.vodId)
+                        if (result.size >= limit) break
                     }
                 }
-                .isNull(ObxVod_.plot)
-                .order(ObxVod_.vodId)
-                .build()
-                .find(0, limit.toLong())
-                .map { it.vodId }
+
+                offset += page.size
+            }
+
+            result
         }
+
 
     override suspend fun getSeriesIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
         withContext(Dispatchers.IO) {
-            // Find series items where plot is null/empty (indicates missing info)
-            seriesBox.query()
-                .apply {
-                    if (afterId > 0) {
-                        greater(ObxSeries_.seriesId, afterId.toLong())
+            // Same deal as VOD: treat null/blank as missing.
+            val query =
+                seriesBox.query()
+                    .apply {
+                        if (afterId > 0) {
+                            greater(ObxSeries_.seriesId, afterId.toLong())
+                        }
+                    }
+                    .order(ObxSeries_.seriesId)
+                    .build()
+
+            val result = ArrayList<Int>(limit)
+            var offset = 0L
+            val pageSize = maxOf(limit * 20, 500)
+
+            while (result.size < limit) {
+                val page = query.find(offset, pageSize.toLong())
+                if (page.isEmpty()) break
+
+                for (series in page) {
+                    val needsBackfill =
+                        series.plot.isNullOrBlank() ||
+                            series.genre.isNullOrBlank() ||
+                            series.cast.isNullOrBlank() ||
+                            series.director.isNullOrBlank()
+
+                    if (needsBackfill) {
+                        result.add(series.seriesId)
+                        if (result.size >= limit) break
                     }
                 }
-                .isNull(ObxSeries_.plot)
-                .order(ObxSeries_.seriesId)
-                .build()
-                .find(0, limit.toLong())
-                .map { it.seriesId }
+
+                offset += page.size
+            }
+
+            result
         }
 
     override suspend fun updateVodInfo(
@@ -303,14 +353,14 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
             .findFirst() ?: return@withContext
 
         val updated = existing.copy(
-            plot = plot ?: existing.plot,
-            director = director ?: existing.director,
-            cast = cast ?: existing.cast,
-            genre = genre ?: existing.genre,
+            plot = plot.cleanOrNull() ?: existing.plot,
+            director = director.cleanOrNull() ?: existing.director,
+            cast = cast.cleanOrNull() ?: existing.cast,
+            genre = genre.cleanOrNull() ?: existing.genre,
             rating = rating ?: existing.rating,
             durationSecs = durationSecs ?: existing.durationSecs,
-            trailer = trailer ?: existing.trailer,
-            tmdbId = tmdbId ?: existing.tmdbId,
+            trailer = trailer.cleanOrNull() ?: existing.trailer,
+            tmdbId = tmdbId.cleanOrNull() ?: existing.tmdbId,
             updatedAt = System.currentTimeMillis(),
         )
         vodBox.put(updated)
@@ -332,13 +382,13 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
             .findFirst() ?: return@withContext
 
         val updated = existing.copy(
-            plot = plot ?: existing.plot,
-            director = director ?: existing.director,
-            cast = cast ?: existing.cast,
-            genre = genre ?: existing.genre,
+            plot = plot.cleanOrNull() ?: existing.plot,
+            director = director.cleanOrNull() ?: existing.director,
+            cast = cast.cleanOrNull() ?: existing.cast,
+            genre = genre.cleanOrNull() ?: existing.genre,
             rating = rating ?: existing.rating,
-            trailer = trailer ?: existing.trailer,
-            tmdbId = tmdbId ?: existing.tmdbId,
+            trailer = trailer.cleanOrNull() ?: existing.trailer,
+            tmdbId = tmdbId.cleanOrNull() ?: existing.tmdbId,
             updatedAt = System.currentTimeMillis(),
         )
         seriesBox.put(updated)
@@ -501,11 +551,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     playbackHints = hints,
                     // === Rich metadata from persisted info backfill ===
                     rating = rating,
-                    plot = plot,
+                    plot = plot.cleanOrNull(),
                     genres = genre,
-                    director = director,
-                    cast = cast,
-                    trailer = trailer,
+                    director = director.cleanOrNull(),
+                    cast = cast.cleanOrNull(),
+                    trailer = trailer.cleanOrNull(),
             )
     }
 
@@ -532,11 +582,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     playbackHints = hints,
                     // === Rich metadata from persisted info backfill ===
                     rating = rating,
-                    plot = plot,
+                    plot = plot.cleanOrNull(),
                     genres = genre,
-                    director = director,
-                    cast = cast,
-                    trailer = trailer,
+                    director = director.cleanOrNull(),
+                    cast = cast.cleanOrNull(),
+                    trailer = trailer.cleanOrNull(),
             )
     }
 
@@ -568,7 +618,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     playbackHints = hints,
                     // === Rich metadata from persisted episode info backfill ===
                     rating = rating,
-                    plot = plot,
+                    plot = plot.cleanOrNull(),
             )
     }
 
@@ -593,11 +643,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 containerExt = containerExt,
                 // Rich metadata from provider
                 rating = rating,
-                plot = plot,
-                genre = genres,
-                director = director,
-                cast = cast,
-                trailer = trailer,
+                plot = plot.cleanOrNull(),
+                genre = genres.cleanOrNull(),
+                director = director.cleanOrNull(),
+                cast = cast.cleanOrNull(),
+                trailer = trailer.cleanOrNull(),
                 // country and releaseDate not available in RawMediaMetadata
                 imdbId = externalIds.imdbId,
                 updatedAt = System.currentTimeMillis()
@@ -617,11 +667,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 imdbId = externalIds.imdbId,
                 // Rich metadata from provider
                 rating = rating,
-                plot = plot,
-                genre = genres,
-                director = director,
-                cast = cast,
-                trailer = trailer,
+                plot = plot.cleanOrNull(),
+                genre = genres.cleanOrNull(),
+                director = director.cleanOrNull(),
+                cast = cast.cleanOrNull(),
+                trailer = trailer.cleanOrNull(),
                 // country and releaseDate not available in RawMediaMetadata
                 updatedAt = System.currentTimeMillis()
         )
@@ -646,10 +696,14 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 title = originalTitle,
                 durationSecs = durationMs?.let { (it / 1000).toInt() },
                 rating = rating,
-                plot = plot,
+                plot = plot.cleanOrNull(),
                 // airDate not available (RawMediaMetadata has no releaseDate)
                 imageUrl = (thumbnail as? ImageRef.Http)?.url,
                 playExt = containerExt,
         )
     }
+    /** Normalize provider strings: treat blank/whitespace as null to keep backfill logic consistent. */
+    private fun String?.cleanOrNull(): String? = this?.trim()?.takeIf { it.isNotBlank() }
+
+
 }

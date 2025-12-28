@@ -758,7 +758,8 @@ class DefaultXtreamApiClient(
     ): String {
         val cfg = config ?: return ""
         val ext = sanitizeExtension(containerExtension ?: cfg.vodExtPrefs.firstOrNull() ?: "mp4")
-        return buildPlayUrl(vodKind, vodId, ext)
+        val playbackKind = resolveVodPlaybackKind(vodKind)
+        return buildPlayUrl(playbackKind, vodId, ext)
     }
 
     override fun buildSeriesEpisodeUrl(
@@ -791,6 +792,22 @@ class DefaultXtreamApiClient(
             append(episodeNumber)
             append(".")
             append(ext)
+        }
+    }
+
+    /**
+     * Resolve the **playback** path segment for VOD.
+     *
+     * Reality check: Many Xtream panels expose VOD lists via `get_vod_streams`/`get_movies_streams`,
+     * but playback is often served under `/movie/...` (singular), not `/vod/...`.
+     *
+     * We keep `vodKind` for API compatibility, but normalize the playback segment.
+     */
+    private fun resolveVodPlaybackKind(vodKindAlias: String): String {
+        return when (vodKindAlias.lowercase()) {
+            "movie", "movies" -> "movie"
+            "vod" -> "movie" // Common in the wild; fixes 404s on providers using /movie/
+            else -> "movie"
         }
     }
 

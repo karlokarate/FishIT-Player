@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":core:feature-api"))
     implementation(project(":core:persistence"))
     implementation(project(":core:player-model"))
+    implementation(project(":core:ui-imaging"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
     

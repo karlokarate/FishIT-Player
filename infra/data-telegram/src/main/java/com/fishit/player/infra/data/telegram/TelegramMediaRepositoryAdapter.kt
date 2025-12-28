@@ -1,6 +1,7 @@
 package com.fishit.player.infra.data.telegram
 
 import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.toUriString
 import com.fishit.player.feature.telegram.domain.TelegramMediaItem
@@ -69,8 +70,11 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
     val chatId = parts.getOrNull(1)?.toLongOrNull()
     val messageId = parts.getOrNull(2)?.toLongOrNull()
 
+    // Prefer Telegram video thumbnails if poster is missing (videos usually have thumbnail, not poster)
+    val primaryImage = thumbnail ?: poster
+
     // Extract posterUrl from ImageRef using remoteId-first URI format
-    val posterUrl = poster?.let { imageRef ->
+    val posterUrl = primaryImage?.let { imageRef ->
         when (imageRef) {
             is ImageRef.Http -> imageRef.url
             is ImageRef.TelegramThumb -> imageRef.toUriString()
@@ -78,6 +82,10 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
             else -> null
         }
     }
+
+    // Playback-critical Telegram identifiers (v2): carried via playbackHints
+    val remoteId = playbackHints[PlaybackHintKeys.Telegram.REMOTE_ID]
+    val mimeType = playbackHints[PlaybackHintKeys.Telegram.MIME_TYPE]
 
     return TelegramMediaItem(
         mediaId = sourceId,
@@ -88,5 +96,7 @@ private fun RawMediaMetadata.toTelegramMediaItem(): TelegramMediaItem {
         posterUrl = posterUrl,
         chatId = chatId,
         messageId = messageId,
+        remoteId = remoteId,
+        mimeType = mimeType,
     )
 }

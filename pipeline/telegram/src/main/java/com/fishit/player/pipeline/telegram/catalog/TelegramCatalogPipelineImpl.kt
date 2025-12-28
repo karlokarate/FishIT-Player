@@ -55,7 +55,7 @@ constructor(
             
             if (auth !is TdlibAuthState.Ready) {
                 UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - auth state is $auth (expected TdlibAuthState.Ready)" }
-                trySend(
+                send(
                         TelegramCatalogEvent.ScanError(
                                 reason = "unauthenticated",
                                 message = "Telegram is not authenticated. Current state: $auth",
@@ -71,7 +71,7 @@ constructor(
             
             if (conn !is TelegramConnectionState.Connected) {
                 UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - connection state is $conn (expected TelegramConnectionState.Connected)" }
-                trySend(
+                send(
                         TelegramCatalogEvent.ScanError(
                                 reason = "not_connected",
                                 message = "Telegram is not connected. Current state: $conn",
@@ -94,7 +94,7 @@ constructor(
             val totalChats = chatsToScan.size
             UnifiedLog.i(TAG) { "Starting catalog scan for $totalChats chats" }
 
-            trySend(
+            send(
                     TelegramCatalogEvent.ScanStarted(
                             chatCount = totalChats,
                             estimatedTotalMessages = null, // TDLib doesn't provide this efficiently
@@ -108,7 +108,7 @@ constructor(
             for (chat in chatsToScan) {
                 if (!isActive) {
                     UnifiedLog.i(TAG) { "Scan cancelled at chat $scannedChats/$totalChats" }
-                    trySend(
+                    send(
                             TelegramCatalogEvent.ScanCancelled(
                                     scannedChats = scannedChats,
                                     scannedMessages = scannedMessages,
@@ -147,7 +147,7 @@ constructor(
                                             chatTitle = chat.title,
                                     )
 
-                            trySend(TelegramCatalogEvent.ItemDiscovered(catalogItem))
+                            send(TelegramCatalogEvent.ItemDiscovered(catalogItem))
                             discoveredItems++
 
                             // Log progress periodically
@@ -160,7 +160,7 @@ constructor(
                         }
 
                         // Emit progress event
-                        trySend(
+                        send(
                                 TelegramCatalogEvent.ScanProgress(
                                         scannedChats = scannedChats,
                                         totalChats = totalChats,
@@ -186,7 +186,7 @@ constructor(
                             "$discoveredItems items in ${durationMs}ms",
             )
 
-            trySend(
+            send(
                     TelegramCatalogEvent.ScanCompleted(
                             scannedChats = scannedChats,
                             scannedMessages = scannedMessages,
@@ -199,7 +199,7 @@ constructor(
             throw ce
         } catch (t: Throwable) {
             UnifiedLog.e(TAG, "Catalog scan failed", t)
-            trySend(
+            send(
                     TelegramCatalogEvent.ScanError(
                             reason = "unexpected_error",
                             message = t.message ?: "Unknown error",
@@ -225,7 +225,7 @@ constructor(
         val auth = adapter.authState.first()
         if (auth !is TdlibAuthState.Ready) {
             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: auth_state=$auth")
-            trySend(
+            send(
                     TelegramCatalogEvent.ScanError(
                             reason = "unauthenticated",
                             message = "Telegram is not authenticated. Current state: $auth",
@@ -237,7 +237,7 @@ constructor(
         val conn = adapter.connectionState.first()
         if (conn !is TelegramConnectionState.Connected) {
             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: connection_state=$conn")
-            trySend(
+            send(
                     TelegramCatalogEvent.ScanError(
                             reason = "not_connected",
                             message = "Telegram is not connected. Current state: $conn",
