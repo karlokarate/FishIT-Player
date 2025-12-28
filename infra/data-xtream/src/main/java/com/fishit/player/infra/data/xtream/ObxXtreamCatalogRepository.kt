@@ -532,7 +532,6 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     cast = cast,
                     trailer = trailer,
             )
-            )
 
     private fun ObxEpisode.toRawMediaMetadata(): RawMediaMetadata {
             // Build playback hints from stored episode data
