@@ -383,18 +383,19 @@ fun XtreamVodInfo.toRawMediaMetadata(
                         ?: ExternalIds()
 
         // Rich metadata from info block
-        val plot = infoBlock?.plot ?: infoBlock?.description ?: infoBlock?.overview
+        val plot = infoBlock?.resolvedPlot
 
-        val genres = infoBlock?.genre ?: infoBlock?.genres
+        val genres = infoBlock?.resolvedGenre
 
         val director = infoBlock?.director
 
-        val cast = infoBlock?.cast ?: infoBlock?.actors
+        val cast = infoBlock?.resolvedCast
+
+        // Trailer URL - use resolved property which handles multiple field names
+        val trailer = infoBlock?.resolvedTrailer
 
         // Images: use info block images if available, fall back to vodItem
-        val posterUrl =
-                infoBlock?.movieImage
-                        ?: infoBlock?.posterPath ?: infoBlock?.cover ?: infoBlock?.coverBig
+        val posterUrl = infoBlock?.resolvedPoster
 
         return RawMediaMetadata(
                 originalTitle = rawTitle,
@@ -426,6 +427,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 genres = genres,
                 director = director,
                 cast = cast,
+                trailer = trailer,
                 // === Playback Hints (v2) ===
                 playbackHints = buildMap {
                         put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)

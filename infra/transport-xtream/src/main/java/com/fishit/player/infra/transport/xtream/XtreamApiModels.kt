@@ -440,7 +440,79 @@ data class XtreamVodInfoBlock(
     val bitrate: String? = null,
     @SerialName("mpaa_rating") val mpaaRating: String? = null,
     val age: String? = null,
-)
+) {
+    // =========================================================================
+    // Resolver properties to handle alternative field names across panels
+    // =========================================================================
+
+    /** Resolved plot/description (handles plot, description, overview) */
+    val resolvedPlot: String?
+        get() = plot?.takeIf { it.isNotBlank() }
+            ?: description?.takeIf { it.isNotBlank() }
+            ?: overview?.takeIf { it.isNotBlank() }
+
+    /** Resolved genre (handles genre, genres) */
+    val resolvedGenre: String?
+        get() = genre?.takeIf { it.isNotBlank() }
+            ?: genres?.takeIf { it.isNotBlank() }
+
+    /** Resolved cast (handles cast, actors) */
+    val resolvedCast: String?
+        get() = cast?.takeIf { it.isNotBlank() }
+            ?: actors?.takeIf { it.isNotBlank() }
+
+    /** Resolved trailer URL (handles youtubeTrailer, trailer, trailerUrl, youtube, ytTrailer) */
+    val resolvedTrailer: String?
+        get() = youtubeTrailer?.takeIf { it.isNotBlank() }
+            ?: trailer?.takeIf { it.isNotBlank() }
+            ?: trailerUrl?.takeIf { it.isNotBlank() }
+            ?: youtube?.takeIf { it.isNotBlank() }
+            ?: ytTrailer?.takeIf { it.isNotBlank() }
+
+    /** Resolved duration in minutes (handles duration string or durationSecs) */
+    val resolvedDurationMins: Int?
+        get() = durationSecs?.let { it / 60 }
+            ?: duration?.trim()?.toIntOrNull()
+            ?: duration?.let { parseDurationString(it) }
+
+    /** Resolved poster URL (handles movieImage, posterPath, cover, coverBig) */
+    val resolvedPoster: String?
+        get() = movieImage?.takeIf { it.isNotBlank() }
+            ?: posterPath?.takeIf { it.isNotBlank() }
+            ?: coverBig?.takeIf { it.isNotBlank() }
+            ?: cover?.takeIf { it.isNotBlank() }
+
+    private fun parseDurationString(input: String): Int? {
+        // Parse formats like "1h 30m", "90 min", "01:30:00"
+        val cleaned = input.trim().lowercase()
+        
+        // Try HH:MM:SS format
+        val colonParts = cleaned.split(":")
+        if (colonParts.size >= 2) {
+            return try {
+                when (colonParts.size) {
+                    3 -> colonParts[0].toInt() * 60 + colonParts[1].toInt()
+                    2 -> colonParts[0].toInt()
+                    else -> null
+                }
+            } catch (_: NumberFormatException) {
+                null
+            }
+        }
+        
+        // Try "1h 30m" format
+        val hMatch = Regex("(\\d+)\\s*h").find(cleaned)
+        val mMatch = Regex("(\\d+)\\s*m").find(cleaned)
+        if (hMatch != null || mMatch != null) {
+            val hours = hMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            val mins = mMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            return hours * 60 + mins
+        }
+        
+        // Try plain number
+        return cleaned.replace(Regex("[^0-9]"), "").toIntOrNull()
+    }
+}
 
 /** Movie data block with stream info. */
 @Serializable
@@ -486,7 +558,37 @@ data class XtreamSeriesInfoBlock(
     @SerialName("youtube_trailer") val youtubeTrailer: String? = null,
     val trailer: String? = null,
     @SerialName("episode_run_time") val episodeRunTime: String? = null,
-)
+) {
+    // =========================================================================
+    // Resolver properties to handle alternative field names across panels
+    // =========================================================================
+
+    /** Resolved plot/description (handles plot, description, overview) */
+    val resolvedPlot: String?
+        get() = plot?.takeIf { it.isNotBlank() }
+            ?: description?.takeIf { it.isNotBlank() }
+            ?: overview?.takeIf { it.isNotBlank() }
+
+    /** Resolved genre (handles genre, genres) */
+    val resolvedGenre: String?
+        get() = genre?.takeIf { it.isNotBlank() }
+            ?: genres?.takeIf { it.isNotBlank() }
+
+    /** Resolved cast (handles cast, actors) */
+    val resolvedCast: String?
+        get() = cast?.takeIf { it.isNotBlank() }
+            ?: actors?.takeIf { it.isNotBlank() }
+
+    /** Resolved trailer URL (handles youtubeTrailer, trailer) */
+    val resolvedTrailer: String?
+        get() = youtubeTrailer?.takeIf { it.isNotBlank() }
+            ?: trailer?.takeIf { it.isNotBlank() }
+
+    /** Resolved poster/cover URL (handles posterPath, cover) */
+    val resolvedPoster: String?
+        get() = posterPath?.takeIf { it.isNotBlank() }
+            ?: cover?.takeIf { it.isNotBlank() }
+}
 
 /** Season info. */
 @Serializable

@@ -355,16 +355,17 @@ constructor(
                 try {
                     val vodInfo = xtreamApiClient.getVodInfo(vodId)
                     if (vodInfo != null) {
+                        val info = vodInfo.info
                         catalogRepository.updateVodInfo(
                                 vodId = vodId,
-                                plot = vodInfo.info?.plot,
-                                director = vodInfo.info?.director,
-                                cast = vodInfo.info?.cast,
-                                genre = vodInfo.info?.genre,
-                                rating = vodInfo.info?.rating?.toDoubleOrNull(),
-                                durationSecs =
-                                        vodInfo.info?.duration?.toIntOrNull()?.let { it * 60 },
-                                trailer = null, // Not typically in API
+                                plot = info?.resolvedPlot,
+                                director = info?.director,
+                                cast = info?.resolvedCast,
+                                genre = info?.resolvedGenre,
+                                rating = info?.rating?.toDoubleOrNull(),
+                                durationSecs = info?.resolvedDurationMins?.let { it * 60 },
+                                trailer = info?.resolvedTrailer,
+                                tmdbId = info?.tmdbId?.takeIf { it.isNotBlank() && it != "0" },
                         )
                         processedCount++
                     }
@@ -435,14 +436,16 @@ constructor(
                 try {
                     val seriesInfo = xtreamApiClient.getSeriesInfo(seriesId)
                     if (seriesInfo != null) {
+                        val info = seriesInfo.info
                         catalogRepository.updateSeriesInfo(
                                 seriesId = seriesId,
-                                plot = seriesInfo.info?.plot,
-                                director = seriesInfo.info?.director,
-                                cast = seriesInfo.info?.cast,
-                                genre = seriesInfo.info?.genre,
-                                rating = seriesInfo.info?.rating?.toDoubleOrNull(),
-                                trailer = null,
+                                plot = info?.resolvedPlot,
+                                director = info?.director,
+                                cast = info?.resolvedCast,
+                                genre = info?.resolvedGenre,
+                                rating = info?.rating?.toDoubleOrNull(),
+                                trailer = info?.resolvedTrailer,
+                                tmdbId = info?.tmdbId?.takeIf { it.isNotBlank() && it != "0" },
                         )
                         processedCount++
                     }

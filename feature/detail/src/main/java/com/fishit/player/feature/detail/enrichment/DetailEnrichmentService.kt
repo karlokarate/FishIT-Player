@@ -109,12 +109,15 @@ constructor(
             val rawMetadata = vodInfo.toRawMediaMetadata(vodItem)
 
             // Build TmdbRef from raw metadata or existing media
-            val tmdbRef = rawMetadata.externalIds?.tmdb
+            val tmdbRef = rawMetadata.externalIds.tmdb
                     ?: media.tmdbId?.let { TmdbRef(TmdbMediaType.MOVIE, it.value) }
 
             // Create normalized metadata for upsert
+            // CRITICAL: Keep the existing canonicalTitle - it's already been through the
+            // SceneNameParser/Normalizer. The rawMetadata.originalTitle from get_vod_info
+            // may contain scene tags or different formatting we don't want.
             val normalized = NormalizedMediaMetadata(
-                    canonicalTitle = rawMetadata.originalTitle ?: media.canonicalTitle,
+                    canonicalTitle = media.canonicalTitle, // Keep normalized title!
                     mediaType = MediaType.MOVIE,
                     year = rawMetadata.year ?: media.year,
                     tmdb = tmdbRef,
@@ -124,6 +127,7 @@ constructor(
                     cast = rawMetadata.cast,
                     rating = rawMetadata.rating,
                     durationMs = rawMetadata.durationMs,
+                    trailer = rawMetadata.trailer, // YouTube trailer URL
                     poster = rawMetadata.poster ?: media.poster,
                     backdrop = rawMetadata.backdrop ?: media.backdrop,
             )

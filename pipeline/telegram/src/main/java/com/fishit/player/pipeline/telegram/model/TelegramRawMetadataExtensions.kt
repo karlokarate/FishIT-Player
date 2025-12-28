@@ -62,14 +62,22 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         val effectiveYear = structuredYear ?: year
         // Structured duration takes precedence over video duration
         // Convert to milliseconds: structuredLengthMinutes (minutes) or durationSecs (seconds)
-        val effectiveDurationMs: Long? = when {
-                structuredLengthMinutes != null -> structuredLengthMinutes.toLong() * 60_000L
-                durationSecs != null -> durationSecs.toLong() * 1000L
-                else -> null
-        }
+        val effectiveDurationMs: Long? =
+                when {
+                        structuredLengthMinutes != null ->
+                                structuredLengthMinutes.toLong() * 60_000L
+                        durationSecs != null -> durationSecs.toLong() * 1000L
+                        else -> null
+                }
         // Build ExternalIds with structured TMDB ID if available
         val externalIds = buildExternalIds()
-        
+
+        // Resolve genres: structured > simple field
+        val effectiveGenres = structuredGenres?.joinToString(", ") ?: genres
+
+        // Resolve plot/description: description field (description is canonical plot)
+        val effectivePlot = description
+
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = mapTelegramMediaType(),
@@ -92,6 +100,11 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 // === Structured Bundle Rating Fields (v2.2) ===
                 rating = structuredRating,
                 ageRating = structuredFsk,
+                // === Rich Metadata (v2) - from structured bundles ===
+                plot = effectivePlot,
+                genres = effectiveGenres,
+                director = structuredDirector,
+                cast = null, // Telegram structured bundles don't provide cast
         )
 }
 
@@ -106,17 +119,17 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
  */
 private fun TelegramMediaItem.buildExternalIds(): ExternalIds {
         if (structuredTmdbId == null) {
-                return ExternalIds() // Telegram doesn't provide external IDs for non-structured content
+                return ExternalIds() // Telegram doesn't provide external IDs for non-structured
+                // content
         }
-        
+
         // Need both ID and type for typed TmdbRef
         val tmdbType = structuredTmdbType
         if (tmdbType == null) {
                 // Legacy: Have ID but no type - store as legacy for migration
-                @Suppress("DEPRECATION")
-                return ExternalIds(legacyTmdbId = structuredTmdbId)
+                @Suppress("DEPRECATION") return ExternalIds(legacyTmdbId = structuredTmdbId)
         }
-        
+
         // Create typed TmdbRef
         val tmdbRef = TmdbRef(tmdbType.toTmdbMediaType(), structuredTmdbId)
         return ExternalIds(tmdb = tmdbRef)

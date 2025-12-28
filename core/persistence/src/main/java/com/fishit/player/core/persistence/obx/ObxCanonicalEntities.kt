@@ -101,6 +101,8 @@ data class ObxCanonicalMedia(
         var director: String? = null,
         /** Comma-separated cast */
         var cast: String? = null,
+        /** YouTube trailer URL */
+        var trailer: String? = null,
         /** Release date (YYYY-MM-DD) */
         var releaseDate: String? = null,
         // === TMDB Resolve State (per TMDB_ENRICHMENT_CONTRACT.md T-15/T-16) ===

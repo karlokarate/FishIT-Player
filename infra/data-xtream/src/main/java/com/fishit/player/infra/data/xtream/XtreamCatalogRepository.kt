@@ -140,6 +140,7 @@ interface XtreamCatalogRepository {
      * @param rating Rating value
      * @param durationSecs Duration in seconds
      * @param trailer Trailer URL
+     * @param tmdbId TMDB ID (from get_vod_info)
      */
     suspend fun updateVodInfo(
         vodId: Int,
@@ -150,6 +151,7 @@ interface XtreamCatalogRepository {
         rating: Double?,
         durationSecs: Int?,
         trailer: String?,
+        tmdbId: String? = null,
     )
 
     /**
@@ -162,6 +164,7 @@ interface XtreamCatalogRepository {
      * @param genre Genre(s)
      * @param rating Rating value
      * @param trailer Trailer URL
+     * @param tmdbId TMDB ID (from get_series_info)
      */
     suspend fun updateSeriesInfo(
         seriesId: Int,
@@ -171,6 +174,7 @@ interface XtreamCatalogRepository {
         genre: String?,
         rating: Double?,
         trailer: String?,
+        tmdbId: String? = null,
     )
 
     /**

@@ -296,6 +296,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         rating: Double?,
         durationSecs: Int?,
         trailer: String?,
+        tmdbId: String?,
     ) = withContext(Dispatchers.IO) {
         val existing = vodBox.query(ObxVod_.vodId.equal(vodId.toLong()))
             .build()
@@ -309,10 +310,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
             rating = rating ?: existing.rating,
             durationSecs = durationSecs ?: existing.durationSecs,
             trailer = trailer ?: existing.trailer,
+            tmdbId = tmdbId ?: existing.tmdbId,
             updatedAt = System.currentTimeMillis(),
         )
         vodBox.put(updated)
-        UnifiedLog.d(TAG) { "Updated VOD info: vodId=$vodId" }
+        UnifiedLog.d(TAG) { "Updated VOD info: vodId=$vodId tmdbId=$tmdbId" }
     }
 
     override suspend fun updateSeriesInfo(
@@ -323,6 +325,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         genre: String?,
         rating: Double?,
         trailer: String?,
+        tmdbId: String?,
     ) = withContext(Dispatchers.IO) {
         val existing = seriesBox.query(ObxSeries_.seriesId.equal(seriesId.toLong()))
             .build()
@@ -335,10 +338,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
             genre = genre ?: existing.genre,
             rating = rating ?: existing.rating,
             trailer = trailer ?: existing.trailer,
+            tmdbId = tmdbId ?: existing.tmdbId,
             updatedAt = System.currentTimeMillis(),
         )
         seriesBox.put(updated)
-        UnifiedLog.d(TAG) { "Updated series info: seriesId=$seriesId" }
+        UnifiedLog.d(TAG) { "Updated series info: seriesId=$seriesId tmdbId=$tmdbId" }
     }
 
     override suspend fun countVodNeedingInfoBackfill(): Long =
@@ -495,6 +499,13 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                             }
                                     ?: ExternalIds(),
                     playbackHints = hints,
+                    // === Rich metadata from persisted info backfill ===
+                    rating = rating,
+                    plot = plot,
+                    genres = genre,
+                    director = director,
+                    cast = cast,
+                    trailer = trailer,
             )
     }
 
@@ -512,7 +523,15 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                             tmdbId?.toIntOrNull()?.let { id ->
                                 ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, id))
                             }
-                                    ?: ExternalIds()
+                                    ?: ExternalIds(),
+                    // === Rich metadata from persisted info backfill ===
+                    rating = rating,
+                    plot = plot,
+                    genres = genre,
+                    director = director,
+                    cast = cast,
+                    trailer = trailer,
+            )
             )
 
     private fun ObxEpisode.toRawMediaMetadata(): RawMediaMetadata {

@@ -113,6 +113,7 @@ constructor(
                                                 genres = normalized.genres ?: existing.genres,
                                                 director = normalized.director ?: existing.director,
                                                 cast = normalized.cast ?: existing.cast,
+                                                trailer = normalized.trailer ?: existing.trailer,
                                                 rating = normalized.rating ?: existing.rating,
                                                 durationMs = normalized.durationMs
                                                                 ?: existing.durationMs,
@@ -150,6 +151,7 @@ constructor(
                                                 genres = normalized.genres,
                                                 director = normalized.director,
                                                 cast = normalized.cast,
+                                                trailer = normalized.trailer,
                                                 rating = normalized.rating,
                                                 durationMs = normalized.durationMs,
                                                 createdAt = now,
@@ -941,6 +943,7 @@ constructor(
                         genres = canonical.genres,
                         director = canonical.director,
                         cast = canonical.cast,
+                        trailer = canonical.trailer,
                         sources = sources,
                 )
         }
