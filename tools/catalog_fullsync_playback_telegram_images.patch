@@ -1,0 +1,624 @@
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramMediaScreen.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramMediaScreen.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramMediaScreen.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramMediaScreen.kt	2025-12-28 15:50:27.345133063 +0000
+@@ -17,6 +17,7 @@
+ import androidx.compose.foundation.lazy.items
+ import androidx.compose.material3.Card
+ import androidx.compose.material3.CardDefaults
++import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.material3.CircularProgressIndicator
+ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.Snackbar
+@@ -24,6 +25,7 @@
+ import androidx.compose.material3.SnackbarHostState
+ import androidx.compose.material3.Text
+ import androidx.compose.runtime.Composable
++import androidx.compose.runtime.remember
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.collectAsState
+ import androidx.compose.runtime.getValue
+@@ -31,8 +33,11 @@
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.draw.clip
+ import androidx.compose.ui.unit.dp
+ import androidx.hilt.navigation.compose.hiltViewModel
++import com.fishit.player.core.imaging.compose.FishImage
++import com.fishit.player.core.model.ImageRef
+ import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+ 
+ /**
+@@ -171,11 +176,22 @@
+                     .padding(end = 16.dp),
+                 contentAlignment = Alignment.Center
+             ) {
+-                // TODO: Add thumbnail image loading with Coil
+-                Text(
+-                    text = "🎬",
+-                    style = MaterialTheme.typography.headlineMedium
+-                )
++                val imageRef = remember(item.posterUrl) { item.posterUrl?.let(ImageRef::fromString) }
++
++                if (imageRef != null) {
++                    FishImage(
++                        imageRef = imageRef,
++                        contentDescription = item.title,
++                        modifier = Modifier
++                            .fillMaxSize()
++                            .clip(RoundedCornerShape(8.dp))
++                    )
++                } else {
++                    Text(
++                        text = "🎬",
++                        style = MaterialTheme.typography.headlineMedium
++                    )
++                }
+             }
+ 
+             Column(
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramTapToPlayUseCase.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramTapToPlayUseCase.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramTapToPlayUseCase.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/TelegramTapToPlayUseCase.kt	2025-12-28 15:49:34.878232146 +0000
+@@ -1,6 +1,7 @@
+ package com.fishit.player.feature.telegram
+ 
+ import com.fishit.player.core.playermodel.PlaybackContext
++import com.fishit.player.core.model.PlaybackHintKeys
+ import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+ import com.fishit.player.infra.logging.UnifiedLog
+ import com.fishit.player.playback.domain.PlayerEntryPoint
+@@ -65,8 +66,10 @@
+     private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
+         // Build extras map with non-secret identifiers
+         val extras = buildMap<String, String> {
+-            item.chatId?.let { put("chatId", it.toString()) }
+-            item.messageId?.let { put("messageId", it.toString()) }
++            item.chatId?.let { put(PlaybackHintKeys.Telegram.CHAT_ID, it.toString()) }
++            item.messageId?.let { put(PlaybackHintKeys.Telegram.MESSAGE_ID, it.toString()) }
++            item.remoteId?.let { put(PlaybackHintKeys.Telegram.REMOTE_ID, it) }
++            item.mimeType?.let { put(PlaybackHintKeys.Telegram.MIME_TYPE, it) }
+         }
+ 
+         return PlaybackContext(
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/domain/TelegramMediaItem.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/domain/TelegramMediaItem.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/domain/TelegramMediaItem.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/feature/telegram-media/src/main/java/com/fishit/player/feature/telegram/domain/TelegramMediaItem.kt	2025-12-28 15:48:27.942185998 +0000
+@@ -21,6 +21,8 @@
+  * @property posterUrl Poster/thumbnail URL if available
+  * @property chatId Telegram chat ID (non-secret identifier)
+  * @property messageId Telegram message ID (non-secret identifier)
++ * @property remoteId Telegram remote file identifier (needed for playback)
++ * @property mimeType Optional mime type hint
+  */
+ data class TelegramMediaItem(
+     val mediaId: String,
+@@ -31,4 +33,6 @@
+     val posterUrl: String? = null,
+     val chatId: Long? = null,
+     val messageId: Long? = null,
++    val remoteId: String? = null,
++    val mimeType: String? = null,
+ )
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/TelegramMediaRepositoryAdapter.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/TelegramMediaRepositoryAdapter.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/TelegramMediaRepositoryAdapter.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/TelegramMediaRepositoryAdapter.kt	2025-12-28 15:49:02.759035008 +0000
+@@ -1,6 +1,7 @@
+ package com.fishit.player.infra.data.telegram
+ 
+ import com.fishit.player.core.model.ImageRef
++import com.fishit.player.core.model.PlaybackHintKeys
+ import com.fishit.player.core.model.RawMediaMetadata
+ import com.fishit.player.core.model.toUriString
+ import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+@@ -69,8 +70,11 @@
+     val chatId = parts.getOrNull(1)?.toLongOrNull()
+     val messageId = parts.getOrNull(2)?.toLongOrNull()
+ 
++    // Prefer Telegram video thumbnails if poster is missing (videos usually have thumbnail, not poster)
++    val primaryImage = thumbnail ?: poster
++
+     // Extract posterUrl from ImageRef using remoteId-first URI format
+-    val posterUrl = poster?.let { imageRef ->
++    val posterUrl = primaryImage?.let { imageRef ->
+         when (imageRef) {
+             is ImageRef.Http -> imageRef.url
+             is ImageRef.TelegramThumb -> imageRef.toUriString()
+@@ -79,6 +83,10 @@
+         }
+     }
+ 
++    // Playback-critical Telegram identifiers (v2): carried via playbackHints
++    val remoteId = playbackHints[PlaybackHintKeys.Telegram.REMOTE_ID]
++    val mimeType = playbackHints[PlaybackHintKeys.Telegram.MIME_TYPE]
++
+     return TelegramMediaItem(
+         mediaId = sourceId,
+         title = originalTitle,
+@@ -88,5 +96,7 @@
+         posterUrl = posterUrl,
+         chatId = chatId,
+         messageId = messageId,
++        remoteId = remoteId,
++        mimeType = mimeType,
+     )
+ }
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt	2025-12-28 15:47:55.246365456 +0000
+@@ -257,36 +257,87 @@
+ 
+     override suspend fun getVodIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
+         withContext(Dispatchers.IO) {
+-            // Find VOD items where plot is null/empty (indicates missing info)
+-            vodBox.query()
+-                .apply {
+-                    if (afterId > 0) {
+-                        greater(ObxVod_.vodId, afterId.toLong())
++            // Some panels persist missing strings as "" instead of null.
++            // We treat BOTH null and blank as "needs backfill".
++            val query =
++                vodBox.query()
++                    .apply {
++                        if (afterId > 0) {
++                            greater(ObxVod_.vodId, afterId.toLong())
++                        }
++                    }
++                    .order(ObxVod_.vodId)
++                    .build()
++
++            val result = ArrayList<Int>(limit)
++            var offset = 0L
++            val pageSize = maxOf(limit * 20, 500)
++
++            while (result.size < limit) {
++                val page = query.find(offset, pageSize.toLong())
++                if (page.isEmpty()) break
++
++                for (vod in page) {
++                    val needsBackfill =
++                        vod.plot.isNullOrBlank() ||
++                            vod.genre.isNullOrBlank() ||
++                            vod.cast.isNullOrBlank() ||
++                            vod.director.isNullOrBlank()
++
++                    if (needsBackfill) {
++                        result.add(vod.vodId)
++                        if (result.size >= limit) break
+                     }
+                 }
+-                .isNull(ObxVod_.plot)
+-                .order(ObxVod_.vodId)
+-                .build()
+-                .find(0, limit.toLong())
+-                .map { it.vodId }
++
++                offset += page.size
++            }
++
++            result
+         }
+ 
++
+     override suspend fun getSeriesIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
+         withContext(Dispatchers.IO) {
+-            // Find series items where plot is null/empty (indicates missing info)
+-            seriesBox.query()
+-                .apply {
+-                    if (afterId > 0) {
+-                        greater(ObxSeries_.seriesId, afterId.toLong())
++            // Same deal as VOD: treat null/blank as missing.
++            val query =
++                seriesBox.query()
++                    .apply {
++                        if (afterId > 0) {
++                            greater(ObxSeries_.seriesId, afterId.toLong())
++                        }
++                    }
++                    .order(ObxSeries_.seriesId)
++                    .build()
++
++            val result = ArrayList<Int>(limit)
++            var offset = 0L
++            val pageSize = maxOf(limit * 20, 500)
++
++            while (result.size < limit) {
++                val page = query.find(offset, pageSize.toLong())
++                if (page.isEmpty()) break
++
++                for (series in page) {
++                    val needsBackfill =
++                        series.plot.isNullOrBlank() ||
++                            series.genre.isNullOrBlank() ||
++                            series.cast.isNullOrBlank() ||
++                            series.director.isNullOrBlank()
++
++                    if (needsBackfill) {
++                        result.add(series.seriesId)
++                        if (result.size >= limit) break
+                     }
+                 }
+-                .isNull(ObxSeries_.plot)
+-                .order(ObxSeries_.seriesId)
+-                .build()
+-                .find(0, limit.toLong())
+-                .map { it.seriesId }
++
++                offset += page.size
++            }
++
++            result
+         }
+ 
++
+     override suspend fun updateVodInfo(
+         vodId: Int,
+         plot: String?,
+@@ -303,14 +354,14 @@
+             .findFirst() ?: return@withContext
+ 
+         val updated = existing.copy(
+-            plot = plot ?: existing.plot,
+-            director = director ?: existing.director,
+-            cast = cast ?: existing.cast,
+-            genre = genre ?: existing.genre,
++            plot = plot.cleanOrNull() ?: existing.plot,
++            director = director.cleanOrNull() ?: existing.director,
++            cast = cast.cleanOrNull() ?: existing.cast,
++            genre = genre.cleanOrNull() ?: existing.genre,
+             rating = rating ?: existing.rating,
+             durationSecs = durationSecs ?: existing.durationSecs,
+-            trailer = trailer ?: existing.trailer,
+-            tmdbId = tmdbId ?: existing.tmdbId,
++            trailer = trailer.cleanOrNull() ?: existing.trailer,
++            tmdbId = tmdbId.cleanOrNull() ?: existing.tmdbId,
+             updatedAt = System.currentTimeMillis(),
+         )
+         vodBox.put(updated)
+@@ -332,13 +383,13 @@
+             .findFirst() ?: return@withContext
+ 
+         val updated = existing.copy(
+-            plot = plot ?: existing.plot,
+-            director = director ?: existing.director,
+-            cast = cast ?: existing.cast,
+-            genre = genre ?: existing.genre,
++            plot = plot.cleanOrNull() ?: existing.plot,
++            director = director.cleanOrNull() ?: existing.director,
++            cast = cast.cleanOrNull() ?: existing.cast,
++            genre = genre.cleanOrNull() ?: existing.genre,
+             rating = rating ?: existing.rating,
+-            trailer = trailer ?: existing.trailer,
+-            tmdbId = tmdbId ?: existing.tmdbId,
++            trailer = trailer.cleanOrNull() ?: existing.trailer,
++            tmdbId = tmdbId.cleanOrNull() ?: existing.tmdbId,
+             updatedAt = System.currentTimeMillis(),
+         )
+         seriesBox.put(updated)
+@@ -501,11 +552,11 @@
+                     playbackHints = hints,
+                     // === Rich metadata from persisted info backfill ===
+                     rating = rating,
+-                    plot = plot,
++                    plot = plot.cleanOrNull(),
+                     genres = genre,
+-                    director = director,
+-                    cast = cast,
+-                    trailer = trailer,
++                    director = director.cleanOrNull(),
++                    cast = cast.cleanOrNull(),
++                    trailer = trailer.cleanOrNull(),
+             )
+     }
+ 
+@@ -532,11 +583,11 @@
+                     playbackHints = hints,
+                     // === Rich metadata from persisted info backfill ===
+                     rating = rating,
+-                    plot = plot,
++                    plot = plot.cleanOrNull(),
+                     genres = genre,
+-                    director = director,
+-                    cast = cast,
+-                    trailer = trailer,
++                    director = director.cleanOrNull(),
++                    cast = cast.cleanOrNull(),
++                    trailer = trailer.cleanOrNull(),
+             )
+     }
+ 
+@@ -568,7 +619,7 @@
+                     playbackHints = hints,
+                     // === Rich metadata from persisted episode info backfill ===
+                     rating = rating,
+-                    plot = plot,
++                    plot = plot.cleanOrNull(),
+             )
+     }
+ 
+@@ -593,11 +644,11 @@
+                 containerExt = containerExt,
+                 // Rich metadata from provider
+                 rating = rating,
+-                plot = plot,
+-                genre = genres,
+-                director = director,
+-                cast = cast,
+-                trailer = trailer,
++                plot = plot.cleanOrNull(),
++                genre = genres.cleanOrNull(),
++                director = director.cleanOrNull(),
++                cast = cast.cleanOrNull(),
++                trailer = trailer.cleanOrNull(),
+                 // country and releaseDate not available in RawMediaMetadata
+                 imdbId = externalIds.imdbId,
+                 updatedAt = System.currentTimeMillis()
+@@ -617,11 +668,11 @@
+                 imdbId = externalIds.imdbId,
+                 // Rich metadata from provider
+                 rating = rating,
+-                plot = plot,
+-                genre = genres,
+-                director = director,
+-                cast = cast,
+-                trailer = trailer,
++                plot = plot.cleanOrNull(),
++                genre = genres.cleanOrNull(),
++                director = director.cleanOrNull(),
++                cast = cast.cleanOrNull(),
++                trailer = trailer.cleanOrNull(),
+                 // country and releaseDate not available in RawMediaMetadata
+                 updatedAt = System.currentTimeMillis()
+         )
+@@ -646,10 +697,14 @@
+                 title = originalTitle,
+                 durationSecs = durationMs?.let { (it / 1000).toInt() },
+                 rating = rating,
+-                plot = plot,
++                plot = plot.cleanOrNull(),
+                 // airDate not available (RawMediaMetadata has no releaseDate)
+                 imageUrl = (thumbnail as? ImageRef.Http)?.url,
+                 playExt = containerExt,
+         )
+     }
++    /** Normalize provider strings: treat blank/whitespace as null to keep backfill logic consistent. */
++    private fun String?.cleanOrNull(): String? = this?.trim()?.takeIf { it.isNotBlank() }
++
++
+ }
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/DefaultXtreamApiClient.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/DefaultXtreamApiClient.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/DefaultXtreamApiClient.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/DefaultXtreamApiClient.kt	2025-12-28 15:42:15.098317048 +0000
+@@ -758,7 +758,8 @@
+     ): String {
+         val cfg = config ?: return ""
+         val ext = sanitizeExtension(containerExtension ?: cfg.vodExtPrefs.firstOrNull() ?: "mp4")
+-        return buildPlayUrl(vodKind, vodId, ext)
++        val playbackKind = resolveVodPlaybackKind(vodKind)
++        return buildPlayUrl(playbackKind, vodId, ext)
+     }
+ 
+     override fun buildSeriesEpisodeUrl(
+@@ -794,6 +795,22 @@
+         }
+     }
+ 
++    /**
++     * Resolve the **playback** path segment for VOD.
++     *
++     * Reality check: Many Xtream panels expose VOD lists via `get_vod_streams`/`get_movies_streams`,
++     * but playback is often served under `/movie/...` (singular), not `/vod/...`.
++     *
++     * We keep `vodKind` for API compatibility, but normalize the playback segment.
++     */
++    private fun resolveVodPlaybackKind(vodKindAlias: String): String {
++        return when (vodKindAlias.lowercase()) {
++            "movie", "movies" -> "movie"
++            "vod" -> "movie" // Common in the wild; fixes 404s on providers using /movie/
++            else -> "movie"
++        }
++    }
++
+     private fun buildPlayUrl(
+             kind: String,
+             id: Int,
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamApiModels.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamApiModels.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamApiModels.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamApiModels.kt	2025-12-28 15:41:01.559412390 +0000
+@@ -339,7 +339,7 @@
+ ) {
+     /** Resolved VOD ID (handles different panel field names) */
+     val resolvedId: Int
+-        get() = vodId ?: movieId ?: streamId ?: id ?: 0
++        get() = streamId ?: vodId ?: movieId ?: id ?: 0
+ 
+     /** Resolved poster URL */
+     val resolvedPoster: String?
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/catalog/TelegramCatalogPipelineImpl.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/catalog/TelegramCatalogPipelineImpl.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/catalog/TelegramCatalogPipelineImpl.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/catalog/TelegramCatalogPipelineImpl.kt	2025-12-28 15:40:10.063890655 +0000
+@@ -55,7 +55,7 @@
+             
+             if (auth !is TdlibAuthState.Ready) {
+                 UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - auth state is $auth (expected TdlibAuthState.Ready)" }
+-                trySend(
++                send(
+                         TelegramCatalogEvent.ScanError(
+                                 reason = "unauthenticated",
+                                 message = "Telegram is not authenticated. Current state: $auth",
+@@ -71,7 +71,7 @@
+             
+             if (conn !is TelegramConnectionState.Connected) {
+                 UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - connection state is $conn (expected TelegramConnectionState.Connected)" }
+-                trySend(
++                send(
+                         TelegramCatalogEvent.ScanError(
+                                 reason = "not_connected",
+                                 message = "Telegram is not connected. Current state: $conn",
+@@ -94,7 +94,7 @@
+             val totalChats = chatsToScan.size
+             UnifiedLog.i(TAG) { "Starting catalog scan for $totalChats chats" }
+ 
+-            trySend(
++            send(
+                     TelegramCatalogEvent.ScanStarted(
+                             chatCount = totalChats,
+                             estimatedTotalMessages = null, // TDLib doesn't provide this efficiently
+@@ -108,7 +108,7 @@
+             for (chat in chatsToScan) {
+                 if (!isActive) {
+                     UnifiedLog.i(TAG) { "Scan cancelled at chat $scannedChats/$totalChats" }
+-                    trySend(
++                    send(
+                             TelegramCatalogEvent.ScanCancelled(
+                                     scannedChats = scannedChats,
+                                     scannedMessages = scannedMessages,
+@@ -147,7 +147,7 @@
+                                             chatTitle = chat.title,
+                                     )
+ 
+-                            trySend(TelegramCatalogEvent.ItemDiscovered(catalogItem))
++                            send(TelegramCatalogEvent.ItemDiscovered(catalogItem))
+                             discoveredItems++
+ 
+                             // Log progress periodically
+@@ -160,7 +160,7 @@
+                         }
+ 
+                         // Emit progress event
+-                        trySend(
++                        send(
+                                 TelegramCatalogEvent.ScanProgress(
+                                         scannedChats = scannedChats,
+                                         totalChats = totalChats,
+@@ -186,7 +186,7 @@
+                             "$discoveredItems items in ${durationMs}ms",
+             )
+ 
+-            trySend(
++            send(
+                     TelegramCatalogEvent.ScanCompleted(
+                             scannedChats = scannedChats,
+                             scannedMessages = scannedMessages,
+@@ -199,7 +199,7 @@
+             throw ce
+         } catch (t: Throwable) {
+             UnifiedLog.e(TAG, "Catalog scan failed", t)
+-            trySend(
++            send(
+                     TelegramCatalogEvent.ScanError(
+                             reason = "unexpected_error",
+                             message = t.message ?: "Unknown error",
+@@ -225,7 +225,7 @@
+         val auth = adapter.authState.first()
+         if (auth !is TdlibAuthState.Ready) {
+             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: auth_state=$auth")
+-            trySend(
++            send(
+                     TelegramCatalogEvent.ScanError(
+                             reason = "unauthenticated",
+                             message = "Telegram is not authenticated. Current state: $auth",
+@@ -237,7 +237,7 @@
+         val conn = adapter.connectionState.first()
+         if (conn !is TelegramConnectionState.Connected) {
+             UnifiedLog.w(TAG_LIVE, "Pre-flight failed: connection_state=$conn")
+-            trySend(
++            send(
+                     TelegramCatalogEvent.ScanError(
+                             reason = "not_connected",
+                             message = "Telegram is not connected. Current state: $conn",
+diff -ruN /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogPipelineImpl.kt /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogPipelineImpl.kt
+--- /mnt/data/repo_orig/FishIT-Player-architecture-v2-bootstrap/pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogPipelineImpl.kt	2025-12-28 12:16:55.000000000 +0000
++++ /mnt/data/repo_mod/FishIT-Player-architecture-v2-bootstrap/pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogPipelineImpl.kt	2025-12-28 15:40:10.061874734 +0000
+@@ -52,7 +52,7 @@
+                             "live=${config.includeLive}",
+             )
+ 
+-            trySend(
++            send(
+                     XtreamCatalogEvent.ScanStarted(
+                             includesVod = config.includeVod,
+                             includesSeries = config.includeSeries,
+@@ -79,11 +79,11 @@
+                         if (!currentCoroutineContext().isActive) break
+ 
+                         val catalogItem = mapper.fromVod(item, headers)
+-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
++                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                         vodCount++
+ 
+                         if (vodCount % PROGRESS_LOG_INTERVAL == 0) {
+-                            trySend(
++                            send(
+                                     XtreamCatalogEvent.ScanProgress(
+                                             vodCount = vodCount,
+                                             seriesCount = seriesCount,
+@@ -113,11 +113,11 @@
+                         if (!currentCoroutineContext().isActive) break
+ 
+                         val catalogItem = mapper.fromSeries(item, headers)
+-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
++                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                         seriesCount++
+ 
+                         if (seriesCount % PROGRESS_LOG_INTERVAL == 0) {
+-                            trySend(
++                            send(
+                                     XtreamCatalogEvent.ScanProgress(
+                                             vodCount = vodCount,
+                                             seriesCount = seriesCount,
+@@ -147,11 +147,11 @@
+ 
+                         // seriesName is now embedded in episode from DefaultXtreamCatalogSource
+                         val catalogItem = mapper.fromEpisode(episode, episode.seriesName, headers)
+-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
++                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                         episodeCount++
+ 
+                         if (episodeCount % PROGRESS_LOG_INTERVAL == 0) {
+-                            trySend(
++                            send(
+                                     XtreamCatalogEvent.ScanProgress(
+                                             vodCount = vodCount,
+                                             seriesCount = seriesCount,
+@@ -180,11 +180,11 @@
+                         if (!currentCoroutineContext().isActive) break
+ 
+                         val catalogItem = mapper.fromChannel(channel, headers)
+-                        trySend(XtreamCatalogEvent.ItemDiscovered(catalogItem))
++                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                         liveCount++
+ 
+                         if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
+-                            trySend(
++                            send(
+                                     XtreamCatalogEvent.ScanProgress(
+                                             vodCount = vodCount,
+                                             seriesCount = seriesCount,
+@@ -205,7 +205,7 @@
+             // Check if cancelled
+             if (!currentCoroutineContext().isActive) {
+                 UnifiedLog.i(TAG, "Scan cancelled")
+-                trySend(
++                send(
+                         XtreamCatalogEvent.ScanCancelled(
+                                 vodCount = vodCount,
+                                 seriesCount = seriesCount,
+@@ -226,7 +226,7 @@
+                             "in ${durationMs}ms",
+             )
+ 
+-            trySend(
++            send(
+                     XtreamCatalogEvent.ScanCompleted(
+                             vodCount = vodCount,
+                             seriesCount = seriesCount,
+@@ -240,7 +240,7 @@
+             throw ce
+         } catch (t: Throwable) {
+             UnifiedLog.e(TAG, "Xtream catalog scan failed", t)
+-            trySend(
++            send(
+                     XtreamCatalogEvent.ScanError(
+                             reason = "unexpected_error",
+                             message = t.message ?: "Unknown error",
