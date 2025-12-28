@@ -29,102 +29,103 @@ import javax.inject.Inject
  * - [TelegramFeatures.LAZY_THUMBNAILS] - enables on-demand thumbnail loading
  */
 @HiltViewModel
-class TelegramMediaViewModel @Inject constructor(
-    private val featureRegistry: FeatureRegistry,
-    private val telegramRepository: TelegramMediaRepository,
-    private val tapToPlayUseCase: TelegramTapToPlayUseCase,
-) : ViewModel() {
+class TelegramMediaViewModel
+    @Inject
+    constructor(
+        private val featureRegistry: FeatureRegistry,
+        private val telegramRepository: TelegramMediaRepository,
+        private val tapToPlayUseCase: TelegramTapToPlayUseCase,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(TelegramMediaUiState())
+        val uiState: StateFlow<TelegramMediaUiState> = _uiState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(TelegramMediaUiState())
-    val uiState: StateFlow<TelegramMediaUiState> = _uiState.asStateFlow()
+        /**
+         * Telegram media items from the repository.
+         *
+         * Observes all Telegram content and updates UI state.
+         */
+        val mediaItems: StateFlow<List<TelegramMediaItem>> =
+            telegramRepository
+                .observeAll()
+                .catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to load Telegram media: ${e.message}" }
+                    emit(emptyList())
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = emptyList(),
+                )
 
-    /**
-     * Telegram media items from the repository.
-     *
-     * Observes all Telegram content and updates UI state.
-     */
-    val mediaItems: StateFlow<List<TelegramMediaItem>> = telegramRepository
-        .observeAll()
-        .catch { e ->
-            UnifiedLog.e(TAG, e) { "Failed to load Telegram media: ${e.message}" }
-            emit(emptyList())
+        /**
+         * Whether full history streaming is supported.
+         * When true, the UI can show a "sync all" option.
+         */
+        val supportsFullHistoryStreaming: Boolean
+            get() = featureRegistry.isSupported(TelegramFeatures.FULL_HISTORY_STREAMING)
+
+        /**
+         * Whether lazy thumbnail loading is supported.
+         * When true, thumbnails are loaded on-demand as items become visible.
+         */
+        val supportsLazyThumbnails: Boolean
+            get() = featureRegistry.isSupported(TelegramFeatures.LAZY_THUMBNAILS)
+
+        init {
+            logFeatureCapabilities()
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
 
-    /**
-     * Whether full history streaming is supported.
-     * When true, the UI can show a "sync all" option.
-     */
-    val supportsFullHistoryStreaming: Boolean
-        get() = featureRegistry.isSupported(TelegramFeatures.FULL_HISTORY_STREAMING)
+        /**
+         * Handles tap-to-play for a Telegram media item.
+         *
+         * Converts the item to a PlaybackContext and starts playback via the player.
+         */
+        fun onItemTap(item: TelegramMediaItem) {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isPlaybackStarting = true, errorMessage = null) }
 
-    /**
-     * Whether lazy thumbnail loading is supported.
-     * When true, thumbnails are loaded on-demand as items become visible.
-     */
-    val supportsLazyThumbnails: Boolean
-        get() = featureRegistry.isSupported(TelegramFeatures.LAZY_THUMBNAILS)
-
-    init {
-        logFeatureCapabilities()
-    }
-
-    /**
-     * Handles tap-to-play for a Telegram media item.
-     *
-     * Converts the item to a PlaybackContext and starts playback via the player.
-     */
-    fun onItemTap(item: TelegramMediaItem) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isPlaybackStarting = true, errorMessage = null) }
-
-            try {
-                tapToPlayUseCase.play(item)
-                // Playback started successfully
-                _uiState.update { it.copy(isPlaybackStarting = false) }
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to start playback: ${e.message}" }
-                _uiState.update {
-                    it.copy(
-                        isPlaybackStarting = false,
-                        errorMessage = "Failed to start playback: ${e.message}"
-                    )
+                try {
+                    tapToPlayUseCase.play(item)
+                    // Playback started successfully
+                    _uiState.update { it.copy(isPlaybackStarting = false) }
+                } catch (e: Exception) {
+                    UnifiedLog.e(TAG, e) { "Failed to start playback: ${e.message}" }
+                    _uiState.update {
+                        it.copy(
+                            isPlaybackStarting = false,
+                            errorMessage = "Failed to start playback: ${e.message}",
+                        )
+                    }
                 }
             }
         }
-    }
 
-    /**
-     * Clears the error message.
-     */
-    fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
-    }
-
-    private fun logFeatureCapabilities() {
-        UnifiedLog.d(TAG) {
-            "Telegram feature capabilities: " +
-                "fullHistory=$supportsFullHistoryStreaming, " +
-                "lazyThumbs=$supportsLazyThumbnails"
+        /**
+         * Clears the error message.
+         */
+        fun clearError() {
+            _uiState.update { it.copy(errorMessage = null) }
         }
 
-        // Log owners for debugging
-        featureRegistry.ownerOf(TelegramFeatures.FULL_HISTORY_STREAMING)?.let { owner ->
-            UnifiedLog.d(TAG) { "Full history streaming owned by: ${owner.moduleName}" }
-        }
-        featureRegistry.ownerOf(TelegramFeatures.LAZY_THUMBNAILS)?.let { owner ->
-            UnifiedLog.d(TAG) { "Lazy thumbnails owned by: ${owner.moduleName}" }
-        }
-    }
+        private fun logFeatureCapabilities() {
+            UnifiedLog.d(TAG) {
+                "Telegram feature capabilities: " +
+                    "fullHistory=$supportsFullHistoryStreaming, " +
+                    "lazyThumbs=$supportsLazyThumbnails"
+            }
 
-    companion object {
-        private const val TAG = "TelegramMediaViewModel"
+            // Log owners for debugging
+            featureRegistry.ownerOf(TelegramFeatures.FULL_HISTORY_STREAMING)?.let { owner ->
+                UnifiedLog.d(TAG) { "Full history streaming owned by: ${owner.moduleName}" }
+            }
+            featureRegistry.ownerOf(TelegramFeatures.LAZY_THUMBNAILS)?.let { owner ->
+                UnifiedLog.d(TAG) { "Lazy thumbnails owned by: ${owner.moduleName}" }
+            }
+        }
+
+        companion object {
+            private const val TAG = "TelegramMediaViewModel"
+        }
     }
-}
 
 /**
  * UI state for the Telegram Media screen.

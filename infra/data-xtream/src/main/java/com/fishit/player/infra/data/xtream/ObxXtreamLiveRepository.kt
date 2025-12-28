@@ -35,117 +35,137 @@ import javax.inject.Singleton
  * - Live: "xtream:live:{streamId}"
  */
 @Singleton
-class ObxXtreamLiveRepository @Inject constructor(
-    private val boxStore: BoxStore
-) : XtreamLiveRepository {
-
-    companion object {
-        private const val TAG = "ObxXtreamLiveRepo"
-    }
-
-    private val liveBox by lazy { boxStore.boxFor<ObxLive>() }
-
-    override fun observeChannels(categoryId: String?): Flow<List<RawMediaMetadata>> {
-        val query = if (categoryId != null) {
-            liveBox.query(ObxLive_.categoryId.equal(categoryId)).build()
-        } else {
-            liveBox.query().order(ObxLive_.nameLower).build()
-        }
-        return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
-    }
-
-    override suspend fun getAll(limit: Int, offset: Int): List<RawMediaMetadata> =
-        withContext(Dispatchers.IO) {
-            liveBox.query().order(ObxLive_.nameLower)
-                .build()
-                .find(offset.toLong(), limit.toLong())
-                .map { it.toRawMediaMetadata() }
+class ObxXtreamLiveRepository
+    @Inject
+    constructor(
+        private val boxStore: BoxStore,
+    ) : XtreamLiveRepository {
+        companion object {
+            private const val TAG = "ObxXtreamLiveRepo"
         }
 
-    override suspend fun getBySourceId(sourceId: String): RawMediaMetadata? =
-        withContext(Dispatchers.IO) {
-            val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull()
-                ?: return@withContext null
-            liveBox.query(ObxLive_.streamId.equal(streamId.toLong()))
-                .build()
-                .findFirst()
-                ?.toRawMediaMetadata()
-        }
+        private val liveBox by lazy { boxStore.boxFor<ObxLive>() }
 
-    override suspend fun search(query: String, limit: Int): List<RawMediaMetadata> =
-        withContext(Dispatchers.IO) {
-            val lowerQuery = query.lowercase()
-            liveBox.query(ObxLive_.nameLower.contains(lowerQuery))
-                .build()
-                .find(0, limit.toLong())
-                .map { it.toRawMediaMetadata() }
-        }
-
-    override suspend fun upsertAll(items: List<RawMediaMetadata>) =
-        withContext(Dispatchers.IO) {
-            UnifiedLog.d(TAG, "upsertAll(${items.size} items)")
-            
-            val entities = items.mapNotNull { it.toObxLive() }
-            if (entities.isEmpty()) return@withContext
-            
-            // Batch-optimized upsert: ONE query instead of N queries
-            val streamIds = entities.map { it.streamId }.toIntArray()
-            val existingEntities = liveBox.query(ObxLive_.streamId.oneOf(streamIds))
-                .build()
-                .find()
-            val existingIdMap = existingEntities.associateBy({ it.streamId }, { it.id })
-            
-            val toUpsert = entities.map { live ->
-                val existingId = existingIdMap[live.streamId]
-                if (existingId != null && existingId > 0) {
-                    live.copy(id = existingId)
+        override fun observeChannels(categoryId: String?): Flow<List<RawMediaMetadata>> {
+            val query =
+                if (categoryId != null) {
+                    liveBox.query(ObxLive_.categoryId.equal(categoryId)).build()
                 } else {
-                    live
+                    liveBox.query().order(ObxLive_.nameLower).build()
                 }
+            return query.asFlow().map { entities -> entities.map { it.toRawMediaMetadata() } }
+        }
+
+        override suspend fun getAll(
+            limit: Int,
+            offset: Int,
+        ): List<RawMediaMetadata> =
+            withContext(Dispatchers.IO) {
+                liveBox
+                    .query()
+                    .order(ObxLive_.nameLower)
+                    .build()
+                    .find(offset.toLong(), limit.toLong())
+                    .map { it.toRawMediaMetadata() }
             }
-            
-            liveBox.put(toUpsert)
-            UnifiedLog.d(TAG, "upsertAll: ${entities.size} items (${existingEntities.size} updates, ${entities.size - existingEntities.size} inserts)")
+
+        override suspend fun getBySourceId(sourceId: String): RawMediaMetadata? =
+            withContext(Dispatchers.IO) {
+                val streamId =
+                    sourceId.removePrefix("xtream:live:").toIntOrNull()
+                        ?: return@withContext null
+                liveBox
+                    .query(ObxLive_.streamId.equal(streamId.toLong()))
+                    .build()
+                    .findFirst()
+                    ?.toRawMediaMetadata()
+            }
+
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<RawMediaMetadata> =
+            withContext(Dispatchers.IO) {
+                val lowerQuery = query.lowercase()
+                liveBox
+                    .query(ObxLive_.nameLower.contains(lowerQuery))
+                    .build()
+                    .find(0, limit.toLong())
+                    .map { it.toRawMediaMetadata() }
+            }
+
+        override suspend fun upsertAll(items: List<RawMediaMetadata>) =
+            withContext(Dispatchers.IO) {
+                UnifiedLog.d(TAG, "upsertAll(${items.size} items)")
+
+                val entities = items.mapNotNull { it.toObxLive() }
+                if (entities.isEmpty()) return@withContext
+
+                // Batch-optimized upsert: ONE query instead of N queries
+                val streamIds = entities.map { it.streamId }.toIntArray()
+                val existingEntities =
+                    liveBox
+                        .query(ObxLive_.streamId.oneOf(streamIds))
+                        .build()
+                        .find()
+                val existingIdMap = existingEntities.associateBy({ it.streamId }, { it.id })
+
+                val toUpsert =
+                    entities.map { live ->
+                        val existingId = existingIdMap[live.streamId]
+                        if (existingId != null && existingId > 0) {
+                            live.copy(id = existingId)
+                        } else {
+                            live
+                        }
+                    }
+
+                liveBox.put(toUpsert)
+                UnifiedLog.d(
+                    TAG,
+                    "upsertAll: ${entities.size} items (${existingEntities.size} updates, ${entities.size - existingEntities.size} inserts)",
+                )
+            }
+
+        override suspend fun upsert(item: RawMediaMetadata) {
+            upsertAll(listOf(item))
         }
 
-    override suspend fun upsert(item: RawMediaMetadata) {
-        upsertAll(listOf(item))
+        override suspend fun count(): Long =
+            withContext(Dispatchers.IO) {
+                liveBox.count()
+            }
+
+        override suspend fun deleteAll() =
+            withContext(Dispatchers.IO) {
+                UnifiedLog.d(TAG, "deleteAll()")
+                liveBox.removeAll()
+            }
+
+        // ========================================================================
+        // Mapping: ObxLive ↔ RawMediaMetadata
+        // ========================================================================
+
+        private fun ObxLive.toRawMediaMetadata(): RawMediaMetadata =
+            RawMediaMetadata(
+                originalTitle = name,
+                mediaType = MediaType.LIVE,
+                sourceType = SourceType.XTREAM,
+                sourceLabel = categoryId ?: "Xtream Live",
+                sourceId = "xtream:live:$streamId",
+                poster = logo?.let { ImageRef.Http(it) },
+                thumbnail = logo?.let { ImageRef.Http(it) },
+            )
+
+        private fun RawMediaMetadata.toObxLive(): ObxLive? {
+            val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull() ?: return null
+            return ObxLive(
+                streamId = streamId,
+                name = originalTitle,
+                nameLower = originalTitle.lowercase(),
+                sortTitleLower = originalTitle.lowercase(),
+                logo = (poster as? ImageRef.Http)?.url ?: (thumbnail as? ImageRef.Http)?.url,
+                categoryId = sourceLabel.takeIf { it != "Xtream Live" },
+            )
+        }
     }
-
-    override suspend fun count(): Long =
-        withContext(Dispatchers.IO) {
-            liveBox.count()
-        }
-
-    override suspend fun deleteAll() =
-        withContext(Dispatchers.IO) {
-            UnifiedLog.d(TAG, "deleteAll()")
-            liveBox.removeAll()
-        }
-
-    // ========================================================================
-    // Mapping: ObxLive ↔ RawMediaMetadata
-    // ========================================================================
-
-    private fun ObxLive.toRawMediaMetadata(): RawMediaMetadata = RawMediaMetadata(
-        originalTitle = name,
-        mediaType = MediaType.LIVE,
-        sourceType = SourceType.XTREAM,
-        sourceLabel = categoryId ?: "Xtream Live",
-        sourceId = "xtream:live:$streamId",
-        poster = logo?.let { ImageRef.Http(it) },
-        thumbnail = logo?.let { ImageRef.Http(it) }
-    )
-
-    private fun RawMediaMetadata.toObxLive(): ObxLive? {
-        val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull() ?: return null
-        return ObxLive(
-            streamId = streamId,
-            name = originalTitle,
-            nameLower = originalTitle.lowercase(),
-            sortTitleLower = originalTitle.lowercase(),
-            logo = (poster as? ImageRef.Http)?.url ?: (thumbnail as? ImageRef.Http)?.url,
-            categoryId = sourceLabel.takeIf { it != "Xtream Live" }
-        )
-    }
-}

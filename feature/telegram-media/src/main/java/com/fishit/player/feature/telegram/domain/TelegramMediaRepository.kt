@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.Flow
  * ```
  */
 interface TelegramMediaRepository {
-
     /**
      * Observe all Telegram media items.
      *
@@ -52,5 +51,8 @@ interface TelegramMediaRepository {
      * @param limit Maximum results
      * @return Matching media items
      */
-    suspend fun search(query: String, limit: Int = 50): List<TelegramMediaItem>
+    suspend fun search(
+        query: String,
+        limit: Int = 50,
+    ): List<TelegramMediaItem>
 }

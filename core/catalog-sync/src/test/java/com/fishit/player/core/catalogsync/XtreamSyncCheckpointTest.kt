@@ -12,7 +12,6 @@ import kotlin.test.assertTrue
  * Tests checkpoint encoding/decoding roundtrips and phase advancement logic.
  */
 class XtreamSyncCheckpointTest {
-
     @Test
     fun `encode and decode roundtrip for INITIAL checkpoint`() {
         val checkpoint = XtreamSyncCheckpoint.INITIAL
@@ -28,13 +27,14 @@ class XtreamSyncCheckpointTest {
 
     @Test
     fun `encode and decode roundtrip with all fields`() {
-        val checkpoint = XtreamSyncCheckpoint(
-            phase = XtreamSyncPhase.VOD_INFO,
-            offset = 150,
-            seriesIndex = 42,
-            lastVodInfoId = 12345,
-            lastSeriesInfoId = 6789,
-        )
+        val checkpoint =
+            XtreamSyncCheckpoint(
+                phase = XtreamSyncPhase.VOD_INFO,
+                offset = 150,
+                seriesIndex = 42,
+                lastVodInfoId = 12345,
+                lastSeriesInfoId = 6789,
+            )
         val encoded = checkpoint.encode()
         val decoded = XtreamSyncCheckpoint.decode(encoded)
 
@@ -135,11 +135,12 @@ class XtreamSyncCheckpointTest {
 
     @Test
     fun `withOffset preserves other fields`() {
-        val original = XtreamSyncCheckpoint(
-            phase = XtreamSyncPhase.VOD_LIST,
-            offset = 10,
-            seriesIndex = 5,
-        )
+        val original =
+            XtreamSyncCheckpoint(
+                phase = XtreamSyncPhase.VOD_LIST,
+                offset = 10,
+                seriesIndex = 5,
+            )
         val updated = original.withOffset(100)
 
         assertEquals(100, updated.offset)
@@ -149,11 +150,12 @@ class XtreamSyncCheckpointTest {
 
     @Test
     fun `withSeriesIndex preserves other fields`() {
-        val original = XtreamSyncCheckpoint(
-            phase = XtreamSyncPhase.SERIES_EPISODES,
-            offset = 10,
-            seriesIndex = 5,
-        )
+        val original =
+            XtreamSyncCheckpoint(
+                phase = XtreamSyncPhase.SERIES_EPISODES,
+                offset = 10,
+                seriesIndex = 5,
+            )
         val updated = original.withSeriesIndex(99)
 
         assertEquals(99, updated.seriesIndex)
@@ -163,11 +165,12 @@ class XtreamSyncCheckpointTest {
 
     @Test
     fun `withLastVodInfoId preserves other fields`() {
-        val original = XtreamSyncCheckpoint(
-            phase = XtreamSyncPhase.VOD_INFO,
-            offset = 0,
-            lastVodInfoId = 100,
-        )
+        val original =
+            XtreamSyncCheckpoint(
+                phase = XtreamSyncPhase.VOD_INFO,
+                offset = 0,
+                lastVodInfoId = 100,
+            )
         val updated = original.withLastVodInfoId(500)
 
         assertEquals(500, updated.lastVodInfoId)
@@ -176,11 +179,12 @@ class XtreamSyncCheckpointTest {
 
     @Test
     fun `encoded string format is stable and parseable`() {
-        val checkpoint = XtreamSyncCheckpoint(
-            phase = XtreamSyncPhase.SERIES_EPISODES,
-            offset = 42,
-            seriesIndex = 7,
-        )
+        val checkpoint =
+            XtreamSyncCheckpoint(
+                phase = XtreamSyncPhase.SERIES_EPISODES,
+                offset = 42,
+                seriesIndex = 7,
+            )
         val encoded = checkpoint.encode()
 
         // Format should be: xtream|phase=SERIES_EPISODES|offset=42|series_index=7

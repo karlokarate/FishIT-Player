@@ -31,100 +31,101 @@ import dagger.assisted.AssistedInject
  */
 @HiltWorker
 class TelegramAuthPreflightWorker
-@AssistedInject
-constructor(
+    @AssistedInject
+    constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
         private val sourceActivationStore: SourceActivationStore,
         private val telegramAuthRepository: TelegramAuthRepository,
-) : CoroutineWorker(context, workerParams) {
-    companion object {
-        private const val TAG = "TelegramAuthPreflightWorker"
-    }
-
-    override suspend fun doWork(): Result {
-        val input = WorkerInputData.from(inputData)
-        val startTimeMs = System.currentTimeMillis()
-
-        UnifiedLog.i(TAG) {
-            "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM"
+    ) : CoroutineWorker(context, workerParams) {
+        companion object {
+            private const val TAG = "TelegramAuthPreflightWorker"
         }
 
-        // Check runtime guards (respects sync mode - manual syncs skip battery guards)
-        val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
-        if (guardReason != null) {
-            UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
-            return Result.retry()
-        }
-
-        // Verify Telegram is active
-        val activeSources = sourceActivationStore.getActiveSources()
-        if (SourceId.TELEGRAM !in activeSources) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.w(TAG) { "FAILURE reason=source_not_active duration_ms=$durationMs" }
-            return Result.failure(
-                    WorkerOutputData.failure(WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED),
-            )
-        }
-
-        // Check authorization state via domain repository
-        return try {
-            val authState = telegramAuthRepository.authState.value
+        override suspend fun doWork(): Result {
+            val input = WorkerInputData.from(inputData)
+            val startTimeMs = System.currentTimeMillis()
 
             UnifiedLog.i(TAG) {
-                "Checking auth state: $authState (isConnected=${authState is TelegramAuthState.Connected})"
+                "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM"
             }
 
-            when (authState) {
-                is TelegramAuthState.Connected -> {
-                    val durationMs = System.currentTimeMillis() - startTimeMs
-                    UnifiedLog.i(TAG) { "✅ SUCCESS duration_ms=$durationMs (TDLib authorized)" }
-                    Result.success(
+            // Check runtime guards (respects sync mode - manual syncs skip battery guards)
+            val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+            if (guardReason != null) {
+                UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
+                return Result.retry()
+            }
+
+            // Verify Telegram is active
+            val activeSources = sourceActivationStore.getActiveSources()
+            if (SourceId.TELEGRAM !in activeSources) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.w(TAG) { "FAILURE reason=source_not_active duration_ms=$durationMs" }
+                return Result.failure(
+                    WorkerOutputData.failure(WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED),
+                )
+            }
+
+            // Check authorization state via domain repository
+            return try {
+                val authState = telegramAuthRepository.authState.value
+
+                UnifiedLog.i(TAG) {
+                    "Checking auth state: $authState (isConnected=${authState is TelegramAuthState.Connected})"
+                }
+
+                when (authState) {
+                    is TelegramAuthState.Connected -> {
+                        val durationMs = System.currentTimeMillis() - startTimeMs
+                        UnifiedLog.i(TAG) { "✅ SUCCESS duration_ms=$durationMs (TDLib authorized)" }
+                        Result.success(
                             WorkerOutputData.success(
-                                    itemsPersisted = 0,
-                                    durationMs = durationMs,
+                                itemsPersisted = 0,
+                                durationMs = durationMs,
                             ),
-                    )
-                }
-                is TelegramAuthState.WaitingForPhone,
-                is TelegramAuthState.WaitingForCode,
-                is TelegramAuthState.WaitingForPassword, -> {
-                    val durationMs = System.currentTimeMillis() - startTimeMs
-                    UnifiedLog.e(TAG) {
-                        "❌ FAILURE reason=login_required state=$authState duration_ms=$durationMs retry=false"
+                        )
                     }
-                    // W-20: Non-retryable failure - user action required
-                    Result.failure(
+                    is TelegramAuthState.WaitingForPhone,
+                    is TelegramAuthState.WaitingForCode,
+                    is TelegramAuthState.WaitingForPassword,
+                    -> {
+                        val durationMs = System.currentTimeMillis() - startTimeMs
+                        UnifiedLog.e(TAG) {
+                            "❌ FAILURE reason=login_required state=$authState duration_ms=$durationMs retry=false"
+                        }
+                        // W-20: Non-retryable failure - user action required
+                        Result.failure(
                             WorkerOutputData.failure(
-                                    WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED
+                                WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED,
                             ),
-                    )
-                }
-                is TelegramAuthState.Disconnected, is TelegramAuthState.Error, -> {
-                    val durationMs = System.currentTimeMillis() - startTimeMs
-                    UnifiedLog.e(TAG) {
-                        "❌ FAILURE reason=not_authorized state=$authState duration_ms=$durationMs retry=false"
+                        )
                     }
-                    // W-20: Non-retryable failure - user action required
-                    Result.failure(
+                    is TelegramAuthState.Disconnected, is TelegramAuthState.Error -> {
+                        val durationMs = System.currentTimeMillis() - startTimeMs
+                        UnifiedLog.e(TAG) {
+                            "❌ FAILURE reason=not_authorized state=$authState duration_ms=$durationMs retry=false"
+                        }
+                        // W-20: Non-retryable failure - user action required
+                        Result.failure(
                             WorkerOutputData.failure(
-                                    WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED
+                                WorkerConstants.FAILURE_TELEGRAM_NOT_AUTHORIZED,
                             ),
-                    )
+                        )
+                    }
+                    is TelegramAuthState.Idle -> {
+                        // Still initializing, retry
+                        UnifiedLog.w(TAG) { "⚠️ Auth state idle (still initializing), retrying" }
+                        Result.retry()
+                    }
                 }
-                is TelegramAuthState.Idle -> {
-                    // Still initializing, retry
-                    UnifiedLog.w(TAG) { "⚠️ Auth state idle (still initializing), retrying" }
-                    Result.retry()
+            } catch (e: Exception) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.e(TAG, e) {
+                    "❌ FAILURE reason=auth_check_failed duration_ms=$durationMs retry=true"
                 }
+                // Transient init error - retry
+                Result.retry()
             }
-        } catch (e: Exception) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.e(TAG, e) {
-                "❌ FAILURE reason=auth_check_failed duration_ms=$durationMs retry=true"
-            }
-            // Transient init error - retry
-            Result.retry()
         }
     }
-}

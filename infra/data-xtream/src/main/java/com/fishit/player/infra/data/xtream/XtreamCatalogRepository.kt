@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.Flow
  * - Pipeline produces RawMediaMetadata, Data consumes it
  */
 interface XtreamCatalogRepository {
-
     /**
      * Observe all VOD items as RawMediaMetadata.
      *
@@ -45,7 +44,10 @@ interface XtreamCatalogRepository {
      * @param seasonNumber Optional season filter
      * @return Flow of episode items
      */
-    fun observeEpisodes(seriesId: String, seasonNumber: Int? = null): Flow<List<RawMediaMetadata>>
+    fun observeEpisodes(
+        seriesId: String,
+        seasonNumber: Int? = null,
+    ): Flow<List<RawMediaMetadata>>
 
     /**
      * Get all catalog items (one-shot query).
@@ -58,7 +60,7 @@ interface XtreamCatalogRepository {
     suspend fun getAll(
         mediaType: MediaType? = null,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
     ): List<RawMediaMetadata>
 
     /**
@@ -76,7 +78,10 @@ interface XtreamCatalogRepository {
      * @param limit Maximum results
      * @return Matching media items
      */
-    suspend fun search(query: String, limit: Int = 50): List<RawMediaMetadata>
+    suspend fun search(
+        query: String,
+        limit: Int = 50,
+    ): List<RawMediaMetadata>
 
     /**
      * Insert or update catalog items from pipeline.
@@ -118,7 +123,10 @@ interface XtreamCatalogRepository {
      * @param afterId Cursor for pagination (return IDs > this)
      * @return List of VOD IDs needing backfill
      */
-    suspend fun getVodIdsNeedingInfoBackfill(limit: Int = 50, afterId: Int = 0): List<Int>
+    suspend fun getVodIdsNeedingInfoBackfill(
+        limit: Int = 50,
+        afterId: Int = 0,
+    ): List<Int>
 
     /**
      * Get series IDs that need info backfill (missing plot/cast).
@@ -127,7 +135,10 @@ interface XtreamCatalogRepository {
      * @param afterId Cursor for pagination (return IDs > this)
      * @return List of series IDs needing backfill
      */
-    suspend fun getSeriesIdsNeedingInfoBackfill(limit: Int = 50, afterId: Int = 0): List<Int>
+    suspend fun getSeriesIdsNeedingInfoBackfill(
+        limit: Int = 50,
+        afterId: Int = 0,
+    ): List<Int>
 
     /**
      * Update VOD with detailed info from get_vod_info API.

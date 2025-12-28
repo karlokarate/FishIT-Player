@@ -31,7 +31,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamDataModule {
-
     /**
      * Binds [ObxXtreamCatalogRepository] as the implementation for [XtreamCatalogRepository].
      *
@@ -42,9 +41,7 @@ abstract class XtreamDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamCatalogRepository(
-        impl: ObxXtreamCatalogRepository
-    ): XtreamCatalogRepository
+    abstract fun bindXtreamCatalogRepository(impl: ObxXtreamCatalogRepository): XtreamCatalogRepository
 
     /**
      * Binds [ObxXtreamLiveRepository] as the implementation for [XtreamLiveRepository].
@@ -54,9 +51,7 @@ abstract class XtreamDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamLiveRepository(
-        impl: ObxXtreamLiveRepository
-    ): XtreamLiveRepository
+    abstract fun bindXtreamLiveRepository(impl: ObxXtreamLiveRepository): XtreamLiveRepository
 
     // ========== Feature Layer Repository Bindings ==========
 
@@ -73,9 +68,7 @@ abstract class XtreamDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindLibraryContentRepository(
-        impl: LibraryContentRepositoryAdapter
-    ): LibraryContentRepository
+    abstract fun bindLibraryContentRepository(impl: LibraryContentRepositoryAdapter): LibraryContentRepository
 
     /**
      * Binds [LiveContentRepositoryAdapter] as the implementation for [LiveContentRepository].
@@ -90,7 +83,5 @@ abstract class XtreamDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindLiveContentRepository(
-        impl: LiveContentRepositoryAdapter
-    ): LiveContentRepository
+    abstract fun bindLiveContentRepository(impl: LiveContentRepositoryAdapter): LiveContentRepository
 }

@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.Flow
  * handles channel metadata only. EPG queries use dedicated methods.
  */
 interface XtreamLiveRepository {
-
     /**
      * Observe all live channels as RawMediaMetadata.
      *
@@ -40,7 +39,10 @@ interface XtreamLiveRepository {
      * @param offset Pagination offset
      * @return List of live channel items
      */
-    suspend fun getAll(limit: Int = 100, offset: Int = 0): List<RawMediaMetadata>
+    suspend fun getAll(
+        limit: Int = 100,
+        offset: Int = 0,
+    ): List<RawMediaMetadata>
 
     /**
      * Get channel by source ID.
@@ -57,7 +59,10 @@ interface XtreamLiveRepository {
      * @param limit Maximum results
      * @return Matching channel items
      */
-    suspend fun search(query: String, limit: Int = 50): List<RawMediaMetadata>
+    suspend fun search(
+        query: String,
+        limit: Int = 50,
+    ): List<RawMediaMetadata>
 
     /**
      * Insert or update channels from pipeline.

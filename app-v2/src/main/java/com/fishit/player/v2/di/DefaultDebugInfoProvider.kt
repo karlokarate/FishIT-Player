@@ -1,10 +1,10 @@
 package com.fishit.player.v2.di
 
 import android.content.Context
-import com.fishit.player.core.sourceactivation.SourceActivationStore
-import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.feature.settings.ConnectionInfo
 import com.fishit.player.feature.settings.ContentCounts
 import com.fishit.player.feature.settings.DebugInfoProvider

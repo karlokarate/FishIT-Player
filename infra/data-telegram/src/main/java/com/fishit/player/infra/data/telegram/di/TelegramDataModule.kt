@@ -1,7 +1,7 @@
 package com.fishit.player.infra.data.telegram.di
 
-import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
+import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
 import com.fishit.player.infra.data.telegram.ObxTelegramContentRepository
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.telegram.TelegramMediaRepositoryAdapter
@@ -30,12 +30,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class TelegramDataModule {
-
     @Binds
     @Singleton
-    abstract fun bindTelegramContentRepository(
-        impl: ObxTelegramContentRepository
-    ): TelegramContentRepository
+    abstract fun bindTelegramContentRepository(impl: ObxTelegramContentRepository): TelegramContentRepository
 
     /**
      * Binds the adapter that implements the feature's repository interface.
@@ -45,13 +42,9 @@ abstract class TelegramDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindTelegramMediaRepository(
-        adapter: TelegramMediaRepositoryAdapter
-    ): TelegramMediaRepository
+    abstract fun bindTelegramMediaRepository(adapter: TelegramMediaRepositoryAdapter): TelegramMediaRepository
 
     @Binds
     @Singleton
-    abstract fun bindTelegramAuthRepository(
-        impl: TelegramAuthRepositoryImpl
-    ): TelegramAuthRepository
+    abstract fun bindTelegramAuthRepository(impl: TelegramAuthRepositoryImpl): TelegramAuthRepository
 }

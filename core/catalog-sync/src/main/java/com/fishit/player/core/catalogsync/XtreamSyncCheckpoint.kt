@@ -54,11 +54,14 @@ data class XtreamSyncCheckpoint(
             if (!encoded.startsWith(PREFIX)) return INITIAL
 
             val parts = encoded.split(SEPARATOR).drop(1) // Skip prefix
-            val map = parts.mapNotNull { part ->
-                val (key, value) = part.split("=", limit = 2).takeIf { it.size == 2 }
-                    ?: return@mapNotNull null
-                key to value
-            }.toMap()
+            val map =
+                parts
+                    .mapNotNull { part ->
+                        val (key, value) =
+                            part.split("=", limit = 2).takeIf { it.size == 2 }
+                                ?: return@mapNotNull null
+                        key to value
+                    }.toMap()
 
             val phaseName = map[KEY_PHASE] ?: return INITIAL
             val phase = XtreamSyncPhase.entries.find { it.name == phaseName } ?: return INITIAL
@@ -78,26 +81,27 @@ data class XtreamSyncCheckpoint(
      *
      * @return Encoded checkpoint string (never null or empty)
      */
-    fun encode(): String = buildString {
-        append(PREFIX)
-        append(SEPARATOR)
-        append("$KEY_PHASE=${phase.name}")
-        append(SEPARATOR)
-        append("$KEY_OFFSET=$offset")
+    fun encode(): String =
+        buildString {
+            append(PREFIX)
+            append(SEPARATOR)
+            append("$KEY_PHASE=${phase.name}")
+            append(SEPARATOR)
+            append("$KEY_OFFSET=$offset")
 
-        if (seriesIndex > 0) {
-            append(SEPARATOR)
-            append("$KEY_SERIES_INDEX=$seriesIndex")
+            if (seriesIndex > 0) {
+                append(SEPARATOR)
+                append("$KEY_SERIES_INDEX=$seriesIndex")
+            }
+            lastVodInfoId?.let {
+                append(SEPARATOR)
+                append("$KEY_LAST_VOD_INFO_ID=$it")
+            }
+            lastSeriesInfoId?.let {
+                append(SEPARATOR)
+                append("$KEY_LAST_SERIES_INFO_ID=$it")
+            }
         }
-        lastVodInfoId?.let {
-            append(SEPARATOR)
-            append("$KEY_LAST_VOD_INFO_ID=$it")
-        }
-        lastSeriesInfoId?.let {
-            append(SEPARATOR)
-            append("$KEY_LAST_SERIES_INFO_ID=$it")
-        }
-    }
 
     /**
      * Advance to the next phase.
@@ -105,15 +109,16 @@ data class XtreamSyncCheckpoint(
      * @return New checkpoint at the start of the next phase, or COMPLETED if done
      */
     fun advancePhase(): XtreamSyncCheckpoint {
-        val nextPhase = when (phase) {
-            XtreamSyncPhase.VOD_LIST -> XtreamSyncPhase.SERIES_LIST
-            XtreamSyncPhase.SERIES_LIST -> XtreamSyncPhase.SERIES_EPISODES
-            XtreamSyncPhase.SERIES_EPISODES -> XtreamSyncPhase.LIVE_LIST
-            XtreamSyncPhase.LIVE_LIST -> XtreamSyncPhase.VOD_INFO
-            XtreamSyncPhase.VOD_INFO -> XtreamSyncPhase.SERIES_INFO
-            XtreamSyncPhase.SERIES_INFO -> XtreamSyncPhase.COMPLETED
-            XtreamSyncPhase.COMPLETED -> XtreamSyncPhase.COMPLETED
-        }
+        val nextPhase =
+            when (phase) {
+                XtreamSyncPhase.VOD_LIST -> XtreamSyncPhase.SERIES_LIST
+                XtreamSyncPhase.SERIES_LIST -> XtreamSyncPhase.SERIES_EPISODES
+                XtreamSyncPhase.SERIES_EPISODES -> XtreamSyncPhase.LIVE_LIST
+                XtreamSyncPhase.LIVE_LIST -> XtreamSyncPhase.VOD_INFO
+                XtreamSyncPhase.VOD_INFO -> XtreamSyncPhase.SERIES_INFO
+                XtreamSyncPhase.SERIES_INFO -> XtreamSyncPhase.COMPLETED
+                XtreamSyncPhase.COMPLETED -> XtreamSyncPhase.COMPLETED
+            }
         return XtreamSyncCheckpoint(phase = nextPhase)
     }
 
@@ -123,8 +128,7 @@ data class XtreamSyncCheckpoint(
      * @param newOffset New offset value
      * @return Updated checkpoint
      */
-    fun withOffset(newOffset: Int): XtreamSyncCheckpoint =
-        copy(offset = newOffset)
+    fun withOffset(newOffset: Int): XtreamSyncCheckpoint = copy(offset = newOffset)
 
     /**
      * Update series index for SERIES_EPISODES phase.
@@ -132,8 +136,7 @@ data class XtreamSyncCheckpoint(
      * @param newSeriesIndex New series index
      * @return Updated checkpoint
      */
-    fun withSeriesIndex(newSeriesIndex: Int): XtreamSyncCheckpoint =
-        copy(seriesIndex = newSeriesIndex)
+    fun withSeriesIndex(newSeriesIndex: Int): XtreamSyncCheckpoint = copy(seriesIndex = newSeriesIndex)
 
     /**
      * Update last processed VOD info ID.
@@ -141,8 +144,7 @@ data class XtreamSyncCheckpoint(
      * @param vodId Last VOD ID that was processed
      * @return Updated checkpoint
      */
-    fun withLastVodInfoId(vodId: Int): XtreamSyncCheckpoint =
-        copy(lastVodInfoId = vodId)
+    fun withLastVodInfoId(vodId: Int): XtreamSyncCheckpoint = copy(lastVodInfoId = vodId)
 
     /**
      * Update last processed series info ID.
@@ -150,8 +152,7 @@ data class XtreamSyncCheckpoint(
      * @param seriesId Last series ID that was processed
      * @return Updated checkpoint
      */
-    fun withLastSeriesInfoId(seriesId: Int): XtreamSyncCheckpoint =
-        copy(lastSeriesInfoId = seriesId)
+    fun withLastSeriesInfoId(seriesId: Int): XtreamSyncCheckpoint = copy(lastSeriesInfoId = seriesId)
 
     /** Check if sync is fully completed */
     val isCompleted: Boolean
@@ -159,18 +160,22 @@ data class XtreamSyncCheckpoint(
 
     /** Check if we're in a list phase (can skip to next phase if desired) */
     val isListPhase: Boolean
-        get() = phase in listOf(
-            XtreamSyncPhase.VOD_LIST,
-            XtreamSyncPhase.SERIES_LIST,
-            XtreamSyncPhase.LIVE_LIST,
-        )
+        get() =
+            phase in
+                listOf(
+                    XtreamSyncPhase.VOD_LIST,
+                    XtreamSyncPhase.SERIES_LIST,
+                    XtreamSyncPhase.LIVE_LIST,
+                )
 
     /** Check if we're in an info backfill phase */
     val isInfoBackfillPhase: Boolean
-        get() = phase in listOf(
-            XtreamSyncPhase.VOD_INFO,
-            XtreamSyncPhase.SERIES_INFO,
-        )
+        get() =
+            phase in
+                listOf(
+                    XtreamSyncPhase.VOD_INFO,
+                    XtreamSyncPhase.SERIES_INFO,
+                )
 }
 
 /**

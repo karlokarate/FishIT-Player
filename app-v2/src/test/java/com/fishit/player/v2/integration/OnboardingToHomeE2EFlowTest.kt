@@ -2,13 +2,13 @@ package com.fishit.player.v2.integration
 
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
 import com.fishit.player.core.sourceactivation.SourceActivationState
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceId
-import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.model.MediaType
-import com.fishit.player.core.model.SourceType
 import com.fishit.player.feature.home.HomeState
 import com.fishit.player.feature.home.HomeViewModel
 import com.fishit.player.feature.home.domain.HomeContentRepository

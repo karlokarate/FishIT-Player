@@ -1,9 +1,9 @@
 package com.fishit.player.v2
 
-import com.fishit.player.core.sourceactivation.SourceActivationStore
-import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
+import com.fishit.player.core.sourceactivation.SourceActivationStore
+import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.v2.di.AppScopeModule
 import kotlinx.coroutines.CoroutineScope

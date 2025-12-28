@@ -35,49 +35,49 @@ import kotlinx.coroutines.isActive
  */
 @HiltWorker
 class TelegramFullHistoryScanWorker
-@AssistedInject
-constructor(
+    @AssistedInject
+    constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
         private val catalogSyncService: CatalogSyncService,
-) : CoroutineWorker(context, workerParams) {
-    companion object {
-        private const val TAG = "TelegramFullHistoryScanWorker"
-    }
-
-    override suspend fun doWork(): Result {
-        val input = WorkerInputData.from(inputData)
-        val startTimeMs = System.currentTimeMillis()
-        var itemsPersisted = 0L
-        var lastCheckpoint: String? = null
-
-        UnifiedLog.i(TAG) {
-            "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM kind=FULL_HISTORY"
+    ) : CoroutineWorker(context, workerParams) {
+        companion object {
+            private const val TAG = "TelegramFullHistoryScanWorker"
         }
 
-        // Check runtime guards (respects sync mode - manual syncs skip battery guards)
-        val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
-        if (guardReason != null) {
-            UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
-            return Result.retry()
-        }
+        override suspend fun doWork(): Result {
+            val input = WorkerInputData.from(inputData)
+            val startTimeMs = System.currentTimeMillis()
+            var itemsPersisted = 0L
+            var lastCheckpoint: String? = null
 
-        // Build sync config based on device class (W-17)
-        val syncConfig =
+            UnifiedLog.i(TAG) {
+                "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM kind=FULL_HISTORY"
+            }
+
+            // Check runtime guards (respects sync mode - manual syncs skip battery guards)
+            val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+            if (guardReason != null) {
+                UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
+                return Result.retry()
+            }
+
+            // Build sync config based on device class (W-17)
+            val syncConfig =
                 SyncConfig(
-                        batchSize = input.batchSize,
-                        enableNormalization = true,
-                        emitProgressEvery = input.batchSize,
+                    batchSize = input.batchSize,
+                    enableNormalization = true,
+                    emitProgressEvery = input.batchSize,
                 )
 
-        try {
-            // W-2: Call ONLY CatalogSyncService
-            // Note: chatIds = null means scan all chats (full history)
-            catalogSyncService.syncTelegram(
-                            chatIds = null, // Full history - no artificial limits
-                            syncConfig = syncConfig,
-                    )
-                    .collect { status ->
+            try {
+                // W-2: Call ONLY CatalogSyncService
+                // Note: chatIds = null means scan all chats (full history)
+                catalogSyncService
+                    .syncTelegram(
+                        chatIds = null, // Full history - no artificial limits
+                        syncConfig = syncConfig,
+                    ).collect { status ->
                         // Check if worker is cancelled
                         if (!currentCoroutineContext().isActive) {
                             UnifiedLog.w(TAG) { "Worker cancelled, stopping sync" }
@@ -129,37 +129,37 @@ constructor(
                         }
                     }
 
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.i(TAG) { "SUCCESS duration_ms=$durationMs persisted_count=$itemsPersisted" }
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.i(TAG) { "SUCCESS duration_ms=$durationMs persisted_count=$itemsPersisted" }
 
-            return Result.success(
+                return Result.success(
                     WorkerOutputData.success(
-                            itemsPersisted = itemsPersisted,
-                            durationMs = durationMs,
-                            checkpointCursor = lastCheckpoint,
+                        itemsPersisted = itemsPersisted,
+                        durationMs = durationMs,
+                        checkpointCursor = lastCheckpoint,
                     ),
-            )
-        } catch (e: CancellationException) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.w(TAG) { "Cancelled after ${durationMs}ms, persisted $itemsPersisted items" }
-            UnifiedLog.i(TAG) { "CHECKPOINT_SAVED cursor=$lastCheckpoint" }
+                )
+            } catch (e: CancellationException) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.w(TAG) { "Cancelled after ${durationMs}ms, persisted $itemsPersisted items" }
+                UnifiedLog.i(TAG) { "CHECKPOINT_SAVED cursor=$lastCheckpoint" }
 
-            // Return success so checkpoint is preserved
-            return Result.success(
+                // Return success so checkpoint is preserved
+                return Result.success(
                     WorkerOutputData.success(
-                            itemsPersisted = itemsPersisted,
-                            durationMs = durationMs,
-                            checkpointCursor = lastCheckpoint,
+                        itemsPersisted = itemsPersisted,
+                        durationMs = durationMs,
+                        checkpointCursor = lastCheckpoint,
                     ),
-            )
-        } catch (e: Exception) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.e(TAG, e) {
-                "FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs retry=true"
+                )
+            } catch (e: Exception) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.e(TAG, e) {
+                    "FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs retry=true"
+                }
+
+                // Transient error - retry
+                return Result.retry()
             }
-
-            // Transient error - retry
-            return Result.retry()
         }
     }
-}
