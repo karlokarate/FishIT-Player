@@ -509,8 +509,13 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
             )
     }
 
-    private fun ObxSeries.toRawMediaMetadata(): RawMediaMetadata =
-            RawMediaMetadata(
+    private fun ObxSeries.toRawMediaMetadata(): RawMediaMetadata {
+            // Build playback hints for series context (episodes carry the true playback IDs).
+            val hints = buildMap {
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                    put(PlaybackHintKeys.Xtream.SERIES_ID, seriesId.toString())
+            }
+            return RawMediaMetadata(
                     originalTitle = name,
                     mediaType = MediaType.SERIES,
                     year = year,
@@ -524,6 +529,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                                 ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, id))
                             }
                                     ?: ExternalIds(),
+                    playbackHints = hints,
                     // === Rich metadata from persisted info backfill ===
                     rating = rating,
                     plot = plot,
@@ -532,7 +538,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     cast = cast,
                     trailer = trailer,
             )
-            )
+    }
 
     private fun ObxEpisode.toRawMediaMetadata(): RawMediaMetadata {
             // Build playback hints from stored episode data
@@ -560,6 +566,9 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                     sourceId = "xtream:episode:$seriesId:$season:$episodeNum",
                     thumbnail = imageUrl?.let { ImageRef.Http(it) },
                     playbackHints = hints,
+                    // === Rich metadata from persisted episode info backfill ===
+                    rating = rating,
+                    plot = plot,
             )
     }
 
@@ -586,6 +595,11 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 rating = rating,
                 plot = plot,
                 genre = genres,
+                director = director,
+                cast = cast,
+                trailer = trailer,
+                // country and releaseDate not available in RawMediaMetadata
+                imdbId = externalIds.imdbId,
                 updatedAt = System.currentTimeMillis()
         )
     }
@@ -600,12 +614,15 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 year = year,
                 imagesJson = (poster as? ImageRef.Http)?.url,
                 tmdbId = externalIds.tmdb?.id?.toString(),
+                imdbId = externalIds.imdbId,
                 // Rich metadata from provider
                 rating = rating,
                 plot = plot,
                 genre = genres,
                 director = director,
                 cast = cast,
+                trailer = trailer,
+                // country and releaseDate not available in RawMediaMetadata
                 updatedAt = System.currentTimeMillis()
         )
     }
@@ -628,6 +645,9 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
                 episodeId = episodeStreamId,
                 title = originalTitle,
                 durationSecs = durationMs?.let { (it / 1000).toInt() },
+                rating = rating,
+                plot = plot,
+                // airDate not available (RawMediaMetadata has no releaseDate)
                 imageUrl = (thumbnail as? ImageRef.Http)?.url,
                 playExt = containerExt,
         )

@@ -3,6 +3,7 @@ package com.fishit.player.pipeline.telegram.model
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbRef
@@ -33,7 +34,8 @@ import com.fishit.player.core.model.TmdbRef
  * CONTRACT COMPLIANCE:
  * - ✅ Provide raw title via simple field priority (NO cleaning)
  * - ✅ Pass through year, season, episode, duration as-is from source
- * - ✅ Provide stable sourceId for tracking (remoteId or "msg:chatId:messageId")
+ * - ✅ Provide stable sourceId for tracking ("msg:chatId:messageId")
+ * - ✅ Persist playback-critical IDs (remoteId, mimeType, ...) via RawMediaMetadata.playbackHints
  * - ✅ Pass through structuredTmdbId to externalIds.tmdbId (if available)
  * - ✅ ImageRef populated from thumbnail/photo data
  * - ✅ NO TMDB lookups, NO cross-pipeline matching, NO canonical identity computation
@@ -78,6 +80,18 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         // Resolve plot/description: description field (description is canonical plot)
         val effectivePlot = description
 
+        // Playback hints (v2 SSOT): keep non-secret playback identifiers OUT of sourceId
+        val playbackHints = buildMap {
+                put(PlaybackHintKeys.Telegram.CHAT_ID, chatId.toString())
+                put(PlaybackHintKeys.Telegram.MESSAGE_ID, messageId.toString())
+                remoteId?.takeIf { it.isNotBlank() }?.let {
+                        put(PlaybackHintKeys.Telegram.REMOTE_ID, it)
+                }
+                mimeType?.takeIf { it.isNotBlank() }?.let {
+                        put(PlaybackHintKeys.Telegram.MIME_TYPE, it)
+                }
+        }
+
         return RawMediaMetadata(
                 originalTitle = rawTitle,
                 mediaType = mapTelegramMediaType(),
@@ -88,7 +102,8 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 externalIds = externalIds,
                 sourceType = SourceType.TELEGRAM,
                 sourceLabel = buildTelegramSourceLabel(),
-                sourceId = remoteId ?: "msg:$chatId:$messageId",
+                // Stable pipeline item ID: message identity (remoteId moves to playbackHints)
+                sourceId = "msg:$chatId:$messageId",
                 // === Pipeline Identity (v2) ===
                 pipelineIdTag = PipelineIdTag.TELEGRAM,
                 // === ImageRef from TelegramImageRefExtensions ===
@@ -105,6 +120,8 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
                 genres = effectiveGenres,
                 director = structuredDirector,
                 cast = null, // Telegram structured bundles don't provide cast
+                // === Playback Hints (v2) ===
+                playbackHints = playbackHints,
         )
 }
 
@@ -160,7 +177,10 @@ private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
         when {
                 isSeries || seasonNumber != null || episodeNumber != null ->
                         MediaType.SERIES_EPISODE
-                mediaType == TelegramMediaType.VIDEO -> MediaType.MOVIE
+                // IMPORTANT: keep VIDEO items UNKNOWN unless we have explicit S/E markers.
+                // This allows :core:metadata-normalizer to classify movies vs episodes
+                // from scene-style filenames (SxxEyy, year tags, etc.).
+                mediaType == TelegramMediaType.VIDEO -> MediaType.UNKNOWN
                 mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
                 mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
                 else -> MediaType.UNKNOWN

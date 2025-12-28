@@ -67,7 +67,7 @@ object PlaybackHintKeys {
     }
 
     /**
-     * Telegram-specific playback hints (for future use).
+     * Telegram-specific playback hints.
      */
     object Telegram {
         /** Chat ID containing the media */
@@ -76,7 +76,21 @@ object PlaybackHintKeys {
         /** Message ID within the chat */
         const val MESSAGE_ID = "telegram.messageId"
 
-        /** File ID for download/streaming */
+        /**
+         * Stable remote ID for the media file (v2 SSOT).
+         *
+         * TDLib resolves this to a session-local fileId via `getRemoteFile(remoteId)`.
+         */
+        const val REMOTE_ID = "telegram.remoteId"
+
+        /** MIME type hint (e.g., "video/mp4") */
+        const val MIME_TYPE = "telegram.mimeType"
+
+        /**
+         * Legacy session-local file ID.
+         *
+         * Keep for backward compatibility only; prefer [REMOTE_ID].
+         */
         const val FILE_ID = "telegram.fileId"
     }
 }

@@ -3,6 +3,8 @@ package com.fishit.player.infra.data.telegram
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.PipelineIdTag
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
@@ -222,6 +224,19 @@ class ObxTelegramContentRepository @Inject constructor(
             ExternalIds(imdbId = it)
         } ?: ExternalIds()
 
+        // Playback hints (v2 SSOT): keep TDLib session-local IDs OUT of storage.
+        // We persist remoteId and resolve fileId at runtime.
+        val hints = buildMap {
+            put(PlaybackHintKeys.Telegram.CHAT_ID, chatId.toString())
+            put(PlaybackHintKeys.Telegram.MESSAGE_ID, messageId.toString())
+            remoteId?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Telegram.REMOTE_ID, it)
+            }
+            mimeType?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Telegram.MIME_TYPE, it)
+            }
+        }
+
         return RawMediaMetadata(
             originalTitle = title ?: caption ?: fileName ?: "Unknown",
             year = year,
@@ -231,10 +246,17 @@ class ObxTelegramContentRepository @Inject constructor(
             sourceType = SourceType.TELEGRAM,
             sourceLabel = "Telegram Chat: $chatId",
             sourceId = "msg:$chatId:$messageId",
+            pipelineIdTag = PipelineIdTag.TELEGRAM,
             mediaType = derivedMediaType,
             thumbnail = thumbnailRef,
             poster = thumbnailRef,
-            externalIds = externalIds
+            externalIds = externalIds,
+            // Rich metadata (SSOT field mapping)
+            plot = description,
+            genres = genres,
+            ageRating = fsk,
+            // Playback hints for playback + detail flows
+            playbackHints = hints,
         )
     }
 
@@ -252,6 +274,10 @@ class ObxTelegramContentRepository @Inject constructor(
         val thumbRemoteId = (thumbnail as? ImageRef.TelegramThumb)?.remoteId
             ?: posterRemoteId // Fallback: use poster as thumbnail if no separate thumbnail
 
+        // v2: Persist video remoteId (SSOT for playback) via playbackHints.
+        val mediaRemoteId = playbackHints[PlaybackHintKeys.Telegram.REMOTE_ID]
+        val mediaMimeType = playbackHints[PlaybackHintKeys.Telegram.MIME_TYPE]
+
         return ObxTelegramMessage(
             chatId = chatId,
             messageId = messageId,
@@ -265,8 +291,14 @@ class ObxTelegramContentRepository @Inject constructor(
             isSeries = mediaType == MediaType.SERIES_EPISODE,
             date = System.currentTimeMillis() / 1000,
             // Persist thumbnail references for UI display
+            remoteId = mediaRemoteId,
             posterRemoteId = posterRemoteId,
             thumbRemoteId = thumbRemoteId,
+            mimeType = mediaMimeType,
+            // Rich metadata (SSOT field mapping)
+            genres = genres,
+            description = plot,
+            fsk = ageRating,
             // Persist external IDs for canonical identity
             tmdbId = externalIds.tmdb?.id?.toString(),
             imdbId = externalIds.imdbId

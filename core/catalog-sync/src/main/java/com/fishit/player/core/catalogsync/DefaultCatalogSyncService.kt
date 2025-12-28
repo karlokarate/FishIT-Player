@@ -462,6 +462,9 @@ class DefaultCatalogSyncService
                 format = null, // TODO: Extract from RawMediaMetadata.format when available
                 sizeBytes = null, // TODO: Add to RawMediaMetadata
                 durationMs = durationMs,
+                // v2 PlaybackHints: MUST be preserved for playback URL construction.
+                // SSOT is RawMediaMetadata.playbackHints (keys in PlaybackHintKeys).
+                playbackHints = playbackHints,
                 priority = calculateSourcePriority(),
             )
 

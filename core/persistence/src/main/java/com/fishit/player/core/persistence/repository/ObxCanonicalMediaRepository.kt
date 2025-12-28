@@ -31,6 +31,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -212,6 +213,8 @@ constructor(
                                                 formatJson =
                                                         source.format?.let { encodeFormat(it) },
                                                 sizeBytes = source.sizeBytes,
+                                                durationMs = source.durationMs,
+                                                playbackHintsJson = encodePlaybackHints(source.playbackHints),
                                                 priority = source.priority,
                                         )
                                 updated.canonicalMedia.target = canonical
@@ -232,6 +235,8 @@ constructor(
                                                 formatJson =
                                                         source.format?.let { encodeFormat(it) },
                                                 sizeBytes = source.sizeBytes,
+                                                durationMs = source.durationMs,
+                                                playbackHintsJson = encodePlaybackHints(source.playbackHints),
                                                 priority = source.priority,
                                                 addedAt = now,
                                         )
@@ -964,8 +969,10 @@ constructor(
                         languages = obx.languagesJson?.let { decodeLanguages(it) },
                         format = obx.formatJson?.let { decodeFormat(it) },
                         sizeBytes = obx.sizeBytes,
+                        durationMs = obx.durationMs,
                         addedAt = obx.addedAt,
                         priority = obx.priority,
+                        playbackHints = decodePlaybackHints(obx.playbackHintsJson),
                 )
         }
 
@@ -1098,4 +1105,36 @@ constructor(
                 } catch (e: Exception) {
                         null
                 }
+
+        // === PlaybackHints (v2) ===
+
+        /**
+         * Encode playback hints as JSON.
+         *
+         * Contract:
+         * - Values are strings
+         * - Empty maps are stored as null (space-saving)
+         */
+        private fun encodePlaybackHints(hints: Map<String, String>): String? {
+                if (hints.isEmpty()) return null
+                return try {
+                        json.encodeToString(hints)
+                } catch (e: Exception) {
+                        null
+                }
+        }
+
+        /**
+         * Decode playback hints JSON back into a map.
+         *
+         * Safe by default: returns emptyMap() on null/blank or decode errors.
+         */
+        private fun decodePlaybackHints(jsonStr: String?): Map<String, String> {
+                if (jsonStr.isNullOrBlank()) return emptyMap()
+                return try {
+                        json.decodeFromString<Map<String, String>>(jsonStr)
+                } catch (e: Exception) {
+                        emptyMap()
+                }
+        }
 }
