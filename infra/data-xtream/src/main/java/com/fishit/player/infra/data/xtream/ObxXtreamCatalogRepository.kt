@@ -382,7 +382,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         if (vods.isEmpty()) return
         
         // Step 1: Collect all vodIds we need to check
-        val vodIds = vods.map { it.vodId.toLong() }.toLongArray()
+        val vodIds = vods.map { it.vodId }.toIntArray()
         
         // Step 2: Load all existing entities in ONE query
         val existingEntities = vodBox.query(ObxVod_.vodId.oneOf(vodIds))
@@ -413,7 +413,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
     private fun upsertSeriesEntities(series: List<ObxSeries>) {
         if (series.isEmpty()) return
         
-        val seriesIds = series.map { it.seriesId.toLong() }.toLongArray()
+        val seriesIds = series.map { it.seriesId }.toIntArray()
         val existingEntities = seriesBox.query(ObxSeries_.seriesId.oneOf(seriesIds))
             .build()
             .find()
@@ -443,7 +443,7 @@ class ObxXtreamCatalogRepository @Inject constructor(private val boxStore: BoxSt
         
         // For episodes, we need to match on (seriesId, season, episodeNum)
         // Load all series IDs involved in this batch
-        val seriesIds = episodes.map { it.seriesId.toLong() }.distinct().toLongArray()
+        val seriesIds = episodes.map { it.seriesId }.distinct().toIntArray()
         
         // Load all existing episodes for these series in ONE query
         val existingEpisodes = episodeBox.query(ObxEpisode_.seriesId.oneOf(seriesIds))

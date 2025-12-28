@@ -89,7 +89,7 @@ class ObxXtreamLiveRepository @Inject constructor(
             if (entities.isEmpty()) return@withContext
             
             // Batch-optimized upsert: ONE query instead of N queries
-            val streamIds = entities.map { it.streamId.toLong() }.toLongArray()
+            val streamIds = entities.map { it.streamId }.toIntArray()
             val existingEntities = liveBox.query(ObxLive_.streamId.oneOf(streamIds))
                 .build()
                 .find()
