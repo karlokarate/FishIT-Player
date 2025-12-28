@@ -30,7 +30,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class TelegramPlaybackModule {
-
     /**
      * Binds the Telegram factory into the set of PlaybackSourceFactory.
      *
@@ -40,9 +39,7 @@ abstract class TelegramPlaybackModule {
     @Binds
     @IntoSet
     @Singleton
-    abstract fun bindTelegramPlaybackSourceFactory(
-            impl: TelegramPlaybackSourceFactoryImpl
-    ): PlaybackSourceFactory
+    abstract fun bindTelegramPlaybackSourceFactory(impl: TelegramPlaybackSourceFactoryImpl): PlaybackSourceFactory
 
     companion object {
         /**
@@ -55,11 +52,7 @@ abstract class TelegramPlaybackModule {
          */
         @Provides
         @Singleton
-        fun provideTelegramFileReadyEnsurer(
-                fileClient: TelegramFileClient
-        ): TelegramFileReadyEnsurer {
-            return TelegramFileReadyEnsurer(fileClient)
-        }
+        fun provideTelegramFileReadyEnsurer(fileClient: TelegramFileClient): TelegramFileReadyEnsurer = TelegramFileReadyEnsurer(fileClient)
 
         /**
          * Provides the TelegramFileDataSourceFactory for Media3 integration.
@@ -70,10 +63,8 @@ abstract class TelegramPlaybackModule {
         @Provides
         @Singleton
         fun provideTelegramFileDataSourceFactory(
-                fileClient: TelegramFileClient,
-                readyEnsurer: TelegramFileReadyEnsurer,
-        ): TelegramFileDataSourceFactory {
-            return TelegramFileDataSourceFactory(fileClient, readyEnsurer)
-        }
+            fileClient: TelegramFileClient,
+            readyEnsurer: TelegramFileReadyEnsurer,
+        ): TelegramFileDataSourceFactory = TelegramFileDataSourceFactory(fileClient, readyEnsurer)
     }
 }

@@ -53,7 +53,6 @@ import com.fishit.player.playback.domain.mp4.Mp4MoovValidationConfig
  */
 @Suppress("unused") // Constants referenced by TelegramFileReadyEnsurer
 object TelegramStreamingConfig {
-
     // ========== MP4 Header Validation (delegated to shared config) ==========
 
     /**

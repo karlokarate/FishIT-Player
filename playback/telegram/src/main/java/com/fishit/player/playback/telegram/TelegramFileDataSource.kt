@@ -10,17 +10,17 @@ import com.fishit.player.infra.transport.telegram.TelegramFileClient
 import com.fishit.player.infra.transport.telegram.api.TelegramFileException
 import com.fishit.player.playback.telegram.config.TelegramFileReadyEnsurer
 import com.fishit.player.playback.telegram.config.TelegramStreamingException
-import java.io.File
-import java.io.IOException
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Media3 DataSource for Telegram files using TDLib + Zero-Copy Streaming.
@@ -58,10 +58,9 @@ import kotlinx.coroutines.withContext
  * @param readyEnsurer Playback layer component for streaming readiness
  */
 class TelegramFileDataSource(
-        private val fileClient: TelegramFileClient,
-        private val readyEnsurer: TelegramFileReadyEnsurer,
+    private val fileClient: TelegramFileClient,
+    private val readyEnsurer: TelegramFileReadyEnsurer,
 ) : DataSource {
-
     companion object {
         private const val TAG = "TelegramFileDataSource"
 
@@ -142,26 +141,26 @@ class TelegramFileDataSource(
 
             scope?.let { s ->
                 s.launchOpenOperation(
-                        fileId = fileId,
-                        remoteId = remoteId,
-                        dataSpec = dataSpec,
-                        resultHolder = resultHolder,
-                        latch = latch,
+                    fileId = fileId,
+                    remoteId = remoteId,
+                    dataSpec = dataSpec,
+                    resultHolder = resultHolder,
+                    latch = latch,
                 )
             }
-                    ?: throw IOException("Failed to create coroutine scope")
+                ?: throw IOException("Failed to create coroutine scope")
 
             // Wait for async operation (ExoPlayer calls from background thread, this is safe)
             val completed = latch.await(OPEN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (!completed) {
                 throw IOException(
-                        "Timeout waiting for Telegram file readiness after ${OPEN_TIMEOUT_SECONDS}s"
+                    "Timeout waiting for Telegram file readiness after ${OPEN_TIMEOUT_SECONDS}s",
                 )
             }
 
             // Check result
             val result =
-                    resultHolder.get() ?: throw IOException("No result from file readiness check")
+                resultHolder.get() ?: throw IOException("No result from file readiness check")
 
             return when (result) {
                 is OpenResult.Success -> result.bytesRemaining
@@ -183,11 +182,11 @@ class TelegramFileDataSource(
 
     /** Launches the async open operation in a coroutine. */
     private fun CoroutineScope.launchOpenOperation(
-            fileId: Int?,
-            remoteId: String?,
-            dataSpec: DataSpec,
-            resultHolder: AtomicReference<OpenResult>,
-            latch: CountDownLatch,
+        fileId: Int?,
+        remoteId: String?,
+        dataSpec: DataSpec,
+        resultHolder: AtomicReference<OpenResult>,
+        latch: CountDownLatch,
     ) {
         launch {
             try {
@@ -195,10 +194,10 @@ class TelegramFileDataSource(
                 resultHolder.set(OpenResult.Success(bytesRemaining))
             } catch (e: Exception) {
                 val ioException =
-                        when (e) {
-                            is IOException -> e
-                            else -> IOException("Open failed: ${e.message}", e)
-                        }
+                    when (e) {
+                        is IOException -> e
+                        else -> IOException("Open failed: ${e.message}", e)
+                    }
                 resultHolder.set(OpenResult.Error(ioException))
             } finally {
                 latch.countDown()
@@ -208,37 +207,37 @@ class TelegramFileDataSource(
 
     /** Performs the actual open operation (called from coroutine). */
     private suspend fun performOpen(
-            fileId: Int?,
-            remoteId: String?,
-            dataSpec: DataSpec,
+        fileId: Int?,
+        remoteId: String?,
+        dataSpec: DataSpec,
     ): Long =
-            withContext(Dispatchers.IO) {
-                // Resolve fileId if needed
-                val resolvedFileId = resolveFileId(fileId, remoteId)
+        withContext(Dispatchers.IO) {
+            // Resolve fileId if needed
+            val resolvedFileId = resolveFileId(fileId, remoteId)
 
-                UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check" }
+            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check" }
 
-                // Use TelegramFileReadyEnsurer for non-blocking readiness
-                // This handles MP4 moov validation and progressive download polling
-                val localPath = readyEnsurer.ensureReadyForPlayback(resolvedFileId)
+            // Use TelegramFileReadyEnsurer for non-blocking readiness
+            // This handles MP4 moov validation and progressive download polling
+            val localPath = readyEnsurer.ensureReadyForPlayback(resolvedFileId)
 
-                val localFile = File(localPath)
-                if (!localFile.exists()) {
-                    throw IOException("File not found at local path: $localPath")
-                }
-
-                UnifiedLog.d(TAG) { "File ready at: $localPath (size=${localFile.length()} bytes)" }
-
-                // Create FileDataSource delegate and open it
-                val fileDataSource = FileDataSource()
-                transferListener?.let { fileDataSource.addTransferListener(it) }
-
-                val fileUri = Uri.fromFile(localFile)
-                val fileDataSpec = dataSpec.buildUpon().setUri(fileUri).build()
-
-                delegate = fileDataSource
-                fileDataSource.open(fileDataSpec)
+            val localFile = File(localPath)
+            if (!localFile.exists()) {
+                throw IOException("File not found at local path: $localPath")
             }
+
+            UnifiedLog.d(TAG) { "File ready at: $localPath (size=${localFile.length()} bytes)" }
+
+            // Create FileDataSource delegate and open it
+            val fileDataSource = FileDataSource()
+            transferListener?.let { fileDataSource.addTransferListener(it) }
+
+            val fileUri = Uri.fromFile(localFile)
+            val fileDataSpec = dataSpec.buildUpon().setUri(fileUri).build()
+
+            delegate = fileDataSource
+            fileDataSource.open(fileDataSpec)
+        }
 
     /**
      * Resolve fileId from URI parameters.
@@ -248,8 +247,11 @@ class TelegramFileDataSource(
      * 2. Resolve via remoteId using TelegramFileClient if available
      * 3. Fail if neither is valid
      */
-    private suspend fun resolveFileId(fileId: Int?, remoteId: String?): Int {
-        return when {
+    private suspend fun resolveFileId(
+        fileId: Int?,
+        remoteId: String?,
+    ): Int =
+        when {
             fileId != null && fileId > 0 -> {
                 UnifiedLog.d(TAG) { "Using fileId from URI: $fileId" }
                 fileId
@@ -257,27 +259,28 @@ class TelegramFileDataSource(
             remoteId != null && remoteId.isNotEmpty() -> {
                 UnifiedLog.d(TAG) { "Resolving fileId via remoteId: $remoteId" }
                 val resolvedFile =
-                        fileClient.resolveRemoteId(remoteId)
-                                ?: throw TelegramFileException(
-                                        "Could not resolve remoteId: $remoteId"
-                                )
+                    fileClient.resolveRemoteId(remoteId)
+                        ?: throw TelegramFileException(
+                            "Could not resolve remoteId: $remoteId",
+                        )
                 resolvedFile.id
             }
             else -> {
                 throw TelegramFileException("No valid fileId or remoteId in URI")
             }
         }
-    }
 
     @Throws(IOException::class)
-    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+    override fun read(
+        buffer: ByteArray,
+        offset: Int,
+        length: Int,
+    ): Int {
         val d = delegate ?: throw IOException("DataSource not opened")
         return d.read(buffer, offset, length)
     }
 
-    override fun getUri(): Uri? {
-        return delegate?.uri
-    }
+    override fun getUri(): Uri? = delegate?.uri
 
     @Throws(IOException::class)
     override fun close() {
@@ -296,8 +299,13 @@ class TelegramFileDataSource(
 
     /** Internal result type for async open operation. */
     private sealed class OpenResult {
-        data class Success(val bytesRemaining: Long) : OpenResult()
-        data class Error(val error: IOException) : OpenResult()
+        data class Success(
+            val bytesRemaining: Long,
+        ) : OpenResult()
+
+        data class Error(
+            val error: IOException,
+        ) : OpenResult()
     }
 }
 
@@ -310,11 +318,8 @@ class TelegramFileDataSource(
  * @param readyEnsurer Playback layer component for streaming readiness
  */
 class TelegramFileDataSourceFactory(
-        private val fileClient: TelegramFileClient,
-        private val readyEnsurer: TelegramFileReadyEnsurer,
+    private val fileClient: TelegramFileClient,
+    private val readyEnsurer: TelegramFileReadyEnsurer,
 ) : DataSource.Factory {
-
-    override fun createDataSource(): DataSource {
-        return TelegramFileDataSource(fileClient, readyEnsurer)
-    }
+    override fun createDataSource(): DataSource = TelegramFileDataSource(fileClient, readyEnsurer)
 }
