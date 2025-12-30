@@ -224,7 +224,6 @@ class LeakDiagnosticsImpl @Inject constructor() : LeakDiagnostics {
                 "Watch Activities" to watcherConfig.watchActivities.toString(),
                 "Watch Fragments" to watcherConfig.watchFragments.toString(),
                 "Watch ViewModels" to watcherConfig.watchViewModels.toString(),
-                "Watch Services" to watcherConfig.watchServices.toString(),
                 "Watch Duration" to "${watcherConfig.watchDurationMillis}ms",
             )
         } catch (e: Exception) {

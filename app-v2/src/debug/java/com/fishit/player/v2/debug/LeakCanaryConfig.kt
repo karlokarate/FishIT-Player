@@ -78,7 +78,6 @@ object LeakCanaryConfig {
             watchFragments = true,
             watchFragmentViews = true,
             watchViewModels = true,
-            watchServices = true,
             
             // Delay before considering object retained (default 5s, we use 10s for player)
             // This gives player more time to clean up after screen rotation
