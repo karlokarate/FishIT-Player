@@ -7,13 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -102,10 +100,11 @@ fun DetailSeriesSectionSeasonSelector(
                     selected = season == selectedSeason,
                     onClick = { onSeasonSelected(season) },
                     label = { Text("Staffel $season") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = FishColors.Primary,
-                        selectedLabelColor = Color.White,
-                    ),
+                    colors =
+                        FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = FishColors.Primary,
+                            selectedLabelColor = Color.White,
+                        ),
                 )
             }
         }
@@ -159,9 +158,10 @@ fun DetailSeriesSectionEpisodeCard(
         ) {
             // Thumbnail with play overlay
             Box(
-                modifier = Modifier
-                    .size(120.dp, 68.dp)
-                    .clip(RoundedCornerShape(6.dp)),
+                modifier =
+                    Modifier
+                        .size(120.dp, 68.dp)
+                        .clip(RoundedCornerShape(6.dp)),
             ) {
                 FishImage(
                     imageRef = episode.thumbnail,
@@ -171,9 +171,10 @@ fun DetailSeriesSectionEpisodeCard(
                 )
                 // Play icon overlay
                 Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(Color.Black.copy(alpha = 0.3f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -186,17 +187,19 @@ fun DetailSeriesSectionEpisodeCard(
                 // Resume progress bar
                 if (episode.hasResume && episode.resumePercent > 0) {
                     Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(Color.Gray.copy(alpha = 0.5f)),
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .height(3.dp)
+                                .background(Color.Gray.copy(alpha = 0.5f)),
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth(episode.resumePercent / 100f)
-                                .height(3.dp)
-                                .background(FishColors.Primary),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(episode.resumePercent / 100f)
+                                    .height(3.dp)
+                                    .background(FishColors.Primary),
                         )
                     }
                 }
@@ -257,10 +260,11 @@ fun DetailLiveSectionBadge(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .clip(FishShapes.Chip)
-            .background(if (isLive) Color.Red else Color.Gray)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier =
+            modifier
+                .clip(FishShapes.Chip)
+                .background(if (isLive) Color.Red else Color.Gray)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Icon(
             imageVector = if (isLive) Icons.Default.Circle else Icons.Default.LiveTv,
@@ -387,10 +391,11 @@ fun DetailAudioSectionChapterRow(
         ) {
             // Chapter number
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(FishColors.Primary.copy(alpha = 0.2f)),
+                modifier =
+                    Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(FishColors.Primary.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -414,7 +419,7 @@ fun DetailAudioSectionChapterRow(
                 )
                 val minutes = (chapter.durationMs / 60_000).toInt()
                 Text(
-                    text = "${minutes} Min.",
+                    text = "$minutes Min.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
