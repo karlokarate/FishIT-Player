@@ -345,12 +345,24 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
      */
     private fun resolveOutputExtension(context: PlaybackContext): String? {
         // Priority 1: Explicit containerExtension (SSOT from enrichment)
+        // BUT: Only accept it if it's a valid output format (m3u8, ts, mp4)
+        // Container formats like mkv, avi are file containers, not streaming output formats
         val explicitExt =
                 context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
                         ?: context.extras[EXTRA_CONTAINER_EXT]
         if (!explicitExt.isNullOrBlank()) {
-            UnifiedLog.d(TAG) { "Using explicit containerExtension: $explicitExt" }
-            return explicitExt
+            val normalizedExt = explicitExt.lowercase().trim()
+            // Only accept valid output formats (streaming formats)
+            if (normalizedExt in FORMAT_PRIORITY) {
+                UnifiedLog.d(TAG) { "Using explicit containerExtension: $explicitExt" }
+                return explicitExt
+            } else {
+                UnifiedLog.d(TAG) { 
+                    "Ignoring containerExtension=$explicitExt (not a valid output format), " +
+                    "falling back to policy-based selection" 
+                }
+                // Fall through to Priority 2
+            }
         }
 
         // Priority 2: Policy-based selection from allowedOutputFormats

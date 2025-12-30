@@ -627,9 +627,12 @@ class DefaultXtreamApiClient(
                             mapOf(idField to vodId.toString()),
                         )
                     val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
-                    if (!body.isNullOrEmpty() && body.startsWith("{")) {
+                    // Trim whitespace and BOM (U+FEFF) that may be added by gzip decompression or proxies
+                    // Handle both orders: whitespace+BOM or BOM+whitespace
+                    val trimmedBody = body?.trim { it.isWhitespace() || it == '\uFEFF' }
+                    if (!trimmedBody.isNullOrEmpty() && trimmedBody.startsWith("{")) {
                         val parsed =
-                            runCatching { json.decodeFromString<XtreamVodInfo>(body) }
+                            runCatching { json.decodeFromString<XtreamVodInfo>(trimmedBody) }
                                 .getOrNull()
                         if (parsed != null && (parsed.info != null || parsed.movieData != null)
                         ) {
@@ -754,7 +757,7 @@ class DefaultXtreamApiClient(
         containerExtension: String?,
     ): String {
         val cfg = config ?: return ""
-        val ext = sanitizeExtension(containerExtension ?: cfg.vodExtPrefs.firstOrNull() ?: "mp4")
+        val ext = sanitizeExtension(containerExtension ?: cfg.vodExtPrefs.firstOrNull() ?: "m3u8")
         val playbackKind = resolveVodPlaybackKind(vodKind)
         return buildPlayUrl(playbackKind, vodId, ext)
     }
@@ -767,7 +770,7 @@ class DefaultXtreamApiClient(
         containerExtension: String?,
     ): String {
         val cfg = config ?: return ""
-        val ext = sanitizeExtension(containerExtension ?: cfg.seriesExtPrefs.firstOrNull() ?: "mp4")
+        val ext = sanitizeExtension(containerExtension ?: cfg.seriesExtPrefs.firstOrNull() ?: "m3u8")
 
         // Prefer episodeId if available (direct path)
         if (episodeId != null && episodeId > 0) {
