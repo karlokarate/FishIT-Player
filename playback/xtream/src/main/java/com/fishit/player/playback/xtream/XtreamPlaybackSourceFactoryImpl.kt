@@ -75,6 +75,30 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
         const val CONTENT_TYPE_LIVE = "live"
         const val CONTENT_TYPE_VOD = "vod"
         const val CONTENT_TYPE_SERIES = "series"
+
+        /**
+         * Select output extension based on allowed formats policy.
+         *
+         * **Policy (priority order):**
+         * 1. m3u8 (HLS - best compatibility, adaptive streaming)
+         * 2. ts (MPEG-TS - fallback for HLS)
+         * 3. mp4 (MP4 - only if allowed)
+         *
+         * @param allowedFormats Set of allowed output formats (lowercase)
+         * @return Selected extension
+         * @throws PlaybackSourceException if no supported format is available
+         */
+        internal fun selectXtreamOutputExt(allowedFormats: Set<String>): String {
+            return when {
+                "m3u8" in allowedFormats -> "m3u8"
+                "ts" in allowedFormats -> "ts"
+                "mp4" in allowedFormats -> "mp4"
+                else -> throw PlaybackSourceException(
+                    message = "No supported output format in allowed list: $allowedFormats",
+                    sourceType = SourceType.XTREAM
+                )
+            }
+        }
     }
 
     override fun supports(sourceType: SourceType): Boolean {
@@ -222,9 +246,8 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
                 sourceType = SourceType.XTREAM
             )
 
-        val extension =
-            context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                ?: context.extras[EXTRA_CONTAINER_EXT]
+        // Determine extension from allowed formats or fallback to containerExtension
+        val extension = determineOutputExtension(context)
         return xtreamApiClient.buildLiveUrl(streamId, extension)
     }
 
@@ -242,9 +265,8 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
                 sourceType = SourceType.XTREAM
             )
 
-        val extension =
-            context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                ?: context.extras[EXTRA_CONTAINER_EXT]
+        // Determine extension from allowed formats or fallback to containerExtension
+        val extension = determineOutputExtension(context)
         return xtreamApiClient.buildVodUrl(vodId, extension)
     }
 
@@ -271,9 +293,9 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
             context.extras[PlaybackHintKeys.Xtream.EPISODE_NUMBER]?.toIntOrNull()
                 ?: context.extras[EXTRA_EPISODE_NUMBER]?.toIntOrNull()
                 ?: 1
-        val extension =
-            context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                ?: context.extras[EXTRA_CONTAINER_EXT]
+
+        // Determine extension from allowed formats or fallback to containerExtension
+        val extension = determineOutputExtension(context)
 
         return xtreamApiClient.buildSeriesEpisodeUrl(
             seriesId = seriesId,
@@ -282,6 +304,48 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
             episodeId = episodeId,
             containerExtension = extension
         )
+    }
+
+    /**
+     * Determine output extension for playback URL.
+     *
+     * **Priority:**
+     * 1. Use allowed_output_formats if present (policy-correct selection)
+     * 2. Fall back to explicit containerExtension hint
+     * 3. Fall back to client default from capabilities
+     *
+     * @param context PlaybackContext with extras
+     * @return Selected extension or null for client default
+     */
+    private fun determineOutputExtension(context: PlaybackContext): String? {
+        // Priority 1: Check for allowed_output_formats hint
+        val allowedFormatsStr = context.extras[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS]
+        if (!allowedFormatsStr.isNullOrBlank()) {
+            val allowedFormats = allowedFormatsStr.split(",")
+                .map { it.trim().lowercase() }
+                .toSet()
+            
+            return try {
+                selectXtreamOutputExt(allowedFormats)
+            } catch (e: PlaybackSourceException) {
+                // Log error and fall back to containerExtension
+                UnifiedLog.w(TAG) { 
+                    "No supported format in allowed list: $allowedFormats, falling back to containerExtension"
+                }
+                null
+            }
+        }
+
+        // Priority 2: Explicit containerExtension hint (from get_vod_info, etc.)
+        val containerExt = context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+            ?: context.extras[EXTRA_CONTAINER_EXT]
+        
+        if (!containerExt.isNullOrBlank()) {
+            return containerExt
+        }
+
+        // Priority 3: Return null to let XtreamApiClient use its default from capabilities
+        return null
     }
 
     /**
@@ -304,22 +368,24 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
 
     /**
      * Determine MIME type from context and content type.
+     *
+     * **Explicit MIME type mapping for reliable playback:**
+     * - m3u8 -> application/x-mpegURL (HLS)
+     * - ts   -> video/mp2t (MPEG-TS)
+     * - mp4  -> video/mp4
      */
     private fun determineMimeType(context: PlaybackContext, contentType: String? = null): String? {
         // Check extras first
         context.extras["mimeType"]?.let { return it }
 
-        // Determine from extension
-        val extension =
-            (context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                ?: context.extras[EXTRA_CONTAINER_EXT])
-                ?.lowercase()
+        // Determine from extension (policy-correct selection)
+        val extension = determineOutputExtension(context)?.lowercase()
         return when (extension) {
+            "m3u8" -> "application/x-mpegURL"
+            "ts" -> "video/mp2t"
             "mp4" -> "video/mp4"
             "mkv" -> "video/x-matroska"
             "avi" -> "video/x-msvideo"
-            "m3u8" -> "application/x-mpegURL"
-            "ts" -> "video/mp2t"
             else -> when (contentType) {
                 CONTENT_TYPE_LIVE -> "application/x-mpegURL" // Assume HLS for live
                 else -> null // Let ExoPlayer detect

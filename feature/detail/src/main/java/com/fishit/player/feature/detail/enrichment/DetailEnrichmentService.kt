@@ -265,14 +265,35 @@ constructor(
 
             // CRITICAL: Update MediaSourceRef.playbackHints with containerExtension for playback
             // Without this, XtreamPlaybackSourceFactory cannot build correct URL
-            if (containerExt != null &&
-                            !xtreamSource.playbackHints.containsKey(
-                                    PlaybackHintKeys.Xtream.CONTAINER_EXT
-                            )
-            ) {
+            // Also store allowed_output_formats from server for policy-correct format selection
+            val needsHintsUpdate = containerExt != null &&
+                    !xtreamSource.playbackHints.containsKey(
+                            PlaybackHintKeys.Xtream.CONTAINER_EXT
+                    ) ||
+                    !xtreamSource.playbackHints.containsKey(
+                            PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS
+                    )
+
+            if (needsHintsUpdate) {
                 val updatedHints =
                         xtreamSource.playbackHints.toMutableMap().apply {
-                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, containerExt)
+                            // Store containerExtension if available
+                            if (containerExt != null) {
+                                put(PlaybackHintKeys.Xtream.CONTAINER_EXT, containerExt)
+                            }
+                            
+                            // Store allowed_output_formats from server user info
+                            // This enables policy-correct output format selection
+                            if (!containsKey(PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS)) {
+                                val userInfoResult = xtreamApiClient.getUserInfo()
+                                userInfoResult.onSuccess { userInfo ->
+                                    val allowedFormats = userInfo.allowedFormats.joinToString(",")
+                                    put(PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS, allowedFormats)
+                                    UnifiedLog.d(TAG) {
+                                        "enrichFromXtream: stored allowed_output_formats=$allowedFormats vodId=$vodId"
+                                    }
+                                }
+                            }
                         }
                 val updatedSourceRef =
                         MediaSourceRef(

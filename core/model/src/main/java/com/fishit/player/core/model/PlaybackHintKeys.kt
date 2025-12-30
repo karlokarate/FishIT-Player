@@ -64,6 +64,14 @@ object PlaybackHintKeys {
          * Used for URL building. If not present, factory uses default ("ts" for live, "mp4" for VOD).
          */
         const val CONTAINER_EXT = "xtream.containerExtension"
+
+        /**
+         * Allowed output formats from server (comma-separated, e.g., "m3u8,ts").
+         *
+         * Populated by DetailEnrichmentService from user_info.allowed_output_formats.
+         * Used by XtreamPlaybackSourceFactory to select policy-correct output format.
+         */
+        const val ALLOWED_OUTPUT_FORMATS = "xtream.allowedOutputFormats"
     }
 
     /**

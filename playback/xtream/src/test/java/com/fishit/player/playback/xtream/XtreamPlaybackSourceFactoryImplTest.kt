@@ -1,5 +1,6 @@
 package com.fishit.player.playback.xtream
 
+import com.fishit.player.playback.domain.PlaybackSourceException
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,6 +26,7 @@ class XtreamPlaybackSourceFactoryImplTest {
                 override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
                 override suspend fun ping() = TODO()
                 override fun close() = TODO()
+                override suspend fun getPanelInfo() = null
                 override suspend fun getServerInfo() = TODO()
                 override suspend fun getUserInfo() = TODO()
                 override suspend fun getLiveCategories() = TODO()
@@ -149,6 +151,45 @@ class XtreamPlaybackSourceFactoryImplTest {
     }
 
     // =========================================================================
+    // Output Format Selection Tests - New policy-correct selection logic
+    // =========================================================================
+
+    @Test
+    fun `selectXtreamOutputExt should prefer m3u8 when available`() {
+        val allowedFormats = setOf("m3u8", "ts", "mp4")
+        val result = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(allowedFormats)
+        org.junit.Assert.assertEquals("m3u8", result)
+    }
+
+    @Test
+    fun `selectXtreamOutputExt should use ts when m3u8 not available`() {
+        val allowedFormats = setOf("ts", "mp4")
+        val result = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(allowedFormats)
+        org.junit.Assert.assertEquals("ts", result)
+    }
+
+    @Test
+    fun `selectXtreamOutputExt should use mp4 when only mp4 available`() {
+        val allowedFormats = setOf("mp4")
+        val result = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(allowedFormats)
+        org.junit.Assert.assertEquals("mp4", result)
+    }
+
+    @Test(expected = PlaybackSourceException::class)
+    fun `selectXtreamOutputExt should throw when no supported format`() {
+        val allowedFormats = setOf("mkv", "avi")
+        XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(allowedFormats)
+    }
+
+    @Test
+    fun `selectXtreamOutputExt should be case insensitive`() {
+        // The selection logic converts to lowercase internally, so input should be lowercase
+        val allowedFormats = setOf("m3u8", "ts")  // lowercase
+        val result = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(allowedFormats)
+        org.junit.Assert.assertEquals("m3u8", result)
+    }
+
+    // =========================================================================
     // Container Extension Tests - Verifies VOD URL uses correct extension
     // =========================================================================
 
@@ -164,17 +205,15 @@ class XtreamPlaybackSourceFactoryImplTest {
             override val authState get() = TODO()
             override val connectionState get() = TODO()
             override val capabilities get() = com.fishit.player.infra.transport.xtream.XtreamCapabilities(
+                version = 2,
+                cacheKey = "test",
                 baseUrl = "http://test.com:8080",
-                serverInfo = null,
-                userInfo = null,
-                liveExtPrefs = listOf("m3u8"),
-                vodExtPrefs = listOf("mp4"),
-                seriesExtPrefs = listOf("mp4"),
-                detectedServerType = null
+                username = "test"
             )
             override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
             override suspend fun ping() = TODO()
             override fun close() = TODO()
+            override suspend fun getPanelInfo() = null
             override suspend fun getServerInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
@@ -204,7 +243,7 @@ class XtreamPlaybackSourceFactoryImplTest {
         // Build context with containerExtension = "mkv" (as returned by get_vod_info)
         val context = com.fishit.player.core.playermodel.PlaybackContext(
             canonicalId = "test:movie:123",
-            sourceType = com.fishit.player.core.model.SourceType.XTREAM,
+            sourceType = com.fishit.player.core.playermodel.SourceType.XTREAM,
             uri = null,
             title = "Test Movie",
             extras = mapOf(
@@ -234,17 +273,15 @@ class XtreamPlaybackSourceFactoryImplTest {
             override val authState get() = TODO()
             override val connectionState get() = TODO()
             override val capabilities get() = com.fishit.player.infra.transport.xtream.XtreamCapabilities(
+                version = 2,
+                cacheKey = "test",
                 baseUrl = "http://test.com:8080",
-                serverInfo = null,
-                userInfo = null,
-                liveExtPrefs = listOf("m3u8"),
-                vodExtPrefs = listOf("mp4"),
-                seriesExtPrefs = listOf("mp4"),
-                detectedServerType = null
+                username = "test"
             )
             override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
             override suspend fun ping() = TODO()
             override fun close() = TODO()
+            override suspend fun getPanelInfo() = null
             override suspend fun getServerInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
@@ -274,7 +311,7 @@ class XtreamPlaybackSourceFactoryImplTest {
         // Build context WITHOUT containerExtension - should fallback to mp4
         val context = com.fishit.player.core.playermodel.PlaybackContext(
             canonicalId = "test:movie:123",
-            sourceType = com.fishit.player.core.model.SourceType.XTREAM,
+            sourceType = com.fishit.player.core.playermodel.SourceType.XTREAM,
             uri = null,
             title = "Test Movie",
             extras = mapOf(
