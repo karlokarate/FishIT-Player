@@ -89,8 +89,6 @@ constructor(
     // Performance metrics (debug builds only)
     private var lastSyncMetrics: SyncPerfMetrics? = null
     override fun getLastSyncMetrics(): SyncPerfMetrics? = lastSyncMetrics
-        private const val SOURCE_XTREAM = "xtream"
-    }
 
     override fun syncTelegram(
             chatIds: List<Long>?,
