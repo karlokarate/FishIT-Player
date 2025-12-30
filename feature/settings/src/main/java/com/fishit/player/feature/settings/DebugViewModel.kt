@@ -5,12 +5,18 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
+import com.fishit.player.feature.settings.debug.ChuckerDiagnostics
 import com.fishit.player.feature.settings.debug.LeakDiagnostics
 import com.fishit.player.feature.settings.debug.LeakSummary
+import com.fishit.player.feature.settings.debug.WorkManagerDebugConstants
+import com.fishit.player.feature.settings.debug.WorkManagerSnapshot
+import com.fishit.player.feature.settings.debug.toTaskInfo
 import com.fishit.player.infra.logging.BufferedLogEntry
 import com.fishit.player.infra.logging.LogBufferProvider
 import com.fishit.player.infra.logging.UnifiedLog
@@ -74,6 +80,12 @@ data class DebugState(
         // === LeakCanary (Memory Diagnostics) ===
         val leakSummary: LeakSummary = LeakSummary(0, null, null),
         val isLeakCanaryAvailable: Boolean = false,
+
+        // === Chucker (HTTP Inspector) ===
+        val isChuckerAvailable: Boolean = false,
+
+        // === WorkManager Snapshot (Diagnostics) ===
+        val workManagerSnapshot: WorkManagerSnapshot = WorkManagerSnapshot.empty(),
 )
 
 /** Simple log entry for display */
@@ -94,6 +106,7 @@ enum class LogLevel {
  * - [DebugInfoProvider] for connection status, cache sizes, content counts
  * - [SyncStateObserver] for catalog sync state (WorkManager)
  * - [LeakDiagnostics] for memory leak detection (LeakCanary in debug builds)
+ * - [ChuckerDiagnostics] for HTTP traffic inspection (Chucker in debug builds)
  *
  * Uses CatalogSyncWorkScheduler (SSOT) for all sync triggers. Contract:
  * CATALOG_SYNC_WORKERS_CONTRACT_V2
@@ -108,6 +121,7 @@ constructor(
         private val logBufferProvider: LogBufferProvider,
         private val debugInfoProvider: DebugInfoProvider,
         private val leakDiagnostics: LeakDiagnostics,
+        private val chuckerDiagnostics: ChuckerDiagnostics,
         @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -118,7 +132,9 @@ constructor(
         loadSystemInfo()
         loadCredentialStatus()
         loadLeakSummary()
+        loadChuckerAvailability()
         observeSyncState()
+        observeWorkManager()
         observeConnectionStatus()
         observeContentCounts()
         observeLogs()
@@ -156,12 +172,90 @@ constructor(
         }
     }
 
+    /** Load Chucker availability. */
+    private fun loadChuckerAvailability() {
+        _state.update {
+            it.copy(isChuckerAvailable = chuckerDiagnostics.isAvailable)
+        }
+    }
+
     /** Observe sync state from WorkManager via SyncStateObserver. */
     private fun observeSyncState() {
         viewModelScope.launch {
             syncStateObserver.observeSyncState().collect { syncState ->
                 _state.update { it.copy(syncState = syncState) }
             }
+        }
+    }
+
+    /**
+     * Observe WorkManager state directly for diagnostics.
+     *
+     * We observe 4 flows:
+     * - Unique work: catalog_sync_global
+     * - Unique work: tmdb_enrichment_global
+     * - Tagged work: catalog_sync
+     * - Tagged work: source_tmdb
+     */
+    private fun observeWorkManager() {
+        val wm = WorkManager.getInstance(appContext)
+
+        // Flow 1: Unique catalog sync work
+        viewModelScope.launch {
+            wm.getWorkInfosForUniqueWorkFlow(WorkManagerDebugConstants.WORK_NAME_CATALOG_SYNC)
+                .collect { infos ->
+                    updateWorkManagerSnapshot { current ->
+                        current.copy(
+                            catalogSyncUniqueWork = infos.map { it.toTaskInfo() }
+                        )
+                    }
+                }
+        }
+
+        // Flow 2: Unique TMDB enrichment work
+        viewModelScope.launch {
+            wm.getWorkInfosForUniqueWorkFlow(WorkManagerDebugConstants.WORK_NAME_TMDB_ENRICHMENT)
+                .collect { infos ->
+                    updateWorkManagerSnapshot { current ->
+                        current.copy(
+                            tmdbUniqueWork = infos.map { it.toTaskInfo() }
+                        )
+                    }
+                }
+        }
+
+        // Flow 3: Tagged catalog sync work
+        viewModelScope.launch {
+            wm.getWorkInfosByTagFlow(WorkManagerDebugConstants.TAG_CATALOG_SYNC)
+                .collect { infos ->
+                    updateWorkManagerSnapshot { current ->
+                        current.copy(
+                            taggedCatalogSyncWork = infos.map { it.toTaskInfo() }
+                        )
+                    }
+                }
+        }
+
+        // Flow 4: Tagged TMDB work
+        viewModelScope.launch {
+            wm.getWorkInfosByTagFlow(WorkManagerDebugConstants.TAG_SOURCE_TMDB)
+                .collect { infos ->
+                    updateWorkManagerSnapshot { current ->
+                        current.copy(
+                            taggedTmdbWork = infos.map { it.toTaskInfo() }
+                        )
+                    }
+                }
+        }
+    }
+
+    private inline fun updateWorkManagerSnapshot(
+        transform: (WorkManagerSnapshot) -> WorkManagerSnapshot
+    ) {
+        _state.update { state ->
+            val current = state.workManagerSnapshot
+            val updated = transform(current).copy(capturedAtEpochMs = System.currentTimeMillis())
+            state.copy(workManagerSnapshot = updated)
         }
     }
 
@@ -398,6 +492,53 @@ constructor(
         _state.update { it.copy(lastActionResult = "TMDB force refresh started") }
     }
 
+    // ========== WorkManager Diagnostics ==========
+
+    /** Export WorkManager snapshot to SAF destination. */
+    fun exportWorkManagerSnapshot(destinationUri: Uri) {
+        viewModelScope.launch {
+            try {
+                val snapshot = _state.value.workManagerSnapshot
+                val content = snapshot.toExportText()
+
+                val resolver = appContext.contentResolver
+                resolver.openOutputStream(destinationUri, "w")?.use { out ->
+                    out.write(content.toByteArray(Charsets.UTF_8))
+                    out.flush()
+                } ?: run {
+                    _state.update { it.copy(lastActionResult = "Export failed: could not open output") }
+                    return@launch
+                }
+
+                _state.update { it.copy(lastActionResult = "WorkManager snapshot exported") }
+                UnifiedLog.i(TAG) { "WorkManager snapshot exported successfully" }
+            } catch (e: SecurityException) {
+                UnifiedLog.w(TAG) { "exportWorkManagerSnapshot: security exception" }
+                _state.update { it.copy(lastActionResult = "Export failed: permission denied") }
+            } catch (e: IOException) {
+                UnifiedLog.w(TAG) { "exportWorkManagerSnapshot: IO error" }
+                _state.update { it.copy(lastActionResult = "Export failed: IO error") }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "exportWorkManagerSnapshot: unexpected error: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Export failed: ${e.message}") }
+            }
+        }
+    }
+
+    /** Get current WorkManager snapshot text for clipboard copy. */
+    fun getWorkManagerSnapshotText(): String = _state.value.workManagerSnapshot.toExportText()
+
+    // ========== Chucker Actions ==========
+
+    /** Open Chucker HTTP Inspector UI. Returns true if successfully opened. */
+    fun openChuckerUi(): Boolean {
+        val success = chuckerDiagnostics.openChuckerUi(appContext)
+        if (!success) {
+            _state.update { it.copy(lastActionResult = "Could not open Chucker UI") }
+        }
+        return success
+    }
+
     // ========== LeakCanary Actions ==========
 
     /** Open LeakCanary UI. Returns true if successfully opened. */
@@ -461,6 +602,12 @@ constructor(
                         val deviceInfoContent = buildDeviceInfoContent()
                         zip.putNextEntry(ZipEntry("device_info.txt"))
                         zip.write(deviceInfoContent.toByteArray(Charsets.UTF_8))
+                        zip.closeEntry()
+
+                        // 4. workmanager.txt (WorkManager diagnostics)
+                        val workManagerContent = _state.value.workManagerSnapshot.toExportText()
+                        zip.putNextEntry(ZipEntry("workmanager.txt"))
+                        zip.write(workManagerContent.toByteArray(Charsets.UTF_8))
                         zip.closeEntry()
                     }
                 } ?: run {

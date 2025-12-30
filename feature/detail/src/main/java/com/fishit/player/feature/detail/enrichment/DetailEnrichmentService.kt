@@ -54,6 +54,8 @@ constructor(
      * @return Updated media with enriched metadata (or original if no enrichment needed)
      */
     suspend fun enrichIfNeeded(media: CanonicalMediaWithSources): CanonicalMediaWithSources {
+        val startMs = System.currentTimeMillis()
+        
         // Fast path: already has plot → no enrichment needed
         if (!media.plot.isNullOrBlank()) {
             UnifiedLog.d(TAG) { "enrichIfNeeded: skipped (already has plot) canonicalId=${media.canonicalId.key.value}" }
@@ -62,7 +64,7 @@ constructor(
 
         val hasXtreamSource = media.sources.any { it.sourceType == SourceType.XTREAM }
 
-        return when {
+        val result = when {
             hasXtreamSource -> enrichFromXtream(media)
             media.tmdbId != null -> enrichFromTmdb(media)
             else -> {
@@ -72,6 +74,16 @@ constructor(
                 media
             }
         }
+        
+        val durationMs = System.currentTimeMillis() - startMs
+        if (result !== media) {
+            UnifiedLog.i(TAG) {
+                "enrichIfNeeded: completed in ${durationMs}ms canonicalId=${media.canonicalId.key.value} " +
+                "hasPlot=${!result.plot.isNullOrBlank()} source=${if (hasXtreamSource) "xtream" else "tmdb"}"
+            }
+        }
+        
+        return result
     }
 
     /**

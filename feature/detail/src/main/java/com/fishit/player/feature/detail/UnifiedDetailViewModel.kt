@@ -9,6 +9,7 @@ import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
+import com.fishit.player.feature.detail.enrichment.DetailEnrichmentService
 import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -34,6 +35,7 @@ class UnifiedDetailViewModel
 @Inject
 constructor(
         private val useCases: UnifiedDetailUseCases,
+        private val detailEnrichmentService: DetailEnrichmentService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UnifiedDetailState())
@@ -93,6 +95,7 @@ constructor(
                 _state.update { it.copy(isLoading = false, error = mediaState.message) }
             }
             is UnifiedMediaState.Success -> {
+                // Initial state update (fast path - show data immediately)
                 _state.update {
                     it.copy(
                             isLoading = false,
@@ -102,6 +105,16 @@ constructor(
                             selectedSource = mediaState.selectedSource,
                             sourceGroups = useCases.sortSourcesForDisplay(mediaState.media.sources),
                     )
+                }
+                
+                // Background enrichment: fetch missing details (plot, cast, etc.)
+                // This runs async and updates UI when complete
+                viewModelScope.launch {
+                    val enriched = detailEnrichmentService.enrichIfNeeded(mediaState.media)
+                    if (enriched !== mediaState.media) {
+                        // Only update if enrichment produced new data
+                        _state.update { it.copy(media = enriched) }
+                    }
                 }
             }
         }

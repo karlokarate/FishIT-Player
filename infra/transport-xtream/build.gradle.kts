@@ -44,6 +44,10 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
 
+    // Chucker HTTP Inspector (debug builds only)
+    debugImplementation(libs.chucker)
+    releaseImplementation(libs.chucker.noop)
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.FolderZip
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.WorkHistory
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,7 +66,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.work.WorkInfo
 import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.feature.settings.debug.WorkManagerSnapshot
+import com.fishit.player.feature.settings.debug.WorkTaskInfo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -124,6 +129,17 @@ fun DebugScreen(
                     onResult = { uri ->
                         if (uri != null) {
                             viewModel.exportDebugBundle(uri)
+                        }
+                    }
+            )
+
+    // WorkManager snapshot export launcher
+    val exportWorkManagerSnapshotLauncher =
+            rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("text/plain"),
+                    onResult = { uri ->
+                        if (uri != null) {
+                            viewModel.exportWorkManagerSnapshot(uri)
                         }
                     }
             )
@@ -316,6 +332,25 @@ fun DebugScreen(
                     }
                 }
 
+                // === WorkManager Snapshot (Diagnostics) ===
+                item {
+                    WorkManagerSnapshotSection(
+                        snapshot = state.workManagerSnapshot,
+                        onCopy = {
+                            val text = viewModel.getWorkManagerSnapshotText()
+                            clipboardManager.setText(AnnotatedString(text))
+                            viewModel.setActionResult("WorkManager snapshot copied")
+                        },
+                        onExport = {
+                            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                                .format(Date())
+                            exportWorkManagerSnapshotLauncher.launch(
+                                "fishit_workmanager_$timestamp.txt"
+                            )
+                        }
+                    )
+                }
+
                 // Cache Section
                 item {
                     DebugSection(title = "Cache", icon = Icons.Default.Storage) {
@@ -366,6 +401,41 @@ fun DebugScreen(
                         StatsRow("Xtream VOD", state.xtreamVodCount)
                         StatsRow("Xtream Series", state.xtreamSeriesCount)
                         StatsRow("Xtream Live", state.xtreamLiveCount)
+                    }
+                }
+
+                // Chucker HTTP Inspector Section
+                item {
+                    DebugSection(title = "HTTP Inspector", icon = Icons.Default.Cloud) {
+                        if (state.isChuckerAvailable) {
+                            Text(
+                                text = "Chucker captures all HTTP requests for debugging.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Text(
+                                text = "Chucker not available (release build)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = { viewModel.openChuckerUi() },
+                            enabled = state.isChuckerAvailable,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BugReport,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Open HTTP Inspector")
+                        }
                     }
                 }
 
@@ -1136,6 +1206,155 @@ private fun SyncStatusRow(syncState: SyncUiState, modifier: Modifier = Modifier)
                             is SyncUiState.Failed -> MaterialTheme.colorScheme.error
                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
+        )
+    }
+}
+
+// ============================================================================
+// WorkManager Snapshot Section
+// ============================================================================
+
+/**
+ * WorkManager Snapshot diagnostics section.
+ *
+ * Shows current WorkManager state with Copy/Export buttons.
+ */
+@Composable
+private fun WorkManagerSnapshotSection(
+    snapshot: WorkManagerSnapshot,
+    onCopy: () -> Unit,
+    onExport: () -> Unit,
+) {
+    DebugSection(
+        title = "WorkManager Snapshot",
+        icon = Icons.Default.WorkHistory,
+    ) {
+        // Action buttons row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onCopy,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Copy")
+            }
+
+            Button(
+                onClick = onExport,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FolderZip,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Export")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Unique work sections
+        WorkInfoGroupSection(
+            title = "Unique: catalog_sync_global",
+            items = snapshot.catalogSyncUniqueWork
+        )
+
+        WorkInfoGroupSection(
+            title = "Unique: tmdb_enrichment_global",
+            items = snapshot.tmdbUniqueWork
+        )
+
+        WorkInfoGroupSection(
+            title = "Tag: catalog_sync",
+            items = snapshot.taggedCatalogSyncWork
+        )
+
+        WorkInfoGroupSection(
+            title = "Tag: source_tmdb",
+            items = snapshot.taggedTmdbWork
+        )
+    }
+}
+
+@Composable
+private fun WorkInfoGroupSection(
+    title: String,
+    items: List<WorkTaskInfo>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(vertical = 4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        if (items.isEmpty()) {
+            Text(
+                text = "(no work infos)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            items.forEach { info ->
+                WorkInfoItemRow(info)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkInfoItemRow(
+    info: WorkTaskInfo,
+    modifier: Modifier = Modifier
+) {
+    val stateColor = when (info.state) {
+        WorkInfo.State.RUNNING -> MaterialTheme.colorScheme.primary
+        WorkInfo.State.SUCCEEDED -> MaterialTheme.colorScheme.tertiary
+        WorkInfo.State.FAILED -> MaterialTheme.colorScheme.error
+        WorkInfo.State.CANCELLED -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+        WorkInfo.State.ENQUEUED -> MaterialTheme.colorScheme.secondary
+        WorkInfo.State.BLOCKED -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, top = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // State indicator
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(stateColor, shape = MaterialTheme.shapes.extraSmall)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Info text
+        Text(
+            text = "${info.state.name} attempts=${info.runAttemptCount}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+
+    // Show failure reason if present
+    info.failureReason?.let { reason ->
+        Text(
+            text = "  → $reason",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(start = 16.dp)
         )
     }
 }

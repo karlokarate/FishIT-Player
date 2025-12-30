@@ -63,6 +63,9 @@ dependencies {
     
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.2")
+
+    // WorkManager (for debug diagnostics)
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
     
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.1")
@@ -71,4 +74,8 @@ dependencies {
     
     // LeakCanary (debug-only for LeakDiagnosticsImpl)
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+
+    // Chucker HTTP Inspector (debug-only for ChuckerDiagnostics)
+    debugImplementation(libs.chucker)
+    releaseImplementation(libs.chucker.noop)
 }

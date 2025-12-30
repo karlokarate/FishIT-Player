@@ -3,10 +3,18 @@
 # Repository: https://github.com/MoviebaseApp/tmdb-kotlin
 tmdbApi = "1.6.0"
 
+# Chucker - HTTP Inspector for Debug builds
+# Repository: https://github.com/ChuckerTeam/chucker
+chucker = "4.1.0"
+
 [libraries]
 # TMDB Kotlin API Client
 # ONLY used in :core:metadata-normalizer per TMDB_ENRICHMENT_CONTRACT.md
 tmdb-api = { module = "app.moviebase:tmdb-api", version.ref = "tmdbApi" }
+
+# Chucker HTTP Inspector (debug only)
+chucker = { module = "com.github.chuckerteam.chucker:library", version.ref = "chucker" }
+chucker-noop = { module = "com.github.chuckerteam.chucker:library-no-op", version.ref = "chucker" }
 
 [bundles]
 # No bundles defined yet

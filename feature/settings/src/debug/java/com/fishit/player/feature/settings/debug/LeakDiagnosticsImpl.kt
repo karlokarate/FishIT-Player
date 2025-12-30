@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import com.fishit.player.infra.logging.UnifiedLog
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -13,10 +12,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import leakcanary.AppWatcher
 import leakcanary.LeakCanary
 
 /**
  * Debug implementation of [LeakDiagnostics] using LeakCanary 2.14.
+ *
+ * **Gold Standard Implementation:**
+ * - Uses LeakCanary's public APIs correctly
+ * - Provides accurate retained object count (not analyzed leaks)
+ * - Directs users to LeakCanary UI for full leak details
+ * - Exports a diagnostic report (not full heap dumps - those use LeakCanary's share)
+ *
+ * **Important Distinctions:**
+ * - `retainedObjectCount`: Objects retained but not yet analyzed
+ * - `hasRetainedObjects`: Quick check if anything is retained
+ * - Full leak history: Only available via LeakCanary UI (internal DB)
  *
  * Provides:
  * - Opening LeakCanary's built-in UI
@@ -82,48 +93,43 @@ class LeakDiagnosticsImpl @Inject constructor() : LeakDiagnostics {
 
     override fun getSummary(): LeakSummary {
         return try {
-            // LeakCanary 2.14: Access leak store for summary info
-            val leakCount = getLeakCountSafe()
-            val lastLeakTime = getLastLeakTimeSafe()
+            val retainedCount = AppWatcher.objectWatcher.retainedObjectCount
+            val hasRetained = AppWatcher.objectWatcher.hasRetainedObjects
 
+            // Note: LeakCanary doesn't expose historical leak count via public API
+            // The retainedObjectCount is objects currently retained but not yet analyzed
+            // For full leak history, users must open LeakCanary UI
             LeakSummary(
-                leakCount = leakCount,
-                lastLeakUptimeMs = lastLeakTime,
-                note = if (leakCount == 0) "No leaks detected" else null
+                leakCount = retainedCount,
+                lastLeakUptimeMs = null, // Not available via public API
+                note = when {
+                    retainedCount == 0 && !hasRetained -> "No objects retained"
+                    retainedCount > 0 -> "$retainedCount object(s) retained - tap 'Open LeakCanary' for details"
+                    else -> "Monitoring active"
+                }
             )
         } catch (e: Exception) {
             UnifiedLog.w(TAG) { "Failed to get leak summary: ${e.message}" }
             LeakSummary(
                 leakCount = 0,
                 lastLeakUptimeMs = null,
-                note = "Unable to read leak info"
+                note = "Unable to read leak info: ${e.message}"
             )
         }
     }
 
     override fun getLatestHeapDumpPath(): String? {
-        return try {
-            // LeakCanary stores heap dumps in app's files directory
-            // This is a best-effort lookup; LeakCanary doesn't expose a public API for this
-            val leakCanaryDir = File(
-                android.os.Environment.getDataDirectory(),
-                "data/${getPackageNameSafe()}/files/leakcanary"
-            )
-            if (!leakCanaryDir.exists()) return null
-
-            val hprofFiles = leakCanaryDir.listFiles { file ->
-                file.extension == "hprof"
-            }?.sortedByDescending { it.lastModified() }
-
-            hprofFiles?.firstOrNull()?.absolutePath
-        } catch (e: Exception) {
-            UnifiedLog.w(TAG) { "Could not find heap dump path: ${e.message}" }
-            null
-        }
+        // LeakCanary 2.x stores heap dumps internally and manages them
+        // Users should use "Share heap dump" in LeakCanary UI for export
+        // We don't expose the internal path as it's an implementation detail
+        return null
     }
 
     /**
-     * Build a text-based leak report for export.
+     * Build a diagnostic report for export.
+     *
+     * Note: This is NOT a full leak report - for detailed leak traces,
+     * users should use LeakCanary's built-in "Share" functionality.
      */
     private fun buildLeakReport(context: Context): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
@@ -140,11 +146,11 @@ class LeakDiagnosticsImpl @Inject constructor() : LeakDiagnostics {
         val versionCode = packageInfo?.versionCode ?: 0
 
         val summary = getSummary()
-        val leakSignatures = getLeakSignaturesSafe()
+        val configInfo = getLeakCanaryConfigInfo()
 
         return buildString {
             appendLine("=" .repeat(60))
-            appendLine("FishIT Player - Leak Report")
+            appendLine("FishIT Player - Memory Diagnostics Report")
             appendLine("=" .repeat(60))
             appendLine()
             appendLine("Generated: $now")
@@ -166,32 +172,37 @@ class LeakDiagnosticsImpl @Inject constructor() : LeakDiagnostics {
             appendLine("Product: ${Build.PRODUCT}")
             appendLine()
             appendLine("-".repeat(40))
-            appendLine("Leak Summary")
+            appendLine("Memory Status")
             appendLine("-".repeat(40))
-            appendLine("Leaks Detected: ${summary.leakCount}")
-            summary.lastLeakUptimeMs?.let { ms ->
-                appendLine("Last Leak (uptime): ${ms}ms")
-            }
-            summary.note?.let { note ->
-                appendLine("Note: $note")
+            appendLine("Retained Objects: ${summary.leakCount}")
+            appendLine("Has Retained: ${AppWatcher.objectWatcher.hasRetainedObjects}")
+            summary.note?.let { appendLine("Status: $it") }
+            appendLine()
+            appendLine("-".repeat(40))
+            appendLine("LeakCanary Configuration")
+            appendLine("-".repeat(40))
+            configInfo.forEach { (key, value) ->
+                appendLine("$key: $value")
             }
             appendLine()
-
-            if (leakSignatures.isNotEmpty()) {
-                appendLine("-".repeat(40))
-                appendLine("Leak Signatures")
-                appendLine("-".repeat(40))
-                leakSignatures.forEachIndexed { index, sig ->
-                    appendLine("${index + 1}. $sig")
-                }
-                appendLine()
-            }
-
             appendLine("-".repeat(40))
-            appendLine("Notes")
+            appendLine("Runtime Memory")
             appendLine("-".repeat(40))
-            appendLine("- For full leak traces, use 'Open LeakCanary' in the app")
-            appendLine("- Heap dumps can be exported from LeakCanary UI ('Share heap dump')")
+            val runtime = Runtime.getRuntime()
+            val usedMB = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
+            val totalMB = runtime.totalMemory() / 1024 / 1024
+            val maxMB = runtime.maxMemory() / 1024 / 1024
+            appendLine("Used: ${usedMB}MB")
+            appendLine("Total: ${totalMB}MB")
+            appendLine("Max: ${maxMB}MB")
+            appendLine()
+            appendLine("-".repeat(40))
+            appendLine("How to Get Full Leak Details")
+            appendLine("-".repeat(40))
+            appendLine("1. Open LeakCanary UI from Debug Screen")
+            appendLine("2. View individual leak traces")
+            appendLine("3. Use 'Share heap dump' for detailed analysis")
+            appendLine("4. Import .hprof into Android Studio Profiler")
             appendLine()
             appendLine("=" .repeat(60))
             appendLine("End of Report")
@@ -200,48 +211,24 @@ class LeakDiagnosticsImpl @Inject constructor() : LeakDiagnostics {
     }
 
     /**
-     * Safely get leak count using LeakCanary's public APIs.
+     * Get LeakCanary configuration info for diagnostics.
      */
-    private fun getLeakCountSafe(): Int {
+    private fun getLeakCanaryConfigInfo(): Map<String, String> {
         return try {
-            // LeakCanary 2.x: Use AppWatcher / ObjectWatcher for retained count
-            // Note: This returns currently retained (not yet analyzed) objects
-            leakcanary.AppWatcher.objectWatcher.retainedObjectCount
+            val config = LeakCanary.config
+            val watcherConfig = AppWatcher.config
+            mapOf(
+                "Retained Threshold" to config.retainedVisibleThreshold.toString(),
+                "Compute Retained Size" to config.computeRetainedHeapSize.toString(),
+                "Max Stored Dumps" to config.maxStoredHeapDumps.toString(),
+                "Watch Activities" to watcherConfig.watchActivities.toString(),
+                "Watch Fragments" to watcherConfig.watchFragments.toString(),
+                "Watch ViewModels" to watcherConfig.watchViewModels.toString(),
+                "Watch Services" to watcherConfig.watchServices.toString(),
+                "Watch Duration" to "${watcherConfig.watchDurationMillis}ms",
+            )
         } catch (e: Exception) {
-            0
-        }
-    }
-
-    /**
-     * Safely get last leak time (best effort).
-     */
-    private fun getLastLeakTimeSafe(): Long? {
-        // LeakCanary doesn't expose a direct API for "last leak time"
-        // We could parse the leak DB, but that uses internal APIs
-        // For now, return null and rely on the leak count
-        return null
-    }
-
-    /**
-     * Get leak signatures (class names) if accessible.
-     * Uses reflection as LeakCanary's leak store is internal.
-     */
-    private fun getLeakSignaturesSafe(): List<String> {
-        return try {
-            // Best effort: LeakCanary stores leaks in an internal database
-            // We can't easily access it without internal APIs
-            // Return empty list and document this limitation
-            emptyList()
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun getPackageNameSafe(): String {
-        return try {
-            "com.fishit.player.v2"
-        } catch (e: Exception) {
-            "unknown"
+            mapOf("Error" to "Could not read config: ${e.message}")
         }
     }
 

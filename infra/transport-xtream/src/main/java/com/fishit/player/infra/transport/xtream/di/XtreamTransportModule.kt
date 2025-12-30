@@ -1,6 +1,7 @@
 package com.fishit.player.infra.transport.xtream.di
 
 import android.content.Context
+import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -94,6 +95,8 @@ object XtreamTransportModule {
             // Redirect handling (many Xtream panels use HTTP on non-standard ports)
             .followRedirects(true)
             .followSslRedirects(false)
+            // Chucker HTTP Inspector (captures all requests in debug builds)
+            .addInterceptor(ChuckerInterceptor.Builder(context).build())
             // Premium Contract Section 4: Headers via interceptor
             .addInterceptor { chain ->
                 val original = chain.request()

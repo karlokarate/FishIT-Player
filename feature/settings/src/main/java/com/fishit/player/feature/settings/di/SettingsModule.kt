@@ -1,5 +1,7 @@
 package com.fishit.player.feature.settings.di
 
+import com.fishit.player.feature.settings.debug.ChuckerDiagnostics
+import com.fishit.player.feature.settings.debug.ChuckerDiagnosticsImpl
 import com.fishit.player.feature.settings.debug.LeakDiagnostics
 import com.fishit.player.feature.settings.debug.LeakDiagnosticsImpl
 import dagger.Binds
@@ -11,10 +13,13 @@ import javax.inject.Singleton
 /**
  * Hilt module for settings feature dependencies.
  *
- * Binds [LeakDiagnostics] to [LeakDiagnosticsImpl].
- * The actual implementation differs between debug and release source sets:
- * - Debug: Real LeakCanary integration
- * - Release: No-op stub
+ * Binds:
+ * - [LeakDiagnostics] to [LeakDiagnosticsImpl] (memory leak detection)
+ * - [ChuckerDiagnostics] to [ChuckerDiagnosticsImpl] (HTTP inspector)
+ *
+ * The actual implementations differ between debug and release source sets:
+ * - Debug: Real LeakCanary/Chucker integration
+ * - Release: No-op stubs
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -23,4 +28,8 @@ abstract class SettingsModule {
     @Binds
     @Singleton
     abstract fun bindLeakDiagnostics(impl: LeakDiagnosticsImpl): LeakDiagnostics
+
+    @Binds
+    @Singleton
+    abstract fun bindChuckerDiagnostics(impl: ChuckerDiagnosticsImpl): ChuckerDiagnostics
 }

@@ -5,6 +5,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.fishit.player.core.playermodel.AudioSelectionState
@@ -184,10 +185,10 @@ class InternalPlayerSession(
         scope.launch {
             try {
                 val source = sourceResolver.resolve(playbackContext)
-                UnifiedLog.d(
-                        TAG,
-                        "Source resolved: ${source.uri}, dataSourceType: ${source.dataSourceType}"
-                )
+                UnifiedLog.d(TAG) {
+                    "Source resolved: uri=${source.uri.take(100)}, " +
+                            "headers=${source.headers.keys}, dataSourceType=${source.dataSourceType}"
+                }
 
                 // Build MediaItem
                 val mediaItemBuilder = MediaItem.Builder().setUri(source.uri)
@@ -197,9 +198,24 @@ class InternalPlayerSession(
                 val mediaItem = mediaItemBuilder.build()
 
                 // Determine appropriate DataSource.Factory based on source type
+                // CRITICAL: Apply HTTP headers for Xtream streams (Referer, User-Agent, etc.)
+                // Without headers, many Xtream panels return 403/406/520
                 val dataSourceFactory =
-                        dataSourceFactories[source.dataSourceType]
-                                ?: DefaultDataSource.Factory(context)
+                        when {
+                            dataSourceFactories.containsKey(source.dataSourceType) ->
+                                    dataSourceFactories[source.dataSourceType]!!
+                            source.headers.isNotEmpty() -> {
+                                // HTTP streams need headers (Xtream Referer, User-Agent, etc.)
+                                UnifiedLog.d(TAG) {
+                                    "Applying ${source.headers.size} HTTP headers to DataSource"
+                                }
+                                val httpFactory =
+                                        DefaultHttpDataSource.Factory()
+                                                .setDefaultRequestProperties(source.headers)
+                                DefaultDataSource.Factory(context, httpFactory)
+                            }
+                            else -> DefaultDataSource.Factory(context)
+                        }
 
                 // Create MediaSource.Factory with appropriate DataSource
                 val mediaSourceFactory =
