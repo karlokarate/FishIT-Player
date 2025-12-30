@@ -58,9 +58,6 @@ object LeakCanaryConfig {
                     // )
                 ),
             
-            // Metadata extractor for better leak grouping
-            metatadaExtractor = LeakCanary.config.metatadaExtractor,
-            
             // Compute retained heap size (slightly slower but more informative)
             computeRetainedHeapSize = true,
             
