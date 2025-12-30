@@ -20,8 +20,8 @@ object PlaybackHintKeys {
     /**
      * Xtream-specific playback hints.
      *
-     * These enable XtreamPlaybackSourceFactory to build correct playback URLs without
-     * additional network calls.
+     * These enable XtreamPlaybackSourceFactory to build correct playback URLs without additional
+     * network calls.
      */
     object Xtream {
         // Content type indicators
@@ -61,14 +61,23 @@ object PlaybackHintKeys {
         /**
          * Container extension (e.g., "mp4", "mkv", "ts").
          *
-         * Used for URL building. If not present, factory uses default ("ts" for live, "mp4" for VOD).
+         * Used for URL building. If not present, factory uses default ("ts" for live, "mp4" for
+         * VOD).
          */
         const val CONTAINER_EXT = "xtream.containerExtension"
+
+        /**
+         * Allowed output formats from server (comma-separated, e.g., "m3u8,ts").
+         *
+         * Source: XtreamServerInfo.userInfo.allowedOutputFormats from Xtream API. Used by
+         * XtreamPlaybackSourceFactory to select the correct stream format.
+         *
+         * Policy priority: m3u8 > ts > mp4 (unless server restricts)
+         */
+        const val ALLOWED_OUTPUT_FORMATS = "xtream.allowedOutputFormats"
     }
 
-    /**
-     * Telegram-specific playback hints.
-     */
+    /** Telegram-specific playback hints. */
     object Telegram {
         /** Chat ID containing the media */
         const val CHAT_ID = "telegram.chatId"

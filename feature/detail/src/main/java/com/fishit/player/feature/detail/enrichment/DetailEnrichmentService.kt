@@ -56,17 +56,15 @@ constructor(
     private val locksLock = Mutex()
 
     private suspend fun getMutexForCanonicalId(canonicalId: String): Mutex {
-        return locksLock.withLock {
-            enrichmentLocks.getOrPut(canonicalId) { Mutex() }
-        }
+        return locksLock.withLock { enrichmentLocks.getOrPut(canonicalId) { Mutex() } }
     }
 
     /**
      * Ensure that a specific source has required playbackHints before playback.
      *
-     * This is the BLOCKING call used by ViewModel.play() to guarantee playbackHints
-     * are available before starting playback. It prevents race conditions where the
-     * user clicks Play before background enrichment completes.
+     * This is the BLOCKING call used by ViewModel.play() to guarantee playbackHints are available
+     * before starting playback. It prevents race conditions where the user clicks Play before
+     * background enrichment completes.
      *
      * **Behavior:**
      * 1. Check if source already has required hints → return immediately (fast path)
@@ -81,17 +79,19 @@ constructor(
      * @return Updated CanonicalMediaWithSources, or null if not found
      */
     suspend fun ensureEnriched(
-        canonicalId: CanonicalMediaId,
-        sourceKey: PipelineItemId? = null,
-        requiredHints: List<String> = emptyList(),
-        timeoutMs: Long = ENSURE_TIMEOUT_MS,
+            canonicalId: CanonicalMediaId,
+            sourceKey: PipelineItemId? = null,
+            requiredHints: List<String> = emptyList(),
+            timeoutMs: Long = ENSURE_TIMEOUT_MS,
     ): CanonicalMediaWithSources? {
         val startMs = System.currentTimeMillis()
 
         // Fetch current state
         val media = canonicalMediaRepository.findByCanonicalId(canonicalId)
         if (media == null) {
-            UnifiedLog.w(TAG) { "ensureEnriched: media not found canonicalId=${canonicalId.key.value}" }
+            UnifiedLog.w(TAG) {
+                "ensureEnriched: media not found canonicalId=${canonicalId.key.value}"
+            }
             return null
         }
 
@@ -100,38 +100,47 @@ constructor(
         if (source != null && requiredHints.isNotEmpty()) {
             val missingHints = requiredHints.filter { source.playbackHints[it].isNullOrBlank() }
             if (missingHints.isEmpty()) {
-                UnifiedLog.d(TAG) { "ensureEnriched: fast path (hints present) canonicalId=${canonicalId.key.value}" }
+                UnifiedLog.d(TAG) {
+                    "ensureEnriched: fast path (hints present) canonicalId=${canonicalId.key.value}"
+                }
                 return media
             }
-            UnifiedLog.d(TAG) { 
+            UnifiedLog.d(TAG) {
                 "ensureEnriched: missing hints=$missingHints canonicalId=${canonicalId.key.value} sourceKey=${sourceKey.value}"
             }
         }
 
         // Perform enrichment with mutex (prevent concurrent enrichment of same media)
         val mutex = getMutexForCanonicalId(canonicalId.key.value)
-        val enriched = mutex.withLock {
-            // Double-check after acquiring lock (another coroutine may have enriched)
-            val currentMedia = canonicalMediaRepository.findByCanonicalId(canonicalId)
-            if (currentMedia == null) return@withLock null
+        val enriched =
+                mutex.withLock {
+                    // Double-check after acquiring lock (another coroutine may have enriched)
+                    val currentMedia = canonicalMediaRepository.findByCanonicalId(canonicalId)
+                    if (currentMedia == null) return@withLock null
 
-            val currentSource = sourceKey?.let { key -> currentMedia.sources.find { it.sourceId == key } }
-            if (currentSource != null && requiredHints.isNotEmpty()) {
-                val stillMissing = requiredHints.filter { currentSource.playbackHints[it].isNullOrBlank() }
-                if (stillMissing.isEmpty()) {
-                    UnifiedLog.d(TAG) { "ensureEnriched: post-lock fast path canonicalId=${canonicalId.key.value}" }
-                    return@withLock currentMedia
+                    val currentSource =
+                            sourceKey?.let { key ->
+                                currentMedia.sources.find { it.sourceId == key }
+                            }
+                    if (currentSource != null && requiredHints.isNotEmpty()) {
+                        val stillMissing =
+                                requiredHints.filter {
+                                    currentSource.playbackHints[it].isNullOrBlank()
+                                }
+                        if (stillMissing.isEmpty()) {
+                            UnifiedLog.d(TAG) {
+                                "ensureEnriched: post-lock fast path canonicalId=${canonicalId.key.value}"
+                            }
+                            return@withLock currentMedia
+                        }
+                    }
+
+                    // Actually enrich with timeout
+                    withTimeoutOrNull(timeoutMs) { enrichIfNeeded(currentMedia) }
                 }
-            }
-
-            // Actually enrich with timeout
-            withTimeoutOrNull(timeoutMs) {
-                enrichIfNeeded(currentMedia)
-            }
-        }
 
         val durationMs = System.currentTimeMillis() - startMs
-        UnifiedLog.d(TAG) { 
+        UnifiedLog.d(TAG) {
             "ensureEnriched: completed in ${durationMs}ms canonicalId=${canonicalId.key.value} success=${enriched != null}"
         }
 
@@ -263,17 +272,47 @@ constructor(
 
             canonicalMediaRepository.upsertCanonicalMedia(normalized)
 
-            // CRITICAL: Update MediaSourceRef.playbackHints with containerExtension for playback
-            // Without this, XtreamPlaybackSourceFactory cannot build correct URL
-            if (containerExt != null &&
+            // CRITICAL: Update MediaSourceRef.playbackHints for playback
+            // - containerExtension: required for correct URL building (mp4, mkv, etc.)
+            // - allowedOutputFormats: policy for format selection (m3u8 > ts > mp4)
+            // Without these, XtreamPlaybackSourceFactory cannot build correct URLs
+            val needsContainerExt =
+                    containerExt != null &&
                             !xtreamSource.playbackHints.containsKey(
                                     PlaybackHintKeys.Xtream.CONTAINER_EXT
                             )
-            ) {
-                val updatedHints =
-                        xtreamSource.playbackHints.toMutableMap().apply {
-                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, containerExt)
+            val needsAllowedFormats =
+                    !xtreamSource.playbackHints.containsKey(
+                            PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS
+                    )
+
+            if (needsContainerExt || needsAllowedFormats) {
+                val updatedHints = xtreamSource.playbackHints.toMutableMap()
+
+                // Add containerExtension
+                if (needsContainerExt && containerExt != null) {
+                    updatedHints[PlaybackHintKeys.Xtream.CONTAINER_EXT] = containerExt
+                }
+
+                // Add allowedOutputFormats from server info (policy SSOT)
+                if (needsAllowedFormats) {
+                    try {
+                        val userInfo = xtreamApiClient.getUserInfo().getOrNull()
+                        if (userInfo != null && userInfo.allowedFormats.isNotEmpty()) {
+                            val formatsString = userInfo.allowedFormats.joinToString(",")
+                            updatedHints[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS] =
+                                    formatsString
+                            UnifiedLog.d(TAG) {
+                                "enrichFromXtream: added allowedOutputFormats=$formatsString vodId=$vodId"
+                            }
                         }
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG) {
+                            "enrichFromXtream: failed to fetch allowedOutputFormats, using defaults"
+                        }
+                    }
+                }
+
                 val updatedSourceRef =
                         MediaSourceRef(
                                 sourceType = xtreamSource.sourceType,
@@ -290,7 +329,7 @@ constructor(
                         )
                 canonicalMediaRepository.addOrUpdateSourceRef(media.canonicalId, updatedSourceRef)
                 UnifiedLog.d(TAG) {
-                    "enrichFromXtream: updated playbackHints with containerExt=$containerExt vodId=$vodId"
+                    "enrichFromXtream: updated playbackHints containerExt=$containerExt vodId=$vodId"
                 }
             }
 
