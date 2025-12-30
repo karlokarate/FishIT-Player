@@ -126,9 +126,7 @@ fun DetailScreen(
                 DetailContent(
                         state = state,
                         onBack = onBack,
-                        onPlay = {
-                            if (state.isLive) viewModel.playLive() else viewModel.play()
-                        },
+                        onPlay = { if (state.isLive) viewModel.playLive() else viewModel.play() },
                         onResume = viewModel::resume,
                         onPlayFromStart = viewModel::playFromStart,
                         onShowSourcePicker = viewModel::showSourcePicker,
@@ -221,9 +219,10 @@ private fun DetailContent(
                         mediaType = state.effectiveMediaType,
                         year = media.year,
                         rating = media.rating?.toFloat(),
-                        durationMs = if (!state.isLive) {
-                            state.activeSource?.durationMs ?: media.durationMs
-                        } else null,
+                        durationMs =
+                                if (!state.isLive) {
+                                    state.activeSource?.durationMs ?: media.durationMs
+                                } else null,
                         quality = state.activeSourceQualityLabel,
                         season = media.season,
                         episode = media.episode,
@@ -237,7 +236,7 @@ private fun DetailContent(
             if (state.hasMultipleSources) {
                 SourceBadgesRow(
                         sourceTypes = state.availableSourceTypes,
-                        selectedSource = state.activeSource,
+                        activeSource = state.activeSource,
                         onShowPicker = onShowSourcePicker
                 )
                 Spacer(modifier = Modifier.height(20.dp))
@@ -262,7 +261,8 @@ private fun DetailContent(
                     if (state.seasons.isNotEmpty()) {
                         DetailSeriesSectionSeasonSelector(
                                 seasons = state.seasons,
-                                selectedSeason = state.selectedSeason ?: state.seasons.firstOrNull() ?: 1,
+                                selectedSeason = state.selectedSeason
+                                                ?: state.seasons.firstOrNull() ?: 1,
                                 onSeasonSelected = onSeasonSelected,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -482,12 +482,13 @@ private fun ActionButtonsRow(
         onPlayFromStart: () -> Unit
 ) {
     // Determine button label based on media type
-    val playLabel = when (mediaType) {
-        MediaType.LIVE -> "Watch Live"
-        MediaType.AUDIOBOOK, MediaType.PODCAST -> "Listen"
-        MediaType.SERIES -> "Play Latest"
-        else -> "Play"
-    }
+    val playLabel =
+            when (mediaType) {
+                MediaType.LIVE -> "Watch Live"
+                MediaType.AUDIOBOOK, MediaType.PODCAST -> "Listen"
+                MediaType.SERIES -> "Play Latest"
+                else -> "Play"
+            }
 
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
         if (canResume) {

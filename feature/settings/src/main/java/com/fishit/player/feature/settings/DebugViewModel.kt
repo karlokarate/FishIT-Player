@@ -5,13 +5,13 @@ import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
 import com.fishit.player.feature.settings.debug.ChuckerDiagnostics
+import com.fishit.player.feature.settings.debug.LeakDetailedStatus
 import com.fishit.player.feature.settings.debug.LeakDiagnostics
 import com.fishit.player.feature.settings.debug.LeakSummary
 import com.fishit.player.feature.settings.debug.WorkManagerDebugConstants
@@ -166,10 +166,11 @@ constructor(
     /** Load LeakCanary summary and detailed status. */
     private fun loadLeakSummary() {
         val summary = leakDiagnostics.getSummary()
-        val detailedStatus = if (leakDiagnostics.isAvailable) {
-            leakDiagnostics.getDetailedStatus()
-        } else null
-        
+        val detailedStatus =
+                if (leakDiagnostics.isAvailable) {
+                    leakDiagnostics.getDetailedStatus()
+                } else null
+
         _state.update {
             it.copy(
                     leakSummary = summary,
@@ -181,9 +182,7 @@ constructor(
 
     /** Load Chucker availability. */
     private fun loadChuckerAvailability() {
-        _state.update {
-            it.copy(isChuckerAvailable = chuckerDiagnostics.isAvailable)
-        }
+        _state.update { it.copy(isChuckerAvailable = chuckerDiagnostics.isAvailable) }
     }
 
     /** Observe sync state from WorkManager via SyncStateObserver. */
@@ -210,54 +209,44 @@ constructor(
         // Flow 1: Unique catalog sync work
         viewModelScope.launch {
             wm.getWorkInfosForUniqueWorkFlow(WorkManagerDebugConstants.WORK_NAME_CATALOG_SYNC)
-                .collect { infos ->
-                    updateWorkManagerSnapshot { current ->
-                        current.copy(
-                            catalogSyncUniqueWork = infos.map { it.toTaskInfo() }
-                        )
+                    .collect { infos ->
+                        updateWorkManagerSnapshot { current ->
+                            current.copy(catalogSyncUniqueWork = infos.map { it.toTaskInfo() })
+                        }
                     }
-                }
         }
 
         // Flow 2: Unique TMDB enrichment work
         viewModelScope.launch {
             wm.getWorkInfosForUniqueWorkFlow(WorkManagerDebugConstants.WORK_NAME_TMDB_ENRICHMENT)
-                .collect { infos ->
-                    updateWorkManagerSnapshot { current ->
-                        current.copy(
-                            tmdbUniqueWork = infos.map { it.toTaskInfo() }
-                        )
+                    .collect { infos ->
+                        updateWorkManagerSnapshot { current ->
+                            current.copy(tmdbUniqueWork = infos.map { it.toTaskInfo() })
+                        }
                     }
-                }
         }
 
         // Flow 3: Tagged catalog sync work
         viewModelScope.launch {
-            wm.getWorkInfosByTagFlow(WorkManagerDebugConstants.TAG_CATALOG_SYNC)
-                .collect { infos ->
-                    updateWorkManagerSnapshot { current ->
-                        current.copy(
-                            taggedCatalogSyncWork = infos.map { it.toTaskInfo() }
-                        )
-                    }
+            wm.getWorkInfosByTagFlow(WorkManagerDebugConstants.TAG_CATALOG_SYNC).collect { infos ->
+                updateWorkManagerSnapshot { current ->
+                    current.copy(taggedCatalogSyncWork = infos.map { it.toTaskInfo() })
                 }
+            }
         }
 
         // Flow 4: Tagged TMDB work
         viewModelScope.launch {
-            wm.getWorkInfosByTagFlow(WorkManagerDebugConstants.TAG_SOURCE_TMDB)
-                .collect { infos ->
-                    updateWorkManagerSnapshot { current ->
-                        current.copy(
-                            taggedTmdbWork = infos.map { it.toTaskInfo() }
-                        )
-                    }
+            wm.getWorkInfosByTagFlow(WorkManagerDebugConstants.TAG_SOURCE_TMDB).collect { infos ->
+                updateWorkManagerSnapshot { current ->
+                    current.copy(taggedTmdbWork = infos.map { it.toTaskInfo() })
                 }
+            }
         }
     }
 
     private inline fun updateWorkManagerSnapshot(
-        transform: (WorkManagerSnapshot) -> WorkManagerSnapshot
+            transform: (WorkManagerSnapshot) -> WorkManagerSnapshot
     ) {
         _state.update { state ->
             val current = state.workManagerSnapshot
@@ -512,10 +501,13 @@ constructor(
                 resolver.openOutputStream(destinationUri, "w")?.use { out ->
                     out.write(content.toByteArray(Charsets.UTF_8))
                     out.flush()
-                } ?: run {
-                    _state.update { it.copy(lastActionResult = "Export failed: could not open output") }
-                    return@launch
                 }
+                        ?: run {
+                            _state.update {
+                                it.copy(lastActionResult = "Export failed: could not open output")
+                            }
+                            return@launch
+                        }
 
                 _state.update { it.copy(lastActionResult = "WorkManager snapshot exported") }
                 UnifiedLog.i(TAG) { "WorkManager snapshot exported successfully" }
@@ -635,10 +627,13 @@ constructor(
                         zip.write(workManagerContent.toByteArray(Charsets.UTF_8))
                         zip.closeEntry()
                     }
-                } ?: run {
-                    _state.update { it.copy(lastActionResult = "Export failed: could not open output") }
-                    return@launch
                 }
+                        ?: run {
+                            _state.update {
+                                it.copy(lastActionResult = "Export failed: could not open output")
+                            }
+                            return@launch
+                        }
 
                 _state.update { it.copy(lastActionResult = "Debug bundle exported") }
                 UnifiedLog.i(TAG) { "Debug bundle exported successfully" }
@@ -665,7 +660,7 @@ constructor(
         val summary = leakDiagnostics.getSummary()
         return buildString {
             appendLine("FishIT Player - Leak Summary")
-            appendLine("=" .repeat(40))
+            appendLine("=".repeat(40))
             appendLine()
             appendLine("LeakCanary Available: ${leakDiagnostics.isAvailable}")
             appendLine("Leaks Detected: ${summary.leakCount}")
@@ -679,21 +674,21 @@ constructor(
     }
 
     private fun buildDeviceInfoContent(): String {
-        val packageInfo = try {
-            appContext.packageManager.getPackageInfo(appContext.packageName, 0)
-        } catch (e: Exception) {
-            null
-        }
+        val packageInfo =
+                try {
+                    appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+                } catch (e: Exception) {
+                    null
+                }
         val versionName = packageInfo?.versionName ?: "unknown"
-        @Suppress("DEPRECATION")
-        val versionCode = packageInfo?.versionCode ?: 0
+        @Suppress("DEPRECATION") val versionCode = packageInfo?.versionCode ?: 0
 
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
         val now = dateFormat.format(Date())
 
         return buildString {
             appendLine("FishIT Player - Device Info")
-            appendLine("=" .repeat(40))
+            appendLine("=".repeat(40))
             appendLine()
             appendLine("Generated: $now")
             appendLine()

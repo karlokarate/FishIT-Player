@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.work.WorkInfo
 import com.fishit.player.core.catalogsync.SyncUiState
+import com.fishit.player.feature.settings.debug.MemoryStats
+import com.fishit.player.feature.settings.debug.RetentionSeverity
 import com.fishit.player.feature.settings.debug.WorkManagerSnapshot
 import com.fishit.player.feature.settings.debug.WorkTaskInfo
 import java.text.SimpleDateFormat
@@ -335,19 +337,20 @@ fun DebugScreen(
                 // === WorkManager Snapshot (Diagnostics) ===
                 item {
                     WorkManagerSnapshotSection(
-                        snapshot = state.workManagerSnapshot,
-                        onCopy = {
-                            val text = viewModel.getWorkManagerSnapshotText()
-                            clipboardManager.setText(AnnotatedString(text))
-                            viewModel.setActionResult("WorkManager snapshot copied")
-                        },
-                        onExport = {
-                            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-                                .format(Date())
-                            exportWorkManagerSnapshotLauncher.launch(
-                                "fishit_workmanager_$timestamp.txt"
-                            )
-                        }
+                            snapshot = state.workManagerSnapshot,
+                            onCopy = {
+                                val text = viewModel.getWorkManagerSnapshotText()
+                                clipboardManager.setText(AnnotatedString(text))
+                                viewModel.setActionResult("WorkManager snapshot copied")
+                            },
+                            onExport = {
+                                val timestamp =
+                                        SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                                                .format(Date())
+                                exportWorkManagerSnapshotLauncher.launch(
+                                        "fishit_workmanager_$timestamp.txt"
+                                )
+                            }
                     )
                 }
 
@@ -409,29 +412,29 @@ fun DebugScreen(
                     DebugSection(title = "HTTP Inspector", icon = Icons.Default.Cloud) {
                         if (state.isChuckerAvailable) {
                             Text(
-                                text = "Chucker captures all HTTP requests for debugging.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "Chucker captures all HTTP requests for debugging.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
                             Text(
-                                text = "Chucker not available (release build)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
+                                    text = "Chucker not available (release build)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error
                             )
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Button(
-                            onClick = { viewModel.openChuckerUi() },
-                            enabled = state.isChuckerAvailable,
-                            modifier = Modifier.fillMaxWidth()
+                                onClick = { viewModel.openChuckerUi() },
+                                enabled = state.isChuckerAvailable,
+                                modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
-                                imageVector = Icons.Default.BugReport,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                    imageVector = Icons.Default.BugReport,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Open HTTP Inspector")
@@ -442,15 +445,15 @@ fun DebugScreen(
                 // Memory / LeakCanary Section
                 item {
                     LeakCanaryDiagnosticsSection(
-                        state = state,
-                        onOpenLeakCanary = { viewModel.openLeakCanaryUi() },
-                        onRefresh = { viewModel.refreshLeakSummary() },
-                        onRequestGc = { viewModel.requestGarbageCollection() },
-                        onTriggerHeapDump = { viewModel.triggerHeapDump() },
-                        onExportReport = {
-                            val fileName = buildLeakExportFileName()
-                            exportLeakReportLauncher.launch(fileName)
-                        }
+                            state = state,
+                            onOpenLeakCanary = { viewModel.openLeakCanaryUi() },
+                            onRefresh = { viewModel.refreshLeakSummary() },
+                            onRequestGc = { viewModel.requestGarbageCollection() },
+                            onTriggerHeapDump = { viewModel.triggerHeapDump() },
+                            onExportReport = {
+                                val fileName = buildLeakExportFileName()
+                                exportLeakReportLauncher.launch(fileName)
+                            }
                     )
                 }
 
@@ -458,19 +461,17 @@ fun DebugScreen(
                 item {
                     DebugSection(title = "Database Tools", icon = Icons.Default.Storage) {
                         Text(
-                            text = "Inspect and edit ObjectBox rows. This is a power tool — changes apply immediately.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text =
+                                        "Inspect and edit ObjectBox rows. This is a power tool — changes apply immediately.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = onDatabaseInspector,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        Button(onClick = onDatabaseInspector, modifier = Modifier.fillMaxWidth()) {
                             Icon(
-                                imageVector = Icons.Default.Storage,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                    imageVector = Icons.Default.Storage,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Open DB Inspector")
@@ -1144,40 +1145,34 @@ private fun SyncStatusRow(syncState: SyncUiState, modifier: Modifier = Modifier)
  */
 @Composable
 private fun WorkManagerSnapshotSection(
-    snapshot: WorkManagerSnapshot,
-    onCopy: () -> Unit,
-    onExport: () -> Unit,
+        snapshot: WorkManagerSnapshot,
+        onCopy: () -> Unit,
+        onExport: () -> Unit,
 ) {
     DebugSection(
-        title = "WorkManager Snapshot",
-        icon = Icons.Default.WorkHistory,
+            title = "WorkManager Snapshot",
+            icon = Icons.Default.WorkHistory,
     ) {
         // Action buttons row
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedButton(
-                onClick = onCopy,
-                modifier = Modifier.weight(1f)
-            ) {
+            OutlinedButton(onClick = onCopy, modifier = Modifier.weight(1f)) {
                 Icon(
-                    imageVector = Icons.Default.ContentCopy,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Copy")
             }
 
-            Button(
-                onClick = onExport,
-                modifier = Modifier.weight(1f)
-            ) {
+            Button(onClick = onExport, modifier = Modifier.weight(1f)) {
                 Icon(
-                    imageVector = Icons.Default.FolderZip,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.FolderZip,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Export")
@@ -1188,96 +1183,84 @@ private fun WorkManagerSnapshotSection(
 
         // Unique work sections
         WorkInfoGroupSection(
-            title = "Unique: catalog_sync_global",
-            items = snapshot.catalogSyncUniqueWork
+                title = "Unique: catalog_sync_global",
+                items = snapshot.catalogSyncUniqueWork
         )
 
         WorkInfoGroupSection(
-            title = "Unique: tmdb_enrichment_global",
-            items = snapshot.tmdbUniqueWork
+                title = "Unique: tmdb_enrichment_global",
+                items = snapshot.tmdbUniqueWork
         )
 
-        WorkInfoGroupSection(
-            title = "Tag: catalog_sync",
-            items = snapshot.taggedCatalogSyncWork
-        )
+        WorkInfoGroupSection(title = "Tag: catalog_sync", items = snapshot.taggedCatalogSyncWork)
 
-        WorkInfoGroupSection(
-            title = "Tag: source_tmdb",
-            items = snapshot.taggedTmdbWork
-        )
+        WorkInfoGroupSection(title = "Tag: source_tmdb", items = snapshot.taggedTmdbWork)
     }
 }
 
 @Composable
 private fun WorkInfoGroupSection(
-    title: String,
-    items: List<WorkTaskInfo>,
-    modifier: Modifier = Modifier
+        title: String,
+        items: List<WorkTaskInfo>,
+        modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(vertical = 4.dp)) {
         Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
         )
         if (items.isEmpty()) {
             Text(
-                text = "(no work infos)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "(no work infos)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            items.forEach { info ->
-                WorkInfoItemRow(info)
-            }
+            items.forEach { info -> WorkInfoItemRow(info) }
         }
     }
 }
 
 @Composable
-private fun WorkInfoItemRow(
-    info: WorkTaskInfo,
-    modifier: Modifier = Modifier
-) {
-    val stateColor = when (info.state) {
-        WorkInfo.State.RUNNING -> MaterialTheme.colorScheme.primary
-        WorkInfo.State.SUCCEEDED -> MaterialTheme.colorScheme.tertiary
-        WorkInfo.State.FAILED -> MaterialTheme.colorScheme.error
-        WorkInfo.State.CANCELLED -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-        WorkInfo.State.ENQUEUED -> MaterialTheme.colorScheme.secondary
-        WorkInfo.State.BLOCKED -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+private fun WorkInfoItemRow(info: WorkTaskInfo, modifier: Modifier = Modifier) {
+    val stateColor =
+            when (info.state) {
+                WorkInfo.State.RUNNING -> MaterialTheme.colorScheme.primary
+                WorkInfo.State.SUCCEEDED -> MaterialTheme.colorScheme.tertiary
+                WorkInfo.State.FAILED -> MaterialTheme.colorScheme.error
+                WorkInfo.State.CANCELLED -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                WorkInfo.State.ENQUEUED -> MaterialTheme.colorScheme.secondary
+                WorkInfo.State.BLOCKED -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 8.dp, top = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
+            modifier = modifier.fillMaxWidth().padding(start = 8.dp, top = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
     ) {
         // State indicator
         Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(stateColor, shape = MaterialTheme.shapes.extraSmall)
+                modifier =
+                        Modifier.size(8.dp)
+                                .background(stateColor, shape = MaterialTheme.shapes.extraSmall)
         )
         Spacer(modifier = Modifier.width(8.dp))
 
         // Info text
         Text(
-            text = "${info.state.name} attempts=${info.runAttemptCount}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
+                text = "${info.state.name} attempts=${info.runAttemptCount}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface
         )
     }
 
     // Show failure reason if present
     info.failureReason?.let { reason ->
         Text(
-            text = "  → $reason",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(start = 16.dp)
+                text = "  → $reason",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp)
         )
     }
 }
@@ -1297,57 +1280,58 @@ private fun WorkInfoItemRow(
  */
 @Composable
 private fun LeakCanaryDiagnosticsSection(
-    state: DebugState,
-    onOpenLeakCanary: () -> Unit,
-    onRefresh: () -> Unit,
-    onRequestGc: () -> Unit,
-    onTriggerHeapDump: () -> Unit,
-    onExportReport: () -> Unit
+        state: DebugState,
+        onOpenLeakCanary: () -> Unit,
+        onRefresh: () -> Unit,
+        onRequestGc: () -> Unit,
+        onTriggerHeapDump: () -> Unit,
+        onExportReport: () -> Unit
 ) {
     DebugSection(title = "Memory / LeakCanary", icon = Icons.Default.Memory) {
         if (state.isLeakCanaryAvailable) {
             val detailedStatus = state.leakDetailedStatus
-            
+
             // Severity Banner
             if (detailedStatus != null) {
                 LeakSeverityBanner(
-                    severity = detailedStatus.severity,
-                    statusMessage = detailedStatus.statusMessage,
-                    retainedCount = detailedStatus.retainedObjectCount
+                        severity = detailedStatus.severity,
+                        statusMessage = detailedStatus.statusMessage,
+                        retainedCount = detailedStatus.retainedObjectCount
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Memory Stats
                 MemoryStatsRow(memoryStats = detailedStatus.memoryStats)
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Config Info (collapsed by default)
                 Text(
-                    text = "Watch: ${detailedStatus.config.watchDurationMillis}ms | Threshold: ${detailedStatus.config.retainedVisibleThreshold}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text =
+                                "Watch: ${detailedStatus.config.watchDurationMillis}ms | Threshold: ${detailedStatus.config.retainedVisibleThreshold}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
                 // Fallback to simple summary
                 Text(
-                    text = "Retained objects: ${state.leakSummary.leakCount}",
-                    style = MaterialTheme.typography.bodyMedium
+                        text = "Retained objects: ${state.leakSummary.leakCount}",
+                        style = MaterialTheme.typography.bodyMedium
                 )
                 state.leakSummary.note?.let { note ->
                     Text(
-                        text = note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = note,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         } else {
             Text(
-                text = "LeakCanary not available (release build)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "LeakCanary not available (release build)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -1355,32 +1339,32 @@ private fun LeakCanaryDiagnosticsSection(
 
         // Primary Action Row: Open + Refresh
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = onOpenLeakCanary,
-                enabled = state.isLeakCanaryAvailable,
-                modifier = Modifier.weight(1f)
+                    onClick = onOpenLeakCanary,
+                    enabled = state.isLeakCanaryAvailable,
+                    modifier = Modifier.weight(1f)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Memory,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.Memory,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Open")
             }
 
             OutlinedButton(
-                onClick = onRefresh,
-                enabled = state.isLeakCanaryAvailable,
-                modifier = Modifier.weight(1f)
+                    onClick = onRefresh,
+                    enabled = state.isLeakCanaryAvailable,
+                    modifier = Modifier.weight(1f)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Refresh")
@@ -1391,32 +1375,32 @@ private fun LeakCanaryDiagnosticsSection(
 
         // Secondary Action Row: GC + Heap Dump
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedButton(
-                onClick = onRequestGc,
-                enabled = state.isLeakCanaryAvailable,
-                modifier = Modifier.weight(1f)
+                    onClick = onRequestGc,
+                    enabled = state.isLeakCanaryAvailable,
+                    modifier = Modifier.weight(1f)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("GC")
             }
 
             OutlinedButton(
-                onClick = onTriggerHeapDump,
-                enabled = state.isLeakCanaryAvailable,
-                modifier = Modifier.weight(1f)
+                    onClick = onTriggerHeapDump,
+                    enabled = state.isLeakCanaryAvailable,
+                    modifier = Modifier.weight(1f)
             ) {
                 Icon(
-                    imageVector = Icons.Default.BugReport,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.BugReport,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Dump")
@@ -1427,14 +1411,14 @@ private fun LeakCanaryDiagnosticsSection(
 
         // Export Action
         OutlinedButton(
-            onClick = onExportReport,
-            enabled = state.isLeakCanaryAvailable,
-            modifier = Modifier.fillMaxWidth()
+                onClick = onExportReport,
+                enabled = state.isLeakCanaryAvailable,
+                modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                imageVector = Icons.Default.FolderZip,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                    imageVector = Icons.Default.FolderZip,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Export Leak Report")
@@ -1443,110 +1427,107 @@ private fun LeakCanaryDiagnosticsSection(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "For heap dump export, use 'Share heap dump' in LeakCanary UI.",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "For heap dump export, use 'Share heap dump' in LeakCanary UI.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
-/**
- * Severity banner with color coding.
- */
+/** Severity banner with color coding. */
 @Composable
 private fun LeakSeverityBanner(
-    severity: com.fishit.player.feature.settings.debug.RetentionSeverity,
-    statusMessage: String,
-    retainedCount: Int
+        severity: com.fishit.player.feature.settings.debug.RetentionSeverity,
+        statusMessage: String,
+        retainedCount: Int
 ) {
-    val (backgroundColor, textColor, icon) = when (severity) {
-        com.fishit.player.feature.settings.debug.RetentionSeverity.NONE -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            Icons.Default.CheckCircle
-        )
-        com.fishit.player.feature.settings.debug.RetentionSeverity.LOW -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            Icons.Default.Info
-        )
-        com.fishit.player.feature.settings.debug.RetentionSeverity.MEDIUM -> Triple(
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.onSecondaryContainer,
-            Icons.Default.Warning
-        )
-        com.fishit.player.feature.settings.debug.RetentionSeverity.HIGH -> Triple(
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer,
-            Icons.Default.Error
-        )
-    }
+    val (backgroundColor, textColor, icon) =
+            when (severity) {
+                com.fishit.player.feature.settings.debug.RetentionSeverity.NONE ->
+                        Triple(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                                Icons.Default.CheckCircle
+                        )
+                com.fishit.player.feature.settings.debug.RetentionSeverity.LOW ->
+                        Triple(
+                                MaterialTheme.colorScheme.tertiaryContainer,
+                                MaterialTheme.colorScheme.onTertiaryContainer,
+                                Icons.Default.Info
+                        )
+                com.fishit.player.feature.settings.debug.RetentionSeverity.MEDIUM ->
+                        Triple(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                MaterialTheme.colorScheme.onSecondaryContainer,
+                                Icons.Default.Warning
+                        )
+                com.fishit.player.feature.settings.debug.RetentionSeverity.HIGH ->
+                        Triple(
+                                MaterialTheme.colorScheme.errorContainer,
+                                MaterialTheme.colorScheme.onErrorContainer,
+                                Icons.Default.Error
+                        )
+            }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        modifier = Modifier.fillMaxWidth()
+            colors = CardDefaults.cardColors(containerColor = backgroundColor),
+            modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = textColor,
-                modifier = Modifier.size(24.dp)
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = textColor,
+                    modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Retained: $retainedCount",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = textColor
+                        text = "Retained: $retainedCount",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = textColor
                 )
                 Text(
-                    text = statusMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textColor.copy(alpha = 0.8f)
+                        text = statusMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textColor.copy(alpha = 0.8f)
                 )
             }
         }
     }
 }
 
-/**
- * Memory statistics row.
- */
+/** Memory statistics row. */
 @Composable
 private fun MemoryStatsRow(memoryStats: com.fishit.player.feature.settings.debug.MemoryStats) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Column {
             Text(
-                text = "Memory",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Memory",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "${memoryStats.usedMemoryMb}MB / ${memoryStats.maxMemoryMb}MB",
-                style = MaterialTheme.typography.bodySmall
+                    text = "${memoryStats.usedMemoryMb}MB / ${memoryStats.maxMemoryMb}MB",
+                    style = MaterialTheme.typography.bodySmall
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = "Usage",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Usage",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "${memoryStats.usagePercentage}%",
-                style = MaterialTheme.typography.bodySmall,
-                color = when {
-                    memoryStats.usagePercentage > 80 -> MaterialTheme.colorScheme.error
-                    memoryStats.usagePercentage > 60 -> MaterialTheme.colorScheme.tertiary
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
+                    text = "${memoryStats.usagePercentage}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                            when {
+                                memoryStats.usagePercentage > 80 -> MaterialTheme.colorScheme.error
+                                memoryStats.usagePercentage > 60 ->
+                                        MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
             )
         }
     }

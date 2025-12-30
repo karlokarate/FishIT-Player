@@ -2,6 +2,7 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
@@ -40,6 +41,7 @@ dependencies {
     
     // Enrichment dependencies (on-demand detail loading)
     implementation(project(":infra:transport-xtream"))
+    implementation(project(":infra:data-xtream"))  // XtreamSeriesIndexRepository for episode lazy loading
     implementation(project(":pipeline:xtream"))
     
     // Compose
@@ -60,6 +62,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    
+    // Serialization (for playback hints JSON)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.1")
