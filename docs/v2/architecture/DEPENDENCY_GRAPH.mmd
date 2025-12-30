@@ -1,0 +1,341 @@
+%% FishIT-Player v2 Module Dependency Graph
+%% Generated: 2024-12-30
+%% Branch: architecture/v2-bootstrap
+%% Render with: Mermaid Live Editor or VS Code Preview
+
+flowchart TB
+    %% ==========================================================================
+    %% LAYER: App
+    %% ==========================================================================
+    subgraph APP["🟢 App Layer"]
+        app-v2["app-v2"]
+    end
+    
+    %% ==========================================================================
+    %% LAYER: Feature
+    %% ==========================================================================
+    subgraph FEATURE["🔵 Feature Layer"]
+        feature:home["feature:home"]
+        feature:library["feature:library"]
+        feature:live["feature:live"]
+        feature:detail["feature:detail"]
+        feature:telegram-media["feature:telegram-media"]
+        feature:audiobooks["feature:audiobooks"]
+        feature:settings["feature:settings"]
+        feature:onboarding["feature:onboarding"]
+    end
+    
+    %% ==========================================================================
+    %% LAYER: Core
+    %% ==========================================================================
+    subgraph CORE["🟠 Core Layer"]
+        core:model["core:model"]
+        core:player-model["core:player-model"]
+        core:feature-api["core:feature-api"]
+        core:source-activation-api["core:source-activation-api"]
+        core:persistence["core:persistence"]
+        core:metadata-normalizer["core:metadata-normalizer"]
+        core:catalog-sync["core:catalog-sync"]
+        core:firebase["core:firebase"]
+        core:ui-imaging["core:ui-imaging"]
+        core:ui-theme["core:ui-theme"]
+        core:ui-layout["core:ui-layout"]
+        core:app-startup["core:app-startup"]
+    end
+    
+    %% ==========================================================================
+    %% LAYER: Playback
+    %% ==========================================================================
+    subgraph PLAYBACK["🟣 Playback Layer"]
+        playback:domain["playback:domain"]
+        playback:telegram["playback:telegram"]
+        playback:xtream["playback:xtream"]
+    end
+    
+    %% ==========================================================================
+    %% LAYER: Player
+    %% ==========================================================================
+    subgraph PLAYER["🔴 Player Layer"]
+        player:ui["player:ui"]
+        player:ui-api["player:ui-api"]
+        player:internal["player:internal"]
+        player:miniplayer["player:miniplayer"]
+        player:nextlib-codecs["player:nextlib-codecs"]
+    end
+    
+    %% ==========================================================================
+    %% LAYER: Pipeline
+    %% ==========================================================================
+    subgraph PIPELINE["🔷 Pipeline Layer"]
+        pipeline:telegram["pipeline:telegram"]
+        pipeline:xtream["pipeline:xtream"]
+        pipeline:io["pipeline:io"]
+        pipeline:audiobook["pipeline:audiobook"]
+    end
+    
+    %% ==========================================================================
+    %% LAYER: Infrastructure
+    %% ==========================================================================
+    subgraph INFRA["⬜ Infrastructure Layer"]
+        infra:logging["infra:logging"]
+        infra:cache["infra:cache"]
+        infra:tooling["infra:tooling"]
+        infra:transport-telegram["infra:transport-telegram"]
+        infra:transport-xtream["infra:transport-xtream"]
+        infra:data-telegram["infra:data-telegram"]
+        infra:data-xtream["infra:data-xtream"]
+        infra:data-home["infra:data-home"]
+        infra:imaging["infra:imaging"]
+        infra:work["infra:work"]
+    end
+    
+    %% ==========================================================================
+    %% EDGES: app-v2
+    %% ==========================================================================
+    app-v2 --> core:model
+    app-v2 --> core:player-model
+    app-v2 --> core:feature-api
+    app-v2 --> core:source-activation-api
+    app-v2 --> core:persistence
+    app-v2 --> core:catalog-sync
+    app-v2 --> core:firebase
+    app-v2 --> core:app-startup
+    app-v2 --> core:metadata-normalizer
+    app-v2 --> playback:domain
+    app-v2 --> playback:xtream
+    app-v2 --> playback:telegram
+    app-v2 --> player:ui
+    app-v2 --> player:ui-api
+    app-v2 --> player:internal
+    app-v2 --> player:miniplayer
+    app-v2 --> player:nextlib-codecs
+    app-v2 --> pipeline:telegram
+    app-v2 --> pipeline:xtream
+    app-v2 --> pipeline:io
+    app-v2 --> pipeline:audiobook
+    app-v2 --> feature:home
+    app-v2 --> feature:library
+    app-v2 --> feature:live
+    app-v2 --> feature:detail
+    app-v2 --> feature:telegram-media
+    app-v2 --> feature:audiobooks
+    app-v2 --> feature:settings
+    app-v2 --> feature:onboarding
+    app-v2 --> core:ui-theme
+    app-v2 --> core:ui-layout
+    app-v2 --> core:ui-imaging
+    app-v2 --> infra:logging
+    app-v2 --> infra:imaging
+    app-v2 --> infra:cache
+    app-v2 --> infra:tooling
+    app-v2 --> infra:transport-telegram
+    app-v2 --> infra:transport-xtream
+    app-v2 --> infra:data-telegram
+    app-v2 --> infra:data-xtream
+    app-v2 --> infra:data-home
+    app-v2 --> infra:work
+    
+    %% ==========================================================================
+    %% EDGES: core modules
+    %% ==========================================================================
+    core:persistence --> core:model
+    core:persistence --> infra:logging
+    core:metadata-normalizer --> core:model
+    core:metadata-normalizer --> infra:logging
+    core:catalog-sync --> core:model
+    core:catalog-sync --> core:source-activation-api
+    core:catalog-sync --> core:metadata-normalizer
+    core:catalog-sync --> core:persistence
+    core:catalog-sync --> infra:logging
+    core:catalog-sync --> infra:data-telegram
+    core:catalog-sync --> infra:data-xtream
+    core:catalog-sync --> pipeline:telegram
+    core:catalog-sync --> pipeline:xtream
+    core:firebase --> core:model
+    core:firebase --> core:persistence
+    core:ui-imaging --> core:model
+    core:ui-imaging --> infra:logging
+    core:ui-layout --> core:model
+    core:ui-layout --> core:ui-theme
+    core:ui-layout --> core:ui-imaging
+    core:app-startup --> core:model
+    core:app-startup --> infra:logging
+    core:app-startup --> infra:transport-telegram
+    core:app-startup --> infra:transport-xtream
+    core:app-startup --> pipeline:telegram
+    core:app-startup --> pipeline:xtream
+    
+    %% ==========================================================================
+    %% EDGES: playback modules
+    %% ==========================================================================
+    playback:domain --> core:model
+    playback:domain --> core:player-model
+    playback:domain --> core:persistence
+    playback:domain --> infra:logging
+    playback:telegram --> core:model
+    playback:telegram --> core:player-model
+    playback:telegram --> infra:logging
+    playback:telegram --> infra:transport-telegram
+    playback:telegram --> playback:domain
+    playback:xtream --> core:model
+    playback:xtream --> core:player-model
+    playback:xtream --> infra:logging
+    playback:xtream --> infra:transport-xtream
+    playback:xtream --> playback:domain
+    
+    %% ==========================================================================
+    %% EDGES: player modules
+    %% ==========================================================================
+    player:ui-api --> core:player-model
+    player:ui --> core:player-model
+    player:ui --> infra:logging
+    player:ui --> playback:domain
+    player:ui --> player:internal
+    player:internal --> core:model
+    player:internal --> core:player-model
+    player:internal --> player:ui-api
+    player:internal --> playback:domain
+    player:internal --> playback:telegram
+    player:internal --> playback:xtream
+    player:internal --> infra:logging
+    player:internal --> infra:transport-telegram
+    player:internal --> player:nextlib-codecs
+    player:miniplayer --> core:player-model
+    player:miniplayer --> player:ui-api
+    player:miniplayer --> player:internal
+    player:miniplayer --> infra:logging
+    
+    %% ==========================================================================
+    %% EDGES: pipeline modules
+    %% ==========================================================================
+    pipeline:telegram --> core:model
+    pipeline:telegram --> core:feature-api
+    pipeline:telegram --> infra:logging
+    pipeline:telegram ==> infra:transport-telegram
+    pipeline:xtream --> core:model
+    pipeline:xtream --> infra:logging
+    pipeline:xtream ==> infra:transport-xtream
+    pipeline:io --> core:model
+    pipeline:io --> core:player-model
+    pipeline:io --> core:persistence
+    pipeline:io --> infra:logging
+    pipeline:audiobook --> core:model
+    pipeline:audiobook --> core:persistence
+    pipeline:audiobook --> infra:logging
+    
+    %% ==========================================================================
+    %% EDGES: feature modules
+    %% ==========================================================================
+    feature:home --> core:model
+    feature:home --> core:player-model
+    feature:home --> core:persistence
+    feature:home --> core:source-activation-api
+    feature:home --> core:catalog-sync
+    feature:home --> core:ui-theme
+    feature:home --> core:ui-layout
+    feature:home --> core:ui-imaging
+    feature:home --> playback:domain
+    feature:home --> player:ui
+    feature:home --> infra:logging
+    feature:library --> core:model
+    feature:library --> core:persistence
+    feature:library --> playback:domain
+    feature:library --> player:internal
+    feature:library --> pipeline:xtream
+    feature:library --> pipeline:telegram
+    feature:library --> pipeline:io
+    feature:library --> infra:logging
+    feature:live --> core:model
+    feature:live --> core:persistence
+    feature:live --> playback:domain
+    feature:live --> player:internal
+    feature:live --> pipeline:xtream
+    feature:live --> infra:logging
+    feature:detail --> core:model
+    feature:detail --> core:player-model
+    feature:detail --> core:ui-theme
+    feature:detail --> core:ui-layout
+    feature:detail --> core:ui-imaging
+    feature:detail --> core:metadata-normalizer
+    feature:detail --> playback:domain
+    feature:detail --> infra:logging
+    feature:detail --> infra:transport-xtream
+    feature:detail --> pipeline:xtream
+    feature:telegram-media --> core:model
+    feature:telegram-media --> core:feature-api
+    feature:telegram-media --> core:persistence
+    feature:telegram-media --> core:player-model
+    feature:telegram-media --> playback:domain
+    feature:telegram-media --> infra:logging
+    feature:audiobooks --> core:model
+    feature:audiobooks --> core:persistence
+    feature:audiobooks --> playback:domain
+    feature:audiobooks --> player:internal
+    feature:audiobooks --> pipeline:audiobook
+    feature:audiobooks --> infra:logging
+    feature:settings --> core:model
+    feature:settings --> core:persistence
+    feature:settings --> core:firebase
+    feature:settings --> core:source-activation-api
+    feature:settings --> core:catalog-sync
+    feature:settings --> core:metadata-normalizer
+    feature:settings --> playback:domain
+    feature:settings --> infra:logging
+    feature:settings --> infra:cache
+    feature:onboarding --> core:model
+    feature:onboarding --> core:ui-theme
+    feature:onboarding --> core:ui-layout
+    feature:onboarding --> core:feature-api
+    feature:onboarding --> infra:logging
+    
+    %% ==========================================================================
+    %% EDGES: infra modules
+    %% ==========================================================================
+    infra:transport-telegram --> core:model
+    infra:transport-telegram --> infra:logging
+    infra:transport-xtream --> core:model
+    infra:transport-xtream --> infra:logging
+    infra:data-telegram --> core:model
+    infra:data-telegram --> core:persistence
+    infra:data-telegram --> core:feature-api
+    infra:data-telegram --> infra:logging
+    infra:data-telegram --> infra:transport-telegram
+    infra:data-telegram --> feature:telegram-media
+    infra:data-xtream --> core:model
+    infra:data-xtream --> core:source-activation-api
+    infra:data-xtream --> core:persistence
+    infra:data-xtream --> infra:logging
+    infra:data-xtream --> infra:transport-xtream
+    infra:data-xtream --> feature:onboarding
+    infra:data-xtream --> feature:library
+    infra:data-xtream --> feature:live
+    infra:data-home --> core:model
+    infra:data-home --> core:persistence
+    infra:data-home --> infra:logging
+    infra:data-home --> feature:home
+    infra:data-home --> infra:data-telegram
+    infra:data-home --> infra:data-xtream
+    infra:imaging --> core:model
+    infra:imaging --> infra:logging
+    infra:work --> core:source-activation-api
+    infra:work --> core:catalog-sync
+    infra:work --> infra:logging
+    
+    %% ==========================================================================
+    %% Styling
+    %% ==========================================================================
+    classDef appStyle fill:#C8E6C9,stroke:#4CAF50,stroke-width:2px
+    classDef featureStyle fill:#BBDEFB,stroke:#2196F3,stroke-width:2px
+    classDef coreStyle fill:#FFE0B2,stroke:#FF9800,stroke-width:2px
+    classDef playbackStyle fill:#E1BEE7,stroke:#9C27B0,stroke-width:2px
+    classDef playerStyle fill:#FFCDD2,stroke:#F44336,stroke-width:2px
+    classDef pipelineStyle fill:#B2EBF2,stroke:#00BCD4,stroke-width:2px
+    classDef infraStyle fill:#CFD8DC,stroke:#607D8B,stroke-width:2px
+    
+    class app-v2 appStyle
+    class feature:home,feature:library,feature:live,feature:detail,feature:telegram-media,feature:audiobooks,feature:settings,feature:onboarding featureStyle
+    class core:model,core:player-model,core:feature-api,core:source-activation-api,core:persistence,core:metadata-normalizer,core:catalog-sync,core:firebase,core:ui-imaging,core:ui-theme,core:ui-layout,core:app-startup coreStyle
+    class playback:domain,playback:telegram,playback:xtream playbackStyle
+    class player:ui,player:ui-api,player:internal,player:miniplayer,player:nextlib-codecs playerStyle
+    class pipeline:telegram,pipeline:xtream,pipeline:io,pipeline:audiobook pipelineStyle
+    class infra:logging,infra:cache,infra:tooling,infra:transport-telegram,infra:transport-xtream,infra:data-telegram,infra:data-xtream,infra:data-home,infra:imaging,infra:work infraStyle

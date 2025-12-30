@@ -1,0 +1,363 @@
+// FishIT-Player v2 Module Dependency Graph
+// Generated: 2024-12-30
+// Branch: architecture/v2-bootstrap
+// Render with: dot -Tpng DEPENDENCY_GRAPH.dot -o dependency_graph.png
+
+digraph FishITPlayer {
+    // Graph settings
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Helvetica"];
+    edge [color="#666666"];
+    
+    // ==========================================================================
+    // LAYER: App
+    // ==========================================================================
+    subgraph cluster_app {
+        label="App Layer";
+        style="rounded,filled";
+        fillcolor="#E8F5E9";
+        color="#4CAF50";
+        
+        "app-v2" [fillcolor="#C8E6C9"];
+    }
+    
+    // ==========================================================================
+    // LAYER: Feature
+    // ==========================================================================
+    subgraph cluster_feature {
+        label="Feature Layer";
+        style="rounded,filled";
+        fillcolor="#E3F2FD";
+        color="#2196F3";
+        
+        "feature:home" [fillcolor="#BBDEFB"];
+        "feature:library" [fillcolor="#BBDEFB"];
+        "feature:live" [fillcolor="#BBDEFB"];
+        "feature:detail" [fillcolor="#BBDEFB"];
+        "feature:telegram-media" [fillcolor="#BBDEFB"];
+        "feature:audiobooks" [fillcolor="#BBDEFB"];
+        "feature:settings" [fillcolor="#BBDEFB"];
+        "feature:onboarding" [fillcolor="#BBDEFB"];
+    }
+    
+    // ==========================================================================
+    // LAYER: Core
+    // ==========================================================================
+    subgraph cluster_core {
+        label="Core Layer";
+        style="rounded,filled";
+        fillcolor="#FFF3E0";
+        color="#FF9800";
+        
+        "core:model" [fillcolor="#FFE0B2"];
+        "core:player-model" [fillcolor="#FFE0B2"];
+        "core:feature-api" [fillcolor="#FFE0B2"];
+        "core:source-activation-api" [fillcolor="#FFE0B2"];
+        "core:persistence" [fillcolor="#FFE0B2"];
+        "core:metadata-normalizer" [fillcolor="#FFE0B2"];
+        "core:catalog-sync" [fillcolor="#FFE0B2"];
+        "core:firebase" [fillcolor="#FFE0B2"];
+        "core:ui-imaging" [fillcolor="#FFE0B2"];
+        "core:ui-theme" [fillcolor="#FFE0B2"];
+        "core:ui-layout" [fillcolor="#FFE0B2"];
+        "core:app-startup" [fillcolor="#FFE0B2"];
+    }
+    
+    // ==========================================================================
+    // LAYER: Playback
+    // ==========================================================================
+    subgraph cluster_playback {
+        label="Playback Layer";
+        style="rounded,filled";
+        fillcolor="#F3E5F5";
+        color="#9C27B0";
+        
+        "playback:domain" [fillcolor="#E1BEE7"];
+        "playback:telegram" [fillcolor="#E1BEE7"];
+        "playback:xtream" [fillcolor="#E1BEE7"];
+    }
+    
+    // ==========================================================================
+    // LAYER: Player
+    // ==========================================================================
+    subgraph cluster_player {
+        label="Player Layer";
+        style="rounded,filled";
+        fillcolor="#FFEBEE";
+        color="#F44336";
+        
+        "player:ui" [fillcolor="#FFCDD2"];
+        "player:ui-api" [fillcolor="#FFCDD2"];
+        "player:internal" [fillcolor="#FFCDD2"];
+        "player:miniplayer" [fillcolor="#FFCDD2"];
+        "player:nextlib-codecs" [fillcolor="#FFCDD2"];
+    }
+    
+    // ==========================================================================
+    // LAYER: Pipeline
+    // ==========================================================================
+    subgraph cluster_pipeline {
+        label="Pipeline Layer";
+        style="rounded,filled";
+        fillcolor="#E0F7FA";
+        color="#00BCD4";
+        
+        "pipeline:telegram" [fillcolor="#B2EBF2"];
+        "pipeline:xtream" [fillcolor="#B2EBF2"];
+        "pipeline:io" [fillcolor="#B2EBF2"];
+        "pipeline:audiobook" [fillcolor="#B2EBF2"];
+    }
+    
+    // ==========================================================================
+    // LAYER: Infrastructure
+    // ==========================================================================
+    subgraph cluster_infra {
+        label="Infrastructure Layer";
+        style="rounded,filled";
+        fillcolor="#ECEFF1";
+        color="#607D8B";
+        
+        "infra:logging" [fillcolor="#CFD8DC"];
+        "infra:cache" [fillcolor="#CFD8DC"];
+        "infra:tooling" [fillcolor="#CFD8DC"];
+        "infra:transport-telegram" [fillcolor="#CFD8DC"];
+        "infra:transport-xtream" [fillcolor="#CFD8DC"];
+        "infra:data-telegram" [fillcolor="#CFD8DC"];
+        "infra:data-xtream" [fillcolor="#CFD8DC"];
+        "infra:data-home" [fillcolor="#CFD8DC"];
+        "infra:imaging" [fillcolor="#CFD8DC"];
+        "infra:work" [fillcolor="#CFD8DC"];
+    }
+    
+    // ==========================================================================
+    // EDGES: app-v2
+    // ==========================================================================
+    "app-v2" -> "core:model";
+    "app-v2" -> "core:player-model";
+    "app-v2" -> "core:feature-api";
+    "app-v2" -> "core:source-activation-api";
+    "app-v2" -> "core:persistence";
+    "app-v2" -> "core:catalog-sync";
+    "app-v2" -> "core:firebase";
+    "app-v2" -> "core:app-startup";
+    "app-v2" -> "core:metadata-normalizer";
+    "app-v2" -> "playback:domain";
+    "app-v2" -> "playback:xtream";
+    "app-v2" -> "playback:telegram";
+    "app-v2" -> "player:ui";
+    "app-v2" -> "player:ui-api";
+    "app-v2" -> "player:internal";
+    "app-v2" -> "player:miniplayer";
+    "app-v2" -> "player:nextlib-codecs";
+    "app-v2" -> "pipeline:telegram";
+    "app-v2" -> "pipeline:xtream";
+    "app-v2" -> "pipeline:io";
+    "app-v2" -> "pipeline:audiobook";
+    "app-v2" -> "feature:home";
+    "app-v2" -> "feature:library";
+    "app-v2" -> "feature:live";
+    "app-v2" -> "feature:detail";
+    "app-v2" -> "feature:telegram-media";
+    "app-v2" -> "feature:audiobooks";
+    "app-v2" -> "feature:settings";
+    "app-v2" -> "feature:onboarding";
+    "app-v2" -> "core:ui-theme";
+    "app-v2" -> "core:ui-layout";
+    "app-v2" -> "core:ui-imaging";
+    "app-v2" -> "infra:logging";
+    "app-v2" -> "infra:imaging";
+    "app-v2" -> "infra:cache";
+    "app-v2" -> "infra:tooling";
+    "app-v2" -> "infra:transport-telegram";
+    "app-v2" -> "infra:transport-xtream";
+    "app-v2" -> "infra:data-telegram";
+    "app-v2" -> "infra:data-xtream";
+    "app-v2" -> "infra:data-home";
+    "app-v2" -> "infra:work";
+    
+    // ==========================================================================
+    // EDGES: core modules
+    // ==========================================================================
+    "core:persistence" -> "core:model";
+    "core:persistence" -> "infra:logging";
+    "core:metadata-normalizer" -> "core:model";
+    "core:metadata-normalizer" -> "infra:logging";
+    "core:catalog-sync" -> "core:model";
+    "core:catalog-sync" -> "core:source-activation-api";
+    "core:catalog-sync" -> "core:metadata-normalizer";
+    "core:catalog-sync" -> "core:persistence";
+    "core:catalog-sync" -> "infra:logging";
+    "core:catalog-sync" -> "infra:data-telegram";
+    "core:catalog-sync" -> "infra:data-xtream";
+    "core:catalog-sync" -> "pipeline:telegram";
+    "core:catalog-sync" -> "pipeline:xtream";
+    "core:firebase" -> "core:model";
+    "core:firebase" -> "core:persistence";
+    "core:ui-imaging" -> "core:model";
+    "core:ui-imaging" -> "infra:logging";
+    "core:ui-layout" -> "core:model";
+    "core:ui-layout" -> "core:ui-theme";
+    "core:ui-layout" -> "core:ui-imaging";
+    "core:app-startup" -> "core:model";
+    "core:app-startup" -> "infra:logging";
+    "core:app-startup" -> "infra:transport-telegram";
+    "core:app-startup" -> "infra:transport-xtream";
+    "core:app-startup" -> "pipeline:telegram";
+    "core:app-startup" -> "pipeline:xtream";
+    
+    // ==========================================================================
+    // EDGES: playback modules
+    // ==========================================================================
+    "playback:domain" -> "core:model";
+    "playback:domain" -> "core:player-model";
+    "playback:domain" -> "core:persistence";
+    "playback:domain" -> "infra:logging";
+    "playback:telegram" -> "core:model";
+    "playback:telegram" -> "core:player-model";
+    "playback:telegram" -> "infra:logging";
+    "playback:telegram" -> "infra:transport-telegram";
+    "playback:telegram" -> "playback:domain";
+    "playback:xtream" -> "core:model";
+    "playback:xtream" -> "core:player-model";
+    "playback:xtream" -> "infra:logging";
+    "playback:xtream" -> "infra:transport-xtream";
+    "playback:xtream" -> "playback:domain";
+    
+    // ==========================================================================
+    // EDGES: player modules
+    // ==========================================================================
+    "player:ui-api" -> "core:player-model";
+    "player:ui" -> "core:player-model";
+    "player:ui" -> "infra:logging";
+    "player:ui" -> "playback:domain";
+    "player:ui" -> "player:internal";
+    "player:internal" -> "core:model";
+    "player:internal" -> "core:player-model";
+    "player:internal" -> "player:ui-api";
+    "player:internal" -> "playback:domain";
+    "player:internal" -> "playback:telegram";
+    "player:internal" -> "playback:xtream";
+    "player:internal" -> "infra:logging";
+    "player:internal" -> "infra:transport-telegram";
+    "player:internal" -> "player:nextlib-codecs";
+    "player:miniplayer" -> "core:player-model";
+    "player:miniplayer" -> "player:ui-api";
+    "player:miniplayer" -> "player:internal";
+    "player:miniplayer" -> "infra:logging";
+    
+    // ==========================================================================
+    // EDGES: pipeline modules
+    // ==========================================================================
+    "pipeline:telegram" -> "core:model";
+    "pipeline:telegram" -> "core:feature-api";
+    "pipeline:telegram" -> "infra:logging";
+    "pipeline:telegram" -> "infra:transport-telegram" [style=bold, color="#9C27B0"];
+    "pipeline:xtream" -> "core:model";
+    "pipeline:xtream" -> "infra:logging";
+    "pipeline:xtream" -> "infra:transport-xtream" [style=bold, color="#9C27B0"];
+    "pipeline:io" -> "core:model";
+    "pipeline:io" -> "core:player-model";
+    "pipeline:io" -> "core:persistence";
+    "pipeline:io" -> "infra:logging";
+    "pipeline:audiobook" -> "core:model";
+    "pipeline:audiobook" -> "core:persistence";
+    "pipeline:audiobook" -> "infra:logging";
+    
+    // ==========================================================================
+    // EDGES: feature modules
+    // ==========================================================================
+    "feature:home" -> "core:model";
+    "feature:home" -> "core:player-model";
+    "feature:home" -> "core:persistence";
+    "feature:home" -> "core:source-activation-api";
+    "feature:home" -> "core:catalog-sync";
+    "feature:home" -> "core:ui-theme";
+    "feature:home" -> "core:ui-layout";
+    "feature:home" -> "core:ui-imaging";
+    "feature:home" -> "playback:domain";
+    "feature:home" -> "player:ui";
+    "feature:home" -> "infra:logging";
+    "feature:library" -> "core:model";
+    "feature:library" -> "core:persistence";
+    "feature:library" -> "playback:domain";
+    "feature:library" -> "player:internal";
+    "feature:library" -> "pipeline:xtream";
+    "feature:library" -> "pipeline:telegram";
+    "feature:library" -> "pipeline:io";
+    "feature:library" -> "infra:logging";
+    "feature:live" -> "core:model";
+    "feature:live" -> "core:persistence";
+    "feature:live" -> "playback:domain";
+    "feature:live" -> "player:internal";
+    "feature:live" -> "pipeline:xtream";
+    "feature:live" -> "infra:logging";
+    "feature:detail" -> "core:model";
+    "feature:detail" -> "core:player-model";
+    "feature:detail" -> "core:ui-theme";
+    "feature:detail" -> "core:ui-layout";
+    "feature:detail" -> "core:ui-imaging";
+    "feature:detail" -> "core:metadata-normalizer";
+    "feature:detail" -> "playback:domain";
+    "feature:detail" -> "infra:logging";
+    "feature:detail" -> "infra:transport-xtream";
+    "feature:detail" -> "pipeline:xtream";
+    "feature:telegram-media" -> "core:model";
+    "feature:telegram-media" -> "core:feature-api";
+    "feature:telegram-media" -> "core:persistence";
+    "feature:telegram-media" -> "core:player-model";
+    "feature:telegram-media" -> "playback:domain";
+    "feature:telegram-media" -> "infra:logging";
+    "feature:audiobooks" -> "core:model";
+    "feature:audiobooks" -> "core:persistence";
+    "feature:audiobooks" -> "playback:domain";
+    "feature:audiobooks" -> "player:internal";
+    "feature:audiobooks" -> "pipeline:audiobook";
+    "feature:audiobooks" -> "infra:logging";
+    "feature:settings" -> "core:model";
+    "feature:settings" -> "core:persistence";
+    "feature:settings" -> "core:firebase";
+    "feature:settings" -> "core:source-activation-api";
+    "feature:settings" -> "core:catalog-sync";
+    "feature:settings" -> "core:metadata-normalizer";
+    "feature:settings" -> "playback:domain";
+    "feature:settings" -> "infra:logging";
+    "feature:settings" -> "infra:cache";
+    "feature:onboarding" -> "core:model";
+    "feature:onboarding" -> "core:ui-theme";
+    "feature:onboarding" -> "core:ui-layout";
+    "feature:onboarding" -> "core:feature-api";
+    "feature:onboarding" -> "infra:logging";
+    
+    // ==========================================================================
+    // EDGES: infra modules
+    // ==========================================================================
+    "infra:transport-telegram" -> "core:model";
+    "infra:transport-telegram" -> "infra:logging";
+    "infra:transport-xtream" -> "core:model";
+    "infra:transport-xtream" -> "infra:logging";
+    "infra:data-telegram" -> "core:model";
+    "infra:data-telegram" -> "core:persistence";
+    "infra:data-telegram" -> "core:feature-api";
+    "infra:data-telegram" -> "infra:logging";
+    "infra:data-telegram" -> "infra:transport-telegram";
+    "infra:data-telegram" -> "feature:telegram-media";
+    "infra:data-xtream" -> "core:model";
+    "infra:data-xtream" -> "core:source-activation-api";
+    "infra:data-xtream" -> "core:persistence";
+    "infra:data-xtream" -> "infra:logging";
+    "infra:data-xtream" -> "infra:transport-xtream";
+    "infra:data-xtream" -> "feature:onboarding";
+    "infra:data-xtream" -> "feature:library";
+    "infra:data-xtream" -> "feature:live";
+    "infra:data-home" -> "core:model";
+    "infra:data-home" -> "core:persistence";
+    "infra:data-home" -> "infra:logging";
+    "infra:data-home" -> "feature:home";
+    "infra:data-home" -> "infra:data-telegram";
+    "infra:data-home" -> "infra:data-xtream";
+    "infra:imaging" -> "core:model";
+    "infra:imaging" -> "infra:logging";
+    "infra:work" -> "core:source-activation-api";
+    "infra:work" -> "core:catalog-sync";
+    "infra:work" -> "infra:logging";
+}
