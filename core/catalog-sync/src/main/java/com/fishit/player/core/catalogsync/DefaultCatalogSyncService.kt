@@ -16,11 +16,20 @@ import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogConfig
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogEvent
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogPipeline
 import com.fishit.player.pipeline.xtream.catalog.XtreamItemKind
+import com.fishit.player.pipeline.xtream.catalog.XtreamScanPhase
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * Default implementation of [CatalogSyncService].
@@ -36,6 +45,13 @@ import kotlinx.coroutines.flow.flow
  * - Links sources to canonical entries via MediaSourceRef
  * - Emits SyncStatus events for progress tracking
  * - Uses batching for efficient persistence
+ *
+ * **Performance Enhancements (Dec 2025):**
+ * - Phase ordering: Live → Movies → Series (perceived speed)
+ * - Per-phase batch sizes (Live=400, Movies=250, Series=150)
+ * - Time-based flush (1200ms) ensures progressive UI updates
+ * - Performance metrics collection for debug builds
+ * - SyncActiveState broadcast for UI flow throttling
  *
  * **Layer Position:** Transport → Pipeline → **CatalogSync** → Normalizer → Data → Domain → UI
  *
@@ -62,6 +78,17 @@ constructor(
     companion object {
         private const val TAG = "CatalogSyncService"
         private const val SOURCE_TELEGRAM = "telegram"
+        private const val SOURCE_XTREAM = "xtream"
+        private const val TIME_FLUSH_CHECK_INTERVAL_MS = 200L
+    }
+
+    // Sync active state for UI flow throttling
+    private val _syncActiveState = MutableStateFlow(SyncActiveState())
+    override val syncActiveState: StateFlow<SyncActiveState> = _syncActiveState.asStateFlow()
+
+    // Performance metrics (debug builds only)
+    private var lastSyncMetrics: SyncPerfMetrics? = null
+    override fun getLastSyncMetrics(): SyncPerfMetrics? = lastSyncMetrics
         private const val SOURCE_XTREAM = "xtream"
     }
 
@@ -391,6 +418,245 @@ constructor(
                 xtreamLiveRepository.deleteAll()
             }
             else -> UnifiedLog.w(TAG, "Unknown source: $source")
+        }
+    }
+
+    // ========================================================================
+    // Enhanced Xtream Sync (Time-Based Batching + Per-Phase Config)
+    // ========================================================================
+
+    /**
+     * Enhanced Xtream sync with time-based batching and performance metrics.
+     *
+     * **Key Differences from syncXtream:**
+     * - Per-phase batch sizes (Live=400, Movies=250, Series=150)
+     * - Time-based flush every 1200ms for progressive UI
+     * - Performance metrics collection
+     * - SyncActiveState broadcast for UI throttling
+     * - Episodes NOT synced by default (lazy loaded)
+     */
+    override fun syncXtreamEnhanced(
+            includeVod: Boolean,
+            includeSeries: Boolean,
+            includeEpisodes: Boolean,
+            includeLive: Boolean,
+            config: EnhancedSyncConfig,
+    ): Flow<SyncStatus> = flow {
+        UnifiedLog.i(TAG, "Starting enhanced Xtream sync: live=$includeLive, vod=$includeVod, series=$includeSeries, episodes=$includeEpisodes")
+        emit(SyncStatus.Started(SOURCE_XTREAM))
+
+        // Initialize metrics
+        val metrics = SyncPerfMetrics(isEnabled = true)
+        lastSyncMetrics = metrics
+
+        // Initialize batch manager
+        val batchManager = SyncBatchManager(config, metrics)
+
+        val startTimeMs = System.currentTimeMillis()
+        var itemsDiscovered = 0L
+        var itemsPersisted = 0L
+
+        // Broadcast sync active
+        _syncActiveState.value = SyncActiveState(
+            isActive = true,
+            source = SOURCE_XTREAM,
+            currentPhase = "INITIALIZING",
+        )
+
+        val pipelineConfig = XtreamCatalogConfig(
+            includeVod = includeVod,
+            includeSeries = includeSeries,
+            includeEpisodes = includeEpisodes,
+            includeLive = includeLive,
+        )
+
+        // Time-based flush job
+        var flushJob: Job? = null
+
+        try {
+            coroutineScope {
+                // Start time-based flush checker
+                flushJob = launch {
+                    while (isActive) {
+                        delay(TIME_FLUSH_CHECK_INTERVAL_MS)
+
+                        // Check each phase for time-based flush
+                        for (phase in SyncPhase.entries) {
+                            val toFlush = batchManager.checkTimeBasedFlush(phase)
+                            if (toFlush != null && toFlush.isNotEmpty()) {
+                                val flushStart = System.currentTimeMillis()
+                                when (phase) {
+                                    SyncPhase.LIVE -> persistXtreamLiveBatch(toFlush)
+                                    else -> persistXtreamCatalogBatch(toFlush)
+                                }
+                                val flushDuration = System.currentTimeMillis() - flushStart
+                                metrics.recordPersist(phase, flushDuration, toFlush.size, isTimeBased = true)
+                                itemsPersisted += toFlush.size
+
+                                UnifiedLog.d(TAG) { "Time-based flush $phase: ${toFlush.size} items in ${flushDuration}ms" }
+                            }
+                        }
+                    }
+                }
+
+                // Collect pipeline events
+                xtreamPipeline.scanCatalog(pipelineConfig).collect { event ->
+                    when (event) {
+                        is XtreamCatalogEvent.ItemDiscovered -> {
+                            itemsDiscovered++
+
+                            // Route to appropriate phase/batch
+                            val phase = when (event.item.kind) {
+                                XtreamItemKind.LIVE -> SyncPhase.LIVE
+                                XtreamItemKind.SERIES -> SyncPhase.SERIES
+                                XtreamItemKind.EPISODE -> SyncPhase.EPISODES
+                                else -> SyncPhase.MOVIES
+                            }
+
+                            metrics.recordItemsDiscovered(phase, 1)
+
+                            // Add to batch - may return items to flush
+                            val toFlush = batchManager.add(phase, event.item.raw)
+                            if (toFlush != null && toFlush.isNotEmpty()) {
+                                val flushStart = System.currentTimeMillis()
+                                when (phase) {
+                                    SyncPhase.LIVE -> persistXtreamLiveBatch(toFlush)
+                                    else -> persistXtreamCatalogBatch(toFlush)
+                                }
+                                val flushDuration = System.currentTimeMillis() - flushStart
+                                metrics.recordPersist(phase, flushDuration, toFlush.size, isTimeBased = false)
+                                itemsPersisted += toFlush.size
+                            }
+
+                            // Emit progress periodically
+                            if (itemsDiscovered % config.emitProgressEvery == 0L) {
+                                emit(SyncStatus.InProgress(
+                                    source = SOURCE_XTREAM,
+                                    itemsDiscovered = itemsDiscovered,
+                                    itemsPersisted = itemsPersisted,
+                                ))
+                            }
+                        }
+
+                        is XtreamCatalogEvent.ScanProgress -> {
+                            val currentPhase = event.currentPhase.name
+                            _syncActiveState.value = _syncActiveState.value.copy(currentPhase = currentPhase)
+
+                            // Start metrics for new phase
+                            val syncPhase = when (event.currentPhase) {
+                                XtreamScanPhase.LIVE -> SyncPhase.LIVE
+                                XtreamScanPhase.VOD -> SyncPhase.MOVIES
+                                XtreamScanPhase.SERIES -> SyncPhase.SERIES
+                                XtreamScanPhase.EPISODES -> SyncPhase.EPISODES
+                            }
+                            metrics.startPhase(syncPhase)
+
+                            emit(SyncStatus.InProgress(
+                                source = SOURCE_XTREAM,
+                                itemsDiscovered = (event.vodCount + event.seriesCount + event.episodeCount + event.liveCount).toLong(),
+                                itemsPersisted = itemsPersisted,
+                                currentPhase = currentPhase,
+                            ))
+                        }
+
+                        is XtreamCatalogEvent.ScanCompleted -> {
+                            // Stop time-based flush job
+                            flushJob?.cancel()
+                            flushJob = null
+
+                            // Flush all remaining batches
+                            val remaining = batchManager.flushAllPhases()
+                            for ((phase, items) in remaining) {
+                                if (items.isNotEmpty()) {
+                                    val flushStart = System.currentTimeMillis()
+                                    when (phase) {
+                                        SyncPhase.LIVE -> persistXtreamLiveBatch(items)
+                                        else -> persistXtreamCatalogBatch(items)
+                                    }
+                                    val flushDuration = System.currentTimeMillis() - flushStart
+                                    metrics.recordPersist(phase, flushDuration, items.size, isTimeBased = false)
+                                    itemsPersisted += items.size
+                                }
+                                metrics.endPhase(phase)
+                            }
+
+                            val durationMs = System.currentTimeMillis() - startTimeMs
+
+                            // Log metrics report
+                            UnifiedLog.i(TAG) { "Enhanced sync completed:\n${metrics.exportReport()}" }
+
+                            emit(SyncStatus.Completed(
+                                source = SOURCE_XTREAM,
+                                totalItems = itemsPersisted,
+                                durationMs = durationMs,
+                            ))
+                        }
+
+                        is XtreamCatalogEvent.ScanCancelled -> {
+                            flushJob?.cancel()
+
+                            // Flush remaining
+                            val remaining = batchManager.flushAllPhases()
+                            for ((phase, items) in remaining) {
+                                if (items.isNotEmpty()) {
+                                    when (phase) {
+                                        SyncPhase.LIVE -> persistXtreamLiveBatch(items)
+                                        else -> persistXtreamCatalogBatch(items)
+                                    }
+                                    itemsPersisted += items.size
+                                }
+                            }
+
+                            emit(SyncStatus.Cancelled(SOURCE_XTREAM, itemsPersisted))
+                        }
+
+                        is XtreamCatalogEvent.ScanError -> {
+                            flushJob?.cancel()
+                            UnifiedLog.e(TAG, "Enhanced sync error: ${event.reason} - ${event.message}")
+                            emit(SyncStatus.Error(
+                                source = SOURCE_XTREAM,
+                                reason = event.reason,
+                                message = event.message,
+                                throwable = event.throwable,
+                            ))
+                        }
+
+                        is XtreamCatalogEvent.ScanStarted -> {
+                            UnifiedLog.d(TAG) { "Enhanced scan started" }
+                        }
+                    }
+                }
+            }
+        } catch (e: CancellationException) {
+            flushJob?.cancel()
+
+            // Flush remaining batches
+            val remaining = batchManager.flushAllPhases()
+            for ((phase, items) in remaining) {
+                if (items.isNotEmpty()) {
+                    when (phase) {
+                        SyncPhase.LIVE -> persistXtreamLiveBatch(items)
+                        else -> persistXtreamCatalogBatch(items)
+                    }
+                    itemsPersisted += items.size
+                }
+            }
+
+            UnifiedLog.w(TAG) { "Enhanced sync cancelled: $itemsPersisted items persisted" }
+            emit(SyncStatus.Cancelled(SOURCE_XTREAM, itemsPersisted))
+            throw e
+        } catch (e: Exception) {
+            flushJob?.cancel()
+            UnifiedLog.e(TAG, "Enhanced sync failed", e)
+            emit(SyncStatus.Error(
+                source = SOURCE_XTREAM,
+                reason = "exception",
+                message = e.message ?: "Unknown error",
+                throwable = e,
+            ))
+        } finally {
+            // Always clear sync active state
+            _syncActiveState.value = SyncActiveState(isActive = false)
         }
     }
 

@@ -156,7 +156,6 @@ constructor(
                     UnifiedMediaState.Success(
                             media = enrichedMedia,
                             resume = resume,
-                            selectedSource = selectBestSource(enrichedMedia.sources, resume),
                     )
             )
         } catch (e: Exception) {
@@ -186,11 +185,12 @@ constructor(
             // Get resume info for current profile (placeholder profile ID = 0)
             val resume = canonicalMediaRepository.getCanonicalResume(enrichedMedia.canonicalId, profileId = 0)
 
+            // Note: selectedSource is NOT set here. Selection is derived via
+            // SourceSelection.resolveActiveSource() at moment of use.
             emit(
                     UnifiedMediaState.Success(
                             media = enrichedMedia,
                             resume = resume,
-                            selectedSource = selectBestSource(enrichedMedia.sources, resume),
                     )
             )
         } catch (e: Exception) {
@@ -222,11 +222,12 @@ constructor(
             val resume =
                     canonicalMediaRepository.getCanonicalResume(enrichedMedia.canonicalId, profileId = 0)
 
+            // Note: selectedSource is NOT set here. Selection is derived via
+            // SourceSelection.resolveActiveSource() at moment of use.
             emit(
                     UnifiedMediaState.Success(
                             media = enrichedMedia,
                             resume = resume,
-                            selectedSource = selectBestSource(enrichedMedia.sources, resume),
                     )
             )
         } catch (e: Exception) {
@@ -360,10 +361,17 @@ sealed class UnifiedMediaState {
     data object Loading : UnifiedMediaState()
     data object NotFound : UnifiedMediaState()
     data class Error(val message: String) : UnifiedMediaState()
+
+    /**
+     * Success state with canonical media and resume info.
+     *
+     * **Note (Dec 2025):** This no longer includes `selectedSource`.
+     * Source selection is now DERIVED from `media.sources` via [SourceSelection.resolveActiveSource]
+     * at the moment of use (in ViewModel and State).
+     */
     data class Success(
             val media: CanonicalMediaWithSources,
             val resume: CanonicalResumeInfo?,
-            val selectedSource: MediaSourceRef?,
     ) : UnifiedMediaState()
 }
 

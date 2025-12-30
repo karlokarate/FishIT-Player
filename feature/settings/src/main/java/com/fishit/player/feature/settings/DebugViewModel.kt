@@ -79,6 +79,8 @@ data class DebugState(
 
         // === LeakCanary (Memory Diagnostics) ===
         val leakSummary: LeakSummary = LeakSummary(0, null, null),
+        /** Detailed leak status with noise control */
+        val leakDetailedStatus: LeakDetailedStatus? = null,
         val isLeakCanaryAvailable: Boolean = false,
 
         // === Chucker (HTTP Inspector) ===
@@ -161,12 +163,17 @@ constructor(
         }
     }
 
-    /** Load LeakCanary summary. */
+    /** Load LeakCanary summary and detailed status. */
     private fun loadLeakSummary() {
         val summary = leakDiagnostics.getSummary()
+        val detailedStatus = if (leakDiagnostics.isAvailable) {
+            leakDiagnostics.getDetailedStatus()
+        } else null
+        
         _state.update {
             it.copy(
                     leakSummary = summary,
+                    leakDetailedStatus = detailedStatus,
                     isLeakCanaryAvailable = leakDiagnostics.isAvailable
             )
         }
@@ -550,9 +557,27 @@ constructor(
         return success
     }
 
-    /** Refresh leak summary. */
+    /** Refresh leak summary and detailed status. */
     fun refreshLeakSummary() {
         loadLeakSummary()
+    }
+
+    /** Request garbage collection to reduce noise. */
+    fun requestGarbageCollection() {
+        leakDiagnostics.requestGarbageCollection()
+        // Wait briefly then refresh
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(500L)
+            loadLeakSummary()
+            _state.update { it.copy(lastActionResult = "GC requested - status refreshed") }
+        }
+    }
+
+    /** Trigger a heap dump for analysis. */
+    fun triggerHeapDump() {
+        UnifiedLog.i(TAG) { "User triggered heap dump" }
+        leakDiagnostics.triggerHeapDump()
+        _state.update { it.copy(lastActionResult = "Heap dump triggered - check LeakCanary UI") }
     }
 
     /** Export leak report to SAF destination. */

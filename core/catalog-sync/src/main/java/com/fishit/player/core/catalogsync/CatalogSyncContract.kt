@@ -94,6 +94,22 @@ data class SyncConfig(
 }
 
 /**
+ * Active sync state for UI flow throttling.
+ *
+ * When sync is active, UI should debounce DB-driven flows to avoid
+ * materializing huge lists repeatedly during rapid inserts.
+ *
+ * @property isActive Whether any sync is currently running
+ * @property source The source currently being synced (if any)
+ * @property currentPhase Current phase (LIVE/MOVIES/SERIES)
+ */
+data class SyncActiveState(
+    val isActive: Boolean = false,
+    val source: String? = null,
+    val currentPhase: String? = null,
+)
+
+/**
  * Service for synchronizing catalog data from pipelines to data repositories.
  *
  * This is the orchestration layer between Pipeline and Data layers.
@@ -108,6 +124,7 @@ data class SyncConfig(
  * - Optionally normalize metadata via MediaMetadataNormalizer
  * - Call repository.upsertAll() to persist items
  * - Track sync progress and emit status events
+ * - Broadcast sync active state for UI flow throttling
  *
  * **NOT Allowed:**
  * - Direct network calls (use Pipeline)
@@ -115,6 +132,15 @@ data class SyncConfig(
  * - ObjectBox/DB access directly (use Data repositories)
  */
 interface CatalogSyncService {
+    /**
+     * Observe whether sync is currently active.
+     *
+     * UI layers should use this to debounce DB-driven flows during sync.
+     * - While active: debounce to 400ms
+     * - While inactive: emit immediately
+     */
+    val syncActiveState: kotlinx.coroutines.flow.StateFlow<SyncActiveState>
+
     /**
      * Synchronize Telegram catalog to local storage.
      *
@@ -150,6 +176,43 @@ interface CatalogSyncService {
         includeLive: Boolean = true,
         syncConfig: SyncConfig = SyncConfig.DEFAULT,
     ): Flow<SyncStatus>
+
+    /**
+     * Synchronize Xtream catalog with enhanced configuration.
+     *
+     * **Performance Features:**
+     * - Phase ordering: Live → Movies → Series (perceived speed)
+     * - Per-phase batch sizes (Live=400, Movies=250, Series=150)
+     * - Time-based flush (1200ms) for progressive UI updates
+     * - Performance metrics collection (debug builds)
+     *
+     * **Default Behavior:**
+     * - Episodes are NOT synced during initial login
+     * - Episodes are loaded on-demand via LoadSeasonEpisodesUseCase
+     *
+     * @param includeVod Whether to sync VOD items
+     * @param includeSeries Whether to sync series index
+     * @param includeEpisodes Whether to sync episodes (default FALSE for perceived speed)
+     * @param includeLive Whether to sync live channels
+     * @param config Enhanced sync configuration with per-phase settings
+     * @return Flow of sync status events
+     */
+    fun syncXtreamEnhanced(
+        includeVod: Boolean = true,
+        includeSeries: Boolean = true,
+        includeEpisodes: Boolean = false, // Lazy load episodes by default
+        includeLive: Boolean = true,
+        config: EnhancedSyncConfig = EnhancedSyncConfig.DEFAULT,
+    ): Flow<SyncStatus>
+
+    /**
+     * Get performance metrics from the last sync.
+     *
+     * Only available in debug builds. Returns null in release.
+     *
+     * @return Performance metrics or null
+     */
+    fun getLastSyncMetrics(): SyncPerfMetrics?
 
     /**
      * Clear all synced data for a source.

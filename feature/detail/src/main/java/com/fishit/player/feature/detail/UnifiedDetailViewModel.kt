@@ -11,6 +11,7 @@ import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 import com.fishit.player.feature.detail.enrichment.DetailEnrichmentService
 import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
+import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,11 +25,29 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel for unified detail screen with cross-pipeline source selection.
  *
- * Features:
- * - Load canonical media with all available sources
- * - Show source badges and version info
- * - Handle source selection for playback
- * - Sync resume across all sources
+ * **Architecture (Dec 2025 - selectedSource Elimination):**
+ *
+ * This ViewModel does NOT store a `selectedSource: MediaSourceRef` snapshot.
+ * Instead, source selection is ALWAYS derived from `state.media.sources` at the
+ * moment of use via [SourceSelection.resolveActiveSource].
+ *
+ * **Why:**
+ * - Eliminates race conditions where async enrichment updates `media.sources` but
+ *   stale `selectedSource` retains outdated playbackHints (e.g., missing containerExtension).
+ * - Single Source of Truth: `media.sources` is the SSOT for all source data.
+ *
+ * **Selection Model:**
+ * - `selectedSourceKey: PipelineItemId?` - Optional stable key for explicit user selection.
+ * - If null, [SourceSelection.resolveActiveSource] picks the best source automatically.
+ * - UI calls [resolveActiveSource] to derive the current source for display/playback.
+ *
+ * **Playback Flow (Race-Proof):**
+ * 1. User clicks Play → [play] is called
+ * 2. Resolve activeSource from CURRENT state.media
+ * 3. Check if source is playback-ready ([SourceSelection.isPlaybackReady])
+ * 4. If missing hints → await [DetailEnrichmentService.ensureEnriched] with timeout
+ * 5. Re-resolve activeSource from refreshed media (SSOT)
+ * 6. Build PlaybackContext and emit StartPlayback event
  */
 @HiltViewModel
 class UnifiedDetailViewModel
@@ -37,6 +56,10 @@ constructor(
         private val useCases: UnifiedDetailUseCases,
         private val detailEnrichmentService: DetailEnrichmentService,
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "UnifiedDetailVM"
+    }
 
     private val _state = MutableStateFlow(UnifiedDetailState())
     val state: StateFlow<UnifiedDetailState> = _state.asStateFlow()
@@ -96,48 +119,107 @@ constructor(
             }
             is UnifiedMediaState.Success -> {
                 // Initial state update (fast path - show data immediately)
+                // Note: We do NOT set selectedSource. Selection is derived via resolveActiveSource().
                 _state.update {
                     it.copy(
                             isLoading = false,
                             error = null,
                             media = mediaState.media,
                             resume = mediaState.resume,
-                            selectedSource = mediaState.selectedSource,
+                            // selectedSourceKey is preserved if user manually selected before
                             sourceGroups = useCases.sortSourcesForDisplay(mediaState.media.sources),
                     )
                 }
                 
-                // Background enrichment: fetch missing details (plot, cast, etc.)
+                // Background enrichment: fetch missing details (plot, cast, containerExtension)
                 // This runs async and updates UI when complete
                 viewModelScope.launch {
                     val enriched = detailEnrichmentService.enrichIfNeeded(mediaState.media)
                     if (enriched !== mediaState.media) {
-                        // Only update if enrichment produced new data
-                        _state.update { it.copy(media = enriched) }
+                        // Update media - UI will re-derive activeSource from new sources
+                        _state.update { currentState ->
+                            currentState.copy(
+                                media = enriched,
+                                sourceGroups = useCases.sortSourcesForDisplay(enriched.sources),
+                            )
+                        }
                     }
                 }
             }
         }
     }
 
-    /** Select a source for playback. */
-    fun selectSource(source: MediaSourceRef) {
-        _state.update { it.copy(selectedSource = source) }
+    // ==========================================================================
+    // Source Selection (Derived, NOT Stored)
+    // ==========================================================================
+
+    /**
+     * Get the currently active source (DERIVED from state.media.sources).
+     *
+     * This should be called whenever the UI needs to display or use the selected source.
+     * It always returns the most up-to-date source from media.sources.
+     */
+    fun resolveActiveSource(): MediaSourceRef? {
+        val currentState = _state.value
+        return SourceSelection.resolveActiveSource(
+            media = currentState.media,
+            selectedSourceKey = currentState.selectedSourceKey,
+            resume = currentState.resume,
+        )
     }
 
-    /** Start playback with the selected source. */
+    /**
+     * Manually select a source for playback.
+     *
+     * This stores only the stable sourceKey (PipelineItemId), NOT the full MediaSourceRef.
+     * The actual source data is always derived from state.media.sources.
+     *
+     * @param source The source to select (only its sourceId is stored)
+     */
+    fun selectSource(source: MediaSourceRef) {
+        _state.update { it.copy(selectedSourceKey = source.sourceId) }
+    }
+
+    /**
+     * Select a source by key (without needing the full MediaSourceRef).
+     *
+     * @param sourceKey The PipelineItemId of the source to select
+     */
+    fun selectSourceByKey(sourceKey: PipelineItemId) {
+        _state.update { it.copy(selectedSourceKey = sourceKey) }
+    }
+
+    /**
+     * Clear manual source selection (revert to auto-selection).
+     */
+    fun clearSourceSelection() {
+        _state.update { it.copy(selectedSourceKey = null) }
+    }
+
+    // ==========================================================================
+    // Playback (Race-Proof)
+    // ==========================================================================
+
+    /**
+     * Start playback with the active source.
+     *
+     * **Race-Proof Implementation:**
+     * 1. Resolve activeSource from CURRENT state.media
+     * 2. Check if all required playbackHints are present
+     * 3. If missing → await ensureEnriched with timeout
+     * 4. Re-resolve activeSource from refreshed media (SSOT)
+     * 5. Only then emit StartPlayback event
+     */
     fun play() {
         val currentState = _state.value
-        val source = currentState.selectedSource ?: return
         val media = currentState.media ?: return
+        val activeSource = resolveActiveSource() ?: return
 
         viewModelScope.launch {
-            _events.emit(
-                    UnifiedDetailEvent.StartPlayback(
-                            canonicalId = media.canonicalId,
-                            source = source,
-                            resumePositionMs = currentState.resume?.positionMs ?: 0,
-                    )
+            playWithSource(
+                media = media,
+                sourceKey = activeSource.sourceId,
+                resumePositionMs = currentState.resume?.positionMs ?: 0,
             )
         }
     }
@@ -145,16 +227,14 @@ constructor(
     /** Start playback from the beginning (ignoring resume). */
     fun playFromStart() {
         val currentState = _state.value
-        val source = currentState.selectedSource ?: return
         val media = currentState.media ?: return
+        val activeSource = resolveActiveSource() ?: return
 
         viewModelScope.launch {
-            _events.emit(
-                    UnifiedDetailEvent.StartPlayback(
-                            canonicalId = media.canonicalId,
-                            source = source,
-                            resumePositionMs = 0,
-                    )
+            playWithSource(
+                media = media,
+                sourceKey = activeSource.sourceId,
+                resumePositionMs = 0,
             )
         }
     }
@@ -164,29 +244,102 @@ constructor(
         val currentState = _state.value
         val resume = currentState.resume ?: return
         val media = currentState.media ?: return
-
-        // Prefer selected source, or fall back to last used source
-        val source =
-                currentState.selectedSource
-                        ?: media.sources.find { it.sourceId == resume.lastSourceId } ?: return
+        val activeSource = resolveActiveSource() ?: return
 
         viewModelScope.launch {
             // Calculate resume position for this specific source
             // IMPORTANT: Different sources have different durations!
-            val sourceDuration = source.durationMs ?: resume.durationMs
-            val resumePosition = resume.calculatePositionForSource(source.sourceId, sourceDuration)
+            val sourceDuration = activeSource.durationMs ?: resume.durationMs
+            val resumePosition = resume.calculatePositionForSource(activeSource.sourceId, sourceDuration)
 
-            _events.emit(
-                    UnifiedDetailEvent.StartPlayback(
-                            canonicalId = media.canonicalId,
-                            source = source,
-                            resumePositionMs = resumePosition.positionMs,
-                            isExactPosition = resumePosition.isExact,
-                            approximationNote = resumePosition.note,
-                    )
+            playWithSource(
+                media = media,
+                sourceKey = activeSource.sourceId,
+                resumePositionMs = resumePosition.positionMs,
+                isExactPosition = resumePosition.isExact,
+                approximationNote = resumePosition.note,
             )
         }
     }
+
+    /**
+     * Internal: Start playback with a specific source (race-proof).
+     *
+     * Ensures playbackHints are present before starting playback.
+     */
+    private suspend fun playWithSource(
+        media: CanonicalMediaWithSources,
+        sourceKey: PipelineItemId,
+        resumePositionMs: Long,
+        isExactPosition: Boolean = true,
+        approximationNote: String? = null,
+    ) {
+        // Step 1: Resolve initial source
+        var source = media.sources.find { it.sourceId == sourceKey }
+        if (source == null) {
+            UnifiedLog.w(TAG) { "play: source not found key=${sourceKey.value}" }
+            _events.emit(UnifiedDetailEvent.ShowError("Source not available"))
+            return
+        }
+
+        // Step 2: Check if playback-ready
+        val missingHints = SourceSelection.getMissingPlaybackHints(source)
+        UnifiedLog.d(TAG) {
+            "play: canonicalId=${media.canonicalId.key.value} sourceKey=${sourceKey.value} missingHints=$missingHints"
+        }
+
+        // Step 3: If missing hints, await enrichment
+        if (missingHints.isNotEmpty()) {
+            UnifiedLog.i(TAG) { "play: awaiting enrichment for hints=$missingHints" }
+
+            val refreshedMedia = detailEnrichmentService.ensureEnriched(
+                canonicalId = media.canonicalId,
+                sourceKey = sourceKey,
+                requiredHints = missingHints,
+            )
+
+            if (refreshedMedia != null) {
+                // Update state with refreshed media
+                _state.update { it.copy(
+                    media = refreshedMedia,
+                    sourceGroups = useCases.sortSourcesForDisplay(refreshedMedia.sources),
+                ) }
+
+                // Re-resolve source from refreshed media (SSOT)
+                source = refreshedMedia.sources.find { it.sourceId == sourceKey }
+                if (source == null) {
+                    UnifiedLog.e(TAG) { "play: source disappeared after enrichment key=${sourceKey.value}" }
+                    _events.emit(UnifiedDetailEvent.ShowError("Source no longer available"))
+                    return
+                }
+
+                // Re-check hints
+                val stillMissing = SourceSelection.getMissingPlaybackHints(source)
+                if (stillMissing.isNotEmpty()) {
+                    UnifiedLog.w(TAG) { "play: hints still missing after enrichment: $stillMissing" }
+                    // Continue anyway - playback may still work with fallbacks
+                }
+            } else {
+                UnifiedLog.w(TAG) { "play: enrichment failed, proceeding with partial hints" }
+                // Continue anyway - playback factory has fallbacks
+            }
+        }
+
+        // Step 4: Emit playback event with current source
+        _events.emit(
+            UnifiedDetailEvent.StartPlayback(
+                canonicalId = media.canonicalId,
+                source = source,
+                resumePositionMs = resumePositionMs,
+                isExactPosition = isExactPosition,
+                approximationNote = approximationNote,
+            )
+        )
+    }
+
+    // ==========================================================================
+    // Resume Calculation
+    // ==========================================================================
 
     /**
      * Get the calculated resume position for a specific source.
@@ -213,6 +366,10 @@ constructor(
         )
     }
 
+    // ==========================================================================
+    // UI Helpers
+    // ==========================================================================
+
     /** Open source picker dialog. */
     fun showSourcePicker() {
         _state.update { it.copy(showSourcePicker = true) }
@@ -235,11 +392,10 @@ constructor(
 
     /** Check for better quality versions. */
     fun checkForBetterQuality(): MediaSourceRef? {
-        val currentState = _state.value
-        val selected = currentState.selectedSource ?: return null
-        val media = currentState.media ?: return null
+        val activeSource = resolveActiveSource() ?: return null
+        val media = _state.value.media ?: return null
 
-        return useCases.findBetterQualitySource(selected, media.sources)
+        return useCases.findBetterQualitySource(activeSource, media.sources)
     }
 
     /** Filter sources by language. */
@@ -248,7 +404,9 @@ constructor(
         return useCases.findSourcesWithLanguage(media.sources, language)
     }
 
-    // ========== Series-specific methods ==========
+    // ==========================================================================
+    // Series-specific methods
+    // ==========================================================================
 
     /** Select a season for episode display. */
     fun selectSeason(season: Int) {
@@ -259,6 +417,8 @@ constructor(
     fun playEpisode(episode: DetailEpisodeItem) {
         val source = episode.sources.firstOrNull() ?: return
         viewModelScope.launch {
+            // For episodes, use the episode's canonicalId and source directly
+            // Episode enrichment is handled separately
             _events.emit(
                 UnifiedDetailEvent.StartPlayback(
                     canonicalId = episode.canonicalId,
@@ -269,19 +429,22 @@ constructor(
         }
     }
 
-    // ========== Live-specific methods ==========
+    // ==========================================================================
+    // Live-specific methods
+    // ==========================================================================
 
     /** Start live stream playback (no resume for live content). */
     fun playLive() {
         val currentState = _state.value
-        val source = currentState.selectedSource ?: return
         val media = currentState.media ?: return
+        val activeSource = resolveActiveSource() ?: return
 
         viewModelScope.launch {
+            // Live streams typically don't need enrichment wait - play immediately
             _events.emit(
                 UnifiedDetailEvent.StartPlayback(
                     canonicalId = media.canonicalId,
-                    source = source,
+                    source = activeSource,
                     resumePositionMs = 0, // Live always starts "now"
                 )
             )
@@ -289,13 +452,22 @@ constructor(
     }
 }
 
-/** State for unified detail screen. */
+/**
+ * State for unified detail screen.
+ *
+ * **IMPORTANT (Dec 2025):** This state does NOT contain `selectedSource: MediaSourceRef`.
+ * Source selection is DERIVED from `media.sources` via [SourceSelection.resolveActiveSource].
+ *
+ * @property selectedSourceKey Optional stable key for manual source selection.
+ *   If null, best source is auto-selected. The full MediaSourceRef is always
+ *   derived from media.sources at the moment of use.
+ */
 data class UnifiedDetailState(
         val isLoading: Boolean = false,
         val error: String? = null,
         val media: CanonicalMediaWithSources? = null,
         val resume: CanonicalResumeInfo? = null,
-        val selectedSource: MediaSourceRef? = null,
+        val selectedSourceKey: PipelineItemId? = null, // Key only, NOT MediaSourceRef!
         val sourceGroups: List<SourceGroup> = emptyList(),
         val showSourcePicker: Boolean = false,
         // Series-specific state
@@ -350,9 +522,18 @@ data class UnifiedDetailState(
     val resumeProgressPercent: Int
         get() = ((resume?.progressPercent ?: 0f) * 100).toInt()
 
-    /** Quality label for selected source */
-    val selectedQualityLabel: String?
-        get() = selectedSource?.quality?.toDisplayLabel()
+    /**
+     * Get the active source DERIVED from media.sources.
+     *
+     * This is a convenience property for UI - it always derives from current media.
+     * For playback, the ViewModel re-derives at the moment of play().
+     */
+    val activeSource: MediaSourceRef?
+        get() = SourceSelection.resolveActiveSource(media, selectedSourceKey, resume)
+
+    /** Quality label for active source (derived) */
+    val activeSourceQualityLabel: String?
+        get() = activeSource?.quality?.toDisplayLabel()
 }
 
 /** Events from unified detail screen. */
@@ -361,7 +542,7 @@ sealed class UnifiedDetailEvent {
      * Start playback with the specified source.
      *
      * @property canonicalId The canonical media identity
-     * @property source The source to play
+     * @property source The source to play (resolved at the moment of play)
      * @property resumePositionMs Position to resume at (may be approximated for cross-source)
      * @property isExactPosition True if resuming on the same source (frame-accurate)
      * @property approximationNote UI note when position is approximated

@@ -23,11 +23,17 @@ import kotlinx.coroutines.isActive
  * - Respects cancellation via coroutine context
  * - Logs progress via UnifiedLog
  *
- * **Scan Order:**
- * 1. VOD items (if enabled)
- * 2. Series containers (if enabled)
- * 3. Episodes (if enabled)
- * 4. Live channels (if enabled)
+ * **Scan Order (Optimized for Perceived Speed - Dec 2025):**
+ * 1. LIVE channels first (smallest items, most frequently accessed)
+ * 2. VOD/Movies next (quick browsing, no child items)
+ * 3. Series containers last (index only, episodes loaded lazily)
+ * 4. Episodes are NOT synced during initial scan - loaded on-demand via EnsureEpisodePlaybackReadyUseCase
+ *
+ * **Rationale:**
+ * - Live tiles appear within ~1-2 seconds
+ * - Movies appear progressively (not all at end)
+ * - Series shows immediately without waiting for 100k+ episodes
+ * - Episode fetching happens when user opens a series (lazy loading)
  *
  * @param source Data source for Xtream catalog items
  * @param mapper Mapper for converting models to catalog items
@@ -68,9 +74,49 @@ constructor(
 
             val headers = XtreamHttpHeaders.withDefaults(config.imageAuthHeaders)
 
-            // Phase 1: VOD
+            // ================================================================
+            // Phase 1: LIVE (First for perceived speed)
+            // Smallest items, most frequently accessed, appear within ~1-2s
+            // ================================================================
+            if (config.includeLive && currentCoroutineContext().isActive) {
+                UnifiedLog.d(TAG, "[Phase 1/3] Scanning live channels first...")
+
+                try {
+                    val channels = source.loadLiveChannels()
+
+                    for (channel in channels) {
+                        if (!currentCoroutineContext().isActive) break
+
+                        val catalogItem = mapper.fromChannel(channel, headers)
+                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        liveCount++
+
+                        if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
+                            send(
+                                    XtreamCatalogEvent.ScanProgress(
+                                            vodCount = vodCount,
+                                            seriesCount = seriesCount,
+                                            episodeCount = episodeCount,
+                                            liveCount = liveCount,
+                                            currentPhase = XtreamScanPhase.LIVE,
+                                    ),
+                            )
+                        }
+                    }
+
+                    UnifiedLog.d(TAG, "[Phase 1/3] Live scan complete: $liveCount channels")
+                } catch (e: XtreamCatalogSourceException) {
+                    UnifiedLog.w(TAG, "[Phase 1/3] Live scan failed: ${e.message}")
+                    // Continue with other phases
+                }
+            }
+
+            // ================================================================
+            // Phase 2: VOD/Movies
+            // Quick browsing, no child items to fetch
+            // ================================================================
             if (config.includeVod && currentCoroutineContext().isActive) {
-                UnifiedLog.d(TAG, "Scanning VOD items...")
+                UnifiedLog.d(TAG, "[Phase 2/3] Scanning VOD items...")
 
                 try {
                     val vodItems = source.loadVodItems()
@@ -95,16 +141,18 @@ constructor(
                         }
                     }
 
-                    UnifiedLog.d(TAG, "VOD scan complete: $vodCount items")
+                    UnifiedLog.d(TAG, "[Phase 2/3] VOD scan complete: $vodCount items")
                 } catch (e: XtreamCatalogSourceException) {
-                    UnifiedLog.w(TAG, "VOD scan failed: ${e.message}")
-                    // Continue with other phases
+                    UnifiedLog.w(TAG, "[Phase 2/3] VOD scan failed: ${e.message}")
                 }
             }
 
-            // Phase 2: Series
+            // ================================================================
+            // Phase 3: Series (Index Only - Episodes are lazy loaded)
+            // Series containers appear quickly, episodes fetched on-demand
+            // ================================================================
             if (config.includeSeries && currentCoroutineContext().isActive) {
-                UnifiedLog.d(TAG, "Scanning series...")
+                UnifiedLog.d(TAG, "[Phase 3/3] Scanning series index (episodes deferred)...")
 
                 try {
                     val seriesItems = source.loadSeriesItems()
@@ -129,15 +177,20 @@ constructor(
                         }
                     }
 
-                    UnifiedLog.d(TAG, "Series scan complete: $seriesCount items")
+                    UnifiedLog.d(TAG, "[Phase 3/3] Series scan complete: $seriesCount items")
                 } catch (e: XtreamCatalogSourceException) {
-                    UnifiedLog.w(TAG, "Series scan failed: ${e.message}")
+                    UnifiedLog.w(TAG, "[Phase 3/3] Series scan failed: ${e.message}")
                 }
             }
 
-            // Phase 3: Episodes
+            // ================================================================
+            // Phase 4: Episodes (SKIPPED during initial sync)
+            // Episodes are loaded on-demand when user opens a series.
+            // This avoids fetching 100k+ episodes during login.
+            // See: EnsureEpisodePlaybackReadyUseCase for lazy loading.
+            // ================================================================
             if (config.includeEpisodes && currentCoroutineContext().isActive) {
-                UnifiedLog.d(TAG, "Scanning episodes...")
+                UnifiedLog.d(TAG, "[Optional] Scanning episodes (background mode)...")
 
                 try {
                     val episodes = source.loadEpisodes()
@@ -163,44 +216,15 @@ constructor(
                         }
                     }
 
-                    UnifiedLog.d(TAG, "Episodes scan complete: $episodeCount items")
+                    UnifiedLog.d(TAG, "[Optional] Episodes scan complete: $episodeCount items")
                 } catch (e: XtreamCatalogSourceException) {
-                    UnifiedLog.w(TAG, "Episodes scan failed: ${e.message}")
+                    UnifiedLog.w(TAG, "[Optional] Episodes scan failed: ${e.message}")
                 }
             }
 
-            // Phase 4: Live
-            if (config.includeLive && currentCoroutineContext().isActive) {
-                UnifiedLog.d(TAG, "Scanning live channels...")
-
-                try {
-                    val channels = source.loadLiveChannels()
-
-                    for (channel in channels) {
-                        if (!currentCoroutineContext().isActive) break
-
-                        val catalogItem = mapper.fromChannel(channel, headers)
-                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                        liveCount++
-
-                        if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
-                            send(
-                                    XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.LIVE,
-                                    ),
-                            )
-                        }
-                    }
-
-                    UnifiedLog.d(TAG, "Live scan complete: $liveCount items")
-                } catch (e: XtreamCatalogSourceException) {
-                    UnifiedLog.w(TAG, "Live scan failed: ${e.message}")
-                }
-            }
+            // ================================================================
+            // Completion / Cancellation Check
+            // ================================================================
 
             // Check if cancelled
             if (!currentCoroutineContext().isActive) {
@@ -222,7 +246,7 @@ constructor(
             UnifiedLog.i(
                     TAG,
                     "Xtream catalog scan completed: $totalItems items " +
-                            "(vod=$vodCount, series=$seriesCount, episodes=$episodeCount, live=$liveCount) " +
+                            "(live=$liveCount, vod=$vodCount, series=$seriesCount, episodes=$episodeCount) " +
                             "in ${durationMs}ms",
             )
 

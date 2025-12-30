@@ -326,3 +326,155 @@ data class ObxIndexQuality(
     @Index var key: String = "",
     var count: Long = 0,
 )
+
+// =========================================================================
+// Season/Episode Index Entities (Part B: Platinum Episode Handling)
+// =========================================================================
+
+/**
+ * Lightweight season index for fast series detail display.
+ *
+ * **Purpose:**
+ * - Store minimal season metadata per series
+ * - Enable instant season list display without fetching full episode data
+ * - Track episode count per season for UI hints
+ *
+ * **TTL Policy:**
+ * - seasonIndex TTL = 7 days
+ * - Invalidated on credential change via [lastUpdatedMs]
+ *
+ * **Usage:**
+ * - Created when user opens a series detail (lazy load)
+ * - Persisted for quick subsequent access
+ * - UI can show "Season 1 (12 episodes)" immediately
+ */
+@Entity
+data class ObxSeasonIndex(
+    @Id var id: Long = 0,
+    
+    /** Parent series ID (Xtream series_id) */
+    @Index var seriesId: Int = 0,
+    
+    /** Season number (1, 2, 3...) */
+    @Index var seasonNumber: Int = 0,
+    
+    /** Number of episodes in this season (optional, for UI hints) */
+    var episodeCount: Int? = null,
+    
+    /** Season name/title (optional) */
+    var name: String? = null,
+    
+    /** Cover image for this season (optional) */
+    var coverUrl: String? = null,
+    
+    /** Air date of first episode (optional) */
+    var airDate: String? = null,
+    
+    /** Last update timestamp for TTL check */
+    @Index var lastUpdatedMs: Long = System.currentTimeMillis(),
+)
+
+/**
+ * Lightweight episode index for paged episode lists.
+ *
+ * **Purpose:**
+ * - Store minimal episode metadata for series browsing
+ * - Enable paged episode loading (pageSize ~30)
+ * - Store playback hints for deterministic playback
+ *
+ * **Key Design:**
+ * - `sourceKey` is the stable identifier (pipelineIdTag + episodeId)
+ * - `playbackHintsJson` stores serialized playback hints (stream_id, containerExtension)
+ * - Enables `EnsureEpisodePlaybackReadyUseCase` to check if enrichment is needed
+ *
+ * **TTL Policy:**
+ * - episodeIndex TTL = 7 days
+ * - playbackHints TTL = 30 days (critical for playback)
+ * - Invalidated on credential change
+ *
+ * **Playback Flow:**
+ * 1. User taps episode
+ * 2. `EnsureEpisodePlaybackReadyUseCase` checks `playbackHintsJson`
+ * 3. If missing/expired → fetch from API, persist, then play
+ * 4. If present → play immediately
+ */
+@Entity
+data class ObxEpisodeIndex(
+    @Id var id: Long = 0,
+    
+    /** Parent series ID (Xtream series_id) */
+    @Index var seriesId: Int = 0,
+    
+    /** Season number */
+    @Index var seasonNumber: Int = 0,
+    
+    /** Episode number within season */
+    @Index var episodeNumber: Int = 0,
+    
+    /**
+     * Stable source key for lookups.
+     * Format: "xtream:episode:{seriesId}:{seasonNum}:{episodeNum}"
+     * Used by EnsureEpisodePlaybackReadyUseCase
+     */
+    @Index var sourceKey: String = "",
+    
+    /**
+     * Xtream episode ID (stream_id from API).
+     * Critical for playback URL construction.
+     */
+    @Index var episodeId: Int? = null,
+    
+    /** Episode title */
+    var title: String? = null,
+    
+    /** Thumbnail URL */
+    var thumbUrl: String? = null,
+    
+    /** Duration in seconds */
+    var durationSecs: Int? = null,
+    
+    /** Plot/description (brief, for list display) */
+    var plotBrief: String? = null,
+    
+    /** Rating (optional) */
+    var rating: Double? = null,
+    
+    /** Air date (optional) */
+    var airDate: String? = null,
+    
+    /**
+     * JSON-serialized playback hints.
+     * Contains keys like "stream_id", "container_extension", etc.
+     * Enables playback without additional API calls.
+     *
+     * Example: {"stream_id":"12345","container_extension":"mkv"}
+     */
+    var playbackHintsJson: String? = null,
+    
+    /** Last update timestamp for episode index TTL (7 days) */
+    @Index var lastUpdatedMs: Long = System.currentTimeMillis(),
+    
+    /** Last update timestamp for playback hints TTL (30 days) */
+    @Index var playbackHintsUpdatedMs: Long = 0,
+) {
+    companion object {
+        /** Episode index TTL: 7 days in milliseconds */
+        const val INDEX_TTL_MS = 7 * 24 * 60 * 60 * 1000L
+        
+        /** Playback hints TTL: 30 days in milliseconds */
+        const val PLAYBACK_HINTS_TTL_MS = 30 * 24 * 60 * 60 * 1000L
+    }
+    
+    /** Check if episode index is stale (older than 7 days) */
+    val isIndexStale: Boolean
+        get() = System.currentTimeMillis() - lastUpdatedMs > INDEX_TTL_MS
+    
+    /** Check if playback hints are stale (older than 30 days) */
+    val arePlaybackHintsStale: Boolean
+        get() = playbackHintsUpdatedMs == 0L || 
+                System.currentTimeMillis() - playbackHintsUpdatedMs > PLAYBACK_HINTS_TTL_MS
+    
+    /** Check if episode is ready for playback (has valid hints) */
+    val isPlaybackReady: Boolean
+        get() = !playbackHintsJson.isNullOrEmpty() && !arePlaybackHintsStale
+}

@@ -441,94 +441,17 @@ fun DebugScreen(
 
                 // Memory / LeakCanary Section
                 item {
-                    DebugSection(title = "Memory / LeakCanary", icon = Icons.Default.Memory) {
-                        // Summary
-                        if (state.isLeakCanaryAvailable) {
-                            Text(
-                                text = "Leaks detected: ${state.leakSummary.leakCount}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            state.leakSummary.note?.let { note ->
-                                Text(
-                                    text = note,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = "LeakCanary not available (release build)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    LeakCanaryDiagnosticsSection(
+                        state = state,
+                        onOpenLeakCanary = { viewModel.openLeakCanaryUi() },
+                        onRefresh = { viewModel.refreshLeakSummary() },
+                        onRequestGc = { viewModel.requestGarbageCollection() },
+                        onTriggerHeapDump = { viewModel.triggerHeapDump() },
+                        onExportReport = {
+                            val fileName = buildLeakExportFileName()
+                            exportLeakReportLauncher.launch(fileName)
                         }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Action buttons
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Open LeakCanary UI
-                            Button(
-                                onClick = { viewModel.openLeakCanaryUi() },
-                                enabled = state.isLeakCanaryAvailable,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Memory,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Open")
-                            }
-
-                            // Refresh summary
-                            OutlinedButton(
-                                onClick = { viewModel.refreshLeakSummary() },
-                                enabled = state.isLeakCanaryAvailable,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Refresh")
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Export leak report
-                        OutlinedButton(
-                            onClick = {
-                                val fileName = buildLeakExportFileName()
-                                exportLeakReportLauncher.launch(fileName)
-                            },
-                            enabled = state.isLeakCanaryAvailable,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.BugReport,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Export Leak Report")
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "For heap dump export, use 'Share heap dump' in LeakCanary UI.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    )
                 }
 
                 // Database Tools
@@ -1356,5 +1279,275 @@ private fun WorkInfoItemRow(
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(start = 16.dp)
         )
+    }
+}
+
+// ============================================================================
+// LeakCanary Diagnostics Section (Gold Standard Noise Control)
+// ============================================================================
+
+/**
+ * LeakCanary Diagnostics Section with Noise Control.
+ *
+ * Features:
+ * - Severity-based color coding (NONE/LOW/MEDIUM/HIGH)
+ * - Detailed status message explaining retention level
+ * - Memory statistics display
+ * - Actions: Open UI, Refresh, Request GC, Trigger Heap Dump, Export Report
+ */
+@Composable
+private fun LeakCanaryDiagnosticsSection(
+    state: DebugState,
+    onOpenLeakCanary: () -> Unit,
+    onRefresh: () -> Unit,
+    onRequestGc: () -> Unit,
+    onTriggerHeapDump: () -> Unit,
+    onExportReport: () -> Unit
+) {
+    DebugSection(title = "Memory / LeakCanary", icon = Icons.Default.Memory) {
+        if (state.isLeakCanaryAvailable) {
+            val detailedStatus = state.leakDetailedStatus
+            
+            // Severity Banner
+            if (detailedStatus != null) {
+                LeakSeverityBanner(
+                    severity = detailedStatus.severity,
+                    statusMessage = detailedStatus.statusMessage,
+                    retainedCount = detailedStatus.retainedObjectCount
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Memory Stats
+                MemoryStatsRow(memoryStats = detailedStatus.memoryStats)
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Config Info (collapsed by default)
+                Text(
+                    text = "Watch: ${detailedStatus.config.watchDurationMillis}ms | Threshold: ${detailedStatus.config.retainedVisibleThreshold}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                // Fallback to simple summary
+                Text(
+                    text = "Retained objects: ${state.leakSummary.leakCount}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                state.leakSummary.note?.let { note ->
+                    Text(
+                        text = note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = "LeakCanary not available (release build)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Primary Action Row: Open + Refresh
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = onOpenLeakCanary,
+                enabled = state.isLeakCanaryAvailable,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Memory,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Open")
+            }
+
+            OutlinedButton(
+                onClick = onRefresh,
+                enabled = state.isLeakCanaryAvailable,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Refresh")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Secondary Action Row: GC + Heap Dump
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onRequestGc,
+                enabled = state.isLeakCanaryAvailable,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Clear,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("GC")
+            }
+
+            OutlinedButton(
+                onClick = onTriggerHeapDump,
+                enabled = state.isLeakCanaryAvailable,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.BugReport,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Dump")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Export Action
+        OutlinedButton(
+            onClick = onExportReport,
+            enabled = state.isLeakCanaryAvailable,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.FolderZip,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Export Leak Report")
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "For heap dump export, use 'Share heap dump' in LeakCanary UI.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * Severity banner with color coding.
+ */
+@Composable
+private fun LeakSeverityBanner(
+    severity: com.fishit.player.feature.settings.debug.RetentionSeverity,
+    statusMessage: String,
+    retainedCount: Int
+) {
+    val (backgroundColor, textColor, icon) = when (severity) {
+        com.fishit.player.feature.settings.debug.RetentionSeverity.NONE -> Triple(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            Icons.Default.CheckCircle
+        )
+        com.fishit.player.feature.settings.debug.RetentionSeverity.LOW -> Triple(
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+            Icons.Default.Info
+        )
+        com.fishit.player.feature.settings.debug.RetentionSeverity.MEDIUM -> Triple(
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer,
+            Icons.Default.Warning
+        )
+        com.fishit.player.feature.settings.debug.RetentionSeverity.HIGH -> Triple(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            Icons.Default.Error
+        )
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = textColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Retained: $retainedCount",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = textColor
+                )
+                Text(
+                    text = statusMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textColor.copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Memory statistics row.
+ */
+@Composable
+private fun MemoryStatsRow(memoryStats: com.fishit.player.feature.settings.debug.MemoryStats) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column {
+            Text(
+                text = "Memory",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "${memoryStats.usedMemoryMb}MB / ${memoryStats.maxMemoryMb}MB",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "Usage",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "${memoryStats.usagePercentage}%",
+                style = MaterialTheme.typography.bodySmall,
+                color = when {
+                    memoryStats.usagePercentage > 80 -> MaterialTheme.colorScheme.error
+                    memoryStats.usagePercentage > 60 -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
+        }
     }
 }

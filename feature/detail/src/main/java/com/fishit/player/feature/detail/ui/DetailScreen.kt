@@ -222,9 +222,9 @@ private fun DetailContent(
                         year = media.year,
                         rating = media.rating?.toFloat(),
                         durationMs = if (!state.isLive) {
-                            state.selectedSource?.durationMs ?: media.durationMs
+                            state.activeSource?.durationMs ?: media.durationMs
                         } else null,
-                        quality = state.selectedQualityLabel,
+                        quality = state.activeSourceQualityLabel,
                         season = media.season,
                         episode = media.episode,
                 )
@@ -237,7 +237,7 @@ private fun DetailContent(
             if (state.hasMultipleSources) {
                 SourceBadgesRow(
                         sourceTypes = state.availableSourceTypes,
-                        selectedSource = state.selectedSource,
+                        selectedSource = state.activeSource,
                         onShowPicker = onShowSourcePicker
                 )
                 Spacer(modifier = Modifier.height(20.dp))
@@ -443,7 +443,7 @@ private fun MetaChip(
 @Composable
 private fun SourceBadgesRow(
         sourceTypes: List<SourceType>,
-        selectedSource: MediaSourceRef?,
+        activeSource: MediaSourceRef?,
         onShowPicker: () -> Unit
 ) {
     Row(

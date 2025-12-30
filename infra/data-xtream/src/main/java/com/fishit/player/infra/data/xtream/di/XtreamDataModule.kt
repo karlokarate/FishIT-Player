@@ -6,8 +6,10 @@ import com.fishit.player.infra.data.xtream.LibraryContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.LiveContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.ObxXtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamLiveRepository
+import com.fishit.player.infra.data.xtream.ObxXtreamSeriesIndexRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -84,4 +86,18 @@ abstract class XtreamDataModule {
     @Binds
     @Singleton
     abstract fun bindLiveContentRepository(impl: LiveContentRepositoryAdapter): LiveContentRepository
+
+    /**
+     * Binds [ObxXtreamSeriesIndexRepository] as the implementation for [XtreamSeriesIndexRepository].
+     *
+     * Provides lazy-loaded season and episode indices for series detail screens.
+     * Features:
+     * - Season index (7-day TTL)
+     * - Episode index with paging (7-day TTL)
+     * - Playback hints for deterministic playback (30-day TTL)
+     * - Used by LoadSeriesSeasonsUseCase, LoadSeasonEpisodesUseCase, EnsureEpisodePlaybackReadyUseCase
+     */
+    @Binds
+    @Singleton
+    abstract fun bindXtreamSeriesIndexRepository(impl: ObxXtreamSeriesIndexRepository): XtreamSeriesIndexRepository
 }
