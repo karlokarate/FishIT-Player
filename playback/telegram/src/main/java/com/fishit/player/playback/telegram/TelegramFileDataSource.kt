@@ -227,35 +227,83 @@ class TelegramFileDataSource(
         dataSpec: DataSpec,
     ): Long =
         withContext(Dispatchers.IO) {
+            // Capture mutable properties to local variables for safe access
+            val capturedChatId = chatId
+            val capturedMessageId = messageId
+            
             // Resolve fileId if needed (with chatId+messageId for RemoteId-First)
-            val resolvedFileId = resolveFileId(fileId, remoteId, chatId, messageId)
+            val resolvedFileId = resolveFileId(fileId, remoteId, capturedChatId, capturedMessageId)
+            val usedFastPath = (fileId != null && fileId > 0 && capturedChatId == null && capturedMessageId == null)
 
-            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode)" }
+            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode, fastPath=$usedFastPath)" }
 
-            // Use TelegramFileReadyEnsurer for non-blocking readiness
-            // Pass MIME type and attemptMode to enable appropriate strategy
-            val localPath = if (attemptMode != null) {
-                readyEnsurer.ensureReadyForAttempt(resolvedFileId, attemptMode, mimeType)
-            } else {
-                readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
+            try {
+                // Use TelegramFileReadyEnsurer for non-blocking readiness
+                // Pass MIME type and attemptMode to enable appropriate strategy
+                val localPath = if (attemptMode != null) {
+                    readyEnsurer.ensureReadyForAttempt(resolvedFileId, attemptMode, mimeType)
+                } else {
+                    readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
+                }
+
+                val localFile = File(localPath)
+                if (!localFile.exists()) {
+                    throw IOException("File not found at local path: $localPath")
+                }
+
+                UnifiedLog.d(TAG) { "File ready at: $localPath (size=${localFile.length()} bytes)" }
+
+                // Create FileDataSource delegate and open it
+                val fileDataSource = FileDataSource()
+                transferListener?.let { fileDataSource.addTransferListener(it) }
+
+                val fileUri = Uri.fromFile(localFile)
+                val fileDataSpec = dataSpec.buildUpon().setUri(fileUri).build()
+
+                delegate = fileDataSource
+                fileDataSource.open(fileDataSpec)
+            } catch (e: Exception) {
+                // If fast-path failed and we have chatId+messageId, retry with RemoteResolver
+                if (usedFastPath && capturedChatId != null && capturedMessageId != null) {
+                    UnifiedLog.i(TAG) {
+                        "Fast-path fileId=$fileId failed (${e.message}), retrying with RemoteResolver (chatId=***${capturedChatId.toString().takeLast(3)}, messageId=***${capturedMessageId.toString().takeLast(3)})"
+                    }
+                    
+                    // Re-resolve via RemoteResolver to get fresh fileId
+                    val resolved = remoteResolver.resolveMedia(TelegramRemoteId(capturedChatId, capturedMessageId))
+                        ?: throw IOException("RemoteResolver retry failed: could not resolve media", e)
+                    
+                    val freshFileId = resolved.mediaFileId
+                    UnifiedLog.d(TAG) { "RemoteResolver retry: fresh fileId=$freshFileId" }
+                    
+                    // Retry readiness check with fresh fileId
+                    val retryLocalPath = if (attemptMode != null) {
+                        readyEnsurer.ensureReadyForAttempt(freshFileId, attemptMode, mimeType)
+                    } else {
+                        readyEnsurer.ensureReadyForPlayback(freshFileId, mimeType)
+                    }
+
+                    val retryLocalFile = File(retryLocalPath)
+                    if (!retryLocalFile.exists()) {
+                        throw IOException("File not found at local path after retry: $retryLocalPath")
+                    }
+
+                    UnifiedLog.i(TAG) { "Retry successful: file ready at $retryLocalPath (size=${retryLocalFile.length()} bytes)" }
+
+                    // Create FileDataSource delegate and open it
+                    val retryFileDataSource = FileDataSource()
+                    transferListener?.let { retryFileDataSource.addTransferListener(it) }
+
+                    val retryFileUri = Uri.fromFile(retryLocalFile)
+                    val retryFileDataSpec = dataSpec.buildUpon().setUri(retryFileUri).build()
+
+                    delegate = retryFileDataSource
+                    return@withContext retryFileDataSource.open(retryFileDataSpec)
+                } else {
+                    // No retry possible or retry not applicable, propagate original error
+                    throw e
+                }
             }
-
-            val localFile = File(localPath)
-            if (!localFile.exists()) {
-                throw IOException("File not found at local path: $localPath")
-            }
-
-            UnifiedLog.d(TAG) { "File ready at: $localPath (size=${localFile.length()} bytes)" }
-
-            // Create FileDataSource delegate and open it
-            val fileDataSource = FileDataSource()
-            transferListener?.let { fileDataSource.addTransferListener(it) }
-
-            val fileUri = Uri.fromFile(localFile)
-            val fileDataSpec = dataSpec.buildUpon().setUri(fileUri).build()
-
-            delegate = fileDataSource
-            fileDataSource.open(fileDataSpec)
         }
 
     /**
@@ -265,8 +313,9 @@ class TelegramFileDataSource(
      * 1. If chatId + messageId available → resolve via TelegramRemoteResolver (PREFERRED)
      *    - Always returns fresh fileId from current TDLib message
      *    - Works after cache eviction, message updates, app restarts
-     * 2. Else if fileId valid (> 0) → use it directly (fast path - same session)
+     * 2. Else if fileId valid (> 0) → use it directly (fast path - HINT ONLY)
      *    - May be stale if TDLib cache changed
+     *    - Will auto-retry via RemoteResolver if it fails and chatId+messageId available
      * 3. Else if remoteId available → resolve via TelegramFileClient.resolveRemoteId (fallback)
      *    - Stable but requires remoteId parameter
      * 4. Else fail
@@ -300,9 +349,9 @@ class TelegramFileDataSource(
                 }
                 resolved.mediaFileId
             }
-            // Path 2: Direct fileId (fast path - same session)
+            // Path 2: Direct fileId (fast path - HINT ONLY, will retry via RemoteResolver if fails)
             fileId != null && fileId > 0 -> {
-                UnifiedLog.d(TAG) { "Using fileId from URI: $fileId (may be stale if cache changed)" }
+                UnifiedLog.d(TAG) { "Using fileId from URI as hint: $fileId (may be stale, will auto-retry if fails)" }
                 fileId
             }
             // Path 3: Fallback to remoteId resolution (TelegramFileClient)

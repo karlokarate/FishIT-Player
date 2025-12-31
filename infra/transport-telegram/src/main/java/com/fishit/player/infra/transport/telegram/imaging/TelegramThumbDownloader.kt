@@ -26,15 +26,28 @@ import javax.inject.Singleton
  * ## Usage Pattern
  *
  * ```kotlin
- * // Show miniThumb immediately
+ * // In ViewModel or Composable:
+ * 
+ * // 1. Show miniThumb immediately
  * Image(data = ImageRef.InlineBytes(miniThumb))
  *
- * // Trigger thumb download (non-blocking)
+ * // 2. Trigger thumb download (non-blocking)
  * val thumbPath = thumbDownloader.ensureThumbDownloaded(remoteId)
  * if (thumbPath != null) {
  *     Image(data = ImageRef.LocalFile(thumbPath))
  * }
- * // else: keep showing miniThumb, will upgrade when fileUpdates Flow emits completion
+ *
+ * // 3. Observe fileUpdates to detect completion and trigger recomposition
+ * LaunchedEffect(remoteId) {
+ *     fileClient.fileUpdates
+ *         .filter { it.fileId == thumbFileId }
+ *         .filter { it.file.local.isDownloadingCompleted }
+ *         .collect {
+ *             // Trigger state update to reload image from TDLib cache
+ *             thumbnailState.value = it.file.local.path
+ *         }
+ * }
+ * // No polling loops needed - fileUpdates provides real-time notification
  * ```
  *
  * @param remoteResolver RemoteId resolver for message → thumbFileId
