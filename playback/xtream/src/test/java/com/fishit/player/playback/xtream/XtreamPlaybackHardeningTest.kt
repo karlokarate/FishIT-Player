@@ -136,10 +136,9 @@ class XtreamPlaybackHardeningTest {
             onInitialize = { 
                 initCalled = true
                 Result.success(XtreamCapabilities(
+                    cacheKey = "test|user",
                     baseUrl = "http://server:8080",
-                    vodKind = "vod",
-                    liveKind = "live",
-                    allowedOutputFormats = setOf("m3u8", "ts")
+                    username = "user"
                 ))
             }
         )
@@ -201,11 +200,12 @@ class XtreamPlaybackHardeningTest {
         )
         
         // Then explicit error with "not configured" message
-        val exception = assertThrows(PlaybackSourceException::class.java) {
-            runTest { factory.createSource(context) }
+        try {
+            factory.createSource(context)
+            fail("Expected PlaybackSourceException")
+        } catch (e: PlaybackSourceException) {
+            assertTrue(e.message!!.contains("not configured") || e.message!!.contains("log in"))
         }
-        
-        assertTrue(exception.message!!.contains("not configured") || exception.message!!.contains("log in"))
     }
     
     @Test
@@ -244,15 +244,16 @@ class XtreamPlaybackHardeningTest {
         )
         
         // Then error message distinguishes invalid credentials
-        val exception = assertThrows(PlaybackSourceException::class.java) {
-            runTest { factory.createSource(context) }
+        try {
+            factory.createSource(context)
+            fail("Expected PlaybackSourceException")
+        } catch (e: PlaybackSourceException) {
+            assertTrue(
+                e.message!!.contains("invalid") || 
+                e.message!!.contains("unreachable") ||
+                e.message!!.contains("log in again")
+            )
         }
-        
-        assertTrue(
-            exception.message!!.contains("invalid") || 
-            exception.message!!.contains("unreachable") ||
-            exception.message!!.contains("log in again")
-        )
     }
 
     // =========================================================================
@@ -264,10 +265,9 @@ class XtreamPlaybackHardeningTest {
         // Given a factory with valid session and unsafe prebuilt URI
         val mockApiClient = createMockApiClient(
             initialCapabilities = XtreamCapabilities(
+                cacheKey = "test|user",
                 baseUrl = "http://server:8080",
-                vodKind = "vod",
-                liveKind = "live",
-                allowedOutputFormats = setOf("m3u8")
+                username = "user"
             )
         )
         
