@@ -354,8 +354,8 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
             val normalizedExt = explicitExt.lowercase().trim()
             // Only accept valid output formats (streaming formats)
             if (normalizedExt in FORMAT_PRIORITY) {
-                UnifiedLog.d(TAG) { "Using explicit containerExtension: $explicitExt" }
-                return explicitExt
+                UnifiedLog.d(TAG) { "Using explicit containerExtension: $normalizedExt" }
+                return normalizedExt
             } else {
                 UnifiedLog.d(TAG) { 
                     "Ignoring containerExtension=$explicitExt (not a valid output format), " +

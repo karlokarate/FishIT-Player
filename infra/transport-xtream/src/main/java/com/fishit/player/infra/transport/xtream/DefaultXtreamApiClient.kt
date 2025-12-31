@@ -653,7 +653,9 @@ class DefaultXtreamApiClient(
                     mapOf("series_id" to seriesId.toString()),
                 )
             val body = fetchRaw(url, isEpg = false) ?: return@withContext null
-            runCatching { json.decodeFromString<XtreamSeriesInfo>(body) }.getOrNull()
+            // Trim whitespace and BOM (U+FEFF) for consistency with getVodInfo()
+            val trimmedBody = body.trim { it.isWhitespace() || it == '\uFEFF' }
+            runCatching { json.decodeFromString<XtreamSeriesInfo>(trimmedBody) }.getOrNull()
         }
 
     // =========================================================================
