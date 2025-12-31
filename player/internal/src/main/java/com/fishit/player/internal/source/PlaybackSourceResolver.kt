@@ -79,8 +79,8 @@ class PlaybackSourceResolver @Inject constructor(
     /**
      * Fallback resolution when no factory is available.
      *
-     * Uses the URI directly if it's an HTTP(S) URL,
-     * otherwise falls back to test stream.
+     * Uses the URI directly if it's an HTTP(S) URL.
+     * Throws explicit error instead of falling back to demo stream.
      */
     private fun resolveFallback(context: PlaybackContext): PlaybackSource {
         val uri = context.uri
@@ -102,11 +102,12 @@ class PlaybackSourceResolver @Inject constructor(
                 )
             }
             else -> {
-                UnifiedLog.w(TAG, "No factory and no valid URI for ${context.sourceType}, using test stream")
-                PlaybackSource(
-                    uri = TEST_STREAM_URL,
-                    mimeType = "video/mp4",
-                    dataSourceType = DataSourceType.DEFAULT
+                // Explicit error instead of demo stream fallback
+                UnifiedLog.e(TAG, "No factory and no valid URI for ${context.sourceType}")
+                throw PlaybackSourceException(
+                    "No playback source available for ${context.sourceType}. " +
+                    "Please ensure the source is configured correctly.",
+                    context.sourceType
                 )
             }
         }
