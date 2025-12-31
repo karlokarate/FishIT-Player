@@ -120,6 +120,34 @@ object TelegramStreamingConfig {
     const val PREFIX_POLL_INTERVAL_MS: Long = 100L
 
     /**
+     * Timeout for DIRECT_FIRST attempt (10 seconds).
+     *
+     * This is intentionally short because DIRECT_FIRST should fail fast if the file is not
+     * suitable for immediate playback. Player will then retry with BUFFERED_5MB.
+     */
+    const val DIRECT_FIRST_TIMEOUT_MS: Long = 10_000L
+
+    /**
+     * Timeout for BUFFERED_5MB attempt (30 seconds).
+     *
+     * Sufficient time to download 5MB on most connections:
+     * - Fast connection (5 MB/s): ~1 second
+     * - Medium connection (1 MB/s): ~5 seconds
+     * - Slow connection (200 KB/s): ~25 seconds
+     */
+    const val BUFFERED_5MB_TIMEOUT_MS: Long = 30_000L
+
+    /**
+     * 5MB threshold for BUFFERED_5MB mode (5 * 1024 * 1024 bytes).
+     *
+     * This provides a reasonable buffer for most video files:
+     * - Enough for moov atom in well-formed MP4 files
+     * - Enough for initial playback of most codecs
+     * - Small enough to maintain acceptable latency
+     */
+    const val BUFFERED_5MB_THRESHOLD_BYTES: Long = 5 * 1024 * 1024 // 5 MiB
+
+    /**
      * Maximum wait time for initial prefix + moov validation in PROGRESSIVE_FILE mode (30 seconds).
      *
      * Covers:

@@ -43,6 +43,60 @@ class TelegramFileReadyEnsurer(
     }
 
     /**
+     * Ensures a file is ready for playback with attempt-aware strategy (DIRECT_FIRST or BUFFERED_5MB).
+     *
+     * **DIRECT_FIRST Strategy:**
+     * - Does NOT hard-block on MP4 moov checks
+     * - Starts download and returns immediately once TDLib has local path
+     * - Allows player to attempt playback as soon as possible
+     * - May fail if file is not suitable for direct playback
+     *
+     * **BUFFERED_5MB Strategy:**
+     * - Waits until downloadedBytes >= 5MB AND local path exists
+     * - Provides deterministic fallback with reasonable latency
+     * - MP4 moov checks are advisory only (not fatal)
+     *
+     * @param fileId TDLib file ID
+     * @param attemptMode "DIRECT_FIRST" or "BUFFERED_5MB"
+     * @param mimeType Optional MIME type hint
+     * @return Local file path ready for playback
+     * @throws TelegramStreamingException if download fails or times out
+     */
+    suspend fun ensureReadyForAttempt(
+        fileId: Int,
+        attemptMode: String,
+        mimeType: String? = null,
+    ): String {
+        UnifiedLog.i(TAG) { "ensureReadyForAttempt(fileId=$fileId, attemptMode=$attemptMode, mime=$mimeType)" }
+
+        // Start high-priority download
+        fileClient.startDownload(
+            fileId = fileId,
+            priority = TelegramStreamingConfig.DOWNLOAD_PRIORITY_STREAMING,
+            offset = TelegramStreamingConfig.DOWNLOAD_OFFSET_START,
+            limit = TelegramStreamingConfig.DOWNLOAD_LIMIT_FULL,
+        )
+
+        return when (attemptMode) {
+            "DIRECT_FIRST" -> {
+                UnifiedLog.i(TAG) { "DIRECT_FIRST: Starting playback as soon as local path available" }
+                withTimeout(TelegramStreamingConfig.DIRECT_FIRST_TIMEOUT_MS) {
+                    pollUntilLocalPathAvailable(fileId)
+                }
+            }
+            "BUFFERED_5MB" -> {
+                UnifiedLog.i(TAG) { "BUFFERED_5MB: Waiting for 5MB buffer before playback" }
+                withTimeout(TelegramStreamingConfig.BUFFERED_5MB_TIMEOUT_MS) {
+                    pollUntilBuffered5MB(fileId, mimeType)
+                }
+            }
+            else -> {
+                throw TelegramStreamingException("Unknown attempt mode: $attemptMode")
+            }
+        }
+    }
+
+    /**
      * Ensures a file is ready for playback from the beginning (offset=0).
      *
      * **Platinum Playback Behavior:**
@@ -411,6 +465,120 @@ class TelegramFileReadyEnsurer(
                     UnifiedLog.d(TAG) { "Seek ready at $seekPosition: $localPath" }
                     return localPath
                 }
+            }
+
+            delay(TelegramStreamingConfig.PREFIX_POLL_INTERVAL_MS)
+        }
+    }
+
+    /**
+     * Polls until local file path is available (DIRECT_FIRST strategy).
+     *
+     * This returns as soon as TDLib has a local path, without waiting for any specific amount
+     * of data. The player will attempt playback immediately, which may succeed for well-optimized
+     * files or fail and trigger fallback to BUFFERED_5MB.
+     *
+     * @param fileId TDLib file ID
+     * @return Local file path (may have minimal data downloaded)
+     */
+    private suspend fun pollUntilLocalPathAvailable(fileId: Int): String {
+        var lastLogTime = 0L
+
+        while (true) {
+            val file =
+                fileClient.getFile(fileId)
+                    ?: throw TelegramStreamingException("File not found: $fileId")
+
+            // Throttled logging
+            val now = System.currentTimeMillis()
+            if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
+                now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
+            ) {
+                UnifiedLog.d(TAG) {
+                    "DIRECT_FIRST: Waiting for local path (downloaded=${file.downloadedPrefixSize / 1024}KB)"
+                }
+                lastLogTime = now
+            }
+
+            val localPath = file.localPath
+            if (localPath != null) {
+                UnifiedLog.i(TAG) {
+                    "DIRECT_FIRST: Local path available, starting playback immediately " +
+                        "(downloaded=${file.downloadedPrefixSize / 1024}KB)"
+                }
+                return localPath
+            }
+
+            delay(TelegramStreamingConfig.PREFIX_POLL_INTERVAL_MS)
+        }
+    }
+
+    /**
+     * Polls until 5MB is buffered (BUFFERED_5MB strategy).
+     *
+     * Waits until:
+     * - downloadedPrefixSize >= 5MB (5 * 1024 * 1024 bytes)
+     * - Local path exists
+     *
+     * For MP4 files, performs advisory moov check but does NOT fail if moov not found.
+     * This provides deterministic fallback with reasonable latency.
+     *
+     * @param fileId TDLib file ID
+     * @param mimeType Optional MIME type for advisory moov checks
+     * @return Local file path with 5MB buffer
+     */
+    private suspend fun pollUntilBuffered5MB(fileId: Int, mimeType: String?): String {
+        var lastLogTime = 0L
+        val targetBytes = TelegramStreamingConfig.BUFFERED_5MB_THRESHOLD_BYTES
+
+        while (true) {
+            val file =
+                fileClient.getFile(fileId)
+                    ?: throw TelegramStreamingException("File not found: $fileId")
+
+            val prefixSize = file.downloadedPrefixSize
+            val localPath = file.localPath
+
+            // Throttled logging
+            val now = System.currentTimeMillis()
+            if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
+                now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
+            ) {
+                val progress = if (prefixSize < targetBytes) {
+                    "${(prefixSize * 100 / targetBytes)}%"
+                } else {
+                    "100%"
+                }
+                UnifiedLog.d(TAG) {
+                    "BUFFERED_5MB: $progress (${prefixSize / 1024}KB / ${targetBytes / 1024}KB)"
+                }
+                lastLogTime = now
+            }
+
+            // Check if download is complete (can happen for small files)
+            if (file.isDownloadingCompleted && localPath != null) {
+                UnifiedLog.i(TAG) { "BUFFERED_5MB: File fully downloaded, starting playback" }
+                return localPath
+            }
+
+            // Check if we have 5MB buffer
+            if (prefixSize >= targetBytes && localPath != null) {
+                // For MP4, perform advisory moov check (not fatal)
+                if (TelegramPlaybackModeDetector.isMp4Container(mimeType)) {
+                    val moovResult = Mp4MoovAtomValidator.checkMoovAtom(localPath, prefixSize)
+                    if (moovResult.isReadyForPlayback) {
+                        UnifiedLog.i(TAG) {
+                            "BUFFERED_5MB: Ready with moov validated (moovStart=${moovResult.moovStart}B)"
+                        }
+                    } else {
+                        UnifiedLog.i(TAG) {
+                            "BUFFERED_5MB: Ready (5MB buffered, moov check: ${if (moovResult.found) "incomplete" else "not found"} - not fatal)"
+                        }
+                    }
+                } else {
+                    UnifiedLog.i(TAG) { "BUFFERED_5MB: Ready (5MB buffered, non-MP4 container)" }
+                }
+                return localPath
             }
 
             delay(TelegramStreamingConfig.PREFIX_POLL_INTERVAL_MS)
