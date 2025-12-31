@@ -144,6 +144,7 @@ jobs:
             --build-cache \
             --parallel \
             --stacktrace \
+            --Info \
             --warning-mode all \
             -x test
         env:
