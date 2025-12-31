@@ -625,34 +625,23 @@ class DefaultXtreamApiClient(
 
     override suspend fun getVodInfo(vodId: Int): XtreamVodInfo? =
             withContext(io) {
-                // Try different alias + ID field combinations
-                for (alias in listOf(vodKind) + VOD_ALIAS_CANDIDATES.filter { it != vodKind }) {
-                    for (idField in VOD_ID_FIELDS) {
-                        val url =
-                                buildPlayerApiUrl(
-                                        "get_${alias}_info",
-                                        mapOf(idField to vodId.toString()),
-                                )
-                        val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
-                        // Trim whitespace and BOM (U+FEFF) that may be added by gzip decompression
-                        // or proxies
-                        // Handle both orders: whitespace+BOM or BOM+whitespace
-                        val trimmedBody = body?.trim { it.isWhitespace() || it == '\uFEFF' }
-                        if (!trimmedBody.isNullOrEmpty() && trimmedBody.startsWith("{")) {
-                            val parsed =
-                                    runCatching {
-                                                json.decodeFromString<XtreamVodInfo>(trimmedBody)
-                                            }
-                                            .getOrNull()
-                            if (parsed != null && (parsed.info != null || parsed.movieData != null)
-                            ) {
-                                vodKind = alias
-                                return@withContext parsed
-                            }
-                        }
-                    }
+                // SSOT: Use ONLY action=get_vod_info&vod_id=<id>
+                // This is the only reliably supported endpoint across all Xtream panel variants.
+                // Previous multi-alias/multi-field heuristics (get_movie_info, movie_id, stream_id, etc.)
+                // caused ~80% invalid API calls resulting in null responses.
+                val url = buildPlayerApiUrl("get_vod_info", mapOf("vod_id" to vodId.toString()))
+                val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
+                // Trim whitespace and BOM (U+FEFF) that may be added by gzip decompression or proxies
+                val trimmedBody = body?.trim { it.isWhitespace() || it == '\uFEFF' }
+                if (trimmedBody.isNullOrEmpty() || !trimmedBody.startsWith("{")) {
+                    UnifiedLog.w(TAG) { "getVodInfo: empty or invalid response vodId=$vodId" }
+                    return@withContext null
                 }
-                null
+                runCatching { json.decodeFromString<XtreamVodInfo>(trimmedBody) }
+                        .onFailure { e ->
+                            UnifiedLog.w(TAG) { "getVodInfo: parse failed vodId=$vodId: ${e.message}" }
+                        }
+                        .getOrNull()
             }
 
     override suspend fun getSeriesInfo(seriesId: Int): XtreamSeriesInfo? =

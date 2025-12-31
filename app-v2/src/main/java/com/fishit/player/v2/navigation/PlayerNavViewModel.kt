@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
@@ -77,72 +78,97 @@ class PlayerNavViewModel
             )
         }
 
-        /** Builds extras map for PlaybackSourceFactory based on source type. */
+        /**
+         * Builds extras map for PlaybackSourceFactory based on source type.
+         *
+         * **SSOT Priority:** playbackHints from MediaSourceRef take precedence.
+         * These are set by the pipeline during catalog sync and contain the correct
+         * content type, IDs, and extensions. Fallback parsing of sourceId is only
+         * used for legacy data or missing hints.
+         */
         private fun buildExtrasForSource(source: MediaSourceRef): Map<String, String> =
             buildMap {
+                // SSOT: Start with playbackHints from MediaSourceRef (pipeline SSOT)
+                // These contain correct contentType, vodId, streamId, episodeId, containerExt, etc.
+                putAll(source.playbackHints)
+
                 val sourceIdValue = source.sourceId.value
 
                 when (source.sourceType) {
                     com.fishit.player.core.model.SourceType.XTREAM -> {
+                        // Only fill missing values via fallback parsing
                         when {
                             sourceIdValue.startsWith("xtream:vod:") -> {
-                                put(
+                                putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD,
                                 )
-                                // Accept legacy format: xtream:vod:{id}:{ext}
-                                put(
-                                    XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID,
-                                    sourceIdValue
-                                        .removePrefix("xtream:vod:")
-                                        .split(":")
-                                        .firstOrNull()
-                                        .orEmpty(),
-                                )
+                                // Fallback: parse vodId from sourceId if not in playbackHints
+                                if (!containsKey(PlaybackHintKeys.Xtream.VOD_ID) &&
+                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID)) {
+                                    put(
+                                        XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID,
+                                        sourceIdValue
+                                            .removePrefix("xtream:vod:")
+                                            .split(":")
+                                            .firstOrNull()
+                                            .orEmpty(),
+                                    )
+                                }
                             }
                             sourceIdValue.startsWith("xtream:series:") -> {
-                                put(
+                                putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
                                 )
-                                put(
-                                    XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID,
-                                    sourceIdValue.removePrefix("xtream:series:"),
-                                )
+                                if (!containsKey(PlaybackHintKeys.Xtream.SERIES_ID) &&
+                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID)) {
+                                    put(
+                                        XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID,
+                                        sourceIdValue.removePrefix("xtream:series:"),
+                                    )
+                                }
                             }
                             sourceIdValue.startsWith("xtream:episode:") -> {
+                                putIfAbsent(
+                                    XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
+                                    XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
+                                )
                                 val parts = sourceIdValue.removePrefix("xtream:episode:").split(":")
                                 if (parts.size >= 3) {
-                                    put(
-                                        XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
-                                        XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
-                                    )
-                                    put(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, parts[0])
-                                    put(XtreamPlaybackSourceFactoryImpl.EXTRA_SEASON_NUMBER, parts[1])
-                                    put(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_NUMBER, parts[2])
+                                    putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, parts[0])
+                                    putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SEASON_NUMBER, parts[1])
+                                    putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_NUMBER, parts[2])
                                 }
                             }
                             sourceIdValue.startsWith("xtream:live:") -> {
-                                put(
+                                putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_LIVE,
                                 )
-                                put(
-                                    XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID,
-                                    sourceIdValue.removePrefix("xtream:live:"),
-                                )
+                                if (!containsKey(PlaybackHintKeys.Xtream.STREAM_ID) &&
+                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID)) {
+                                    put(
+                                        XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID,
+                                        sourceIdValue.removePrefix("xtream:live:"),
+                                    )
+                                }
                             }
                         }
-                        source.format?.container?.let {
-                            put(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT, it)
+                        // Legacy fallback: container from MediaFormat if not in playbackHints
+                        if (!containsKey(PlaybackHintKeys.Xtream.CONTAINER_EXT) &&
+                            !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT)) {
+                            source.format?.container?.let {
+                                put(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT, it)
+                            }
                         }
                     }
                     com.fishit.player.core.model.SourceType.TELEGRAM -> {
                         if (sourceIdValue.startsWith("msg:")) {
                             val parts = sourceIdValue.removePrefix("msg:").split(":")
                             if (parts.size >= 2) {
-                                put("chatId", parts[0])
-                                put("messageId", parts[1])
+                                putIfAbsent("chatId", parts[0])
+                                putIfAbsent("messageId", parts[1])
                             }
                         }
                     }
