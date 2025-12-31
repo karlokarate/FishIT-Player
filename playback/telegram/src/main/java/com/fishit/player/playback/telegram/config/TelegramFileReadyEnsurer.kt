@@ -147,7 +147,7 @@ class TelegramFileReadyEnsurer(
                 when (initialMode) {
                     TelegramPlaybackMode.PROGRESSIVE_FILE -> {
                         // Try progressive first, may fallback to FULL_FILE if moov not found
-                        pollUntilReadyProgressive(fileId, mimeType)
+                        pollUntilReadyProgressiveWithFallback(fileId, mimeType)
                     }
                     TelegramPlaybackMode.FULL_FILE -> {
                         // Skip moov validation, wait for full download
@@ -239,21 +239,57 @@ class TelegramFileReadyEnsurer(
     /**
      * Polls for PROGRESSIVE_FILE mode readiness with automatic fallback to FULL_FILE.
      *
-     * **Platinum Playback Logic:**
+     * **Platinum Playback Logic with Timeout Management:**
      * 1. Wait for MIN_PREFIX_FOR_VALIDATION_BYTES
      * 2. Check moov atom with Mp4MoovAtomValidator
      * 3. If moov found and complete → return (fast start)
-     * 4. If moov not found after MAX_PREFIX_SCAN_BYTES → switch to FULL_FILE mode (NOT an error)
-     * 5. If moov incomplete after timeout → switch to FULL_FILE mode (NOT an error)
-     * 6. FULL_FILE mode: wait for complete download, then return
+     * 4. If moov not found after MAX_PREFIX_SCAN_BYTES → switch to FULL_FILE mode
+     * 5. If moov incomplete after timeout → switch to FULL_FILE mode
+     * 6. FULL_FILE mode: Uses extended timeout (60s) for large file downloads
+     *
+     * **Timeout Handling:**
+     * - This method restarts the timeout when falling back to FULL_FILE mode
+     * - FULL_FILE fallback gets its own 60-second timeout instead of remaining PROGRESSIVE timeout
      *
      * @param fileId TDLib file ID
      * @param mimeType Optional MIME type for logging context
      * @return Local file path ready for playback
      */
+    private suspend fun pollUntilReadyProgressiveWithFallback(
+        fileId: Int,
+        mimeType: String?,
+    ): String {
+        try {
+            // Try progressive playback (will throw exception if fallback needed)
+            return pollUntilReadyProgressive(fileId, mimeType, throwOnFallback = true)
+        } catch (e: FallbackToFullFileException) {
+            // Moov not found or incomplete - switch to FULL_FILE mode with extended timeout
+            UnifiedLog.i(TAG) { "Switching to FULL_FILE mode after progressive attempt: ${e.message}" }
+            return withTimeout(TelegramStreamingConfig.FULL_FILE_DOWNLOAD_TIMEOUT_MS) {
+                pollUntilReadyFullFile(fileId)
+            }
+        }
+    }
+
+    /**
+     * Polls for PROGRESSIVE_FILE mode readiness.
+     *
+     * **Platinum Playback Logic:**
+     * 1. Wait for MIN_PREFIX_FOR_VALIDATION_BYTES
+     * 2. Check moov atom with Mp4MoovAtomValidator
+     * 3. If moov found and complete → return (fast start)
+     * 4. If moov not found after MAX_PREFIX_SCAN_BYTES → throw FallbackToFullFileException or call pollUntilReadyFullFile
+     * 5. If moov incomplete after timeout → throw FallbackToFullFileException or call pollUntilReadyFullFile
+     *
+     * @param fileId TDLib file ID
+     * @param mimeType Optional MIME type for logging context
+     * @param throwOnFallback If true, throws FallbackToFullFileException when fallback needed; if false, returns direct result
+     * @return Local file path ready for playback
+     */
     private suspend fun pollUntilReadyProgressive(
         fileId: Int,
         mimeType: String?,
+        throwOnFallback: Boolean = false,
     ): String {
         var lastLogTime = 0L
         var moovIncompleteStartTime: Long? = null
@@ -279,7 +315,7 @@ class TelegramFileReadyEnsurer(
 
             // Check if download is complete (can happen if file is very small)
             if (file.isDownloadingCompleted && localPath != null) {
-                UnifiedLog.i(TAG) { "Download complete, ready for playback: $localPath" }
+                UnifiedLog.i(TAG) { "Download complete, ready for playback (fileId=$fileId, size=${prefixSize / 1024}KB)" }
                 return localPath
             }
 
@@ -307,21 +343,27 @@ class TelegramFileReadyEnsurer(
                             Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
                         ) {
                             // Timeout waiting for moov to complete - switch to FULL_FILE mode
-                            UnifiedLog.i(TAG) {
-                                "Moov incomplete after ${Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS}ms, " +
-                                    "switching to FULL_FILE mode (moovSize=${moovResult.moovSize}B, available=${prefixSize}B)"
+                            val reason = "Moov incomplete after ${Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS}ms, " +
+                                "moovSize=${moovResult.moovSize}B, available=${prefixSize}B"
+                            UnifiedLog.i(TAG) { "$reason, switching to FULL_FILE mode" }
+                            if (throwOnFallback) {
+                                throw FallbackToFullFileException(reason)
+                            } else {
+                                return pollUntilReadyFullFile(fileId)
                             }
-                            return pollUntilReadyFullFile(fileId)
                         }
                     }
                     !moovResult.found &&
                         prefixSize >= TelegramStreamingConfig.MAX_PREFIX_SCAN_BYTES -> {
                         // Scanned max prefix, moov not found - switch to FULL_FILE mode (NOT an error!)
-                        UnifiedLog.i(TAG) {
-                            "Moov atom not found after scanning ${prefixSize / 1024}KB, " +
-                                "switching to FULL_FILE mode (mime=$mimeType). This is normal for non-faststart MP4 files."
+                        val reason = "Moov atom not found after scanning ${prefixSize / 1024}KB (mime=$mimeType). " +
+                            "This is normal for non-faststart MP4 files."
+                        UnifiedLog.i(TAG) { "$reason, switching to FULL_FILE mode" }
+                        if (throwOnFallback) {
+                            throw FallbackToFullFileException(reason)
+                        } else {
+                            return pollUntilReadyFullFile(fileId)
                         }
-                        return pollUntilReadyFullFile(fileId)
                     }
                     // else: moov not found yet, continue polling
                 }
@@ -381,12 +423,24 @@ class TelegramFileReadyEnsurer(
             if (file.isDownloadingCompleted && localPath != null) {
                 UnifiedLog.i(TAG) { "Telegram file fully downloaded, starting playback: ${totalSize / 1024}KB" }
                 return localPath
+            } else if (file.isDownloadingCompleted && localPath == null) {
+                // Defensive: unexpected state, log and continue polling
+                UnifiedLog.w(TAG) {
+                    "Telegram file reported as fully downloaded but localPath is null " +
+                        "(fileId=$fileId, downloadedSize=${downloadedSize / 1024}KB, totalSize=${totalSize / 1024}KB)"
+                }
             }
 
             // Safety check: if downloadedSize >= totalSize, consider complete
             if (totalSize > 0 && downloadedSize >= totalSize && localPath != null) {
                 UnifiedLog.i(TAG) { "Telegram file download reached total size, starting playback: ${totalSize / 1024}KB" }
                 return localPath
+            } else if (totalSize > 0 && downloadedSize >= totalSize && localPath == null) {
+                // Defensive: unexpected state, log and continue polling
+                UnifiedLog.w(TAG) {
+                    "Telegram file download reached total size but localPath is null " +
+                        "(fileId=$fileId, downloadedSize=${downloadedSize / 1024}KB, totalSize=${totalSize / 1024}KB)"
+                }
             }
 
             delay(TelegramStreamingConfig.PREFIX_POLL_INTERVAL_MS)
@@ -447,7 +501,7 @@ class TelegramFileReadyEnsurer(
 
             // Check if download is complete
             if (file.isDownloadingCompleted && localPath != null) {
-                UnifiedLog.d(TAG) { "Download complete for seek: $localPath" }
+                UnifiedLog.d(TAG) { "Download complete for seek (fileId=$fileId, seekPosition=$seekPosition)" }
                 return localPath
             }
 
@@ -462,7 +516,7 @@ class TelegramFileReadyEnsurer(
                         prefixSize >= seekPosition
 
                 if (hasEnoughBytes || isNearEndOfFile) {
-                    UnifiedLog.d(TAG) { "Seek ready at $seekPosition: $localPath" }
+                    UnifiedLog.d(TAG) { "Seek ready (fileId=$fileId, seekPosition=$seekPosition, prefixSize=${prefixSize / 1024}KB)" }
                     return localPath
                 }
             }
@@ -591,3 +645,13 @@ class TelegramStreamingException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
+
+/**
+ * Internal exception used to signal fallback from PROGRESSIVE_FILE to FULL_FILE mode.
+ *
+ * This is not a user-facing error - it's a control flow mechanism to restart the timeout
+ * when switching modes to ensure FULL_FILE downloads get their full 60-second timeout.
+ */
+private class FallbackToFullFileException(
+    message: String,
+) : Exception(message)

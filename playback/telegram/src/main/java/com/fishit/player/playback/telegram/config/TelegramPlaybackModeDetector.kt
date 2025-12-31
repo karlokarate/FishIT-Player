@@ -90,16 +90,19 @@ object TelegramPlaybackModeDetector {
      *
      * Useful for logging and diagnostics.
      *
+     * **Note:** MIME types are considered safe metadata to log (no sensitive data).
+     *
      * @param mimeType MIME type from file metadata
      * @return Description string (e.g., "MKV container, requires full download")
      */
     fun describeMode(mimeType: String?): String {
+        val normalizedMime = mimeType?.lowercase()
         return when {
             requiresFullDownload(mimeType) -> {
                 val containerName = when {
-                    mimeType?.contains("matroska") == true || mimeType?.contains("mkv") == true -> "MKV"
-                    mimeType?.contains("webm") == true -> "WebM"
-                    mimeType?.contains("avi") == true -> "AVI"
+                    normalizedMime?.contains("matroska") == true || normalizedMime?.contains("mkv") == true -> "MKV"
+                    normalizedMime?.contains("webm") == true -> "WebM"
+                    normalizedMime?.contains("avi") == true -> "AVI"
                     else -> "Non-progressive"
                 }
                 "$containerName container, requires full download"
