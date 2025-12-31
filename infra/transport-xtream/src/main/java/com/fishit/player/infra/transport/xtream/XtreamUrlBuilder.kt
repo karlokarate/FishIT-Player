@@ -163,7 +163,7 @@ class XtreamUrlBuilder(
         vodId: Int,
         containerExtension: String? = null,
     ): String {
-        val ext = sanitizeExtension(containerExtension ?: config.vodExtPrefs.firstOrNull() ?: "mp4")
+        val ext = sanitizeExtension(containerExtension ?: config.vodExtPrefs.firstOrNull() ?: "m3u8")
         return playUrl(vodKind, vodId, ext)
     }
 
@@ -183,7 +183,7 @@ class XtreamUrlBuilder(
     ): String {
         val ext =
             sanitizeExtension(
-                containerExtension ?: config.seriesExtPrefs.firstOrNull() ?: "mp4",
+                containerExtension ?: config.seriesExtPrefs.firstOrNull() ?: "m3u8",
             )
 
         // Direct episodeId path (modern panels)
@@ -463,10 +463,20 @@ class XtreamUrlBuilder(
         }
     }
 
+    /**
+     * Sanitize extension for playback URL building.
+     *
+     * CRITICAL: Only accepts valid STREAMING OUTPUT formats:
+     * - m3u8 (HLS): Best for adaptive streaming
+     * - ts (MPEG-TS): Good fallback
+     *
+     * Container formats (mp4, mkv, avi) describe the FILE on the server,
+     * NOT the streaming output format. They are rejected.
+     */
     private fun sanitizeExtension(ext: String?): String {
         val lower = ext?.lowercase()?.trim().orEmpty()
-        val valid = Regex("^[a-z0-9]{2,5}$")
-        return if (valid.matches(lower)) lower else "mp4"
+        val validStreamingFormats = setOf("m3u8", "ts")
+        return if (lower in validStreamingFormats) lower else "m3u8"
     }
 
     private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")

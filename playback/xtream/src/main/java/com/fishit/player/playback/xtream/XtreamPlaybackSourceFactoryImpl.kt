@@ -78,7 +78,11 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
         const val CONTENT_TYPE_SERIES = "series"
 
         // Output format priority (policy: HLS > TS > MP4)
+        // MP4 is only valid if explicitly in server's allowed_output_formats
         private val FORMAT_PRIORITY = listOf("m3u8", "ts", "mp4")
+        
+        // TRUE streaming formats (safe to accept from any source)
+        private val STREAMING_FORMATS = setOf("m3u8", "ts")
 
         /**
          * Select the best output format based on server-allowed formats.
@@ -336,36 +340,19 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
      * Resolve the output extension for playback URL.
      *
      * Priority:
-     * 1. Explicit containerExtension from playbackHints (SSOT from VOD/episode info)
-     * 2. Policy-based selection from allowedOutputFormats (m3u8 > ts > mp4)
-     * 3. null (let XtreamApiClient use its defaults)
+     * 1. Policy-based selection from allowedOutputFormats (m3u8 > ts > mp4) - MOST RELIABLE
+     * 2. Explicit containerExtension ONLY if it's a TRUE streaming format (m3u8, ts)
+     * 3. null (let XtreamApiClient use its defaults → m3u8)
+     *
+     * NOTE: containerExtension from VOD metadata (e.g., "mkv", "mp4") describes the FILE
+     * on the server, NOT the streaming output. We only trust allowedOutputFormats for mp4.
      *
      * @param context The playback context
      * @return The resolved extension, or null to use defaults
      */
     private fun resolveOutputExtension(context: PlaybackContext): String? {
-        // Priority 1: Explicit containerExtension (SSOT from enrichment)
-        // BUT: Only accept it if it's a valid output format (m3u8, ts, mp4)
-        // Container formats like mkv, avi are file containers, not streaming output formats
-        val explicitExt =
-                context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                        ?: context.extras[EXTRA_CONTAINER_EXT]
-        if (!explicitExt.isNullOrBlank()) {
-            val normalizedExt = explicitExt.lowercase().trim()
-            // Only accept valid output formats (streaming formats)
-            if (normalizedExt in FORMAT_PRIORITY) {
-                UnifiedLog.d(TAG) { "Using explicit containerExtension: $normalizedExt" }
-                return normalizedExt
-            } else {
-                UnifiedLog.d(TAG) { 
-                    """Ignoring containerExtension=$explicitExt (not a valid output format), 
-                       |falling back to policy-based selection""".trimMargin()
-                }
-                // Fall through to Priority 2
-            }
-        }
-
-        // Priority 2: Policy-based selection from allowedOutputFormats
+        // Priority 1: Policy-based selection from allowedOutputFormats (MOST RELIABLE)
+        // This is the ONLY place where mp4 is safe to accept
         val allowedFormatsRaw = context.extras[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS]
         if (!allowedFormatsRaw.isNullOrBlank()) {
             val allowedFormats = allowedFormatsRaw.split(",").map { it.trim().lowercase() }.toSet()
@@ -376,8 +363,29 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
                 }
                 selected
             } catch (e: PlaybackSourceException) {
-                UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, using defaults" }
+                UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, trying containerExtension" }
+                // Fall through to Priority 2
                 null
+            }
+        }
+
+        // Priority 2: Explicit containerExtension - ONLY accept TRUE streaming formats
+        // mp4/mkv/avi are container formats describing the FILE, not streaming output!
+        val explicitExt =
+                context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                        ?: context.extras[EXTRA_CONTAINER_EXT]
+        if (!explicitExt.isNullOrBlank()) {
+            val normalizedExt = explicitExt.lowercase().trim()
+            // HARDENED: Only accept true streaming formats from containerExtension
+            // mp4 is NOT safe here - it's a container format, not streaming output
+            if (normalizedExt in STREAMING_FORMATS) {
+                UnifiedLog.d(TAG) { "Using explicit streaming containerExtension: $normalizedExt" }
+                return normalizedExt
+            } else {
+                UnifiedLog.d(TAG) { 
+                    "Ignoring containerExtension=$explicitExt (container format, not streaming output)"
+                }
+                // Fall through to defaults
             }
         }
 

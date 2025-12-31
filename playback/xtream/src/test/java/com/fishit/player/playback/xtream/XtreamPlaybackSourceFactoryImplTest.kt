@@ -149,16 +149,18 @@ class XtreamPlaybackSourceFactoryImplTest {
     }
 
     // =========================================================================
-    // Container Extension Tests - Verifies VOD URL uses correct extension
+    // Output Format Resolution Tests - Verifies STREAMING format selection
     // =========================================================================
 
     /**
-     * Test that buildVodUrl correctly passes the container extension.
-     * This is the critical fix for Bug #1: UnrecognizedInputFormatException.
+     * CRITICAL TEST: containerExtension="mkv" must NOT produce .mkv URL
+     * 
+     * MKV is a container format describing the FILE, not streaming output.
+     * When no allowed_output_formats is provided, we fall back to defaults (m3u8).
      */
     @Test
-    fun `buildVodUrl should use containerExtension from playbackHints`() {
-        var capturedExtension: String? = null
+    fun `containerExtension=mkv should be ignored - falls back to m3u8`() {
+        var capturedExtension: String? = "NOT_CALLED"
         
         val mockClient = object : com.fishit.player.infra.transport.xtream.XtreamApiClient {
             override val authState get() = TODO()
@@ -168,8 +170,8 @@ class XtreamPlaybackSourceFactoryImplTest {
                 serverInfo = null,
                 userInfo = null,
                 liveExtPrefs = listOf("m3u8"),
-                vodExtPrefs = listOf("mp4"),
-                seriesExtPrefs = listOf("mp4"),
+                vodExtPrefs = listOf("m3u8"),
+                seriesExtPrefs = listOf("m3u8"),
                 detectedServerType = null
             )
             override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
@@ -191,7 +193,9 @@ class XtreamPlaybackSourceFactoryImplTest {
             override fun buildLiveUrl(streamId: Int, extension: String?) = ""
             override fun buildVodUrl(vodId: Int, containerExtension: String?): String {
                 capturedExtension = containerExtension
-                return "http://test.com:8080/movie/user/pass/$vodId.${containerExtension ?: "mp4"}"
+                // Real implementation normalizes to m3u8, but mock echoes for assertion
+                val ext = containerExtension ?: "m3u8"
+                return "http://test.com:8080/movie/user/pass/$vodId.$ext"
             }
             override fun buildSeriesEpisodeUrl(seriesId: Int, seasonNumber: Int, episodeNumber: Int, episodeId: Int?, containerExtension: String?) = ""
             override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int) = null
@@ -201,7 +205,8 @@ class XtreamPlaybackSourceFactoryImplTest {
 
         val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
         
-        // Build context with containerExtension = "mkv" (as returned by get_vod_info)
+        // Build context with containerExtension = "mkv" (from VOD metadata)
+        // WITHOUT allowed_output_formats - mkv should be IGNORED
         val context = com.fishit.player.core.playermodel.PlaybackContext(
             canonicalId = "test:movie:123",
             sourceType = com.fishit.player.core.model.SourceType.XTREAM,
@@ -211,24 +216,28 @@ class XtreamPlaybackSourceFactoryImplTest {
                 com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTENT_TYPE to "vod",
                 com.fishit.player.core.model.PlaybackHintKeys.Xtream.VOD_ID to "787947",
                 com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTAINER_EXT to "mkv"
+                // NO ALLOWED_OUTPUT_FORMATS - should ignore mkv and use defaults
             )
         )
 
         // Execute
         kotlinx.coroutines.runBlocking {
-            val source = factory.createSource(context)
+            factory.createSource(context)
             
-            // Verify the extension was passed to buildVodUrl
-            org.junit.Assert.assertEquals("mkv", capturedExtension)
-            
-            // Verify the resulting URL ends with .mkv
-            assertTrue("URL should end with .mkv but was: ${source.uri}", source.uri.endsWith(".mkv"))
+            // Verify NULL was passed - mkv is a container format, not streaming output
+            org.junit.Assert.assertNull(
+                "mkv should be ignored (container format, not streaming). Expected null but was: $capturedExtension", 
+                capturedExtension
+            )
         }
     }
 
+    /**
+     * TEST: allowed_output_formats=m3u8,ts should select m3u8 (priority)
+     */
     @Test
-    fun `buildVodUrl should fallback to mp4 when no extension provided`() {
-        var capturedExtension: String? = "UNSET"
+    fun `allowed_output_formats should take priority - selects m3u8`() {
+        var capturedExtension: String? = "NOT_CALLED"
         
         val mockClient = object : com.fishit.player.infra.transport.xtream.XtreamApiClient {
             override val authState get() = TODO()
@@ -238,8 +247,8 @@ class XtreamPlaybackSourceFactoryImplTest {
                 serverInfo = null,
                 userInfo = null,
                 liveExtPrefs = listOf("m3u8"),
-                vodExtPrefs = listOf("mp4"),
-                seriesExtPrefs = listOf("mp4"),
+                vodExtPrefs = listOf("m3u8"),
+                seriesExtPrefs = listOf("m3u8"),
                 detectedServerType = null
             )
             override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
@@ -261,7 +270,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override fun buildLiveUrl(streamId: Int, extension: String?) = ""
             override fun buildVodUrl(vodId: Int, containerExtension: String?): String {
                 capturedExtension = containerExtension
-                return "http://test.com:8080/movie/user/pass/$vodId.${containerExtension ?: "mp4"}"
+                return "http://test.com:8080/movie/user/pass/$vodId.${containerExtension ?: "m3u8"}"
             }
             override fun buildSeriesEpisodeUrl(seriesId: Int, seasonNumber: Int, episodeNumber: Int, episodeId: Int?, containerExtension: String?) = ""
             override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int) = null
@@ -271,7 +280,6 @@ class XtreamPlaybackSourceFactoryImplTest {
 
         val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
         
-        // Build context WITHOUT containerExtension - should fallback to mp4
         val context = com.fishit.player.core.playermodel.PlaybackContext(
             canonicalId = "test:movie:123",
             sourceType = com.fishit.player.core.model.SourceType.XTREAM,
@@ -279,20 +287,224 @@ class XtreamPlaybackSourceFactoryImplTest {
             title = "Test Movie",
             extras = mapOf(
                 com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTENT_TYPE to "vod",
-                com.fishit.player.core.model.PlaybackHintKeys.Xtream.VOD_ID to "787947"
-                // NO CONTAINER_EXT - should fallback
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.VOD_ID to "787947",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTAINER_EXT to "mkv",
+                // allowed_output_formats takes priority!
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS to "m3u8,ts"
             )
         )
 
-        // Execute
         kotlinx.coroutines.runBlocking {
             val source = factory.createSource(context)
             
-            // Verify null was passed to buildVodUrl (client handles fallback)
-            org.junit.Assert.assertNull("Extension should be null for fallback", capturedExtension)
+            org.junit.Assert.assertEquals("m3u8", capturedExtension)
+            assertTrue("URL should end with .m3u8", source.uri.endsWith(".m3u8"))
+        }
+    }
+
+    /**
+     * TEST: allowed_output_formats=ts only should select ts
+     */
+    @Test
+    fun `allowed_output_formats=ts should select ts`() {
+        var capturedExtension: String? = "NOT_CALLED"
+        
+        val mockClient = object : com.fishit.player.infra.transport.xtream.XtreamApiClient {
+            override val authState get() = TODO()
+            override val connectionState get() = TODO()
+            override val capabilities get() = com.fishit.player.infra.transport.xtream.XtreamCapabilities(
+                baseUrl = "http://test.com:8080",
+                serverInfo = null,
+                userInfo = null,
+                liveExtPrefs = listOf("m3u8"),
+                vodExtPrefs = listOf("m3u8"),
+                seriesExtPrefs = listOf("m3u8"),
+                detectedServerType = null
+            )
+            override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
+            override suspend fun ping() = TODO()
+            override fun close() = TODO()
+            override suspend fun getServerInfo() = TODO()
+            override suspend fun getUserInfo() = TODO()
+            override suspend fun getLiveCategories() = TODO()
+            override suspend fun getVodCategories() = TODO()
+            override suspend fun getSeriesCategories() = TODO()
+            override suspend fun getLiveStreams(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getVodStreams(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getSeries(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getVodInfo(vodId: Int) = TODO()
+            override suspend fun getSeriesInfo(seriesId: Int) = TODO()
+            override suspend fun getShortEpg(streamId: Int, limit: Int) = TODO()
+            override suspend fun getFullEpg(streamId: Int) = TODO()
+            override suspend fun prefetchEpg(streamIds: List<Int>, perStreamLimit: Int) = TODO()
+            override fun buildLiveUrl(streamId: Int, extension: String?) = ""
+            override fun buildVodUrl(vodId: Int, containerExtension: String?): String {
+                capturedExtension = containerExtension
+                return "http://test.com:8080/movie/user/pass/$vodId.${containerExtension ?: "m3u8"}"
+            }
+            override fun buildSeriesEpisodeUrl(seriesId: Int, seasonNumber: Int, episodeNumber: Int, episodeId: Int?, containerExtension: String?) = ""
+            override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int) = null
+            override suspend fun search(query: String, types: Set<com.fishit.player.infra.transport.xtream.XtreamContentType>, limit: Int) = TODO()
+            override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
+        }
+
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        
+        val context = com.fishit.player.core.playermodel.PlaybackContext(
+            canonicalId = "test:movie:123",
+            sourceType = com.fishit.player.core.model.SourceType.XTREAM,
+            uri = null,
+            title = "Test Movie",
+            extras = mapOf(
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTENT_TYPE to "vod",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.VOD_ID to "787947",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS to "ts"
+            )
+        )
+
+        kotlinx.coroutines.runBlocking {
+            val source = factory.createSource(context)
             
-            // Verify the resulting URL ends with .mp4 (default fallback)
-            assertTrue("URL should end with .mp4 but was: ${source.uri}", source.uri.endsWith(".mp4"))
+            org.junit.Assert.assertEquals("ts", capturedExtension)
+            assertTrue("URL should end with .ts", source.uri.endsWith(".ts"))
+        }
+    }
+
+    /**
+     * TEST: mp4 only allowed if in allowed_output_formats
+     */
+    @Test
+    fun `mp4 only allowed when in allowed_output_formats`() {
+        var capturedExtension: String? = "NOT_CALLED"
+        
+        val mockClient = object : com.fishit.player.infra.transport.xtream.XtreamApiClient {
+            override val authState get() = TODO()
+            override val connectionState get() = TODO()
+            override val capabilities get() = com.fishit.player.infra.transport.xtream.XtreamCapabilities(
+                baseUrl = "http://test.com:8080",
+                serverInfo = null,
+                userInfo = null,
+                liveExtPrefs = listOf("m3u8"),
+                vodExtPrefs = listOf("m3u8"),
+                seriesExtPrefs = listOf("m3u8"),
+                detectedServerType = null
+            )
+            override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
+            override suspend fun ping() = TODO()
+            override fun close() = TODO()
+            override suspend fun getServerInfo() = TODO()
+            override suspend fun getUserInfo() = TODO()
+            override suspend fun getLiveCategories() = TODO()
+            override suspend fun getVodCategories() = TODO()
+            override suspend fun getSeriesCategories() = TODO()
+            override suspend fun getLiveStreams(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getVodStreams(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getSeries(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getVodInfo(vodId: Int) = TODO()
+            override suspend fun getSeriesInfo(seriesId: Int) = TODO()
+            override suspend fun getShortEpg(streamId: Int, limit: Int) = TODO()
+            override suspend fun getFullEpg(streamId: Int) = TODO()
+            override suspend fun prefetchEpg(streamIds: List<Int>, perStreamLimit: Int) = TODO()
+            override fun buildLiveUrl(streamId: Int, extension: String?) = ""
+            override fun buildVodUrl(vodId: Int, containerExtension: String?): String {
+                capturedExtension = containerExtension
+                return "http://test.com:8080/movie/user/pass/$vodId.${containerExtension ?: "m3u8"}"
+            }
+            override fun buildSeriesEpisodeUrl(seriesId: Int, seasonNumber: Int, episodeNumber: Int, episodeId: Int?, containerExtension: String?) = ""
+            override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int) = null
+            override suspend fun search(query: String, types: Set<com.fishit.player.infra.transport.xtream.XtreamContentType>, limit: Int) = TODO()
+            override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
+        }
+
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        
+        // Server explicitly allows mp4
+        val context = com.fishit.player.core.playermodel.PlaybackContext(
+            canonicalId = "test:movie:123",
+            sourceType = com.fishit.player.core.model.SourceType.XTREAM,
+            uri = null,
+            title = "Test Movie",
+            extras = mapOf(
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTENT_TYPE to "vod",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.VOD_ID to "787947",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS to "mp4"
+            )
+        )
+
+        kotlinx.coroutines.runBlocking {
+            val source = factory.createSource(context)
+            
+            org.junit.Assert.assertEquals("mp4", capturedExtension)
+            assertTrue("URL should end with .mp4", source.uri.endsWith(".mp4"))
+        }
+    }
+
+    /**
+     * TEST: m3u8 containerExtension is valid streaming format - should be used
+     */
+    @Test
+    fun `containerExtension=m3u8 is valid streaming format - should be used`() {
+        var capturedExtension: String? = "NOT_CALLED"
+        
+        val mockClient = object : com.fishit.player.infra.transport.xtream.XtreamApiClient {
+            override val authState get() = TODO()
+            override val connectionState get() = TODO()
+            override val capabilities get() = com.fishit.player.infra.transport.xtream.XtreamCapabilities(
+                baseUrl = "http://test.com:8080",
+                serverInfo = null,
+                userInfo = null,
+                liveExtPrefs = listOf("m3u8"),
+                vodExtPrefs = listOf("m3u8"),
+                seriesExtPrefs = listOf("m3u8"),
+                detectedServerType = null
+            )
+            override suspend fun initialize(config: com.fishit.player.infra.transport.xtream.XtreamApiConfig, forceDiscovery: Boolean) = TODO()
+            override suspend fun ping() = TODO()
+            override fun close() = TODO()
+            override suspend fun getServerInfo() = TODO()
+            override suspend fun getUserInfo() = TODO()
+            override suspend fun getLiveCategories() = TODO()
+            override suspend fun getVodCategories() = TODO()
+            override suspend fun getSeriesCategories() = TODO()
+            override suspend fun getLiveStreams(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getVodStreams(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getSeries(categoryId: String?, limit: Int, offset: Int) = TODO()
+            override suspend fun getVodInfo(vodId: Int) = TODO()
+            override suspend fun getSeriesInfo(seriesId: Int) = TODO()
+            override suspend fun getShortEpg(streamId: Int, limit: Int) = TODO()
+            override suspend fun getFullEpg(streamId: Int) = TODO()
+            override suspend fun prefetchEpg(streamIds: List<Int>, perStreamLimit: Int) = TODO()
+            override fun buildLiveUrl(streamId: Int, extension: String?) = ""
+            override fun buildVodUrl(vodId: Int, containerExtension: String?): String {
+                capturedExtension = containerExtension
+                return "http://test.com:8080/movie/user/pass/$vodId.${containerExtension ?: "m3u8"}"
+            }
+            override fun buildSeriesEpisodeUrl(seriesId: Int, seasonNumber: Int, episodeNumber: Int, episodeId: Int?, containerExtension: String?) = ""
+            override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int) = null
+            override suspend fun search(query: String, types: Set<com.fishit.player.infra.transport.xtream.XtreamContentType>, limit: Int) = TODO()
+            override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
+        }
+
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        
+        // containerExtension = "m3u8" is a valid streaming format
+        val context = com.fishit.player.core.playermodel.PlaybackContext(
+            canonicalId = "test:movie:123",
+            sourceType = com.fishit.player.core.model.SourceType.XTREAM,
+            uri = null,
+            title = "Test Movie",
+            extras = mapOf(
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTENT_TYPE to "vod",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.VOD_ID to "787947",
+                com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTAINER_EXT to "m3u8"
+            )
+        )
+
+        kotlinx.coroutines.runBlocking {
+            val source = factory.createSource(context)
+            
+            org.junit.Assert.assertEquals("m3u8", capturedExtension)
+            assertTrue("URL should end with .m3u8", source.uri.endsWith(".m3u8"))
         }
     }
 }
