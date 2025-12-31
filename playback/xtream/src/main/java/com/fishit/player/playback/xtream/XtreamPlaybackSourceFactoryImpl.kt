@@ -438,8 +438,11 @@ constructor(
             }
         }
 
-        // Priority 3: Default to m3u8 (XtreamApiClient will use this)
-        UnifiedLog.d(TAG) { "No format hints, defaulting to m3u8" }
+        // Priority 3: Default to m3u8 (with warning - allowed_output_formats should be present)
+        UnifiedLog.w(TAG) { 
+            "No allowed_output_formats provided by server, defaulting to m3u8. " +
+            "This may fail with some providers. Server should provide allowed_output_formats."
+        }
         return "m3u8"
     }
 
