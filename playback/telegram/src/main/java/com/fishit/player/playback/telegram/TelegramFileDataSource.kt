@@ -137,7 +137,7 @@ class TelegramFileDataSource(
             val attemptMode = uri.getQueryParameter("attemptMode") // DIRECT_FIRST or BUFFERED_5MB
 
             UnifiedLog.d(TAG) {
-                "Opening Telegram file: fileId=$fileId, chatId=$chatId, messageId=$messageId, " +
+                "Opening Telegram file: fileId=$fileId, chatId=***${chatId?.toString()?.takeLast(3) ?: "null"}, messageId=***${messageId?.toString()?.takeLast(3) ?: "null"}, " +
                     "mimeType=$mimeType, attemptMode=$attemptMode"
             }
 
@@ -287,11 +287,11 @@ class TelegramFileDataSource(
             // Path 1: RemoteId-First (chatId + messageId) - PREFERRED
             chatId != null && messageId != null -> {
                 UnifiedLog.d(TAG) {
-                    "Resolving via TelegramRemoteResolver (RemoteId-First): chatId=$chatId, messageId=$messageId"
+                    "Resolving via TelegramRemoteResolver (RemoteId-First): chatId=***${chatId.toString().takeLast(3)}, messageId=***${messageId.toString().takeLast(3)}"
                 }
                 val resolved = remoteResolver.resolveMedia(TelegramRemoteId(chatId, messageId))
                     ?: throw TelegramFileException(
-                        "Could not resolve media via RemoteId: chatId=$chatId, messageId=$messageId"
+                        "Could not resolve media via RemoteId (masked)"
                     )
                 UnifiedLog.d(TAG) {
                     "Resolved via RemoteResolver: fileId=${resolved.mediaFileId}, " +

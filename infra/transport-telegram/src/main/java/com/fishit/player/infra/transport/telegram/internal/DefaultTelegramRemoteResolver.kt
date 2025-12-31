@@ -55,7 +55,7 @@ internal class DefaultTelegramRemoteResolver(
 
     override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? {
         UnifiedLog.d(TAG) {
-            "Resolving media: chatId=${remoteId.chatId}, messageId=${remoteId.messageId}"
+            "Resolving media: chatId=***${remoteId.chatId.toString().takeLast(3)}, messageId=***${remoteId.messageId.toString().takeLast(3)}"
         }
 
         // Fetch message from TDLib
@@ -68,7 +68,7 @@ internal class DefaultTelegramRemoteResolver(
             is TdlResult.Success -> messageResult.result
             is TdlResult.Failure -> {
                 UnifiedLog.w(TAG) {
-                    "Failed to fetch message: ${messageResult.code} - ${messageResult.message}"
+                    "Failed to fetch message (masked): ${messageResult.code} - ${messageResult.message}"
                 }
                 return null
             }
@@ -76,7 +76,7 @@ internal class DefaultTelegramRemoteResolver(
 
         // Extract media content
         val content = message.content ?: run {
-            UnifiedLog.d(TAG) { "Message has no content: ${remoteId.messageId}" }
+            UnifiedLog.d(TAG) { "Message has no content (masked)" }
             return null
         }
 

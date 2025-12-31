@@ -1,5 +1,6 @@
 package com.fishit.player.infra.transport.telegram.internal
 
+import com.fishit.player.infra.transport.telegram.ResolvedTelegramMedia
 import com.fishit.player.infra.transport.telegram.TelegramRemoteId
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
@@ -15,8 +16,10 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -128,5 +131,77 @@ class DefaultTelegramRemoteResolverTest {
         assertEquals(true, result.supportsStreaming)
         assertNotNull(result.minithumbnailBytes)
         assertEquals(4, result.minithumbnailBytes?.size)
+    }
+}
+
+    @Test
+    fun `ResolvedTelegramMedia equals handles null minithumbnailBytes`() {
+        // Given: Two instances with null minithumbnailBytes
+        val media1 = ResolvedTelegramMedia(
+            mediaFileId = 123,
+            thumbFileId = 456,
+            mimeType = "video/mp4",
+            minithumbnailBytes = null
+        )
+        val media2 = ResolvedTelegramMedia(
+            mediaFileId = 123,
+            thumbFileId = 456,
+            mimeType = "video/mp4",
+            minithumbnailBytes = null
+        )
+
+        // When: Compare
+        val result = media1 == media2
+
+        // Then: Should be equal and not throw NPE
+        assertTrue(result)
+    }
+
+    @Test
+    fun `ResolvedTelegramMedia equals handles one null minithumbnailBytes`() {
+        // Given: One with null, one with bytes
+        val media1 = ResolvedTelegramMedia(
+            mediaFileId = 123,
+            thumbFileId = 456,
+            mimeType = "video/mp4",
+            minithumbnailBytes = null
+        )
+        val media2 = ResolvedTelegramMedia(
+            mediaFileId = 123,
+            thumbFileId = 456,
+            mimeType = "video/mp4",
+            minithumbnailBytes = byteArrayOf(1, 2, 3)
+        )
+
+        // When: Compare
+        val result = media1 == media2
+
+        // Then: Should not be equal
+        assertFalse(result)
+    }
+
+    @Test
+    fun `ResolvedTelegramMedia equals handles both non-null minithumbnailBytes`() {
+        // Given: Both with same bytes
+        val bytes1 = byteArrayOf(1, 2, 3, 4)
+        val bytes2 = byteArrayOf(1, 2, 3, 4)
+        val media1 = ResolvedTelegramMedia(
+            mediaFileId = 123,
+            thumbFileId = 456,
+            mimeType = "video/mp4",
+            minithumbnailBytes = bytes1
+        )
+        val media2 = ResolvedTelegramMedia(
+            mediaFileId = 123,
+            thumbFileId = 456,
+            mimeType = "video/mp4",
+            minithumbnailBytes = bytes2
+        )
+
+        // When: Compare
+        val result = media1 == media2
+
+        // Then: Should be equal
+        assertTrue(result)
     }
 }

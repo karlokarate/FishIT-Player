@@ -15,6 +15,7 @@ import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
 import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
+import com.fishit.player.infra.transport.telegram.imaging.TelegramThumbDownloader
 import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
 import dagger.Module
 import dagger.Provides
@@ -171,4 +172,24 @@ object TelegramTransportModule {
     @Singleton
     fun provideTelegramRemoteResolver(telegramClient: TelegramClient): TelegramRemoteResolver =
             telegramClient
+
+    /**
+     * Provides TelegramThumbDownloader for thumbnail upgrade strategy.
+     *
+     * Features:
+     * - Ensures thumbnails are downloaded via TDLib cache (no secondary cache)
+     * - Non-blocking: triggers download, returns path when ready
+     * - Low priority downloads (background)
+     * - Idempotent and app-scope (not UI-scope)
+     *
+     * Note: TelegramThumbDownloader is provided as a separate singleton even though it
+     * composes resolver + fileClient, as it provides specific thumbnail download logic
+     * that's distinct from the generic file/resolver interfaces.
+     */
+    @Provides
+    @Singleton
+    fun provideTelegramThumbDownloader(
+        remoteResolver: TelegramRemoteResolver,
+        fileClient: TelegramFileClient
+    ): TelegramThumbDownloader = TelegramThumbDownloader(remoteResolver, fileClient)
 }
