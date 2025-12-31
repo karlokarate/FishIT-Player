@@ -358,8 +358,8 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
                 return normalizedExt
             } else {
                 UnifiedLog.d(TAG) { 
-                    "Ignoring containerExtension=$explicitExt (not a valid output format), " +
-                    "falling back to policy-based selection" 
+                    """Ignoring containerExtension=$explicitExt (not a valid output format), 
+                       |falling back to policy-based selection""".trimMargin()
                 }
                 // Fall through to Priority 2
             }
