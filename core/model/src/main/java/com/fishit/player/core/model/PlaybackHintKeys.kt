@@ -101,5 +101,25 @@ object PlaybackHintKeys {
          * Keep for backward compatibility only; prefer [REMOTE_ID].
          */
         const val FILE_ID = "telegram.fileId"
+
+        /**
+         * Playback attempt mode (SSOT for Telegram playback strategy).
+         *
+         * Values:
+         * - [ATTEMPT_MODE_DIRECT_FIRST]: Try playback directly without blocking on MP4 moov checks
+         * - [ATTEMPT_MODE_BUFFERED_5MB]: Wait for 5MB download before starting playback
+         *
+         * Strategy:
+         * 1. First attempt uses DIRECT_FIRST for fastest possible start
+         * 2. On player error during DIRECT_FIRST, retry with BUFFERED_5MB
+         * 3. BUFFERED_5MB provides deterministic fallback with reasonable latency
+         */
+        const val PLAYBACK_ATTEMPT_MODE = "telegram.playbackAttemptMode"
+
+        /** Direct playback attempt (no buffering wait, fastest start) */
+        const val ATTEMPT_MODE_DIRECT_FIRST = "DIRECT_FIRST"
+
+        /** Buffered playback attempt (wait for 5MB before start) */
+        const val ATTEMPT_MODE_BUFFERED_5MB = "BUFFERED_5MB"
     }
 }

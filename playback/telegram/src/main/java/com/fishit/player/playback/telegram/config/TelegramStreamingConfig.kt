@@ -120,7 +120,35 @@ object TelegramStreamingConfig {
     const val PREFIX_POLL_INTERVAL_MS: Long = 100L
 
     /**
-     * Maximum wait time for initial prefix + moov validation (30 seconds).
+     * Timeout for DIRECT_FIRST attempt (10 seconds).
+     *
+     * This is intentionally short because DIRECT_FIRST should fail fast if the file is not
+     * suitable for immediate playback. Player will then retry with BUFFERED_5MB.
+     */
+    const val DIRECT_FIRST_TIMEOUT_MS: Long = 10_000L
+
+    /**
+     * Timeout for BUFFERED_5MB attempt (30 seconds).
+     *
+     * Sufficient time to download 5MB on most connections:
+     * - Fast connection (5 MB/s): ~1 second
+     * - Medium connection (1 MB/s): ~5 seconds
+     * - Slow connection (200 KB/s): ~25 seconds
+     */
+    const val BUFFERED_5MB_TIMEOUT_MS: Long = 30_000L
+
+    /**
+     * 5MB threshold for BUFFERED_5MB mode (5 * 1024 * 1024 bytes).
+     *
+     * This provides a reasonable buffer for most video files:
+     * - Enough for moov atom in well-formed MP4 files
+     * - Enough for initial playback of most codecs
+     * - Small enough to maintain acceptable latency
+     */
+    const val BUFFERED_5MB_THRESHOLD_BYTES: Long = 5 * 1024 * 1024 // 5 MiB
+
+    /**
+     * Maximum wait time for initial prefix + moov validation in PROGRESSIVE_FILE mode (30 seconds).
      *
      * Covers:
      * - Initial TDLib connection delay
@@ -130,8 +158,32 @@ object TelegramStreamingConfig {
      * If timeout occurs, file is likely:
      * - Network issue (check connectivity)
      * - Very large moov atom (rare, indicates non-optimized file)
+     *
+     * **Note:** This timeout is for PROGRESSIVE_FILE mode only. FULL_FILE mode uses
+     * FULL_FILE_DOWNLOAD_TIMEOUT_MS.
      */
     const val ENSURE_READY_TIMEOUT_MS: Long = 30_000L
+
+    /**
+     * Maximum wait time for FULL_FILE mode downloads (60 seconds).
+     *
+     * This timeout is used when:
+     * - MKV files require full download
+     * - MP4 files without faststart optimization (moov at end)
+     * - Progressive playback fallback to FULL_FILE mode
+     *
+     * **Rationale:**
+     * - Typical video file: 50-500 MB
+     * - Minimum acceptable speed: ~1 MB/s
+     * - 60s allows up to 60 MB files on slow connections
+     * - Larger files may timeout (user should see "download too slow" error)
+     *
+     * **User Experience:**
+     * - Small files (< 50 MB): Usually complete within 10-20s
+     * - Medium files (50-200 MB): May take 30-60s
+     * - Large files (> 200 MB): May timeout (acceptable - encourages better encoding)
+     */
+    const val FULL_FILE_DOWNLOAD_TIMEOUT_MS: Long = 60_000L
 
     /**
      * Timeout for moov atom completeness check.
