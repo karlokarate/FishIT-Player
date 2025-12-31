@@ -210,8 +210,7 @@ constructor(
             // Fatal error - fail without retry to prevent infinite loops
             return Result.failure(
                     WorkerOutputData.failure(
-                            errorMessage = "Fatal error: ${t.javaClass.simpleName}",
-                            durationMs = durationMs,
+                            reason = "Fatal error: ${t.javaClass.simpleName}",
                     ),
             )
         }

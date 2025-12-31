@@ -5,7 +5,9 @@ import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
 import com.fishit.player.infra.transport.telegram.api.TgChat
 import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgMessage
+import com.fishit.player.infra.transport.telegram.api.TgMinithumbnail
 import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
+import com.fishit.player.infra.transport.telegram.api.TgThumbnail
 import com.fishit.player.infra.transport.telegram.util.RetryConfig
 import com.fishit.player.infra.transport.telegram.util.TelegramRetry
 import dev.g000sha256.tdl.TdlClient
@@ -396,7 +398,25 @@ class TelegramChatBrowser(
                             height = content.video.height,
                             fileSize = content.video.video.size,
                             supportsStreaming = content.video.supportsStreaming,
-                            caption = content.caption.text
+                            caption = content.caption.text,
+                            // Extract thumbnail (v2 fix - enables image tiles)
+                            thumbnail = content.video.thumbnail?.let { thumb ->
+                                TgThumbnail(
+                                    fileId = thumb.file.id,
+                                    remoteId = thumb.file.remote?.id ?: "",
+                                    width = thumb.width,
+                                    height = thumb.height,
+                                    fileSize = thumb.file.size
+                                )
+                            },
+                            // Extract minithumbnail for instant blur placeholder
+                            minithumbnail = content.video.minithumbnail?.let { mini ->
+                                TgMinithumbnail(
+                                    width = mini.width,
+                                    height = mini.height,
+                                    data = mini.data
+                                )
+                            }
                     )
             is MessageAudio ->
                     TgContent.Audio(
@@ -408,7 +428,24 @@ class TelegramChatBrowser(
                             title = content.audio.title,
                             performer = content.audio.performer,
                             fileSize = content.audio.audio.size,
-                            caption = content.caption.text
+                            caption = content.caption.text,
+                            // Extract album cover thumbnail
+                            albumCoverThumbnail = content.audio.albumCoverThumbnail?.let { thumb ->
+                                TgThumbnail(
+                                    fileId = thumb.file.id,
+                                    remoteId = thumb.file.remote?.id ?: "",
+                                    width = thumb.width,
+                                    height = thumb.height,
+                                    fileSize = thumb.file.size
+                                )
+                            },
+                            albumCoverMinithumbnail = content.audio.albumCoverMinithumbnail?.let { mini ->
+                                TgMinithumbnail(
+                                    width = mini.width,
+                                    height = mini.height,
+                                    data = mini.data
+                                )
+                            }
                     )
             is MessageDocument ->
                     TgContent.Document(
@@ -417,7 +454,24 @@ class TelegramChatBrowser(
                             fileName = content.document.fileName,
                             mimeType = content.document.mimeType,
                             fileSize = content.document.document.size,
-                            caption = content.caption.text
+                            caption = content.caption.text,
+                            // Extract document thumbnail (v2 fix - enables image tiles for video-as-document)
+                            thumbnail = content.document.thumbnail?.let { thumb ->
+                                TgThumbnail(
+                                    fileId = thumb.file.id,
+                                    remoteId = thumb.file.remote?.id ?: "",
+                                    width = thumb.width,
+                                    height = thumb.height,
+                                    fileSize = thumb.file.size
+                                )
+                            },
+                            minithumbnail = content.document.minithumbnail?.let { mini ->
+                                TgMinithumbnail(
+                                    width = mini.width,
+                                    height = mini.height,
+                                    data = mini.data
+                                )
+                            }
                     )
             is MessagePhoto ->
                     TgContent.Photo(
@@ -431,7 +485,14 @@ class TelegramChatBrowser(
                                                 fileSize = size.photo.size
                                         )
                                     },
-                            caption = content.caption.text
+                            caption = content.caption.text,
+                            minithumbnail = content.photo.minithumbnail?.let { mini ->
+                                TgMinithumbnail(
+                                    width = mini.width,
+                                    height = mini.height,
+                                    data = mini.data
+                                )
+                            }
                     )
             is MessageAnimation ->
                     TgContent.Animation(
@@ -443,7 +504,23 @@ class TelegramChatBrowser(
                             width = content.animation.width,
                             height = content.animation.height,
                             fileSize = content.animation.animation.size,
-                            caption = content.caption.text
+                            caption = content.caption.text,
+                            thumbnail = content.animation.thumbnail?.let { thumb ->
+                                TgThumbnail(
+                                    fileId = thumb.file.id,
+                                    remoteId = thumb.file.remote?.id ?: "",
+                                    width = thumb.width,
+                                    height = thumb.height,
+                                    fileSize = thumb.file.size
+                                )
+                            },
+                            minithumbnail = content.animation.minithumbnail?.let { mini ->
+                                TgMinithumbnail(
+                                    width = mini.width,
+                                    height = mini.height,
+                                    data = mini.data
+                                )
+                            }
                     )
             is MessageVideoNote ->
                     TgContent.VideoNote(
@@ -451,7 +528,23 @@ class TelegramChatBrowser(
                             remoteId = content.videoNote.video.remote?.id ?: "",
                             duration = content.videoNote.duration,
                             length = content.videoNote.length,
-                            fileSize = content.videoNote.video.size
+                            fileSize = content.videoNote.video.size,
+                            thumbnail = content.videoNote.thumbnail?.let { thumb ->
+                                TgThumbnail(
+                                    fileId = thumb.file.id,
+                                    remoteId = thumb.file.remote?.id ?: "",
+                                    width = thumb.width,
+                                    height = thumb.height,
+                                    fileSize = thumb.file.size
+                                )
+                            },
+                            minithumbnail = content.videoNote.minithumbnail?.let { mini ->
+                                TgMinithumbnail(
+                                    width = mini.width,
+                                    height = mini.height,
+                                    data = mini.data
+                                )
+                            }
                     )
             is MessageVoiceNote ->
                     TgContent.VoiceNote(

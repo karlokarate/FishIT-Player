@@ -125,6 +125,11 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
      *
      * Per Contract D (Timestamp Normalization):
      * - Converts TgMessage.date (seconds) to milliseconds for consistency
+     *
+     * **Thumbnail Priority (Dec 2025 fix):**
+     * 1. PHOTO message in bundle (posterSize) - highest quality poster
+     * 2. Video's own thumbnail (videoProps.thumbRemoteId) - fallback
+     * 3. No thumbnail if neither available
      */
     private fun mapVideoToMediaItem(
             videoMessage: TgMessage,
@@ -133,20 +138,20 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
             posterSize: TgPhotoSize?,
     ): TelegramMediaItem {
         // Extract video properties from either Video or Document content
-        val (
-                remoteId,
-                fileName,
-                caption,
-                mimeType,
-                fileSize,
-                duration,
-                width,
-                height,
-                supportsStreaming) =
-                extractVideoProperties(videoMessage)
+        val videoProps = extractVideoProperties(videoMessage)
 
         // Convert timestamp from seconds to milliseconds (Contract D)
         val timestampMs = videoMessage.date * 1000L
+
+        // Thumbnail selection: PHOTO message takes priority, then video's own thumbnail
+        val effectiveThumbRemoteId = posterSize?.remoteId ?: videoProps.thumbRemoteId
+        val effectiveThumbWidth = posterSize?.width ?: videoProps.thumbWidth
+        val effectiveThumbHeight = posterSize?.height ?: videoProps.thumbHeight
+        
+        // Minithumbnail: from video (PHOTO messages don't provide minithumbnail in bundles)
+        val effectiveMinithumbBytes = videoProps.minithumbnailBytes
+        val effectiveMinithumbWidth = videoProps.minithumbnailWidth
+        val effectiveMinithumbHeight = videoProps.minithumbnailHeight
 
         return TelegramMediaItem(
                 // Core identifiers
@@ -155,23 +160,28 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
                 mediaType = TelegramMediaType.VIDEO,
 
                 // File reference (remoteId only - resolve fileId at runtime)
-                remoteId = remoteId,
+                remoteId = videoProps.remoteId,
 
                 // Video properties
-                title = fileName ?: caption?.take(MAX_CAPTION_TITLE_LENGTH) ?: "",
-                fileName = fileName,
-                caption = caption,
-                mimeType = mimeType,
-                sizeBytes = fileSize,
-                durationSecs = duration,
-                width = width,
-                height = height,
-                supportsStreaming = supportsStreaming,
+                title = videoProps.fileName ?: videoProps.caption?.take(MAX_CAPTION_TITLE_LENGTH) ?: "",
+                fileName = videoProps.fileName,
+                caption = videoProps.caption,
+                mimeType = videoProps.mimeType,
+                sizeBytes = videoProps.fileSize,
+                durationSecs = videoProps.duration,
+                width = videoProps.width,
+                height = videoProps.height,
+                supportsStreaming = videoProps.supportsStreaming,
 
-                // Poster from PHOTO message (if present)
-                thumbRemoteId = posterSize?.remoteId,
-                thumbnailWidth = posterSize?.width,
-                thumbnailHeight = posterSize?.height,
+                // Thumbnail: PHOTO > Video's own thumbnail (v2 fix)
+                thumbRemoteId = effectiveThumbRemoteId,
+                thumbnailWidth = effectiveThumbWidth,
+                thumbnailHeight = effectiveThumbHeight,
+                
+                // Minithumbnail for instant blur placeholder
+                minithumbnailBytes = effectiveMinithumbBytes,
+                minithumbnailWidth = effectiveMinithumbWidth,
+                minithumbnailHeight = effectiveMinithumbHeight,
 
                 // Timestamp in MILLISECONDS (Contract D)
                 date = timestampMs,
@@ -202,6 +212,9 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
      * Per Contract B (DOC+VIDEO):
      * - Document with video MIME is treated as VIDEO for emission
      * - MUST NOT crash on Document content
+     *
+     * **Bug fix (Dec 2025):** Now also extracts video's own thumbnail and minithumbnail.
+     * Previously these were ignored, causing thumbnails to be missing when no PHOTO was in the bundle.
      */
     private fun extractVideoProperties(videoMessage: TgMessage): VideoProperties {
         return when (val content = videoMessage.content) {
@@ -216,6 +229,13 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
                             width = content.width,
                             height = content.height,
                             supportsStreaming = content.supportsStreaming,
+                            // Extract video's own thumbnail (v2 fix)
+                            thumbRemoteId = content.thumbnail?.remoteId,
+                            thumbWidth = content.thumbnail?.width,
+                            thumbHeight = content.thumbnail?.height,
+                            minithumbnailBytes = content.minithumbnail?.data,
+                            minithumbnailWidth = content.minithumbnail?.width,
+                            minithumbnailHeight = content.minithumbnail?.height,
                     )
             is TgContent.Document ->
                     VideoProperties(
@@ -228,6 +248,13 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
                             width = null,
                             height = null,
                             supportsStreaming = false,
+                            // Extract document's thumbnail (v2 fix)
+                            thumbRemoteId = content.thumbnail?.remoteId,
+                            thumbWidth = content.thumbnail?.width,
+                            thumbHeight = content.thumbnail?.height,
+                            minithumbnailBytes = content.minithumbnail?.data,
+                            minithumbnailWidth = content.minithumbnail?.width,
+                            minithumbnailHeight = content.minithumbnail?.height,
                     )
             else -> {
                 UnifiedLog.w(TAG) {
@@ -249,7 +276,12 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
         }
     }
 
-    /** Internal data class for video properties extraction. */
+    /**
+     * Internal data class for video properties extraction.
+     *
+     * Now includes thumbnail and minithumbnail from the video content itself,
+     * as a fallback when no separate PHOTO message is in the bundle.
+     */
     private data class VideoProperties(
             val remoteId: String?,
             val fileName: String?,
@@ -260,6 +292,13 @@ class TelegramBundleToMediaItemMapper @Inject constructor(
             val width: Int?,
             val height: Int?,
             val supportsStreaming: Boolean,
+            // === Video's own thumbnail (fallback when no PHOTO in bundle) ===
+            val thumbRemoteId: String? = null,
+            val thumbWidth: Int? = null,
+            val thumbHeight: Int? = null,
+            val minithumbnailBytes: ByteArray? = null,
+            val minithumbnailWidth: Int? = null,
+            val minithumbnailHeight: Int? = null,
     )
 
     companion object {
