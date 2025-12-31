@@ -10,54 +10,70 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /**
- * Tests for hardened Xtream playback behavior addressing:
- * 1. Lazy session re-initialization
- * 2. Strict output format selection (Cloudflare-safe)
- * 3. Safe URI validation not blocking session-derived paths
- * 4. Explicit error propagation (no demo stream fallback)
+ * Gold-grade tests for hardened Xtream playback behavior:
+ * 1. Policy-driven format selection (allowed_output_formats is SSOT)
+ * 2. Lazy session re-initialization (idempotent, thread-safe)
+ * 3. Safe URI validation (no false positives on session-derived paths)
+ * 4. Explicit error propagation (no masked failures)
  */
 class XtreamPlaybackHardeningTest {
 
+    // =========================================================================
+    // Format Selection Tests (Policy-Driven, allowed_output_formats is SSOT)
+    // =========================================================================
+
     @Test
-    fun `format selection prioritizes m3u8 over ts over mp4`() {
+    fun `format selection prioritizes m3u8 when available`() {
         // Given formats with all three options
         val formats = setOf("mp4", "ts", "m3u8")
         
         // When selecting
         val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
         
-        // Then m3u8 is chosen
+        // Then m3u8 is chosen (highest priority)
         assertEquals("m3u8", selected)
     }
 
     @Test
     fun `format selection uses ts when m3u8 not available`() {
-        // Given formats with only ts and mp4
+        // Given formats with ts and mp4 only
         val formats = setOf("mp4", "ts")
         
         // When selecting
         val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
         
-        // Then ts is chosen (mp4 is not in priority list)
+        // Then ts is chosen (second priority)
         assertEquals("ts", selected)
     }
 
     @Test
-    fun `format selection uses mp4 only if it is the ONLY format`() {
-        // Given only mp4
+    fun `format selection uses mp4 when explicitly allowed`() {
+        // Given only mp4 in allowed formats
         val formats = setOf("mp4")
         
         // When selecting
         val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
         
-        // Then mp4 is used as last resort
+        // Then mp4 is used (policy-driven, not restricted)
         assertEquals("mp4", selected)
+    }
+    
+    @Test
+    fun `format selection chooses ts over mp4`() {
+        // Given both ts and mp4
+        val formats = setOf("ts", "mp4")
+        
+        // When selecting
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        
+        // Then ts is preferred
+        assertEquals("ts", selected)
     }
 
     @Test
-    fun `format selection fails when no supported format and mp4 not alone`() {
+    fun `format selection fails when no supported format`() {
         // Given unsupported formats only
-        val formats = setOf("webm", "flv")
+        val formats = setOf("webm", "flv", "avi")
         
         // When selecting
         val exception = assertThrows(PlaybackSourceException::class.java) {
@@ -66,19 +82,50 @@ class XtreamPlaybackHardeningTest {
         
         // Then error message indicates no support
         assertTrue(exception.message!!.contains("No supported output format"))
+        assertTrue(exception.message!!.contains("m3u8, ts, mp4"))
     }
 
     @Test
-    fun `format selection for Cloudflare panels uses m3u8`() {
-        // Given typical Cloudflare panel formats
+    fun `format selection fails when allowed formats empty`() {
+        // Given empty formats
+        val formats = emptySet<String>()
+        
+        // When selecting
+        val exception = assertThrows(PlaybackSourceException::class.java) {
+            XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        }
+        
+        // Then error message indicates empty list
+        assertTrue(exception.message!!.contains("allowed_output_formats is empty"))
+    }
+
+    @Test
+    fun `format selection for Cloudflare panels with m3u8 and ts`() {
+        // Given typical Cloudflare panel formats (no mp4)
         val formats = setOf("m3u8", "ts")
         
         // When selecting
         val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
         
-        // Then m3u8 is selected (Cloudflare-safe)
+        // Then m3u8 is selected
         assertEquals("m3u8", selected)
     }
+    
+    @Test
+    fun `format selection handles provider with mp4 and ts but no m3u8`() {
+        // Given provider that allows mp4 and ts (some providers do this)
+        val formats = setOf("mp4", "ts")
+        
+        // When selecting
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        
+        // Then ts is chosen (higher priority than mp4)
+        assertEquals("ts", selected)
+    }
+
+    // =========================================================================
+    // Lazy Re-Init Tests (Idempotent, Thread-Safe, Bounded)
+    // =========================================================================
 
     @Test
     fun `lazy reinit succeeds when credentials available and valid`() = runTest {
@@ -153,13 +200,64 @@ class XtreamPlaybackHardeningTest {
             )
         )
         
-        // Then explicit error with actionable message
+        // Then explicit error with "not configured" message
         val exception = assertThrows(PlaybackSourceException::class.java) {
             runTest { factory.createSource(context) }
         }
         
-        assertTrue(exception.message!!.contains("log in to your Xtream account"))
+        assertTrue(exception.message!!.contains("not configured") || exception.message!!.contains("log in"))
     }
+    
+    @Test
+    fun `lazy reinit provides actionable error when credentials invalid`() = runTest {
+        // Given stored credentials that are invalid
+        val mockApiClient = createMockApiClient(
+            initialCapabilities = null,
+            onInitialize = { 
+                Result.failure(Exception("Invalid credentials"))
+            }
+        )
+        
+        val mockCredentialsStore = object : XtreamCredentialsStore {
+            override suspend fun read() = XtreamStoredConfig(
+                scheme = "http",
+                host = "server",
+                port = 8080,
+                username = "user",
+                password = "wrongpass"
+            )
+            override suspend fun write(config: XtreamStoredConfig) {}
+            override suspend fun clear() {}
+        }
+        
+        val factory = XtreamPlaybackSourceFactoryImpl(mockApiClient, mockCredentialsStore)
+        
+        // When creating source
+        val context = PlaybackContext(
+            canonicalId = "test",
+            sourceType = SourceType.XTREAM,
+            uri = null,
+            extras = mapOf(
+                "contentType" to "live",
+                "streamId" to "123"
+            )
+        )
+        
+        // Then error message distinguishes invalid credentials
+        val exception = assertThrows(PlaybackSourceException::class.java) {
+            runTest { factory.createSource(context) }
+        }
+        
+        assertTrue(
+            exception.message!!.contains("invalid") || 
+            exception.message!!.contains("unreachable") ||
+            exception.message!!.contains("log in again")
+        )
+    }
+
+    // =========================================================================
+    // URI Safety Tests (No False Positives on Session-Derived Paths)
+    // =========================================================================
 
     @Test
     fun `prebuilt URI validation does not block session-derived paths`() = runTest {
@@ -180,7 +278,7 @@ class XtreamPlaybackHardeningTest {
         val context = PlaybackContext(
             canonicalId = "test",
             sourceType = SourceType.XTREAM,
-            uri = "http://user:pass@server/live/123.m3u8", // Unsafe
+            uri = "******server/live/123.m3u8", // Unsafe
             extras = mapOf(
                 "contentType" to "live",
                 "streamId" to "123"

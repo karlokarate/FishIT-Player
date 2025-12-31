@@ -13,6 +13,8 @@ import com.fishit.player.playback.domain.PlaybackSourceException
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -64,6 +66,9 @@ constructor(
     private val credentialsStore: XtreamCredentialsStore
 ) : PlaybackSourceFactory {
 
+    // Mutex to ensure lazy re-init is idempotent and thread-safe
+    private val reinitMutex = Mutex()
+
     companion object {
         private const val TAG = "XtreamPlaybackFactory"
         
@@ -85,51 +90,51 @@ constructor(
         const val CONTENT_TYPE_VOD = "vod"
         const val CONTENT_TYPE_SERIES = "series"
 
-        // Output format priority (policy: HLS > TS only for Cloudflare compatibility)
-        // MP4 is explicitly excluded from default priority to avoid Cloudflare issues
-        // MP4 is only used if it's the ONLY format in allowedOutputFormats
-        private val FORMAT_PRIORITY = listOf("m3u8", "ts")
+        // Output format priority (policy-driven from allowed_output_formats)
+        // Priority: m3u8 > ts > mp4 (if explicitly allowed by server)
+        private val FORMAT_PRIORITY = listOf("m3u8", "ts", "mp4")
         
-        // TRUE streaming formats (safe to accept from any source)
+        // TRUE streaming formats (safe to accept from containerExtension)
+        // Note: mp4 is NOT in this set - it's a container format, not streaming output
         private val STREAMING_FORMATS = setOf("m3u8", "ts")
 
         /**
-         * Select the best output format based on server-allowed formats.
+         * Select the best output format based on server-allowed formats (SSOT).
          *
-         * Policy priority: m3u8 > ts (Cloudflare-safe)
+         * Policy priority: m3u8 > ts > mp4
          * - m3u8 (HLS): Best for adaptive streaming, seeks, and compatibility
          * - ts (MPEG-TS): Good fallback, works on most players
-         * - mp4: Only if it's the ONLY available format (rare case)
+         * - mp4: Used if explicitly in allowed_output_formats (provider-specific)
          *
-         * @param allowedFormats Set of formats the server supports (e.g., {"m3u8", "ts"})
+         * This is POLICY-DRIVEN: allowed_output_formats is the Single Source of Truth.
+         * We select the best format from what the server explicitly allows.
+         *
+         * @param allowedFormats Set of formats the server supports (e.g., {"m3u8", "ts", "mp4"})
          * @return The best format to use
          * @throws PlaybackSourceException if no supported format is available
          */
         internal fun selectXtreamOutputExt(allowedFormats: Set<String>): String {
             if (allowedFormats.isEmpty()) {
                 throw PlaybackSourceException(
-                        message = "No output formats specified by server",
+                        message = "No output formats specified by server (allowed_output_formats is empty)",
                         sourceType = SourceType.XTREAM
                 )
             }
             val normalized = allowedFormats.map { it.lowercase().trim() }.toSet()
             
-            // Try priority formats first (m3u8, ts)
+            // Policy-driven selection: try each format in priority order
             val selected = FORMAT_PRIORITY.firstOrNull { it in normalized }
+            
             if (selected != null) {
                 return selected
             }
             
-            // Fallback: if mp4 is the ONLY format, use it (rare case)
-            if (normalized.size == 1 && "mp4" in normalized) {
-                return "mp4"
-            }
-            
-            // No supported format found
+            // No supported format found in allowed list
             throw PlaybackSourceException(
                     message =
-                            "No supported output format. Server allows: ${allowedFormats.joinToString()}, " +
-                            "supported (priority): ${FORMAT_PRIORITY.joinToString()}, fallback: mp4 (if only option)",
+                            "No supported output format in server's allowed_output_formats. " +
+                            "Server allows: ${allowedFormats.joinToString()}, " +
+                            "we support (priority): ${FORMAT_PRIORITY.joinToString()}",
                     sourceType = SourceType.XTREAM
             )
         }
@@ -170,8 +175,17 @@ constructor(
             val reinitSuccess = attemptLazyReInitialization()
             
             if (!reinitSuccess) {
+                // Determine specific failure reason for actionable error message
+                val errorMessage = when {
+                    !hasStoredCredentials() -> 
+                        "Xtream not configured. Please log in to your Xtream account in Settings."
+                    else -> 
+                        "Xtream session unavailable (credentials invalid or server unreachable). " +
+                        "Please check your connection or log in again in Settings."
+                }
+                
                 throw PlaybackSourceException(
-                    message = "Xtream session unavailable. Please log in to your Xtream account in Settings.",
+                    message = errorMessage,
                     sourceType = SourceType.XTREAM
                 )
             }
@@ -480,34 +494,66 @@ constructor(
     /**
      * Attempt to lazily re-initialize the Xtream session using stored credentials.
      * 
-     * This is a bounded operation with a timeout to avoid blocking playback indefinitely.
+     * This is a bounded, idempotent operation with mutex protection against parallel calls.
      * It only attempts re-init if credentials are stored; it does NOT prompt for credentials.
+     * 
+     * **Thread Safety:** Protected by reinitMutex to prevent parallel initialization attempts.
+     * **Timeout:** 3 seconds total (includes credential read + initialize call).
+     * **Error Handling:** Returns false on any failure, logs details for debugging.
      * 
      * @return true if re-initialization succeeded and capabilities are now available
      */
     private suspend fun attemptLazyReInitialization(): Boolean {
+        return reinitMutex.withLock {
+            // Quick check: if already initialized, return success immediately
+            if (xtreamApiClient.capabilities != null) {
+                UnifiedLog.d(TAG) { "Session already initialized, skipping lazy re-init" }
+                return@withLock true
+            }
+            
+            try {
+                val storedConfig = withTimeoutOrNull(LAZY_REINIT_TIMEOUT_MS) {
+                    credentialsStore.read()
+                }
+                
+                if (storedConfig == null) {
+                    UnifiedLog.w(TAG) { "No stored credentials available for lazy re-init" }
+                    return@withLock false
+                }
+                
+                UnifiedLog.d(TAG) { 
+                    "Attempting lazy re-init with stored credentials: " +
+                    "scheme=${storedConfig.scheme}, host=${storedConfig.host}, port=${storedConfig.port}"
+                }
+                
+                val result = withTimeoutOrNull(LAZY_REINIT_TIMEOUT_MS) {
+                    xtreamApiClient.initialize(storedConfig.toApiConfig())
+                }
+                
+                val success = result?.isSuccess == true
+                if (!success) {
+                    val error = result?.exceptionOrNull()
+                    UnifiedLog.w(TAG) { "Lazy re-init failed: ${error?.message ?: "unknown error"}" }
+                }
+                
+                success
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Lazy re-init error" }
+                false
+            }
+        }
+    }
+    
+    /**
+     * Quick check if stored credentials are available (without reading them).
+     * Used for better error messages.
+     */
+    private suspend fun hasStoredCredentials(): Boolean {
         return try {
-            val storedConfig = withTimeoutOrNull(LAZY_REINIT_TIMEOUT_MS) {
+            withTimeoutOrNull(500L) {
                 credentialsStore.read()
-            }
-            
-            if (storedConfig == null) {
-                UnifiedLog.w(TAG) { "No stored credentials available for lazy re-init" }
-                return false
-            }
-            
-            UnifiedLog.d(TAG) { "Attempting lazy re-init with stored credentials" }
-            val result = withTimeoutOrNull(LAZY_REINIT_TIMEOUT_MS) {
-                xtreamApiClient.initialize(storedConfig.toApiConfig())
-            }
-            
-            val success = result?.isSuccess == true
-            if (!success) {
-                UnifiedLog.w(TAG) { "Lazy re-init failed: ${result?.exceptionOrNull()?.message}" }
-            }
-            success
+            } != null
         } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Lazy re-init error" }
             false
         }
     }

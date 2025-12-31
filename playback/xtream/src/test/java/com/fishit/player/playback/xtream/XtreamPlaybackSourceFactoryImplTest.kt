@@ -12,6 +12,13 @@ import org.junit.Test
  */
 class XtreamPlaybackSourceFactoryImplTest {
 
+    /** Helper to create a mock credentials store for tests */
+    private fun createMockCredentialsStore() = object : com.fishit.player.infra.transport.xtream.XtreamCredentialsStore {
+        override suspend fun read() = null
+        override suspend fun write(config: com.fishit.player.infra.transport.xtream.XtreamStoredConfig) {}
+        override suspend fun clear() {}
+    }
+
     /**
      * Helper to access the private isSafePrebuiltXtreamUri method via reflection.
      * This is needed since the method is private but we want to test it in isolation.
@@ -26,6 +33,7 @@ class XtreamPlaybackSourceFactoryImplTest {
                 override suspend fun ping() = TODO()
                 override fun close() = TODO()
                 override suspend fun getServerInfo() = TODO()
+                override suspend fun getPanelInfo() = TODO()
                 override suspend fun getUserInfo() = TODO()
                 override suspend fun getLiveCategories() = TODO()
                 override suspend fun getVodCategories() = TODO()
@@ -44,7 +52,8 @@ class XtreamPlaybackSourceFactoryImplTest {
                 override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int) = null
                 override suspend fun search(query: String, types: Set<com.fishit.player.infra.transport.xtream.XtreamContentType>, limit: Int) = TODO()
                 override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
-            }
+            },
+            credentialsStore = createMockCredentialsStore()
         )
 
         // Use reflection to access private method
@@ -178,6 +187,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun ping() = TODO()
             override fun close() = TODO()
             override suspend fun getServerInfo() = TODO()
+                override suspend fun getPanelInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
             override suspend fun getVodCategories() = TODO()
@@ -203,7 +213,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
         }
 
-        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient, createMockCredentialsStore())
         
         // Build context with containerExtension = "mkv" (from VOD metadata)
         // WITHOUT allowed_output_formats - mkv should be IGNORED
@@ -255,6 +265,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun ping() = TODO()
             override fun close() = TODO()
             override suspend fun getServerInfo() = TODO()
+                override suspend fun getPanelInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
             override suspend fun getVodCategories() = TODO()
@@ -278,7 +289,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
         }
 
-        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient, createMockCredentialsStore())
         
         val context = com.fishit.player.core.playermodel.PlaybackContext(
             canonicalId = "test:movie:123",
@@ -325,6 +336,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun ping() = TODO()
             override fun close() = TODO()
             override suspend fun getServerInfo() = TODO()
+                override suspend fun getPanelInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
             override suspend fun getVodCategories() = TODO()
@@ -348,7 +360,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
         }
 
-        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient, createMockCredentialsStore())
         
         val context = com.fishit.player.core.playermodel.PlaybackContext(
             canonicalId = "test:movie:123",
@@ -393,6 +405,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun ping() = TODO()
             override fun close() = TODO()
             override suspend fun getServerInfo() = TODO()
+                override suspend fun getPanelInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
             override suspend fun getVodCategories() = TODO()
@@ -416,7 +429,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
         }
 
-        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient, createMockCredentialsStore())
         
         // Server explicitly allows mp4
         val context = com.fishit.player.core.playermodel.PlaybackContext(
@@ -462,6 +475,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun ping() = TODO()
             override fun close() = TODO()
             override suspend fun getServerInfo() = TODO()
+                override suspend fun getPanelInfo() = TODO()
             override suspend fun getUserInfo() = TODO()
             override suspend fun getLiveCategories() = TODO()
             override suspend fun getVodCategories() = TODO()
@@ -485,7 +499,7 @@ class XtreamPlaybackSourceFactoryImplTest {
             override suspend fun rawApiCall(action: String, params: Map<String, String>) = TODO()
         }
 
-        val factory = XtreamPlaybackSourceFactoryImpl(mockClient)
+        val factory = XtreamPlaybackSourceFactoryImpl(mockClient, createMockCredentialsStore())
         
         // containerExtension = "m3u8" is a valid streaming format
         val context = com.fishit.player.core.playermodel.PlaybackContext(
