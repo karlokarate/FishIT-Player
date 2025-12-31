@@ -1,6 +1,7 @@
 package com.fishit.player.playback.telegram.di
 
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
+import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import com.fishit.player.playback.telegram.TelegramFileDataSourceFactory
 import com.fishit.player.playback.telegram.TelegramPlaybackSourceFactoryImpl
@@ -25,6 +26,7 @@ import javax.inject.Singleton
  * it to resolve playback sources based on [SourceType].
  *
  * **Dependencies:**
+ * - [TelegramRemoteResolver] from `:infra:transport-telegram` (for RemoteId-First resolution)
  * - [TelegramFileClient] from `:infra:transport-telegram`
  */
 @Module
@@ -58,13 +60,14 @@ abstract class TelegramPlaybackModule {
          * Provides the TelegramFileDataSourceFactory for Media3 integration.
          *
          * This factory creates TelegramFileDataSource instances for handling tg:// URIs during
-         * playback.
+         * playback. Uses RemoteId-First resolution for robust file access.
          */
         @Provides
         @Singleton
         fun provideTelegramFileDataSourceFactory(
+            remoteResolver: TelegramRemoteResolver,
             fileClient: TelegramFileClient,
             readyEnsurer: TelegramFileReadyEnsurer,
-        ): TelegramFileDataSourceFactory = TelegramFileDataSourceFactory(fileClient, readyEnsurer)
+        ): TelegramFileDataSourceFactory = TelegramFileDataSourceFactory(remoteResolver, fileClient, readyEnsurer)
     }
 }
