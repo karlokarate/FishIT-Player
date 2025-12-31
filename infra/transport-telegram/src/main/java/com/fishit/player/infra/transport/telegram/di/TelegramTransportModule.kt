@@ -12,6 +12,7 @@ import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
 import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
+import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
 import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
@@ -50,6 +51,8 @@ import kotlinx.coroutines.SupervisorJob
  * - File download operations with priority queue
  * - [TelegramThumbFetcher]
  * - Thumbnail fetching for Coil integration
+ * - [TelegramRemoteResolver]
+ * - RemoteId-based media resolution (SSOT for file references)
  *
  * **Why SSOT matters:**
  * - Shared state/retry/caching logic in one place
@@ -153,5 +156,19 @@ object TelegramTransportModule {
     @Provides
     @Singleton
     fun provideTelegramThumbFetcher(telegramClient: TelegramClient): TelegramThumbFetcher =
+            telegramClient
+
+    /**
+     * Provides TelegramRemoteResolver - resolves to the SAME TelegramClient instance.
+     *
+     * Features:
+     * - Resolves (chatId, messageId) to current TDLib fileIds
+     * - Supports media and thumbnail file resolution
+     * - Returns metadata (MIME type, duration, dimensions, local paths)
+     * - Implements RemoteId-First Architecture (SSOT)
+     */
+    @Provides
+    @Singleton
+    fun provideTelegramRemoteResolver(telegramClient: TelegramClient): TelegramRemoteResolver =
             telegramClient
 }
