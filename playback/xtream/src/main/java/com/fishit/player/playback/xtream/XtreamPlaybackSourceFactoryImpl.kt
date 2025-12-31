@@ -5,6 +5,7 @@ import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
+import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
@@ -12,6 +13,9 @@ import com.fishit.player.playback.domain.PlaybackSourceException
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Factory for creating Xtream playback sources.
@@ -57,10 +61,19 @@ import javax.inject.Singleton
 @Singleton
 class XtreamPlaybackSourceFactoryImpl
 @Inject
-constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactory {
+constructor(
+    private val xtreamApiClient: XtreamApiClient,
+    private val credentialsStore: XtreamCredentialsStore
+) : PlaybackSourceFactory {
+
+    // Mutex to ensure lazy re-init is idempotent and thread-safe
+    private val reinitMutex = Mutex()
 
     companion object {
         private const val TAG = "XtreamPlaybackFactory"
+        
+        // Lazy re-init timeout (bounded to avoid blocking playback indefinitely)
+        private const val LAZY_REINIT_TIMEOUT_MS = 3000L
 
         // Extra keys (NON-SECRET ONLY)
         const val EXTRA_CONTENT_TYPE = "contentType"
@@ -77,39 +90,53 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
         const val CONTENT_TYPE_VOD = "vod"
         const val CONTENT_TYPE_SERIES = "series"
 
-        // Output format priority (policy: HLS > TS > MP4)
-        // MP4 is only valid if explicitly in server's allowed_output_formats
+        // Output format priority (policy-driven from allowed_output_formats)
+        // Priority: m3u8 > ts > mp4 (if explicitly allowed by server)
         private val FORMAT_PRIORITY = listOf("m3u8", "ts", "mp4")
         
-        // TRUE streaming formats (safe to accept from any source)
+        // TRUE streaming formats (safe to accept from containerExtension)
+        // Note: mp4 is NOT in this set - it's a container format, not streaming output
         private val STREAMING_FORMATS = setOf("m3u8", "ts")
 
         /**
-         * Select the best output format based on server-allowed formats.
+         * Select the best output format based on server-allowed formats (SSOT).
          *
          * Policy priority: m3u8 > ts > mp4
          * - m3u8 (HLS): Best for adaptive streaming, seeks, and compatibility
          * - ts (MPEG-TS): Good fallback, works on most players
-         * - mp4: Only if explicitly allowed (container format, not streaming)
+         * - mp4: Used if explicitly in allowed_output_formats (provider-specific)
          *
-         * @param allowedFormats Set of formats the server supports (e.g., {"m3u8", "ts"})
+         * This is POLICY-DRIVEN: allowed_output_formats is the Single Source of Truth.
+         * We select the best format from what the server explicitly allows.
+         *
+         * @param allowedFormats Set of formats the server supports (e.g., {"m3u8", "ts", "mp4"})
          * @return The best format to use
          * @throws PlaybackSourceException if no supported format is available
          */
         internal fun selectXtreamOutputExt(allowedFormats: Set<String>): String {
             if (allowedFormats.isEmpty()) {
                 throw PlaybackSourceException(
-                        message = "No output formats specified by server",
+                        message = "No output formats specified by server (allowed_output_formats is empty)",
                         sourceType = SourceType.XTREAM
                 )
             }
             val normalized = allowedFormats.map { it.lowercase().trim() }.toSet()
-            return FORMAT_PRIORITY.firstOrNull { it in normalized }
-                    ?: throw PlaybackSourceException(
-                            message =
-                                    "No supported output format. Server allows: ${allowedFormats.joinToString()}, supported: ${FORMAT_PRIORITY.joinToString()}",
-                            sourceType = SourceType.XTREAM
-                    )
+            
+            // Policy-driven selection: try each format in priority order
+            val selected = FORMAT_PRIORITY.firstOrNull { it in normalized }
+            
+            if (selected != null) {
+                return selected
+            }
+            
+            // No supported format found in allowed list
+            throw PlaybackSourceException(
+                    message =
+                            "No supported output format in server's allowed_output_formats. " +
+                            "Server allows: ${allowedFormats.joinToString()}, " +
+                            "we support (priority): ${FORMAT_PRIORITY.joinToString()}",
+                    sourceType = SourceType.XTREAM
+            )
         }
     }
 
@@ -121,12 +148,13 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
         UnifiedLog.d(TAG) { "Creating source for: ${context.canonicalId}" }
 
         // Secondary Path: Safe prebuilt URI support (backward compatibility)
+        // ONLY validates prebuilt URIs from context.uri, does NOT block session-derived paths
         val existingUri = context.uri
         if (existingUri != null &&
                         (existingUri.startsWith("http://") || existingUri.startsWith("https://"))
         ) {
             if (isSafePrebuiltXtreamUri(existingUri)) {
-                UnifiedLog.d(TAG) { "Using safe prebuilt URI for playback" }
+                UnifiedLog.d(TAG) { "Using safe prebuilt URI for playback (bypassing session)" }
                 return PlaybackSource(
                         uri = existingUri,
                         mimeType = determineMimeType(context),
@@ -134,18 +162,35 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
                         dataSourceType = DataSourceType.DEFAULT
                 )
             } else {
-                UnifiedLog.w(TAG) { "Rejected unsafe prebuilt Xtream URI (credentials detected)" }
-                // Continue to session-derived path or fail
+                UnifiedLog.w(TAG) { "Rejected unsafe prebuilt URI (credentials detected), falling back to session-derived path" }
+                // Continue to session-derived path (don't fail, just warn)
             }
         }
 
         // Primary Path: Session-derived URL building
-        // Verify session is initialized
+        // Attempt lazy re-initialization if session is null
         if (xtreamApiClient.capabilities == null) {
-            throw PlaybackSourceException(
-                    message = "Xtream session not initialized. Please connect to Xtream first.",
+            UnifiedLog.w(TAG) { "Xtream session not initialized, attempting lazy re-init" }
+            
+            val reinitSuccess = attemptLazyReInitialization()
+            
+            if (!reinitSuccess) {
+                // Determine specific failure reason for actionable error message
+                val errorMessage = when {
+                    !hasStoredCredentials() -> 
+                        "Xtream not configured. Please log in to your Xtream account in Settings."
+                    else -> 
+                        "Xtream session unavailable (credentials invalid or server unreachable). " +
+                        "Please check your connection or log in again in Settings."
+                }
+                
+                throw PlaybackSourceException(
+                    message = errorMessage,
                     sourceType = SourceType.XTREAM
-            )
+                )
+            }
+            
+            UnifiedLog.i(TAG) { "Lazy re-initialization succeeded, proceeding with playback" }
         }
 
         // v2 SSOT: PlaybackHintKeys.Xtream.* (namespaced). Keep legacy keys for compatibility.
@@ -339,20 +384,25 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
     /**
      * Resolve the output extension for playback URL.
      *
-     * Priority:
-     * 1. Policy-based selection from allowedOutputFormats (m3u8 > ts > mp4) - MOST RELIABLE
-     * 2. Explicit containerExtension ONLY if it's a TRUE streaming format (m3u8, ts)
-     * 3. null (let XtreamApiClient use its defaults → m3u8)
+     * **Strict Policy (Cloudflare-safe):**
+     * Priority 1: allowedOutputFormats policy selection (m3u8 > ts, NO mp4 by default)
+     * Priority 2: containerExtension ONLY if TRUE streaming format (m3u8, ts)
+     * Priority 3: Default to m3u8
+     *
+     * **CRITICAL for Cloudflare panels:**
+     * - mp4 is NOT in priority list (causes issues with Cloudflare)
+     * - Only m3u8 and ts are prioritized
+     * - mp4 only used if it's the ONLY format in allowedOutputFormats
      *
      * NOTE: containerExtension from VOD metadata (e.g., "mkv", "mp4") describes the FILE
-     * on the server, NOT the streaming output. We only trust allowedOutputFormats for mp4.
+     * on the server, NOT the streaming output. We only trust allowedOutputFormats.
      *
      * @param context The playback context
-     * @return The resolved extension, or null to use defaults
+     * @return The resolved extension (m3u8, ts, or rarely mp4)
      */
     private fun resolveOutputExtension(context: PlaybackContext): String? {
-        // Priority 1: Policy-based selection from allowedOutputFormats (MOST RELIABLE)
-        // This is the ONLY place where mp4 is safe to accept
+        // Priority 1: Policy-based selection from allowedOutputFormats (SSOT)
+        // This is the ONLY place where format selection is authoritative
         val allowedFormatsRaw = context.extras[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS]
         if (!allowedFormatsRaw.isNullOrBlank()) {
             val allowedFormats = allowedFormatsRaw.split(",").map { it.trim().lowercase() }.toSet()
@@ -363,35 +413,37 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
                 }
                 selected
             } catch (e: PlaybackSourceException) {
-                UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, trying containerExtension" }
-                // Fall through to Priority 2
-                null
+                UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, defaulting to m3u8" }
+                // Default to m3u8 (safest for Cloudflare)
+                return "m3u8"
             }
         }
 
         // Priority 2: Explicit containerExtension - ONLY accept TRUE streaming formats
-        // mp4/mkv/avi are container formats describing the FILE, not streaming output!
+        // NEVER accept container formats (mkv, avi, mp4) as streaming output hints
         val explicitExt =
                 context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
                         ?: context.extras[EXTRA_CONTAINER_EXT]
         if (!explicitExt.isNullOrBlank()) {
             val normalizedExt = explicitExt.lowercase().trim()
-            // HARDENED: Only accept true streaming formats from containerExtension
-            // mp4 is NOT safe here - it's a container format, not streaming output
+            // HARDENED: Only m3u8 and ts from containerExtension
             if (normalizedExt in STREAMING_FORMATS) {
                 UnifiedLog.d(TAG) { "Using explicit streaming containerExtension: $normalizedExt" }
                 return normalizedExt
             } else {
                 UnifiedLog.d(TAG) { 
-                    "Ignoring containerExtension=$explicitExt (container format, not streaming output)"
+                    "Ignoring containerExtension=$explicitExt (not a TRUE streaming format)"
                 }
                 // Fall through to defaults
             }
         }
 
-        // Priority 3: Let XtreamApiClient use its defaults
-        UnifiedLog.d(TAG) { "No format hints, using XtreamApiClient defaults" }
-        return null
+        // Priority 3: Default to m3u8 (with warning - allowed_output_formats should be present)
+        UnifiedLog.w(TAG) { 
+            "No allowed_output_formats provided by server, defaulting to m3u8. " +
+            "This may fail with some providers. Server should provide allowed_output_formats."
+        }
+        return "m3u8"
     }
 
     /** Guess content type from context if not explicitly set. */
@@ -441,4 +493,71 @@ constructor(private val xtreamApiClient: XtreamApiClient) : PlaybackSourceFactor
                     headers = context.headers,
                     referer = xtreamApiClient.capabilities?.baseUrl,
             )
+    
+    /**
+     * Attempt to lazily re-initialize the Xtream session using stored credentials.
+     * 
+     * This is a bounded, idempotent operation with mutex protection against parallel calls.
+     * It only attempts re-init if credentials are stored; it does NOT prompt for credentials.
+     * 
+     * **Thread Safety:** Protected by reinitMutex to prevent parallel initialization attempts.
+     * **Timeout:** 3 seconds total (includes credential read + initialize call).
+     * **Error Handling:** Returns false on any failure, logs details for debugging.
+     * 
+     * @return true if re-initialization succeeded and capabilities are now available
+     */
+    private suspend fun attemptLazyReInitialization(): Boolean {
+        return reinitMutex.withLock {
+            // Quick check: if already initialized, return success immediately
+            if (xtreamApiClient.capabilities != null) {
+                UnifiedLog.d(TAG) { "Session already initialized, skipping lazy re-init" }
+                return@withLock true
+            }
+            
+            try {
+                val storedConfig = withTimeoutOrNull(LAZY_REINIT_TIMEOUT_MS) {
+                    credentialsStore.read()
+                }
+                
+                if (storedConfig == null) {
+                    UnifiedLog.w(TAG) { "No stored credentials available for lazy re-init" }
+                    return@withLock false
+                }
+                
+                UnifiedLog.d(TAG) { 
+                    "Attempting lazy re-init with stored credentials: " +
+                    "scheme=${storedConfig.scheme}, host=${storedConfig.host}, port=${storedConfig.port}"
+                }
+                
+                val result = withTimeoutOrNull(LAZY_REINIT_TIMEOUT_MS) {
+                    xtreamApiClient.initialize(storedConfig.toApiConfig())
+                }
+                
+                val success = result?.isSuccess == true
+                if (!success) {
+                    val error = result?.exceptionOrNull()
+                    UnifiedLog.w(TAG) { "Lazy re-init failed: ${error?.message ?: "unknown error"}" }
+                }
+                
+                success
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Lazy re-init error" }
+                false
+            }
+        }
+    }
+    
+    /**
+     * Quick check if stored credentials are available (without reading them).
+     * Used for better error messages.
+     */
+    private suspend fun hasStoredCredentials(): Boolean {
+        return try {
+            withTimeoutOrNull(500L) {
+                credentialsStore.read()
+            } != null
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
