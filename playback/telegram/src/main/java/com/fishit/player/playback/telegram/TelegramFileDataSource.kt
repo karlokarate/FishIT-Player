@@ -127,9 +127,10 @@ class TelegramFileDataSource(
             chatId = uri.getQueryParameter("chatId")?.toLongOrNull()
             messageId = uri.getQueryParameter("messageId")?.toLongOrNull()
             remoteId = uri.getQueryParameter("remoteId")
+            val mimeType = uri.getQueryParameter("mimeType")
 
             UnifiedLog.d(TAG) {
-                "Opening Telegram file: fileId=$fileId, chatId=$chatId, messageId=$messageId, remoteId=$remoteId"
+                "Opening Telegram file: fileId=$fileId, chatId=$chatId, messageId=$messageId, mimeType=$mimeType"
             }
 
             // Create scope for async operations
@@ -143,6 +144,7 @@ class TelegramFileDataSource(
                 s.launchOpenOperation(
                     fileId = fileId,
                     remoteId = remoteId,
+                    mimeType = mimeType,
                     dataSpec = dataSpec,
                     resultHolder = resultHolder,
                     latch = latch,
@@ -184,13 +186,14 @@ class TelegramFileDataSource(
     private fun CoroutineScope.launchOpenOperation(
         fileId: Int?,
         remoteId: String?,
+        mimeType: String?,
         dataSpec: DataSpec,
         resultHolder: AtomicReference<OpenResult>,
         latch: CountDownLatch,
     ) {
         launch {
             try {
-                val bytesRemaining = performOpen(fileId, remoteId, dataSpec)
+                val bytesRemaining = performOpen(fileId, remoteId, mimeType, dataSpec)
                 resultHolder.set(OpenResult.Success(bytesRemaining))
             } catch (e: Exception) {
                 val ioException =
@@ -209,17 +212,18 @@ class TelegramFileDataSource(
     private suspend fun performOpen(
         fileId: Int?,
         remoteId: String?,
+        mimeType: String?,
         dataSpec: DataSpec,
     ): Long =
         withContext(Dispatchers.IO) {
             // Resolve fileId if needed
             val resolvedFileId = resolveFileId(fileId, remoteId)
 
-            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check" }
+            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType)" }
 
             // Use TelegramFileReadyEnsurer for non-blocking readiness
-            // This handles MP4 moov validation and progressive download polling
-            val localPath = readyEnsurer.ensureReadyForPlayback(resolvedFileId)
+            // Pass MIME type to enable Platinum Playback mode detection
+            val localPath = readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
 
             val localFile = File(localPath)
             if (!localFile.exists()) {
