@@ -10,6 +10,7 @@ import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.feature.onboarding.domain.XtreamAuthState
 import com.fishit.player.feature.onboarding.domain.XtreamConnectionState
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -19,9 +20,16 @@ import dagger.assisted.AssistedInject
  * Validates Xtream configuration and connectivity before catalog scan.
  *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
- * - W-20: Non-Retryable Failures (invalid credentials)
+ * - W-20: Non-Retryable Failures (invalid credentials, not configured)
  * - Does NOT perform scanning
  * - Only validates config is present and credentials are valid
+ *
+ * **Semantics:**
+ * - Authenticated → Result.success
+ * - Failed/Expired → Result.failure (non-retryable)
+ * - Idle + no stored credentials → Result.failure (not configured, non-retryable)
+ * - Idle + stored credentials exist → Result.retry (initializing, transient, bounded by backoff)
+ * - Connection error → Result.retry (transient, bounded by backoff policy)
  *
  * **Architecture:**
  * - Uses domain interface [XtreamAuthRepository] (not transport layer)
@@ -37,6 +45,7 @@ class XtreamPreflightWorker
         @Assisted workerParams: WorkerParameters,
         private val sourceActivationStore: SourceActivationStore,
         private val xtreamAuthRepository: XtreamAuthRepository,
+        private val xtreamCredentialsStore: XtreamCredentialsStore,
     ) : CoroutineWorker(context, workerParams) {
         companion object {
             private const val TAG = "XtreamPreflightWorker"
@@ -113,9 +122,30 @@ class XtreamPreflightWorker
                     )
                 }
                 is XtreamAuthState.Idle -> {
-                    // Not yet authenticated, retry
-                    UnifiedLog.w(TAG) { "Auth state idle, retrying" }
-                    Result.retry()
+                    val durationMs = System.currentTimeMillis() - startTimeMs
+                    // Check if credentials are stored to distinguish "not configured" from "initializing"
+                    val storedCredentials = xtreamCredentialsStore.read()
+                    
+                    if (storedCredentials == null) {
+                        // No credentials stored = not configured
+                        // Fail fast to prevent infinite retry loops
+                        UnifiedLog.e(TAG) {
+                            "FAILURE reason=not_configured state=Idle no_stored_credentials=true duration_ms=$durationMs retry=false"
+                        }
+                        // W-20: Non-retryable failure - source not configured
+                        Result.failure(
+                            WorkerOutputData.failure(
+                                WorkerConstants.FAILURE_XTREAM_NOT_CONFIGURED,
+                            ),
+                        )
+                    } else {
+                        // Credentials exist but session not yet initialized = transient
+                        // Retry with bounded backoff
+                        UnifiedLog.w(TAG) {
+                            "Auth state idle but credentials exist (session initializing), retrying with backoff"
+                        }
+                        Result.retry()
+                    }
                 }
             }
         }

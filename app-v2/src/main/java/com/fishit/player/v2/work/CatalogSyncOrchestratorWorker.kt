@@ -19,13 +19,21 @@ import java.util.concurrent.TimeUnit
 /**
  * Catalog Sync Orchestrator Worker.
  *
- * Builds and enqueues the deterministic worker chain based on active sources.
+ * Builds and enqueues PARALLEL worker chains per active source.
  *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
- * - W-7: Source Order (MANDATORY): Xtream → Telegram → IO
  * - W-8: No-Source Behavior (MANDATORY): No workers if no sources active
  * - Does NOT call pipelines or CatalogSyncService directly
  * - Only reads SourceActivationStore and enqueues child workers
+ * - Each source runs in its own independent chain (not sequential)
+ * - Per-source unique work names prevent cross-source blocking
+ *
+ * **Architecture:**
+ * - Xtream chain: catalog_sync_global_xtream
+ * - Telegram chain: catalog_sync_global_telegram
+ * - IO chain: catalog_sync_global_io
+ * - Uses KEEP policy by default to avoid canceling running work
+ * - Uses REPLACE policy only on FORCE_RESCAN mode
  *
  * @see XtreamPreflightWorker
  * @see XtreamCatalogScanWorker
@@ -84,74 +92,90 @@ class CatalogSyncOrchestratorWorker
                 "Active sources: $activeSources (TELEGRAM=${SourceId.TELEGRAM in activeSources}, XTREAM=${SourceId.XTREAM in activeSources}, IO=${SourceId.IO in activeSources})"
             }
 
-            // Build child worker chain in fixed order: Xtream → Telegram → IO (W-7)
+            // Build PARALLEL chains per source (not sequential)
+            // Each source gets its own unique work name and can run independently
+            // This prevents one source's preflight retries from blocking another source
             val workManager = WorkManager.getInstance(applicationContext)
             val childInputData = buildChildInputData(input, activeSources)
 
-            var workContinuation: androidx.work.WorkContinuation? = null
+            // Track enqueued chains for logging
+            val enqueuedChains = mutableListOf<String>()
 
-            // 1. Xtream (if active)
+            // Use KEEP policy to avoid canceling already-running work
+            // Only REPLACE on explicit rescan (FORCE_RESCAN mode)
+            val enqueuePolicy =
+                if (input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN) {
+                    ExistingWorkPolicy.REPLACE
+                } else {
+                    ExistingWorkPolicy.KEEP
+                }
+
+            // 1. Xtream (if active) - independent chain
             if (SourceId.XTREAM in activeSources) {
                 val xtreamChain = buildXtreamChain(childInputData)
-                workContinuation =
-                    if (workContinuation == null) {
-                        workManager
-                            .beginUniqueWork(
-                                "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_xtream",
-                                ExistingWorkPolicy.REPLACE,
-                                xtreamChain.first(),
-                            ).then(xtreamChain.drop(1))
-                    } else {
-                        workContinuation.then(xtreamChain)
-                    }
-                UnifiedLog.d(TAG) { "Enqueued Xtream workers" }
+                val xtreamWorkName = getSourceWorkName(SourceId.XTREAM)
+                
+                workManager
+                    .beginUniqueWork(
+                        xtreamWorkName,
+                        enqueuePolicy,
+                        xtreamChain.first(),
+                    )
+                    .then(xtreamChain.drop(1))
+                    .enqueue()
+                
+                enqueuedChains.add("XTREAM")
+                UnifiedLog.d(TAG) {
+                    "Enqueued Xtream chain: work_name=$xtreamWorkName policy=$enqueuePolicy workers=${xtreamChain.size}"
+                }
             }
 
-            // 2. Telegram (if active)
+            // 2. Telegram (if active) - independent chain
             if (SourceId.TELEGRAM in activeSources) {
                 UnifiedLog.i(TAG) { "✅ Telegram is ACTIVE - building Telegram worker chain" }
                 val telegramChain = buildTelegramChain(childInputData, input)
-                workContinuation =
-                    if (workContinuation == null) {
-                        workManager
-                            .beginUniqueWork(
-                                "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_telegram",
-                                ExistingWorkPolicy.REPLACE,
-                                telegramChain.first(),
-                            ).then(telegramChain.drop(1))
-                    } else {
-                        workContinuation.then(telegramChain)
-                    }
+                val telegramWorkName = getSourceWorkName(SourceId.TELEGRAM)
+                
+                workManager
+                    .beginUniqueWork(
+                        telegramWorkName,
+                        enqueuePolicy,
+                        telegramChain.first(),
+                    )
+                    .then(telegramChain.drop(1))
+                    .enqueue()
+                
+                enqueuedChains.add("TELEGRAM")
                 UnifiedLog.i(TAG) {
-                    "✅ Enqueued ${telegramChain.size} Telegram workers (preflight + scan)"
+                    "✅ Enqueued Telegram chain: work_name=$telegramWorkName policy=$enqueuePolicy workers=${telegramChain.size} (preflight + scan)"
                 }
             } else {
                 // Use DEBUG level - Telegram might just be initializing, not an error
                 UnifiedLog.d(TAG) { "Telegram not in active sources - skipping Telegram workers" }
             }
 
-            // 3. IO (if active)
+            // 3. IO (if active) - independent chain
             if (SourceId.IO in activeSources) {
                 val ioWorker = buildIoWorker(childInputData)
-                workContinuation =
-                    if (workContinuation == null) {
-                        workManager.beginUniqueWork(
-                            "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_io",
-                            ExistingWorkPolicy.REPLACE,
-                            ioWorker,
-                        )
-                    } else {
-                        workContinuation.then(ioWorker)
-                    }
-                UnifiedLog.d(TAG) { "Enqueued IO worker" }
+                val ioWorkName = getSourceWorkName(SourceId.IO)
+                
+                workManager
+                    .beginUniqueWork(
+                        ioWorkName,
+                        enqueuePolicy,
+                        ioWorker,
+                    )
+                    .enqueue()
+                
+                enqueuedChains.add("IO")
+                UnifiedLog.d(TAG) {
+                    "Enqueued IO chain: work_name=$ioWorkName policy=$enqueuePolicy workers=1"
+                }
             }
-
-            // Enqueue the chain
-            workContinuation?.enqueue()
 
             val durationMs = System.currentTimeMillis() - startTimeMs
             UnifiedLog.i(TAG) {
-                "SUCCESS duration_ms=$durationMs (enqueued workers for sources: $activeSources)"
+                "CHAINS_ENQUEUED duration_ms=$durationMs policy=$enqueuePolicy sources=${enqueuedChains.joinToString(", ")} (downstream workers will report completion)"
             }
 
             return Result.success(
@@ -269,4 +293,11 @@ class CatalogSyncOrchestratorWorker
                     WorkerConstants.BACKOFF_INITIAL_SECONDS,
                     TimeUnit.SECONDS,
                 ).build()
+
+        /**
+         * Get unique work name for a source chain.
+         * Pattern: catalog_sync_global_{source_lowercase}
+         */
+        private fun getSourceWorkName(sourceId: SourceId): String =
+            "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_${sourceId.name.lowercase()}"
     }

@@ -18,9 +18,15 @@ import dagger.assisted.AssistedInject
  * Verifies TDLib authorization state before catalog scan.
  *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
- * - W-20: Non-Retryable Failures (login required)
+ * - W-20: Non-Retryable Failures (login required, not authorized)
  * - Does NOT perform scanning
  * - Only validates TDLib is authorized and ready
+ *
+ * **Semantics:**
+ * - Connected → Result.success
+ * - WaitingForPhone/Code/Password → Result.failure (non-retryable, user action required)
+ * - Disconnected/Error → Result.failure (non-retryable)
+ * - Idle (still initializing) → Result.retry (transient, bounded by backoff policy)
  *
  * **Architecture:**
  * - Uses domain interface [TelegramAuthRepository] (not transport layer)
