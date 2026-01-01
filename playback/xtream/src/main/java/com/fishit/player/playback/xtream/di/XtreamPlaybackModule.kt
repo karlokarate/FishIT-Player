@@ -19,6 +19,10 @@ import javax.inject.Singleton
  * The [PlaybackSourceFactory] set is injected into [PlaybackSourceResolver]
  * which uses it to resolve playback sources based on [SourceType].
  *
+ * **DataSource Factory:**
+ * The [XtreamHttpDataSourceFactory] is provided by [PlayerDataSourceModule]
+ * in the player:internal module where BuildConfig is available.
+ *
  * **Architecture Note:**
  * The factory is stateless - Xtream server configuration is passed via
  * [PlaybackContext.extras] for each playback request.
@@ -26,7 +30,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamPlaybackModule {
-
     /**
      * Binds the Xtream factory into the set of PlaybackSourceFactory.
      *
@@ -36,7 +39,5 @@ abstract class XtreamPlaybackModule {
     @Binds
     @IntoSet
     @Singleton
-    abstract fun bindXtreamPlaybackSourceFactory(
-        impl: XtreamPlaybackSourceFactoryImpl
-    ): PlaybackSourceFactory
+    abstract fun bindXtreamPlaybackSourceFactory(impl: XtreamPlaybackSourceFactoryImpl): PlaybackSourceFactory
 }

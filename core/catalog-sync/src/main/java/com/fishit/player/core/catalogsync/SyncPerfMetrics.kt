@@ -107,7 +107,10 @@ class SyncPerfMetrics(
     /**
      * Record fetch operation duration.
      */
-    suspend fun recordFetch(phase: SyncPhase, durationMs: Long) {
+    suspend fun recordFetch(
+        phase: SyncPhase,
+        durationMs: Long,
+    ) {
         if (!isEnabled) return
         mutex.withLock {
             phaseMetrics.getOrPut(phase) { PhaseMetrics() }.apply {
@@ -120,7 +123,11 @@ class SyncPerfMetrics(
     /**
      * Record parse operation duration.
      */
-    suspend fun recordParse(phase: SyncPhase, durationMs: Long, itemCount: Int = 0) {
+    suspend fun recordParse(
+        phase: SyncPhase,
+        durationMs: Long,
+        itemCount: Int = 0,
+    ) {
         if (!isEnabled) return
         mutex.withLock {
             phaseMetrics.getOrPut(phase) { PhaseMetrics() }.apply {
@@ -160,7 +167,10 @@ class SyncPerfMetrics(
     /**
      * Record items discovered (without timing).
      */
-    suspend fun recordItemsDiscovered(phase: SyncPhase, count: Int) {
+    suspend fun recordItemsDiscovered(
+        phase: SyncPhase,
+        count: Int,
+    ) {
         if (!isEnabled) return
         mutex.withLock {
             phaseMetrics.getOrPut(phase) { PhaseMetrics() }.apply {
@@ -182,41 +192,49 @@ class SyncPerfMetrics(
     /**
      * Export metrics report as text for debug bundle.
      */
-    fun exportReport(): String = buildString {
-        appendLine("=== Xtream Catalog Sync Performance Report ===")
-        appendLine("Generated: ${java.time.Instant.now()}")
-        appendLine()
-
-        var totalDuration = 0L
-        var totalDiscovered = 0L
-        var totalPersisted = 0L
-
-        for (phase in SyncPhase.entries) {
-            val metrics = phaseMetrics[phase] ?: continue
-            
-            appendLine("--- ${phase.name} ---")
-            appendLine("  Duration: ${metrics.totalDurationMs}ms")
-            appendLine("  Fetch: ${metrics.fetchCount} calls, ${metrics.fetchMs}ms total, ${String.format("%.1f", metrics.avgFetchMs)}ms avg")
-            appendLine("  Parse: ${metrics.parseCount} calls, ${metrics.parseMs}ms total")
-            appendLine("  Persist: ${metrics.persistCount} batches, ${metrics.persistMs}ms total, ${String.format("%.1f", metrics.avgPersistMs)}ms avg")
-            appendLine("  Items Discovered: ${metrics.itemsDiscovered} (${String.format("%.1f", metrics.itemsDiscoveredPerSec)}/sec)")
-            appendLine("  Items Persisted: ${metrics.itemsPersisted} (${String.format("%.1f", metrics.itemsPersistedPerSec)}/sec)")
-            appendLine("  Batches Flushed: ${metrics.batchesFlushed} (${metrics.timeBasedFlushes} time-based)")
+    fun exportReport(): String =
+        buildString {
+            appendLine("=== Xtream Catalog Sync Performance Report ===")
+            appendLine("Generated: ${java.time.Instant.now()}")
             appendLine()
 
-            totalDuration += metrics.totalDurationMs
-            totalDiscovered += metrics.itemsDiscovered
-            totalPersisted += metrics.itemsPersisted
-        }
+            var totalDuration = 0L
+            var totalDiscovered = 0L
+            var totalPersisted = 0L
 
-        appendLine("=== TOTALS ===")
-        appendLine("  Total Duration: ${totalDuration}ms (${totalDuration / 1000.0}s)")
-        appendLine("  Total Discovered: $totalDiscovered items")
-        appendLine("  Total Persisted: $totalPersisted items")
-        if (totalDuration > 0) {
-            appendLine("  Overall Throughput: ${String.format("%.1f", totalPersisted * 1000.0 / totalDuration)} items/sec")
+            for (phase in SyncPhase.entries) {
+                val metrics = phaseMetrics[phase] ?: continue
+
+                appendLine("--- ${phase.name} ---")
+                appendLine("  Duration: ${metrics.totalDurationMs}ms")
+                appendLine(
+                    "  Fetch: ${metrics.fetchCount} calls, ${metrics.fetchMs}ms total, ${String.format("%.1f", metrics.avgFetchMs)}ms avg",
+                )
+                appendLine("  Parse: ${metrics.parseCount} calls, ${metrics.parseMs}ms total")
+                appendLine(
+                    "  Persist: ${metrics.persistCount} batches, ${metrics.persistMs}ms total, ${String.format(
+                        "%.1f",
+                        metrics.avgPersistMs,
+                    )}ms avg",
+                )
+                appendLine("  Items Discovered: ${metrics.itemsDiscovered} (${String.format("%.1f", metrics.itemsDiscoveredPerSec)}/sec)")
+                appendLine("  Items Persisted: ${metrics.itemsPersisted} (${String.format("%.1f", metrics.itemsPersistedPerSec)}/sec)")
+                appendLine("  Batches Flushed: ${metrics.batchesFlushed} (${metrics.timeBasedFlushes} time-based)")
+                appendLine()
+
+                totalDuration += metrics.totalDurationMs
+                totalDiscovered += metrics.itemsDiscovered
+                totalPersisted += metrics.itemsPersisted
+            }
+
+            appendLine("=== TOTALS ===")
+            appendLine("  Total Duration: ${totalDuration}ms (${totalDuration / 1000.0}s)")
+            appendLine("  Total Discovered: $totalDiscovered items")
+            appendLine("  Total Persisted: $totalPersisted items")
+            if (totalDuration > 0) {
+                appendLine("  Overall Throughput: ${String.format("%.1f", totalPersisted * 1000.0 / totalDuration)} items/sec")
+            }
         }
-    }
 
     /**
      * Reset all metrics.

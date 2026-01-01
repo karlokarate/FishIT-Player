@@ -11,18 +11,18 @@ import com.fishit.player.playback.domain.SubtitleSelectionPolicy
  * Full profile-aware selection will be added in Phase 6.
  */
 class DefaultSubtitleSelectionPolicy : SubtitleSelectionPolicy {
-
     private val preferredLanguages = listOf("de", "deu", "ger", "en", "eng")
 
     override suspend fun selectSubtitleTrack(
         context: PlaybackContext,
-        availableTracks: List<MediaTrack>
+        availableTracks: List<MediaTrack>,
     ): MediaTrack? {
         // Try to find a track matching preferred languages
         for (lang in preferredLanguages) {
-            val track = availableTracks.find {
-                it.language?.lowercase()?.startsWith(lang) == true
-            }
+            val track =
+                availableTracks.find {
+                    it.language?.lowercase()?.startsWith(lang) == true
+                }
             if (track != null) return track
         }
         // Fall back to default or first track
@@ -31,13 +31,14 @@ class DefaultSubtitleSelectionPolicy : SubtitleSelectionPolicy {
 
     override suspend fun selectAudioTrack(
         context: PlaybackContext,
-        availableTracks: List<MediaTrack>
+        availableTracks: List<MediaTrack>,
     ): MediaTrack? {
         // Try to find German audio first
         for (lang in preferredLanguages) {
-            val track = availableTracks.find {
-                it.language?.lowercase()?.startsWith(lang) == true
-            }
+            val track =
+                availableTracks.find {
+                    it.language?.lowercase()?.startsWith(lang) == true
+                }
             if (track != null) return track
         }
         return availableTracks.find { it.isDefault } ?: availableTracks.firstOrNull()

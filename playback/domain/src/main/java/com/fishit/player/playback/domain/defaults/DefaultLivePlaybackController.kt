@@ -1,6 +1,5 @@
 package com.fishit.player.playback.domain.defaults
 
-import com.fishit.player.playback.domain.EpgEntry
 import com.fishit.player.playback.domain.LiveChannelInfo
 import com.fishit.player.playback.domain.LivePlaybackController
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * Real live TV integration will be added in Phase 3.
  */
 class DefaultLivePlaybackController : LivePlaybackController {
-
     private val _currentChannel = MutableStateFlow<LiveChannelInfo?>(null)
     private val _availableChannels = MutableStateFlow<List<LiveChannelInfo>>(emptyList())
 

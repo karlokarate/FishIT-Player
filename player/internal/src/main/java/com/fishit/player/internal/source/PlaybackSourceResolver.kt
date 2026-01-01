@@ -31,98 +31,98 @@ import javax.inject.Singleton
  * create a basic HTTP PlaybackSource.
  */
 @Singleton
-class PlaybackSourceResolver @Inject constructor(
-    private val factories: Set<@JvmSuppressWildcards PlaybackSourceFactory>
-) {
-    companion object {
-        private const val TAG = "PlaybackSourceResolver"
+class PlaybackSourceResolver
+    @Inject
+    constructor(
+        private val factories: Set<@JvmSuppressWildcards PlaybackSourceFactory>,
+    ) {
+        companion object {
+            private const val TAG = "PlaybackSourceResolver"
+
+            /**
+             * Big Buck Bunny - reliable public domain test video.
+             * Used as fallback when no real source is available.
+             */
+            const val TEST_STREAM_URL =
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        }
 
         /**
-         * Big Buck Bunny - reliable public domain test video.
-         * Used as fallback when no real source is available.
+         * Resolves a [PlaybackContext] to a [PlaybackSource].
+         *
+         * @param context The playback context to resolve
+         * @return A PlaybackSource ready for MediaItem construction
+         * @throws PlaybackSourceException if resolution fails
          */
-        const val TEST_STREAM_URL =
-            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    }
+        suspend fun resolve(context: PlaybackContext): PlaybackSource {
+            UnifiedLog.d(TAG, "Resolving source for: ${context.canonicalId} (${context.sourceType})")
 
-    /**
-     * Resolves a [PlaybackContext] to a [PlaybackSource].
-     *
-     * @param context The playback context to resolve
-     * @return A PlaybackSource ready for MediaItem construction
-     * @throws PlaybackSourceException if resolution fails
-     */
-    suspend fun resolve(context: PlaybackContext): PlaybackSource {
-        UnifiedLog.d(TAG, "Resolving source for: ${context.canonicalId} (${context.sourceType})")
+            // Find a factory that supports this source type
+            val factory = factories.find { it.supports(context.sourceType) }
 
-        // Find a factory that supports this source type
-        val factory = factories.find { it.supports(context.sourceType) }
-
-        return if (factory != null) {
-            UnifiedLog.d(TAG, "Using factory: ${factory::class.simpleName}")
-            try {
-                factory.createSource(context)
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, "Factory failed to create source", e)
-                throw PlaybackSourceException(
-                    "Failed to create source: ${e.message}",
-                    context.sourceType,
-                    e
-                )
-            }
-        } else {
-            // No factory found - try fallback
-            resolveFallback(context)
-        }
-    }
-
-    /**
-     * Fallback resolution when no factory is available.
-     *
-     * Uses the URI directly if it's an HTTP(S) URL.
-     * Throws explicit error instead of falling back to demo stream.
-     */
-    private fun resolveFallback(context: PlaybackContext): PlaybackSource {
-        val uri = context.uri
-
-        return when {
-            uri != null && (uri.startsWith("http://") || uri.startsWith("https://")) -> {
-                UnifiedLog.w(TAG, "No factory for ${context.sourceType}, using URI directly: $uri")
-                PlaybackSource(
-                    uri = uri,
-                    headers = context.headers,
-                    dataSourceType = DataSourceType.DEFAULT
-                )
-            }
-            uri != null && uri.startsWith("file://") -> {
-                UnifiedLog.w(TAG, "No factory for ${context.sourceType}, using local file: $uri")
-                PlaybackSource(
-                    uri = uri,
-                    dataSourceType = DataSourceType.LOCAL_FILE
-                )
-            }
-            else -> {
-                // Explicit error instead of demo stream fallback
-                UnifiedLog.e(TAG, "No factory and no valid URI for ${context.sourceType}")
-                throw PlaybackSourceException(
-                    "No playback source available for ${context.sourceType}. " +
-                    "Please ensure the source is configured correctly.",
-                    context.sourceType
-                )
+            return if (factory != null) {
+                UnifiedLog.d(TAG, "Using factory: ${factory::class.simpleName}")
+                try {
+                    factory.createSource(context)
+                } catch (e: Exception) {
+                    UnifiedLog.e(TAG, "Factory failed to create source", e)
+                    throw PlaybackSourceException(
+                        "Failed to create source: ${e.message}",
+                        context.sourceType,
+                        e,
+                    )
+                }
+            } else {
+                // No factory found - try fallback
+                resolveFallback(context)
             }
         }
-    }
 
-    /**
-     * Checks if any factory can handle the given source type.
-     */
-    fun canResolve(sourceType: SourceType): Boolean {
-        return factories.any { it.supports(sourceType) }
-    }
+        /**
+         * Fallback resolution when no factory is available.
+         *
+         * Uses the URI directly if it's an HTTP(S) URL.
+         * Throws explicit error instead of falling back to demo stream.
+         */
+        private fun resolveFallback(context: PlaybackContext): PlaybackSource {
+            val uri = context.uri
 
-    /**
-     * Gets the number of registered factories.
-     * Useful for diagnostics.
-     */
-    fun factoryCount(): Int = factories.size
-}
+            return when {
+                uri != null && (uri.startsWith("http://") || uri.startsWith("https://")) -> {
+                    UnifiedLog.w(TAG, "No factory for ${context.sourceType}, using URI directly: $uri")
+                    PlaybackSource(
+                        uri = uri,
+                        headers = context.headers,
+                        dataSourceType = DataSourceType.DEFAULT,
+                    )
+                }
+                uri != null && uri.startsWith("file://") -> {
+                    UnifiedLog.w(TAG, "No factory for ${context.sourceType}, using local file: $uri")
+                    PlaybackSource(
+                        uri = uri,
+                        dataSourceType = DataSourceType.LOCAL_FILE,
+                    )
+                }
+                else -> {
+                    // Explicit error instead of demo stream fallback
+                    UnifiedLog.e(TAG, "No factory and no valid URI for ${context.sourceType}")
+                    throw PlaybackSourceException(
+                        "No playback source available for ${context.sourceType}. " +
+                            "Please ensure the source is configured correctly.",
+                        context.sourceType,
+                    )
+                }
+            }
+        }
+
+        /**
+         * Checks if any factory can handle the given source type.
+         */
+        fun canResolve(sourceType: SourceType): Boolean = factories.any { it.supports(sourceType) }
+
+        /**
+         * Gets the number of registered factories.
+         * Useful for diagnostics.
+         */
+        fun factoryCount(): Int = factories.size
+    }

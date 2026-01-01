@@ -14,7 +14,6 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * - Feature modules depend ONLY on this interface, NOT on player:internal
  */
 interface PlayerEntryPoint {
-
     /**
      * Initiates playback with the given context.
      *
@@ -39,5 +38,5 @@ interface PlayerEntryPoint {
  */
 class PlaybackException(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception(message, cause)

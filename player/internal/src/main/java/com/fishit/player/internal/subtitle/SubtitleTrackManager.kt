@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.update
  * - Logging via UnifiedLog
  */
 class SubtitleTrackManager {
-
     companion object {
         private const val TAG = "SubtitleTrackManager"
     }
@@ -51,7 +50,10 @@ class SubtitleTrackManager {
      *
      * Call this after the player is created but before playback starts.
      */
-    fun attach(player: Player, isKidMode: Boolean = false) {
+    fun attach(
+        player: Player,
+        isKidMode: Boolean = false,
+    ) {
         this.player = player
         this.isKidMode = isKidMode
 
@@ -64,11 +66,11 @@ class SubtitleTrackManager {
 
         // Listen for track changes
         player.addListener(
-                object : Player.Listener {
-                    override fun onTracksChanged(tracks: Tracks) {
-                        discoverTracks(tracks)
-                    }
+            object : Player.Listener {
+                override fun onTracksChanged(tracks: Tracks) {
+                    discoverTracks(tracks)
                 }
+            },
         )
 
         // Initial track discovery if tracks already available
@@ -93,11 +95,11 @@ class SubtitleTrackManager {
      */
     fun selectTrack(trackId: SubtitleTrackId): Boolean {
         val currentPlayer =
-                player
-                        ?: run {
-                            UnifiedLog.w(TAG, "Cannot select track: no player attached")
-                            return false
-                        }
+            player
+                ?: run {
+                    UnifiedLog.w(TAG, "Cannot select track: no player attached")
+                    return false
+                }
 
         if (isKidMode) {
             UnifiedLog.d(TAG, "Cannot select track: kid mode active")
@@ -119,13 +121,13 @@ class SubtitleTrackManager {
         try {
             val override = TrackSelectionOverride(trackGroup, listOf(trackIndex))
             val newParams =
-                    currentPlayer
-                            .trackSelectionParameters
-                            .buildUpon()
-                            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
-                            .clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                            .addOverride(override)
-                            .build()
+                currentPlayer
+                    .trackSelectionParameters
+                    .buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                    .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                    .addOverride(override)
+                    .build()
 
             currentPlayer.trackSelectionParameters = newParams
 
@@ -147,11 +149,11 @@ class SubtitleTrackManager {
      */
     fun disableSubtitles(): Boolean {
         val currentPlayer =
-                player
-                        ?: run {
-                            UnifiedLog.w(TAG, "Cannot disable subtitles: no player attached")
-                            return false
-                        }
+            player
+                ?: run {
+                    UnifiedLog.w(TAG, "Cannot disable subtitles: no player attached")
+                    return false
+                }
 
         return try {
             disableSubtitlesInternal(currentPlayer)
@@ -217,9 +219,9 @@ class SubtitleTrackManager {
      */
     fun selectTrackByLanguage(languageCode: String): Boolean {
         val track =
-                _state.value.availableTracks.find {
-                    it.language?.startsWith(languageCode, ignoreCase = true) == true
-                }
+            _state.value.availableTracks.find {
+                it.language?.startsWith(languageCode, ignoreCase = true) == true
+            }
 
         return if (track != null) {
             selectTrack(track.id)
@@ -266,44 +268,43 @@ class SubtitleTrackManager {
     }
 
     private fun mapFormatToSubtitleTrack(
-            trackGroup: TrackGroup,
-            trackIndex: Int,
-            format: Format
+        trackGroup: TrackGroup,
+        trackIndex: Int,
+        format: Format,
     ): SubtitleTrack {
         val groupIndex = trackGroup.hashCode() // Use hash as stable group identifier
 
         return SubtitleTrack(
-                id = SubtitleTrackId("$groupIndex:$trackIndex"),
-                language = format.language,
-                label = format.label ?: format.language ?: "Track ${trackIndex + 1}",
-                isDefault = format.selectionFlags and C.SELECTION_FLAG_DEFAULT != 0,
-                isForced = format.selectionFlags and C.SELECTION_FLAG_FORCED != 0,
-                isClosedCaption = format.roleFlags and C.ROLE_FLAG_CAPTION != 0,
-                sourceType = determineSourceType(format),
-                mimeType = format.sampleMimeType
+            id = SubtitleTrackId("$groupIndex:$trackIndex"),
+            language = format.language,
+            label = format.label ?: format.language ?: "Track ${trackIndex + 1}",
+            isDefault = format.selectionFlags and C.SELECTION_FLAG_DEFAULT != 0,
+            isForced = format.selectionFlags and C.SELECTION_FLAG_FORCED != 0,
+            isClosedCaption = format.roleFlags and C.ROLE_FLAG_CAPTION != 0,
+            sourceType = determineSourceType(format),
+            mimeType = format.sampleMimeType,
         )
     }
 
-    private fun determineSourceType(format: Format): SubtitleSourceType {
-        return when {
+    private fun determineSourceType(format: Format): SubtitleSourceType =
+        when {
             format.containerMimeType?.contains("mpegurl", ignoreCase = true) == true ->
-                    SubtitleSourceType.MANIFEST
+                SubtitleSourceType.MANIFEST
             format.containerMimeType?.contains("dash", ignoreCase = true) == true ->
-                    SubtitleSourceType.MANIFEST
+                SubtitleSourceType.MANIFEST
             format.sampleMimeType?.startsWith("application/x-subrip") == true ->
-                    SubtitleSourceType.SIDECAR
+                SubtitleSourceType.SIDECAR
             format.sampleMimeType?.startsWith("text/vtt") == true -> SubtitleSourceType.SIDECAR
             else -> SubtitleSourceType.EMBEDDED
         }
-    }
 
     private fun disableSubtitlesInternal(player: Player) {
         val newParams =
-                player.trackSelectionParameters
-                        .buildUpon()
-                        .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                        .clearOverridesOfType(C.TRACK_TYPE_TEXT)
-                        .build()
+            player.trackSelectionParameters
+                .buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+                .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+                .build()
 
         player.trackSelectionParameters = newParams
     }

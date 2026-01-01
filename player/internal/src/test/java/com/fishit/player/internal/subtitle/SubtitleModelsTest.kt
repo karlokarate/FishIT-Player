@@ -19,7 +19,6 @@ import org.junit.Test
  * - Track ID handling
  */
 class SubtitleModelsTest {
-
     // ========== SubtitleTrackId Tests ==========
 
     @Test
@@ -42,16 +41,16 @@ class SubtitleModelsTest {
     @Test
     fun `SubtitleTrack fromMedia3 creates correct track`() {
         val track =
-                SubtitleTrack.fromMedia3(
-                        groupIndex = 0,
-                        trackIndex = 1,
-                        language = "en",
-                        label = "English",
-                        isDefault = true,
-                        isForced = false,
-                        isClosedCaption = false,
-                        mimeType = "text/vtt"
-                )
+            SubtitleTrack.fromMedia3(
+                groupIndex = 0,
+                trackIndex = 1,
+                language = "en",
+                label = "English",
+                isDefault = true,
+                isForced = false,
+                isClosedCaption = false,
+                mimeType = "text/vtt",
+            )
 
         assertEquals(SubtitleTrackId("0:1"), track.id)
         assertEquals("en", track.language)
@@ -66,13 +65,13 @@ class SubtitleModelsTest {
     @Test
     fun `SubtitleTrack fromMedia3 generates label from language when null`() {
         val track =
-                SubtitleTrack.fromMedia3(
-                        groupIndex = 0,
-                        trackIndex = 0,
-                        language = "de",
-                        label = null,
-                        isDefault = false
-                )
+            SubtitleTrack.fromMedia3(
+                groupIndex = 0,
+                trackIndex = 0,
+                language = "de",
+                label = null,
+                isDefault = false,
+            )
 
         assertEquals("de", track.label)
     }
@@ -80,13 +79,13 @@ class SubtitleModelsTest {
     @Test
     fun `SubtitleTrack fromMedia3 generates fallback label when both null`() {
         val track =
-                SubtitleTrack.fromMedia3(
-                        groupIndex = 0,
-                        trackIndex = 2,
-                        language = null,
-                        label = null,
-                        isDefault = false
-                )
+            SubtitleTrack.fromMedia3(
+                groupIndex = 0,
+                trackIndex = 2,
+                language = null,
+                label = null,
+                isDefault = false,
+            )
 
         assertEquals("Track 3", track.label)
     }
@@ -123,10 +122,10 @@ class SubtitleModelsTest {
         val track = SubtitleTrack(id = SubtitleTrackId("0:0"), language = "en", label = "English")
 
         val state =
-                SubtitleSelectionState(
-                        availableTracks = listOf(track),
-                        selectedTrackId = SubtitleTrackId.OFF
-                )
+            SubtitleSelectionState(
+                availableTracks = listOf(track),
+                selectedTrackId = SubtitleTrackId.OFF,
+            )
 
         assertNull(state.selectedTrack)
     }
@@ -137,11 +136,11 @@ class SubtitleModelsTest {
         val track2 = SubtitleTrack(id = SubtitleTrackId("0:1"), language = "de", label = "Deutsch")
 
         val state =
-                SubtitleSelectionState(
-                        availableTracks = listOf(track1, track2),
-                        selectedTrackId = SubtitleTrackId("0:1"),
-                        isEnabled = true
-                )
+            SubtitleSelectionState(
+                availableTracks = listOf(track1, track2),
+                selectedTrackId = SubtitleTrackId("0:1"),
+                isEnabled = true,
+            )
 
         assertEquals(track2, state.selectedTrack)
     }
@@ -152,39 +151,39 @@ class SubtitleModelsTest {
         assertFalse(emptyState.hasAvailableTracks)
 
         val populatedState =
-                SubtitleSelectionState(
-                        availableTracks =
-                                listOf(
-                                        SubtitleTrack(
-                                                id = SubtitleTrackId("0:0"),
-                                                language = "en",
-                                                label = "English"
-                                        )
-                                )
-                )
+            SubtitleSelectionState(
+                availableTracks =
+                    listOf(
+                        SubtitleTrack(
+                            id = SubtitleTrackId("0:0"),
+                            language = "en",
+                            label = "English",
+                        ),
+                    ),
+            )
         assertTrue(populatedState.hasAvailableTracks)
     }
 
     @Test
     fun `trackCount returns correct count`() {
         val tracks =
-                listOf(
-                        SubtitleTrack(
-                                id = SubtitleTrackId("0:0"),
-                                language = "en",
-                                label = "English"
-                        ),
-                        SubtitleTrack(
-                                id = SubtitleTrackId("0:1"),
-                                language = "de",
-                                label = "Deutsch"
-                        ),
-                        SubtitleTrack(
-                                id = SubtitleTrackId("0:2"),
-                                language = "es",
-                                label = "Español"
-                        )
-                )
+            listOf(
+                SubtitleTrack(
+                    id = SubtitleTrackId("0:0"),
+                    language = "en",
+                    label = "English",
+                ),
+                SubtitleTrack(
+                    id = SubtitleTrackId("0:1"),
+                    language = "de",
+                    label = "Deutsch",
+                ),
+                SubtitleTrack(
+                    id = SubtitleTrackId("0:2"),
+                    language = "es",
+                    label = "Español",
+                ),
+            )
 
         val state = SubtitleSelectionState(availableTracks = tracks)
 

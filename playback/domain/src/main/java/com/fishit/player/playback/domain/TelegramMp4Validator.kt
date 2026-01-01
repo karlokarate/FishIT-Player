@@ -1,8 +1,8 @@
 package com.fishit.player.playback.domain
 
+import kotlinx.coroutines.delay
 import java.io.File
 import java.io.RandomAccessFile
-import kotlinx.coroutines.delay
 
 /**
  * MP4 header validation for Telegram file playback.
@@ -26,15 +26,14 @@ import kotlinx.coroutines.delay
  * @see com.fishit.player.playback.domain.mp4.Mp4MoovValidationConfig
  */
 @Deprecated(
-        message = "Use Mp4MoovAtomValidator from playback.domain.mp4 package instead",
-        replaceWith =
-                ReplaceWith(
-                        "Mp4MoovAtomValidator.checkMoovAtom(file.absolutePath, file.length())",
-                        "com.fishit.player.playback.domain.mp4.Mp4MoovAtomValidator"
-                )
+    message = "Use Mp4MoovAtomValidator from playback.domain.mp4 package instead",
+    replaceWith =
+        ReplaceWith(
+            "Mp4MoovAtomValidator.checkMoovAtom(file.absolutePath, file.length())",
+            "com.fishit.player.playback.domain.mp4.Mp4MoovAtomValidator",
+        ),
 )
 object TelegramMp4Validator {
-
     /** Minimum bytes needed to check for atoms. */
     private const val MIN_HEADER_SIZE = 8L
 
@@ -54,8 +53,8 @@ object TelegramMp4Validator {
      */
     @Deprecated("Use Mp4MoovAtomValidator.checkMoovAtom() instead")
     suspend fun ensureFileReadyWithMp4Validation(
-            file: File,
-            timeoutMillis: Long = 30_000L,
+        file: File,
+        timeoutMillis: Long = 30_000L,
     ) {
         val startTime = System.currentTimeMillis()
 
@@ -70,7 +69,7 @@ object TelegramMp4Validator {
                     }
                     MoovCheckResult.INVALID_FORMAT -> {
                         throw Mp4ValidationException(
-                                "File is not a valid MP4 container: ${file.name}"
+                            "File is not a valid MP4 container: ${file.name}",
                         )
                     }
                     MoovCheckResult.FILE_TOO_SMALL -> {
@@ -87,8 +86,8 @@ object TelegramMp4Validator {
         }
 
         throw Mp4ValidationException(
-                "Timeout waiting for moov atom in ${file.name}. " +
-                        "Downloaded: ${file.length()} bytes after ${timeoutMillis}ms"
+            "Timeout waiting for moov atom in ${file.name}. " +
+                "Downloaded: ${file.length()} bytes after ${timeoutMillis}ms",
         )
     }
 
@@ -98,13 +97,12 @@ object TelegramMp4Validator {
      * @param file File to check
      * @return true if moov atom is present
      */
-    fun hasMoovAtom(file: File): Boolean {
-        return try {
+    fun hasMoovAtom(file: File): Boolean =
+        try {
             checkMoovAtom(file) == MoovCheckResult.FOUND
         } catch (e: Exception) {
             false
         }
-    }
 
     /** Parse file and check for moov atom. */
     private fun checkMoovAtom(file: File): MoovCheckResult {
@@ -150,18 +148,18 @@ object TelegramMp4Validator {
 
                 // Handle special size values
                 val atomSize =
-                        when {
-                            size == 0L -> fileSize - position // Atom extends to EOF
-                            size == 1L -> {
-                                // Extended size (64-bit) after type
-                                if (position + 16 > fileSize) break
-                                val extSizeBytes = ByteArray(8)
-                                if (raf.read(extSizeBytes) != 8) break
-                                extSizeBytes.toUInt64()
-                            }
-                            size < 8 -> return MoovCheckResult.INVALID_FORMAT
-                            else -> size
+                    when {
+                        size == 0L -> fileSize - position // Atom extends to EOF
+                        size == 1L -> {
+                            // Extended size (64-bit) after type
+                            if (position + 16 > fileSize) break
+                            val extSizeBytes = ByteArray(8)
+                            if (raf.read(extSizeBytes) != 8) break
+                            extSizeBytes.toUInt64()
                         }
+                        size < 8 -> return MoovCheckResult.INVALID_FORMAT
+                        else -> size
+                    }
 
                 position += atomSize
             }
@@ -172,24 +170,22 @@ object TelegramMp4Validator {
     }
 
     /** Convert 4 bytes to unsigned 32-bit integer (big-endian). */
-    private fun ByteArray.toUInt32(): Long {
-        return ((this[0].toLong() and 0xFF) shl 24) or
-                ((this[1].toLong() and 0xFF) shl 16) or
-                ((this[2].toLong() and 0xFF) shl 8) or
-                (this[3].toLong() and 0xFF)
-    }
+    private fun ByteArray.toUInt32(): Long =
+        ((this[0].toLong() and 0xFF) shl 24) or
+            ((this[1].toLong() and 0xFF) shl 16) or
+            ((this[2].toLong() and 0xFF) shl 8) or
+            (this[3].toLong() and 0xFF)
 
     /** Convert 8 bytes to unsigned 64-bit integer (big-endian). */
-    private fun ByteArray.toUInt64(): Long {
-        return ((this[0].toLong() and 0xFF) shl 56) or
-                ((this[1].toLong() and 0xFF) shl 48) or
-                ((this[2].toLong() and 0xFF) shl 40) or
-                ((this[3].toLong() and 0xFF) shl 32) or
-                ((this[4].toLong() and 0xFF) shl 24) or
-                ((this[5].toLong() and 0xFF) shl 16) or
-                ((this[6].toLong() and 0xFF) shl 8) or
-                (this[7].toLong() and 0xFF)
-    }
+    private fun ByteArray.toUInt64(): Long =
+        ((this[0].toLong() and 0xFF) shl 56) or
+            ((this[1].toLong() and 0xFF) shl 48) or
+            ((this[2].toLong() and 0xFF) shl 40) or
+            ((this[3].toLong() and 0xFF) shl 32) or
+            ((this[4].toLong() and 0xFF) shl 24) or
+            ((this[5].toLong() and 0xFF) shl 16) or
+            ((this[6].toLong() and 0xFF) shl 8) or
+            (this[7].toLong() and 0xFF)
 }
 
 /** Result of moov atom check. */
@@ -208,4 +204,6 @@ private enum class MoovCheckResult {
 }
 
 /** Exception thrown when MP4 validation fails. */
-class Mp4ValidationException(message: String) : Exception(message)
+class Mp4ValidationException(
+    message: String,
+) : Exception(message)

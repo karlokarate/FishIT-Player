@@ -21,7 +21,7 @@ enum class TvInputAction {
     CHANNEL_UP,
     CHANNEL_DOWN,
     INFO,
-    MENU
+    MENU,
 }
 
 /**
@@ -35,7 +35,9 @@ sealed class TvInputResult {
     data object PassThrough : TvInputResult()
 
     /** The action triggers a specific player behavior. */
-    data class Action(val description: String) : TvInputResult()
+    data class Action(
+        val description: String,
+    ) : TvInputResult()
 }
 
 /**
@@ -44,7 +46,6 @@ sealed class TvInputResult {
  * Maps TV input events to player actions based on current state.
  */
 interface TvInputController {
-
     /**
      * Whether TV input mode is active (running on TV device).
      */
@@ -57,7 +58,10 @@ interface TvInputController {
      * @param isControlsVisible Whether player controls are currently visible.
      * @return Result indicating how the action was handled.
      */
-    fun handleInput(action: TvInputAction, isControlsVisible: Boolean): TvInputResult
+    fun handleInput(
+        action: TvInputAction,
+        isControlsVisible: Boolean,
+    ): TvInputResult
 
     /**
      * Seek step in milliseconds for left/right DPAD when seeking.

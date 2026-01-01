@@ -29,7 +29,6 @@ import com.fishit.player.core.playermodel.SourceType
  * ```
  */
 interface PlaybackSourceFactory {
-
     /**
      * Checks if this factory can handle the given source type.
      *
@@ -59,5 +58,5 @@ interface PlaybackSourceFactory {
 class PlaybackSourceException(
     message: String,
     val sourceType: SourceType? = null,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception(message, cause)

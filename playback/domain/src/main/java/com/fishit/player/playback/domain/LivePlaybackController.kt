@@ -9,7 +9,7 @@ data class EpgEntry(
     val title: String,
     val startTime: Long,
     val endTime: Long,
-    val description: String? = null
+    val description: String? = null,
 )
 
 /**
@@ -20,7 +20,7 @@ data class LiveChannelInfo(
     val name: String,
     val logoUrl: String?,
     val currentProgram: EpgEntry?,
-    val nextProgram: EpgEntry?
+    val nextProgram: EpgEntry?,
 )
 
 /**
@@ -29,7 +29,6 @@ data class LiveChannelInfo(
  * Manages channel switching, EPG display, and live-specific controls.
  */
 interface LivePlaybackController {
-
     /**
      * Current channel info as a StateFlow.
      */

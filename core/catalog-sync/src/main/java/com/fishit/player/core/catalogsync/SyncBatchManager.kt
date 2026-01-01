@@ -22,19 +22,19 @@ import java.util.concurrent.ConcurrentHashMap
  * **Usage:**
  * ```kotlin
  * val manager = SyncBatchManager(config, metrics)
- * 
+ *
  * // Add items - returns batch if flush needed
  * val toFlush = manager.add(SyncPhase.LIVE, item)
  * if (toFlush != null) {
  *     persistLiveBatch(toFlush)
  * }
- * 
+ *
  * // Check time-based flush periodically
  * val timeFlush = manager.checkTimeBasedFlush(SyncPhase.LIVE)
  * if (timeFlush != null) {
  *     persistLiveBatch(timeFlush)
  * }
- * 
+ *
  * // Flush remaining on completion
  * val remaining = manager.flushAll(SyncPhase.LIVE)
  * ```
@@ -57,6 +57,7 @@ class SyncBatchManager(
     private val locks = ConcurrentHashMap<SyncPhase, Mutex>()
 
     private fun getLock(phase: SyncPhase) = locks.getOrPut(phase) { Mutex() }
+
     private fun getBatch(phase: SyncPhase) = batches.getOrPut(phase) { PhaseBatch() }
 
     /**
@@ -64,8 +65,11 @@ class SyncBatchManager(
      *
      * @return List to flush if batch is full, null otherwise
      */
-    suspend fun add(phase: SyncPhase, item: RawMediaMetadata): List<RawMediaMetadata>? {
-        return getLock(phase).withLock {
+    suspend fun add(
+        phase: SyncPhase,
+        item: RawMediaMetadata,
+    ): List<RawMediaMetadata>? =
+        getLock(phase).withLock {
             val batch = getBatch(phase)
             batch.items.add(item)
 
@@ -76,15 +80,17 @@ class SyncBatchManager(
                 null
             }
         }
-    }
 
     /**
      * Add multiple items to a phase batch.
      *
      * @return List to flush if batch exceeds size, null otherwise
      */
-    suspend fun addAll(phase: SyncPhase, items: List<RawMediaMetadata>): List<RawMediaMetadata>? {
-        return getLock(phase).withLock {
+    suspend fun addAll(
+        phase: SyncPhase,
+        items: List<RawMediaMetadata>,
+    ): List<RawMediaMetadata>? =
+        getLock(phase).withLock {
             val batch = getBatch(phase)
             batch.items.addAll(items)
 
@@ -95,7 +101,6 @@ class SyncBatchManager(
                 null
             }
         }
-    }
 
     /**
      * Check if time-based flush is needed for a phase.
@@ -113,12 +118,13 @@ class SyncBatchManager(
             if (batch.items.isEmpty()) return@withLock null
 
             val elapsed = System.currentTimeMillis() - batch.lastFlushTimeMs
-            val flushInterval = when (phase) {
-                SyncPhase.LIVE -> config.liveConfig.flushIntervalMs
-                SyncPhase.MOVIES -> config.moviesConfig.flushIntervalMs
-                SyncPhase.SERIES -> config.seriesConfig.flushIntervalMs
-                SyncPhase.EPISODES -> config.episodesConfig.flushIntervalMs
-            }
+            val flushInterval =
+                when (phase) {
+                    SyncPhase.LIVE -> config.liveConfig.flushIntervalMs
+                    SyncPhase.MOVIES -> config.moviesConfig.flushIntervalMs
+                    SyncPhase.SERIES -> config.seriesConfig.flushIntervalMs
+                    SyncPhase.EPISODES -> config.episodesConfig.flushIntervalMs
+                }
 
             if (elapsed >= flushInterval) {
                 UnifiedLog.d(TAG) { "Time-based flush for $phase: ${batch.items.size} items after ${elapsed}ms" }

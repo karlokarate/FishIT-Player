@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -55,30 +54,31 @@ fun InternalPlayerControls(
     onSeekTo: (Long) -> Unit,
     onToggleMute: () -> Unit,
     onTapSurface: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onTapSurface
-            )
+        modifier =
+            modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onTapSurface,
+                ),
     ) {
         AnimatedVisibility(
             visible = state.areControlsVisible,
             enter = fadeIn(),
-            exit = fadeOut()
+            exit = fadeOut(),
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 // Top gradient with title
                 TopBar(
                     title = state.context?.title ?: "",
                     subtitle = state.context?.subtitle,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -89,7 +89,7 @@ fun InternalPlayerControls(
                     onTogglePlayPause = onTogglePlayPause,
                     onSeekForward = onSeekForward,
                     onSeekBackward = onSeekBackward,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -99,7 +99,7 @@ fun InternalPlayerControls(
                     state = state,
                     onSeekTo = onSeekTo,
                     onToggleMute = onToggleMute,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -110,16 +110,16 @@ fun InternalPlayerControls(
 private fun TopBar(
     title: String,
     subtitle: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
-                )
-            )
-            .padding(16.dp)
+        modifier =
+            modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent),
+                    ),
+                ).padding(16.dp),
     ) {
         Column {
             Text(
@@ -127,7 +127,7 @@ private fun TopBar(
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             if (subtitle != null) {
                 Text(
@@ -135,7 +135,7 @@ private fun TopBar(
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -148,22 +148,22 @@ private fun CenterControls(
     onTogglePlayPause: () -> Unit,
     onSeekForward: () -> Unit,
     onSeekBackward: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(
             onClick = onSeekBackward,
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(56.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Replay10,
                 contentDescription = stringResource(R.string.player_seek_backward),
                 tint = Color.White,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
         }
 
@@ -171,17 +171,18 @@ private fun CenterControls(
 
         IconButton(
             onClick = onTogglePlayPause,
-            modifier = Modifier.size(72.dp)
+            modifier = Modifier.size(72.dp),
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) {
-                    stringResource(R.string.player_pause)
-                } else {
-                    stringResource(R.string.player_play)
-                },
+                contentDescription =
+                    if (isPlaying) {
+                        stringResource(R.string.player_pause)
+                    } else {
+                        stringResource(R.string.player_play)
+                    },
                 tint = Color.White,
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(64.dp),
             )
         }
 
@@ -189,13 +190,13 @@ private fun CenterControls(
 
         IconButton(
             onClick = onSeekForward,
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(56.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Forward10,
                 contentDescription = stringResource(R.string.player_seek_forward),
                 tint = Color.White,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
         }
     }
@@ -206,16 +207,16 @@ private fun BottomBar(
     state: InternalPlayerState,
     onSeekTo: (Long) -> Unit,
     onToggleMute: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
-                )
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier =
+            modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                    ),
+                ).padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         // Progress slider
         if (!state.isLive) {
@@ -223,32 +224,35 @@ private fun BottomBar(
                 value = state.positionMs.toFloat(),
                 onValueChange = { onSeekTo(it.toLong()) },
                 valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                ),
-                modifier = Modifier.fillMaxWidth()
+                colors =
+                    SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                    ),
+                modifier = Modifier.fillMaxWidth(),
             )
         } else {
             // Live indicator
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.CenterStart
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(Color.Red, shape = MaterialTheme.shapes.small)
+                        modifier =
+                            Modifier
+                                .size(8.dp)
+                                .background(Color.Red, shape = MaterialTheme.shapes.small),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.player_live),
                         color = Color.White,
-                        style = MaterialTheme.typography.labelMedium
+                        style = MaterialTheme.typography.labelMedium,
                     )
                 }
             }
@@ -260,29 +264,31 @@ private fun BottomBar(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Time display
             Text(
-                text = if (state.isLive) {
-                    stringResource(R.string.player_live)
-                } else {
-                    "${formatTime(state.positionMs)} / ${formatTime(state.durationMs)}"
-                },
+                text =
+                    if (state.isLive) {
+                        stringResource(R.string.player_live)
+                    } else {
+                        "${formatTime(state.positionMs)} / ${formatTime(state.durationMs)}"
+                    },
                 color = Color.White,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
             )
 
             // Volume button
             IconButton(onClick = onToggleMute) {
                 Icon(
                     imageVector = if (state.isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                    contentDescription = if (state.isMuted) {
-                        stringResource(R.string.player_unmute)
-                    } else {
-                        stringResource(R.string.player_mute)
-                    },
-                    tint = Color.White
+                    contentDescription =
+                        if (state.isMuted) {
+                            stringResource(R.string.player_unmute)
+                        } else {
+                            stringResource(R.string.player_mute)
+                        },
+                    tint = Color.White,
                 )
             }
         }
@@ -297,7 +303,7 @@ private fun formatTime(ms: Long): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    
+
     return if (hours > 0) {
         String.format("%d:%02d:%02d", hours, minutes, seconds)
     } else {

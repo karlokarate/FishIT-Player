@@ -39,6 +39,9 @@ enum class DataSourceType {
 
     /** Use progressive download DataSource */
     PROGRESSIVE,
+
+    /** Use Xtream-specific OkHttp DataSource with redirect handling and header preservation */
+    XTREAM_HTTP,
 }
 
 /**

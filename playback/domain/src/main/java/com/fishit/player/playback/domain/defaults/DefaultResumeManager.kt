@@ -13,38 +13,34 @@ import com.fishit.player.playback.domain.ResumeManager
  * Real persistence will be added in Phase 6.
  */
 class DefaultResumeManager : ResumeManager {
-
     private val resumePoints = mutableMapOf<String, ResumePoint>()
 
-    override suspend fun getResumePoint(contentId: String): ResumePoint? {
-        return resumePoints[contentId]
-    }
+    override suspend fun getResumePoint(contentId: String): ResumePoint? = resumePoints[contentId]
 
     override suspend fun saveResumePoint(
         context: PlaybackContext,
         positionMs: Long,
-        durationMs: Long
+        durationMs: Long,
     ) {
         val contentId = context.canonicalId
-        resumePoints[contentId] = ResumePoint(
-            contentId = contentId,
-            type = mapSourceTypeToPlaybackType(context.sourceType),
-            positionMs = positionMs,
-            durationMs = durationMs,
-            profileId = null // TODO: Add profile tracking in Phase 6
-        )
+        resumePoints[contentId] =
+            ResumePoint(
+                contentId = contentId,
+                type = mapSourceTypeToPlaybackType(context.sourceType),
+                positionMs = positionMs,
+                durationMs = durationMs,
+                profileId = null, // TODO: Add profile tracking in Phase 6
+            )
     }
 
     override suspend fun clearResumePoint(contentId: String) {
         resumePoints.remove(contentId)
     }
 
-    override suspend fun getAllResumePoints(): List<ResumePoint> {
-        return resumePoints.values.toList()
-    }
+    override suspend fun getAllResumePoints(): List<ResumePoint> = resumePoints.values.toList()
 
-    private fun mapSourceTypeToPlaybackType(sourceType: SourceType): PlaybackType {
-        return when (sourceType) {
+    private fun mapSourceTypeToPlaybackType(sourceType: SourceType): PlaybackType =
+        when (sourceType) {
             SourceType.TELEGRAM -> PlaybackType.TELEGRAM
             SourceType.XTREAM -> PlaybackType.VOD
             SourceType.FILE -> PlaybackType.IO
@@ -52,5 +48,4 @@ class DefaultResumeManager : ResumeManager {
             SourceType.AUDIOBOOK -> PlaybackType.AUDIOBOOK
             SourceType.UNKNOWN -> PlaybackType.VOD
         }
-    }
 }

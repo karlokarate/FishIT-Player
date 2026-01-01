@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * Real persistence will be added in Phase 6.
  */
 class DefaultSubtitleStyleManager : SubtitleStyleManager {
-
     private val _style = MutableStateFlow(SubtitleStyle())
 
     override val style: StateFlow<SubtitleStyle> = _style.asStateFlow()

@@ -29,7 +29,6 @@ import shark.AndroidReferenceMatchers
  * - https://square.github.io/leakcanary/recipes/#watching-objects-with-a-lifecycle
  */
 object LeakCanaryConfig {
-
     private const val TAG = "LeakCanaryConfig"
 
     /**
@@ -39,47 +38,44 @@ object LeakCanaryConfig {
      */
     fun install(app: Application) {
         // Configure LeakCanary behavior
-        LeakCanary.config = LeakCanary.config.copy(
-            // Dump heap when 5 retained objects are detected (default is 5)
-            retainedVisibleThreshold = 5,
-            
-            // Show notification for leaks
-            dumpHeapWhenDebugging = false, // Don't auto-dump when debugger attached
-            
-            // Reference matchers - include known Android framework leaks
-            referenceMatchers = AndroidReferenceMatchers.appDefaults +
-                // Add FishIT-specific known leaks to ignore (if any framework bugs exist)
-                listOf(
-                    // Example: If we find a framework leak, add it here
-                    // AndroidReferenceMatchers.instanceFieldLeak(
-                    //     className = "android.app.ActivityThread",
-                    //     fieldName = "mLastIntentSender",
-                    //     description = "Framework leak in ActivityThread"
-                    // )
-                ),
-            
-            // Compute retained heap size (slightly slower but more informative)
-            computeRetainedHeapSize = true,
-            
-            // Max stored heap dumps (prevents filling storage)
-            maxStoredHeapDumps = 7,
-            
-            // Request write external storage permission for heap dump export
-            requestWriteExternalStoragePermission = false, // We use SAF
-        )
+        LeakCanary.config =
+            LeakCanary.config.copy(
+                // Dump heap when 5 retained objects are detected (default is 5)
+                retainedVisibleThreshold = 5,
+                // Show notification for leaks
+                dumpHeapWhenDebugging = false, // Don't auto-dump when debugger attached
+                // Reference matchers - include known Android framework leaks
+                referenceMatchers =
+                    AndroidReferenceMatchers.appDefaults +
+                        // Add FishIT-specific known leaks to ignore (if any framework bugs exist)
+                        listOf(
+                            // Example: If we find a framework leak, add it here
+                            // AndroidReferenceMatchers.instanceFieldLeak(
+                            //     className = "android.app.ActivityThread",
+                            //     fieldName = "mLastIntentSender",
+                            //     description = "Framework leak in ActivityThread"
+                            // )
+                        ),
+                // Compute retained heap size (slightly slower but more informative)
+                computeRetainedHeapSize = true,
+                // Max stored heap dumps (prevents filling storage)
+                maxStoredHeapDumps = 7,
+                // Request write external storage permission for heap dump export
+                requestWriteExternalStoragePermission = false, // We use SAF
+            )
 
         // Configure AppWatcher for additional object types
-        AppWatcher.config = AppWatcher.config.copy(
-            // Watch all default types
-            watchActivities = true,
-            watchFragments = true,
-            watchFragmentViews = true,
-            watchViewModels = true,
-            
-            // Delay before considering object retained (default 5s, we use 10s for player)
-            // This gives player more time to clean up after screen rotation
-            watchDurationMillis = 10_000L,
-        )
+        AppWatcher.config =
+            AppWatcher.config.copy(
+                // Watch all default types
+                watchActivities = true,
+                watchFragments = true,
+                watchFragmentViews = true,
+                watchViewModels = true,
+                // Delay before considering object retained (default 5s, we use 10s for player)
+                // This gives player more time to clean up after screen rotation
+                watchDurationMillis = 10_000L,
+            )
 
         android.util.Log.i(TAG, "LeakCanary configured for FishIT Player v2")
     }
@@ -93,10 +89,13 @@ object LeakCanaryConfig {
      * @param watchedObject The object to watch (e.g., PlayerSession, PlayerView)
      * @param description Human-readable description for leak reports
      */
-    fun watchPlayerObject(watchedObject: Any, description: String) {
+    fun watchPlayerObject(
+        watchedObject: Any,
+        description: String,
+    ) {
         AppWatcher.objectWatcher.expectWeaklyReachable(
             watchedObject = watchedObject,
-            description = "Player: $description"
+            description = "Player: $description",
         )
     }
 
@@ -108,10 +107,13 @@ object LeakCanaryConfig {
      * @param watchedObject The object to watch
      * @param description Human-readable description
      */
-    fun watchTdLibObject(watchedObject: Any, description: String) {
+    fun watchTdLibObject(
+        watchedObject: Any,
+        description: String,
+    ) {
         AppWatcher.objectWatcher.expectWeaklyReachable(
             watchedObject = watchedObject,
-            description = "TDLib: $description"
+            description = "TDLib: $description",
         )
     }
 
@@ -124,10 +126,13 @@ object LeakCanaryConfig {
      * @param watchedObject The ViewModel to watch
      * @param description Human-readable description
      */
-    fun watchViewModel(watchedObject: Any, description: String) {
+    fun watchViewModel(
+        watchedObject: Any,
+        description: String,
+    ) {
         AppWatcher.objectWatcher.expectWeaklyReachable(
             watchedObject = watchedObject,
-            description = "ViewModel: $description"
+            description = "ViewModel: $description",
         )
     }
 
@@ -137,16 +142,12 @@ object LeakCanaryConfig {
      * This returns objects that are retained but not yet analyzed.
      * For full leak history, use LeakCanary UI.
      */
-    fun getRetainedObjectCount(): Int {
-        return AppWatcher.objectWatcher.retainedObjectCount
-    }
+    fun getRetainedObjectCount(): Int = AppWatcher.objectWatcher.retainedObjectCount
 
     /**
      * Check if there are any retained objects waiting for analysis.
      */
-    fun hasRetainedObjects(): Boolean {
-        return AppWatcher.objectWatcher.hasRetainedObjects
-    }
+    fun hasRetainedObjects(): Boolean = AppWatcher.objectWatcher.hasRetainedObjects
 
     /**
      * Trigger a heap dump and analysis now.

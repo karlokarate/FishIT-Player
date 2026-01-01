@@ -18,10 +18,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class PlayerEntryModule {
-
     @Binds
     @Singleton
-    abstract fun bindPlayerEntryPoint(
-        impl: InternalPlayerEntryImpl
-    ): PlayerEntryPoint
+    abstract fun bindPlayerEntryPoint(impl: InternalPlayerEntryImpl): PlayerEntryPoint
 }

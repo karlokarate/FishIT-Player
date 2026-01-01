@@ -85,26 +85,29 @@ data class EnhancedSyncConfig(
          * Configuration for full sync including episodes.
          * Use for background refresh, not initial login.
          */
-        val FULL_SYNC = EnhancedSyncConfig(
-            episodesConfig = SyncPhaseConfig.EPISODES.copy(batchSize = 100)
-        )
+        val FULL_SYNC =
+            EnhancedSyncConfig(
+                episodesConfig = SyncPhaseConfig.EPISODES.copy(batchSize = 100),
+            )
 
         /**
          * Configuration for quick sync (e.g., pull-to-refresh).
          * Smaller batches for faster first-item visibility.
          */
-        val QUICK_SYNC = EnhancedSyncConfig(
-            liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 200),
-            moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 100),
-            seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 50),
-        )
+        val QUICK_SYNC =
+            EnhancedSyncConfig(
+                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 200),
+                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 100),
+                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 50),
+            )
     }
 
     /** Get batch size for a specific phase */
-    fun batchSizeFor(phase: SyncPhase): Int = when (phase) {
-        SyncPhase.LIVE -> liveConfig.batchSize
-        SyncPhase.MOVIES -> moviesConfig.batchSize
-        SyncPhase.SERIES -> seriesConfig.batchSize
-        SyncPhase.EPISODES -> episodesConfig.batchSize
-    }
+    fun batchSizeFor(phase: SyncPhase): Int =
+        when (phase) {
+            SyncPhase.LIVE -> liveConfig.batchSize
+            SyncPhase.MOVIES -> moviesConfig.batchSize
+            SyncPhase.SERIES -> seriesConfig.batchSize
+            SyncPhase.EPISODES -> episodesConfig.batchSize
+        }
 }

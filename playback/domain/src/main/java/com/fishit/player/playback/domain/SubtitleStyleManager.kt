@@ -10,7 +10,7 @@ data class SubtitleStyle(
     val fontColor: Int = 0xFFFFFFFF.toInt(),
     val backgroundColor: Int = 0x80000000.toInt(),
     val edgeType: Int = 0,
-    val edgeColor: Int = 0xFF000000.toInt()
+    val edgeColor: Int = 0xFF000000.toInt(),
 )
 
 /**
@@ -19,7 +19,6 @@ data class SubtitleStyle(
  * Provides a reactive flow of style changes that the player UI observes.
  */
 interface SubtitleStyleManager {
-
     /**
      * Current subtitle style as a StateFlow.
      */
