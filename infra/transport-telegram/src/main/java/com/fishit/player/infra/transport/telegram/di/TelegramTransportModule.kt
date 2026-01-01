@@ -182,9 +182,10 @@ object TelegramTransportModule {
      * - Low priority downloads (background)
      * - Idempotent and app-scope (not UI-scope)
      *
-     * Note: TelegramThumbDownloader is provided as a separate singleton even though it
-     * composes resolver + fileClient, as it provides specific thumbnail download logic
-     * that's distinct from the generic file/resolver interfaces.
+     * Note: TelegramThumbDownloader is intentionally an @Singleton even though it composes
+     * resolver + fileClient. It centralizes thumbnail download coordination across multiple
+     * UI surfaces, reusing a shared TDLib-backed download queue and avoiding duplicate work,
+     * while remaining UI-agnostic (no Context, no ViewModel state).
      */
     @Provides
     @Singleton
