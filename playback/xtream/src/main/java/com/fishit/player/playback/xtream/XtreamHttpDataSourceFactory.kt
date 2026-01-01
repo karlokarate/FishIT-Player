@@ -44,6 +44,12 @@ class XtreamHttpDataSourceFactory(
         private const val WRITE_TIMEOUT_SECONDS = 30L
     }
 
+    /**
+     * OkHttpClient instance configured for Xtream streaming.
+     * 
+     * Thread-safe lazy initialization - Kotlin's `by lazy` ensures thread-safe singleton creation.
+     * OkHttpClient itself is thread-safe and designed to be shared across the application.
+     */
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient
             .Builder()
@@ -115,12 +121,20 @@ class XtreamHttpDataSourceFactory(
                             " [no redirect]"
                         }
 
-                    // Check if response is HLS manifest (peek at first bytes)
+                    // Check if response is HLS manifest (only for plausible content types)
+                    val contentType = response.header("Content-Type") ?: ""
+                    val maybeHls =
+                        contentType.contains("mpegurl", ignoreCase = true) ||
+                            contentType.contains("m3u", ignoreCase = true) ||
+                            contentType.contains("text", ignoreCase = true) ||
+                            contentType.isEmpty()
+
                     val isHlsManifest =
-                        response
-                            .peekBody(10)
-                            .string()
-                            .startsWith("#EXTM3U")
+                        if (maybeHls) {
+                            response.peekBody(10).string().startsWith("#EXTM3U")
+                        } else {
+                            false
+                        }
 
                     UnifiedLog.i(TAG) {
                         "← Xtream HTTP success: 200$redirectInfo, HLS manifest: $isHlsManifest"

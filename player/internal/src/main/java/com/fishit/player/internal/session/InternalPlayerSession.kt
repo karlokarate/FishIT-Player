@@ -217,7 +217,7 @@ class InternalPlayerSession(
                         DataSourceType.XTREAM_HTTP -> {
                             // Use OkHttp for Xtream to ensure headers survive redirects
                             UnifiedLog.d(TAG) {
-                                "Using XtreamHttpDataSource with ${source.headers.size} headers for redirect-safe playback"
+                                "Using XtreamHttpDataSource for redirect-safe playback"
                             }
                             XtreamHttpDataSourceFactory(
                                 headers = source.headers,
