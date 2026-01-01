@@ -65,6 +65,12 @@ class TelegramChatBrowser(
     companion object {
         private const val TAG = "TelegramChatBrowser"
         private const val PAGE_SIZE_CHATS = 100
+        
+        /**
+         * Delay before retrying when TDLib returns a partial batch.
+         * TDLib may be loading chat list from server asynchronously.
+         */
+        private const val PARTIAL_BATCH_RETRY_DELAY_MS = 500L
     }
 
     // Cache for chat metadata to reduce API calls - thread-safe
@@ -137,13 +143,60 @@ class TelegramChatBrowser(
                 }
             }
 
-            // TDLib returns chats in order - if we got less than requested, we're done
+            // TDLib may return partial batch while loading from server
+            // Retry once with backoff before concluding end of list
             if (batch.size < pageLimit) {
                 UnifiedLog.d(
                         TAG,
-                        "Partial batch received (${batch.size}/$pageLimit), end of chat list"
+                        "Partial batch received (${batch.size}/$pageLimit), retrying for TDLib async load..."
                 )
-                break
+                delay(PARTIAL_BATCH_RETRY_DELAY_MS)
+                
+                // Retry same request
+                val retryBatch =
+                        TelegramRetry.executeWithRetry(
+                                config = RetryConfig.QUICK,
+                                operationName = "getChats-retry",
+                        ) {
+                            val chatsResult = client.getChats(ChatListMain(), pageLimit)
+                            when (chatsResult) {
+                                is TdlResult.Success -> chatsResult.result.chatIds
+                                is TdlResult.Failure ->
+                                        throw RuntimeException(
+                                                "getChats retry failed: ${chatsResult.code} - ${chatsResult.message}"
+                                        )
+                            }
+                        }
+                
+                if (retryBatch.isEmpty() || retryBatch.size <= batch.size) {
+                    // Still partial or empty - truly end of list
+                    UnifiedLog.d(TAG, "Confirmed end of chat list after retry")
+                    break
+                }
+                
+                // Got more chats on retry - process them
+                UnifiedLog.d(TAG, "Retry yielded ${retryBatch.size} chats, continuing...")
+                for (chatId in retryBatch) {
+                    if (allChats.size >= effectiveLimit) break
+                    if (allChats.any { it.chatId == chatId }) continue // Skip duplicates
+                    
+                    try {
+                        val chatResult = client.getChat(chatId)
+                        if (chatResult is TdlResult.Success) {
+                            val chat = chatResult.result
+                            chatCache[chatId] = chat
+                            allChats.add(mapChat(chat))
+                        }
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG, "Error loading chat $chatId on retry: ${e.message}")
+                    }
+                }
+                
+                // If retry batch was also partial, we're done
+                if (retryBatch.size < pageLimit) {
+                    UnifiedLog.d(TAG, "Retry batch also partial, end of chat list")
+                    break
+                }
             }
         }
 

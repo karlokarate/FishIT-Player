@@ -1,9 +1,11 @@
 package com.fishit.player.pipeline.telegram.catalog
 
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.telegram.adapter.TelegramChatInfo
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.model.TelegramMediaItem
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 /**
@@ -48,6 +50,11 @@ internal class TelegramMessageCursor(
     /**
      * Fetch the next batch of media items from the chat.
      *
+     * **TDLib Async Loading Handling:**
+     * TDLib may return empty results while loading data from the server in the background.
+     * We retry up to [EMPTY_PAGE_MAX_RETRIES] times with exponential backoff before
+     * concluding that the chat history is truly exhausted.
+     *
      * @return List of TelegramMediaItem (may be empty if no more media or quota reached)
      */
     suspend fun nextBatch(): List<TelegramMediaItem> {
@@ -70,14 +77,35 @@ internal class TelegramMessageCursor(
             .coerceAtMost(pageSize.toLong())
             .toInt()
 
-        // Fetch page from TelegramPipelineAdapter
-        val page = adapter.fetchMediaMessages(
-            chatId = chat.chatId,
-            limit = remainingForQuota,
-            offsetMessageId = fromMessageId,
-        )
+        // Fetch page with retry for TDLib async loading
+        // TDLib may return empty while loading from server - retry with backoff
+        var page: List<TelegramMediaItem> = emptyList()
+        var emptyRetries = 0
+        
+        while (emptyRetries <= EMPTY_PAGE_MAX_RETRIES) {
+            page = adapter.fetchMediaMessages(
+                chatId = chat.chatId,
+                limit = remainingForQuota,
+                offsetMessageId = fromMessageId,
+            )
+            
+            if (page.isNotEmpty()) {
+                break // Got data, continue processing
+            }
+            
+            // Empty page - might be TDLib async loading, retry with backoff
+            if (emptyRetries < EMPTY_PAGE_MAX_RETRIES) {
+                val backoffMs = EMPTY_PAGE_BASE_DELAY_MS * (1 shl emptyRetries) // Exponential: 300, 600, 1200ms
+                UnifiedLog.d(TAG, "Empty page for chat ${chat.chatId}, retry ${emptyRetries + 1}/$EMPTY_PAGE_MAX_RETRIES after ${backoffMs}ms")
+                delay(backoffMs)
+                emptyRetries++
+            } else {
+                break // Exhausted retries
+            }
+        }
 
         if (page.isEmpty()) {
+            UnifiedLog.d(TAG, "Chat ${chat.chatId}: No more messages after $emptyRetries retries")
             reachedEnd = true
             return emptyList()
         }
@@ -121,6 +149,19 @@ internal class TelegramMessageCursor(
     fun scannedCount(): Long = scannedMessages
 
     companion object {
+        private const val TAG = "TelegramMessageCursor"
         private const val DEFAULT_PAGE_SIZE = 100
+        
+        /**
+         * Maximum retries when TDLib returns empty page.
+         * TDLib may be loading data from server asynchronously.
+         */
+        private const val EMPTY_PAGE_MAX_RETRIES = 3
+        
+        /**
+         * Base delay for exponential backoff on empty pages (milliseconds).
+         * Actual delays: 300ms, 600ms, 1200ms
+         */
+        private const val EMPTY_PAGE_BASE_DELAY_MS = 300L
     }
 }
