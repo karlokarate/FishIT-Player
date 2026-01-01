@@ -137,7 +137,7 @@ class TelegramFileDataSource(
             val attemptMode = uri.getQueryParameter("attemptMode") // DIRECT_FIRST or BUFFERED_5MB
 
             UnifiedLog.d(TAG) {
-                "Opening Telegram file: fileId=$fileId, chatId=***${chatId?.toString()?.takeLast(3) ?: "null"}, messageId=***${messageId?.toString()?.takeLast(3) ?: "null"}, " +
+                "Opening Telegram file: fileId=$fileId, chatId=$chatId, messageId=$messageId, " +
                     "mimeType=$mimeType, attemptMode=$attemptMode"
             }
 
