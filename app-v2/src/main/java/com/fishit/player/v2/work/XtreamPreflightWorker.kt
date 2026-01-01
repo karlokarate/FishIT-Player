@@ -19,9 +19,15 @@ import dagger.assisted.AssistedInject
  * Validates Xtream configuration and connectivity before catalog scan.
  *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
- * - W-20: Non-Retryable Failures (invalid credentials)
+ * - W-20: Non-Retryable Failures (invalid credentials, not configured)
  * - Does NOT perform scanning
  * - Only validates config is present and credentials are valid
+ *
+ * **Semantics:**
+ * - Authenticated → Result.success
+ * - Failed/Expired → Result.failure (non-retryable)
+ * - Idle (not configured) → Result.failure (non-retryable, prevents infinite retry loops)
+ * - Connection error → Result.retry (transient, bounded by backoff policy)
  *
  * **Architecture:**
  * - Uses domain interface [XtreamAuthRepository] (not transport layer)
@@ -113,9 +119,18 @@ class XtreamPreflightWorker
                     )
                 }
                 is XtreamAuthState.Idle -> {
-                    // Not yet authenticated, retry
-                    UnifiedLog.w(TAG) { "Auth state idle, retrying" }
-                    Result.retry()
+                    val durationMs = System.currentTimeMillis() - startTimeMs
+                    // Idle means not configured or session init not started
+                    // Don't retry indefinitely - fail fast to unblock other sources
+                    UnifiedLog.e(TAG) {
+                        "FAILURE reason=not_configured state=Idle duration_ms=$durationMs retry=false"
+                    }
+                    // W-20: Non-retryable failure - source not configured
+                    Result.failure(
+                        WorkerOutputData.failure(
+                            WorkerConstants.FAILURE_XTREAM_INVALID_CREDENTIALS,
+                        ),
+                    )
                 }
             }
         }
