@@ -13,39 +13,28 @@ import com.fishit.player.core.playermodel.PlaybackState
 data class InternalPlayerState(
     /** Current playback context (what is being played). */
     val context: PlaybackContext? = null,
-    
     /** Current playback state. */
     val playbackState: PlaybackState = PlaybackState.IDLE,
-    
     /** Current playback position in milliseconds. */
     val positionMs: Long = 0L,
-    
     /** Total duration in milliseconds (0 if unknown or live). */
     val durationMs: Long = 0L,
-    
     /** Current buffered position in milliseconds. */
     val bufferedPositionMs: Long = 0L,
-    
     /** Whether the player is currently playing (not paused). */
     val isPlaying: Boolean = false,
-    
     /** Playback speed (1.0 = normal). */
     val playbackSpeed: Float = 1.0f,
-    
     /** Current volume (0.0 to 1.0). */
     val volume: Float = 1.0f,
-    
     /** Whether the player is muted. */
     val isMuted: Boolean = false,
-    
     /** Whether controls should be visible. */
     val areControlsVisible: Boolean = true,
-    
     /** Error information if playbackState is ERROR. */
     val error: PlaybackError? = null,
-    
     /** Elapsed session time for kids gate tracking. */
-    val sessionElapsedMs: Long = 0L
+    val sessionElapsedMs: Long = 0L,
 ) {
     /**
      * Progress as a fraction (0.0 to 1.0).

@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.update
  * - Logging via UnifiedLog
  */
 class AudioTrackManager {
-
     companion object {
         private const val TAG = "AudioTrackManager"
     }
@@ -57,35 +56,35 @@ class AudioTrackManager {
      * @param preferSurroundSound Whether to prefer surround sound over stereo.
      */
     fun attach(
-            player: Player,
-            preferredLanguage: String? = null,
-            preferSurroundSound: Boolean = true
+        player: Player,
+        preferredLanguage: String? = null,
+        preferSurroundSound: Boolean = true,
     ) {
         this.player = player
         this.preferredLanguage = preferredLanguage
         this.preferSurroundSound = preferSurroundSound
 
         _state.value =
-                AudioSelectionState(
-                        preferredLanguage = preferredLanguage,
-                        preferSurroundSound = preferSurroundSound
-                )
+            AudioSelectionState(
+                preferredLanguage = preferredLanguage,
+                preferSurroundSound = preferSurroundSound,
+            )
 
         // Listen for track changes
         player.addListener(
-                object : Player.Listener {
-                    override fun onTracksChanged(tracks: Tracks) {
-                        discoverTracks(tracks)
-                    }
+            object : Player.Listener {
+                override fun onTracksChanged(tracks: Tracks) {
+                    discoverTracks(tracks)
                 }
+            },
         )
 
         // Initial track discovery if tracks already available
         discoverTracks(player.currentTracks)
 
         UnifiedLog.d(
-                TAG,
-                "Attached to player (preferredLang=$preferredLanguage, surround=$preferSurroundSound)"
+            TAG,
+            "Attached to player (preferredLang=$preferredLanguage, surround=$preferSurroundSound)",
         )
     }
 
@@ -104,22 +103,22 @@ class AudioTrackManager {
      * @param preferSurroundSound New surround sound preference.
      */
     fun updatePreferences(
-            preferredLanguage: String? = this.preferredLanguage,
-            preferSurroundSound: Boolean = this.preferSurroundSound
+        preferredLanguage: String? = this.preferredLanguage,
+        preferSurroundSound: Boolean = this.preferSurroundSound,
     ) {
         this.preferredLanguage = preferredLanguage
         this.preferSurroundSound = preferSurroundSound
 
         _state.update {
             it.copy(
-                    preferredLanguage = preferredLanguage,
-                    preferSurroundSound = preferSurroundSound
+                preferredLanguage = preferredLanguage,
+                preferSurroundSound = preferSurroundSound,
             )
         }
 
         UnifiedLog.d(
-                TAG,
-                "Preferences updated: lang=$preferredLanguage, surround=$preferSurroundSound"
+            TAG,
+            "Preferences updated: lang=$preferredLanguage, surround=$preferSurroundSound",
         )
     }
 
@@ -131,11 +130,11 @@ class AudioTrackManager {
      */
     fun selectTrack(trackId: AudioTrackId): Boolean {
         val currentPlayer =
-                player
-                        ?: run {
-                            UnifiedLog.w(TAG, "Cannot select track: no player attached")
-                            return false
-                        }
+            player
+                ?: run {
+                    UnifiedLog.w(TAG, "Cannot select track: no player attached")
+                    return false
+                }
 
         val trackData = trackGroupMap[trackId]
         if (trackData == null) {
@@ -148,13 +147,13 @@ class AudioTrackManager {
         try {
             val override = TrackSelectionOverride(trackGroup, listOf(trackIndex))
             val newParams =
-                    currentPlayer
-                            .trackSelectionParameters
-                            .buildUpon()
-                            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
-                            .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
-                            .addOverride(override)
-                            .build()
+                currentPlayer
+                    .trackSelectionParameters
+                    .buildUpon()
+                    .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                    .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+                    .addOverride(override)
+                    .build()
 
             currentPlayer.trackSelectionParameters = newParams
 
@@ -208,11 +207,11 @@ class AudioTrackManager {
 
         // Prefer surround if enabled
         val track =
-                if (preferSurroundSound) {
-                    langTracks.firstOrNull { it.channelLayout.isSurround } ?: langTracks.first()
-                } else {
-                    langTracks.first()
-                }
+            if (preferSurroundSound) {
+                langTracks.firstOrNull { it.channelLayout.isSurround } ?: langTracks.first()
+            } else {
+                langTracks.first()
+            }
 
         return selectTrack(track.id)
     }
@@ -230,14 +229,14 @@ class AudioTrackManager {
         }
 
         val currentIndex =
-                currentState.availableTracks.indexOfFirst { it.id == currentState.selectedTrackId }
+            currentState.availableTracks.indexOfFirst { it.id == currentState.selectedTrackId }
 
         val nextIndex =
-                if (currentIndex < 0) {
-                    0
-                } else {
-                    (currentIndex + 1) % currentState.availableTracks.size
-                }
+            if (currentIndex < 0) {
+                0
+            } else {
+                (currentIndex + 1) % currentState.availableTracks.size
+            }
 
         val nextTrack = currentState.availableTracks[nextIndex]
         if (selectTrack(nextTrack.id)) {
@@ -282,8 +281,8 @@ class AudioTrackManager {
     }
 
     private fun findCurrentlySelectedTrack(
-            tracks: Tracks,
-            audioTracks: List<AudioTrack>
+        tracks: Tracks,
+        audioTracks: List<AudioTrack>,
     ): AudioTrackId {
         for (group in tracks.groups) {
             if (group.type != C.TRACK_TYPE_AUDIO) continue
@@ -306,25 +305,25 @@ class AudioTrackManager {
     }
 
     private fun mapFormatToAudioTrack(
-            trackGroup: TrackGroup,
-            trackIndex: Int,
-            format: Format
+        trackGroup: TrackGroup,
+        trackIndex: Int,
+        format: Format,
     ): AudioTrack {
         val groupHash = trackGroup.hashCode()
         val channelCount = format.channelCount.takeIf { it > 0 } ?: 2
 
         return AudioTrack(
-                id = AudioTrackId("$groupHash:$trackIndex"),
-                language = format.language,
-                label = format.label ?: buildLabel(format),
-                channelLayout = AudioChannelLayout.fromChannelCount(channelCount),
-                codecType = AudioCodecType.fromMimeType(format.sampleMimeType),
-                isDefault = format.selectionFlags and C.SELECTION_FLAG_DEFAULT != 0,
-                isDescriptive = format.roleFlags and C.ROLE_FLAG_DESCRIBES_VIDEO != 0,
-                sourceType = determineSourceType(format),
-                bitrate = format.bitrate.takeIf { it > 0 },
-                sampleRate = format.sampleRate.takeIf { it > 0 },
-                mimeType = format.sampleMimeType
+            id = AudioTrackId("$groupHash:$trackIndex"),
+            language = format.language,
+            label = format.label ?: buildLabel(format),
+            channelLayout = AudioChannelLayout.fromChannelCount(channelCount),
+            codecType = AudioCodecType.fromMimeType(format.sampleMimeType),
+            isDefault = format.selectionFlags and C.SELECTION_FLAG_DEFAULT != 0,
+            isDescriptive = format.roleFlags and C.ROLE_FLAG_DESCRIBES_VIDEO != 0,
+            sourceType = determineSourceType(format),
+            bitrate = format.bitrate.takeIf { it > 0 },
+            sampleRate = format.sampleRate.takeIf { it > 0 },
+            mimeType = format.sampleMimeType,
         )
     }
 
@@ -333,7 +332,7 @@ class AudioTrackManager {
 
         // Language
         format.language?.let { lang -> parts.add(getLanguageDisplayName(lang)) }
-                ?: parts.add("Audio ${trackGroupMap.size + 1}")
+            ?: parts.add("Audio ${trackGroupMap.size + 1}")
 
         // Channel layout
         val channelLayout = AudioChannelLayout.fromChannelCount(format.channelCount)
@@ -344,7 +343,7 @@ class AudioTrackManager {
             AudioChannelLayout.SURROUND_7_1 -> parts.add("7.1")
             AudioChannelLayout.ATMOS -> parts.add("Atmos")
             AudioChannelLayout.UNKNOWN -> {
-                /* skip */
+                // skip
             }
         }
 
@@ -356,18 +355,17 @@ class AudioTrackManager {
         return parts.joinToString(" ")
     }
 
-    private fun determineSourceType(format: Format): AudioSourceType {
-        return when {
+    private fun determineSourceType(format: Format): AudioSourceType =
+        when {
             format.containerMimeType?.contains("mpegurl", ignoreCase = true) == true ->
-                    AudioSourceType.MANIFEST
+                AudioSourceType.MANIFEST
             format.containerMimeType?.contains("dash", ignoreCase = true) == true ->
-                    AudioSourceType.MANIFEST
+                AudioSourceType.MANIFEST
             else -> AudioSourceType.EMBEDDED
         }
-    }
 
-    private fun getLanguageDisplayName(languageCode: String): String {
-        return when (languageCode.lowercase().take(2)) {
+    private fun getLanguageDisplayName(languageCode: String): String =
+        when (languageCode.lowercase().take(2)) {
             "en" -> "English"
             "de" -> "Deutsch"
             "es" -> "Español"
@@ -386,15 +384,15 @@ class AudioTrackManager {
             "und" -> "Unknown"
             else -> languageCode.uppercase()
         }
-    }
 }
 
 /** Extension property to check if channel layout is surround sound. */
 private val AudioChannelLayout.isSurround: Boolean
     get() =
-            when (this) {
-                AudioChannelLayout.SURROUND_5_1,
-                AudioChannelLayout.SURROUND_7_1,
-                AudioChannelLayout.ATMOS -> true
-                else -> false
-            }
+        when (this) {
+            AudioChannelLayout.SURROUND_5_1,
+            AudioChannelLayout.SURROUND_7_1,
+            AudioChannelLayout.ATMOS,
+            -> true
+            else -> false
+        }

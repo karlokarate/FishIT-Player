@@ -14,7 +14,6 @@ package com.fishit.player.playback.domain.mp4
  * @see Mp4MoovAtomValidator for the validation implementation
  */
 object Mp4MoovValidationConfig {
-
     /**
      * Minimum prefix size before attempting moov validation (64 KB).
      *

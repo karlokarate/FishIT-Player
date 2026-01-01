@@ -10,10 +10,9 @@ import com.fishit.player.playback.domain.KidsPlaybackGate
  * Real screen-time tracking will be added in Phase 9.
  */
 class DefaultKidsPlaybackGate : KidsPlaybackGate {
-
     override suspend fun tick(
         context: PlaybackContext,
-        elapsedMs: Long
+        elapsedMs: Long,
     ): KidsPlaybackGate.GateResult {
         // Always allow in Phase 1
         return KidsPlaybackGate.GateResult.Allowed

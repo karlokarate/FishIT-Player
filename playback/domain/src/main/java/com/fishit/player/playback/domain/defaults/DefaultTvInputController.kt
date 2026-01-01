@@ -11,19 +11,19 @@ import com.fishit.player.playback.domain.TvInputResult
  * Full TV input handling will be added in Phase 6.
  */
 class DefaultTvInputController(
-    override val isTvMode: Boolean = false
+    override val isTvMode: Boolean = false,
 ) : TvInputController {
-
     override val seekStepMs: Long = 10_000L // 10 seconds
 
     override fun handleInput(
         action: TvInputAction,
-        isControlsVisible: Boolean
-    ): TvInputResult {
-        return when (action) {
+        isControlsVisible: Boolean,
+    ): TvInputResult =
+        when (action) {
             TvInputAction.PLAY_PAUSE,
             TvInputAction.MEDIA_PLAY,
-            TvInputAction.MEDIA_PAUSE -> TvInputResult.Consumed
+            TvInputAction.MEDIA_PAUSE,
+            -> TvInputResult.Consumed
 
             TvInputAction.DPAD_CENTER -> {
                 if (isControlsVisible) {
@@ -46,5 +46,4 @@ class DefaultTvInputController(
 
             else -> TvInputResult.PassThrough
         }
-    }
 }

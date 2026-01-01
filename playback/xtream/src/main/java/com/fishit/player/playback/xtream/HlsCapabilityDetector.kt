@@ -47,8 +47,8 @@ object HlsCapabilityDetector {
      * Attempts to load the HlsMediaSource class. If successful, HLS is available.
      * Logs the result once for debugging purposes.
      */
-    private fun detectHlsCapability(): Boolean {
-        return try {
+    private fun detectHlsCapability(): Boolean =
+        try {
             Class.forName(HLS_MEDIA_SOURCE_CLASS)
             UnifiedLog.i(TAG) { "HLS module detected: media3-exoplayer-hls is present" }
             true
@@ -59,5 +59,4 @@ object HlsCapabilityDetector {
             UnifiedLog.w(TAG) { "Unexpected error detecting HLS capability: ${e.message}" }
             false
         }
-    }
 }

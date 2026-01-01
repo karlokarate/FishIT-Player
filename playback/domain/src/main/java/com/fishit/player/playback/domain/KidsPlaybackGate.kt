@@ -11,7 +11,6 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * Uses [PlaybackContext] from core:player-model.
  */
 interface KidsPlaybackGate {
-
     /**
      * Result of a gate check.
      */
@@ -20,10 +19,15 @@ interface KidsPlaybackGate {
         data object Allowed : GateResult()
 
         /** Playback should be paused due to time limit. */
-        data class Blocked(val reason: String, val remainingMinutes: Int = 0) : GateResult()
+        data class Blocked(
+            val reason: String,
+            val remainingMinutes: Int = 0,
+        ) : GateResult()
 
         /** A warning that time is almost up. */
-        data class Warning(val remainingMinutes: Int) : GateResult()
+        data class Warning(
+            val remainingMinutes: Int,
+        ) : GateResult()
     }
 
     /**
@@ -33,7 +37,10 @@ interface KidsPlaybackGate {
      * @param elapsedMs Time elapsed in this session (milliseconds).
      * @return Gate result indicating whether playback should continue.
      */
-    suspend fun tick(context: PlaybackContext, elapsedMs: Long): GateResult
+    suspend fun tick(
+        context: PlaybackContext,
+        elapsedMs: Long,
+    ): GateResult
 
     /**
      * Resets the gate (e.g., when switching profiles or on new day).

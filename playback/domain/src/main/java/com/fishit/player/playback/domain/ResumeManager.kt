@@ -10,7 +10,6 @@ import com.fishit.player.core.playermodel.PlaybackContext
  * Uses [PlaybackContext] from core:player-model.
  */
 interface ResumeManager {
-
     /**
      * Gets the resume point for the given content, if any.
      */
@@ -26,7 +25,7 @@ interface ResumeManager {
     suspend fun saveResumePoint(
         context: PlaybackContext,
         positionMs: Long,
-        durationMs: Long
+        durationMs: Long,
     )
 
     /**

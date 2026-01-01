@@ -12,10 +12,10 @@ import java.io.RandomAccessFile
  * @property moovSize Size of moov atom in bytes (if found)
  */
 data class MoovCheckResult(
-        val found: Boolean,
-        val complete: Boolean,
-        val moovStart: Long? = null,
-        val moovSize: Long? = null,
+    val found: Boolean,
+    val complete: Boolean,
+    val moovStart: Long? = null,
+    val moovSize: Long? = null,
 ) {
     companion object {
         /** Moov atom not found in scanned prefix. */
@@ -51,7 +51,6 @@ data class MoovCheckResult(
  * @see Mp4MoovValidationConfig for configuration constants
  */
 object Mp4MoovAtomValidator {
-
     private const val BOX_HEADER_SIZE = 8
     private const val EXTENDED_SIZE_HEADER = 16
     private const val FTYP = "ftyp"
@@ -68,7 +67,10 @@ object Mp4MoovAtomValidator {
      * ```
      * with details about moov location and completeness
      */
-    fun checkMoovAtom(localPath: String, availableBytes: Long): MoovCheckResult {
+    fun checkMoovAtom(
+        localPath: String,
+        availableBytes: Long,
+    ): MoovCheckResult {
         val file = File(localPath)
         if (!file.exists() || availableBytes < BOX_HEADER_SIZE) {
             return MoovCheckResult.FILE_TOO_SMALL
@@ -91,7 +93,10 @@ object Mp4MoovAtomValidator {
      * 4. Skip to next box (current position + size - header)
      * 5. Stop if exceeded MAX_PREFIX_SCAN_BYTES or availableBytes
      */
-    private fun scanForMoov(raf: RandomAccessFile, availableBytes: Long): MoovCheckResult {
+    private fun scanForMoov(
+        raf: RandomAccessFile,
+        availableBytes: Long,
+    ): MoovCheckResult {
         var position = 0L
         var foundFtyp = false
         val maxScan = minOf(availableBytes, Mp4MoovValidationConfig.MAX_PREFIX_SCAN_BYTES)
@@ -109,19 +114,19 @@ object Mp4MoovAtomValidator {
 
             // Handle extended size (size == 1)
             val actualSize: Long =
-                    when {
-                        boxSize == 1L -> {
-                            if (position + EXTENDED_SIZE_HEADER > maxScan) break
-                            val extHeader = ByteArray(8)
-                            if (raf.read(extHeader) < 8) break
-                            extHeader.toUInt64(0)
-                        }
-                        boxSize == 0L -> {
-                            // Box extends to end of file
-                            availableBytes - position
-                        }
-                        else -> boxSize
+                when {
+                    boxSize == 1L -> {
+                        if (position + EXTENDED_SIZE_HEADER > maxScan) break
+                        val extHeader = ByteArray(8)
+                        if (raf.read(extHeader) < 8) break
+                        extHeader.toUInt64(0)
                     }
+                    boxSize == 0L -> {
+                        // Box extends to end of file
+                        availableBytes - position
+                    }
+                    else -> boxSize
+                }
 
             // Validate box size is sane
             if (actualSize < BOX_HEADER_SIZE) {
@@ -138,10 +143,10 @@ object Mp4MoovAtomValidator {
                     val complete = moovEnd <= availableBytes
 
                     return MoovCheckResult(
-                            found = true,
-                            complete = complete,
-                            moovStart = position,
-                            moovSize = actualSize,
+                        found = true,
+                        complete = complete,
+                        moovStart = position,
+                        moovSize = actualSize,
                     )
                 }
             }
@@ -159,22 +164,20 @@ object Mp4MoovAtomValidator {
     }
 
     /** Reads 4 bytes as big-endian unsigned int32. */
-    private fun ByteArray.toUInt32(offset: Int): Long {
-        return ((this[offset].toLong() and 0xFF) shl 24) or
-                ((this[offset + 1].toLong() and 0xFF) shl 16) or
-                ((this[offset + 2].toLong() and 0xFF) shl 8) or
-                (this[offset + 3].toLong() and 0xFF)
-    }
+    private fun ByteArray.toUInt32(offset: Int): Long =
+        ((this[offset].toLong() and 0xFF) shl 24) or
+            ((this[offset + 1].toLong() and 0xFF) shl 16) or
+            ((this[offset + 2].toLong() and 0xFF) shl 8) or
+            (this[offset + 3].toLong() and 0xFF)
 
     /** Reads 8 bytes as big-endian unsigned int64. */
-    private fun ByteArray.toUInt64(offset: Int): Long {
-        return ((this[offset].toLong() and 0xFF) shl 56) or
-                ((this[offset + 1].toLong() and 0xFF) shl 48) or
-                ((this[offset + 2].toLong() and 0xFF) shl 40) or
-                ((this[offset + 3].toLong() and 0xFF) shl 32) or
-                ((this[offset + 4].toLong() and 0xFF) shl 24) or
-                ((this[offset + 5].toLong() and 0xFF) shl 16) or
-                ((this[offset + 6].toLong() and 0xFF) shl 8) or
-                (this[offset + 7].toLong() and 0xFF)
-    }
+    private fun ByteArray.toUInt64(offset: Int): Long =
+        ((this[offset].toLong() and 0xFF) shl 56) or
+            ((this[offset + 1].toLong() and 0xFF) shl 48) or
+            ((this[offset + 2].toLong() and 0xFF) shl 40) or
+            ((this[offset + 3].toLong() and 0xFF) shl 32) or
+            ((this[offset + 4].toLong() and 0xFF) shl 24) or
+            ((this[offset + 5].toLong() and 0xFF) shl 16) or
+            ((this[offset + 6].toLong() and 0xFF) shl 8) or
+            (this[offset + 7].toLong() and 0xFF)
 }

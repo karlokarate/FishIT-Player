@@ -60,7 +60,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class PlaybackDomainModule {
-
     /**
      * Declares an empty set for [PlaybackSourceFactory] contributions.
      *
@@ -79,7 +78,6 @@ abstract class PlaybackDomainModule {
     abstract fun bindPlaybackSourceFactories(): Set<PlaybackSourceFactory>
 
     companion object {
-
         /**
          * Provides ObjectBox-backed ResumeManager.
          *
@@ -88,9 +86,8 @@ abstract class PlaybackDomainModule {
          */
         @Provides
         @Singleton
-        fun provideResumeManager(
-            canonicalMediaRepository: CanonicalMediaRepository,
-        ): ResumeManager = ObxResumeManager(canonicalMediaRepository)
+        fun provideResumeManager(canonicalMediaRepository: CanonicalMediaRepository): ResumeManager =
+            ObxResumeManager(canonicalMediaRepository)
 
         @Provides
         @Singleton

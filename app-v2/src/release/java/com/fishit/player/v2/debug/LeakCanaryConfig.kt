@@ -8,20 +8,28 @@ package com.fishit.player.v2.debug
  */
 @Suppress("UNUSED_PARAMETER")
 object LeakCanaryConfig {
-
     fun install(app: android.app.Application) {
         // No-op in release
     }
 
-    fun watchPlayerObject(watchedObject: Any, description: String) {
+    fun watchPlayerObject(
+        watchedObject: Any,
+        description: String,
+    ) {
         // No-op in release
     }
 
-    fun watchTdLibObject(watchedObject: Any, description: String) {
+    fun watchTdLibObject(
+        watchedObject: Any,
+        description: String,
+    ) {
         // No-op in release
     }
 
-    fun watchViewModel(watchedObject: Any, description: String) {
+    fun watchViewModel(
+        watchedObject: Any,
+        description: String,
+    ) {
         // No-op in release
     }
 

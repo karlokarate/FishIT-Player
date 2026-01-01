@@ -10,7 +10,7 @@ data class MediaTrack(
     val language: String?,
     val label: String?,
     val isDefault: Boolean = false,
-    val isForced: Boolean = false
+    val isForced: Boolean = false,
 )
 
 /**
@@ -20,7 +20,6 @@ data class MediaTrack(
  * and content metadata.
  */
 interface SubtitleSelectionPolicy {
-
     /**
      * Selects the preferred subtitle track from available options.
      *
@@ -30,7 +29,7 @@ interface SubtitleSelectionPolicy {
      */
     suspend fun selectSubtitleTrack(
         context: PlaybackContext,
-        availableTracks: List<MediaTrack>
+        availableTracks: List<MediaTrack>,
     ): MediaTrack?
 
     /**
@@ -42,7 +41,7 @@ interface SubtitleSelectionPolicy {
      */
     suspend fun selectAudioTrack(
         context: PlaybackContext,
-        availableTracks: List<MediaTrack>
+        availableTracks: List<MediaTrack>,
     ): MediaTrack?
 
     /**

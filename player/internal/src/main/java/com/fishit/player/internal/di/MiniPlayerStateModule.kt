@@ -18,10 +18,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class MiniPlayerStateModule {
-
     @Binds
     @Singleton
-    abstract fun bindMiniPlayerStateSource(
-        impl: InternalMiniPlayerStateSource
-    ): MiniPlayerStateSource
+    abstract fun bindMiniPlayerStateSource(impl: InternalMiniPlayerStateSource): MiniPlayerStateSource
 }

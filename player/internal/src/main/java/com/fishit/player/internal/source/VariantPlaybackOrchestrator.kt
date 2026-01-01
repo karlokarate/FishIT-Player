@@ -30,7 +30,7 @@ import com.fishit.player.infra.logging.UnifiedLog
  * - Auth errors → propagate to UI (user action needed)
  */
 class VariantPlaybackOrchestrator(
-        private val sourceResolver: PlaybackSourceResolver,
+    private val sourceResolver: PlaybackSourceResolver,
 ) {
     companion object {
         private const val TAG = "VariantPlayback"
@@ -40,14 +40,14 @@ class VariantPlaybackOrchestrator(
     sealed class PlaybackResult {
         /** Playback started successfully with the given context. */
         data class Success(
-                val context: PlaybackContext,
-                val variant: MediaVariant,
+            val context: PlaybackContext,
+            val variant: MediaVariant,
         ) : PlaybackResult()
 
         /** All variants failed. */
         data class AllVariantsFailed(
-                val attemptedCount: Int,
-                val lastError: PlaybackError?,
+            val attemptedCount: Int,
+            val lastError: PlaybackError?,
         ) : PlaybackResult()
 
         /** No variants available (all filtered out as dead). */
@@ -63,10 +63,10 @@ class VariantPlaybackOrchestrator(
      * @return PlaybackResult indicating success or failure
      */
     suspend fun attemptPlayback(
-            media: NormalizedMedia,
-            prefs: VariantPreferences = VariantPreferences.default(),
-            manualOverride: SourceKey? = null,
-            contextBuilder: suspend (MediaVariant) -> PlaybackContext,
+        media: NormalizedMedia,
+        prefs: VariantPreferences = VariantPreferences.default(),
+        manualOverride: SourceKey? = null,
+        contextBuilder: suspend (MediaVariant) -> PlaybackContext,
     ): PlaybackResult {
         // Apply manual override ordering first (if provided), then sort by preference
         val baseVariants = applyManualOverrideOrdering(media.variants, manualOverride)
@@ -76,9 +76,9 @@ class VariantPlaybackOrchestrator(
 
         // Filter out dead variants
         val candidateVariants =
-                sortedVariants.filter { variant ->
-                    variant.available && !VariantHealthStore.isPermanentlyDead(variant.sourceKey)
-                }
+            sortedVariants.filter { variant ->
+                variant.available && !VariantHealthStore.isPermanentlyDead(variant.sourceKey)
+            }
 
         val canonicalLabel = media.canonicalId?.value ?: "unlinked"
         if (candidateVariants.isEmpty()) {
@@ -92,9 +92,9 @@ class VariantPlaybackOrchestrator(
         for (variant in candidateVariants) {
             attemptedCount++
             UnifiedLog.d(
-                    TAG,
-                    "Attempting variant $attemptedCount/${candidateVariants.size}: " +
-                            "${variant.sourceKey.pipeline.code}:${variant.qualityTag}"
+                TAG,
+                "Attempting variant $attemptedCount/${candidateVariants.size}: " +
+                    "${variant.sourceKey.pipeline.code}:${variant.qualityTag}",
             )
 
             try {
@@ -113,8 +113,8 @@ class VariantPlaybackOrchestrator(
                     PlaybackError.ErrorType.SOURCE_NOT_FOUND -> {
                         // Hard failure - record and try next
                         UnifiedLog.w(
-                                TAG,
-                                "Variant ${variant.sourceKey} failed with hard error: ${e.message}"
+                            TAG,
+                            "Variant ${variant.sourceKey} failed with hard error: ${e.message}",
                         )
                         VariantHealthStore.recordHardFailure(variant.sourceKey)
                         variant.available = false
@@ -122,8 +122,8 @@ class VariantPlaybackOrchestrator(
                     PlaybackError.ErrorType.NETWORK, PlaybackError.ErrorType.TIMEOUT -> {
                         // Transient - still try next variant
                         UnifiedLog.w(
-                                TAG,
-                                "Variant ${variant.sourceKey} failed with network error: ${e.message}"
+                            TAG,
+                            "Variant ${variant.sourceKey} failed with network error: ${e.message}",
                         )
                     }
                     PlaybackError.ErrorType.PERMISSION -> {
@@ -134,8 +134,8 @@ class VariantPlaybackOrchestrator(
                     }
                     else -> {
                         UnifiedLog.w(
-                                TAG,
-                                "Variant ${variant.sourceKey} failed with error: ${e.message}"
+                            TAG,
+                            "Variant ${variant.sourceKey} failed with error: ${e.message}",
                         )
                     }
                 }
@@ -147,8 +147,8 @@ class VariantPlaybackOrchestrator(
     }
 
     private fun applyManualOverrideOrdering(
-            variants: List<MediaVariant>,
-            manualOverride: SourceKey?,
+        variants: List<MediaVariant>,
+        manualOverride: SourceKey?,
     ): List<MediaVariant> {
         if (manualOverride == null) return variants
 
@@ -157,38 +157,41 @@ class VariantPlaybackOrchestrator(
     }
 
     /** Categorize an exception into a PlaybackError. */
-    private fun categorizeError(e: Exception, variant: MediaVariant): PlaybackError {
+    private fun categorizeError(
+        e: Exception,
+        variant: MediaVariant,
+    ): PlaybackError {
         val message = e.message?.lowercase() ?: ""
 
         return when {
             message.contains("404") ||
-                    message.contains("not found") ||
-                    message.contains("file not found") ||
-                    message.contains("no such file") -> {
+                message.contains("not found") ||
+                message.contains("file not found") ||
+                message.contains("no such file") -> {
                 PlaybackError.sourceNotFound("File not found: ${e.message}")
             }
             message.contains("401") ||
-                    message.contains("403") ||
-                    message.contains("unauthorized") ||
-                    message.contains("forbidden") -> {
+                message.contains("403") ||
+                message.contains("unauthorized") ||
+                message.contains("forbidden") -> {
                 PlaybackError(
-                        type = PlaybackError.ErrorType.PERMISSION,
-                        message = "Auth required: ${e.message}",
-                        isRetryable = false,
+                    type = PlaybackError.ErrorType.PERMISSION,
+                    message = "Auth required: ${e.message}",
+                    isRetryable = false,
                 )
             }
             message.contains("timeout") ||
-                    message.contains("connection") ||
-                    message.contains("network") -> {
+                message.contains("connection") ||
+                message.contains("network") -> {
                 PlaybackError.network("Network error: ${e.message}", isRetryable = true)
             }
             message.contains("moov") || message.contains("mp4") -> {
                 // Telegram-specific: moov not ready
                 if (variant.sourceKey.pipeline == PipelineIdTag.TELEGRAM) {
                     PlaybackError(
-                            type = PlaybackError.ErrorType.SOURCE_SPECIFIC,
-                            message = "Source not ready: ${e.message}",
-                            isRetryable = true,
+                        type = PlaybackError.ErrorType.SOURCE_SPECIFIC,
+                        message = "Source not ready: ${e.message}",
+                        isRetryable = true,
                     )
                 } else {
                     PlaybackError.decoder("Decoding error: ${e.message}")

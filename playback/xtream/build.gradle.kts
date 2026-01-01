@@ -39,6 +39,10 @@ dependencies {
     val media3Version = "1.8.0"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-datasource:$media3Version")
+    implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
+
+    // OkHttp for reliable redirect handling
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")

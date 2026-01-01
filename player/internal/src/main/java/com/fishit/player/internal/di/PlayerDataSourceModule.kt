@@ -28,7 +28,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object PlayerDataSourceModule {
-
     /**
      * Provides the complete map of DataSource factories keyed by [DataSourceType].
      *
@@ -41,14 +40,13 @@ object PlayerDataSourceModule {
     @Provides
     @Singleton
     fun provideDataSourceFactories(
-            @ApplicationContext context: Context,
-            telegramFactory: TelegramFileDataSourceFactory
-    ): Map<DataSourceType, DataSource.Factory> {
-        return mapOf(
-                DataSourceType.TELEGRAM_FILE to telegramFactory,
-                DataSourceType.DEFAULT to DefaultDataSource.Factory(context)
+        @ApplicationContext context: Context,
+        telegramFactory: TelegramFileDataSourceFactory,
+    ): Map<DataSourceType, DataSource.Factory> =
+        mapOf(
+            DataSourceType.TELEGRAM_FILE to telegramFactory,
+            DataSourceType.DEFAULT to DefaultDataSource.Factory(context),
         )
-    }
 
     // Note: TelegramFileDataSourceFactory is provided by TelegramPlaybackModule.
     // DO NOT add a duplicate @Provides here - it causes Hilt duplicate binding errors.

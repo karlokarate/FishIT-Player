@@ -1,7 +1,5 @@
 package com.fishit.player.playback.domain.mp4
 
-import java.io.File
-import java.io.RandomAccessFile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -9,6 +7,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
+import java.io.RandomAccessFile
 
 /**
  * Unit tests for [Mp4MoovAtomValidator].
@@ -22,7 +22,6 @@ import org.junit.rules.TemporaryFolder
  * - Edge cases (empty file, too small file)
  */
 class Mp4MoovAtomValidatorTest {
-
     @get:Rule val tempFolder = TemporaryFolder()
 
     private lateinit var testFile: File
@@ -39,9 +38,9 @@ class Mp4MoovAtomValidatorTest {
     }
 
     private fun writeMp4Header(
-            ftypSize: Int = 20,
-            moovSize: Int = 100,
-            moovDataSize: Int = moovSize - 8, // Full moov data by default
+        ftypSize: Int = 20,
+        moovSize: Int = 100,
+        moovDataSize: Int = moovSize - 8, // Full moov data by default
     ) {
         RandomAccessFile(testFile, "rw").use { raf ->
             // ftyp box

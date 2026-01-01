@@ -105,7 +105,8 @@ class PlayerNavViewModel
                                 )
                                 // Fallback: parse vodId from sourceId if not in playbackHints
                                 if (!containsKey(PlaybackHintKeys.Xtream.VOD_ID) &&
-                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID)) {
+                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID)
+                                ) {
                                     put(
                                         XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID,
                                         sourceIdValue
@@ -122,7 +123,8 @@ class PlayerNavViewModel
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
                                 )
                                 if (!containsKey(PlaybackHintKeys.Xtream.SERIES_ID) &&
-                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID)) {
+                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID)
+                                ) {
                                     put(
                                         XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID,
                                         sourceIdValue.removePrefix("xtream:series:"),
@@ -147,7 +149,8 @@ class PlayerNavViewModel
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_LIVE,
                                 )
                                 if (!containsKey(PlaybackHintKeys.Xtream.STREAM_ID) &&
-                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID)) {
+                                    !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID)
+                                ) {
                                     put(
                                         XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID,
                                         sourceIdValue.removePrefix("xtream:live:"),
@@ -157,7 +160,8 @@ class PlayerNavViewModel
                         }
                         // Legacy fallback: container from MediaFormat if not in playbackHints
                         if (!containsKey(PlaybackHintKeys.Xtream.CONTAINER_EXT) &&
-                            !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT)) {
+                            !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT)
+                        ) {
                             source.format?.container?.let {
                                 put(XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT, it)
                             }
