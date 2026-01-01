@@ -97,7 +97,7 @@ internal class DefaultTelegramRemoteResolver(
      */
     private suspend fun resolveVideo(video: MessageVideo): ResolvedTelegramMedia {
         val videoFile = video.video.video
-        val thumbnail = selectBestThumbnail(video.video.thumbnail, null, video.video.minithumbnail)
+        val thumbnail = selectBestThumbnail(video.video.thumbnail, null)
 
         // Get local paths if already downloaded
         val mediaLocalPath = if (videoFile.local.isDownloadingCompleted) {
@@ -134,8 +134,7 @@ internal class DefaultTelegramRemoteResolver(
         val docFile = document.document.document
         val thumbnail = selectBestThumbnail(
             document.document.thumbnail,
-            null,
-            document.document.minithumbnail
+            null
         )
 
         val mediaLocalPath = if (docFile.local.isDownloadingCompleted) {
@@ -172,8 +171,7 @@ internal class DefaultTelegramRemoteResolver(
         val animFile = animation.animation.animation
         val thumbnail = selectBestThumbnail(
             animation.animation.thumbnail,
-            null,
-            animation.animation.minithumbnail
+            null
         )
 
         val mediaLocalPath = if (animFile.local.isDownloadingCompleted) {
@@ -207,17 +205,18 @@ internal class DefaultTelegramRemoteResolver(
      * Priority:
      * 1. Standard thumbnail (largest available)
      * 2. Album cover (for audio/animation)
-     * 3. Minithumbnail (inline, always use for placeholder but also return as fallback)
+     * 3. Album cover (animation/audio)
+     *
+     * Note: Minithumbnail is NOT processed by this function. It's stored separately
+     * in ResolvedTelegramMedia.minithumbnailBytes for immediate placeholder rendering.
      *
      * @param thumbnail Standard thumbnail from video/document
      * @param albumCover Album cover from audio/animation
-     * @param minithumbnail Inline minithumbnail (not returned as thumbnail, used for placeholder)
      * @return Best thumbnail, or null if none available
      */
     private fun selectBestThumbnail(
         thumbnail: Thumbnail?,
-        albumCover: Thumbnail?,
-        minithumbnail: dev.g000sha256.tdl.dto.Minithumbnail?
+        albumCover: Thumbnail?
     ): Thumbnail? {
         // Prefer standard thumbnail (usually higher quality)
         if (thumbnail != null) return thumbnail
