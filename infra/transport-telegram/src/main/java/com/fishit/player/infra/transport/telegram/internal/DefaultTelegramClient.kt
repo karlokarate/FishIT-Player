@@ -1,6 +1,8 @@
 package com.fishit.player.infra.transport.telegram.internal
 
+import com.fishit.player.infra.transport.telegram.ResolvedTelegramMedia
 import com.fishit.player.infra.transport.telegram.TelegramClient
+import com.fishit.player.infra.transport.telegram.TelegramRemoteId
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TgFileUpdate
 import com.fishit.player.infra.transport.telegram.TgStorageStats
@@ -54,6 +56,7 @@ internal class DefaultTelegramClient(
     private val chatBrowser = TelegramChatBrowser(tdlClient)
     private val fileDownloadManager = TelegramFileDownloadManager(tdlClient, fileScope)
     private val thumbFetcher = TelegramThumbFetcherImpl(fileDownloadManager)
+    private val remoteResolver = DefaultTelegramRemoteResolver(tdlClient)
 
     // Connection state (internal, exposed via TelegramTransportClient if needed)
     private val _connectionState =
@@ -167,4 +170,9 @@ internal class DefaultTelegramClient(
     override suspend fun clearFailedCache() {
         thumbFetcher.clearFailedCache()
     }
+
+    // ========== TelegramRemoteResolver ==========
+
+    override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? =
+        remoteResolver.resolveMedia(remoteId)
 }

@@ -7,6 +7,8 @@ import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
+import com.fishit.player.infra.transport.telegram.TelegramRemoteId
+import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.infra.transport.telegram.api.TelegramFileException
 import com.fishit.player.playback.telegram.config.TelegramFileReadyEnsurer
 import com.fishit.player.playback.telegram.config.TelegramStreamingException
@@ -27,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * **v2 Architecture:**
  * - Belongs in `:playback:telegram` (NOT in player:internal)
+ * - Uses `TelegramRemoteResolver` for RemoteId-first resolution
  * - Uses `TelegramFileClient` from transport layer for all file operations
  * - Delegates to FileDataSource for actual I/O (zero-copy)
  * - Uses `TelegramFileReadyEnsurer` for non-blocking file readiness
@@ -42,22 +45,25 @@ import java.util.concurrent.atomic.AtomicReference
  * - No ByteArray buffers, no custom position tracking
  * - ExoPlayer/FileDataSource handles seeking and scrubbing
  *
- * **Resolution Strategy:**
+ * **Resolution Strategy (RemoteId-First):**
  * 1. Parse URL to extract fileId, remoteId, chatId, messageId
- * 2. If fileId is valid (> 0), use it directly (fast path - same session)
- * 3. If fileId is 0 or invalid, resolve via remoteId using TelegramFileClient
- * 4. Ensure file is ready via TelegramFileReadyEnsurer (non-blocking coroutine)
- * 5. Delegate to FileDataSource for actual I/O
+ * 2. If chatId + messageId available, resolve via TelegramRemoteResolver (PREFERRED - always fresh)
+ * 3. Else if fileId is valid (> 0), use it directly (fast path - same session, may be stale)
+ * 4. Else if remoteId available, resolve via TelegramFileClient.resolveRemoteId (fallback)
+ * 5. Ensure file is ready via TelegramFileReadyEnsurer (non-blocking coroutine)
+ * 6. Delegate to FileDataSource for actual I/O
  *
  * **Threading Model:**
  * - ExoPlayer calls open() from a background loader thread (not main)
  * - We use a dedicated IO coroutine scope to avoid blocking the main thread
  * - The latch-based approach allows ExoPlayer's thread to wait without runBlocking
  *
- * @param fileClient Transport layer client for TDLib file operations (download, resolve)
+ * @param remoteResolver RemoteId resolver for chatId+messageId → fileId (SSOT)
+ * @param fileClient Transport layer client for TDLib file operations (download, fallback resolve)
  * @param readyEnsurer Playback layer component for streaming readiness
  */
 class TelegramFileDataSource(
+    private val remoteResolver: TelegramRemoteResolver,
     private val fileClient: TelegramFileClient,
     private val readyEnsurer: TelegramFileReadyEnsurer,
 ) : DataSource {
@@ -221,54 +227,135 @@ class TelegramFileDataSource(
         dataSpec: DataSpec,
     ): Long =
         withContext(Dispatchers.IO) {
-            // Resolve fileId if needed
-            val resolvedFileId = resolveFileId(fileId, remoteId)
+            // Capture mutable properties to local variables for safe access
+            val capturedChatId = chatId
+            val capturedMessageId = messageId
 
-            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode)" }
+            // Resolve fileId if needed (with chatId+messageId for RemoteId-First)
+            val resolvedFileId = resolveFileId(fileId, remoteId, capturedChatId, capturedMessageId)
+            val usedFastPath =
+                (fileId != null && fileId > 0 && capturedChatId == null && capturedMessageId == null && remoteId == null)
 
-            // Use TelegramFileReadyEnsurer for non-blocking readiness
-            // Pass MIME type and attemptMode to enable appropriate strategy
-            val localPath = if (attemptMode != null) {
-                readyEnsurer.ensureReadyForAttempt(resolvedFileId, attemptMode, mimeType)
-            } else {
-                readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
+            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode, fastPath=$usedFastPath)" }
+
+            try {
+                // Use TelegramFileReadyEnsurer for non-blocking readiness
+                // Pass MIME type and attemptMode to enable appropriate strategy
+                val localPath = if (attemptMode != null) {
+                    readyEnsurer.ensureReadyForAttempt(resolvedFileId, attemptMode, mimeType)
+                } else {
+                    readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
+                }
+
+                val localFile = File(localPath)
+                if (!localFile.exists()) {
+                    throw IOException("File not found at local path: $localPath")
+                }
+
+                UnifiedLog.d(TAG) { "File ready at: $localPath (size=${localFile.length()} bytes)" }
+
+                // Create FileDataSource delegate and open it
+                val fileDataSource = FileDataSource()
+                transferListener?.let { fileDataSource.addTransferListener(it) }
+
+                val fileUri = Uri.fromFile(localFile)
+                val fileDataSpec = dataSpec.buildUpon().setUri(fileUri).build()
+
+                delegate = fileDataSource
+                fileDataSource.open(fileDataSpec)
+            } catch (e: Exception) {
+                // If fast-path failed and we have chatId+messageId, retry with RemoteResolver
+                if (usedFastPath && capturedChatId != null && capturedMessageId != null) {
+                    UnifiedLog.i(TAG) {
+                        "Fast-path fileId=$fileId failed (${e.message}), retrying with RemoteResolver (chatId=***${capturedChatId.toString().takeLast(3)}, messageId=***${capturedMessageId.toString().takeLast(3)})"
+                    }
+                    
+                    // Re-resolve via RemoteResolver to get fresh fileId
+                    val resolved = remoteResolver.resolveMedia(TelegramRemoteId(capturedChatId, capturedMessageId))
+                        ?: throw IOException("RemoteResolver retry failed: could not resolve media", e)
+                    
+                    val freshFileId = resolved.mediaFileId
+                    UnifiedLog.d(TAG) { "RemoteResolver retry: fresh fileId=$freshFileId" }
+                    
+                    // Retry readiness check with fresh fileId
+                    val retryLocalPath = if (attemptMode != null) {
+                        readyEnsurer.ensureReadyForAttempt(freshFileId, attemptMode, mimeType)
+                    } else {
+                        readyEnsurer.ensureReadyForPlayback(freshFileId, mimeType)
+                    }
+
+                    val retryLocalFile = File(retryLocalPath)
+                    if (!retryLocalFile.exists()) {
+                        throw IOException("File not found at local path after retry: $retryLocalPath")
+                    }
+
+                    UnifiedLog.i(TAG) { "Retry successful: file ready at $retryLocalPath (size=${retryLocalFile.length()} bytes)" }
+
+                    // Create FileDataSource delegate and open it
+                    val retryFileDataSource = FileDataSource()
+                    transferListener?.let { retryFileDataSource.addTransferListener(it) }
+
+                    val retryFileUri = Uri.fromFile(retryLocalFile)
+                    val retryFileDataSpec = dataSpec.buildUpon().setUri(retryFileUri).build()
+
+                    delegate = retryFileDataSource
+                    return@withContext retryFileDataSource.open(retryFileDataSpec)
+                } else {
+                    // No retry possible or retry not applicable, propagate original error
+                    throw e
+                }
             }
-
-            val localFile = File(localPath)
-            if (!localFile.exists()) {
-                throw IOException("File not found at local path: $localPath")
-            }
-
-            UnifiedLog.d(TAG) { "File ready at: $localPath (size=${localFile.length()} bytes)" }
-
-            // Create FileDataSource delegate and open it
-            val fileDataSource = FileDataSource()
-            transferListener?.let { fileDataSource.addTransferListener(it) }
-
-            val fileUri = Uri.fromFile(localFile)
-            val fileDataSpec = dataSpec.buildUpon().setUri(fileUri).build()
-
-            delegate = fileDataSource
-            fileDataSource.open(fileDataSpec)
         }
 
     /**
-     * Resolve fileId from URI parameters.
+     * Resolve fileId from URI parameters using RemoteId-First strategy.
      *
-     * Priority:
-     * 1. Use fileId if valid (> 0)
-     * 2. Resolve via remoteId using TelegramFileClient if available
-     * 3. Fail if neither is valid
+     * Priority (aligned with RemoteId-First Architecture):
+     * 1. If chatId + messageId available → resolve via TelegramRemoteResolver (PREFERRED)
+     *    - Always returns fresh fileId from current TDLib message
+     *    - Works after cache eviction, message updates, app restarts
+     * 2. Else if fileId valid (> 0) → use it directly (fast path - HINT ONLY)
+     *    - May be stale if TDLib cache changed
+     *    - Will auto-retry via RemoteResolver if it fails and chatId+messageId available
+     * 3. Else if remoteId available → resolve via TelegramFileClient.resolveRemoteId (fallback)
+     *    - Stable but requires remoteId parameter
+     * 4. Else fail
+     *
+     * @param fileId Optional TDLib file ID from URI
+     * @param remoteId Optional stable remote ID from URI
+     * @param chatId Optional chat ID from URI (for RemoteResolver)
+     * @param messageId Optional message ID from URI (for RemoteResolver)
+     * @return Resolved fileId ready for download
      */
     private suspend fun resolveFileId(
         fileId: Int?,
         remoteId: String?,
+        chatId: Long?,
+        messageId: Long?,
     ): Int =
         when {
+            // Path 1: RemoteId-First (chatId + messageId) - PREFERRED
+            chatId != null && messageId != null -> {
+                UnifiedLog.d(TAG) {
+                    "Resolving via TelegramRemoteResolver (RemoteId-First): chatId=***${chatId.toString().takeLast(3)}, messageId=***${messageId.toString().takeLast(3)}"
+                }
+                val resolved = remoteResolver.resolveMedia(TelegramRemoteId(chatId, messageId))
+                    ?: throw TelegramFileException(
+                        "Could not resolve media via RemoteId (masked)"
+                    )
+                UnifiedLog.d(TAG) {
+                    "Resolved via RemoteResolver: fileId=${resolved.mediaFileId}, " +
+                        "localPath=${resolved.mediaLocalPath != null}, " +
+                        "mime=${resolved.mimeType}"
+                }
+                resolved.mediaFileId
+            }
+            // Path 2: Direct fileId (fast path - HINT ONLY, will retry via RemoteResolver if fails)
             fileId != null && fileId > 0 -> {
-                UnifiedLog.d(TAG) { "Using fileId from URI: $fileId" }
+                UnifiedLog.d(TAG) { "Using fileId from URI as hint: $fileId (may be stale, will auto-retry if fails)" }
                 fileId
             }
+            // Path 3: Fallback to remoteId resolution (TelegramFileClient)
             remoteId != null && remoteId.isNotEmpty() -> {
                 UnifiedLog.d(TAG) { "Resolving fileId via remoteId: $remoteId" }
                 val resolvedFile =
@@ -278,9 +365,10 @@ class TelegramFileDataSource(
                         )
                 resolvedFile.id
             }
-            else -> {
-                throw TelegramFileException("No valid fileId or remoteId in URI")
-            }
+            // Path 4: No resolution method available
+            else -> throw TelegramFileException(
+                "Cannot resolve fileId: no chatId+messageId, no valid fileId, and no remoteId"
+            )
         }
 
     @Throws(IOException::class)
@@ -327,12 +415,14 @@ class TelegramFileDataSource(
  *
  * This factory is registered with the player's source resolver to handle tg:// URIs.
  *
+ * @param remoteResolver RemoteId resolver for chatId+messageId → fileId (SSOT)
  * @param fileClient Transport layer client for TDLib file operations
  * @param readyEnsurer Playback layer component for streaming readiness
  */
 class TelegramFileDataSourceFactory(
+    private val remoteResolver: TelegramRemoteResolver,
     private val fileClient: TelegramFileClient,
     private val readyEnsurer: TelegramFileReadyEnsurer,
 ) : DataSource.Factory {
-    override fun createDataSource(): DataSource = TelegramFileDataSource(fileClient, readyEnsurer)
+    override fun createDataSource(): DataSource = TelegramFileDataSource(remoteResolver, fileClient, readyEnsurer)
 }
