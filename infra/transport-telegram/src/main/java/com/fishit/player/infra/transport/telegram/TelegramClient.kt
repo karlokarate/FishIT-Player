@@ -12,6 +12,8 @@ package com.fishit.player.infra.transport.telegram
  * - File download operations
  * - [TelegramThumbFetcher]
  * - Thumbnail fetching
+ * - [TelegramRemoteResolver]
+ * - RemoteId-based file resolution
  *
  * **Architecture:**
  * - Single implementation ([DefaultTelegramClient]) composes existing modules
@@ -25,4 +27,4 @@ package com.fishit.player.infra.transport.telegram
  * you need the legacy interface for migration purposes, use it directly.
  */
 interface TelegramClient :
-        TelegramAuthClient, TelegramHistoryClient, TelegramFileClient, TelegramThumbFetcher
+        TelegramAuthClient, TelegramHistoryClient, TelegramFileClient, TelegramThumbFetcher, TelegramRemoteResolver
