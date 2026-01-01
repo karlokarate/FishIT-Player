@@ -410,8 +410,14 @@ constructor(
                 }
                 selected
             } catch (e: PlaybackSourceException) {
+                // Check if this is an HLS-missing error (fail-fast)
+                if (e.message?.contains("HLS") == true && 
+                    e.message?.contains("not available") == true) {
+                    // Propagate HLS-missing errors - don't mask them
+                    throw e
+                }
+                // For other format selection errors, log and default to m3u8
                 UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, defaulting to m3u8" }
-                // Default to m3u8 (safest for Cloudflare)
                 return "m3u8"
             }
         }
