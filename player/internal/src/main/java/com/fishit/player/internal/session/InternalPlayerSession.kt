@@ -187,13 +187,17 @@ class InternalPlayerSession(
                 val source = sourceResolver.resolve(playbackContext)
                 UnifiedLog.d(TAG) {
                     "Source resolved: uri=${source.uri.take(100)}, " +
+                            "mimeType=${source.mimeType}, " +
                             "headers=${source.headers.keys}, dataSourceType=${source.dataSourceType}"
                 }
 
                 // Build MediaItem
                 val mediaItemBuilder = MediaItem.Builder().setUri(source.uri)
 
-                source.mimeType?.let { mediaItemBuilder.setMimeType(it) }
+                source.mimeType?.let { 
+                    mediaItemBuilder.setMimeType(it)
+                    UnifiedLog.d(TAG) { "Set MediaItem MIME type: $it" }
+                }
 
                 val mediaItem = mediaItemBuilder.build()
 

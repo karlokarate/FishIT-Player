@@ -99,21 +99,30 @@ constructor(
         private val STREAMING_FORMATS = setOf("m3u8", "ts")
 
         /**
-         * Select the best output format based on server-allowed formats (SSOT).
+         * Select the best output format based on server-allowed formats (SSOT) and HLS capability.
          *
          * Policy priority: m3u8 > ts > mp4
          * - m3u8 (HLS): Best for adaptive streaming, seeks, and compatibility
          * - ts (MPEG-TS): Good fallback, works on most players
          * - mp4: Used if explicitly in allowed_output_formats (provider-specific)
          *
+         * **HLS Capability Fallback:**
+         * - If HLS module is NOT present at runtime, automatically select ts over m3u8
+         * - If only m3u8 is allowed and HLS is unavailable, fail fast with actionable error
+         * - This ensures playback works across all device configurations
+         *
          * This is POLICY-DRIVEN: allowed_output_formats is the Single Source of Truth.
          * We select the best format from what the server explicitly allows.
          *
          * @param allowedFormats Set of formats the server supports (e.g., {"m3u8", "ts", "mp4"})
+         * @param hlsAvailable Whether HLS module is present in the build (default: detect at runtime)
          * @return The best format to use
          * @throws PlaybackSourceException if no supported format is available
          */
-        internal fun selectXtreamOutputExt(allowedFormats: Set<String>): String {
+        internal fun selectXtreamOutputExt(
+            allowedFormats: Set<String>,
+            hlsAvailable: Boolean = HlsCapabilityDetector.isHlsAvailable()
+        ): String {
             if (allowedFormats.isEmpty()) {
                 throw PlaybackSourceException(
                         message = "No output formats specified by server (allowed_output_formats is empty)",
@@ -121,6 +130,24 @@ constructor(
                 )
             }
             val normalized = allowedFormats.map { it.lowercase().trim() }.toSet()
+            
+            // HLS capability-aware selection
+            if (!hlsAvailable && "m3u8" in normalized) {
+                // HLS module not present - try to fallback to ts
+                if ("ts" in normalized) {
+                    UnifiedLog.i(TAG) {
+                        "HLS module unavailable, falling back from m3u8 to ts (allowed: ${allowedFormats.joinToString()})"
+                    }
+                    return "ts"
+                }
+                // Only m3u8 is allowed but HLS unavailable - fail fast with actionable error
+                throw PlaybackSourceException(
+                    message = "HLS (m3u8) required but media3-exoplayer-hls module is not available in this build. " +
+                            "Server only allows: ${allowedFormats.joinToString()}. " +
+                            "Please ensure the HLS dependency is included or contact the provider for TS format support.",
+                    sourceType = SourceType.XTREAM
+                )
+            }
             
             // Policy-driven selection: try each format in priority order
             val selected = FORMAT_PRIORITY.firstOrNull { it in normalized }
@@ -155,9 +182,13 @@ constructor(
         ) {
             if (isSafePrebuiltXtreamUri(existingUri)) {
                 UnifiedLog.d(TAG) { "Using safe prebuilt URI for playback (bypassing session)" }
+                // Extract extension from URI for MIME type determination
+                val uriExtension = existingUri.substringAfterLast('.', "")
+                    .substringBefore('?') // Remove query params if any
+                    .takeIf { it.isNotBlank() }
                 return PlaybackSource(
                         uri = existingUri,
-                        mimeType = determineMimeType(context),
+                        mimeType = determineMimeTypeFromExtension(uriExtension),
                         headers = buildHeaders(context),
                         dataSourceType = DataSourceType.DEFAULT
                 )
@@ -197,11 +228,58 @@ constructor(
         val contentType =
                 context.extras[PlaybackHintKeys.Xtream.CONTENT_TYPE]
                         ?: context.extras[EXTRA_CONTENT_TYPE] ?: guessContentType(context)
+        
+        // Resolve the output extension first (this considers HLS capability)
+        val resolvedExtension = resolveOutputExtension(context)
+        
         val streamUrl =
                 when (contentType) {
-                    CONTENT_TYPE_LIVE -> buildLiveUrlFromContext(context)
-                    CONTENT_TYPE_VOD -> buildVodUrlFromContext(context)
-                    CONTENT_TYPE_SERIES -> buildSeriesUrlFromContext(context)
+                    CONTENT_TYPE_LIVE -> xtreamApiClient.buildLiveUrl(
+                        context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
+                            ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
+                            ?: throw PlaybackSourceException(
+                                message = "Missing streamId for live content",
+                                sourceType = SourceType.XTREAM
+                            ),
+                        resolvedExtension
+                    )
+                    CONTENT_TYPE_VOD -> xtreamApiClient.buildVodUrl(
+                        context.extras[PlaybackHintKeys.Xtream.VOD_ID]?.toIntOrNull()
+                            ?: context.extras[EXTRA_VOD_ID]?.toIntOrNull()
+                            ?: context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
+                            ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
+                            ?: throw PlaybackSourceException(
+                                message = "Missing vodId for VOD content",
+                                sourceType = SourceType.XTREAM
+                            ),
+                        resolvedExtension
+                    )
+                    CONTENT_TYPE_SERIES -> {
+                        val seriesId =
+                            context.extras[PlaybackHintKeys.Xtream.SERIES_ID]?.toIntOrNull()
+                                ?: context.extras[EXTRA_SERIES_ID]?.toIntOrNull()
+                                ?: throw PlaybackSourceException(
+                                    message = "Missing seriesId for series content",
+                                    sourceType = SourceType.XTREAM
+                                )
+                        val episodeId =
+                            context.extras[PlaybackHintKeys.Xtream.EPISODE_ID]?.toIntOrNull()
+                                ?: context.extras[EXTRA_EPISODE_ID]?.toIntOrNull()
+                        val seasonNumber =
+                            context.extras[PlaybackHintKeys.Xtream.SEASON_NUMBER]?.toIntOrNull()
+                                ?: context.extras[EXTRA_SEASON_NUMBER]?.toIntOrNull() ?: 1
+                        val episodeNumber =
+                            context.extras[PlaybackHintKeys.Xtream.EPISODE_NUMBER]?.toIntOrNull()
+                                ?: context.extras[EXTRA_EPISODE_NUMBER]?.toIntOrNull() ?: 1
+                        
+                        xtreamApiClient.buildSeriesEpisodeUrl(
+                            seriesId = seriesId,
+                            seasonNumber = seasonNumber,
+                            episodeNumber = episodeNumber,
+                            episodeId = episodeId,
+                            containerExtension = resolvedExtension
+                        )
+                    }
                     else ->
                             throw PlaybackSourceException(
                                     message = "Unknown content type: $contentType",
@@ -209,11 +287,11 @@ constructor(
                             )
                 }
 
-        UnifiedLog.d(TAG) { "Built stream URL for $contentType content" }
+        UnifiedLog.d(TAG) { "Built stream URL for $contentType content with extension: $resolvedExtension" }
 
         return PlaybackSource(
                 uri = streamUrl,
-                mimeType = determineMimeType(context, contentType),
+                mimeType = determineMimeTypeFromExtension(resolvedExtension),
                 headers = buildHeaders(context),
                 dataSourceType = DataSourceType.DEFAULT
         )
@@ -301,87 +379,6 @@ constructor(
     }
 
     /**
-     * Build live stream URL using XtreamApiClient.
-     *
-     * Extension selection priority:
-     * 1. Explicit containerExtension from playbackHints (e.g., from VOD info)
-     * 2. Policy-based selection from allowedOutputFormats (m3u8 > ts > mp4)
-     * 3. XtreamApiClient default (from config prefs)
-     */
-    private fun buildLiveUrlFromContext(context: PlaybackContext): String {
-        val streamId =
-                context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
-                        ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
-                                ?: throw PlaybackSourceException(
-                                message = "Missing streamId for live content",
-                                sourceType = SourceType.XTREAM
-                        )
-
-        val extension = resolveOutputExtension(context)
-        return xtreamApiClient.buildLiveUrl(streamId, extension)
-    }
-
-    /**
-     * Build VOD stream URL using XtreamApiClient.
-     *
-     * Extension selection priority:
-     * 1. Explicit containerExtension from playbackHints (e.g., from VOD info)
-     * 2. Policy-based selection from allowedOutputFormats (m3u8 > ts > mp4)
-     * 3. XtreamApiClient default (from config prefs)
-     */
-    private fun buildVodUrlFromContext(context: PlaybackContext): String {
-        val vodId =
-                context.extras[PlaybackHintKeys.Xtream.VOD_ID]?.toIntOrNull()
-                        ?: context.extras[EXTRA_VOD_ID]?.toIntOrNull()
-                                ?: context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
-                                ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
-                                ?: throw PlaybackSourceException(
-                                message = "Missing vodId for VOD content",
-                                sourceType = SourceType.XTREAM
-                        )
-
-        val extension = resolveOutputExtension(context)
-        return xtreamApiClient.buildVodUrl(vodId, extension)
-    }
-
-    /**
-     * Build series episode URL using XtreamApiClient.
-     *
-     * Extension selection priority:
-     * 1. Explicit containerExtension from playbackHints (e.g., from episode info)
-     * 2. Policy-based selection from allowedOutputFormats (m3u8 > ts > mp4)
-     * 3. XtreamApiClient default (from config prefs)
-     */
-    private fun buildSeriesUrlFromContext(context: PlaybackContext): String {
-        val seriesId =
-                context.extras[PlaybackHintKeys.Xtream.SERIES_ID]?.toIntOrNull()
-                        ?: context.extras[EXTRA_SERIES_ID]?.toIntOrNull()
-                                ?: throw PlaybackSourceException(
-                                message = "Missing seriesId for series content",
-                                sourceType = SourceType.XTREAM
-                        )
-
-        val episodeId =
-                context.extras[PlaybackHintKeys.Xtream.EPISODE_ID]?.toIntOrNull()
-                        ?: context.extras[EXTRA_EPISODE_ID]?.toIntOrNull()
-        val seasonNumber =
-                context.extras[PlaybackHintKeys.Xtream.SEASON_NUMBER]?.toIntOrNull()
-                        ?: context.extras[EXTRA_SEASON_NUMBER]?.toIntOrNull() ?: 1
-        val episodeNumber =
-                context.extras[PlaybackHintKeys.Xtream.EPISODE_NUMBER]?.toIntOrNull()
-                        ?: context.extras[EXTRA_EPISODE_NUMBER]?.toIntOrNull() ?: 1
-        val extension = resolveOutputExtension(context)
-
-        return xtreamApiClient.buildSeriesEpisodeUrl(
-                seriesId = seriesId,
-                seasonNumber = seasonNumber,
-                episodeNumber = episodeNumber,
-                episodeId = episodeId,
-                containerExtension = extension
-        )
-    }
-
-    /**
      * Resolve the output extension for playback URL.
      *
      * **Strict Policy (Cloudflare-safe):**
@@ -413,8 +410,14 @@ constructor(
                 }
                 selected
             } catch (e: PlaybackSourceException) {
+                // Check if this is an HLS-missing error (fail-fast)
+                if (e.message?.contains("HLS") == true && 
+                    e.message?.contains("not available") == true) {
+                    // Propagate HLS-missing errors - don't mask them
+                    throw e
+                }
+                // For other format selection errors, log and default to m3u8
                 UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, defaulting to m3u8" }
-                // Default to m3u8 (safest for Cloudflare)
                 return "m3u8"
             }
         }
@@ -462,28 +465,23 @@ constructor(
         }
     }
 
-    /** Determine MIME type from context and content type. */
-    private fun determineMimeType(context: PlaybackContext, contentType: String? = null): String? {
-        // Check extras first
-        context.extras["mimeType"]?.let {
-            return it
-        }
-
-        // Determine from extension
-        val extension =
-                (context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                                ?: context.extras[EXTRA_CONTAINER_EXT])?.lowercase()
-        return when (extension) {
+    /**
+     * Determine MIME type from the resolved output extension.
+     * 
+     * This maps the actual streaming format (m3u8, ts, mp4) to its MIME type.
+     * The extension comes from resolveOutputExtension which considers HLS capability.
+     * 
+     * @param extension The resolved extension (e.g., "m3u8", "ts", "mp4")
+     * @return The MIME type or null to let ExoPlayer auto-detect
+     */
+    private fun determineMimeTypeFromExtension(extension: String?): String? {
+        return when (extension?.lowercase()) {
+            "m3u8" -> "application/x-mpegURL"
+            "ts" -> "video/mp2t"
             "mp4" -> "video/mp4"
             "mkv" -> "video/x-matroska"
             "avi" -> "video/x-msvideo"
-            "m3u8" -> "application/x-mpegURL"
-            "ts" -> "video/mp2t"
-            else ->
-                    when (contentType) {
-                        CONTENT_TYPE_LIVE -> "application/x-mpegURL" // Assume HLS for live
-                        else -> null // Let ExoPlayer detect
-                    }
+            else -> null // Let ExoPlayer detect
         }
     }
 

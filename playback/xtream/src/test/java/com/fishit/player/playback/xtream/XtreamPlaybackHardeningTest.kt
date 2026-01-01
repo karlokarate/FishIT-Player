@@ -27,8 +27,8 @@ class XtreamPlaybackHardeningTest {
         // Given formats with all three options
         val formats = setOf("mp4", "ts", "m3u8")
         
-        // When selecting
-        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        // When selecting (with HLS available)
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         
         // Then m3u8 is chosen (highest priority)
         assertEquals("m3u8", selected)
@@ -36,11 +36,11 @@ class XtreamPlaybackHardeningTest {
 
     @Test
     fun `format selection uses ts when m3u8 not available`() {
-        // Given formats with ts and mp4 only
+        // Given formats with ts and mp4 only (no m3u8)
         val formats = setOf("mp4", "ts")
         
-        // When selecting
-        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        // When selecting (HLS availability doesn't matter since no m3u8)
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         
         // Then ts is chosen (second priority)
         assertEquals("ts", selected)
@@ -51,8 +51,8 @@ class XtreamPlaybackHardeningTest {
         // Given only mp4 in allowed formats
         val formats = setOf("mp4")
         
-        // When selecting
-        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        // When selecting (HLS availability doesn't matter since no m3u8)
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         
         // Then mp4 is used (policy-driven, not restricted)
         assertEquals("mp4", selected)
@@ -63,8 +63,8 @@ class XtreamPlaybackHardeningTest {
         // Given both ts and mp4
         val formats = setOf("ts", "mp4")
         
-        // When selecting
-        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        // When selecting (HLS availability doesn't matter since no m3u8)
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         
         // Then ts is preferred
         assertEquals("ts", selected)
@@ -75,9 +75,9 @@ class XtreamPlaybackHardeningTest {
         // Given unsupported formats only
         val formats = setOf("webm", "flv", "avi")
         
-        // When selecting
+        // When selecting (HLS availability doesn't matter since no supported formats)
         val exception = assertThrows(PlaybackSourceException::class.java) {
-            XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+            XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         }
         
         // Then error message indicates no support
@@ -90,9 +90,9 @@ class XtreamPlaybackHardeningTest {
         // Given empty formats
         val formats = emptySet<String>()
         
-        // When selecting
+        // When selecting (HLS availability doesn't matter)
         val exception = assertThrows(PlaybackSourceException::class.java) {
-            XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+            XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         }
         
         // Then error message indicates empty list
@@ -104,8 +104,8 @@ class XtreamPlaybackHardeningTest {
         // Given typical Cloudflare panel formats (no mp4)
         val formats = setOf("m3u8", "ts")
         
-        // When selecting
-        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        // When selecting (with HLS available)
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         
         // Then m3u8 is selected
         assertEquals("m3u8", selected)
@@ -116,8 +116,8 @@ class XtreamPlaybackHardeningTest {
         // Given provider that allows mp4 and ts (some providers do this)
         val formats = setOf("mp4", "ts")
         
-        // When selecting
-        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats)
+        // When selecting (HLS availability doesn't matter since no m3u8)
+        val selected = XtreamPlaybackSourceFactoryImpl.selectXtreamOutputExt(formats, hlsAvailable = true)
         
         // Then ts is chosen (higher priority than mp4)
         assertEquals("ts", selected)
