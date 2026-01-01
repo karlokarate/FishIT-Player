@@ -385,71 +385,159 @@ class XtreamPlaybackSourceFactoryImpl
         /**
          * Resolve the output extension for playback URL.
          *
-         * **Strict Policy (Cloudflare-safe):**
-         * Priority 1: allowedOutputFormats policy selection (m3u8 > ts, NO mp4 by default)
-         * Priority 2: containerExtension ONLY if TRUE streaming format (m3u8, ts)
-         * Priority 3: Default to m3u8
+         * **PLATINUM FIX: Content-type aware extension resolution.**
          *
-         * **CRITICAL for Cloudflare panels:**
-         * - mp4 is NOT in priority list (causes issues with Cloudflare)
-         * - Only m3u8 and ts are prioritized
-         * - mp4 only used if it's the ONLY format in allowedOutputFormats
+         * **For LIVE streams:**
+         * - Always use streaming formats (ts > m3u8)
+         * - Respect allowedOutputFormats if provided
          *
-         * NOTE: containerExtension from VOD metadata (e.g., "mkv", "mp4") describes the FILE
-         * on the server, NOT the streaming output. We only trust allowedOutputFormats.
+         * **For VOD/SERIES (file-based content):**
+         * - PREFER containerExtension (mkv, mp4, etc.) if present
+         * - This is the actual file on the server!
+         * - Only fall back to streaming formats if no containerExtension
+         *
+         * **Why this matters:**
+         * - VOD/Series files are often mkv/mp4 containers
+         * - Forcing m3u8/ts on these fails with many providers
+         * - Legacy behavior was: use the file extension the server reports
          *
          * @param context The playback context
-         * @return The resolved extension (m3u8, ts, or rarely mp4)
+         * @return The resolved extension (mkv, mp4, ts, m3u8, etc.)
          */
         private fun resolveOutputExtension(context: PlaybackContext): String? {
-            // Priority 1: Policy-based selection from allowedOutputFormats (SSOT)
-            // This is the ONLY place where format selection is authoritative
+            val contentType =
+                context.extras[PlaybackHintKeys.Xtream.CONTENT_TYPE]
+                    ?: context.extras[EXTRA_CONTENT_TYPE]
+                    ?: guessContentType(context)
+
+            // Get containerExtension from hints (the actual file extension on server)
+            val containerExt =
+                (context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                    ?: context.extras[EXTRA_CONTAINER_EXT])
+                    ?.lowercase()
+                    ?.trim()
+
+            // Get allowed formats from server (if available)
             val allowedFormatsRaw = context.extras[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS]
-            if (!allowedFormatsRaw.isNullOrBlank()) {
-                val allowedFormats = allowedFormatsRaw.split(",").map { it.trim().lowercase() }.toSet()
+            val allowedFormats =
+                if (!allowedFormatsRaw.isNullOrBlank()) {
+                    allowedFormatsRaw.split(",").map { it.trim().lowercase() }.toSet()
+                } else {
+                    emptySet()
+                }
+
+            return when (contentType) {
+                CONTENT_TYPE_LIVE -> {
+                    // LIVE: Always use streaming format (ts preferred for IPTV)
+                    resolveLiveExtension(allowedFormats, containerExt)
+                }
+                CONTENT_TYPE_VOD, CONTENT_TYPE_SERIES -> {
+                    // VOD/SERIES: PREFER containerExtension (the actual file!)
+                    resolveFileExtension(containerExt, allowedFormats, contentType)
+                }
+                else -> {
+                    // Unknown: fallback to VOD behavior
+                    resolveFileExtension(containerExt, allowedFormats, contentType)
+                }
+            }
+        }
+
+        /**
+         * Resolve extension for LIVE streams.
+         *
+         * Priority: ts > m3u8 (ts is more reliable for IPTV)
+         * Respects allowedOutputFormats if provided.
+         */
+        private fun resolveLiveExtension(
+            allowedFormats: Set<String>,
+            containerExt: String?,
+        ): String {
+            // If server specifies allowed formats, use policy selection
+            if (allowedFormats.isNotEmpty()) {
                 return try {
                     val selected = selectXtreamOutputExt(allowedFormats)
                     UnifiedLog.d(TAG) {
-                        "Policy-selected extension: $selected from allowed: $allowedFormats"
+                        "LIVE: Policy-selected extension: $selected from allowed: $allowedFormats"
                     }
                     selected
                 } catch (e: PlaybackSourceException) {
-                    // Check if this is an HLS-missing error (fail-fast)
                     if (e.message?.contains("HLS") == true &&
                         e.message?.contains("not available") == true
                     ) {
-                        // Propagate HLS-missing errors - don't mask them
                         throw e
                     }
-                    // For other format selection errors, log and default to m3u8
-                    UnifiedLog.w(TAG) { "Format selection failed: ${e.message}, defaulting to m3u8" }
-                    return "m3u8"
+                    UnifiedLog.w(TAG) { "LIVE: Format selection failed: ${e.message}, defaulting to ts" }
+                    "ts"
                 }
             }
 
-            // Priority 2: Explicit containerExtension - ONLY accept TRUE streaming formats
-            // NEVER accept container formats (mkv, avi, mp4) as streaming output hints
-            val explicitExt =
-                context.extras[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                    ?: context.extras[EXTRA_CONTAINER_EXT]
-            if (!explicitExt.isNullOrBlank()) {
-                val normalizedExt = explicitExt.lowercase().trim()
-                // HARDENED: Only m3u8 and ts from containerExtension
-                if (normalizedExt in STREAMING_FORMATS) {
-                    UnifiedLog.d(TAG) { "Using explicit streaming containerExtension: $normalizedExt" }
-                    return normalizedExt
-                } else {
+            // If containerExt is a streaming format, use it
+            if (containerExt != null && containerExt in STREAMING_FORMATS) {
+                UnifiedLog.d(TAG) { "LIVE: Using containerExtension: $containerExt" }
+                return containerExt
+            }
+
+            // Default for LIVE: ts (more reliable for IPTV than m3u8)
+            UnifiedLog.d(TAG) { "LIVE: Defaulting to ts (no allowedFormats or containerExt)" }
+            return "ts"
+        }
+
+        /**
+         * Resolve extension for file-based content (VOD/SERIES).
+         *
+         * **PLATINUM: Respect containerExtension for file downloads!**
+         *
+         * Priority:
+         * 1. containerExtension if it's a known video format (mkv, mp4, avi, etc.)
+         * 2. allowedOutputFormats policy
+         * 3. Fallback to m3u8
+         */
+        private fun resolveFileExtension(
+            containerExt: String?,
+            allowedFormats: Set<String>,
+            contentType: String,
+        ): String {
+            // Known video container formats (files, not streams)
+            val videoContainerFormats = setOf("mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
+
+            // PLATINUM: If containerExtension is a video file format, USE IT!
+            // This is the actual file on the server - don't override it.
+            if (containerExt != null && containerExt in videoContainerFormats) {
+                UnifiedLog.i(TAG) {
+                    "$contentType: Using file containerExtension: $containerExt (legacy-parity)"
+                }
+                return containerExt
+            }
+
+            // If containerExtension is a streaming format (m3u8/ts), use it
+            if (containerExt != null && containerExt in STREAMING_FORMATS) {
+                UnifiedLog.d(TAG) { "$contentType: Using streaming containerExtension: $containerExt" }
+                return containerExt
+            }
+
+            // If server specifies allowed formats, use policy selection
+            if (allowedFormats.isNotEmpty()) {
+                return try {
+                    val selected = selectXtreamOutputExt(allowedFormats)
                     UnifiedLog.d(TAG) {
-                        "Ignoring containerExtension=$explicitExt (not a TRUE streaming format)"
+                        "$contentType: Policy-selected extension: $selected from allowed: $allowedFormats"
                     }
-                    // Fall through to defaults
+                    selected
+                } catch (e: PlaybackSourceException) {
+                    if (e.message?.contains("HLS") == true &&
+                        e.message?.contains("not available") == true
+                    ) {
+                        throw e
+                    }
+                    UnifiedLog.w(TAG) { "$contentType: Format selection failed, defaulting to m3u8" }
+                    "m3u8"
                 }
             }
 
-            // Priority 3: Default to m3u8 (with warning - allowed_output_formats should be present)
+            // Fallback: m3u8 (with warning)
             UnifiedLog.w(TAG) {
-                "No allowed_output_formats provided by server, defaulting to m3u8. " +
-                    "This may fail with some providers. Server should provide allowed_output_formats."
+                "$contentType: No containerExtension or allowedFormats, defaulting to m3u8. " +
+                    "This may fail with some providers."
             }
             return "m3u8"
         }
@@ -488,11 +576,23 @@ class XtreamPlaybackSourceFactoryImpl
                 else -> null // Let ExoPlayer detect
             }
 
-        /** Build HTTP headers for authenticated streams. */
+        /**
+         * Build HTTP headers for media playback.
+         *
+         * **PLATINUM FIX: Uses PLAYBACK headers, NOT API headers!**
+         *
+         * PLAYBACK headers differ from API headers:
+         * - Accept: */* (not application/json)
+         * - Accept-Encoding: identity (not gzip - critical for streams!)
+         * - Icy-MetaData: 1 (for IPTV metadata)
+         *
+         * This ensures legacy-parity with v1 and Cloudflare/WAF compatibility.
+         */
         private fun buildHeaders(context: PlaybackContext): Map<String, String> =
-            XtreamHttpHeaders.withDefaults(
+            XtreamHttpHeaders.withPlaybackDefaults(
                 headers = context.headers,
                 referer = xtreamApiClient.capabilities?.baseUrl,
+                includeIcyMetadata = true,
             )
 
         /**

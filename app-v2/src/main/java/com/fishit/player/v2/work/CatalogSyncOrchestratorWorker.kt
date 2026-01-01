@@ -44,260 +44,299 @@ import java.util.concurrent.TimeUnit
  */
 @HiltWorker
 class CatalogSyncOrchestratorWorker
-    @AssistedInject
-    constructor(
+@AssistedInject
+constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
         private val sourceActivationStore: SourceActivationStore,
-    ) : CoroutineWorker(context, workerParams) {
-        companion object {
-            private const val TAG = "CatalogSyncOrchestratorWorker"
+) : CoroutineWorker(context, workerParams) {
+    companion object {
+        private const val TAG = "CatalogSyncOrchestratorWorker"
+    }
+
+    override suspend fun doWork(): Result {
+        val input = WorkerInputData.from(inputData)
+        val startTimeMs = System.currentTimeMillis()
+
+        UnifiedLog.i(TAG) { "START sync_run_id=${input.syncRunId} mode=${input.syncMode}" }
+
+        // W-16: Check runtime guards (respects sync mode - manual syncs skip battery guards)
+        val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+        if (guardReason != null) {
+            UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
+            // Return retry to defer execution
+            return Result.retry()
         }
 
-        override suspend fun doWork(): Result {
-            val input = WorkerInputData.from(inputData)
-            val startTimeMs = System.currentTimeMillis()
+        // W-8: Check for active sources
+        val activeSources = sourceActivationStore.getActiveSources()
 
-            UnifiedLog.i(TAG) { "START sync_run_id=${input.syncRunId} mode=${input.syncMode}" }
+        UnifiedLog.i(TAG) {
+            "Active sources check: $activeSources (isEmpty=${activeSources.isEmpty()})"
+        }
 
-            // W-16: Check runtime guards (respects sync mode - manual syncs skip battery guards)
-            val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
-            if (guardReason != null) {
-                UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
-                // Return retry to defer execution
-                return Result.retry()
-            }
-
-            // W-8: Check for active sources
-            val activeSources = sourceActivationStore.getActiveSources()
-
+        if (activeSources.isEmpty()) {
+            val durationMs = System.currentTimeMillis() - startTimeMs
             UnifiedLog.i(TAG) {
-                "Active sources check: $activeSources (isEmpty=${activeSources.isEmpty()})"
+                "SUCCESS duration_ms=$durationMs (no active sources, nothing to sync)"
             }
-
-            if (activeSources.isEmpty()) {
-                val durationMs = System.currentTimeMillis() - startTimeMs
-                UnifiedLog.i(TAG) {
-                    "SUCCESS duration_ms=$durationMs (no active sources, nothing to sync)"
-                }
-                return Result.success(
+            return Result.success(
                     WorkerOutputData.success(
-                        itemsPersisted = 0,
-                        durationMs = durationMs,
+                            itemsPersisted = 0,
+                            durationMs = durationMs,
                     ),
-                )
-            }
+            )
+        }
 
-            UnifiedLog.d(TAG) {
-                "Active sources: $activeSources (TELEGRAM=${SourceId.TELEGRAM in activeSources}, XTREAM=${SourceId.XTREAM in activeSources}, IO=${SourceId.IO in activeSources})"
-            }
+        UnifiedLog.d(TAG) {
+            "Active sources: $activeSources (TELEGRAM=${SourceId.TELEGRAM in activeSources}, XTREAM=${SourceId.XTREAM in activeSources}, IO=${SourceId.IO in activeSources})"
+        }
 
-            // Build PARALLEL chains per source (not sequential)
-            // Each source gets its own unique work name and can run independently
-            // This prevents one source's preflight retries from blocking another source
-            val workManager = WorkManager.getInstance(applicationContext)
-            val childInputData = buildChildInputData(input, activeSources)
+        // Build PARALLEL chains per source (not sequential)
+        // Each source gets its own unique work name and can run independently
+        // This prevents one source's preflight retries from blocking another source
+        val workManager = WorkManager.getInstance(applicationContext)
+        val childInputData = buildChildInputData(input, activeSources)
 
-            // Track enqueued chains for logging
-            val enqueuedChains = mutableListOf<String>()
+        // Track enqueued chains for logging
+        val enqueuedChains = mutableListOf<String>()
 
-            // Use KEEP policy to avoid canceling already-running work
-            // Only REPLACE on explicit rescan (FORCE_RESCAN mode)
-            val enqueuePolicy =
+        // Use KEEP policy to avoid canceling already-running work
+        // Only REPLACE on explicit rescan (FORCE_RESCAN mode)
+        val enqueuePolicy =
                 if (input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN) {
                     ExistingWorkPolicy.REPLACE
                 } else {
                     ExistingWorkPolicy.KEEP
                 }
 
-            // 1. Xtream (if active) - independent chain
-            if (SourceId.XTREAM in activeSources) {
-                val xtreamChain = buildXtreamChain(childInputData)
-                val xtreamWorkName = getSourceWorkName(SourceId.XTREAM)
-                
-                workManager
+        // 1. Xtream (if active) - independent chain
+        if (SourceId.XTREAM in activeSources) {
+            val xtreamChain = buildXtreamChain(childInputData)
+            val xtreamWorkName = getSourceWorkName(SourceId.XTREAM)
+
+            workManager
                     .beginUniqueWork(
-                        xtreamWorkName,
-                        enqueuePolicy,
-                        xtreamChain.first(),
+                            xtreamWorkName,
+                            enqueuePolicy,
+                            xtreamChain.first(),
                     )
                     .then(xtreamChain.drop(1))
                     .enqueue()
-                
-                enqueuedChains.add("XTREAM")
-                UnifiedLog.d(TAG) {
-                    "Enqueued Xtream chain: work_name=$xtreamWorkName policy=$enqueuePolicy workers=${xtreamChain.size}"
-                }
-            }
 
-            // 2. Telegram (if active) - independent chain
-            if (SourceId.TELEGRAM in activeSources) {
-                UnifiedLog.i(TAG) { "✅ Telegram is ACTIVE - building Telegram worker chain" }
-                val telegramChain = buildTelegramChain(childInputData, input)
-                val telegramWorkName = getSourceWorkName(SourceId.TELEGRAM)
-                
-                workManager
+            enqueuedChains.add("XTREAM")
+            UnifiedLog.d(TAG) {
+                "Enqueued Xtream chain: work_name=$xtreamWorkName policy=$enqueuePolicy workers=${xtreamChain.size}"
+            }
+        }
+
+        // 2. Telegram (if active) - independent chain
+        if (SourceId.TELEGRAM in activeSources) {
+            UnifiedLog.i(TAG) { "✅ Telegram is ACTIVE - building Telegram worker chain" }
+            val telegramChain = buildTelegramChain(childInputData, input)
+            val telegramWorkName = getSourceWorkName(SourceId.TELEGRAM)
+
+            workManager
                     .beginUniqueWork(
-                        telegramWorkName,
-                        enqueuePolicy,
-                        telegramChain.first(),
+                            telegramWorkName,
+                            enqueuePolicy,
+                            telegramChain.first(),
                     )
                     .then(telegramChain.drop(1))
                     .enqueue()
-                
-                enqueuedChains.add("TELEGRAM")
-                UnifiedLog.i(TAG) {
-                    "✅ Enqueued Telegram chain: work_name=$telegramWorkName policy=$enqueuePolicy workers=${telegramChain.size} (preflight + scan)"
-                }
-            } else {
-                // Use DEBUG level - Telegram might just be initializing, not an error
-                UnifiedLog.d(TAG) { "Telegram not in active sources - skipping Telegram workers" }
-            }
 
-            // 3. IO (if active) - independent chain
-            if (SourceId.IO in activeSources) {
-                val ioWorker = buildIoWorker(childInputData)
-                val ioWorkName = getSourceWorkName(SourceId.IO)
-                
-                workManager
+            enqueuedChains.add("TELEGRAM")
+            UnifiedLog.i(TAG) {
+                "✅ Enqueued Telegram chain: work_name=$telegramWorkName policy=$enqueuePolicy workers=${telegramChain.size} (preflight + scan)"
+            }
+        } else {
+            // Use DEBUG level - Telegram might just be initializing, not an error
+            UnifiedLog.d(TAG) { "Telegram not in active sources - skipping Telegram workers" }
+        }
+
+        // 3. IO (if active) - independent chain
+        if (SourceId.IO in activeSources) {
+            val ioWorker = buildIoWorker(childInputData)
+            val ioWorkName = getSourceWorkName(SourceId.IO)
+
+            workManager
                     .beginUniqueWork(
-                        ioWorkName,
-                        enqueuePolicy,
-                        ioWorker,
+                            ioWorkName,
+                            enqueuePolicy,
+                            ioWorker,
                     )
                     .enqueue()
-                
-                enqueuedChains.add("IO")
-                UnifiedLog.d(TAG) {
-                    "Enqueued IO chain: work_name=$ioWorkName policy=$enqueuePolicy workers=1"
-                }
-            }
 
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.i(TAG) {
-                "CHAINS_ENQUEUED duration_ms=$durationMs policy=$enqueuePolicy sources=${enqueuedChains.joinToString(", ")} (downstream workers will report completion)"
+            enqueuedChains.add("IO")
+            UnifiedLog.d(TAG) {
+                "Enqueued IO chain: work_name=$ioWorkName policy=$enqueuePolicy workers=1"
             }
-
-            return Result.success(
-                WorkerOutputData.success(
-                    itemsPersisted = 0,
-                    durationMs = durationMs,
-                ),
-            )
         }
 
-        private fun buildChildInputData(
+        // PLATINUM: Log WorkInfo states for debug visibility
+        logWorkInfoStates(workManager, activeSources)
+
+        val durationMs = System.currentTimeMillis() - startTimeMs
+        UnifiedLog.i(TAG) {
+            "CHAINS_ENQUEUED duration_ms=$durationMs policy=$enqueuePolicy sources=${enqueuedChains.joinToString(", ")} (downstream workers will report completion)"
+        }
+
+        return Result.success(
+                WorkerOutputData.success(
+                        itemsPersisted = 0,
+                        durationMs = durationMs,
+                ),
+        )
+    }
+
+    private fun buildChildInputData(
             parentInput: WorkerInputData,
             activeSources: Set<SourceId>,
-        ): Data =
-            Data
-                .Builder()
-                .putString(WorkerConstants.KEY_SYNC_RUN_ID, parentInput.syncRunId)
-                .putString(WorkerConstants.KEY_SYNC_MODE, parentInput.syncMode)
-                .putStringArray(
-                    WorkerConstants.KEY_ACTIVE_SOURCES,
-                    activeSources.map { it.name }.toTypedArray(),
-                ).putBoolean(WorkerConstants.KEY_WIFI_ONLY, parentInput.wifiOnly)
-                .putLong(WorkerConstants.KEY_MAX_RUNTIME_MS, parentInput.maxRuntimeMs)
-                .putString(WorkerConstants.KEY_DEVICE_CLASS, parentInput.deviceClass)
-                .putString(
-                    WorkerConstants.KEY_XTREAM_SYNC_SCOPE,
-                    parentInput.xtreamSyncScope ?: WorkerConstants.XTREAM_SCOPE_INCREMENTAL,
-                ).putString(
-                    WorkerConstants.KEY_TELEGRAM_SYNC_KIND,
-                    parentInput.telegramSyncKind
-                        ?: WorkerConstants.TELEGRAM_KIND_INCREMENTAL,
-                ).putString(
-                    WorkerConstants.KEY_IO_SYNC_SCOPE,
-                    parentInput.ioSyncScope ?: WorkerConstants.IO_SCOPE_QUICK,
-                ).build()
+    ): Data =
+            Data.Builder()
+                    .putString(WorkerConstants.KEY_SYNC_RUN_ID, parentInput.syncRunId)
+                    .putString(WorkerConstants.KEY_SYNC_MODE, parentInput.syncMode)
+                    .putStringArray(
+                            WorkerConstants.KEY_ACTIVE_SOURCES,
+                            activeSources.map { it.name }.toTypedArray(),
+                    )
+                    .putBoolean(WorkerConstants.KEY_WIFI_ONLY, parentInput.wifiOnly)
+                    .putLong(WorkerConstants.KEY_MAX_RUNTIME_MS, parentInput.maxRuntimeMs)
+                    .putString(WorkerConstants.KEY_DEVICE_CLASS, parentInput.deviceClass)
+                    .putString(
+                            WorkerConstants.KEY_XTREAM_SYNC_SCOPE,
+                            parentInput.xtreamSyncScope ?: WorkerConstants.XTREAM_SCOPE_INCREMENTAL,
+                    )
+                    .putString(
+                            WorkerConstants.KEY_TELEGRAM_SYNC_KIND,
+                            parentInput.telegramSyncKind
+                                    ?: WorkerConstants.TELEGRAM_KIND_INCREMENTAL,
+                    )
+                    .putString(
+                            WorkerConstants.KEY_IO_SYNC_SCOPE,
+                            parentInput.ioSyncScope ?: WorkerConstants.IO_SCOPE_QUICK,
+                    )
+                    .build()
 
-        private fun buildXtreamChain(inputData: Data): List<OneTimeWorkRequest> =
+    private fun buildXtreamChain(inputData: Data): List<OneTimeWorkRequest> =
             listOf(
-                OneTimeWorkRequestBuilder<XtreamPreflightWorker>()
-                    .setInputData(inputData)
-                    .addTag(WorkerConstants.TAG_CATALOG_SYNC)
-                    .addTag(WorkerConstants.TAG_SOURCE_XTREAM)
-                    .addTag(WorkerConstants.TAG_WORKER_XTREAM_PREFLIGHT)
-                    .setBackoffCriteria(
-                        androidx.work.BackoffPolicy.EXPONENTIAL,
-                        WorkerConstants.BACKOFF_INITIAL_SECONDS,
-                        TimeUnit.SECONDS,
-                    ).build(),
-                OneTimeWorkRequestBuilder<XtreamCatalogScanWorker>()
-                    .setInputData(inputData)
-                    .addTag(WorkerConstants.TAG_CATALOG_SYNC)
-                    .addTag(WorkerConstants.TAG_SOURCE_XTREAM)
-                    .addTag(WorkerConstants.TAG_WORKER_XTREAM_SCAN)
-                    .setBackoffCriteria(
-                        androidx.work.BackoffPolicy.EXPONENTIAL,
-                        WorkerConstants.BACKOFF_INITIAL_SECONDS,
-                        TimeUnit.SECONDS,
-                    ).build(),
+                    OneTimeWorkRequestBuilder<XtreamPreflightWorker>()
+                            .setInputData(inputData)
+                            .addTag(WorkerConstants.TAG_CATALOG_SYNC)
+                            .addTag(WorkerConstants.TAG_SOURCE_XTREAM)
+                            .addTag(WorkerConstants.TAG_WORKER_XTREAM_PREFLIGHT)
+                            .setBackoffCriteria(
+                                    androidx.work.BackoffPolicy.EXPONENTIAL,
+                                    WorkerConstants.BACKOFF_INITIAL_SECONDS,
+                                    TimeUnit.SECONDS,
+                            )
+                            .build(),
+                    OneTimeWorkRequestBuilder<XtreamCatalogScanWorker>()
+                            .setInputData(inputData)
+                            .addTag(WorkerConstants.TAG_CATALOG_SYNC)
+                            .addTag(WorkerConstants.TAG_SOURCE_XTREAM)
+                            .addTag(WorkerConstants.TAG_WORKER_XTREAM_SCAN)
+                            .setBackoffCriteria(
+                                    androidx.work.BackoffPolicy.EXPONENTIAL,
+                                    WorkerConstants.BACKOFF_INITIAL_SECONDS,
+                                    TimeUnit.SECONDS,
+                            )
+                            .build(),
             )
 
-        private fun buildTelegramChain(
+    private fun buildTelegramChain(
             inputData: Data,
             parentInput: WorkerInputData,
-        ): List<OneTimeWorkRequest> {
-            val scanWorker =
+    ): List<OneTimeWorkRequest> {
+        val scanWorker =
                 if (parentInput.telegramSyncKind == WorkerConstants.TELEGRAM_KIND_FULL_HISTORY ||
-                    parentInput.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN
+                                parentInput.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN
                 ) {
                     OneTimeWorkRequestBuilder<TelegramFullHistoryScanWorker>()
-                        .setInputData(inputData)
-                        .addTag(WorkerConstants.TAG_CATALOG_SYNC)
-                        .addTag(WorkerConstants.TAG_SOURCE_TELEGRAM)
-                        .addTag(WorkerConstants.TAG_WORKER_TELEGRAM_FULL)
-                        .setBackoffCriteria(
-                            androidx.work.BackoffPolicy.EXPONENTIAL,
-                            WorkerConstants.BACKOFF_INITIAL_SECONDS,
-                            TimeUnit.SECONDS,
-                        ).build()
+                            .setInputData(inputData)
+                            .addTag(WorkerConstants.TAG_CATALOG_SYNC)
+                            .addTag(WorkerConstants.TAG_SOURCE_TELEGRAM)
+                            .addTag(WorkerConstants.TAG_WORKER_TELEGRAM_FULL)
+                            .setBackoffCriteria(
+                                    androidx.work.BackoffPolicy.EXPONENTIAL,
+                                    WorkerConstants.BACKOFF_INITIAL_SECONDS,
+                                    TimeUnit.SECONDS,
+                            )
+                            .build()
                 } else {
                     OneTimeWorkRequestBuilder<TelegramIncrementalScanWorker>()
+                            .setInputData(inputData)
+                            .addTag(WorkerConstants.TAG_CATALOG_SYNC)
+                            .addTag(WorkerConstants.TAG_SOURCE_TELEGRAM)
+                            .addTag(WorkerConstants.TAG_WORKER_TELEGRAM_INCREMENTAL)
+                            .setBackoffCriteria(
+                                    androidx.work.BackoffPolicy.EXPONENTIAL,
+                                    WorkerConstants.BACKOFF_INITIAL_SECONDS,
+                                    TimeUnit.SECONDS,
+                            )
+                            .build()
+                }
+
+        return listOf(
+                OneTimeWorkRequestBuilder<TelegramAuthPreflightWorker>()
                         .setInputData(inputData)
                         .addTag(WorkerConstants.TAG_CATALOG_SYNC)
                         .addTag(WorkerConstants.TAG_SOURCE_TELEGRAM)
-                        .addTag(WorkerConstants.TAG_WORKER_TELEGRAM_INCREMENTAL)
+                        .addTag(WorkerConstants.TAG_WORKER_TELEGRAM_AUTH)
                         .setBackoffCriteria(
+                                androidx.work.BackoffPolicy.EXPONENTIAL,
+                                WorkerConstants.BACKOFF_INITIAL_SECONDS,
+                                TimeUnit.SECONDS,
+                        )
+                        .build(),
+                scanWorker,
+        )
+    }
+
+    private fun buildIoWorker(inputData: Data): OneTimeWorkRequest =
+            OneTimeWorkRequestBuilder<IoQuickScanWorker>()
+                    .setInputData(inputData)
+                    .addTag(WorkerConstants.TAG_CATALOG_SYNC)
+                    .addTag(WorkerConstants.TAG_SOURCE_IO)
+                    .addTag(WorkerConstants.TAG_WORKER_IO_QUICK)
+                    .setBackoffCriteria(
                             androidx.work.BackoffPolicy.EXPONENTIAL,
                             WorkerConstants.BACKOFF_INITIAL_SECONDS,
                             TimeUnit.SECONDS,
-                        ).build()
-                }
+                    )
+                    .build()
 
-            return listOf(
-                OneTimeWorkRequestBuilder<TelegramAuthPreflightWorker>()
-                    .setInputData(inputData)
-                    .addTag(WorkerConstants.TAG_CATALOG_SYNC)
-                    .addTag(WorkerConstants.TAG_SOURCE_TELEGRAM)
-                    .addTag(WorkerConstants.TAG_WORKER_TELEGRAM_AUTH)
-                    .setBackoffCriteria(
-                        androidx.work.BackoffPolicy.EXPONENTIAL,
-                        WorkerConstants.BACKOFF_INITIAL_SECONDS,
-                        TimeUnit.SECONDS,
-                    ).build(),
-                scanWorker,
-            )
-        }
-
-        private fun buildIoWorker(inputData: Data): OneTimeWorkRequest =
-            OneTimeWorkRequestBuilder<IoQuickScanWorker>()
-                .setInputData(inputData)
-                .addTag(WorkerConstants.TAG_CATALOG_SYNC)
-                .addTag(WorkerConstants.TAG_SOURCE_IO)
-                .addTag(WorkerConstants.TAG_WORKER_IO_QUICK)
-                .setBackoffCriteria(
-                    androidx.work.BackoffPolicy.EXPONENTIAL,
-                    WorkerConstants.BACKOFF_INITIAL_SECONDS,
-                    TimeUnit.SECONDS,
-                ).build()
-
-        /**
-         * Get unique work name for a source chain.
-         * Pattern: catalog_sync_global_{source_lowercase}
-         */
-        private fun getSourceWorkName(sourceId: SourceId): String =
+    /** Get unique work name for a source chain. Pattern: catalog_sync_global_{source_lowercase} */
+    private fun getSourceWorkName(sourceId: SourceId): String =
             "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_${sourceId.name.lowercase()}"
+
+    /**
+     * PLATINUM: Log WorkInfo states for debug visibility.
+     *
+     * Shows state of each source's work chain after enqueue. Useful for debugging BLOCKED issues.
+     */
+    private fun logWorkInfoStates(
+            workManager: WorkManager,
+            activeSources: Set<SourceId>,
+    ) {
+        // Note: This is best-effort debug logging - don't fail if it throws
+        // We just log that chains were enqueued - detailed state inspection requires
+        // WorkManager UI or adb shell commands
+        try {
+            val stateReport = buildString {
+                appendLine("📊 WorkInfo chains enqueued:")
+                activeSources.forEach { sourceId ->
+                    val workName = getSourceWorkName(sourceId)
+                    appendLine("  [$sourceId] work_name=$workName → ENQUEUED")
+                }
+                appendLine(
+                        "  Use 'adb shell dumpsys jobscheduler' or WorkManager Inspector for detailed state"
+                )
+            }
+
+            UnifiedLog.d(TAG) { stateReport }
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG) { "Failed to log WorkInfo states: ${e.message}" }
+        }
     }
+}

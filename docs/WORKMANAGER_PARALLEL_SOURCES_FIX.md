@@ -224,6 +224,107 @@ catalog_sync_global_telegram: RUNNING  ← NEW!
 
 ---
 
+## Platinum Checklist (2025-01-21)
+
+This section confirms the "Platinum Catalog Sync Reliability" requirements.
+
+### ✅ 1. Bounded Retry Behavior
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Retries are truly bounded | ✅ | `WorkerRetryPolicy.retryOrFail()` checks `runAttemptCount` against limits |
+| AUTO mode: max 3 retries | ✅ | `WorkerConstants.RETRY_LIMIT_AUTO = 3` |
+| EXPERT mode: max 5 retries | ✅ | `WorkerConstants.RETRY_LIMIT_EXPERT = 5` |
+| Clear failure reason on exceed | ✅ | e.g., `XTREAM_IDLE_TIMEOUT`, `TELEGRAM_IDLE_TIMEOUT` |
+| Preflight workers use policy | ✅ | Both `TelegramAuthPreflightWorker` and `XtreamPreflightWorker` |
+
+**Files:**
+- `app-v2/work/WorkerRetryPolicy.kt` (NEW)
+- `app-v2/work/TelegramAuthPreflightWorker.kt` (updated)
+- `app-v2/work/XtreamPreflightWorker.kt` (updated)
+
+### ✅ 2. Episode Ingestion Behavior
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Episodes in INCREMENTAL mode | ✅ | `includeEpisodes` no longer gated behind `FULL`/`FORCE_RESCAN` |
+| Budget-bounded per run | ✅ | `maxRuntimeMs` ensures checkpoint on exceed |
+| Resumable via checkpoint | ✅ | `XtreamSyncCheckpoint` with phase tracking |
+
+**Change:** Removed condition `input.xtreamSyncScope == FULL || syncMode == FORCE_RESCAN` for episodes.
+Now episodes are always included when in `SERIES_EPISODES` phase, with runtime budget protection.
+
+**File:** `app-v2/work/XtreamCatalogScanWorker.kt`
+
+### ✅ 3. Canonical ↔ SourceRef Link Integrity
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Linking failures counted | ✅ | `linkedCount`, `failedCount` tracked per batch |
+| Integrity summary logged | ✅ | WARN level on failures, DEBUG on success |
+| Playback hint validation | ✅ | `validateTelegramPlaybackHints()`, `validateXtreamPlaybackHints()` |
+
+**Note:** Linking is still "best-effort" (doesn't fail batch on link error), but now with clear metrics.
+Future: Consider failing batch if `failedCount > threshold`.
+
+**File:** `core/catalog-sync/DefaultCatalogSyncService.kt`
+
+### ✅ 4. Playback Ref Completeness
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Required hints defined per source | ✅ | `PlaybackHintKeys.Telegram.*`, `PlaybackHintKeys.Xtream.*` |
+| Validation on ref creation | ✅ | `PlaybackHintValidation` in `DefaultCatalogSyncService` |
+| Warning on missing hints | ✅ | Logged as `playbackHintWarnings` count |
+
+**Required Hints:**
+- **Telegram:** `chatId` + `messageId` + (`remoteId` OR `fileId`)
+- **Xtream VOD:** `contentType=vod` + `vodId` + `containerExtension`
+- **Xtream Episode:** `contentType=series` + `seriesId` + `seasonNumber` + `episodeNumber` + `episodeId` + `containerExtension`
+- **Xtream Live:** `contentType=live` + `streamId`
+
+**File:** `core/catalog-sync/DefaultCatalogSyncService.kt`
+
+### ✅ 5. Observability Improvements
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| CHAINS_ENQUEUED (not SUCCESS) | ✅ | Orchestrator logs `CHAINS_ENQUEUED` |
+| Per-source completion logged | ✅ | Scan workers log `✅ SUCCESS source=...` |
+| WorkInfo states debug dump | ✅ | `logWorkInfoStates()` shows state per chain |
+| Attempt info in preflight logs | ✅ | `WorkerRetryPolicy.getAttemptInfo()` |
+
+**Files:**
+- `app-v2/work/CatalogSyncOrchestratorWorker.kt`
+- `app-v2/work/TelegramIncrementalScanWorker.kt`
+- `app-v2/work/TelegramFullHistoryScanWorker.kt`
+
+### ✅ 6. Credentials Store Error Handling (XtreamPreflight)
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Read wrapped in try/catch | ✅ | Exception → retry (bounded) |
+| Read returns null | ✅ | → `XTREAM_NOT_CONFIGURED` (fail-fast) |
+| Read returns incomplete | ✅ | → `XTREAM_INVALID_CREDENTIALS` (fail-fast) |
+| Read returns valid + Idle | ✅ | → retry (bounded) with `XTREAM_IDLE_TIMEOUT` |
+
+**File:** `app-v2/work/XtreamPreflightWorker.kt`
+
+---
+
+## Platinum Acceptance Criteria
+
+| Criteria | Status | Notes |
+|----------|--------|-------|
+| Late Telegram activation works | ✅ | Uses independent `catalog_sync_global_telegram` chain |
+| Retries truly bounded | ✅ | `WorkerRetryPolicy` enforces limits |
+| Episode rows > 0 after AUTO | ✅ | Episodes included in INCREMENTAL mode |
+| No unlinked SourceRefs | ⚠️ | Logged as warnings; best-effort (non-blocking) |
+| Playback refs validated | ✅ | Missing hints logged as warnings |
+| Clear logging | ✅ | `CHAINS_ENQUEUED` + per-source completion |
+
+---
+
 ## Related Documents
 
 - `TELEGRAM_BLOCKER_INVESTIGATION_REPORT.md` - Original investigation
@@ -232,4 +333,4 @@ catalog_sync_global_telegram: RUNNING  ← NEW!
 
 ---
 
-**Status:** ✅ FIXED - Parallel execution with per-source unique work names
+**Status:** ✅ FIXED - Parallel execution with per-source unique work names + Platinum hardening
