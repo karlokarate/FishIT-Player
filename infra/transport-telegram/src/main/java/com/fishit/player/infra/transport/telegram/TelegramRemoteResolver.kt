@@ -162,7 +162,7 @@ data class ResolvedTelegramMedia(
             supportsStreaming == other.supportsStreaming &&
             mediaLocalPath == other.mediaLocalPath &&
             thumbLocalPath == other.thumbLocalPath &&
-            (minithumbnailBytes?.contentEquals(other.minithumbnailBytes) ?: (other.minithumbnailBytes == null))
+            minithumbnailBytes.contentEquals(other.minithumbnailBytes)
     }
 
     override fun hashCode(): Int {
