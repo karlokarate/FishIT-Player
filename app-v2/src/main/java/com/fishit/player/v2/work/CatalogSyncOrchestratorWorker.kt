@@ -103,7 +103,7 @@ class CatalogSyncOrchestratorWorker
             // 1. Xtream (if active) - independent chain
             if (SourceId.XTREAM in activeSources) {
                 val xtreamChain = buildXtreamChain(childInputData)
-                val xtreamWorkName = "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_xtream"
+                val xtreamWorkName = getSourceWorkName(SourceId.XTREAM)
                 
                 workManager
                     .beginUniqueWork(
@@ -124,7 +124,7 @@ class CatalogSyncOrchestratorWorker
             if (SourceId.TELEGRAM in activeSources) {
                 UnifiedLog.i(TAG) { "✅ Telegram is ACTIVE - building Telegram worker chain" }
                 val telegramChain = buildTelegramChain(childInputData, input)
-                val telegramWorkName = "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_telegram"
+                val telegramWorkName = getSourceWorkName(SourceId.TELEGRAM)
                 
                 workManager
                     .beginUniqueWork(
@@ -147,7 +147,7 @@ class CatalogSyncOrchestratorWorker
             // 3. IO (if active) - independent chain
             if (SourceId.IO in activeSources) {
                 val ioWorker = buildIoWorker(childInputData)
-                val ioWorkName = "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_io"
+                val ioWorkName = getSourceWorkName(SourceId.IO)
                 
                 workManager
                     .beginUniqueWork(
@@ -283,4 +283,11 @@ class CatalogSyncOrchestratorWorker
                     WorkerConstants.BACKOFF_INITIAL_SECONDS,
                     TimeUnit.SECONDS,
                 ).build()
+
+        /**
+         * Get unique work name for a source chain.
+         * Pattern: catalog_sync_global_{source_lowercase}
+         */
+        private fun getSourceWorkName(sourceId: SourceId): String =
+            "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_${sourceId.name.lowercase()}"
     }
