@@ -128,7 +128,7 @@ class XtreamPreflightWorker
                     // W-20: Non-retryable failure - source not configured
                     Result.failure(
                         WorkerOutputData.failure(
-                            WorkerConstants.FAILURE_XTREAM_INVALID_CREDENTIALS,
+                            WorkerConstants.FAILURE_XTREAM_NOT_CONFIGURED,
                         ),
                     )
                 }
