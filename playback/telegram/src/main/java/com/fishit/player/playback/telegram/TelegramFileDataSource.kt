@@ -230,10 +230,11 @@ class TelegramFileDataSource(
             // Capture mutable properties to local variables for safe access
             val capturedChatId = chatId
             val capturedMessageId = messageId
-            
+
             // Resolve fileId if needed (with chatId+messageId for RemoteId-First)
             val resolvedFileId = resolveFileId(fileId, remoteId, capturedChatId, capturedMessageId)
-            val usedFastPath = (fileId != null && fileId > 0 && capturedChatId == null && capturedMessageId == null)
+            val usedFastPath =
+                (fileId != null && fileId > 0 && capturedChatId == null && capturedMessageId == null && remoteId == null)
 
             UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode, fastPath=$usedFastPath)" }
 
