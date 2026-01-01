@@ -32,7 +32,8 @@ import java.util.concurrent.TimeUnit
  * - Xtream chain: catalog_sync_global_xtream
  * - Telegram chain: catalog_sync_global_telegram
  * - IO chain: catalog_sync_global_io
- * - Each chain uses REPLACE policy for late activation safety
+ * - Uses KEEP policy by default to avoid canceling running work
+ * - Uses REPLACE policy only on FORCE_RESCAN mode
  *
  * @see XtreamPreflightWorker
  * @see XtreamCatalogScanWorker
@@ -100,6 +101,15 @@ class CatalogSyncOrchestratorWorker
             // Track enqueued chains for logging
             val enqueuedChains = mutableListOf<String>()
 
+            // Use KEEP policy to avoid canceling already-running work
+            // Only REPLACE on explicit rescan (FORCE_RESCAN mode)
+            val enqueuePolicy =
+                if (input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN) {
+                    ExistingWorkPolicy.REPLACE
+                } else {
+                    ExistingWorkPolicy.KEEP
+                }
+
             // 1. Xtream (if active) - independent chain
             if (SourceId.XTREAM in activeSources) {
                 val xtreamChain = buildXtreamChain(childInputData)
@@ -108,7 +118,7 @@ class CatalogSyncOrchestratorWorker
                 workManager
                     .beginUniqueWork(
                         xtreamWorkName,
-                        ExistingWorkPolicy.REPLACE,
+                        enqueuePolicy,
                         xtreamChain.first(),
                     )
                     .then(xtreamChain.drop(1))
@@ -116,7 +126,7 @@ class CatalogSyncOrchestratorWorker
                 
                 enqueuedChains.add("XTREAM")
                 UnifiedLog.d(TAG) {
-                    "Enqueued Xtream chain: work_name=$xtreamWorkName workers=${xtreamChain.size}"
+                    "Enqueued Xtream chain: work_name=$xtreamWorkName policy=$enqueuePolicy workers=${xtreamChain.size}"
                 }
             }
 
@@ -129,7 +139,7 @@ class CatalogSyncOrchestratorWorker
                 workManager
                     .beginUniqueWork(
                         telegramWorkName,
-                        ExistingWorkPolicy.REPLACE,
+                        enqueuePolicy,
                         telegramChain.first(),
                     )
                     .then(telegramChain.drop(1))
@@ -137,7 +147,7 @@ class CatalogSyncOrchestratorWorker
                 
                 enqueuedChains.add("TELEGRAM")
                 UnifiedLog.i(TAG) {
-                    "✅ Enqueued Telegram chain: work_name=$telegramWorkName workers=${telegramChain.size} (preflight + scan)"
+                    "✅ Enqueued Telegram chain: work_name=$telegramWorkName policy=$enqueuePolicy workers=${telegramChain.size} (preflight + scan)"
                 }
             } else {
                 // Use DEBUG level - Telegram might just be initializing, not an error
@@ -152,20 +162,20 @@ class CatalogSyncOrchestratorWorker
                 workManager
                     .beginUniqueWork(
                         ioWorkName,
-                        ExistingWorkPolicy.REPLACE,
+                        enqueuePolicy,
                         ioWorker,
                     )
                     .enqueue()
                 
                 enqueuedChains.add("IO")
                 UnifiedLog.d(TAG) {
-                    "Enqueued IO chain: work_name=$ioWorkName workers=1"
+                    "Enqueued IO chain: work_name=$ioWorkName policy=$enqueuePolicy workers=1"
                 }
             }
 
             val durationMs = System.currentTimeMillis() - startTimeMs
             UnifiedLog.i(TAG) {
-                "SUCCESS duration_ms=$durationMs (enqueued ${enqueuedChains.size} parallel chains: ${enqueuedChains.joinToString(", ")})"
+                "CHAINS_ENQUEUED duration_ms=$durationMs policy=$enqueuePolicy sources=${enqueuedChains.joinToString(", ")} (downstream workers will report completion)"
             }
 
             return Result.success(

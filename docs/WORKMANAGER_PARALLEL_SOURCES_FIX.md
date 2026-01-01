@@ -55,16 +55,20 @@ All sources shared `catalog_sync_global`, causing cross-source blocking.
 **New Architecture:**
 ```kotlin
 // Each source enqueues independently
+// Use KEEP policy by default to avoid canceling running work
+// Only REPLACE on explicit FORCE_RESCAN
+val policy = if (syncMode == FORCE_RESCAN) REPLACE else KEEP
+
 if (XTREAM in activeSources) {
     workManager
-        .beginUniqueWork("catalog_sync_global_xtream", REPLACE, xtreamChain[0])
+        .beginUniqueWork("catalog_sync_global_xtream", policy, xtreamChain[0])
         .then(xtreamChain.drop(1))
         .enqueue()
 }
 
 if (TELEGRAM in activeSources) {
     workManager
-        .beginUniqueWork("catalog_sync_global_telegram", REPLACE, telegramChain[0])
+        .beginUniqueWork("catalog_sync_global_telegram", policy, telegramChain[0])
         .then(telegramChain.drop(1))
         .enqueue()
 }
@@ -73,10 +77,31 @@ if (TELEGRAM in activeSources) {
 **Benefits:**
 - Each source runs in its own independent chain
 - Late activation (Telegram after Xtream) starts immediately
-- REPLACE policy ensures fresh chain on re-activation
+- KEEP policy prevents canceling already-running work (no thrashing)
+- REPLACE only on explicit force rescan
 - No cross-source blocking
 
-### 2. XtreamPreflight Fail-Fast on Idle
+### 2. XtreamPreflight Smart Idle Handling
+
+**New Semantics:**
+```kotlin
+is XtreamAuthState.Idle -> {
+    val storedCredentials = credentialsStore.read()
+    
+    if (storedCredentials == null) {
+        // Not configured - fail fast
+        Result.failure(XTREAM_NOT_CONFIGURED)
+    } else {
+        // Credentials exist, session initializing - retry with backoff
+        Result.retry()
+    }
+}
+```
+
+**Key Improvement:**
+- Distinguishes "not configured" from "initializing with valid credentials"
+- Prevents false failures on app startup when credentials exist
+- Fail-fast only when truly not configured
 
 **New Semantics:**
 ```kotlin
@@ -98,7 +123,8 @@ is XtreamAuthState.Idle -> {
 |--------|-------|--------|-------|
 | **XtreamPreflight** | `Authenticated` | `success` | Ready to scan |
 | | `Failed/Expired` | `failure` | Invalid credentials |
-| | `Idle` | `failure` | Not configured |
+| | `Idle` + no credentials | `failure` | Not configured |
+| | `Idle` + credentials exist | `retry` | Initializing, bounded backoff |
 | | Connection error | `retry` | Transient, bounded backoff |
 | **TelegramAuthPreflight** | `Connected` | `success` | Ready to scan |
 | | `WaitingFor*` | `failure` | User action required |
