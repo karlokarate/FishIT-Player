@@ -11,6 +11,7 @@ import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.PlayerEntryPoint
 import com.fishit.player.playback.domain.ResumeManager
+import com.fishit.player.playback.xtream.XtreamDataSourceFactoryProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,7 +36,11 @@ import javax.inject.Singleton
  * **DataSource Wiring:**
  * - Injects Map<DataSourceType, DataSource.Factory> from PlayerDataSourceModule
  * - Telegram uses TelegramFileDataSourceFactory (zero-copy TDLib streaming)
- * - Xtream uses DefaultDataSource.Factory (standard HTTP)
+ * - Xtream uses XtreamDataSourceFactoryProvider (optional, for OkHttp redirect handling)
+ *
+ * **Source-Agnostic Design:**
+ * - Xtream provider is optional (compiles with zero playback sources)
+ * - Graceful degradation when providers unavailable
  *
  * @param context Android application context
  * @param sourceResolver Resolver for playback sources
@@ -43,6 +48,7 @@ import javax.inject.Singleton
  * @param kidsPlaybackGate Gate for kids screen time
  * @param codecConfigurator Configurator for FFmpeg codecs
  * @param dataSourceFactories Map of source-type-specific DataSource factories
+ * @param xtreamDataSourceProvider Optional provider for Xtream DataSource factories (requires :playback:xtream)
  */
 @Singleton
 class InternalPlayerEntryImpl
@@ -54,6 +60,7 @@ class InternalPlayerEntryImpl
         private val kidsPlaybackGate: KidsPlaybackGate,
         private val codecConfigurator: NextlibCodecConfigurator,
         private val dataSourceFactories: Map<DataSourceType, @JvmSuppressWildcards DataSource.Factory>,
+        private val xtreamDataSourceProvider: XtreamDataSourceFactoryProvider?,
     ) : PlayerEntryPoint {
         private val mutex = Mutex()
         private var currentSession: InternalPlayerSession? = null
@@ -77,6 +84,7 @@ class InternalPlayerEntryImpl
                         kidsPlaybackGate = kidsPlaybackGate,
                         codecConfigurator = codecConfigurator,
                         dataSourceFactories = dataSourceFactories,
+                        xtreamDataSourceProvider = xtreamDataSourceProvider,
                     )
 
                 currentSession = session

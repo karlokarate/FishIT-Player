@@ -26,7 +26,7 @@ import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.ResumeManager
-import com.fishit.player.playback.xtream.XtreamHttpDataSourceFactory
+import com.fishit.player.playback.xtream.XtreamDataSourceFactoryProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -56,6 +56,11 @@ import kotlinx.coroutines.launch
  * - Uses types from core:player-model
  * - Integrates with playback:domain interfaces
  * - Supports custom DataSource.Factory for source-specific streaming
+ *
+ * **Source-Agnostic Design:**
+ * - Depends on provider interfaces, not concrete implementations
+ * - Can compile/run with zero playback sources
+ * - Xtream/Telegram support is optional via DI
  */
 class InternalPlayerSession(
     private val context: Context,
@@ -64,6 +69,7 @@ class InternalPlayerSession(
     private val kidsPlaybackGate: KidsPlaybackGate,
     private val codecConfigurator: NextlibCodecConfigurator,
     private val dataSourceFactories: Map<DataSourceType, DataSource.Factory> = emptyMap(),
+    private val xtreamDataSourceProvider: XtreamDataSourceFactoryProvider? = null,
 ) {
     companion object {
         private const val TAG = "InternalPlayerSession"
@@ -215,14 +221,26 @@ class InternalPlayerSession(
                 val dataSourceFactory =
                     when (source.dataSourceType) {
                         DataSourceType.XTREAM_HTTP -> {
-                            // Use OkHttp for Xtream to ensure headers survive redirects
-                            UnifiedLog.d(TAG) {
-                                "Using XtreamHttpDataSource for redirect-safe playback"
+                            // Use Xtream provider if available (optional dependency)
+                            if (xtreamDataSourceProvider != null) {
+                                UnifiedLog.d(TAG) {
+                                    "Using XtreamDataSourceProvider for redirect-safe playback"
+                                }
+                                xtreamDataSourceProvider.create(
+                                    headers = source.headers,
+                                    debugMode = BuildConfig.DEBUG,
+                                )
+                            } else {
+                                // Fallback when Xtream module not available
+                                UnifiedLog.w(TAG) {
+                                    "XtreamDataSourceProvider not available, falling back to DefaultHttpDataSource"
+                                }
+                                val httpFactory =
+                                    DefaultHttpDataSource
+                                        .Factory()
+                                        .setDefaultRequestProperties(source.headers)
+                                DefaultDataSource.Factory(context, httpFactory)
                             }
-                            XtreamHttpDataSourceFactory(
-                                headers = source.headers,
-                                debugMode = BuildConfig.DEBUG,
-                            )
                         }
                         else ->
                             when {
