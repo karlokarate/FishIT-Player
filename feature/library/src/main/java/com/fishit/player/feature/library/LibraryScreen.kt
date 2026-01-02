@@ -50,8 +50,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
-import com.fishit.player.feature.library.domain.LibraryCategory
-import com.fishit.player.feature.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibraryCategory
+import com.fishit.player.core.library.domain.LibraryMediaItem
 
 /**
  * Library Screen - Browse VOD and Series content.

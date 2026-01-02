@@ -116,21 +116,26 @@ The actual type may live in `:core:model`, but conceptually:
 ```kotlin
 data class CanonicalMediaId(
     val kind: MediaKind,      // MOVIE or EPISODE
-    val key: String           // unique key, e.g. "tmdb:12345" or "movie:x-men:2000"
+  val key: String           // unique key, e.g. "tmdb:movie:12345" or "movie:x-men:2000"
 )
 ```
 
 **Identity Rules (ordered by priority):**
 
-1. If `tmdbId != null`:
-   - `CanonicalMediaId.key = "tmdb:<tmdbId>"`
-   - `CanonicalMediaId.kind` is determined from TMDB metadata (movie/episode).
+1. If `tmdbId != null` (typed TMDB reference):
+  - Movies: `CanonicalMediaId.key = "tmdb:movie:<tmdbId>"`
+  - TV (series root for episodes): `CanonicalMediaId.key = "tmdb:tv:<tmdbId>"`
+  - `CanonicalMediaId.kind` is determined by normalized season/episode presence (movie vs episode).
 2. If no `tmdbId`, but normalized title + year (+ S/E for episodes) are known:
    - Movies:
      - `CanonicalMediaId.key = "movie:<canonicalTitle>:<year>"`
    - Episodes:
      - `CanonicalMediaId.key = "episode:<canonicalTitle>:S<season>E<episode>"`
 3. If neither of the above is available, the item **cannot** be assigned a stable `CanonicalMediaId` and must be treated as unlinked for canonical features.
+
+> **Legacy compatibility:** Older persisted data may contain untyped TMDB keys like `"tmdb:<id>"`.
+> Implementations MUST treat `tmdb:<id>` as a legacy alias for lookups and converge new writes to
+> `tmdb:movie:<id>` / `tmdb:tv:<id>`.
 
 > **Implementation note (v2):** The concrete ID wrappers live in
 > `core/model/src/main/java/com/fishit/player/core/model/ids/` as Kotlin value classes

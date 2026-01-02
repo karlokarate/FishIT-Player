@@ -9,6 +9,9 @@ import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.TmdbResolvePolicy
+import com.fishit.player.core.model.TmdbResolveState
+import com.fishit.player.core.model.TmdbResolvedBy
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.ids.asCanonicalId
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
@@ -24,6 +27,7 @@ import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark_
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef_
 import com.fishit.player.core.persistence.toTmdbIdOrNull
+import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryBuilder.StringOrder
@@ -57,6 +61,12 @@ constructor(
         private val sourceBox = boxStore.boxFor<ObxMediaSourceRef>()
         private val resumeBox = boxStore.boxFor<ObxCanonicalResumeMark>()
 
+        companion object {
+                private const val TAG = "ObxCanonicalMediaRepository"
+                private val LEGACY_UNTYPED_TMDB_PATTERN = Regex("^tmdb:(\\d+)$")
+                private val TYPED_TMDB_PATTERN = Regex("^tmdb:(movie|tv):(\\d+)$")
+        }
+
         private val json = Json {
                 ignoreUnknownKeys = true
                 encodeDefaults = false
@@ -64,109 +74,239 @@ constructor(
 
         // ========== Core CRUD Operations ==========
 
+        /**
+         * Upsert canonical media with race condition handling.
+         *
+         * **PLATINUM PARALLEL SYNC FIX:** When Telegram and Xtream syncs run in parallel and
+         * discover the same media (e.g., "The Matrix (1999)"), both may attempt to create a new
+         * canonical entry simultaneously. ObjectBox's @Unique constraint on canonicalKey will cause
+         * a UniqueViolationException for the second writer.
+         *
+         * Solution:
+         * 1. Try query-then-insert in a transaction
+         * 2. If UniqueViolationException occurs (race condition), retry with query-only
+         * 3. Return existing canonical ID on retry
+         *
+         * This ensures both pipelines link to the SAME canonical entry.
+         */
         override suspend fun upsertCanonicalMedia(
                 normalized: NormalizedMediaMetadata
         ): CanonicalMediaId =
                 withContext(Dispatchers.IO) {
                         val canonicalKey = generateCanonicalKey(normalized)
+                        val canonicalKeyCandidates = canonicalKeyLookupCandidates(canonicalKey)
                         val kind =
                                 if (normalized.season != null && normalized.episode != null)
                                         "episode"
                                 else "movie"
+                        val mediaKind =
+                                if (kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
 
-                        // Try to find existing
-                        val existing =
-                                canonicalBox
-                                        .query(ObxCanonicalMedia_.canonicalKey.equal(canonicalKey))
-                                        .build()
-                                        .findFirst()
+                        // Prefer normalized.tmdb (typed ref) over externalIds.tmdb (legacy
+                        // aggregate)
+                        val effectiveTmdbId =
+                                (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
 
-                        val now = System.currentTimeMillis()
-
-                        // Prefer normalized.tmdb (typed ref) over externalIds.tmdb (legacy aggregate)
-                        val effectiveTmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
-
-                        if (existing != null) {
-                                // Update existing entry with any new metadata
-                                val updated =
-                                        existing.copy(
-                                                canonicalTitle = normalized.canonicalTitle,
-                                                canonicalTitleLower =
-                                                        normalized.canonicalTitle.lowercase(),
-                                                mediaType = normalized.mediaType.name,
-                                                year = normalized.year ?: existing.year,
-                                                season = normalized.season ?: existing.season,
-                                                episode = normalized.episode ?: existing.episode,
-                                                tmdbId = effectiveTmdbId ?: existing.tmdbId,
-                                                imdbId = normalized.externalIds.imdbId
-                                                                ?: existing.imdbId,
-                                                tvdbId = normalized.externalIds.tvdbId
-                                                                ?: existing.tvdbId,
-                                                // Pipeline images (fallback to existing if TMDB
-                                                // already set)
-                                                poster = normalized.poster ?: existing.poster,
-                                                backdrop = normalized.backdrop ?: existing.backdrop,
-                                                thumbnail = normalized.thumbnail
-                                                                ?: existing.thumbnail,
-                                                // Rich metadata (fallback to existing if TMDB
-                                                // enrichment already set)
-                                                plot = normalized.plot ?: existing.plot,
-                                                genres = normalized.genres ?: existing.genres,
-                                                director = normalized.director ?: existing.director,
-                                                cast = normalized.cast ?: existing.cast,
-                                                trailer = normalized.trailer ?: existing.trailer,
-                                                rating = normalized.rating ?: existing.rating,
-                                                durationMs = normalized.durationMs
-                                                                ?: existing.durationMs,
-                                                updatedAt = now,
-                                        )
-                                canonicalBox.put(updated)
-                                CanonicalMediaId(
-                                        kind =
-                                                if (kind == "episode") MediaKind.EPISODE
-                                                else MediaKind.MOVIE,
-                                        key = canonicalKey.asCanonicalId()
+                        try {
+                                // Primary path: query + upsert in transaction
+                                upsertCanonicalMediaInternal(
+                                        canonicalKey = canonicalKey,
+                                        canonicalKeyCandidates = canonicalKeyCandidates,
+                                        kind = kind,
+                                        mediaKind = mediaKind,
+                                        normalized = normalized,
+                                        effectiveTmdbId = effectiveTmdbId,
                                 )
-                        } else {
-                                // Create new entry
-                                val newEntry =
-                                        ObxCanonicalMedia(
-                                                canonicalKey = canonicalKey,
-                                                kind = kind,
-                                                mediaType = normalized.mediaType.name,
-                                                canonicalTitle = normalized.canonicalTitle,
-                                                canonicalTitleLower =
-                                                        normalized.canonicalTitle.lowercase(),
-                                                year = normalized.year,
-                                                season = normalized.season,
-                                                episode = normalized.episode,
-                                                tmdbId = effectiveTmdbId,
-                                                imdbId = normalized.externalIds.imdbId,
-                                                tvdbId = normalized.externalIds.tvdbId,
-                                                // Pipeline images (from Telegram/Xtream)
-                                                poster = normalized.poster,
-                                                backdrop = normalized.backdrop,
-                                                thumbnail = normalized.thumbnail,
-                                                // Rich metadata (from pipeline)
-                                                plot = normalized.plot,
-                                                genres = normalized.genres,
-                                                director = normalized.director,
-                                                cast = normalized.cast,
-                                                trailer = normalized.trailer,
-                                                rating = normalized.rating,
-                                                durationMs = normalized.durationMs,
-                                                createdAt = now,
-                                                updatedAt = now,
+                        } catch (e: io.objectbox.exception.UniqueViolationException) {
+                                // Race condition: another pipeline created this entry first
+                                // Retry with query-only to get the existing entry
+                                val existing = findCanonicalByAnyKey(canonicalKey)
+
+                                if (existing != null) {
+                                        // Update existing with any new metadata (merge)
+                                        val updated =
+                                                updateExistingCanonicalMedia(
+                                                        existing,
+                                                        normalized,
+                                                        effectiveTmdbId
+                                                )
+                                        CanonicalMediaId(
+                                                kind = mediaKind,
+                                                key = updated.canonicalKey.asCanonicalId()
                                         )
-                                canonicalBox.put(newEntry)
-                                CanonicalMediaId(
-                                        kind =
-                                                if (kind == "episode") MediaKind.EPISODE
-                                                else MediaKind.MOVIE,
-                                        key = canonicalKey.asCanonicalId()
-                                )
+                                } else {
+                                        // Should not happen, but propagate if it does
+                                        throw e
+                                }
                         }
                 }
+
+        /** Internal upsert logic - may throw UniqueViolationException on race condition. */
+        private fun upsertCanonicalMediaInternal(
+                canonicalKey: String,
+                canonicalKeyCandidates: Array<String>,
+                kind: String,
+                mediaKind: MediaKind,
+                normalized: NormalizedMediaMetadata,
+                effectiveTmdbId: String?,
+        ): CanonicalMediaId {
+                // Try to find existing (supports legacy untyped tmdb:<id> entries)
+                val existing =
+                        canonicalBox
+                                .query(
+                                        ObxCanonicalMedia_.canonicalKey.oneOf(
+                                                canonicalKeyCandidates
+                                        )
+                                )
+                                .build()
+                                .findFirst()
+
+                val now = System.currentTimeMillis()
+
+                return if (existing != null) {
+                        // Update existing entry with any new metadata
+                        val merged =
+                                updateExistingCanonicalMedia(existing, normalized, effectiveTmdbId)
+
+                        // Converge canonical keys to the preferred typed format when possible.
+                        val finalKey = tryUpgradeCanonicalKey(merged, canonicalKey)
+
+                        CanonicalMediaId(kind = mediaKind, key = finalKey.asCanonicalId())
+                } else {
+                        // Create new entry
+                        val newEntry =
+                                ObxCanonicalMedia(
+                                        canonicalKey = canonicalKey,
+                                        kind = kind,
+                                        mediaType = normalized.mediaType.name,
+                                        canonicalTitle = normalized.canonicalTitle,
+                                        canonicalTitleLower = normalized.canonicalTitle.lowercase(),
+                                        year = normalized.year,
+                                        season = normalized.season,
+                                        episode = normalized.episode,
+                                        tmdbId = effectiveTmdbId,
+                                        imdbId = normalized.externalIds.imdbId,
+                                        tvdbId = normalized.externalIds.tvdbId,
+                                        // Pipeline images (from Telegram/Xtream)
+                                        poster = normalized.poster,
+                                        backdrop = normalized.backdrop,
+                                        thumbnail = normalized.thumbnail,
+                                        // Rich metadata (from pipeline)
+                                        plot = normalized.plot,
+                                        genres = normalized.genres,
+                                        director = normalized.director,
+                                        cast = normalized.cast,
+                                        trailer = normalized.trailer,
+                                        rating = normalized.rating,
+                                        durationMs = normalized.durationMs,
+                                        createdAt = now,
+                                        updatedAt = now,
+                                )
+                        canonicalBox.put(newEntry)
+                        CanonicalMediaId(kind = mediaKind, key = canonicalKey.asCanonicalId())
+                }
+        }
+
+        /**
+         * Update existing canonical entry with new metadata (merge strategy). Preserves existing
+         * values when normalized has null.
+         */
+        private fun updateExistingCanonicalMedia(
+                existing: ObxCanonicalMedia,
+                normalized: NormalizedMediaMetadata,
+                effectiveTmdbId: String?,
+        ): ObxCanonicalMedia {
+                val now = System.currentTimeMillis()
+                val updated =
+                        existing.copy(
+                                canonicalTitle = normalized.canonicalTitle,
+                                canonicalTitleLower = normalized.canonicalTitle.lowercase(),
+                                mediaType = normalized.mediaType.name,
+                                year = normalized.year ?: existing.year,
+                                season = normalized.season ?: existing.season,
+                                episode = normalized.episode ?: existing.episode,
+                                tmdbId = effectiveTmdbId ?: existing.tmdbId,
+                                imdbId = normalized.externalIds.imdbId ?: existing.imdbId,
+                                tvdbId = normalized.externalIds.tvdbId ?: existing.tvdbId,
+                                // Pipeline images (fallback to existing if TMDB already set)
+                                poster = normalized.poster ?: existing.poster,
+                                backdrop = normalized.backdrop ?: existing.backdrop,
+                                thumbnail = normalized.thumbnail ?: existing.thumbnail,
+                                // Rich metadata (fallback to existing if TMDB enrichment already
+                                // set)
+                                plot = normalized.plot ?: existing.plot,
+                                genres = normalized.genres ?: existing.genres,
+                                director = normalized.director ?: existing.director,
+                                cast = normalized.cast ?: existing.cast,
+                                trailer = normalized.trailer ?: existing.trailer,
+                                rating = normalized.rating ?: existing.rating,
+                                durationMs = normalized.durationMs ?: existing.durationMs,
+                                updatedAt = now,
+                        )
+                canonicalBox.put(updated)
+                return updated
+        }
+
+        private fun findCanonicalByAnyKey(key: String): ObxCanonicalMedia? {
+                val candidates = canonicalKeyLookupCandidates(key)
+                return canonicalBox
+                        .query(ObxCanonicalMedia_.canonicalKey.oneOf(candidates))
+                        .build()
+                        .findFirst()
+        }
+
+        private fun canonicalKeyLookupCandidates(key: String): Array<String> {
+                val trimmed = key.trim()
+
+                // Expand legacy untyped TMDB keys into typed candidates.
+                val legacyMatch = LEGACY_UNTYPED_TMDB_PATTERN.matchEntire(trimmed)
+                if (legacyMatch != null) {
+                        val id = legacyMatch.groupValues[1]
+                        return arrayOf(
+                                "tmdb:movie:$id",
+                                "tmdb:tv:$id",
+                                trimmed,
+                        )
+                }
+
+                // Expand typed TMDB keys to include legacy alias.
+                val typedMatch = TYPED_TMDB_PATTERN.matchEntire(trimmed)
+                if (typedMatch != null) {
+                        val id = typedMatch.groupValues[2]
+                        return arrayOf(trimmed, "tmdb:$id")
+                }
+
+                return arrayOf(trimmed)
+        }
+
+        private fun tryUpgradeCanonicalKey(
+                existing: ObxCanonicalMedia,
+                desiredCanonicalKey: String,
+        ): String {
+                if (existing.canonicalKey == desiredCanonicalKey) return desiredCanonicalKey
+
+                // Only upgrade TMDB-based canonical keys. Title/year based keys remain stable.
+                if (!CanonicalKeyGenerator.isTmdbBased(existing.canonicalKey) ||
+                                !CanonicalKeyGenerator.isTmdbBased(desiredCanonicalKey)
+                ) {
+                        return existing.canonicalKey
+                }
+
+                return try {
+                        val upgraded = existing.copy(canonicalKey = desiredCanonicalKey)
+                        canonicalBox.put(upgraded)
+                        UnifiedLog.i(TAG) {
+                                "canonicalKey.upgraded: from=${existing.canonicalKey} to=$desiredCanonicalKey"
+                        }
+                        desiredCanonicalKey
+                } catch (e: io.objectbox.exception.UniqueViolationException) {
+                        // Another record already owns the desired key. Full merge is a follow-up.
+                        UnifiedLog.w(TAG) {
+                                "canonicalKey.upgrade.skipped(unique): from=${existing.canonicalKey} to=$desiredCanonicalKey"
+                        }
+                        existing.canonicalKey
+                }
+        }
 
         override suspend fun addOrUpdateSourceRef(
                 canonicalId: CanonicalMediaId,
@@ -214,7 +354,8 @@ constructor(
                                                         source.format?.let { encodeFormat(it) },
                                                 sizeBytes = source.sizeBytes,
                                                 durationMs = source.durationMs,
-                                                playbackHintsJson = encodePlaybackHints(source.playbackHints),
+                                                playbackHintsJson =
+                                                        encodePlaybackHints(source.playbackHints),
                                                 priority = source.priority,
                                         )
                                 updated.canonicalMedia.target = canonical
@@ -236,7 +377,8 @@ constructor(
                                                         source.format?.let { encodeFormat(it) },
                                                 sizeBytes = source.sizeBytes,
                                                 durationMs = source.durationMs,
-                                                playbackHintsJson = encodePlaybackHints(source.playbackHints),
+                                                playbackHintsJson =
+                                                        encodePlaybackHints(source.playbackHints),
                                                 priority = source.priority,
                                                 addedAt = now,
                                         )
@@ -265,14 +407,7 @@ constructor(
         ): CanonicalMediaWithSources? =
                 withContext(Dispatchers.IO) {
                         val canonical =
-                                canonicalBox
-                                        .query(
-                                                ObxCanonicalMedia_.canonicalKey.equal(
-                                                        canonicalId.key.value
-                                                )
-                                        )
-                                        .build()
-                                        .findFirst()
+                                findCanonicalByAnyKey(canonicalId.key.value)
                                         ?: return@withContext null
 
                         toCanonicalMediaWithSources(canonical)
@@ -431,16 +566,18 @@ constructor(
                 profileId: Long,
         ): CanonicalResumeInfo? =
                 withContext(Dispatchers.IO) {
+                        val keys = canonicalKeyLookupCandidates(canonicalId.key.value)
                         resumeBox
                                 .query(
                                         ObxCanonicalResumeMark_.canonicalKey
-                                                .equal(canonicalId.key.value)
+                                                .oneOf(keys)
                                                 .and(
                                                         ObxCanonicalResumeMark_.profileId.equal(
                                                                 profileId
                                                         )
                                                 )
                                 )
+                                .orderDesc(ObxCanonicalResumeMark_.updatedAt)
                                 .build()
                                 .findFirst()
                                 ?.let { toCanonicalResumeInfo(it) }
@@ -456,6 +593,12 @@ constructor(
                 withContext(Dispatchers.IO) {
                         val now = System.currentTimeMillis()
 
+                        // Converge resume keys: if legacy key was provided, resolve to stored
+                        // canonical key.
+                        val canonicalKeyForWrite =
+                                findCanonicalByAnyKey(canonicalId.key.value)?.canonicalKey
+                                        ?: canonicalId.key.value
+
                         // Calculate percentage for cross-source resume
                         val positionPercent =
                                 if (durationMs > 0) {
@@ -468,7 +611,7 @@ constructor(
                                 resumeBox
                                         .query(
                                                 ObxCanonicalResumeMark_.canonicalKey
-                                                        .equal(canonicalId.key.value)
+                                                        .equal(canonicalKeyForWrite)
                                                         .and(
                                                                 ObxCanonicalResumeMark_.profileId
                                                                         .equal(profileId)
@@ -492,7 +635,7 @@ constructor(
                         } else {
                                 val newResume =
                                         ObxCanonicalResumeMark(
-                                                canonicalKey = canonicalId.key.value,
+                                                canonicalKey = canonicalKeyForWrite,
                                                 profileId = profileId,
                                                 positionPercent = positionPercent,
                                                 positionMs = positionMs,
@@ -512,11 +655,14 @@ constructor(
                 profileId: Long,
         ) =
                 withContext(Dispatchers.IO) {
+                        val canonicalKeyForWrite =
+                                findCanonicalByAnyKey(canonicalId.key.value)?.canonicalKey
+                                        ?: canonicalId.key.value
                         val existing =
                                 resumeBox
                                         .query(
                                                 ObxCanonicalResumeMark_.canonicalKey
-                                                        .equal(canonicalId.key.value)
+                                                        .equal(canonicalKeyForWrite)
                                                         .and(
                                                                 ObxCanonicalResumeMark_.profileId
                                                                         .equal(profileId)
@@ -542,16 +688,18 @@ constructor(
                 profileId: Long,
         ): Unit =
                 withContext(Dispatchers.IO) {
+                        val keys = canonicalKeyLookupCandidates(canonicalId.key.value)
                         resumeBox
                                 .query(
                                         ObxCanonicalResumeMark_.canonicalKey
-                                                .equal(canonicalId.key.value)
+                                                .oneOf(keys)
                                                 .and(
                                                         ObxCanonicalResumeMark_.profileId.equal(
                                                                 profileId
                                                         )
                                                 )
                                 )
+                                .orderDesc(ObxCanonicalResumeMark_.updatedAt)
                                 .build()
                                 .findFirst()
                                 ?.let { resumeBox.remove(it) }
@@ -585,8 +733,10 @@ constructor(
                                 val canonical =
                                         canonicalBox
                                                 .query(
-                                                        ObxCanonicalMedia_.canonicalKey.equal(
-                                                                resume.canonicalKey
+                                                        ObxCanonicalMedia_.canonicalKey.oneOf(
+                                                                canonicalKeyLookupCandidates(
+                                                                        resume.canonicalKey
+                                                                )
                                                         )
                                                 )
                                                 .build()
@@ -620,15 +770,7 @@ constructor(
         override suspend fun verifySourceAvailability(canonicalId: CanonicalMediaId): Int =
                 withContext(Dispatchers.IO) {
                         val canonical =
-                                canonicalBox
-                                        .query(
-                                                ObxCanonicalMedia_.canonicalKey.equal(
-                                                        canonicalId.key.value
-                                                )
-                                        )
-                                        .build()
-                                        .findFirst()
-                                        ?: return@withContext 0
+                                findCanonicalByAnyKey(canonicalId.key.value) ?: return@withContext 0
 
                         // For now, just mark last verified time
                         val now = System.currentTimeMillis()
@@ -731,32 +873,78 @@ constructor(
                 now: Long
         ): List<CanonicalMediaId> =
                 withContext(Dispatchers.IO) {
-                        // Find items without TmdbId that are eligible for search
-                        // Respects cooldown: tmdbNextEligibleAt <= now
-                        canonicalBox
-                                .query()
-                                .isNull(ObxCanonicalMedia_.tmdbId)
-                                .apply {
-                                        // Only include items where cooldown has passed
-                                        // tmdbNextEligibleAt == 0 (never tried) OR
-                                        // tmdbNextEligibleAt <= now
-                                        less(ObxCanonicalMedia_.tmdbNextEligibleAt, now + 1)
-                                }
-                                .orderDesc(ObxCanonicalMedia_.updatedAt)
-                                .build()
-                                .find(0, limit.toLong())
-                                .mapNotNull { obx ->
+                        // Find items without TmdbId that are eligible for search.
+                        // Respects cooldown: tmdbNextEligibleAt <= now OR tmdbNextEligibleAt is
+                        // null (never tried).
+                        // Excludes UNRESOLVABLE_PERMANENT items.
+
+                        fun mapToIds(obxItems: List<ObxCanonicalMedia>): List<CanonicalMediaId> =
+                                obxItems.mapNotNull { obx ->
                                         val kind =
                                                 if (obx.kind == "episode") MediaKind.EPISODE
                                                 else MediaKind.MOVIE
                                         CanonicalMediaId(kind, obx.canonicalKey.asCanonicalId())
                                 }
+
+                        val eligibleNeverTried =
+                                canonicalBox
+                                        .query()
+                                        .isNull(ObxCanonicalMedia_.tmdbId)
+                                        .isNull(ObxCanonicalMedia_.tmdbNextEligibleAt)
+                                        .notEqual(
+                                                ObxCanonicalMedia_.tmdbResolveState,
+                                                TmdbResolveState.UNRESOLVABLE_PERMANENT.name,
+                                                StringOrder.CASE_INSENSITIVE,
+                                        )
+                                        .orderDesc(ObxCanonicalMedia_.updatedAt)
+                                        .build()
+                                        .find(0, limit.toLong())
+
+                        if (eligibleNeverTried.size >= limit) {
+                                return@withContext mapToIds(eligibleNeverTried)
+                        }
+
+                        val remaining = (limit - eligibleNeverTried.size).coerceAtLeast(0)
+                        val eligibleCooldownPassed =
+                                if (remaining > 0) {
+                                        val scanLimit = (remaining * 5).coerceAtMost(500)
+                                        canonicalBox
+                                                .query()
+                                                .isNull(ObxCanonicalMedia_.tmdbId)
+                                                .notNull(ObxCanonicalMedia_.tmdbNextEligibleAt)
+                                                .notEqual(
+                                                        ObxCanonicalMedia_.tmdbResolveState,
+                                                        TmdbResolveState.UNRESOLVABLE_PERMANENT
+                                                                .name,
+                                                        StringOrder.CASE_INSENSITIVE,
+                                                )
+                                                .orderDesc(ObxCanonicalMedia_.updatedAt)
+                                                .build()
+                                                .find(0, scanLimit.toLong())
+                                                .asSequence()
+                                                .filter {
+                                                        it.tmdbNextEligibleAt != null &&
+                                                                it.tmdbNextEligibleAt!! <= now
+                                                }
+                                                .take(remaining)
+                                                .toList()
+                                } else {
+                                        emptyList()
+                                }
+
+                        // Merge and de-duplicate by canonicalKey (defensive).
+                        val merged =
+                                (eligibleNeverTried + eligibleCooldownPassed)
+                                        .distinctBy { it.canonicalKey }
+                                        .take(limit)
+
+                        mapToIds(merged)
                 }
 
         override suspend fun markTmdbDetailsApplied(
                 canonicalId: CanonicalMediaId,
                 tmdbId: com.fishit.player.core.model.ids.TmdbId,
-                resolvedBy: String,
+                resolvedBy: TmdbResolvedBy,
                 resolvedAt: Long,
         ): Unit =
                 withContext(Dispatchers.IO) {
@@ -774,7 +962,7 @@ constructor(
                         val updated =
                                 existing.copy(
                                         tmdbResolveState = "RESOLVED",
-                                        tmdbResolvedBy = resolvedBy,
+                                        tmdbResolvedBy = resolvedBy.name,
                                         tmdbLastResolvedAt = resolvedAt,
                                         tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
                                         lastTmdbAttemptAt = resolvedAt,
@@ -786,7 +974,6 @@ constructor(
 
         override suspend fun markTmdbResolveAttemptFailed(
                 canonicalId: CanonicalMediaId,
-                state: String,
                 reason: String,
                 attemptAt: Long,
                 nextEligibleAt: Long,
@@ -803,12 +990,26 @@ constructor(
                                         .findFirst()
                                         ?: return@withContext
 
+                        val nextAttempts = existing.tmdbResolveAttempts + 1
+
+                        val nextState =
+                                if (nextAttempts >= TmdbResolvePolicy.MAX_ATTEMPTS)
+                                        TmdbResolveState.UNRESOLVABLE_PERMANENT.name
+                                else TmdbResolveState.UNRESOLVED.name
+
                         val updated =
                                 existing.copy(
-                                        tmdbResolveState = state,
-                                        tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
+                                        tmdbResolveState = nextState,
+                                        tmdbResolveAttempts = nextAttempts,
                                         lastTmdbAttemptAt = attemptAt,
-                                        tmdbNextEligibleAt = nextEligibleAt,
+                                        tmdbNextEligibleAt =
+                                                if (nextState ==
+                                                                TmdbResolveState
+                                                                        .UNRESOLVABLE_PERMANENT
+                                                                        .name
+                                                )
+                                                        null
+                                                else nextEligibleAt,
                                         tmdbLastFailureReason = reason,
                                         updatedAt = attemptAt,
                                 )
@@ -818,6 +1019,7 @@ constructor(
         override suspend fun markTmdbResolved(
                 canonicalId: CanonicalMediaId,
                 tmdbId: com.fishit.player.core.model.ids.TmdbId,
+                resolvedBy: TmdbResolvedBy,
                 resolvedAt: Long,
         ): Unit =
                 withContext(Dispatchers.IO) {
@@ -836,7 +1038,7 @@ constructor(
                                 existing.copy(
                                         tmdbId = tmdbId.value.toString(),
                                         tmdbResolveState = "RESOLVED",
-                                        tmdbResolvedBy = "SEARCH_MATCH",
+                                        tmdbResolvedBy = resolvedBy.name,
                                         tmdbLastResolvedAt = resolvedAt,
                                         tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
                                         lastTmdbAttemptAt = resolvedAt,
@@ -849,7 +1051,7 @@ constructor(
         override suspend fun updateTmdbEnriched(
                 canonicalId: CanonicalMediaId,
                 enriched: NormalizedMediaMetadata,
-                resolvedBy: String,
+                resolvedBy: TmdbResolvedBy,
                 resolvedAt: Long,
         ): Unit =
                 withContext(Dispatchers.IO) {
@@ -888,7 +1090,7 @@ constructor(
                                         year = enriched.year ?: existing.year,
                                         // TMDB resolve state
                                         tmdbResolveState = "RESOLVED",
-                                        tmdbResolvedBy = resolvedBy,
+                                        tmdbResolvedBy = resolvedBy.name,
                                         tmdbLastResolvedAt = resolvedAt,
                                         tmdbResolveAttempts = existing.tmdbResolveAttempts + 1,
                                         lastTmdbAttemptAt = resolvedAt,
@@ -922,11 +1124,12 @@ constructor(
                 canonical: ObxCanonicalMedia
         ): CanonicalMediaWithSources? {
                 val kind = if (canonical.kind == "episode") MediaKind.EPISODE else MediaKind.MOVIE
-                val mediaType = try {
-                        MediaType.valueOf(canonical.mediaType)
-                } catch (e: Exception) {
-                        MediaType.UNKNOWN
-                }
+                val mediaType =
+                        try {
+                                MediaType.valueOf(canonical.mediaType)
+                        } catch (e: Exception) {
+                                MediaType.UNKNOWN
+                        }
                 val sources = canonical.sources.map { toMediaSourceRef(it) }
 
                 return CanonicalMediaWithSources(

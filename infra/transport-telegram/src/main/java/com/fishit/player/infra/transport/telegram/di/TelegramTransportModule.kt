@@ -12,6 +12,7 @@ import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
 import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
+import com.fishit.player.infra.transport.telegram.TelegramTdlibClientFactory
 import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
@@ -37,9 +38,9 @@ import kotlinx.coroutines.SupervisorJob
  * - One TdlClient, one orchestrating wrapper, one truth
  *
  * **v2 Architecture:**
- * - Accepts TdlClient directly (not TdlibClientProvider which is v1 legacy)
- * - TdlClient must be provided by the app module (requires Android Context for initialization)
- * - App module handles TDLib parameter setup, logging installation, and lifecycle
+ * - Uses a single process-wide TdlClient internally (no provider pattern exposed)
+ * - TdlClient is provided by the transport module (no TDLib types leak into app-v2)
+ * - TelegramSessionConfig remains provided by app-v2 (requires Android Context)
  *
  * **Provided Interfaces (all backed by single TelegramClient instance):**
  * - [TelegramClient]
@@ -67,6 +68,11 @@ object TelegramTransportModule {
 
     private const val TELEGRAM_AUTH_SCOPE = "TelegramAuthScope"
     private const val TELEGRAM_FILE_SCOPE = "TelegramFileScope"
+
+        /** Provides the shared TdlClient instance (exactly one per process). */
+        @Provides
+        @Singleton
+        fun provideTdlClient(): TdlClient = TelegramTdlibClientFactory.create()
 
     /** Provides a dedicated coroutine scope for Telegram auth operations. */
     @Provides

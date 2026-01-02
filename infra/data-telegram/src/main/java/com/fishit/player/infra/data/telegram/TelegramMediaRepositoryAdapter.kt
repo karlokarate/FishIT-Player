@@ -4,8 +4,8 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.toUriString
-import com.fishit.player.feature.telegram.domain.TelegramMediaItem
-import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

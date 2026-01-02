@@ -179,7 +179,7 @@ The following v1 components must be ported directly to `:pipeline:telegram`:
 
 - Port `ObxStore` singleton pattern to `:core:persistence`
 - Reuse v1 entity definitions (`ObxEntities.kt`) directly - specifically `ObxTelegramMessage`
-- Adapt `ResumeRepository` to implement v2 `ResumeManager` interface
+- Implement/maintain v2 `ResumeManager` backed by canonical media storage (`CanonicalMediaRepository`)
 
 ### Checklist
 

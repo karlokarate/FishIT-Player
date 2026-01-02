@@ -9,8 +9,8 @@ import com.fishit.player.core.persistence.obx.ObxCanonicalMedia_
 import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark
 import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark_
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
-import com.fishit.player.feature.home.domain.HomeContentRepository
-import com.fishit.player.feature.home.domain.HomeMediaItem
+import com.fishit.player.core.home.domain.HomeContentRepository
+import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
@@ -111,15 +111,24 @@ class HomeContentRepositoryAdapter @Inject constructor(
     /**
      * Observe recently added items across all sources.
      *
+     * **PLATINUM Episode Filtering:**
+     * - Excludes SERIES_EPISODE mediaType - episodes NEVER appear as standalone tiles
+     * - Episodes belong inside SeriesDetail, accessed via Series tile navigation
+     * - Shows only top-level content: MOVIE, SERIES, LIVE, CLIP, AUDIOBOOK, etc.
+     *
      * **Implementation:**
      * - Queries ObxCanonicalMedia sorted by createdAt DESC
+     * - Filters OUT mediaType = SERIES_EPISODE
      * - Limited to [RECENTLY_ADDED_LIMIT] items (FireTV-safe)
      * - Maps to HomeMediaItem with isNew = true for items added in last 7 days
      * - Determines navigationSource deterministically using source priority:
      *   XTREAM > TELEGRAM > IO (never SourceType.OTHER)
      */
     override fun observeRecentlyAdded(): Flow<List<HomeMediaItem>> {
-        val query = canonicalMediaBox.query()
+        // PLATINUM: Exclude SERIES_EPISODE - episodes belong inside SeriesDetail
+        val query = canonicalMediaBox.query(
+            ObxCanonicalMedia_.mediaType.notEqual("SERIES_EPISODE")
+        )
             .orderDesc(ObxCanonicalMedia_.createdAt)
             .build()
 
@@ -292,14 +301,20 @@ class HomeContentRepositoryAdapter @Inject constructor(
     /**
      * Observe all series from all sources (cross-pipeline).
      *
-     * Queries ObxCanonicalMedia where mediaType = "SERIES" or "SERIES_EPISODE".
-     * Groups by series (distinct by canonicalTitle).
+     * **PLATINUM Episode Filtering:**
+     * - Queries ONLY mediaType = "SERIES" - series entries created during sync
+     * - Does NOT query SERIES_EPISODE - episodes belong inside SeriesDetail
+     * - Each series tile navigates to SeriesDetail where seasons/episodes are loaded
+     *
+     * **Architecture:**
+     * - Series tiles → SeriesDetail → SeasonSelector → EpisodeList
+     * - Episodes are NEVER shown as standalone tiles
+     * - Episode data lives in XtreamSeriesIndexRepository (lazy loaded)
      */
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
-        // Query for series + episodes - we'll dedupe by series title
-        // Use oneOf() for ObjectBox "IN" clause equivalent
+        // PLATINUM: Query ONLY SERIES - episodes are accessed via SeriesDetail
         val query = canonicalMediaBox.query(
-            ObxCanonicalMedia_.mediaType.oneOf(arrayOf("SERIES", "SERIES_EPISODE"))
+            ObxCanonicalMedia_.mediaType.equal("SERIES")
         )
             .orderDesc(ObxCanonicalMedia_.createdAt)
             .build()
@@ -309,38 +324,27 @@ class HomeContentRepositoryAdapter @Inject constructor(
                 val now = System.currentTimeMillis()
                 val sevenDaysAgo = now - SEVEN_DAYS_MS
                 
-                // Dedupe by canonicalTitle to show each series once
-                val seenTitles = mutableSetOf<String>()
-                // No limit - LazyRow handles virtualization
-                canonicalMediaList
-                    .filter { canonical ->
-                        val titleLower = canonical.canonicalTitle.lowercase()
-                        if (titleLower in seenTitles) {
-                            false
-                        } else {
-                            seenTitles.add(titleLower)
-                            true
-                        }
+                // No deduplication needed - SERIES entries are already unique per series title
+                // (episodes have their own canonical keys like "episode:title:S01E01")
+                canonicalMediaList.map { canonical ->
+                    val sourcesLoaded = canonical.sources
+                    val bestSource = if (sourcesLoaded.isEmpty()) {
+                        SourceType.UNKNOWN
+                    } else {
+                        selectBestSourceType(sourcesLoaded)
                     }
-                    .map { canonical ->
-                        val sourcesLoaded = canonical.sources
-                        val bestSource = if (sourcesLoaded.isEmpty()) {
-                            SourceType.UNKNOWN
-                        } else {
-                            selectBestSourceType(sourcesLoaded)
-                        }
-                        val allSourceTypes = if (sourcesLoaded.isEmpty()) {
-                            listOf(SourceType.UNKNOWN)
-                        } else {
-                            extractAllSourceTypes(sourcesLoaded)
-                        }
-                        
-                        canonical.toHomeMediaItem(
-                            isNew = canonical.createdAt >= sevenDaysAgo,
-                            navigationSource = bestSource,
-                            sourceTypes = allSourceTypes
-                        )
+                    val allSourceTypes = if (sourcesLoaded.isEmpty()) {
+                        listOf(SourceType.UNKNOWN)
+                    } else {
+                        extractAllSourceTypes(sourcesLoaded)
                     }
+                    
+                    canonical.toHomeMediaItem(
+                        isNew = canonical.createdAt >= sevenDaysAgo,
+                        navigationSource = bestSource,
+                        sourceTypes = allSourceTypes
+                    )
+                }
             }
             .catch { throwable ->
                 UnifiedLog.e(TAG, throwable) { "Failed to observe series" }

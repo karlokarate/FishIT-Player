@@ -1,5 +1,6 @@
 package com.fishit.player.pipeline.xtream.catalog
 
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
@@ -7,6 +8,13 @@ import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
 import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /**
  * Default implementation of [XtreamCatalogSource] that delegates to [XtreamPipelineAdapter].
@@ -14,7 +22,7 @@ import javax.inject.Singleton
  * This implementation:
  * - Loads content via the pipeline adapter (which wraps XtreamApiClient)
  * - Handles errors by wrapping in XtreamCatalogSourceException
- * - Episodes are loaded per-series (batch loading via loadAllEpisodes)
+ * - **PLATINUM:** Episodes loaded in parallel with streaming results
  *
  * **Architecture:**
  * - Pipeline Layer: This source uses XtreamPipelineAdapter
@@ -42,6 +50,11 @@ class DefaultXtreamCatalogSource @Inject constructor(
         }
     }
 
+    @Deprecated(
+        message = "Use loadEpisodesStreaming() for parallel loading with checkpoint support",
+        replaceWith = ReplaceWith("loadEpisodesStreaming()")
+    )
+    @Suppress("DEPRECATION")
     override suspend fun loadEpisodes(): List<XtreamEpisode> {
         return try {
             // First load all series, then fetch episodes for each
@@ -54,14 +67,148 @@ class DefaultXtreamCatalogSource @Inject constructor(
                     val episodes = adapter.loadEpisodes(seriesItem.id, seriesItem.name)
                     allEpisodes.addAll(episodes)
                 } catch (e: Exception) {
-                    // Log and continue - don't fail entire load for one series
-                    // UnifiedLog.w(TAG, "Failed to load episodes for series ${seriesItem.id}", e)
+                    UnifiedLog.w(TAG) { "Failed to load episodes for series ${seriesItem.id}: ${e.message}" }
                 }
             }
             
             allEpisodes
         } catch (e: Exception) {
             throw XtreamCatalogSourceException("Failed to load episodes", e)
+        }
+    }
+
+    /**
+     * PLATINUM: Stream episodes from all series with parallel loading.
+     *
+     * **Performance Characteristics:**
+     * - 4 concurrent series by default (configurable via [parallelism])
+     * - ~4x faster than sequential loading for typical catalogs
+     * - Memory-efficient: episodes emitted immediately, not accumulated
+     * - Checkpoint-friendly: skip already-processed series via [excludeSeriesIds]
+     *
+     * **Flow Emission Order:**
+     * For each series (in parallel):
+     * 1. EpisodeBatchResult.Batch (if series has episodes)
+     * 2. EpisodeBatchResult.SeriesComplete OR EpisodeBatchResult.SeriesFailed
+     *
+     * @param parallelism Max concurrent getSeriesInfo() calls
+     * @param excludeSeriesIds Series to skip (for checkpoint resume)
+     */
+    override fun loadEpisodesStreaming(
+        parallelism: Int,
+        excludeSeriesIds: Set<Int>,
+    ): Flow<EpisodeBatchResult> = channelFlow {
+        val startTimeMs = System.currentTimeMillis()
+        
+        // Step 1: Load series list
+        val allSeries = try {
+            adapter.loadSeriesItems()
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Failed to load series list for episode streaming" }
+            throw XtreamCatalogSourceException("Failed to load series list", e)
+        }
+        
+        // Step 2: Filter out already-processed series
+        val seriesToProcess = if (excludeSeriesIds.isEmpty()) {
+            allSeries
+        } else {
+            allSeries.filter { it.id !in excludeSeriesIds }
+        }
+        
+        val totalSeries = allSeries.size
+        val skippedSeries = totalSeries - seriesToProcess.size
+        
+        UnifiedLog.i(TAG) {
+            "Episode streaming: $totalSeries series total, $skippedSeries skipped, " +
+            "${seriesToProcess.size} to process (parallelism=$parallelism)"
+        }
+        
+        if (seriesToProcess.isEmpty()) {
+            UnifiedLog.d(TAG) { "No series to process for episodes" }
+            return@channelFlow
+        }
+        
+        // Step 3: Process series in parallel with semaphore limiting
+        val semaphore = Semaphore(parallelism)
+        var completedCount = 0
+        var failedCount = 0
+        var totalEpisodes = 0
+        val lock = Any()
+        
+        supervisorScope {
+            seriesToProcess.map { seriesItem ->
+                async {
+                    semaphore.withPermit {
+                        val result = processSeriesEpisodes(seriesItem)
+                        synchronized(lock) {
+                            when (result) {
+                                is ProcessResult.Success -> {
+                                    completedCount++
+                                    totalEpisodes += result.episodeCount
+                                }
+                                is ProcessResult.Failed -> failedCount++
+                            }
+                        }
+                    }
+                }
+            }.awaitAll()
+        }
+        
+        val durationMs = System.currentTimeMillis() - startTimeMs
+        UnifiedLog.i(TAG) {
+            "Episode streaming complete: ${seriesToProcess.size} series in ${durationMs}ms " +
+            "(completed=$completedCount, failed=$failedCount, episodes=$totalEpisodes)"
+        }
+    }
+    
+    /** Internal result type for process tracking. */
+    private sealed class ProcessResult {
+        data class Success(val episodeCount: Int) : ProcessResult()
+        data object Failed : ProcessResult()
+    }
+    
+    /**
+     * Process a single series: load episodes and emit results.
+     * 
+     * @return ProcessResult for counter tracking
+     */
+    private suspend fun kotlinx.coroutines.channels.SendChannel<EpisodeBatchResult>.processSeriesEpisodes(
+        seriesItem: XtreamSeriesItem
+    ): ProcessResult {
+        return try {
+            val episodes = adapter.loadEpisodes(seriesItem.id, seriesItem.name)
+            
+            if (episodes.isNotEmpty()) {
+                send(
+                    EpisodeBatchResult.Batch(
+                        seriesId = seriesItem.id,
+                        seriesName = seriesItem.name,
+                        episodes = episodes,
+                    )
+                )
+            }
+            
+            send(
+                EpisodeBatchResult.SeriesComplete(
+                    seriesId = seriesItem.id,
+                    episodeCount = episodes.size,
+                )
+            )
+            
+            if (episodes.isNotEmpty()) {
+                UnifiedLog.v(TAG) { "Series ${seriesItem.id} (${seriesItem.name}): ${episodes.size} episodes" }
+            }
+            
+            ProcessResult.Success(episodes.size)
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG) { "Series ${seriesItem.id} (${seriesItem.name}) failed: ${e.message}" }
+            send(
+                EpisodeBatchResult.SeriesFailed(
+                    seriesId = seriesItem.id,
+                    error = e,
+                )
+            )
+            ProcessResult.Failed
         }
     }
 

@@ -2,7 +2,7 @@ package com.fishit.player.infra.data.xtream
 
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
-import com.fishit.player.feature.onboarding.domain.XtreamConfig
+import com.fishit.player.core.onboarding.domain.XtreamConfig
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState

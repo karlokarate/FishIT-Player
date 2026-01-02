@@ -11,7 +11,7 @@ package com.fishit.player.infra.transport.xtream
  *    - Used by: XtreamApiClient, metadata fetching
  *
  * 2. **PLAYBACK Headers** (for media streaming):
- *    - Accept: */*
+ *    - Accept: *&#47;*
  *    - Accept-Encoding: identity (NO compression - critical for streams!)
  *    - Used by: XtreamPlaybackSourceFactoryImpl, OkHttpDataSource
  *
@@ -97,7 +97,7 @@ object XtreamHttpHeaders {
      *
      * **CRITICAL for legacy-parity and Cloudflare compatibility:**
      * - User-Agent: FishIT-Player/2.x (Android)
-     * - Accept: */* (NOT application/json!)
+    * - Accept: *&#47;* (NOT application/json!)
      * - Accept-Encoding: identity (NO compression - critical!)
      * - Optional: Icy-MetaData: 1 (for IPTV stream metadata)
      *

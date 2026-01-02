@@ -2,9 +2,9 @@ package com.fishit.player.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fishit.player.feature.library.domain.LibraryCategory
-import com.fishit.player.feature.library.domain.LibraryContentRepository
-import com.fishit.player.feature.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibraryCategory
+import com.fishit.player.core.library.domain.LibraryContentRepository
+import com.fishit.player.core.library.domain.LibraryMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi

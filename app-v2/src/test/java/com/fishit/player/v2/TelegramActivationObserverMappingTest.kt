@@ -224,6 +224,8 @@ class TelegramActivationObserverMappingTest {
         override suspend fun sendPassword(password: String) {}
 
         override suspend fun logout() {}
+
+        override suspend fun getCurrentUserId(): Long? = 123456789L
     }
 
     private class FakeSourceActivationStore : SourceActivationStore {

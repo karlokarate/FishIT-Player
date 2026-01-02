@@ -7,7 +7,7 @@ package com.fishit.player.core.catalogsync
  * The checkpoint is encoded as a stable string format for persistence in
  * WorkManager progress or DataStore.
  *
- * **Format:** `xtream|phase=<PHASE>|offset=<N>|extra=<...>`
+ * **Format:** `xtream|v=2|phase=<PHASE>|offset=<N>|processed_series=<id1,id2,...>|extra=<...>`
  *
  * **Phases (in execution order):**
  * 1. VOD_LIST - Scanning VOD items
@@ -18,9 +18,15 @@ package com.fishit.player.core.catalogsync
  * 6. SERIES_INFO - Backfilling series info
  * 7. COMPLETED - Scan fully completed
  *
+ * **PLATINUM Episode Checkpoint:**
+ * - `processedSeriesIds` tracks which series have had their episodes loaded
+ * - On resume, these series are skipped in `loadEpisodesStreaming(excludeSeriesIds)`
+ * - Enables incremental episode loading across worker runs
+ *
  * @property phase Current sync phase
  * @property offset Progress within the current phase (e.g., index in list)
- * @property seriesIndex For SERIES_EPISODES: which series we're processing
+ * @property seriesIndex For SERIES_EPISODES: which series we're processing (legacy)
+ * @property processedSeriesIds Series IDs whose episodes have been fully loaded (PLATINUM)
  * @property lastVodInfoId For VOD_INFO: last processed VOD ID
  * @property lastSeriesInfoId For SERIES_INFO: last processed series ID
  */
@@ -28,15 +34,19 @@ data class XtreamSyncCheckpoint(
     val phase: XtreamSyncPhase,
     val offset: Int = 0,
     val seriesIndex: Int = 0,
+    val processedSeriesIds: Set<Int> = emptySet(),
     val lastVodInfoId: Int? = null,
     val lastSeriesInfoId: Int? = null,
 ) {
     companion object {
         private const val PREFIX = "xtream"
+        private const val VERSION = 2
         private const val SEPARATOR = "|"
+        private const val KEY_VERSION = "v"
         private const val KEY_PHASE = "phase"
         private const val KEY_OFFSET = "offset"
         private const val KEY_SERIES_INDEX = "series_index"
+        private const val KEY_PROCESSED_SERIES = "processed_series"
         private const val KEY_LAST_VOD_INFO_ID = "last_vod_info_id"
         private const val KEY_LAST_SERIES_INFO_ID = "last_series_info_id"
 
@@ -45,6 +55,8 @@ data class XtreamSyncCheckpoint(
 
         /**
          * Decode checkpoint from string representation.
+         *
+         * Supports both v1 (legacy) and v2 (with processedSeriesIds) formats.
          *
          * @param encoded Encoded checkpoint string
          * @return Decoded checkpoint or [INITIAL] if parsing fails
@@ -66,10 +78,18 @@ data class XtreamSyncCheckpoint(
             val phaseName = map[KEY_PHASE] ?: return INITIAL
             val phase = XtreamSyncPhase.entries.find { it.name == phaseName } ?: return INITIAL
 
+            // Parse processedSeriesIds (comma-separated integers)
+            val processedSeriesIds = map[KEY_PROCESSED_SERIES]
+                ?.split(",")
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.toSet()
+                ?: emptySet()
+
             return XtreamSyncCheckpoint(
                 phase = phase,
                 offset = map[KEY_OFFSET]?.toIntOrNull() ?: 0,
                 seriesIndex = map[KEY_SERIES_INDEX]?.toIntOrNull() ?: 0,
+                processedSeriesIds = processedSeriesIds,
                 lastVodInfoId = map[KEY_LAST_VOD_INFO_ID]?.toIntOrNull(),
                 lastSeriesInfoId = map[KEY_LAST_SERIES_INFO_ID]?.toIntOrNull(),
             )
@@ -85,6 +105,8 @@ data class XtreamSyncCheckpoint(
         buildString {
             append(PREFIX)
             append(SEPARATOR)
+            append("$KEY_VERSION=$VERSION")
+            append(SEPARATOR)
             append("$KEY_PHASE=${phase.name}")
             append(SEPARATOR)
             append("$KEY_OFFSET=$offset")
@@ -92,6 +114,10 @@ data class XtreamSyncCheckpoint(
             if (seriesIndex > 0) {
                 append(SEPARATOR)
                 append("$KEY_SERIES_INDEX=$seriesIndex")
+            }
+            if (processedSeriesIds.isNotEmpty()) {
+                append(SEPARATOR)
+                append("$KEY_PROCESSED_SERIES=${processedSeriesIds.joinToString(",")}")
             }
             lastVodInfoId?.let {
                 append(SEPARATOR)
@@ -119,7 +145,15 @@ data class XtreamSyncCheckpoint(
                 XtreamSyncPhase.SERIES_INFO -> XtreamSyncPhase.COMPLETED
                 XtreamSyncPhase.COMPLETED -> XtreamSyncPhase.COMPLETED
             }
-        return XtreamSyncCheckpoint(phase = nextPhase)
+        // Clear processedSeriesIds when moving past SERIES_EPISODES phase
+        // (they are only relevant for episode loading resume)
+        val clearProcessed = phase == XtreamSyncPhase.SERIES_EPISODES
+        return copy(
+            phase = nextPhase,
+            offset = 0,
+            seriesIndex = 0,
+            processedSeriesIds = if (clearProcessed) emptySet() else processedSeriesIds,
+        )
     }
 
     /**
@@ -137,6 +171,35 @@ data class XtreamSyncCheckpoint(
      * @return Updated checkpoint
      */
     fun withSeriesIndex(newSeriesIndex: Int): XtreamSyncCheckpoint = copy(seriesIndex = newSeriesIndex)
+
+    /**
+     * Mark a series as having its episodes fully processed.
+     *
+     * **PLATINUM:** Used during parallel episode streaming to track progress.
+     * On next run, these series are excluded from episode loading.
+     *
+     * @param seriesId The series ID that completed episode loading
+     * @return Updated checkpoint with series added to processed set
+     */
+    fun withProcessedSeries(seriesId: Int): XtreamSyncCheckpoint =
+        copy(processedSeriesIds = processedSeriesIds + seriesId)
+
+    /**
+     * Mark multiple series as having their episodes fully processed.
+     *
+     * @param seriesIds Series IDs that completed episode loading
+     * @return Updated checkpoint with all series added to processed set
+     */
+    fun withProcessedSeriesAll(seriesIds: Collection<Int>): XtreamSyncCheckpoint =
+        copy(processedSeriesIds = processedSeriesIds + seriesIds)
+
+    /**
+     * Clear processed series (for force rescan).
+     *
+     * @return Checkpoint with empty processedSeriesIds
+     */
+    fun clearProcessedSeries(): XtreamSyncCheckpoint =
+        copy(processedSeriesIds = emptySet())
 
     /**
      * Update last processed VOD info ID.
@@ -176,6 +239,10 @@ data class XtreamSyncCheckpoint(
                     XtreamSyncPhase.VOD_INFO,
                     XtreamSyncPhase.SERIES_INFO,
                 )
+
+    /** Number of series whose episodes have been processed */
+    val processedSeriesCount: Int
+        get() = processedSeriesIds.size
 }
 
 /**

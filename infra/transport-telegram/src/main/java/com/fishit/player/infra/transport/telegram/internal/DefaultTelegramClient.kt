@@ -97,6 +97,10 @@ internal class DefaultTelegramClient(
         authSession.logout()
     }
 
+    override suspend fun getCurrentUserId(): Long? {
+        return authSession.getCurrentUserId()
+    }
+
     // ========== TelegramHistoryClient ==========
 
     override val messageUpdates: Flow<TgMessage> = chatBrowser.messageUpdates

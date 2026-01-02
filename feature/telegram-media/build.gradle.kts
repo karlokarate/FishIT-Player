@@ -30,8 +30,8 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:telegrammedia-domain"))
     implementation(project(":core:feature-api"))
-    implementation(project(":core:persistence"))
     implementation(project(":core:player-model"))
     implementation(project(":core:ui-imaging"))
     implementation(project(":playback:domain"))

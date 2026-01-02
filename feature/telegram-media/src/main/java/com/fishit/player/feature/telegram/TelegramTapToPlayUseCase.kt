@@ -2,7 +2,7 @@ package com.fishit.player.feature.telegram
 
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.playback.domain.PlayerEntryPoint
 import javax.inject.Inject

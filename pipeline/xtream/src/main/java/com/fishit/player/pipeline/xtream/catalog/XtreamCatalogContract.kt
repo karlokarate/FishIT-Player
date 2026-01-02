@@ -46,6 +46,8 @@ interface XtreamCatalogPipeline {
  * @property includeSeries Include series containers in the scan
  * @property includeEpisodes Include series episodes in the scan
  * @property includeLive Include live channels in the scan
+ * @property excludeSeriesIds Series IDs to skip during episode loading (for checkpoint resume)
+ * @property episodeParallelism Max concurrent series for parallel episode loading (PLATINUM)
  * @property imageAuthHeaders Optional headers for authenticated image access
  */
 data class XtreamCatalogConfig(
@@ -53,9 +55,14 @@ data class XtreamCatalogConfig(
     val includeSeries: Boolean = true,
     val includeEpisodes: Boolean = true,
     val includeLive: Boolean = true,
+    val excludeSeriesIds: Set<Int> = emptySet(),
+    val episodeParallelism: Int = DEFAULT_EPISODE_PARALLELISM,
     val imageAuthHeaders: Map<String, String> = emptyMap(),
 ) {
     companion object {
+        /** Default parallelism for episode loading (4 concurrent series). */
+        const val DEFAULT_EPISODE_PARALLELISM = 4
+
         /** Default config including all content types. */
         val DEFAULT = XtreamCatalogConfig()
 
@@ -175,6 +182,34 @@ sealed interface XtreamCatalogEvent {
         val reason: String,
         val message: String,
         val throwable: Throwable? = null,
+    ) : XtreamCatalogEvent
+
+    /**
+     * A series episode loading completed (PLATINUM parallel streaming).
+     *
+     * Emitted when all episodes for a specific series have been loaded.
+     * Used for checkpoint tracking to enable cross-run resume.
+     *
+     * @property seriesId The series ID that completed loading
+     * @property episodeCount Number of episodes loaded for this series
+     */
+    data class SeriesEpisodeComplete(
+        val seriesId: Int,
+        val episodeCount: Int,
+    ) : XtreamCatalogEvent
+
+    /**
+     * A series episode loading failed (PLATINUM parallel streaming).
+     *
+     * Emitted when loading episodes for a series fails.
+     * Series won't be added to processedSeriesIds for retry on next run.
+     *
+     * @property seriesId The series ID that failed
+     * @property reason Error description
+     */
+    data class SeriesEpisodeFailed(
+        val seriesId: Int,
+        val reason: String,
     ) : XtreamCatalogEvent
 }
 

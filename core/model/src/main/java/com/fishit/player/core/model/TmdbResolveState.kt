@@ -24,18 +24,16 @@ enum class TmdbResolveState {
     RESOLVED,
 
     /**
-     * Multiple TMDB results had similar scores.
-     * - TmdbRef NOT set (ambiguous matches are not committed)
-     * - May be retried after cooldown or with better metadata
+     * Permanently unresolvable (max attempts, no match, marked skip).
+     *
+     * The canonical item remains in storage, but workers should stop trying to resolve it.
      */
-    AMBIGUOUS,
+    UNRESOLVABLE_PERMANENT,
 
     /**
-     * TMDB resolution failed (API error, no results, etc.).
-     * - May be retried after cooldown
-     * - tmdbLastFailureReason contains error details
+     * Was resolved but needs refresh (stale SSOT).
      */
-    FAILED,
+    STALE_REFRESH_REQUIRED,
 }
 
 /**

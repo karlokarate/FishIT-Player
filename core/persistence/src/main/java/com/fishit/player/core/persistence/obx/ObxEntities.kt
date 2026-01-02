@@ -187,22 +187,6 @@ data class ObxScreenTimeEntry(
     var limitMinutes: Int = 0,
 )
 
-@Entity
-data class ObxResumeMark(
-    @Id var id: Long = 0,
-    @Index var type: String = "vod", // vod | series | live | telegram | audiobook | io
-    // VOD: encoded media id (OBX scheme) to avoid Room mapping
-    @Index var mediaEncodedId: Long? = null,
-    // Series: composite identification for OBX episodes (when xtream episode id is not present)
-    @Index var seriesId: Int? = null,
-    @Index var season: Int? = null,
-    @Index var episodeNum: Int? = null,
-    // ContentId scheme support (e.g., "vod:123", "series:456:1:3")
-    @Index var contentId: String? = null,
-    var positionSecs: Int = 0,
-    @Index var updatedAt: Long = 0,
-)
-
 /**
  * ObjectBox entity for Telegram media items.
  *

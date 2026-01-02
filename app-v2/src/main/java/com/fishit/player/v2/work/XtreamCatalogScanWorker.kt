@@ -58,8 +58,8 @@ constructor(
 ) : CoroutineWorker(context, workerParams) {
     companion object {
         private const val TAG = "XtreamCatalogScanWorker"
-        private const val INFO_BACKFILL_BATCH_SIZE = 10
-        private const val INFO_BACKFILL_THROTTLE_MS = 200L
+        private const val INFO_BACKFILL_BATCH_SIZE = 25   // Tuned Dec 2025: HTTP can parallelize more
+        private const val INFO_BACKFILL_THROTTLE_MS = 100L // Tuned Dec 2025: Most providers allow this
     }
 
     override suspend fun doWork(): Result {
@@ -264,11 +264,21 @@ constructor(
                         emitProgressEvery = input.batchSize,
                 )
 
+        // PLATINUM: Pass already-processed series IDs for checkpoint resume
+        val excludeSeriesIds = checkpoint.processedSeriesIds
+
+        if (excludeSeriesIds.isNotEmpty()) {
+            UnifiedLog.i(TAG) {
+                "Resuming episode scan: skipping ${excludeSeriesIds.size} already-processed series"
+            }
+        }
+
         catalogSyncService.syncXtream(
                         includeVod = includeVod,
                         includeSeries = includeSeries,
                         includeEpisodes = includeEpisodes,
                         includeLive = includeLive,
+                        excludeSeriesIds = excludeSeriesIds,
                         syncConfig = syncConfig,
                 )
                 .collect { status ->
@@ -324,6 +334,17 @@ constructor(
                         }
                         is SyncStatus.Error -> {
                             throw status.throwable ?: RuntimeException(status.message)
+                        }
+                        is SyncStatus.SeriesEpisodeComplete -> {
+                            // PLATINUM: Track completed series for checkpoint resume
+                            currentCheckpoint = currentCheckpoint.withProcessedSeries(status.seriesId)
+                            UnifiedLog.v(TAG) {
+                                "Series ${status.seriesId} episodes complete: ${status.episodeCount} eps, " +
+                                        "processed=${currentCheckpoint.processedSeriesCount}"
+                            }
+                        }
+                        is SyncStatus.TelegramChatComplete -> {
+                            // N/A for Xtream - ignore
                         }
                     }
                 }

@@ -21,7 +21,7 @@ import io.objectbox.relation.ToMany
  * - Multiple sources are linked via ObxMediaSourceRef
  * - Resume positions are tied to the canonical identity, not individual sources
  *
- * @property canonicalKey Stable identity key (e.g., "tmdb:12345" or "movie:inception:2010")
+ * @property canonicalKey Stable identity key (e.g., "tmdb:movie:12345" or "movie:inception:2010")
  * @property kind MOVIE or EPISODE
  * @property canonicalTitle Normalized title (cleaned, deterministic)
  * @property year Release year
@@ -46,7 +46,7 @@ import io.objectbox.relation.ToMany
 @Entity
 data class ObxCanonicalMedia(
         @Id var id: Long = 0,
-        /** Unique canonical identity key (e.g., "tmdb:550" or "movie:fight-club:1999") */
+    /** Unique canonical identity key (e.g., "tmdb:movie:550" or "movie:fight-club:1999") */
         @Unique @Index var canonicalKey: String = "",
         /** Media kind: "movie" or "episode" */
         @Index var kind: String = "movie",
@@ -107,8 +107,12 @@ data class ObxCanonicalMedia(
         var releaseDate: String? = null,
         // === TMDB Resolve State (per TMDB_ENRICHMENT_CONTRACT.md T-15/T-16) ===
         /**
-         * TMDB resolution state: UNRESOLVED, RESOLVED, AMBIGUOUS, FAILED.
-         * @see TmdbResolveState
+         * TMDB resolution state.
+         *
+         * Per TMDB_ENRICHMENT_CONTRACT.md T-16:
+         * UNRESOLVED, RESOLVED, UNRESOLVABLE_PERMANENT, STALE_REFRESH_REQUIRED.
+         *
+         * @see com.fishit.player.core.model.TmdbResolveState
          */
         @Index var tmdbResolveState: String = "UNRESOLVED",
         /** Number of TMDB search attempts for this item */
@@ -117,7 +121,7 @@ data class ObxCanonicalMedia(
         var lastTmdbAttemptAt: Long? = null,
         /** Next eligible timestamp for TMDB resolution (cooldown enforcement) */
         @Index var tmdbNextEligibleAt: Long? = null,
-        /** Last failure reason (if tmdbResolveState is FAILED or AMBIGUOUS) */
+        /** Last failure reason (diagnostics). */
         var tmdbLastFailureReason: String? = null,
         /** Timestamp when TMDB resolution succeeded */
         var tmdbLastResolvedAt: Long? = null,
@@ -228,7 +232,7 @@ data class ObxMediaSourceRef(
  * and runtimes for the SAME movie. The canonical resume uses percentage-based positioning to enable
  * cross-source resuming.
  *
- * @property canonicalKey The canonical media key (e.g., "tmdb:550")
+ * @property canonicalKey The canonical media key (e.g., "tmdb:movie:550")
  * @property profileId User profile ID for multi-profile support
  * @property positionPercent Playback position as percentage (0.0 - 1.0) - PRIMARY for cross-source
  * @property positionMs Position in milliseconds from LAST source played (for same-source resume)
@@ -295,7 +299,15 @@ object CanonicalKeyGenerator {
     private const val MOVIE_PREFIX = "movie:"
     private const val EPISODE_PREFIX = "episode:"
 
-    /** Generate canonical key from TMDB ID (preferred). */
+    /**
+     * Generate a canonical key from an untyped TMDB ID.
+     *
+     * This produces the legacy untyped format `tmdb:<id>`.
+     * Prefer [fromTmdbId(com.fishit.player.core.model.TmdbRef)] for deterministic typed keys.
+     */
+    @Deprecated(
+        message = "Ambiguous TMDB ID without type. Prefer fromTmdbId(TmdbRef) for tmdb:movie:/tmdb:tv:.",
+    )
     fun fromTmdbId(tmdbId: com.fishit.player.core.model.ids.TmdbId): String = "$TMDB_PREFIX${tmdbId.value}"
     
     /** 

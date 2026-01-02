@@ -137,8 +137,8 @@ val xtreamPosition = 0.75f * 7_500_000 = 5_625_000    // 1:33:45 (!)
 
 1. **TMDB ID** (höchste Priorität)
    ```
-   tmdb:550          // Fight Club (Movie)
-   tmdb:1399         // Game of Thrones (Series)
+    tmdb:movie:550    // Fight Club (Movie)
+    tmdb:tv:1399      // Game of Thrones (TV)
    ```
 
 2. **Title + Year** (Fallback für Movies ohne TMDB)
@@ -175,7 +175,7 @@ Cross-Pipeline-Linking) behandelt.
 ```kotlin
 data class CanonicalMediaId(
     val kind: MediaKind,  // MOVIE oder EPISODE
-    val key: String,      // z.B. "tmdb:550" oder "movie:fight-club:1999"
+    val key: String,      // z.B. "tmdb:movie:550" oder "movie:fight-club:1999"
 )
 
 enum class MediaKind {
@@ -295,7 +295,7 @@ AvailableOnSection(
 @Entity
 data class ObxCanonicalResumeMark(
     @Id var id: Long = 0,
-    @Index var canonicalKey: String,     // "tmdb:550"
+    @Index var canonicalKey: String,     // "tmdb:movie:550"
     @Index var profileId: Long,          // Multi-Profile-Support
     
     // === Position (Prozent = PRIMARY für Cross-Source) ===
@@ -534,8 +534,8 @@ data class MediaQuality(
 // Canonical Key Generation
 @Test
 fun `generates stable key from TMDB`() {
-    val key = CanonicalKeyGenerator.fromTmdbId("550")
-    assertEquals("tmdb:550", key)
+    val key = CanonicalKeyGenerator.fromTmdbId(TmdbRef(TmdbMediaType.MOVIE, 550))
+    assertEquals("tmdb:movie:550", key)
 }
 
 @Test

@@ -17,21 +17,25 @@ import kotlinx.coroutines.isActive
 /**
  * Telegram Incremental Scan Worker.
  *
- * Executes incremental Telegram synchronization via CatalogSyncService ONLY. Uses persisted cursors
- * to resume from last sync point.
+ * Executes incremental Telegram synchronization via CatalogSyncService ONLY.
+ *
+ * **Incremental Sync Strategy (Platinum Solution - Dec 2025):**
+ * - CatalogSyncService reads checkpoint from SyncCheckpointStore
+ * - If checkpoint exists with high-water marks → INCREMENTAL mode
+ *   - Only fetches messages NEWER than last sync per chat
+ *   - TDLib returns newest-first, stops when reaching known messageId
+ * - If no checkpoint (empty catalog) → FULL mode
+ *   - Scans all chats, all messages
+ *   - Records high-water marks for next sync
+ * - Checkpoint is persisted by CatalogSyncService, not by this worker
  *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
  * - W-2: All scanning MUST go through CatalogSyncService
  * - W-5: Telegram pipelines may emit multiple RawMediaMetadata items per bundle
- * ```
- *        Worker treats every Raw emission as an independent variant
- * ```
- * - W-17: FireTV Safety (bounded batches, frequent checkpoints)
- * - Uses persisted cursors
- * - Persists streaming; checkpoint frequently
+ * - W-17: FireTV Safety (bounded batches, runtime budget)
  *
  * @see TelegramAuthPreflightWorker for auth validation
- * @see TelegramFullHistoryScanWorker for full history scanning
+ * @see TelegramFullHistoryScanWorker for force full history scanning
  */
 @HiltWorker
 class TelegramIncrementalScanWorker
@@ -49,7 +53,7 @@ constructor(
         val input = WorkerInputData.from(inputData)
         val startTimeMs = System.currentTimeMillis()
         var itemsPersisted = 0L
-        var lastCheckpoint: String? = null
+        var syncCompleted = false
 
         UnifiedLog.i(TAG) {
             "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM kind=INCREMENTAL"
@@ -72,9 +76,9 @@ constructor(
 
         try {
             // W-2: Call ONLY CatalogSyncService
-            // Note: Incremental sync uses persisted cursors internally
+            // CatalogSyncService handles checkpoint reading/writing internally
             catalogSyncService.syncTelegram(
-                            chatIds = null, // Incremental - pipeline uses persisted cursors
+                            chatIds = null, // null = all chats, incremental via internal checkpoint
                             syncConfig = syncConfig,
                     )
                     .collect { status ->
@@ -84,14 +88,14 @@ constructor(
                             throw CancellationException("Worker cancelled")
                         }
 
-                        // Check max runtime
+                        // Check max runtime - throw to exit collect loop properly
                         val elapsedMs = System.currentTimeMillis() - startTimeMs
                         if (elapsedMs > input.maxRuntimeMs) {
                             UnifiedLog.w(TAG) {
-                                "Max runtime exceeded (${elapsedMs}ms > ${input.maxRuntimeMs}ms), saving checkpoint"
+                                "Max runtime exceeded (${elapsedMs}ms > ${input.maxRuntimeMs}ms)"
                             }
-                            UnifiedLog.i(TAG) { "CHECKPOINT_SAVED cursor=$lastCheckpoint" }
-                            return@collect
+                            // CatalogSyncService saves partial checkpoint on cancellation
+                            throw CancellationException("Max runtime exceeded")
                         }
 
                         when (status) {
@@ -100,16 +104,13 @@ constructor(
                             }
                             is SyncStatus.InProgress -> {
                                 itemsPersisted = status.itemsPersisted
-                                lastCheckpoint = status.currentPhase
-
-                                // Log progress (counts only, no payloads - W-17)
-                                // Note: Each Raw emission is treated independently (W-5)
                                 UnifiedLog.d(TAG) {
                                     "PROGRESS discovered=${status.itemsDiscovered} persisted=$itemsPersisted phase=${status.currentPhase}"
                                 }
                             }
                             is SyncStatus.Completed -> {
                                 itemsPersisted = status.totalItems
+                                syncCompleted = true
                                 UnifiedLog.i(TAG) {
                                     "Sync completed: ${status.totalItems} items in ${status.durationMs}ms"
                                 }
@@ -117,7 +118,7 @@ constructor(
                             is SyncStatus.Cancelled -> {
                                 itemsPersisted = status.itemsPersisted
                                 UnifiedLog.w(TAG) {
-                                    "Sync cancelled: $itemsPersisted items persisted"
+                                    "Sync cancelled: $itemsPersisted items persisted (checkpoint saved by service)"
                                 }
                             }
                             is SyncStatus.Error -> {
@@ -126,19 +127,28 @@ constructor(
                                 }
                                 throw status.throwable ?: RuntimeException(status.message)
                             }
+                            is SyncStatus.TelegramChatComplete -> {
+                                // PLATINUM: Track completed chat for checkpoint resume
+                                UnifiedLog.v(TAG) {
+                                    "Chat ${status.chatId} complete: ${status.itemCount} items, hwm=${status.newHighWaterMark}"
+                                }
+                            }
+                            is SyncStatus.SeriesEpisodeComplete -> {
+                                // N/A for Telegram - ignore
+                            }
                         }
                     }
 
             val durationMs = System.currentTimeMillis() - startTimeMs
             UnifiedLog.i(TAG) {
-                "✅ SUCCESS duration_ms=$durationMs persisted_count=$itemsPersisted source=TELEGRAM kind=INCREMENTAL"
+                "✅ SUCCESS duration_ms=$durationMs persisted_count=$itemsPersisted " +
+                        "source=TELEGRAM kind=INCREMENTAL completed=$syncCompleted"
             }
 
             return Result.success(
                     WorkerOutputData.success(
                             itemsPersisted = itemsPersisted,
                             durationMs = durationMs,
-                            checkpointCursor = lastCheckpoint,
                     ),
             )
         } catch (e: CancellationException) {
@@ -146,14 +156,12 @@ constructor(
             UnifiedLog.w(TAG) {
                 "⏸️ CANCELLED after ${durationMs}ms, persisted $itemsPersisted items source=TELEGRAM"
             }
-            UnifiedLog.i(TAG) { "CHECKPOINT_SAVED cursor=$lastCheckpoint" }
-
-            // Return success so checkpoint is preserved
+            // Checkpoint is saved by CatalogSyncService, not here
+            // Return success so WorkManager doesn't retry immediately
             return Result.success(
                     WorkerOutputData.success(
                             itemsPersisted = itemsPersisted,
                             durationMs = durationMs,
-                            checkpointCursor = lastCheckpoint,
                     ),
             )
         } catch (e: Exception) {
@@ -161,9 +169,7 @@ constructor(
             UnifiedLog.e(TAG, e) {
                 "❌ FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs source=TELEGRAM"
             }
-
-            // Transient error - retry (bounded by WorkManager backoff, not WorkerRetryPolicy for
-            // scan workers)
+            // Transient error - retry with backoff
             return Result.retry()
         }
     }

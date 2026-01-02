@@ -31,6 +31,7 @@ android {
 dependencies {
     // Internal modules
     implementation(project(":core:model"))
+    implementation(project(":core:onboarding-domain"))
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
     implementation(project(":core:feature-api"))

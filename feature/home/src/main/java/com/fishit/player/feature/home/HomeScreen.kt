@@ -79,7 +79,7 @@ import com.fishit.player.core.ui.layout.FishRowEmpty
 import com.fishit.player.core.ui.layout.FishTile
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.LocalFishDimens
-import com.fishit.player.feature.home.domain.HomeMediaItem
+import com.fishit.player.core.home.domain.HomeMediaItem
 
 /**
  * Home Screen - Main content browsing screen

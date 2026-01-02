@@ -15,7 +15,7 @@ import javax.inject.Singleton
  * - TelegramCatalogPipeline: Event-based catalog scanning
  *
  * **Dependencies (must be provided elsewhere):**
- * - TelegramClient: From TdlibClientProvider/TelegramCoreModule
+ * - TelegramClient: From infra:transport-telegram (TelegramTransportModule)
  *
  * **Consumers:**
  * - CatalogSync: Processes catalog events and persists to storage

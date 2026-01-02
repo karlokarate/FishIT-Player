@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 
 /**
@@ -184,41 +185,78 @@ constructor(
             }
 
             // ================================================================
-            // Phase 4: Episodes (SKIPPED during initial sync)
-            // Episodes are loaded on-demand when user opens a series.
-            // This avoids fetching 100k+ episodes during login.
-            // See: EnsureEpisodePlaybackReadyUseCase for lazy loading.
+            // Phase 4: Episodes (PLATINUM: Parallel streaming)
+            // Episodes are now loaded in parallel with immediate emission.
+            // This replaces the previous blocking loadEpisodes() that timed out.
             // ================================================================
             if (config.includeEpisodes && currentCoroutineContext().isActive) {
-                UnifiedLog.d(TAG, "[Optional] Scanning episodes (background mode)...")
+                UnifiedLog.d(TAG, "[Phase 4/4] Scanning episodes (parallel streaming mode)...")
 
                 try {
-                    val episodes = source.loadEpisodes()
-
-                    for (episode in episodes) {
-                        if (!currentCoroutineContext().isActive) break
-
-                        // seriesName is now embedded in episode from DefaultXtreamCatalogSource
-                        val catalogItem = mapper.fromEpisode(episode, episode.seriesName, headers)
-                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                        episodeCount++
-
-                        if (episodeCount % PROGRESS_LOG_INTERVAL == 0) {
-                            send(
-                                    XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.EPISODES,
+                    // Use streaming API with parallel loading
+                    // excludeSeriesIds from config allows checkpoint resume
+                    source.loadEpisodesStreaming(
+                        parallelism = config.episodeParallelism,
+                        excludeSeriesIds = config.excludeSeriesIds,
+                    ).collect { result ->
+                        if (!currentCoroutineContext().isActive) {
+                            throw CancellationException("Pipeline cancelled during episode streaming")
+                        }
+                        
+                        when (result) {
+                            is EpisodeBatchResult.Batch -> {
+                                // Emit each episode immediately
+                                for (episode in result.episodes) {
+                                    val catalogItem = mapper.fromEpisode(episode, result.seriesName, headers)
+                                    send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                    episodeCount++
+                                    
+                                    if (episodeCount % PROGRESS_LOG_INTERVAL == 0) {
+                                        send(
+                                            XtreamCatalogEvent.ScanProgress(
+                                                vodCount = vodCount,
+                                                seriesCount = seriesCount,
+                                                episodeCount = episodeCount,
+                                                liveCount = liveCount,
+                                                currentPhase = XtreamScanPhase.EPISODES,
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                            is EpisodeBatchResult.SeriesComplete -> {
+                                // Emit event for checkpoint tracking (PLATINUM)
+                                send(
+                                    XtreamCatalogEvent.SeriesEpisodeComplete(
+                                        seriesId = result.seriesId,
+                                        episodeCount = result.episodeCount,
                                     ),
-                            )
+                                )
+                                UnifiedLog.v(TAG) {
+                                    "Series ${result.seriesId} complete: ${result.episodeCount} episodes"
+                                }
+                            }
+                            is EpisodeBatchResult.SeriesFailed -> {
+                                // Emit event for tracking (series won't be in processedSeriesIds)
+                                send(
+                                    XtreamCatalogEvent.SeriesEpisodeFailed(
+                                        seriesId = result.seriesId,
+                                        reason = result.error.message ?: "Unknown error",
+                                    ),
+                                )
+                                UnifiedLog.w(TAG) {
+                                    "Series ${result.seriesId} failed: ${result.error.message}"
+                                }
+                            }
                         }
                     }
 
-                    UnifiedLog.d(TAG, "[Optional] Episodes scan complete: $episodeCount items")
+                    UnifiedLog.d(TAG, "[Phase 4/4] Episodes scan complete: $episodeCount episodes")
+                } catch (e: CancellationException) {
+                    UnifiedLog.i(TAG, "[Phase 4/4] Episode scan cancelled at $episodeCount episodes")
+                    throw e
                 } catch (e: XtreamCatalogSourceException) {
-                    UnifiedLog.w(TAG, "[Optional] Episodes scan failed: ${e.message}")
+                    UnifiedLog.w(TAG, "[Phase 4/4] Episodes scan failed: ${e.message}")
                 }
             }
 

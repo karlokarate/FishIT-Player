@@ -106,7 +106,12 @@ class SettingsViewModel @Inject constructor(
     private fun observeSyncState() {
         viewModelScope.launch {
             syncStateObserver.observeSyncState().collect { syncState ->
-                _state.update { it.copy(syncState = syncState) }
+                _state.update {
+                    it.copy(
+                        syncState = syncState,
+                        isSyncActionInProgress = syncState.isRunning,
+                    )
+                }
             }
         }
     }
@@ -155,10 +160,8 @@ class SettingsViewModel @Inject constructor(
      */
     fun syncNow() {
         UnifiedLog.i(TAG) { "User triggered: Sync Now" }
-        _state.update { it.copy(isSyncActionInProgress = true) }
         catalogSyncWorkScheduler.enqueueExpertSyncNow()
         showSnackbar("Sync gestartet")
-        _state.update { it.copy(isSyncActionInProgress = false) }
     }
 
     /**
@@ -167,10 +170,8 @@ class SettingsViewModel @Inject constructor(
      */
     fun forceRescan() {
         UnifiedLog.i(TAG) { "User triggered: Force Rescan" }
-        _state.update { it.copy(isSyncActionInProgress = true) }
         catalogSyncWorkScheduler.enqueueForceRescan()
         showSnackbar("Rescan gestartet")
-        _state.update { it.copy(isSyncActionInProgress = false) }
     }
 
     /**

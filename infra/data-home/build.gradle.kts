@@ -28,7 +28,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))  // For ObjectBox canonical media queries
     implementation(project(":infra:logging"))
-    implementation(project(":feature:home"))  // For HomeContentRepository interface
+    implementation(project(":core:home-domain"))
     
     // Data layer dependencies
     implementation(project(":infra:data-telegram"))

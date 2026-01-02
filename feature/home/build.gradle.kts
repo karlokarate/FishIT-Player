@@ -30,8 +30,8 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:home-domain"))
     implementation(project(":core:player-model"))
-    implementation(project(":core:persistence"))
     implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:ui-theme"))

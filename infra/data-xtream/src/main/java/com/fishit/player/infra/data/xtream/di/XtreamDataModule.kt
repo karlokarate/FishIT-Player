@@ -1,12 +1,14 @@
 package com.fishit.player.infra.data.xtream.di
 
-import com.fishit.player.feature.library.domain.LibraryContentRepository
-import com.fishit.player.feature.live.domain.LiveContentRepository
+import com.fishit.player.core.detail.domain.XtreamSeriesIndexRefresher
+import com.fishit.player.core.library.domain.LibraryContentRepository
+import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.infra.data.xtream.LibraryContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.LiveContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.ObxXtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamLiveRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamSeriesIndexRepository
+import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRefresherImpl
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRepository
@@ -100,4 +102,8 @@ abstract class XtreamDataModule {
     @Binds
     @Singleton
     abstract fun bindXtreamSeriesIndexRepository(impl: ObxXtreamSeriesIndexRepository): XtreamSeriesIndexRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindXtreamSeriesIndexRefresher(impl: XtreamSeriesIndexRefresherImpl): XtreamSeriesIndexRefresher
 }

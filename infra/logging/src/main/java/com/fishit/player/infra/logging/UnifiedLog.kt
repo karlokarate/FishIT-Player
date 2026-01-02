@@ -38,7 +38,7 @@ import timber.log.Timber
  * Must be initialized via [UnifiedLogInitializer.init] in Application.onCreate()
  *
  * **v1 Component Mapping:**
- * - Adapted from v1 `com.chris.m3usuite.core.logging.UnifiedLog`
+ * - Adapted from the v1 UnifiedLog implementation
  * - Simplified for v2 (no ring buffer or DataStore integration yet)
  * - Uses Timber as backend instead of direct android.util.Log
  *

@@ -314,16 +314,21 @@ constructor(
     /** Load real cache sizes. */
     private fun loadCacheSizes() {
         viewModelScope.launch {
-            val telegramSize = debugInfoProvider.getTelegramCacheSize()
-            val imageSize = debugInfoProvider.getImageCacheSize()
-            val dbSize = debugInfoProvider.getDatabaseSize()
+            try {
+                val telegramSize = debugInfoProvider.getTelegramCacheSize()
+                val imageSize = debugInfoProvider.getImageCacheSize()
+                val dbSize = debugInfoProvider.getDatabaseSize()
 
-            _state.update {
-                it.copy(
+                _state.update {
+                    it.copy(
                         telegramCacheSize = telegramSize?.formatAsSize() ?: "N/A",
                         imageCacheSize = imageSize?.formatAsSize() ?: "N/A",
-                        dbSize = dbSize?.formatAsSize() ?: "N/A"
-                )
+                        dbSize = dbSize?.formatAsSize() ?: "N/A",
+                    )
+                }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "loadCacheSizes: unexpected error: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Failed to load cache sizes") }
             }
         }
     }
@@ -335,14 +340,20 @@ constructor(
     fun clearTelegramCache() {
         viewModelScope.launch {
             _state.update { it.copy(isClearingCache = true) }
-            val success = debugInfoProvider.clearTelegramCache()
-            loadCacheSizes() // Refresh sizes
-            _state.update {
-                it.copy(
-                        isClearingCache = false,
+            try {
+                val success = debugInfoProvider.clearTelegramCache()
+                loadCacheSizes() // Refresh sizes
+                _state.update {
+                    it.copy(
                         lastActionResult =
-                                if (success) "Telegram cache cleared" else "Failed to clear cache"
-                )
+                            if (success) "Telegram cache cleared" else "Failed to clear cache",
+                    )
+                }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "clearTelegramCache: unexpected error: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Failed to clear Telegram cache") }
+            } finally {
+                _state.update { it.copy(isClearingCache = false) }
             }
         }
     }
@@ -350,14 +361,20 @@ constructor(
     fun clearImageCache() {
         viewModelScope.launch {
             _state.update { it.copy(isClearingCache = true) }
-            val success = debugInfoProvider.clearImageCache()
-            loadCacheSizes() // Refresh sizes
-            _state.update {
-                it.copy(
-                        isClearingCache = false,
+            try {
+                val success = debugInfoProvider.clearImageCache()
+                loadCacheSizes() // Refresh sizes
+                _state.update {
+                    it.copy(
                         lastActionResult =
-                                if (success) "Image cache cleared" else "Failed to clear cache"
-                )
+                            if (success) "Image cache cleared" else "Failed to clear cache",
+                    )
+                }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "clearImageCache: unexpected error: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Failed to clear image cache") }
+            } finally {
+                _state.update { it.copy(isClearingCache = false) }
             }
         }
     }
@@ -365,16 +382,22 @@ constructor(
     fun clearAllCaches() {
         viewModelScope.launch {
             _state.update { it.copy(isClearingCache = true) }
-            val telegramOk = debugInfoProvider.clearTelegramCache()
-            val imageOk = debugInfoProvider.clearImageCache()
-            loadCacheSizes() // Refresh sizes
-            _state.update {
-                it.copy(
-                        isClearingCache = false,
+            try {
+                val telegramOk = debugInfoProvider.clearTelegramCache()
+                val imageOk = debugInfoProvider.clearImageCache()
+                loadCacheSizes() // Refresh sizes
+                _state.update {
+                    it.copy(
                         lastActionResult =
-                                if (telegramOk && imageOk) "All caches cleared"
-                                else "Some caches failed to clear"
-                )
+                            if (telegramOk && imageOk) "All caches cleared"
+                            else "Some caches failed to clear",
+                    )
+                }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "clearAllCaches: unexpected error: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Failed to clear caches") }
+            } finally {
+                _state.update { it.copy(isClearingCache = false) }
             }
         }
     }

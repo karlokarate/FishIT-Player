@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.imaging.compose.FishImage
 import com.fishit.player.core.model.ImageRef
-import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
 
 /**
  * Telegram Media screen - displays all Telegram media items.

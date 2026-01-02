@@ -1,5 +1,6 @@
 package com.fishit.player.core.catalogsync
 
+import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.PlaybackHintKeys
@@ -75,6 +76,8 @@ constructor(
         private val xtreamLiveRepository: XtreamLiveRepository,
         private val normalizer: MediaMetadataNormalizer,
         private val canonicalMediaRepository: CanonicalMediaRepository,
+        private val checkpointStore: SyncCheckpointStore,
+        private val telegramAuthRepository: TelegramAuthRepository,
 ) : CatalogSyncService {
     companion object {
         private const val TAG = "CatalogSyncService"
@@ -95,6 +98,42 @@ constructor(
     override fun syncTelegram(
             chatIds: List<Long>?,
             syncConfig: SyncConfig,
+    ): Flow<SyncStatus> = syncTelegramInternal(
+        chatIds = chatIds,
+        syncConfig = syncConfig,
+        excludeChatIds = emptySet(),
+        chatParallelism = TelegramCatalogConfig.DEFAULT_CHAT_PARALLELISM,
+    )
+
+    /**
+     * PLATINUM: Enhanced Telegram sync with parallel chat scanning and checkpoint resume.
+     *
+     * @param chatIds Optional list of specific chat IDs to scan
+     * @param syncConfig Batching and progress configuration
+     * @param excludeChatIds Chat IDs to skip (from checkpoint resume)
+     * @param chatParallelism Number of chats to scan in parallel (default 3)
+     * @return Flow of [SyncStatus] events including [SyncStatus.TelegramChatComplete] for checkpoint tracking
+     */
+    fun syncTelegramPlatinum(
+        chatIds: List<Long>? = null,
+        syncConfig: SyncConfig = SyncConfig.DEFAULT,
+        excludeChatIds: Set<Long> = emptySet(),
+        chatParallelism: Int = TelegramCatalogConfig.DEFAULT_CHAT_PARALLELISM,
+    ): Flow<SyncStatus> = syncTelegramInternal(
+        chatIds = chatIds,
+        syncConfig = syncConfig,
+        excludeChatIds = excludeChatIds,
+        chatParallelism = chatParallelism,
+    )
+
+    /**
+     * Internal Telegram sync implementation with full PLATINUM support.
+     */
+    private fun syncTelegramInternal(
+        chatIds: List<Long>?,
+        syncConfig: SyncConfig,
+        excludeChatIds: Set<Long>,
+        chatParallelism: Int,
     ): Flow<SyncStatus> = flow {
         UnifiedLog.i(TAG, "Starting Telegram sync with config: $syncConfig")
         emit(SyncStatus.Started(SOURCE_TELEGRAM))
@@ -104,7 +143,41 @@ constructor(
         var itemsDiscovered = 0L
         var itemsPersisted = 0L
 
-        val pipelineConfig = TelegramCatalogConfig(chatIds = chatIds)
+        // Get current user ID for checkpoint validation (account switch detection)
+        val currentUserId = telegramAuthRepository.getCurrentUserId()
+        UnifiedLog.d(TAG, "Current Telegram userId: $currentUserId")
+
+        // Load existing checkpoint for incremental sync
+        var existingCheckpoint = checkpointStore.getTelegramCheckpoint()
+            ?.let { TelegramSyncCheckpoint.decode(it) }
+            ?: TelegramSyncCheckpoint.INITIAL
+        
+        // Account switch detection: If checkpoint belongs to different user, force full scan
+        if (!existingCheckpoint.isValidFor(currentUserId)) {
+            UnifiedLog.w(TAG, "Checkpoint userId mismatch! " +
+                    "Checkpoint userId=${existingCheckpoint.telegramUserId}, " +
+                    "current userId=$currentUserId. Forcing full scan.")
+            checkpointStore.clearTelegramCheckpoint()
+            existingCheckpoint = TelegramSyncCheckpoint.INITIAL
+        }
+        
+        val isIncremental = !existingCheckpoint.isInitial
+        val effectiveExcludeChatIds = excludeChatIds.ifEmpty { existingCheckpoint.processedChatIds }
+        
+        UnifiedLog.i(TAG, "Telegram sync mode: ${if (isIncremental) "INCREMENTAL" else "FULL"} " +
+                "(tracked_chats=${existingCheckpoint.trackedChatCount}, " +
+                "exclude_chats=${effectiveExcludeChatIds.size}, parallel=$chatParallelism)")
+
+        // Build pipeline config with high-water marks for incremental sync + PLATINUM parameters
+        val pipelineConfig = TelegramCatalogConfig(
+            chatIds = chatIds,
+            highWaterMarks = if (isIncremental) existingCheckpoint.highWaterMarks else null,
+            excludeChatIds = effectiveExcludeChatIds,
+            chatParallelism = chatParallelism,
+        )
+        
+        // Track new high-water marks during this sync
+        var newHighWaterMarks: Map<Long, Long> = emptyMap()
 
         try {
             telegramPipeline.scanCatalog(pipelineConfig).collect { event ->
@@ -148,10 +221,19 @@ constructor(
                             batch.clear()
                         }
 
+                        // Update checkpoint with new high-water marks and current userId
+                        newHighWaterMarks = event.newHighWaterMarks
+                        val updatedCheckpoint = existingCheckpoint
+                            .updateHighWaterMarks(newHighWaterMarks)
+                            .markComplete(currentUserId)
+                        checkpointStore.saveTelegramCheckpoint(updatedCheckpoint.encode())
+                        UnifiedLog.i(TAG, "Telegram checkpoint saved: ${updatedCheckpoint.trackedChatCount} chats tracked, userId=$currentUserId")
+
                         val durationMs = System.currentTimeMillis() - startTimeMs
                         UnifiedLog.i(
                                 TAG,
-                                "Telegram sync completed: $itemsPersisted items in ${durationMs}ms",
+                                "Telegram sync completed: $itemsPersisted items in ${durationMs}ms " +
+                                        "(incremental=$isIncremental, new_hwm_chats=${newHighWaterMarks.size})",
                         )
                         emit(
                                 SyncStatus.Completed(
@@ -169,6 +251,14 @@ constructor(
                             batch.clear()
                         }
 
+                        // Save partial checkpoint so next sync can resume
+                        if (event.partialHighWaterMarks.isNotEmpty()) {
+                            val partialCheckpoint = existingCheckpoint
+                                .updateHighWaterMarks(event.partialHighWaterMarks)
+                            checkpointStore.saveTelegramCheckpoint(partialCheckpoint.encode())
+                            UnifiedLog.i(TAG, "Telegram partial checkpoint saved: ${event.partialHighWaterMarks.size} chats")
+                        }
+
                         UnifiedLog.w(
                                 TAG,
                                 "Telegram sync cancelled: $itemsPersisted items persisted",
@@ -179,6 +269,23 @@ constructor(
                                         itemsPersisted = itemsPersisted,
                                 ),
                         )
+                    }
+                    is TelegramCatalogEvent.ChatScanComplete -> {
+                        // PLATINUM: Emit checkpoint event for per-chat tracking
+                        UnifiedLog.v(TAG) { "Chat ${event.chatId} complete: ${event.itemCount} items" }
+                        emit(
+                            SyncStatus.TelegramChatComplete(
+                                source = SOURCE_TELEGRAM,
+                                chatId = event.chatId,
+                                messageCount = event.messageCount,
+                                itemCount = event.itemCount,
+                                newHighWaterMark = event.newHighWaterMark,
+                            ),
+                        )
+                    }
+                    is TelegramCatalogEvent.ChatScanFailed -> {
+                        // PLATINUM: Log chat failure but don't emit error (scan continues)
+                        UnifiedLog.w(TAG, "Chat ${event.chatId} scan failed: ${event.reason}")
                     }
                     is TelegramCatalogEvent.ScanError -> {
                         UnifiedLog.e(TAG, "Telegram sync error: ${event.reason} - ${event.message}")
@@ -222,6 +329,8 @@ constructor(
             includeSeries: Boolean,
             includeEpisodes: Boolean,
             includeLive: Boolean,
+            excludeSeriesIds: Set<Int>,
+            episodeParallelism: Int,
             syncConfig: SyncConfig,
     ): Flow<SyncStatus> = flow {
         UnifiedLog.i(TAG, "Starting Xtream sync with config: $syncConfig")
@@ -240,6 +349,8 @@ constructor(
                         includeSeries = includeSeries,
                         includeEpisodes = includeEpisodes,
                         includeLive = includeLive,
+                        excludeSeriesIds = excludeSeriesIds,
+                        episodeParallelism = episodeParallelism,
                 )
 
         try {
@@ -377,6 +488,20 @@ constructor(
                                 TAG,
                                 "Xtream scan started: VOD=$includeVod, Series=$includeSeries, Live=$includeLive",
                         )
+                    }
+                    is XtreamCatalogEvent.SeriesEpisodeComplete -> {
+                        // Emit for Worker checkpoint tracking (PLATINUM)
+                        emit(
+                                SyncStatus.SeriesEpisodeComplete(
+                                        source = SOURCE_XTREAM,
+                                        seriesId = event.seriesId,
+                                        episodeCount = event.episodeCount,
+                                ),
+                        )
+                    }
+                    is XtreamCatalogEvent.SeriesEpisodeFailed -> {
+                        // Log but don't fail sync - other series continue
+                        UnifiedLog.w(TAG, "Series ${event.seriesId} episode load failed: ${event.reason}")
                     }
                 }
             }
@@ -664,6 +789,23 @@ constructor(
                         }
                         is XtreamCatalogEvent.ScanStarted -> {
                             UnifiedLog.d(TAG) { "Enhanced scan started" }
+                        }
+                        is XtreamCatalogEvent.SeriesEpisodeComplete -> {
+                            // Emit for Worker checkpoint tracking (PLATINUM)
+                            emit(
+                                    SyncStatus.SeriesEpisodeComplete(
+                                            source = SOURCE_XTREAM,
+                                            seriesId = event.seriesId,
+                                            episodeCount = event.episodeCount,
+                                    ),
+                            )
+                        }
+                        is XtreamCatalogEvent.SeriesEpisodeFailed -> {
+                            // Log but don't fail sync - other series continue
+                            UnifiedLog.w(
+                                    TAG,
+                                    "Series ${event.seriesId} episode load failed: ${event.reason}",
+                            )
                         }
                     }
                 }

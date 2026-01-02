@@ -85,4 +85,14 @@ interface TelegramAuthClient {
      * This will invalidate the current session and require re-authentication.
      */
     suspend fun logout()
+
+    /**
+     * Get the current user's Telegram ID.
+     *
+     * Calls TDLib's `getMe()` to retrieve the authenticated user's ID.
+     * Useful for checkpoint validation to detect account switches.
+     *
+     * @return The current user's Telegram ID, or null if not authenticated
+     */
+    suspend fun getCurrentUserId(): Long?
 }

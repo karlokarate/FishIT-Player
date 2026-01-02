@@ -9,11 +9,14 @@ import com.fishit.player.core.model.ids.CanonicalId
  * across all pipelines (Telegram, Xtream, IO, etc.).
  *
  * Per MEDIA_NORMALIZATION_CONTRACT.md identity rules (ordered by priority):
- * 1. If tmdbId exists: key = "tmdb:<tmdbId>"
+ * 1. If tmdbId exists (typed): key = "tmdb:movie:<tmdbId>" or "tmdb:tv:<tmdbId>"
  * 2. If no tmdbId, but normalized title + year + (S/E for episodes):
  *    - Movies: key = "movie:<canonicalTitle>:<year>"
  *    - Episodes: key = "episode:<canonicalTitle>:S<season>E<episode>"
  * 3. If neither available: item cannot be assigned a stable CanonicalMediaId
+ *
+ * Legacy compatibility: older persisted data may contain untyped TMDB keys like "tmdb:<id>".
+ * Implementations should treat them as aliases for lookup/migration.
  *
  * @property kind Type of media (MOVIE or EPISODE)
  * @property key Unique key string representing the canonical identity

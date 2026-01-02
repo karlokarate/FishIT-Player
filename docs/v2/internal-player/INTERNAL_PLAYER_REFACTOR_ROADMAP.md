@@ -71,9 +71,9 @@ All player call sites now use typed PlaybackContext and route through InternalPl
     - `loadResumePositionMs(context: PlaybackContext): Long?`
     - `handlePeriodicTick(context: PlaybackContext, positionMs: Long, durationMs: Long)`
     - `handleEnded(context: PlaybackContext)`
-  - ✅ Implement `DefaultResumeManager` using existing `ResumeRepository`:
-    - ✅ Map VOD resume to `mediaId`
-    - ✅ Map series resume to `seriesId`, `season`, `episodeNumber`
+  - ✅ Implement `ResumeManager` backed by canonical media storage (`CanonicalMediaRepository`):
+    - ✅ Resume is keyed by canonical identity / source refs (cross-source)
+    - ✅ Applies same thresholds as legacy for resume/clear
     - ✅ Apply same thresholds as legacy:
       - Only resume if position > 10s
       - Clear resume when remaining duration < 10s
@@ -1363,7 +1363,7 @@ app/
 - Prefer **reuse of existing modules**:
   - `DelegatingDataSourceFactory` for data-source routing (Xtream/Telegram/RAR)
   - `TelegramFileDataSource`, `RarDataSource`, `StreamingConfig`, and `T_TelegramFileDownloader` for Telegram integration
-  - `ResumeRepository`, `ScreenTimeRepository`, `ObxStore`, `ObxProfile` for domain logic
+  - `ScreenTimeRepository`, `ObxStore`, `ObxProfile` for domain logic
 
 - Prefer **official and maintained libraries**:
   - Media and playback:

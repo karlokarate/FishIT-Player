@@ -51,8 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.fishit.player.feature.live.domain.LiveCategory
-import com.fishit.player.feature.live.domain.LiveChannel
+import com.fishit.player.core.live.domain.LiveCategory
+import com.fishit.player.core.live.domain.LiveChannel
 
 /**
  * Live TV screen displaying channels in a grid with category filtering.

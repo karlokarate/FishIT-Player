@@ -1,7 +1,7 @@
 package com.fishit.player.infra.data.telegram.di
 
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
-import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
 import com.fishit.player.infra.data.telegram.ObxTelegramContentRepository
 import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.telegram.TelegramMediaRepositoryAdapter

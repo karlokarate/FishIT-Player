@@ -28,10 +28,6 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
-    implementation(project(":playback:domain"))
-    implementation(project(":player:internal"))
-    implementation(project(":pipeline:audiobook"))
     implementation(project(":infra:logging"))
     
     // Compose

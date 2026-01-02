@@ -148,6 +148,14 @@ dependencies {
     implementation(project(":core:firebase"))
     implementation(project(":core:app-startup"))
 
+    // v2 Domain Modules (extracted from features)
+    implementation(project(":core:home-domain"))
+    implementation(project(":core:library-domain"))
+    implementation(project(":core:live-domain"))
+    implementation(project(":core:detail-domain"))
+    implementation(project(":core:telegrammedia-domain"))
+    implementation(project(":core:onboarding-domain"))
+
     // v2 Metadata Normalizer (TMDB enrichment)
     implementation(project(":core:metadata-normalizer"))
 
@@ -191,6 +199,7 @@ dependencies {
     implementation(project(":infra:transport-xtream"))
     implementation(project(":infra:data-telegram"))
     implementation(project(":infra:data-xtream"))
+    implementation(project(":infra:data-detail"))
     implementation(project(":infra:data-home"))
     implementation(project(":infra:work"))
 

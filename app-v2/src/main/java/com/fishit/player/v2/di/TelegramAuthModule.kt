@@ -10,15 +10,14 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import dev.g000sha256.tdl.TdlClient
 import java.io.File
 import javax.inject.Singleton
 
 /**
- * Hilt module for Telegram configuration and TdlClient.
+ * Hilt module for Telegram configuration.
  *
  * **SSOT Architecture:**
- * - This module provides ONLY the configuration and TdlClient
+ * - This module provides ONLY TelegramSessionConfig (needs Android Context)
  * - TelegramTransportModule provides ALL typed interfaces (Auth, History, File, Thumb)
  * - All interfaces resolve to the SAME TelegramClient instance
  *
@@ -27,7 +26,7 @@ import javax.inject.Singleton
  * - TelegramTransportModule is in infra:transport-telegram (no Context access)
  *
  * **Consumers:**
- * - TelegramTransportModule consumes TdlClient + TelegramSessionConfig
+ * - TelegramTransportModule consumes TelegramSessionConfig
  * - All Telegram interfaces come from TelegramTransportModule
  */
 @Module
@@ -64,18 +63,4 @@ object TelegramAuthModule {
             appVersion = BuildConfig.VERSION_NAME,
         )
     }
-
-    /**
-     * Provides the shared TdlClient instance for the entire app.
-     *
-     * **v2 Architecture:**
-     * - TdlClient is created once and shared across all Telegram consumers
-     * - This replaces the v1 TdlibClientProvider pattern
-     *
-     * **Consumers:**
-     * - TelegramTransportModule (creates unified TelegramClient)
-     */
-    @Provides
-    @Singleton
-    fun provideTdlClient(): TdlClient = TdlClient.create()
 }

@@ -308,7 +308,7 @@ class TmdbEnrichmentBatchWorker
                 canonicalMediaRepository.updateTmdbEnriched(
                     canonicalId = canonicalId,
                     enriched = enriched,
-                    resolvedBy = TmdbResolvedBy.DETAILS_BY_ID.name,
+                    resolvedBy = TmdbResolvedBy.DETAILS_BY_ID,
                     resolvedAt = System.currentTimeMillis(),
                 )
                 UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=DETAILS_BY_ID status=ENRICHED" }
@@ -317,7 +317,7 @@ class TmdbEnrichmentBatchWorker
                 canonicalMediaRepository.markTmdbDetailsApplied(
                     canonicalId = canonicalId,
                     tmdbId = tmdbId,
-                    resolvedBy = TmdbResolvedBy.DETAILS_BY_ID.name,
+                    resolvedBy = TmdbResolvedBy.DETAILS_BY_ID,
                     resolvedAt = System.currentTimeMillis(),
                 )
                 UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=DETAILS_BY_ID status=NO_NEW_DATA" }
@@ -356,7 +356,7 @@ class TmdbEnrichmentBatchWorker
                 canonicalMediaRepository.updateTmdbEnriched(
                     canonicalId = canonicalId,
                     enriched = enriched,
-                    resolvedBy = TmdbResolvedBy.SEARCH_MATCH.name,
+                    resolvedBy = TmdbResolvedBy.SEARCH_MATCH,
                     resolvedAt = now,
                 )
                 UnifiedLog.d(TAG) { "PROGRESS item=${canonicalId.key} action=SEARCH_MATCH tmdbId=${resolvedTmdbRef.id}" }
@@ -365,7 +365,6 @@ class TmdbEnrichmentBatchWorker
                 // No match found - mark as failed with cooldown
                 canonicalMediaRepository.markTmdbResolveAttemptFailed(
                     canonicalId = canonicalId,
-                    state = "FAILED",
                     reason = "No confident TMDB match found",
                     attemptAt = now,
                     nextEligibleAt = nextEligible,

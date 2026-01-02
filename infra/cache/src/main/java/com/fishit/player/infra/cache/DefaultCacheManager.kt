@@ -33,10 +33,16 @@ class DefaultCacheManager @Inject constructor(
 
     companion object {
         private const val TAG = "CacheManager"
-        
-        // TDLib directory names (relative to noBackupFilesDir)
-        private const val TDLIB_DB_DIR = "tdlib"
-        private const val TDLIB_FILES_DIR = "tdlib-files"
+
+        // TDLib session directory names (current v2 default: app-v2 TelegramAuthModule)
+        private const val TDLIB_SESSION_ROOT_DIR = "tdlib"
+        private const val TDLIB_DB_SUBDIR = "db"
+        private const val TDLIB_FILES_SUBDIR = "files"
+
+        // TDLib legacy directory names (v1 / older layouts)
+        private const val TDLIB_DB_DIR_LEGACY = "tdlib-db"
+        private const val TDLIB_FILES_DIR_LEGACY = "tdlib-files"
+        private const val TDLIB_DIR_LEGACY = "tdlib"
         
         // ObjectBox directory name (relative to filesDir)
         private const val OBJECTBOX_DIR = "objectbox"
@@ -48,19 +54,30 @@ class DefaultCacheManager @Inject constructor(
 
     override suspend fun getTelegramCacheSizeBytes(): Long = withContext(Dispatchers.IO) {
         try {
-            val tdlibDir = File(context.noBackupFilesDir, TDLIB_DB_DIR)
-            val filesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR)
-            
+            val v2SessionRoot = File(context.filesDir, TDLIB_SESSION_ROOT_DIR)
+            val v2FilesDir = File(v2SessionRoot, TDLIB_FILES_SUBDIR)
+
+            val legacyFilesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR_LEGACY)
+            val legacySessionRoot = File(context.noBackupFilesDir, TDLIB_DIR_LEGACY)
+            val legacyFilesDirAlt = File(legacySessionRoot, TDLIB_FILES_SUBDIR)
+
+            val candidates =
+                listOf(
+                    v2FilesDir,
+                    legacyFilesDir,
+                    legacyFilesDirAlt,
+                )
+
             var totalSize = 0L
-            
-            if (tdlibDir.exists()) {
-                totalSize += calculateDirectorySize(tdlibDir)
+            val visited = HashSet<String>(candidates.size)
+            for (dir in candidates) {
+                if (!dir.exists()) continue
+                val key = runCatching { dir.canonicalPath }.getOrElse { dir.absolutePath }
+                if (!visited.add(key)) continue
+                totalSize += calculateDirectorySize(dir)
             }
-            if (filesDir.exists()) {
-                totalSize += calculateDirectorySize(filesDir)
-            }
-            
-            UnifiedLog.d(TAG) { "TDLib cache size: $totalSize bytes" }
+
+            UnifiedLog.d(TAG) { "TDLib files cache size: $totalSize bytes" }
             totalSize
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to calculate TDLib cache size" }
@@ -104,11 +121,26 @@ class DefaultCacheManager @Inject constructor(
 
     override suspend fun clearTelegramCache(): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Only clear files directory (downloaded media), preserve database
-            val filesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR)
-            
-            if (filesDir.exists()) {
-                deleteDirectoryContents(filesDir)
+            // Only clear files directory (downloaded media), preserve database.
+            // Current v2 layout: filesDir/tdlib/files (see app-v2 TelegramAuthModule).
+            val v2FilesDir = File(File(context.filesDir, TDLIB_SESSION_ROOT_DIR), TDLIB_FILES_SUBDIR)
+
+            // Legacy layouts that might still exist on upgraded installs.
+            val legacyFilesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR_LEGACY)
+            val legacyFilesDirAlt = File(File(context.noBackupFilesDir, TDLIB_DIR_LEGACY), TDLIB_FILES_SUBDIR)
+
+            val candidates = listOf(v2FilesDir, legacyFilesDir, legacyFilesDirAlt)
+            val visited = HashSet<String>(candidates.size)
+            var clearedAny = false
+            for (dir in candidates) {
+                if (!dir.exists()) continue
+                val key = runCatching { dir.canonicalPath }.getOrElse { dir.absolutePath }
+                if (!visited.add(key)) continue
+                deleteDirectoryContents(dir)
+                clearedAny = true
+            }
+
+            if (clearedAny) {
                 UnifiedLog.i(TAG) { "Cleared TDLib files cache" }
             } else {
                 UnifiedLog.d(TAG) { "TDLib files directory does not exist, nothing to clear" }

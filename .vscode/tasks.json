@@ -9,8 +9,8 @@
     {
       "label": "Safe Build Debug",
       "type": "shell",
-      "command": "chmod +x ${workspaceFolder}/scripts/build/safe-build.sh && ${workspaceFolder}/scripts/build/safe-build.sh",
-      "args": ["assembleDebug"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/build/safe-build.sh", "assembleDebug"],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -25,8 +25,8 @@
     {
       "label": "Safe Build Release",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/build/safe-build.sh",
-      "args": ["assembleRelease"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/build/safe-build.sh", "assembleRelease"],
       "group": "build",
       "presentation": {
         "reveal": "always",
@@ -38,8 +38,8 @@
     {
       "label": "Clean Build",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/build/safe-build.sh",
-      "args": ["clean", "assembleDebug"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/build/safe-build.sh", "clean", "assembleDebug"],
       "group": "build",
       "presentation": {
         "reveal": "always",

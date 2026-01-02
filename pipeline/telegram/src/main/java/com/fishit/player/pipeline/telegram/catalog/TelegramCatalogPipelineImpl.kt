@@ -7,16 +7,29 @@ import com.fishit.player.pipeline.telegram.adapter.TelegramChatInfo
 import com.fishit.player.pipeline.telegram.adapter.TelegramMediaUpdate
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.model.toRawMediaMetadata
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /**
  * Default implementation of [TelegramCatalogPipeline].
+ *
+ * **PLATINUM:** Parallel Chat Scanning
+ * - Scans multiple chats concurrently (controlled by chatParallelism)
+ * - Emits items immediately via channelFlow (no accumulation)
+ * - Supports checkpoint resume via excludeChatIds
+ * - ~3x faster than sequential scanning for typical accounts
  *
  * Stateless producer that:
  * - Reads from TelegramPipelineAdapter (auth state, chats, messages)
@@ -80,19 +93,32 @@ constructor(
                 return@channelFlow
             }
             
-            UnifiedLog.i(TAG) { "Pre-flight checks passed - starting catalog scan" }
+            UnifiedLog.i(TAG) { "Pre-flight checks passed - starting PLATINUM parallel catalog scan" }
 
-            // Get chats to scan
-            val allChats = adapter.getChats(limit = 200)
-            val chatsToScan =
-                    if (config.chatIds != null) {
-                        allChats.filter { it.chatId in config.chatIds }
-                    } else {
-                        allChats
-                    }
+            // Get chats to scan (limit=0 means all chats)
+            val allChats = adapter.getChats(limit = 0)
+            
+            // Apply chatIds filter
+            val filteredChats = if (config.chatIds != null) {
+                allChats.filter { it.chatId in config.chatIds }
+            } else {
+                allChats
+            }
+            
+            // PLATINUM: Apply excludeChatIds filter for checkpoint resume
+            val chatsToScan = if (config.excludeChatIds.isNotEmpty()) {
+                filteredChats.filter { it.chatId !in config.excludeChatIds }
+            } else {
+                filteredChats
+            }
 
-            val totalChats = chatsToScan.size
-            UnifiedLog.i(TAG) { "Starting catalog scan for $totalChats chats" }
+            val totalChats = filteredChats.size
+            val skippedChats = filteredChats.size - chatsToScan.size
+            
+            UnifiedLog.i(TAG) { 
+                "PLATINUM scan: $totalChats total chats, $skippedChats skipped, " +
+                "${chatsToScan.size} to process (parallelism=${config.chatParallelism})" 
+            }
 
             send(
                     TelegramCatalogEvent.ScanStarted(
@@ -101,97 +127,89 @@ constructor(
                     ),
             )
 
-            var scannedChats = 0
-            var scannedMessages = 0L
-            var discoveredItems = 0L
+            if (chatsToScan.isEmpty()) {
+                UnifiedLog.d(TAG) { "No chats to scan (all excluded or filtered)" }
+                send(
+                    TelegramCatalogEvent.ScanCompleted(
+                        scannedChats = 0,
+                        scannedMessages = 0,
+                        discoveredItems = 0,
+                        durationMs = System.currentTimeMillis() - startTime,
+                        newHighWaterMarks = emptyMap(),
+                    ),
+                )
+                return@channelFlow
+            }
 
-            for (chat in chatsToScan) {
-                if (!isActive) {
-                    UnifiedLog.i(TAG) { "Scan cancelled at chat $scannedChats/$totalChats" }
-                    send(
-                            TelegramCatalogEvent.ScanCancelled(
-                                    scannedChats = scannedChats,
-                                    scannedMessages = scannedMessages,
-                            ),
-                    )
-                    return@channelFlow
-                }
+            // Atomic counters for thread-safe updates
+            val scannedChats = AtomicInteger(0)
+            val scannedMessages = AtomicLong(0)
+            val discoveredItems = AtomicLong(0)
+            
+            // Track high-water marks for checkpoint updates (synchronized)
+            val newHighWaterMarks = java.util.concurrent.ConcurrentHashMap<Long, Long>()
+            val isIncremental = config.isIncremental
+            
+            if (isIncremental) {
+                UnifiedLog.i(TAG) { "Incremental scan: Using ${config.highWaterMarks?.size ?: 0} high-water marks" }
+            } else {
+                UnifiedLog.i(TAG) { "Full scan: No high-water marks (initial sync)" }
+            }
 
-                UnifiedLog.d(TAG, "Scanning chat '${chat.title}' (id=${chat.chatId})")
-
-                try {
-                    val cursor =
-                            TelegramMessageCursor(
-                                    adapter = adapter,
-                                    chat = chat,
-                                    maxMessages = config.maxMessagesPerChat,
-                                    minMessageTimestampMs = config.minMessageTimestampMs,
-                                    pageSize = config.pageSize,
+            // ================================================================
+            // PLATINUM: Parallel Chat Scanning
+            // Scan multiple chats concurrently with semaphore limiting
+            // ================================================================
+            val semaphore = Semaphore(config.chatParallelism)
+            
+            supervisorScope {
+                chatsToScan.map { chat ->
+                    async {
+                        semaphore.withPermit {
+                            if (!isActive) return@withPermit
+                            
+                            scanSingleChat(
+                                chat = chat,
+                                config = config,
+                                scannedMessages = scannedMessages,
+                                discoveredItems = discoveredItems,
+                                scannedChats = scannedChats,
+                                totalChats = chatsToScan.size,
+                                newHighWaterMarks = newHighWaterMarks,
+                                isIncremental = isIncremental,
                             )
-
-                    while (isActive && cursor.hasNext()) {
-                        val batch = cursor.nextBatch()
-                        if (batch.isEmpty()) break
-
-                        for (mediaItem in batch) {
-                            scannedMessages++
-
-                            // Convert to RawMediaMetadata
-                            val rawMetadata = mediaItem.toRawMediaMetadata()
-
-                            val catalogItem =
-                                    TelegramCatalogItem(
-                                            raw = rawMetadata,
-                                            chatId = chat.chatId,
-                                            messageId = mediaItem.messageId,
-                                            chatTitle = chat.title,
-                                    )
-
-                            send(TelegramCatalogEvent.ItemDiscovered(catalogItem))
-                            discoveredItems++
-
-                            // Log progress periodically
-                            if (scannedMessages % PROGRESS_LOG_INTERVAL == 0L) {
-                                UnifiedLog.d(
-                                        TAG,
-                                        "Progress: $scannedMessages messages, $discoveredItems items",
-                                )
-                            }
                         }
-
-                        // Emit progress event
-                        send(
-                                TelegramCatalogEvent.ScanProgress(
-                                        scannedChats = scannedChats,
-                                        totalChats = totalChats,
-                                        scannedMessages = scannedMessages,
-                                        discoveredItems = discoveredItems,
-                                ),
-                        )
                     }
+                }.awaitAll()
+            }
 
-                    scannedChats++
-                } catch (ce: CancellationException) {
-                    throw ce // Re-throw cancellation
-                } catch (e: Exception) {
-                    // Log error but continue with next chat
-                    UnifiedLog.w(TAG, "Error scanning chat ${chat.chatId}: ${e.message}")
-                }
+            // Check if cancelled during parallel scan
+            if (!isActive) {
+                UnifiedLog.i(TAG) { "Scan cancelled during parallel processing" }
+                send(
+                    TelegramCatalogEvent.ScanCancelled(
+                        scannedChats = scannedChats.get(),
+                        scannedMessages = scannedMessages.get(),
+                        partialHighWaterMarks = newHighWaterMarks.toMap(),
+                    ),
+                )
+                return@channelFlow
             }
 
             val durationMs = System.currentTimeMillis() - startTime
             UnifiedLog.i(
                     TAG,
-                    "Scan completed: $scannedChats chats, $scannedMessages messages, " +
-                            "$discoveredItems items in ${durationMs}ms",
+                    "PLATINUM scan completed: ${scannedChats.get()} chats, ${scannedMessages.get()} messages, " +
+                            "${discoveredItems.get()} items in ${durationMs}ms (incremental=$isIncremental, parallel=${config.chatParallelism})",
             )
 
             send(
                     TelegramCatalogEvent.ScanCompleted(
-                            scannedChats = scannedChats,
-                            scannedMessages = scannedMessages,
-                            discoveredItems = discoveredItems,
+                            scannedChats = scannedChats.get(),
+                            scannedMessages = scannedMessages.get(),
+                            discoveredItems = discoveredItems.get(),
                             durationMs = durationMs,
+                            newHighWaterMarks = newHighWaterMarks.toMap(),
                     ),
             )
         } catch (ce: CancellationException) {
@@ -205,6 +223,132 @@ constructor(
                             message = t.message ?: "Unknown error",
                             throwable = t,
                     ),
+            )
+        }
+    }
+    
+    /**
+     * PLATINUM: Scan a single chat and emit results.
+     *
+     * Called concurrently from multiple coroutines during parallel scanning.
+     * Emits ChatScanComplete/ChatScanFailed events for checkpoint tracking.
+     */
+    private suspend fun kotlinx.coroutines.channels.SendChannel<TelegramCatalogEvent>.scanSingleChat(
+        chat: TelegramChatInfo,
+        config: TelegramCatalogConfig,
+        scannedMessages: AtomicLong,
+        discoveredItems: AtomicLong,
+        scannedChats: AtomicInteger,
+        totalChats: Int,
+        newHighWaterMarks: java.util.concurrent.ConcurrentHashMap<Long, Long>,
+        isIncremental: Boolean,
+    ) {
+        val chatHighWaterMark = config.getHighWaterMark(chat.chatId)
+        UnifiedLog.d(TAG, "Scanning chat '${chat.title}' (id=${chat.chatId}, hwm=${chatHighWaterMark ?: "none"})")
+
+        var chatItemCount = 0L
+        var chatHighestSeen = 0L
+        var batchCount = 0
+
+        try {
+            val cursor = TelegramMessageCursor(
+                adapter = adapter,
+                chat = chat,
+                maxMessages = config.maxMessagesPerChat,
+                minMessageTimestampMs = config.minMessageTimestampMs,
+                pageSize = config.pageSize,
+                stopAtMessageId = chatHighWaterMark,
+            )
+
+            while (cursor.hasNext()) {
+                val batch = cursor.nextBatch()
+                if (batch.isEmpty()) break
+                batchCount++
+
+                for (mediaItem in batch) {
+                    // Check cancellation in inner loop for responsiveness
+                    if (!kotlinx.coroutines.currentCoroutineContext().isActive) {
+                        UnifiedLog.d(TAG, "Chat ${chat.chatId} scan cancelled mid-batch")
+                        return
+                    }
+                    
+                    chatItemCount++
+                    val totalItems = scannedMessages.incrementAndGet()
+
+                    // Convert to RawMediaMetadata
+                    val rawMetadata = mediaItem.toRawMediaMetadata()
+
+                    val catalogItem = TelegramCatalogItem(
+                        raw = rawMetadata,
+                        chatId = chat.chatId,
+                        messageId = mediaItem.messageId,
+                        chatTitle = chat.title,
+                    )
+
+                    send(TelegramCatalogEvent.ItemDiscovered(catalogItem))
+                    val totalDiscovered = discoveredItems.incrementAndGet()
+
+                    // Log progress periodically
+                    if (totalItems % PROGRESS_LOG_INTERVAL == 0L) {
+                        UnifiedLog.d(TAG, "Progress: $totalItems scanned, $totalDiscovered discovered")
+                    }
+                }
+
+                // Debounce progress events: emit every 3rd batch to reduce channel flooding
+                if (batchCount % 3 == 0) {
+                    send(
+                        TelegramCatalogEvent.ScanProgress(
+                            scannedChats = scannedChats.get(),
+                            totalChats = totalChats,
+                            scannedMessages = scannedMessages.get(),
+                            discoveredItems = discoveredItems.get(),
+                        ),
+                    )
+                }
+            }
+
+            // Update high-water mark for this chat
+            chatHighestSeen = cursor.highestSeenMessageId()
+            if (chatHighestSeen > 0) {
+                val existingHwm = chatHighWaterMark ?: 0L
+                if (chatHighestSeen > existingHwm) {
+                    newHighWaterMarks[chat.chatId] = chatHighestSeen
+                } else if (existingHwm > 0) {
+                    newHighWaterMarks[chat.chatId] = existingHwm
+                }
+            } else if (chatHighWaterMark != null) {
+                newHighWaterMarks[chat.chatId] = chatHighWaterMark
+            }
+
+            if (cursor.reachedHighWaterMark()) {
+                UnifiedLog.d(TAG, "Chat ${chat.chatId}: Incremental sync complete (reached HWM)")
+            }
+
+            scannedChats.incrementAndGet()
+            
+            // PLATINUM: Emit ChatScanComplete for checkpoint tracking
+            // Note: chatItemCount represents media items (cursor already filters for media)
+            send(
+                TelegramCatalogEvent.ChatScanComplete(
+                    chatId = chat.chatId,
+                    messageCount = cursor.scannedCount(), // Actual messages scanned (before filtering)
+                    itemCount = chatItemCount,           // Media items discovered
+                    newHighWaterMark = if (chatHighestSeen > 0) chatHighestSeen else chatHighWaterMark,
+                ),
+            )
+            
+            UnifiedLog.v(TAG) { "Chat ${chat.chatId} (${chat.title}) complete: ${cursor.scannedCount()} scanned, $chatItemCount items" }
+            
+        } catch (ce: CancellationException) {
+            throw ce // Re-throw cancellation
+        } catch (e: Exception) {
+            // PLATINUM: Emit ChatScanFailed - this chat won't be in processedChatIds
+            UnifiedLog.w(TAG, "Error scanning chat ${chat.chatId}: ${e.message}")
+            send(
+                TelegramCatalogEvent.ChatScanFailed(
+                    chatId = chat.chatId,
+                    reason = e.message ?: "Unknown error",
+                ),
             )
         }
     }

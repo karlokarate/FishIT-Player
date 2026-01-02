@@ -12,6 +12,16 @@ class TmdbIdParsingTest {
     }
 
     @Test
+    fun `parses typed tmdb movie strings`() {
+        assertEquals(TmdbId(550), "tmdb:movie:550".toTmdbIdOrNull())
+    }
+
+    @Test
+    fun `parses typed tmdb tv strings`() {
+        assertEquals(TmdbId(1399), "tmdb:tv:1399".toTmdbIdOrNull())
+    }
+
+    @Test
     fun `parses numeric strings`() {
         assertEquals(TmdbId(1399), "1399".toTmdbIdOrNull())
     }

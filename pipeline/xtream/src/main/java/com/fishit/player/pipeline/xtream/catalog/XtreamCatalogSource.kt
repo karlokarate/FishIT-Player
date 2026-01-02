@@ -4,6 +4,7 @@ import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
 import com.fishit.player.pipeline.xtream.model.XtreamVodItem
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Abstraction over the data source for Xtream catalog items.
@@ -44,15 +45,41 @@ interface XtreamCatalogSource {
     /**
      * Load all episodes across all series.
      *
-     * Implementations may:
-     * - Fetch episodes per series and merge
-     * - Use pre-fetched local cache
-     * - Call a bulk API if available
+     * @deprecated Use [loadEpisodesStreaming] for parallel loading with progress.
+     * This method blocks until ALL episodes from ALL series are loaded,
+     * which can take minutes for large catalogs and may timeout.
      *
      * @return List of all episodes (may be empty)
      * @throws XtreamCatalogSourceException on non-recoverable errors
      */
+    @Deprecated(
+        message = "Use loadEpisodesStreaming() for parallel loading with checkpoint support",
+        replaceWith = ReplaceWith("loadEpisodesStreaming()")
+    )
     suspend fun loadEpisodes(): List<XtreamEpisode>
+
+    /**
+     * Stream episodes from all series with parallel loading.
+     *
+     * **PLATINUM Episode Loading:**
+     * - Loads episodes from multiple series in parallel (controlled by [parallelism])
+     * - Emits [EpisodeBatchResult] as soon as each series completes
+     * - Supports filtering to skip already-processed series (for checkpoint resume)
+     * - Memory-efficient: doesn't accumulate all episodes before returning
+     *
+     * **Behavior:**
+     * - First loads series list, then fetches episodes for each in parallel
+     * - Each series emits: Batch(episodes) → SeriesComplete OR SeriesFailed
+     * - Flow completes when all series are processed
+     *
+     * @param parallelism Max concurrent series to load (default: 4)
+     * @param excludeSeriesIds Series IDs to skip (for checkpoint resume)
+     * @return Cold Flow of [EpisodeBatchResult] events
+     */
+    fun loadEpisodesStreaming(
+        parallelism: Int = DEFAULT_EPISODE_PARALLELISM,
+        excludeSeriesIds: Set<Int> = emptySet(),
+    ): Flow<EpisodeBatchResult>
 
     /**
      * Load all live TV channels.
@@ -61,6 +88,61 @@ interface XtreamCatalogSource {
      * @throws XtreamCatalogSourceException on non-recoverable errors
      */
     suspend fun loadLiveChannels(): List<XtreamChannel>
+
+    companion object {
+        /** Default parallelism for episode streaming (4 concurrent series). */
+        const val DEFAULT_EPISODE_PARALLELISM = 4
+    }
+}
+
+/**
+ * Result from streaming episode loading.
+ *
+ * Emitted per-series during [XtreamCatalogSource.loadEpisodesStreaming].
+ */
+sealed interface EpisodeBatchResult {
+    /** The series ID this result relates to. */
+    val seriesId: Int
+
+    /**
+     * A batch of episodes loaded from a single series.
+     *
+     * @property seriesId The series these episodes belong to
+     * @property seriesName The series name (for metadata context)
+     * @property episodes List of episodes (never empty)
+     */
+    data class Batch(
+        override val seriesId: Int,
+        val seriesName: String?,
+        val episodes: List<XtreamEpisode>,
+    ) : EpisodeBatchResult
+
+    /**
+     * Series episode loading completed successfully.
+     *
+     * Emitted after all episodes for a series have been emitted via [Batch].
+     * May be emitted even if series had 0 episodes.
+     *
+     * @property seriesId The completed series
+     * @property episodeCount Total episodes loaded for this series
+     */
+    data class SeriesComplete(
+        override val seriesId: Int,
+        val episodeCount: Int,
+    ) : EpisodeBatchResult
+
+    /**
+     * Series episode loading failed.
+     *
+     * The overall stream continues with other series.
+     *
+     * @property seriesId The failed series
+     * @property error The failure reason
+     */
+    data class SeriesFailed(
+        override val seriesId: Int,
+        val error: Throwable,
+    ) : EpisodeBatchResult
 }
 
 /**

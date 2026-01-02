@@ -2,7 +2,7 @@ package com.fishit.player.feature.telegram
 
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.playermodel.PlaybackContext
-import com.fishit.player.feature.telegram.domain.TelegramMediaItem
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -6,9 +6,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceId
-import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
-import com.fishit.player.feature.onboarding.domain.XtreamAuthState
-import com.fishit.player.feature.onboarding.domain.XtreamConnectionState
+import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.core.onboarding.domain.XtreamAuthState
+import com.fishit.player.core.onboarding.domain.XtreamConnectionState
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import dagger.assisted.Assisted

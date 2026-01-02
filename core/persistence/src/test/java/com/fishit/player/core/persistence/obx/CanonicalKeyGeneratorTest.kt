@@ -1,6 +1,7 @@
 package com.fishit.player.core.persistence.obx
 
-import com.fishit.player.core.model.ids.TmdbId
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,14 +14,14 @@ class CanonicalKeyGeneratorTest {
 
     @Test
     fun `generates TMDB key correctly`() {
-        val key = CanonicalKeyGenerator.fromTmdbId(TmdbId(550))
-        assertEquals("tmdb:550", key)
+        val key = CanonicalKeyGenerator.fromTmdbId(TmdbRef(TmdbMediaType.MOVIE, 550))
+        assertEquals("tmdb:movie:550", key)
     }
 
     @Test
     fun `generates TMDB key for TV show`() {
-        val key = CanonicalKeyGenerator.fromTmdbId(TmdbId(1399))
-        assertEquals("tmdb:1399", key)
+        val key = CanonicalKeyGenerator.fromTmdbId(TmdbRef(TmdbMediaType.TV, 1399))
+        assertEquals("tmdb:tv:1399", key)
     }
 
     // ========== Movie Key Generation ==========
@@ -92,7 +93,7 @@ class CanonicalKeyGeneratorTest {
 
     @Test
     fun `detects movie kind from TMDB key`() {
-        val kind = CanonicalKeyGenerator.kindFromKey("tmdb:550")
+        val kind = CanonicalKeyGenerator.kindFromKey("tmdb:movie:550")
         assertEquals("movie", kind)
     }
 
@@ -112,6 +113,9 @@ class CanonicalKeyGeneratorTest {
 
     @Test
     fun `detects TMDB-based key`() {
+        assertTrue(CanonicalKeyGenerator.isTmdbBased("tmdb:movie:550"))
+        assertTrue(CanonicalKeyGenerator.isTmdbBased("tmdb:tv:1399"))
+        // Legacy untyped format remains supported for lookups/migration
         assertTrue(CanonicalKeyGenerator.isTmdbBased("tmdb:550"))
     }
 

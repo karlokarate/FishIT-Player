@@ -11,8 +11,8 @@ import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.feature.home.HomeState
 import com.fishit.player.feature.home.HomeViewModel
-import com.fishit.player.feature.home.domain.HomeContentRepository
-import com.fishit.player.feature.home.domain.HomeMediaItem
+import com.fishit.player.core.home.domain.HomeContentRepository
+import com.fishit.player.core.home.domain.HomeMediaItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

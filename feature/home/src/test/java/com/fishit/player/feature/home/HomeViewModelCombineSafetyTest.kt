@@ -2,7 +2,7 @@ package com.fishit.player.feature.home
 
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.feature.home.domain.HomeMediaItem
+import com.fishit.player.core.home.domain.HomeMediaItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

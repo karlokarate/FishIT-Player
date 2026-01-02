@@ -56,8 +56,12 @@ Binding for all v2 modules that touch media identity or images:
 
 If a valid TMDB ID is known for a work, then:
 
-* `canonicalId.key = "tmdb:<tmdbId>"`
+* Movies: `canonicalId.key = "tmdb:movie:<tmdbId>"`
+* TV (series root for episodes): `canonicalId.key = "tmdb:tv:<tmdbId>"`
 * This is the **highest priority identity**, overriding all other identity strategies.
+
+> Legacy compatibility: older data may contain untyped `tmdb:<id>`. Implementations must treat it
+> as a legacy alias for lookups and converge new writes to the typed format.
 
 ### 4.2 Where TMDB IDs May Come From
 
@@ -247,7 +251,7 @@ Add CI checks (grep-based or Detekt custom rule) that fail if:
 
 ---
 
-# Step-by-step (recommended rollout)
+      # Step-by-step (recommended rollout)
 
 1. Add this file under `/contracts/` and register it in the contracts inventory README.
 2. Add CI guardrails (grep/Detekt) for TMDB URL leakage + pipeline violations.

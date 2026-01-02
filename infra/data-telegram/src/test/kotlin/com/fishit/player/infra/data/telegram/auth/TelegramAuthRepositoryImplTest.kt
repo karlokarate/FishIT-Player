@@ -116,6 +116,8 @@ class TelegramAuthRepositoryImplTest {
         override suspend fun logout() {
             logoutCalls++
         }
+
+        override suspend fun getCurrentUserId(): Long? = 123456789L
     }
 
     private suspend fun TelegramAuthRepositoryImpl.awaitStateMatching(

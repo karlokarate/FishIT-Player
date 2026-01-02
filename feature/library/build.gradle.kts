@@ -30,12 +30,8 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))
+    implementation(project(":core:library-domain"))
     implementation(project(":playback:domain"))
-    implementation(project(":player:internal"))
-    implementation(project(":pipeline:xtream"))
-    implementation(project(":pipeline:telegram"))
-    implementation(project(":pipeline:io"))
     implementation(project(":infra:logging"))
     
     // Compose

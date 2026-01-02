@@ -20,6 +20,16 @@ interface TelegramAuthRepository {
     suspend fun sendPassword(password: String)
 
     suspend fun logout()
+
+    /**
+     * Get the current Telegram user's ID.
+     *
+     * Used for checkpoint validation to detect account switches.
+     * Returns null if not authenticated or if the call fails.
+     *
+     * @return The current user's Telegram ID, or null
+     */
+    suspend fun getCurrentUserId(): Long?
 }
 
 /**

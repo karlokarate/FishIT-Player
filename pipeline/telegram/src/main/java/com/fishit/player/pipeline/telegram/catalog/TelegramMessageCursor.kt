@@ -9,21 +9,29 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 /**
- * Cursor-based chat history traversal.
+ * Cursor-based chat history traversal with incremental sync support.
  *
  * Uses TDLib's fromMessageId semantics:
  * - fromMessageId=0 → start from latest
  * - subsequent pages use last message ID as cursor
  *
+ * **Incremental Sync (High-Water Mark):**
+ * When [stopAtMessageId] is provided, scanning stops when we reach a message
+ * with ID <= stopAtMessageId. This enables "only fetch new content" behavior:
+ * - TDLib returns messages newest-first
+ * - We scan until we hit a message we've already seen
+ * - The caller tracks the highest seen messageId for next sync
+ *
  * **Design:**
  * - Stateful cursor (tracks position, counts)
  * - Client-side timestamp filtering via minMessageTimestampMs
  * - Respects maxMessages quota
+ * - Incremental sync via stopAtMessageId (high-water mark)
  * - Cancellation-aware via coroutine context
  *
  * **Usage:**
  * ```kotlin
- * val cursor = TelegramMessageCursor(adapter, chat, config)
+ * val cursor = TelegramMessageCursor(adapter, chat, config, highWaterMark)
  * while (cursor.hasNext()) {
  *     val batch = cursor.nextBatch()
  *     // process batch
@@ -35,6 +43,7 @@ import kotlinx.coroutines.isActive
  * @property maxMessages Maximum messages to fetch (null = no limit)
  * @property minMessageTimestampMs Minimum message timestamp filter (null = no filter)
  * @property pageSize Messages per page
+ * @property stopAtMessageId Stop scanning when reaching this messageId (for incremental sync)
  */
 internal class TelegramMessageCursor(
     private val adapter: TelegramPipelineAdapter,
@@ -42,10 +51,13 @@ internal class TelegramMessageCursor(
     private val maxMessages: Long?,
     private val minMessageTimestampMs: Long?,
     private val pageSize: Int = DEFAULT_PAGE_SIZE,
+    private val stopAtMessageId: Long? = null,
 ) {
     private var fromMessageId: Long = 0L
     private var reachedEnd: Boolean = false
     private var scannedMessages: Long = 0L
+    private var highestSeenMessageId: Long = 0L
+    private var reachedHighWaterMark: Boolean = false
 
     /**
      * Fetch the next batch of media items from the chat.
@@ -54,6 +66,10 @@ internal class TelegramMessageCursor(
      * TDLib may return empty results while loading data from the server in the background.
      * We retry up to [EMPTY_PAGE_MAX_RETRIES] times with exponential backoff before
      * concluding that the chat history is truly exhausted.
+     *
+     * **Incremental Sync:**
+     * If [stopAtMessageId] is set, the batch is truncated at the first message
+     * with ID <= stopAtMessageId, and scanning stops.
      *
      * @return List of TelegramMediaItem (may be empty if no more media or quota reached)
      */
@@ -110,18 +126,46 @@ internal class TelegramMessageCursor(
             return emptyList()
         }
 
-        scannedMessages += page.size
-        fromMessageId = page.last().messageId
+        // Track highest seen messageId for checkpoint updates
+        val firstMsgId = page.firstOrNull()?.messageId ?: 0L
+        if (firstMsgId > highestSeenMessageId) {
+            highestSeenMessageId = firstMsgId
+        }
+
+        // Incremental sync: Check for high-water mark
+        // TDLib returns messages newest-first, so if we see messageId <= stopAtMessageId,
+        // we've reached content we've already seen
+        val truncatedPage = if (stopAtMessageId != null) {
+            val hwmIndex = page.indexOfFirst { it.messageId <= stopAtMessageId }
+            if (hwmIndex >= 0) {
+                // Found known content - truncate and stop
+                reachedHighWaterMark = true
+                reachedEnd = true
+                val newItems = page.take(hwmIndex)
+                UnifiedLog.d(TAG, "Chat ${chat.chatId}: Reached high-water mark at messageId=$stopAtMessageId, " +
+                        "returning ${newItems.size} new items (truncated from ${page.size})")
+                newItems
+            } else {
+                page
+            }
+        } else {
+            page
+        }
+
+        scannedMessages += truncatedPage.size
+        if (truncatedPage.isNotEmpty()) {
+            fromMessageId = truncatedPage.last().messageId
+        }
 
         // Apply timestamp filter
         val filtered = if (minMessageTimestampMs != null) {
             val cutoffSeconds = minMessageTimestampMs / 1000
-            page.filter { item ->
+            truncatedPage.filter { item ->
                 val dateSeconds = item.date ?: 0L
                 dateSeconds >= cutoffSeconds
             }
         } else {
-            page
+            truncatedPage
         }
 
         // If all messages were filtered out and we hit quota, we're done
@@ -130,7 +174,7 @@ internal class TelegramMessageCursor(
         }
 
         // If we got a partial page (less than requested), we've reached the end
-        if (page.size < remainingForQuota) {
+        if (truncatedPage.size < remainingForQuota && !reachedHighWaterMark) {
             reachedEnd = true
         }
 
@@ -147,6 +191,19 @@ internal class TelegramMessageCursor(
 
     /** Get total messages scanned so far (before filtering). */
     fun scannedCount(): Long = scannedMessages
+
+    /**
+     * Get the highest messageId seen during this cursor's lifetime.
+     * Used by caller to update high-water marks for next incremental sync.
+     */
+    fun highestSeenMessageId(): Long = highestSeenMessageId
+
+    /**
+     * Check if scanning stopped because we reached the high-water mark.
+     * True = incremental sync completed (found known content).
+     * False = full scan completed (reached end of chat history).
+     */
+    fun reachedHighWaterMark(): Boolean = reachedHighWaterMark
 
     companion object {
         private const val TAG = "TelegramMessageCursor"

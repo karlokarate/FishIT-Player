@@ -1,9 +1,9 @@
 package probe
 
-import com.chris.m3usuite.core.m3u.M3UParser
-import com.chris.m3usuite.model.MediaItem
 import java.io.File
+import java.io.BufferedReader
 import java.io.FileInputStream
+import java.io.InputStreamReader
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.system.measureTimeMillis
 
@@ -24,31 +24,75 @@ object M3UParseProbe {
         val withPoster = AtomicLong(0)
         val withEpg = AtomicLong(0)
 
-        fun tally(batch: List<MediaItem>) {
-            total.addAndGet(batch.size.toLong())
-            batch.forEach { mi ->
-                val t = mi.type.ifBlank { "(blank)" }
-                byType[t] = (byType[t] ?: 0) + 1
-                val cat = (mi.categoryName ?: "").ifBlank { "(none)" }
-                byCategory[cat] = (byCategory[cat] ?: 0) + 1
-                if (!mi.logo.isNullOrBlank()) withLogo.incrementAndGet()
-                if (!mi.poster.isNullOrBlank()) withPoster.incrementAndGet()
-                if (!mi.epgChannelId.isNullOrBlank()) withEpg.incrementAndGet()
+        fun inferType(url: String): String {
+            val lower = url.lowercase()
+            return when {
+                lower.contains("/series/") -> "SERIES"
+                lower.contains("/movie/") || lower.contains("/vod/") -> "VOD"
+                lower.endsWith(".m3u8") || lower.endsWith(".ts") -> "LIVE"
+                lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".avi") -> "VOD"
+                else -> "UNKNOWN"
             }
+        }
+
+        fun parseAttr(extinfLine: String, key: String): String? {
+            // Matches key="value" (very common IPTV format)
+            val pattern = Regex("\\b" + Regex.escape(key) + "=\\\"([^\\\"]*)\\\"")
+            return pattern.find(extinfLine)?.groupValues?.getOrNull(1)
+        }
+
+        fun parseGroupTitle(extinfLine: String): String? {
+            return parseAttr(extinfLine, "group-title")
+        }
+
+        fun parseLogo(extinfLine: String): String? {
+            return parseAttr(extinfLine, "tvg-logo")
+        }
+
+        fun parsePoster(extinfLine: String): String? {
+            // Non-standard but used by some providers
+            return parseAttr(extinfLine, "poster")
+                ?: parseAttr(extinfLine, "xui-poster")
+        }
+
+        fun parseEpgId(extinfLine: String): String? {
+            return parseAttr(extinfLine, "tvg-id")
+        }
+
+        fun tallyItem(extinfLine: String, urlLine: String) {
+            total.incrementAndGet()
+
+            val inferredType = inferType(urlLine)
+            byType[inferredType] = (byType[inferredType] ?: 0) + 1
+
+            val cat = parseGroupTitle(extinfLine).orEmpty().ifBlank { "(none)" }
+            byCategory[cat] = (byCategory[cat] ?: 0) + 1
+
+            if (!parseLogo(extinfLine).isNullOrBlank()) withLogo.incrementAndGet()
+            if (!parsePoster(extinfLine).isNullOrBlank()) withPoster.incrementAndGet()
+            if (!parseEpgId(extinfLine).isNullOrBlank()) withEpg.incrementAndGet()
         }
 
         val ms = measureTimeMillis {
             FileInputStream(f).use { input ->
-                val approx = f.length()
-                kotlinx.coroutines.runBlocking {
-                    M3UParser.parseStreaming(
-                        source = input,
-                        approxSizeBytes = approx,
-                        batchSize = 2000,
-                        onBatch = { batch -> tally(batch) },
-                        onProgress = { /* ignore */ },
-                        cancel = { false }
-                    )
+                BufferedReader(InputStreamReader(input)).use { reader ->
+                    var pendingExtinf: String? = null
+                    reader.lineSequence().forEach { rawLine ->
+                        val line = rawLine.trim()
+                        if (line.isEmpty()) return@forEach
+
+                        if (line.startsWith("#EXTINF", ignoreCase = true)) {
+                            pendingExtinf = line
+                            return@forEach
+                        }
+
+                        // URL line (may follow EXTINF)
+                        val extinf = pendingExtinf
+                        if (extinf != null && !line.startsWith("#")) {
+                            tallyItem(extinfLine = extinf, urlLine = line)
+                            pendingExtinf = null
+                        }
+                    }
                 }
             }
         }

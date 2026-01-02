@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
-import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
-import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
-import com.fishit.player.feature.onboarding.domain.XtreamConfig
-import com.fishit.player.feature.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
+import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.core.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
+import com.fishit.player.core.onboarding.domain.XtreamConfig
+import com.fishit.player.core.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

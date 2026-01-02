@@ -21,7 +21,9 @@ class TelegramAuthRepositoryImpl internal constructor(
     private val scope: CoroutineScope,
 ) : TelegramAuthRepository {
     @Inject
-    constructor(transport: TelegramAuthClient) : this(
+    constructor(
+        transport: TelegramAuthClient,
+    ) : this(
         transport = transport,
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     )
@@ -63,7 +65,12 @@ class TelegramAuthRepositoryImpl internal constructor(
 
     override suspend fun logout() {
         UnifiedLog.i(TAG) { "logout()" }
+        // Note: Checkpoint is NOT cleared here - userId validation at sync start handles account switches
         transport.logout()
+    }
+
+    override suspend fun getCurrentUserId(): Long? {
+        return transport.getCurrentUserId()
     }
 
     private fun observeTransportAuthState() {

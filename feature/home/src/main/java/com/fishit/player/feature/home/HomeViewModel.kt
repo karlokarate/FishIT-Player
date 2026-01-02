@@ -8,8 +8,8 @@ import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.feature.home.domain.HomeContentRepository
-import com.fishit.player.feature.home.domain.HomeMediaItem
+import com.fishit.player.core.home.domain.HomeContentRepository
+import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow

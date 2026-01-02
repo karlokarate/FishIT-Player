@@ -56,17 +56,28 @@ interface TelegramCatalogPipeline {
  * @property minMessageTimestampMs Minimum message timestamp in ms since epoch (null = no filter)
  * @property chatIds Specific chat IDs to scan (null = all chats)
  * @property pageSize Messages per page for TDLib pagination
+ * @property highWaterMarks Map of chatId to highest seen messageId for incremental sync.
+ *           When provided, scanning stops for a chat when reaching messageId <= highWaterMark.
+ *           This enables "only fetch new content" behavior on subsequent syncs.
+ * @property excludeChatIds Chat IDs to skip during scanning (for checkpoint resume, PLATINUM)
+ * @property chatParallelism Max concurrent chats to scan in parallel (PLATINUM)
  */
 data class TelegramCatalogConfig(
     val maxMessagesPerChat: Long? = null,
     val minMessageTimestampMs: Long? = null,
     val chatIds: List<Long>? = null,
     val pageSize: Int = DEFAULT_PAGE_SIZE,
+    val highWaterMarks: Map<Long, Long>? = null,
+    val excludeChatIds: Set<Long> = emptySet(),
+    val chatParallelism: Int = DEFAULT_CHAT_PARALLELISM,
 ) {
     companion object {
         const val DEFAULT_PAGE_SIZE = 100
+        
+        /** Default parallelism for chat scanning (3 concurrent chats). */
+        const val DEFAULT_CHAT_PARALLELISM = 3
 
-        /** Default config with no limits. */
+        /** Default config with no limits (full scan). */
         val DEFAULT = TelegramCatalogConfig()
 
         /** Quick scan: limited messages, recent only. */
@@ -74,7 +85,32 @@ data class TelegramCatalogConfig(
             maxMessagesPerChat = maxPerChat,
             minMessageTimestampMs = System.currentTimeMillis() - (recentDays * 24 * 60 * 60 * 1000L),
         )
+
+        /**
+         * Incremental scan using high-water marks.
+         *
+         * Only fetches messages newer than the last sync for each chat.
+         *
+         * @param highWaterMarks Map of chatId to highest seen messageId
+         */
+        fun incremental(highWaterMarks: Map<Long, Long>) = TelegramCatalogConfig(
+            highWaterMarks = highWaterMarks,
+        )
     }
+
+    /**
+     * Check if this is an incremental scan (has high-water marks).
+     */
+    val isIncremental: Boolean
+        get() = !highWaterMarks.isNullOrEmpty()
+
+    /**
+     * Get high-water mark for a specific chat.
+     *
+     * @param chatId Chat ID
+     * @return High-water mark messageId, or null if full scan for this chat
+     */
+    fun getHighWaterMark(chatId: Long): Long? = highWaterMarks?.get(chatId)
 }
 
 /**
@@ -142,12 +178,15 @@ sealed interface TelegramCatalogEvent {
      * @property scannedMessages Total messages scanned
      * @property discoveredItems Total media items found
      * @property durationMs Scan duration in milliseconds
+     * @property newHighWaterMarks Updated high-water marks (chatId → highest messageId).
+     *           Consumers should persist these for incremental sync on next run.
      */
     data class ScanCompleted(
         val scannedChats: Int,
         val scannedMessages: Long,
         val discoveredItems: Long,
         val durationMs: Long,
+        val newHighWaterMarks: Map<Long, Long> = emptyMap(),
     ) : TelegramCatalogEvent
 
     /**
@@ -155,10 +194,12 @@ sealed interface TelegramCatalogEvent {
      *
      * @property scannedChats Chats scanned before cancellation
      * @property scannedMessages Messages scanned before cancellation
+     * @property partialHighWaterMarks Partial high-water marks from chats scanned before cancellation
      */
     data class ScanCancelled(
         val scannedChats: Int,
         val scannedMessages: Long,
+        val partialHighWaterMarks: Map<Long, Long> = emptyMap(),
     ) : TelegramCatalogEvent
 
     /**
@@ -172,6 +213,38 @@ sealed interface TelegramCatalogEvent {
         val reason: String,
         val message: String,
         val throwable: Throwable? = null,
+    ) : TelegramCatalogEvent
+
+    /**
+     * A chat scan completed successfully (PLATINUM parallel scanning).
+     *
+     * Emitted when all messages for a specific chat have been scanned.
+     * Used for checkpoint tracking to enable cross-run resume.
+     *
+     * @property chatId The chat ID that completed scanning
+     * @property messageCount Number of messages scanned for this chat
+     * @property itemCount Number of media items discovered in this chat
+     * @property newHighWaterMark Updated high-water mark for this chat (highest messageId seen)
+     */
+    data class ChatScanComplete(
+        val chatId: Long,
+        val messageCount: Long,
+        val itemCount: Long,
+        val newHighWaterMark: Long?,
+    ) : TelegramCatalogEvent
+
+    /**
+     * A chat scan failed (PLATINUM parallel scanning).
+     *
+     * The overall scan continues with other chats.
+     * Failed chats are NOT added to processedChatIds for retry on next run.
+     *
+     * @property chatId The chat ID that failed
+     * @property reason Error description
+     */
+    data class ChatScanFailed(
+        val chatId: Long,
+        val reason: String,
     ) : TelegramCatalogEvent
 }
 

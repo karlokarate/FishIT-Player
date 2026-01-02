@@ -64,8 +64,9 @@ data class RawMediaMetadata(
          * **PIPELINE CONTRACT:** Pipelines MUST leave this empty (""). Canonical identity is
          * assigned centrally by `:core:metadata-normalizer` during unification.
          *
-         * Format when set by normalizer: contract canonical key (`tmdb:<id>` or
-         * `movie:<title>[:<year>]` / `episode:<title>:SxxExx`).
+         * Format when set by normalizer: contract canonical key (`tmdb:movie:<id>` /
+         * `tmdb:tv:<id>` or `movie:<title>[:<year>]` / `episode:<title>:SxxExx`).
+         * Legacy compatibility: older stored data may contain untyped `tmdb:<id>`.
          *
          * @see com.fishit.player.core.metadata.FallbackCanonicalKeyGenerator for generation logic
          */

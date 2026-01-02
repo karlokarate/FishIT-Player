@@ -17,7 +17,6 @@ import com.fishit.player.core.persistence.obx.ObxLive
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
 import com.fishit.player.core.persistence.obx.ObxProfile
 import com.fishit.player.core.persistence.obx.ObxProfilePermissions
-import com.fishit.player.core.persistence.obx.ObxResumeMark
 import com.fishit.player.core.persistence.obx.ObxScreenTimeEntry
 import com.fishit.player.core.persistence.obx.ObxSeries
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
@@ -53,8 +52,6 @@ internal object ObxInspectorEntityRegistry {
             EntitySpec("ObxKidCategoryAllow", "Kid Allow: Category", ObxKidCategoryAllow::class.java),
             EntitySpec("ObxKidContentBlock", "Kid Block: Content", ObxKidContentBlock::class.java),
             EntitySpec("ObxScreenTimeEntry", "Screen Time", ObxScreenTimeEntry::class.java),
-
-            EntitySpec("ObxResumeMark", "Resume Mark (legacy)", ObxResumeMark::class.java),
             EntitySpec("ObxTelegramMessage", "Telegram Message", ObxTelegramMessage::class.java),
 
             // Aggregated index tables

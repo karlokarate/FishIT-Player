@@ -2,9 +2,9 @@ package com.fishit.player.feature.live
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fishit.player.feature.live.domain.LiveCategory
-import com.fishit.player.feature.live.domain.LiveChannel
-import com.fishit.player.feature.live.domain.LiveContentRepository
+import com.fishit.player.core.live.domain.LiveCategory
+import com.fishit.player.core.live.domain.LiveChannel
+import com.fishit.player.core.live.domain.LiveContentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,6 +1,6 @@
 package com.fishit.player.infra.data.home.di
 
-import com.fishit.player.feature.home.domain.HomeContentRepository
+import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.infra.data.home.HomeContentRepositoryAdapter
 import dagger.Binds
 import dagger.Module

@@ -24,11 +24,11 @@ data class SyncPhaseConfig(
     companion object {
         const val DEFAULT_FLUSH_INTERVAL_MS = 1200L
 
-        // Optimized batch sizes per content type
-        const val LIVE_BATCH_SIZE = 400
-        const val MOVIES_BATCH_SIZE = 250
-        const val SERIES_BATCH_SIZE = 150
-        const val EPISODES_BATCH_SIZE = 100 // Smaller for lazy loading
+        // Optimized batch sizes per content type (tuned Dec 2025)
+        const val LIVE_BATCH_SIZE = 500      // Small items, can go higher
+        const val MOVIES_BATCH_SIZE = 300    // Sweet spot for RAM/speed
+        const val SERIES_BATCH_SIZE = 150    // Needs to appear quickly
+        const val EPISODES_BATCH_SIZE = 200  // Lazy loaded, larger batches OK
 
         val LIVE = SyncPhaseConfig(SyncPhase.LIVE, LIVE_BATCH_SIZE)
         val MOVIES = SyncPhaseConfig(SyncPhase.MOVIES, MOVIES_BATCH_SIZE)

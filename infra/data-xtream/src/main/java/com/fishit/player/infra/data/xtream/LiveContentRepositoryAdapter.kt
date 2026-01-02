@@ -9,9 +9,9 @@ import com.fishit.player.core.persistence.obx.ObxEpgNowNext
 import com.fishit.player.core.persistence.obx.ObxEpgNowNext_
 import com.fishit.player.core.persistence.obx.ObxLive
 import com.fishit.player.core.persistence.obx.ObxLive_
-import com.fishit.player.feature.live.domain.LiveCategory
-import com.fishit.player.feature.live.domain.LiveChannel
-import com.fishit.player.feature.live.domain.LiveContentRepository
+import com.fishit.player.core.live.domain.LiveCategory
+import com.fishit.player.core.live.domain.LiveChannel
+import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor

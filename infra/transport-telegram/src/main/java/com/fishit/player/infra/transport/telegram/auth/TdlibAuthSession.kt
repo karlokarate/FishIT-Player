@@ -182,6 +182,26 @@ class TdlibAuthSession(
         }
     }
 
+    override suspend fun getCurrentUserId(): Long? {
+        return try {
+            val me = client.getMe()
+            when (me) {
+                is TdlResult.Success -> {
+                    val userId = me.result.id
+                    UnifiedLog.d(TAG, "getCurrentUserId: $userId")
+                    userId
+                }
+                is TdlResult.Failure -> {
+                    UnifiedLog.w(TAG, "getMe failed: ${me.code} - ${me.message}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG, "getCurrentUserId error: ${e.message}")
+            null
+        }
+    }
+
     // ========== Internal Methods ==========
 
     private suspend fun waitForReady() {

@@ -1,36 +1,15 @@
 package com.fishit.player.feature.detail.series
 
-import com.fishit.player.infra.data.xtream.EpisodeIndexItem
-import com.fishit.player.infra.data.xtream.EpisodePlaybackHints
-import com.fishit.player.infra.data.xtream.SeasonIndexItem
-import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRepository
+import com.fishit.player.core.detail.domain.EpisodeIndexItem
+import com.fishit.player.core.detail.domain.EpisodePlaybackHints
+import com.fishit.player.core.detail.domain.SeasonIndexItem
+import com.fishit.player.core.detail.domain.XtreamSeriesIndexRefresher
+import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.xtream.XtreamApiClient
-import com.fishit.player.infra.transport.xtream.XtreamSeasonInfo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
-
-/**
- * Helper to build playback hints JSON.
- */
-private fun buildPlaybackHintsJson(
-    streamId: Int?,
-    containerExtension: String?,
-    directUrl: String?,
-): String? {
-    if (streamId == null) return null
-    return Json.encodeToString(
-        mapOf(
-            "streamId" to streamId.toString(),
-            "containerExtension" to (containerExtension ?: ""),
-            "directUrl" to (directUrl ?: ""),
-        ),
-    )
-}
 
 /**
  * Use case for loading series seasons.
@@ -41,14 +20,14 @@ private fun buildPlaybackHintsJson(
  * 3. If stale/missing → fetch from API, persist, return
  *
  * **Architecture:**
- * - Domain layer (feature/detail)
- * - Uses XtreamSeriesIndexRepository (data layer)
- * - Uses XtreamApiClient (transport layer) for fetching
+ * - UI/Feature-safe (no transport / pipeline imports)
+ * - Uses XtreamSeriesIndexRepository for cache
+ * - Uses XtreamSeriesIndexRefresher port for refresh
  */
 @Singleton
 class LoadSeriesSeasonsUseCase @Inject constructor(
     private val repository: XtreamSeriesIndexRepository,
-    private val apiClient: XtreamApiClient,
+    private val refresher: XtreamSeriesIndexRefresher,
 ) {
     companion object {
         private const val TAG = "LoadSeriesSeasons"
@@ -82,38 +61,8 @@ class LoadSeriesSeasonsUseCase @Inject constructor(
             return false
         }
 
-        // Fetch from API
-        UnifiedLog.d(TAG) { "Fetching seasons for series $seriesId from API" }
-        val seriesInfo = apiClient.getSeriesInfo(seriesId)
-        
-        if (seriesInfo == null) {
-            UnifiedLog.w(TAG) { "API returned null for series $seriesId" }
-            return false
-        }
-
-        // Extract seasons from API response
-        val seasons = seriesInfo.seasons?.mapNotNull { season ->
-            val seasonNum = season.seasonNumber ?: return@mapNotNull null
-            SeasonIndexItem(
-                seriesId = seriesId,
-                seasonNumber = seasonNum,
-                episodeCount = season.episodeCount,
-                name = season.name,
-                coverUrl = season.coverBig ?: season.cover,
-                airDate = season.airDate,
-                lastUpdatedMs = System.currentTimeMillis(),
-            )
-        } ?: emptyList()
-
-        if (seasons.isEmpty()) {
-            UnifiedLog.w(TAG) { "No seasons found for series $seriesId" }
-            return false
-        }
-
-        // Persist to repository
-        repository.upsertSeasons(seriesId, seasons)
-        UnifiedLog.d(TAG) { "Persisted ${seasons.size} seasons for series $seriesId" }
-        return true
+        UnifiedLog.d(TAG) { "Refreshing seasons for series $seriesId" }
+        return refresher.refreshSeasons(seriesId)
     }
 }
 
@@ -132,7 +81,7 @@ class LoadSeriesSeasonsUseCase @Inject constructor(
 @Singleton
 class LoadSeasonEpisodesUseCase @Inject constructor(
     private val repository: XtreamSeriesIndexRepository,
-    private val apiClient: XtreamApiClient,
+    private val refresher: XtreamSeriesIndexRefresher,
 ) {
     companion object {
         private const val TAG = "LoadSeasonEpisodes"
@@ -183,60 +132,8 @@ class LoadSeasonEpisodesUseCase @Inject constructor(
             return false
         }
 
-        // Fetch from API
-        UnifiedLog.d(TAG) { "Fetching episodes for series $seriesId season $seasonNumber from API" }
-        val seriesInfo = apiClient.getSeriesInfo(seriesId)
-        
-        if (seriesInfo == null) {
-            UnifiedLog.w(TAG) { "API returned null for series $seriesId" }
-            return false
-        }
-
-        // Extract episodes for this season (API returns Map<String, List<XtreamEpisodeInfo>>)
-        val seasonKey = seasonNumber.toString()
-        val episodesList = seriesInfo.episodes?.get(seasonKey) ?: emptyList()
-        
-        val episodes = episodesList.mapNotNull { ep ->
-            val epNum = ep.episodeNum ?: return@mapNotNull null
-            val sourceKey = "xtream:episode:${seriesId}:${seasonNumber}:${epNum}"
-            
-            // Build playback hints if available
-            val resolvedId = ep.resolvedEpisodeId
-            val hintsJson = resolvedId?.let { streamId ->
-                buildPlaybackHintsJson(
-                    streamId = streamId,
-                    containerExtension = ep.containerExtension,
-                    directUrl = ep.directSource,
-                )
-            }
-            
-            EpisodeIndexItem(
-                seriesId = seriesId,
-                seasonNumber = seasonNumber,
-                episodeNumber = epNum,
-                sourceKey = sourceKey,
-                episodeId = resolvedId,
-                title = ep.title ?: ep.info?.name,
-                thumbUrl = ep.info?.movieImage ?: ep.info?.posterPath ?: ep.info?.stillPath,
-                durationSecs = ep.info?.durationSecs,
-                plotBrief = ep.info?.plot?.take(200), // Brief for list display
-                rating = ep.info?.rating?.toDoubleOrNull(),
-                airDate = ep.info?.releaseDate ?: ep.info?.airDate,
-                playbackHintsJson = hintsJson,
-                lastUpdatedMs = System.currentTimeMillis(),
-                playbackHintsUpdatedMs = if (hintsJson != null) System.currentTimeMillis() else 0L,
-            )
-        }
-
-        if (episodes.isEmpty()) {
-            UnifiedLog.w(TAG) { "No episodes found for series $seriesId season $seasonNumber" }
-            return false
-        }
-
-        // Persist to repository
-        repository.upsertEpisodes(episodes)
-        UnifiedLog.d(TAG) { "Persisted ${episodes.size} episodes for series $seriesId season $seasonNumber" }
-        return true
+        UnifiedLog.d(TAG) { "Refreshing episodes for series $seriesId season $seasonNumber" }
+        return refresher.refreshEpisodes(seriesId, seasonNumber)
     }
 
     /**
@@ -276,7 +173,7 @@ class LoadSeasonEpisodesUseCase @Inject constructor(
 @Singleton
 class EnsureEpisodePlaybackReadyUseCase @Inject constructor(
     private val repository: XtreamSeriesIndexRepository,
-    private val apiClient: XtreamApiClient,
+    private val refresher: XtreamSeriesIndexRefresher,
 ) {
     companion object {
         private const val TAG = "EnsureEpisodePlayback"
@@ -337,38 +234,16 @@ class EnsureEpisodePlaybackReadyUseCase @Inject constructor(
         
         return try {
             withTimeout(ENRICHMENT_TIMEOUT_MS) {
-                val seriesInfo = apiClient.getSeriesInfo(seriesId)
-                    ?: return@withTimeout Result.Failed(sourceKey, "API returned null for series")
+                val hints =
+                    refresher.refreshEpisodePlaybackHints(
+                        seriesId = seriesId,
+                        seasonNumber = seasonNumber,
+                        episodeNumber = episodeNumber,
+                        sourceKey = sourceKey,
+                    )
+                        ?: return@withTimeout Result.Failed(sourceKey, "Failed to resolve playback hints")
 
-                // Find the specific episode (API returns Map<String, List<XtreamEpisodeInfo>>)
-                val seasonKey = seasonNumber.toString()
-                val episodesList = seriesInfo.episodes?.get(seasonKey)
-                    ?: return@withTimeout Result.Failed(sourceKey, "Season $seasonNumber not found")
-                    
-                val episode = episodesList.find { it.episodeNum == episodeNumber }
-                    ?: return@withTimeout Result.Failed(sourceKey, "Episode $episodeNumber not found")
-
-                val resolvedId = episode.resolvedEpisodeId
-                    ?: return@withTimeout Result.Failed(sourceKey, "Episode has no playable ID")
-
-                // Build and persist playback hints
-                val hintsJson = buildPlaybackHintsJson(
-                    streamId = resolvedId,
-                    containerExtension = episode.containerExtension,
-                    directUrl = episode.directSource,
-                )
-                
-                repository.updatePlaybackHints(sourceKey, hintsJson)
-
-                // Return fresh hints
-                val hints = EpisodePlaybackHints(
-                    episodeId = resolvedId,
-                    streamId = resolvedId,
-                    containerExtension = episode.containerExtension,
-                    directUrl = episode.directSource,
-                )
-                
-                UnifiedLog.d(TAG) { "Episode $sourceKey enriched successfully: streamId=$resolvedId" }
+                UnifiedLog.d(TAG) { "Episode $sourceKey enriched successfully: streamId=${hints.streamId}" }
                 Result.Ready(sourceKey, hints)
             }
         } catch (e: Exception) {

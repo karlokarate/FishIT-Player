@@ -107,18 +107,15 @@ class DefaultDebugInfoProvider
         // =========================================================================
 
         override suspend fun getTelegramCacheSize(): Long? {
-            val size = cacheManager.getTelegramCacheSizeBytes()
-            return if (size > 0) size else null
+            return cacheManager.getTelegramCacheSizeBytes()
         }
 
         override suspend fun getImageCacheSize(): Long? {
-            val size = cacheManager.getImageCacheSizeBytes()
-            return if (size > 0) size else null
+            return cacheManager.getImageCacheSizeBytes()
         }
 
         override suspend fun getDatabaseSize(): Long? {
-            val size = cacheManager.getDatabaseSizeBytes()
-            return if (size > 0) size else null
+            return cacheManager.getDatabaseSizeBytes()
         }
 
         // =========================================================================

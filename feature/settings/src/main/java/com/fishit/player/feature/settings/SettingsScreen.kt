@@ -173,6 +173,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
                             onClick = viewModel::cancelSync,
+                            enabled = state.syncState.isRunning,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(

@@ -6,6 +6,7 @@ import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.TmdbResolvedBy
 import com.fishit.player.core.model.ids.CanonicalId
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.ids.TmdbId
@@ -243,7 +244,7 @@ interface CanonicalMediaRepository {
     suspend fun markTmdbDetailsApplied(
             canonicalId: CanonicalMediaId,
             tmdbId: TmdbId,
-            resolvedBy: String,
+            resolvedBy: TmdbResolvedBy,
             resolvedAt: Long,
     )
 
@@ -253,31 +254,31 @@ interface CanonicalMediaRepository {
      * Updates resolve state and sets cooldown for retry.
      *
      * @param canonicalId The canonical media ID
-     * @param state The new resolve state (FAILED or AMBIGUOUS)
      * @param reason Description of why resolution failed
      * @param attemptAt Timestamp of the attempt
      * @param nextEligibleAt When the item can be retried
      */
     suspend fun markTmdbResolveAttemptFailed(
             canonicalId: CanonicalMediaId,
-            state: String,
             reason: String,
             attemptAt: Long,
             nextEligibleAt: Long,
     )
 
     /**
-     * Mark item as successfully resolved via search.
+     * Mark item as successfully resolved.
      *
      * Sets the TmdbRef and updates resolve state to RESOLVED.
      *
      * @param canonicalId The canonical media ID
      * @param tmdbId The resolved TMDB ID
+     * @param resolvedBy How the item was resolved
      * @param resolvedAt Timestamp of resolution
      */
     suspend fun markTmdbResolved(
             canonicalId: CanonicalMediaId,
             tmdbId: TmdbId,
+            resolvedBy: TmdbResolvedBy,
             resolvedAt: Long,
     )
 
@@ -297,7 +298,7 @@ interface CanonicalMediaRepository {
     suspend fun updateTmdbEnriched(
             canonicalId: CanonicalMediaId,
             enriched: NormalizedMediaMetadata,
-            resolvedBy: String,
+            resolvedBy: TmdbResolvedBy,
             resolvedAt: Long,
     )
 

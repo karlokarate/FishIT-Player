@@ -2,7 +2,7 @@ package com.fishit.player.infra.data.xtream
 
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
-import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
@@ -23,9 +23,9 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
-import com.fishit.player.feature.onboarding.domain.XtreamAuthState as DomainAuthState
-import com.fishit.player.feature.onboarding.domain.XtreamConfig as DomainConfig
-import com.fishit.player.feature.onboarding.domain.XtreamConnectionState as DomainConnectionState
+import com.fishit.player.core.onboarding.domain.XtreamAuthState as DomainAuthState
+import com.fishit.player.core.onboarding.domain.XtreamConfig as DomainConfig
+import com.fishit.player.core.onboarding.domain.XtreamConnectionState as DomainConnectionState
 import com.fishit.player.infra.transport.xtream.XtreamAuthState as TransportAuthState
 import com.fishit.player.infra.transport.xtream.XtreamConnectionState as TransportConnectionState
 

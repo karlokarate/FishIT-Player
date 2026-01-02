@@ -41,7 +41,7 @@ data class IoMediaItem(
      * Follows the resume contract from Phase 2 Task 1:
      * - IO content uses: `"io:file:{uri}"`
      *
-     * @return ContentId string suitable for ObxResumeMark.
+    * @return ContentId string suitable for resume tracking.
      */
     fun toContentId(): String = "io:file:${source.toUriString()}"
 

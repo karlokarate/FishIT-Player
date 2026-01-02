@@ -1,6 +1,6 @@
 package com.fishit.player.infra.data.xtream.di
 
-import com.fishit.player.feature.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.infra.data.xtream.XtreamAuthRepositoryAdapter
 import dagger.Binds
 import dagger.Module

@@ -80,13 +80,12 @@ All v2 modules live in the existing repo but are separate from the legacy app.
     - `EntitlementRepository`
     - `LocalMediaRepository` (for generic IO content)
     - `SubtitleStyleStore` (persistence for subtitle style preferences)
-    - `ResumeRepository` (backed by `ObxResumeMark`)
     - Cached feature flags / entitlements
-    - `CanonicalMediaRepository` (stores canonical media and source references - see `MEDIA_NORMALIZATION_CONTRACT.md`)
+    - `CanonicalMediaRepository` (stores canonical media, source references, and unified resume - see `MEDIA_NORMALIZATION_CONTRACT.md`)
   - ObjectBox entities ported from v1:
     - `ObxCategory`, `ObxLive`, `ObxVod`, `ObxSeries`, `ObxEpisode`
     - `ObxEpgNowNext`, `ObxProfile`, `ObxProfilePermissions`
-    - `ObxResumeMark`, `ObxTelegramMessage`
+    - `ObxTelegramMessage`
 
 - `:core:metadata-normalizer`
   - **Status: Phase 3 skeleton complete** – Module exists with interfaces and no-op implementations

@@ -36,13 +36,11 @@ dependencies {
     implementation(project(":core:ui-layout"))
     implementation(project(":core:ui-imaging"))
     implementation(project(":core:metadata-normalizer"))
+    implementation(project(":core:detail-domain"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
-    
-    // Enrichment dependencies (on-demand detail loading)
-    implementation(project(":infra:transport-xtream"))
-    implementation(project(":infra:data-xtream"))  // XtreamSeriesIndexRepository for episode lazy loading
-    implementation(project(":pipeline:xtream"))
+
+    // NOTE: Feature modules MUST NOT depend on transport/pipeline/data modules directly.
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

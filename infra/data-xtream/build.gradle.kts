@@ -35,18 +35,16 @@ dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":core:source-activation-api"))
+    implementation(project(":core:onboarding-domain"))
+    implementation(project(":core:library-domain"))
+    implementation(project(":core:live-domain"))
+    implementation(project(":core:detail-domain"))
     // NOTE: NO dependency on core:catalog-sync - cycle permanently broken.
     // Use api() for persistence to expose generated ObjectBox cursor classes (ObxVod_, ObxSeries_, etc.)
     api(project(":core:persistence"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:transport-xtream"))
     // NOTE: No pipeline:xtream dependency - Data layer works only with RawMediaMetadata
-
-    // Feature interface dependencies (Dependency Inversion)
-    // Repository interfaces are owned by feature modules, implemented here
-    implementation(project(":feature:onboarding"))
-    implementation(project(":feature:library"))
-    implementation(project(":feature:live"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

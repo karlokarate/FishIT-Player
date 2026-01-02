@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.feature.FeatureRegistry
 import com.fishit.player.core.feature.TelegramFeatures
-import com.fishit.player.feature.telegram.domain.TelegramMediaItem
-import com.fishit.player.feature.telegram.domain.TelegramMediaRepository
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
+import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

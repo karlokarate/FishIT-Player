@@ -71,6 +71,44 @@ sealed interface SyncStatus {
         val message: String,
         val throwable: Throwable? = null,
     ) : SyncStatus
+
+    /**
+     * A series episode scan completed.
+     *
+     * Used for checkpoint tracking during parallel episode loading (PLATINUM).
+     * Worker can update checkpoint with completed series IDs to enable
+     * cross-run resume.
+     *
+     * @property source The source being synced (always "xtream")
+     * @property seriesId The series ID that completed
+     * @property episodeCount Number of episodes loaded for this series
+     */
+    data class SeriesEpisodeComplete(
+        val source: String,
+        val seriesId: Int,
+        val episodeCount: Int,
+    ) : SyncStatus
+
+    /**
+     * A Telegram chat scan completed.
+     *
+     * Used for checkpoint tracking during parallel chat scanning (PLATINUM).
+     * Worker can update checkpoint with completed chat IDs to enable
+     * cross-run resume.
+     *
+     * @property source The source being synced (always "telegram")
+     * @property chatId The chat ID that completed
+     * @property messageCount Number of messages scanned in this chat
+     * @property itemCount Number of media items discovered in this chat
+     * @property newHighWaterMark The new high-water mark for this chat
+     */
+    data class TelegramChatComplete(
+        val source: String,
+        val chatId: Long,
+        val messageCount: Long,
+        val itemCount: Long,
+        val newHighWaterMark: Long?,
+    ) : SyncStatus
 }
 
 /**
@@ -86,8 +124,8 @@ data class SyncConfig(
     val emitProgressEvery: Int = DEFAULT_PROGRESS_INTERVAL,
 ) {
     companion object {
-        const val DEFAULT_BATCH_SIZE = 50
-        const val DEFAULT_PROGRESS_INTERVAL = 100
+        const val DEFAULT_BATCH_SIZE = 150  // Optimized for ObjectBox speed (Dec 2025)
+        const val DEFAULT_PROGRESS_INTERVAL = 150
 
         val DEFAULT = SyncConfig()
     }
@@ -166,6 +204,8 @@ interface CatalogSyncService {
      * @param includeSeries Whether to sync series
      * @param includeEpisodes Whether to sync episodes
      * @param includeLive Whether to sync live channels
+     * @param excludeSeriesIds Series IDs to skip during episode loading (for checkpoint resume)
+     * @param episodeParallelism Max concurrent series for parallel episode loading
      * @param syncConfig Sync configuration
      * @return Flow of sync status events
      */
@@ -174,6 +214,8 @@ interface CatalogSyncService {
         includeSeries: Boolean = true,
         includeEpisodes: Boolean = true,
         includeLive: Boolean = true,
+        excludeSeriesIds: Set<Int> = emptySet(),
+        episodeParallelism: Int = 4,
         syncConfig: SyncConfig = SyncConfig.DEFAULT,
     ): Flow<SyncStatus>
 
