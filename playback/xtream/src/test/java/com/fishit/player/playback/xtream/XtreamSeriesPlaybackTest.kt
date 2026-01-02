@@ -1,0 +1,180 @@
+package com.fishit.player.playback.xtream
+
+import com.fishit.player.infra.transport.xtream.*
+import org.junit.Assert.*
+import org.junit.Test
+
+/**
+ * Tests for Xtream SERIES episode playback URL construction.
+ *
+ * Critical requirements from problem statement:
+ * 1. Series episodes MUST use /series/<user>/<pass>/<episodeId>.<ext> (NOT /movie/ or /vod/)
+ * 2. Container extension must be preserved (NOT forced to m3u8/ts)
+ * 3. episodeId is REQUIRED for playback
+ * 4. Fallback to mp4 if containerExtension is missing (NOT m3u8)
+ */
+class XtreamSeriesPlaybackTest {
+    companion object {
+        private const val TEST_HOST = "konigtv.com"
+        private const val TEST_PORT = 8080
+        private const val TEST_USER = "testuser"
+        private const val TEST_PASS = "testpass"
+        private const val TEST_EPISODE_ID = 12345
+        private const val TEST_SERIES_ID = 999
+    }
+
+    /**
+     * Create a URL builder for testing.
+     */
+    private fun createUrlBuilder(): XtreamUrlBuilder {
+        val config =
+            XtreamApiConfig(
+                host = TEST_HOST,
+                port = TEST_PORT,
+                scheme = "HTTP",
+                username = TEST_USER,
+                password = TEST_PASS,
+            )
+        return XtreamUrlBuilder(config)
+    }
+
+    // =========================================================================
+    // Series Episode URL Construction Tests (Core Bug Fix)
+    // =========================================================================
+
+    @Test
+    fun `series episode URL uses series path with episodeId and mp4 extension`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL with episodeId and mp4 container
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "mp4",
+            )
+
+        // Then: URL must use /series/ path (NOT /movie/ or /vod/)
+        assertTrue(
+            "Series URL must use /series/ path",
+            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mp4"),
+        )
+        assertFalse("Series URL must NOT use /movie/ path", url.contains("/movie/"))
+        assertFalse("Series URL must NOT use /vod/ path", url.contains("/vod/"))
+    }
+
+    @Test
+    fun `series episode URL uses series path with episodeId and mkv extension`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL with episodeId and mkv container
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "mkv",
+            )
+
+        // Then: URL must preserve mkv extension (NOT forced to m3u8/ts)
+        assertTrue(
+            "Series URL must use /series/ path with mkv extension",
+            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mkv"),
+        )
+        assertFalse("Series URL must NOT be forced to m3u8", url.endsWith(".m3u8"))
+        assertFalse("Series URL must NOT be forced to ts", url.endsWith(".ts"))
+    }
+
+    @Test
+    fun `series episode URL falls back to mp4 when containerExtension is missing`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL WITHOUT containerExtension
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = null,
+            )
+
+        // Then: URL must fallback to mp4 (NOT m3u8)
+        assertTrue(
+            "Series URL must fallback to mp4 when containerExtension is missing",
+            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mp4"),
+        )
+        assertFalse("Series URL must NOT fallback to m3u8", url.endsWith(".m3u8"))
+    }
+
+    @Test
+    fun `series episode URL must NOT use movie path`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "mp4",
+            )
+
+        // Then: URL must NOT contain /movie/ or /vod/
+        assertFalse(
+            "Series URL must NOT use /movie/ path (legacy bug)",
+            url.contains("/movie/"),
+        )
+        assertFalse(
+            "Series URL must NOT use /vod/ path (legacy bug)",
+            url.contains("/vod/"),
+        )
+    }
+
+    @Test
+    fun `series episode URL uses legacy path when episodeId is missing`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL WITHOUT episodeId
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 2,
+                episodeId = null,
+                containerExtension = "mp4",
+            )
+
+        // Then: URL should use legacy fallback path with /series/
+        assertTrue(
+            "Series URL should use legacy path with /series/",
+            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_SERIES_ID/1/2.mp4"),
+        )
+    }
+
+    @Test
+    fun `VOD URL continues to use movie path`() {
+        // Given: A URL builder for VOD content
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a VOD URL
+        val url = urlBuilder.vodUrl(vodId = 54321, containerExtension = "mp4")
+
+        // Then: VOD URL should use /movie/ or /vod/ path (NOT /series/)
+        assertFalse("VOD URL must NOT use /series/ path", url.contains("/series/"))
+        // Should contain either /movie/ or /vod/ (the exact one depends on config)
+        assertTrue(
+            "VOD URL should use /movie/ or /vod/ path",
+            url.contains("/movie/") || url.contains("/vod/"),
+        )
+    }
+}

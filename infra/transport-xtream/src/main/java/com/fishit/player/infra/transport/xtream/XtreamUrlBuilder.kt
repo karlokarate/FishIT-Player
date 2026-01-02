@@ -170,12 +170,22 @@ class XtreamUrlBuilder(
     /**
      * Build series episode URL.
      *
-     * Uses VOD/movie path for file-based playback (not /series/).
-     * This treats episodes as file-based content, matching provider behavior.
+     * **CRITICAL:** Series episodes MUST use /series/ path (NOT /movie/ or /vod/).
+     * Legacy behavior: /series/{user}/{pass}/{episodeId}.{ext} -> 302 redirect to CDN.
      *
-     * Prefers episodeId (direct): {base}/{vod|movie}/{user}/{pass}/{episodeId}.{ext}
+     * Format: {base}/series/{user}/{pass}/{episodeId}.{ext}
      *
-     * Fallback (legacy format): {base}/{vod|movie}/{user}/{pass}/{seriesId}/{season}/{episode}.{ext}
+     * **Why /series/ path:**
+     * - Xtream Codes API requires /series/ endpoint for episode playback
+     * - Returns 302 Found redirect to tokenized CDN URL (cross-host)
+     * - Using /movie/ or /vod/ path fails with 404 or wrong content
+     *
+     * @param seriesId Series ID (used only if episodeId is missing - rare fallback)
+     * @param seasonNumber Season number (used only if episodeId is missing)
+     * @param episodeNumber Episode number (used only if episodeId is missing)
+     * @param episodeId Episode stream ID (REQUIRED for direct playback)
+     * @param containerExtension Container format from server (e.g., "mp4", "mkv")
+     * @return Series episode playback URL
      */
     fun seriesEpisodeUrl(
         seriesId: Int,
@@ -186,21 +196,28 @@ class XtreamUrlBuilder(
     ): String {
         val ext =
             sanitizeExtension(
-                containerExtension ?: config.seriesExtPrefs.firstOrNull() ?: "m3u8",
+                containerExtension ?: config.seriesExtPrefs.firstOrNull() ?: "mp4",
             )
 
-        // Use VOD path (vod/movie) for episode playback - treat as file-based content
-        // Direct episodeId path (modern panels)
+        // Direct episodeId path: /series/user/pass/episodeId.ext (standard approach)
         if (episodeId != null && episodeId > 0) {
-            return playUrl(vodKind, episodeId, ext)
+            return buildString {
+                append(baseUrl)
+                append("/series/")
+                append(urlEncode(config.username))
+                append("/")
+                append(urlEncode(config.password))
+                append("/")
+                append(episodeId)
+                append(".")
+                append(ext)
+            }
         }
 
-        // Legacy path with VOD kind: /movie/user/pass/seriesId/season/episode.ext
+        // Legacy fallback: /series/user/pass/seriesId/season/episode.ext (rare)
         return buildString {
             append(baseUrl)
-            append("/")
-            append(vodKind)
-            append("/")
+            append("/series/")
             append(urlEncode(config.username))
             append("/")
             append(urlEncode(config.password))

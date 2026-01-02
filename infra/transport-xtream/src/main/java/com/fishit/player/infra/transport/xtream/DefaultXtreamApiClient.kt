@@ -767,28 +767,32 @@ class DefaultXtreamApiClient(
         containerExtension: String?,
     ): String {
         val cfg = config ?: return ""
-        // For Series Episodes: Treat as file-based playback (like VOD)
+        // **CRITICAL:** Series episodes MUST use /series/ path (NOT /movie/ or /vod/).
+        // Legacy behavior: /series/{user}/{pass}/{episodeId}.{ext} -> 302 redirect to CDN.
         // container_extension is SSOT (mkv, mp4, etc. - the actual file on server)
-        // Fallback to seriesExtPrefs or m3u8 only if no container_extension provided
+        // Fallback to seriesExtPrefs or mp4 only if no container_extension provided
         val ext =
-            sanitizeExtension(containerExtension ?: cfg.seriesExtPrefs.firstOrNull() ?: "m3u8")
+            sanitizeExtension(containerExtension ?: cfg.seriesExtPrefs.firstOrNull() ?: "mp4")
 
-        // Use VOD/movie path for episode playback (not /series/)
-        // This treats episodes as file-based content, matching provider behavior
-        val playbackKind = resolveVodPlaybackKind(vodKind)
-
-        // Prefer episodeId if available (direct path: /movie/user/pass/episodeId.ext)
+        // Direct episodeId path: /series/user/pass/episodeId.ext (standard approach)
         if (episodeId != null && episodeId > 0) {
-            return buildPlayUrl(playbackKind, episodeId, ext)
+            return buildString {
+                append(buildBaseUrl())
+                append("/series/")
+                append(urlEncode(cfg.username))
+                append("/")
+                append(urlEncode(cfg.password))
+                append("/")
+                append(episodeId)
+                append(".")
+                append(ext)
+            }
         }
 
-        // Legacy fallback: seriesId/season/episode path with VOD kind
-        // Format: /movie/user/pass/seriesId/season/episode.ext
+        // Legacy fallback: /series/user/pass/seriesId/season/episode.ext (rare)
         return buildString {
             append(buildBaseUrl())
-            append("/")
-            append(playbackKind)
-            append("/")
+            append("/series/")
             append(urlEncode(cfg.username))
             append("/")
             append(urlEncode(cfg.password))
