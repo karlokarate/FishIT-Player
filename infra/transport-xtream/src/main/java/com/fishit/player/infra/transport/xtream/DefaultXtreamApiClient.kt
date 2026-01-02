@@ -767,20 +767,28 @@ class DefaultXtreamApiClient(
         containerExtension: String?,
     ): String {
         val cfg = config ?: return ""
-        // For Series: container_extension is SSOT (mkv, mp4, etc. - the actual file on server)
+        // For Series Episodes: Treat as file-based playback (like VOD)
+        // container_extension is SSOT (mkv, mp4, etc. - the actual file on server)
         // Fallback to seriesExtPrefs or m3u8 only if no container_extension provided
         val ext =
             sanitizeExtension(containerExtension ?: cfg.seriesExtPrefs.firstOrNull() ?: "m3u8")
 
-        // Prefer episodeId if available (direct path)
+        // Use VOD/movie path for episode playback (not /series/)
+        // This treats episodes as file-based content, matching provider behavior
+        val playbackKind = resolveVodPlaybackKind(vodKind)
+
+        // Prefer episodeId if available (direct path: /movie/user/pass/episodeId.ext)
         if (episodeId != null && episodeId > 0) {
-            return buildPlayUrl("series", episodeId, ext)
+            return buildPlayUrl(playbackKind, episodeId, ext)
         }
 
-        // Fall back to seriesId/season/episode path
+        // Legacy fallback: seriesId/season/episode path with VOD kind
+        // Format: /movie/user/pass/seriesId/season/episode.ext
         return buildString {
             append(buildBaseUrl())
-            append("/series/")
+            append("/")
+            append(playbackKind)
+            append("/")
             append(urlEncode(cfg.username))
             append("/")
             append(urlEncode(cfg.password))

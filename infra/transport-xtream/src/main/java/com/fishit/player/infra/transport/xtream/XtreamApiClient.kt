@@ -287,15 +287,18 @@ interface XtreamApiClient {
     /**
      * Build series episode playback URL.
      *
+     * Uses VOD/movie path for file-based playback (not /series/).
+     * This treats episodes as file-based content, matching provider behavior.
+     *
      * Two URL formats supported:
-     * 1. Episode ID: {baseUrl}/series/{username}/{password}/{episodeId}.{ext}
-     * 2. Path-based: {baseUrl}/series/{username}/{password}/{seriesId}/{season}/{episode}.{ext}
+     * 1. Episode ID: {baseUrl}/{vodKind}/{username}/{password}/{episodeId}.{ext}
+     * 2. Path-based: {baseUrl}/{vodKind}/{username}/{password}/{seriesId}/{season}/{episode}.{ext}
      *
      * @param seriesId The series ID
      * @param seasonNumber Season number
      * @param episodeNumber Episode number
      * @param episodeId Optional direct episode ID (preferred if available)
-     * @param containerExtension Container from episode info
+     * @param containerExtension Container from episode info (SSOT)
      * @return Playback URL string
      */
     fun buildSeriesEpisodeUrl(
