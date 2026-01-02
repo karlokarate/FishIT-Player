@@ -16,7 +16,6 @@ import kotlin.test.assertTrue
  * because body.startsWith("{") failed. The fix adds trimStart() before the check.
  */
 class JsonWhitespaceHandlingTest {
-
     /**
      * Helper to simulate the JSON validation logic used in getVodInfo().
      * This is the critical check that was failing before the fix.
@@ -142,17 +141,17 @@ class JsonWhitespaceHandlingTest {
 
     /**
      * Documents the bug and fix:
-     * 
+     *
      * Before Fix:
      * - getVodInfo() checked: if (!body.isNullOrEmpty() && body.startsWith("{"))
      * - Responses with "\n{...}" would fail the startsWith check
      * - Result: getVodInfo() returned null, causing "API returned null" errors
-     * 
+     *
      * After Fix:
      * - getVodInfo() now trims: val trimmedBody = body?.trimStart()
      * - Then checks: if (!trimmedBody.isNullOrEmpty() && trimmedBody.startsWith("{"))
      * - Result: Leading whitespace/BOM is ignored, JSON is parsed correctly
-     * 
+     *
      * Root Cause:
      * - Server sends "HTTP 200 + gzip compressed" response
      * - After gzip decompression, body may have leading whitespace or BOM
@@ -160,7 +159,8 @@ class JsonWhitespaceHandlingTest {
      */
     @Test
     fun `documents the whitespace handling bug fix`() {
-        val bugScenario = """
+        val bugScenario =
+            """
             Scenario: Server sends gzip-compressed JSON with leading newline
             
             HTTP Response:
@@ -177,15 +177,15 @@ class JsonWhitespaceHandlingTest {
             - body.trimStart().startsWith("{") == true
             - JSON is parsed successfully
             - Enrichment proceeds normally
-        """.trimIndent()
-        
+            """.trimIndent()
+
         assertTrue(bugScenario.isNotEmpty(), "Bug scenario should be documented")
-        
+
         // Verify the fix handles the exact scenario
         val problematicResponse = "\n{\"info\":{\"name\":\"Movie\"}}"
         assertTrue(
             isValidJsonStart(problematicResponse),
-            "Fix should handle the exact bug scenario"
+            "Fix should handle the exact bug scenario",
         )
     }
 }

@@ -53,8 +53,5 @@ abstract class XtreamPlaybackModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamDataSourceFactoryProvider(
-        impl: DefaultXtreamDataSourceFactoryProvider
-    ): XtreamDataSourceFactoryProvider
+    abstract fun bindXtreamDataSourceFactoryProvider(impl: DefaultXtreamDataSourceFactoryProvider): XtreamDataSourceFactoryProvider
 }
-
