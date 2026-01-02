@@ -499,9 +499,14 @@ class XtreamPlaybackSourceFactoryImpl
          *
          * **container_extension is SSOT for VOD/Series!**
          *
-         * Priority:
-         * 1. containerExtension if provided (mkv, mp4, avi, etc. - the actual file on server)
-         * 2. Fallback to mp4 (most common container format)
+         * **For SERIES (containerExtension-first, minimal fallback):**
+         * 1. containerExtension if provided (mkv, mp4, avi, etc. - the actual file on server) → USE IT
+         * 2. If missing: fallback to mp4 (first choice), mkv is fallback #2 if mp4 fails
+         * 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
+         *
+         * **For VOD:**
+         * 1. containerExtension if provided → USE IT
+         * 2. Fallback to mp4 (most common)
          *
          * Note: allowed_output_formats is NOT used for VOD/Series (only for Live).
          * The container_extension describes the actual file on the server, not a streaming format.
@@ -530,13 +535,21 @@ class XtreamPlaybackSourceFactoryImpl
                 return containerExt
             }
 
-            // Fallback: mp4 (most common container format for VOD/Series)
-            // Note: We do NOT use allowed_output_formats for VOD/Series
-            UnifiedLog.w(TAG) {
-                "$contentType: No valid containerExtension provided, defaulting to mp4. " +
-                    "This may fail if the actual file has a different extension."
+            // Fallback when containerExtension is missing
+            if (contentType == CONTENT_TYPE_SERIES) {
+                // SERIES: mp4 (first fallback), mkv is fallback #2 if mp4 fails at playback
+                UnifiedLog.w(TAG) {
+                    "$contentType: No containerExtension provided. Using fallback: mp4 " +
+                    "(if playback fails, mkv may be attempted as fallback #2)"
+                }
+                return "mp4"
+            } else {
+                // VOD: Fallback to mp4 (most common container format)
+                UnifiedLog.w(TAG) {
+                    "$contentType: No containerExtension provided, defaulting to mp4."
+                }
+                return "mp4"
             }
-            return "mp4"
         }
 
         /** Guess content type from context if not explicitly set. */
