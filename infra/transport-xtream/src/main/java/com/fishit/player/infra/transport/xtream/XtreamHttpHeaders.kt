@@ -97,7 +97,7 @@ object XtreamHttpHeaders {
      *
      * **CRITICAL for legacy-parity and Cloudflare compatibility:**
      * - User-Agent: FishIT-Player/2.x (Android)
-    * - Accept: *&#47;* (NOT application/json!)
+     * - Accept: *&#47;* (NOT application/json!)
      * - Accept-Encoding: identity (NO compression - critical!)
      * - Optional: Icy-MetaData: 1 (for IPTV stream metadata)
      *

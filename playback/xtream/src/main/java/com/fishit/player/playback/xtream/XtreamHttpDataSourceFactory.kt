@@ -58,7 +58,7 @@ class XtreamHttpDataSourceFactory(
 
     /**
      * OkHttpClient instance configured for Xtream streaming.
-     * 
+     *
      * Thread-safe lazy initialization - Kotlin's `by lazy` ensures thread-safe singleton creation.
      * OkHttpClient itself is thread-safe and designed to be shared across the application.
      */

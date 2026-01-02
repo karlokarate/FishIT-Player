@@ -15,12 +15,12 @@ import javax.inject.Singleton
  */
 @Singleton
 class DefaultXtreamDataSourceFactoryProvider
-@Inject
-constructor(
-    @ApplicationContext private val context: Context,
-) : XtreamDataSourceFactoryProvider {
-    override fun create(
-        headers: Map<String, String>,
-        debugMode: Boolean,
-    ): DataSource.Factory = XtreamHttpDataSourceFactory(context, headers, debugMode)
-}
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : XtreamDataSourceFactoryProvider {
+        override fun create(
+            headers: Map<String, String>,
+            debugMode: Boolean,
+        ): DataSource.Factory = XtreamHttpDataSourceFactory(context, headers, debugMode)
+    }
