@@ -628,7 +628,7 @@ PlaybackContext { extras: {...episodeId: "12345"...} }
        ↓
 XtreamPlaybackSourceFactory.buildUrl(extras["xtream.episodeId"])
        ↓
-http://server:port/series/{username}/{password}/{episodeId}.mkv
+http://server:port/movie/{username}/{password}/{episodeId}.mkv
 ```
 
 ---
