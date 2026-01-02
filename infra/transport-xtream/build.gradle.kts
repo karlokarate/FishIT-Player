@@ -28,6 +28,9 @@ dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":infra:logging"))
+    
+    // Debug settings (for GatedChuckerInterceptor in debug builds)
+    debugImplementation(project(":core:debug-settings"))
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

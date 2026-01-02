@@ -1,7 +1,6 @@
 package com.fishit.player.infra.transport.xtream.di
 
 import android.content.Context
-import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -16,6 +15,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
@@ -37,6 +37,10 @@ annotation class XtreamHttpClient
  * - Section 3: HTTP Timeouts (connect/read/write/call all 30s)
  * - Section 4: User-Agent FishIT-Player/2.x (Android)
  * - Section 5: Device-class parallelism (OkHttp Dispatcher limits)
+ *
+ * **Debug Runtime Toggles:**
+ * - Chucker HTTP Inspector: OFF by default, gated via GatedChuckerInterceptor
+ * - User can enable/disable via Settings (debug builds only)
  *
  * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract</a>
  */
@@ -77,6 +81,10 @@ object XtreamTransportModule {
      * Parallelism per Section 5:
      * - Phone/Tablet: maxRequests=10, maxRequestsPerHost=10
      * - FireTV/low-RAM: maxRequests=3, maxRequestsPerHost=3
+     *
+     * **Debug Runtime Toggles:**
+     * - Chucker: Gated via GatedChuckerInterceptor (OFF by default in debug)
+     * - Release: No Chucker (no-op implementation)
      */
     @Provides
     @Singleton
@@ -84,6 +92,7 @@ object XtreamTransportModule {
     fun provideXtreamOkHttpClient(
         @ApplicationContext context: Context,
         parallelism: XtreamParallelism,
+        chuckerInterceptor: Interceptor, // GatedChuckerInterceptor in debug, no-op in release
     ): OkHttpClient =
         OkHttpClient
             .Builder()
@@ -95,8 +104,8 @@ object XtreamTransportModule {
             // Redirect handling (many Xtream panels use HTTP on non-standard ports)
             .followRedirects(true)
             .followSslRedirects(false)
-            // Chucker HTTP Inspector (captures all requests in debug builds)
-            .addInterceptor(ChuckerInterceptor.Builder(context).build())
+            // Chucker HTTP Inspector (gated in debug, no-op in release)
+            .addInterceptor(chuckerInterceptor)
             // Premium Contract Section 4: Headers via interceptor
             .addInterceptor { chain ->
                 val original = chain.request()

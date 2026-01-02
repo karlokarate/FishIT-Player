@@ -66,6 +66,10 @@ class FishItV2Application :
     @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
     lateinit var appScope: CoroutineScope
 
+    // Debug-only bootstraps (null in release)
+    @Inject
+    lateinit var debugBootstrapsProvider: dagger.Lazy<DebugBootstraps>
+
     override fun onCreate() {
         super.onCreate()
 
@@ -73,8 +77,18 @@ class FishItV2Application :
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
 
         // Contract S-1.1: LeakCanary configuration (debug builds only, after logging)
+        // NOTE: LeakCanary is now configured by DebugToolsInitializer (OFF by default)
         if (BuildConfig.DEBUG) {
             LeakCanaryConfig.install(this)
+        }
+
+        // Contract S-1.2: Start DebugToolsInitializer (syncs DataStore to runtime flags)
+        if (BuildConfig.DEBUG) {
+            try {
+                debugBootstrapsProvider.get().start(appScope)
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "DebugBootstraps not available (expected in release): ${e.message}" }
+            }
         }
 
         // WorkManager initialization (after logging is ready)
