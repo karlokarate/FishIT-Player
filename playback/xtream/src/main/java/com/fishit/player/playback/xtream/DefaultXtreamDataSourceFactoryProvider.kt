@@ -1,6 +1,8 @@
 package com.fishit.player.playback.xtream
 
+import android.content.Context
 import androidx.media3.datasource.DataSource
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,9 +14,13 @@ import javax.inject.Singleton
  * Xtream implementation behind an interface.
  */
 @Singleton
-class DefaultXtreamDataSourceFactoryProvider @Inject constructor() : XtreamDataSourceFactoryProvider {
+class DefaultXtreamDataSourceFactoryProvider
+@Inject
+constructor(
+    @ApplicationContext private val context: Context,
+) : XtreamDataSourceFactoryProvider {
     override fun create(
         headers: Map<String, String>,
         debugMode: Boolean,
-    ): DataSource.Factory = XtreamHttpDataSourceFactory(headers, debugMode)
+    ): DataSource.Factory = XtreamHttpDataSourceFactory(context, headers, debugMode)
 }

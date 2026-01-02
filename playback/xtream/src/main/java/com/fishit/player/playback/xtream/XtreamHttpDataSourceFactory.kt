@@ -1,7 +1,9 @@
 package com.fishit.player.playback.xtream
 
+import android.content.Context
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.fishit.player.infra.logging.UnifiedLog
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -13,6 +15,7 @@ import java.util.concurrent.TimeUnit
  *
  * **Key Features:**
  * - Uses OkHttp to ensure headers survive HTTP redirects (User-Agent, Referer, etc.)
+ * - Integrates Chucker HTTP inspector in debug builds for observability
  * - Logs redirect chains in debug builds (status codes, host changes, final response type)
  * - Allows HTTPS redirects from HTTP (common with Cloudflare panels)
  *
@@ -21,6 +24,13 @@ import java.util.concurrent.TimeUnit
  * with Cloudflare and other proxy/CDN configurations. OkHttp provides explicit control
  * over redirect handling and header propagation.
  *
+ * **Chucker Integration:**
+ * In debug builds, Chucker interceptor is added to allow inspection of:
+ * - `/live/username/password/streamId.ext` (live TV streams)
+ * - `/movie/username/password/streamId.ext` (VOD streams)
+ * - `/series/username/password/streamId.ext` (series episodes)
+ * This makes debugging panel connectivity and redirect issues much easier.
+ *
  * **Debug Logging:**
  * In debug builds, logs:
  * - HTTP status codes (301, 302, 307, 308)
@@ -28,10 +38,12 @@ import java.util.concurrent.TimeUnit
  * - Whether final response starts with "#EXTM3U" (HLS manifest detection)
  * - No secrets (credentials, keys, tokens) are logged
  *
+ * @param context Application context for Chucker initialization
  * @param headers HTTP headers to apply (User-Agent, Referer, Accept, Accept-Encoding)
- * @param debugMode Enable redirect logging (should be tied to BuildConfig.DEBUG)
+ * @param debugMode Enable redirect logging and Chucker (should be tied to BuildConfig.DEBUG)
  */
 class XtreamHttpDataSourceFactory(
+    private val context: Context,
     private val headers: Map<String, String>,
     private val debugMode: Boolean = false,
 ) : DataSource.Factory {
@@ -60,6 +72,9 @@ class XtreamHttpDataSourceFactory(
             .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .apply {
                 if (debugMode) {
+                    // Add Chucker first so it sees the original request/response
+                    addInterceptor(ChuckerInterceptor.Builder(context).build())
+                    // Add redirect logging after Chucker for structured logs
                     addNetworkInterceptor(RedirectLoggingInterceptor())
                 }
             }.build()

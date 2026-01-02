@@ -44,6 +44,10 @@ dependencies {
     // OkHttp for reliable redirect handling
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 
+    // Chucker HTTP Inspector (debug builds only)
+    debugImplementation(libs.chucker)
+    releaseImplementation(libs.chucker.noop)
+
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
@@ -53,4 +57,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.14")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test:core:1.6.1")
 }
