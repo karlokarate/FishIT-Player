@@ -11,6 +11,7 @@ import com.fishit.player.core.catalogsync.SyncStatus
 import com.fishit.player.core.catalogsync.XtreamSyncCheckpoint
 import com.fishit.player.core.catalogsync.XtreamSyncPhase
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.persistence.cache.HomeCacheInvalidator
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -55,11 +56,13 @@ constructor(
         private val catalogRepository: XtreamCatalogRepository,
         private val liveRepository: XtreamLiveRepository,
         private val xtreamApiClient: XtreamApiClient,
+        private val homeCacheInvalidator: HomeCacheInvalidator, // ✅ Phase 2: Cache invalidation
 ) : CoroutineWorker(context, workerParams) {
     companion object {
         private const val TAG = "XtreamCatalogScanWorker"
-        private const val INFO_BACKFILL_BATCH_SIZE = 25   // Tuned Dec 2025: HTTP can parallelize more
-        private const val INFO_BACKFILL_THROTTLE_MS = 100L // Tuned Dec 2025: Most providers allow this
+        private const val INFO_BACKFILL_BATCH_SIZE = 25 // Tuned Dec 2025: HTTP can parallelize more
+        private const val INFO_BACKFILL_THROTTLE_MS =
+                100L // Tuned Dec 2025: Most providers allow this
     }
 
     override suspend fun doWork(): Result {
@@ -164,6 +167,12 @@ constructor(
                         "vod=$vodCount series=$seriesCount episodes=$episodeCount live=$liveCount | " +
                         "backfill_remaining: vod=$vodBackfillRemaining series=$seriesBackfillRemaining"
             }
+
+            // ✅ Phase 2: Invalidate Home cache after successful sync
+            homeCacheInvalidator.invalidateAllAfterSync(
+                    source = "XTREAM",
+                    syncRunId = input.syncRunId
+            )
 
             // Clear checkpoint on full completion
             checkpointStore.clearXtreamCheckpoint()
@@ -337,7 +346,8 @@ constructor(
                         }
                         is SyncStatus.SeriesEpisodeComplete -> {
                             // PLATINUM: Track completed series for checkpoint resume
-                            currentCheckpoint = currentCheckpoint.withProcessedSeries(status.seriesId)
+                            currentCheckpoint =
+                                    currentCheckpoint.withProcessedSeries(status.seriesId)
                             UnifiedLog.v(TAG) {
                                 "Series ${status.seriesId} episodes complete: ${status.episodeCount} eps, " +
                                         "processed=${currentCheckpoint.processedSeriesCount}"
