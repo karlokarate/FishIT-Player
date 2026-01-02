@@ -177,4 +177,73 @@ class XtreamSeriesPlaybackTest {
             url.contains("/movie/") || url.contains("/vod/"),
         )
     }
+
+    @Test
+    fun `series episode URL rejects m3u8 extension`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When/Then: Building a series episode URL with m3u8 extension should fail
+        try {
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "m3u8",
+            )
+            fail("Should have thrown IllegalArgumentException for m3u8 extension")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(
+                "Error message should mention m3u8 is not allowed for series",
+                e.message!!.contains("m3u8") && e.message!!.contains("streaming formats"),
+            )
+        }
+    }
+
+    @Test
+    fun `series episode URL rejects ts extension`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When/Then: Building a series episode URL with ts extension should fail
+        try {
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "ts",
+            )
+            fail("Should have thrown IllegalArgumentException for ts extension")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(
+                "Error message should mention ts is not allowed for series",
+                e.message!!.contains("ts") && e.message!!.contains("streaming formats"),
+            )
+        }
+    }
+
+    @Test
+    fun `series episode URL rejects invalid extension`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When/Then: Building a series episode URL with invalid extension should fail
+        try {
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "xyz",
+            )
+            fail("Should have thrown IllegalArgumentException for invalid extension")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(
+                "Error message should list valid formats",
+                e.message!!.contains("Valid formats") && e.message!!.contains("mp4"),
+            )
+        }
+    }
 }

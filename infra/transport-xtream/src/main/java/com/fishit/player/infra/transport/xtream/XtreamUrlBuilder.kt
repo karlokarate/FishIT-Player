@@ -180,12 +180,18 @@ class XtreamUrlBuilder(
      * - Returns 302 Found redirect to tokenized CDN URL (cross-host)
      * - Using /movie/ or /vod/ path fails with 404 or wrong content
      *
+     * **Extension Resolution (containerExtension-first, minimal fallback):**
+     * 1. If containerExtension provided and valid → USE IT (SSOT)
+     * 2. If missing, try: mp4 → mkv → FAIL
+     * 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
+     *
      * @param seriesId Series ID (used only if episodeId is missing - rare fallback)
      * @param seasonNumber Season number (used only if episodeId is missing)
      * @param episodeNumber Episode number (used only if episodeId is missing)
      * @param episodeId Episode stream ID (REQUIRED for direct playback)
      * @param containerExtension Container format from server (e.g., "mp4", "mkv")
      * @return Series episode playback URL
+     * @throws IllegalArgumentException if no valid extension can be determined
      */
     fun seriesEpisodeUrl(
         seriesId: Int,
@@ -194,10 +200,15 @@ class XtreamUrlBuilder(
         episodeId: Int? = null,
         containerExtension: String? = null,
     ): String {
+        // SSOT: Use containerExtension if provided
         val ext =
-            sanitizeExtension(
-                containerExtension ?: config.seriesExtPrefs.firstOrNull() ?: "mp4",
-            )
+            if (!containerExtension.isNullOrBlank()) {
+                sanitizeSeriesExtension(containerExtension)
+            } else {
+                // Minimal fallback: mp4 → mkv only
+                config.seriesExtPrefs.firstOrNull()?.let { sanitizeSeriesExtension(it) }
+                    ?: "mp4" // First fallback: mp4
+            }
 
         // Direct episodeId path: /series/user/pass/episodeId.ext (standard approach)
         if (episodeId != null && episodeId > 0) {
@@ -503,6 +514,47 @@ class XtreamUrlBuilder(
         // Accept both streaming formats and container formats
         val validFormats = setOf("m3u8", "ts", "mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
         return if (lower in validFormats) lower else "m3u8"
+    }
+
+    /**
+     * Sanitize extension for SERIES episode playback URL building.
+     *
+     * **containerExtension-first with minimal fallback:**
+     * 1. If extension is valid container format → USE IT (SSOT)
+     * 2. Otherwise → FAIL with IllegalArgumentException
+     *
+     * **Valid container formats for series (file-based, NOT adaptive streams):**
+     * - mkv, mp4, avi, mov, wmv, flv, webm
+     *
+     * **NOT allowed for series:**
+     * - m3u8, ts (streaming formats) - series are direct file downloads, not adaptive streams
+     *
+     * @param ext Extension to sanitize (e.g., "mp4", "mkv")
+     * @return Sanitized extension in lowercase
+     * @throws IllegalArgumentException if extension is not a valid container format
+     */
+    private fun sanitizeSeriesExtension(ext: String): String {
+        val lower = ext.lowercase().trim()
+        // Valid video container formats (files, not streams)
+        val validSeriesFormats = setOf("mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
+        
+        if (lower in validSeriesFormats) {
+            return lower
+        }
+        
+        // Reject streaming formats for series
+        if (lower in setOf("m3u8", "ts")) {
+            throw IllegalArgumentException(
+                "Invalid extension for series episode: '$ext'. " +
+                "Series episodes require container formats (mp4, mkv, avi, etc.), not streaming formats (m3u8, ts)."
+            )
+        }
+        
+        // Unknown/invalid extension
+        throw IllegalArgumentException(
+            "Invalid extension for series episode: '$ext'. " +
+            "Valid formats: mp4, mkv, avi, mov, wmv, flv, webm"
+        )
     }
 
     private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")
