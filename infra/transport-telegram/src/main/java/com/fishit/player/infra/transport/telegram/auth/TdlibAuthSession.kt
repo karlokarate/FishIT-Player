@@ -84,11 +84,20 @@ class TdlibAuthSession(
      */
     val authEvents: Flow<AuthEvent> = _authEvents.asSharedFlow()
 
+    init {
+        // Start auth state collector immediately so auth state is always up-to-date
+        // This ensures TelegramActivationObserver sees state transitions even if
+        // ensureAuthorized() is never called (e.g., when resuming existing session)
+        startAuthCollectorIfNeeded()
+        UnifiedLog.d(TAG, "TdlibAuthSession initialized - auth state collector started")
+    }
+
     // ========== TelegramAuthClient Implementation ==========
 
     override suspend fun ensureAuthorized() {
         UnifiedLog.d(TAG, "ensureAuthorized() - starting auth flow")
 
+        // Collector is now started in init, but keep this call for safety
         startAuthCollectorIfNeeded()
 
         // Get initial state
