@@ -63,7 +63,11 @@ class PlaybackSourceResolver
             return if (factory != null) {
                 UnifiedLog.d(TAG, "Using factory: ${factory::class.simpleName}")
                 try {
-                    factory.createSource(context)
+                    val source = factory.createSource(context)
+                    UnifiedLog.d(TAG) {
+                        "Selected dataSourceType=${source.dataSourceType} for canonicalId=${context.canonicalId}"
+                    }
+                    source
                 } catch (e: Exception) {
                     UnifiedLog.e(TAG, "Factory failed to create source", e)
                     throw PlaybackSourceException(
