@@ -414,7 +414,11 @@ class XtreamPlaybackHardeningTest {
                 episodeNumber: Int,
                 episodeId: Int?,
                 containerExtension: String?,
-            ) = "http://server/series/$seriesId/$seasonNumber/$episodeNumber.${containerExtension ?: "mp4"}"
+            ) = if (episodeId != null && episodeId > 0) {
+                "http://server/movie/$episodeId.${containerExtension ?: "mp4"}"
+            } else {
+                "http://server/movie/$seriesId/$seasonNumber/$episodeNumber.${containerExtension ?: "mp4"}"
+            }
 
             override fun buildCatchupUrl(
                 streamId: Int,

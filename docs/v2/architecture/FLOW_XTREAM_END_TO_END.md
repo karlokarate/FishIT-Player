@@ -454,7 +454,7 @@ sequenceDiagram
         XAC-->>XPBF: "http://server/live/user/pass/456.m3u8"
     else Series Episode
         XPBF->>XAC: buildSeriesEpisodeUrl(seriesId, season, episode)
-        XAC-->>XPBF: "http://server/series/user/pass/789.mkv"
+        XAC-->>XPBF: "http://server/movie/user/pass/789.mkv"
     end
     
     XPBF->>XPBF: determineMimeType()
@@ -520,7 +520,8 @@ class XtreamPlaybackSourceFactoryImpl @Inject constructor(
 // URL patterns:
 // Live:    http://{host}/live/{user}/{pass}/{streamId}.{ext}
 // VOD:     http://{host}/movie/{user}/{pass}/{vodId}.{ext}
-// Series:  http://{host}/series/{user}/{pass}/{episodeId}.{ext}
+// Series:  http://{host}/movie/{user}/{pass}/{episodeId}.{ext}
+//          (Episodes use VOD/movie path for file-based playback)
 ```
 
 **PlaybackContext Construction:**
