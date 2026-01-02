@@ -224,7 +224,7 @@ class InternalPlayerSession(
                                 // Use Xtream provider if available (optional dependency)
                                 if (xtreamDataSourceProvider != null) {
                                     UnifiedLog.d(TAG) {
-                                        "Using XtreamDataSourceProvider for redirect-safe playback"
+                                        "Using Xtream HTTP DataSource = OkHttpDataSource.Factory (redirect-safe, Chucker-visible)"
                                     }
                                     xtreamDataSourceProvider.create(
                                             headers = source.headers,
