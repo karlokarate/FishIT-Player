@@ -759,8 +759,8 @@ class DefaultXtreamApiClient(
             containerExtension: String?,
     ): String {
         val cfg = config ?: return ""
-        // Ultimate fallback is m3u8 (HLS) to align with streaming-first policy.
-        // This is only used when cfg.vodExtPrefs is empty; normally vodExtPrefs takes precedence.
+        // For VOD: container_extension is SSOT (mkv, mp4, etc. - the actual file on server)
+        // Fallback to vodExtPrefs or m3u8 only if no container_extension provided
         val ext = sanitizeExtension(containerExtension ?: cfg.vodExtPrefs.firstOrNull() ?: "m3u8")
         val playbackKind = resolveVodPlaybackKind(vodKind)
         return buildPlayUrl(playbackKind, vodId, ext)
@@ -774,9 +774,8 @@ class DefaultXtreamApiClient(
             containerExtension: String?,
     ): String {
         val cfg = config ?: return ""
-        // Ultimate fallback is m3u8 (HLS) to align with streaming-first policy.
-        // This is only used when cfg.seriesExtPrefs is empty; normally seriesExtPrefs takes
-        // precedence.
+        // For Series: container_extension is SSOT (mkv, mp4, etc. - the actual file on server)
+        // Fallback to seriesExtPrefs or m3u8 only if no container_extension provided
         val ext =
                 sanitizeExtension(containerExtension ?: cfg.seriesExtPrefs.firstOrNull() ?: "m3u8")
 
@@ -1635,10 +1634,11 @@ class DefaultXtreamApiClient(
      */
     private fun sanitizeExtension(ext: String?): String {
         val lower = ext?.lowercase()?.trim().orEmpty()
-        // HARDENED: Only accept TRUE streaming output formats
-        // mp4/mkv/avi/mov are container formats - NOT streaming outputs!
-        val validStreamingFormats = setOf("m3u8", "ts")
-        return if (lower in validStreamingFormats) lower else "m3u8"
+        // Accept both streaming formats and container formats
+        // For VOD/Series: container_extension is SSOT (mkv, mp4, avi, etc.)
+        // For Live: streaming formats (m3u8, ts)
+        val validFormats = setOf("m3u8", "ts", "mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
+        return if (lower in validFormats) lower else "m3u8"
     }
 
     private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")

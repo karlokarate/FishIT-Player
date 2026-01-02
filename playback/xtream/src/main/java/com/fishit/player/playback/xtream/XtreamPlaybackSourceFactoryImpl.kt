@@ -394,21 +394,22 @@ constructor(
     /**
      * Resolve the output extension for playback URL.
      *
-     * **PLATINUM FIX: Content-type aware extension resolution.**
+     * **Content-type aware extension resolution:**
      *
      * **For LIVE streams:**
-     * - Always use streaming formats (ts > m3u8)
-     * - Respect allowedOutputFormats if provided
+     * - Use streaming formats (ts > m3u8) based on allowed_output_formats
+     * - allowed_output_formats is SSOT for Live
      *
      * **For VOD/SERIES (file-based content):**
-     * - PREFER containerExtension (mkv, mp4, etc.) if present
-     * - This is the actual file on the server!
-     * - Only fall back to streaming formats if no containerExtension
+     * - Use container_extension as SSOT (mkv, mp4, avi, etc.)
+     * - This is the actual file format on the server!
+     * - allowed_output_formats is NOT used for VOD/Series
+     * - Fallback to mp4 if no container_extension provided
      *
      * **Why this matters:**
-     * - VOD/Series files are often mkv/mp4 containers
+     * - VOD/Series files are often mkv/mp4 containers on disk
      * - Forcing m3u8/ts on these fails with many providers
-     * - Legacy behavior was: use the file extension the server reports
+     * - Live streams need adaptive formats (m3u8/ts)
      *
      * @param context The playback context
      * @return The resolved extension (mkv, mp4, ts, m3u8, etc.)
@@ -494,12 +495,14 @@ constructor(
     /**
      * Resolve extension for file-based content (VOD/SERIES).
      *
-     * **PLATINUM: Respect containerExtension for file downloads!**
+     * **container_extension is SSOT for VOD/Series!**
      *
      * Priority:
-     * 1. containerExtension if it's a known video format (mkv, mp4, avi, etc.)
-     * 2. allowedOutputFormats policy
-     * 3. Fallback to m3u8
+     * 1. containerExtension if provided (mkv, mp4, avi, etc. - the actual file on server)
+     * 2. Fallback to mp4 (most common container format)
+     *
+     * Note: allowed_output_formats is NOT used for VOD/Series (only for Live).
+     * The container_extension describes the actual file on the server, not a streaming format.
      */
     private fun resolveFileExtension(
             containerExt: String?,
@@ -509,46 +512,29 @@ constructor(
         // Known video container formats (files, not streams)
         val videoContainerFormats = setOf("mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
 
-        // PLATINUM: If containerExtension is a video file format, USE IT!
+        // If containerExtension is a video file format, USE IT!
         // This is the actual file on the server - don't override it.
         if (containerExt != null && containerExt in videoContainerFormats) {
             UnifiedLog.i(TAG) {
-                "$contentType: Using file containerExtension: $containerExt (legacy-parity)"
+                "$contentType: Using file containerExtension: $containerExt (SSOT)"
             }
             return containerExt
         }
 
         // If containerExtension is a streaming format (m3u8/ts), use it
+        // (Some providers might use HLS for VOD)
         if (containerExt != null && containerExt in STREAMING_FORMATS) {
             UnifiedLog.d(TAG) { "$contentType: Using streaming containerExtension: $containerExt" }
             return containerExt
         }
 
-        // If server specifies allowed formats, use policy selection
-        if (allowedFormats.isNotEmpty()) {
-            return try {
-                val selected = selectXtreamOutputExt(allowedFormats)
-                UnifiedLog.d(TAG) {
-                    "$contentType: Policy-selected extension: $selected from allowed: $allowedFormats"
-                }
-                selected
-            } catch (e: PlaybackSourceException) {
-                if (e.message?.contains("HLS") == true &&
-                                e.message?.contains("not available") == true
-                ) {
-                    throw e
-                }
-                UnifiedLog.w(TAG) { "$contentType: Format selection failed, defaulting to m3u8" }
-                "m3u8"
-            }
-        }
-
-        // Fallback: m3u8 (with warning)
+        // Fallback: mp4 (most common container format for VOD/Series)
+        // Note: We do NOT use allowed_output_formats for VOD/Series
         UnifiedLog.w(TAG) {
-            "$contentType: No containerExtension or allowedFormats, defaulting to m3u8. " +
-                    "This may fail with some providers."
+            "$contentType: No valid containerExtension provided, defaulting to mp4. " +
+                    "This may fail if the actual file has a different extension."
         }
-        return "m3u8"
+        return "mp4"
     }
 
     /** Guess content type from context if not explicitly set. */

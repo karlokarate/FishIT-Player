@@ -466,17 +466,20 @@ class XtreamUrlBuilder(
     /**
      * Sanitize extension for playback URL building.
      *
-     * CRITICAL: Only accepts valid STREAMING OUTPUT formats:
-     * - m3u8 (HLS): Best for adaptive streaming
-     * - ts (MPEG-TS): Good fallback
+     * Accepts both streaming formats and container formats:
+     * - Streaming formats (m3u8, ts): For live streams and adaptive VOD
+     * - Container formats (mkv, mp4, avi, etc.): For direct file access in VOD/Series
      *
-     * Container formats (mp4, mkv, avi) describe the FILE on the server,
-     * NOT the streaming output format. They are rejected.
+     * For VOD/Series, the container_extension is the SSOT - it describes the actual
+     * file on the server (.../movie/.../id.mkv or .../vod/.../id.mp4).
+     *
+     * For Live, only streaming formats make sense (m3u8, ts).
      */
     private fun sanitizeExtension(ext: String?): String {
         val lower = ext?.lowercase()?.trim().orEmpty()
-        val validStreamingFormats = setOf("m3u8", "ts")
-        return if (lower in validStreamingFormats) lower else "m3u8"
+        // Accept both streaming formats and container formats
+        val validFormats = setOf("m3u8", "ts", "mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
+        return if (lower in validFormats) lower else "m3u8"
     }
 
     private fun urlEncode(value: String): String = java.net.URLEncoder.encode(value, "UTF-8")
