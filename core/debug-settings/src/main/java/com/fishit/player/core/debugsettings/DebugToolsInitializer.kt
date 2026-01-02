@@ -72,16 +72,6 @@ class DebugToolsInitializer
          */
         private fun configureLeakCanary(enabled: Boolean) {
             if (enabled) {
-                // Enable all watchers
-                AppWatcher.config =
-                    AppWatcher.config.copy(
-                        watchActivities = true,
-                        watchFragments = true,
-                        watchFragmentViews = true,
-                        watchViewModels = true,
-                        watchDurationMillis = 10_000L, // 10s delay before considering retained
-                    )
-
                 // Enable heap dumps
                 LeakCanary.config =
                     LeakCanary.config.copy(
@@ -89,25 +79,22 @@ class DebugToolsInitializer
                         retainedVisibleThreshold = 5, // Dump when 5+ objects retained
                     )
 
-                UnifiedLog.i(TAG) { "LeakCanary watchers ENABLED (Activities, Fragments, ViewModels)" }
-            } else {
-                // Disable all watchers (DEFAULT)
-                AppWatcher.config =
-                    AppWatcher.config.copy(
-                        watchActivities = false,
-                        watchFragments = false,
-                        watchFragmentViews = false,
-                        watchViewModels = false,
-                    )
+                // Enable watchers via showLeakDisplayActivityLauncherIcon
+                LeakCanary.showLeakDisplayActivityLauncherIcon(true)
 
-                // Disable heap dumps
+                UnifiedLog.i(TAG) { "LeakCanary ENABLED (watchers active, heap dumps allowed)" }
+            } else {
+                // Disable heap dumps (DEFAULT)
                 LeakCanary.config =
                     LeakCanary.config.copy(
                         dumpHeapWhenDebugging = false,
                         retainedVisibleThreshold = Int.MAX_VALUE, // Effectively disable auto-dump
                     )
 
-                UnifiedLog.i(TAG) { "LeakCanary watchers DISABLED (no automatic heap dumps)" }
+                // Hide LeakCanary icon
+                LeakCanary.showLeakDisplayActivityLauncherIcon(false)
+
+                UnifiedLog.i(TAG) { "LeakCanary DISABLED (no automatic heap dumps)" }
             }
         }
 

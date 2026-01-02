@@ -77,6 +77,10 @@ data class DebugState(
         // === Catalog Sync (SSOT via WorkManager) ===
         val syncState: SyncUiState = SyncUiState.Idle,
 
+        // === Debug Tools Runtime Toggles ===
+        val networkInspectorEnabled: Boolean = false,
+        val leakCanaryEnabled: Boolean = false,
+
         // === LeakCanary (Memory Diagnostics) ===
         val leakSummary: LeakSummary = LeakSummary(0, null, null),
         /** Detailed leak status with noise control */
