@@ -76,13 +76,15 @@ class FishItV2Application :
         // Contract S-1: UnifiedLog MUST be initialized BEFORE any other subsystem
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
 
-        // Contract S-1.1: LeakCanary configuration (debug builds only, after logging)
-        // NOTE: LeakCanary is now configured by DebugToolsInitializer (OFF by default)
+        // Contract S-1.1: LeakCanary base configuration (debug builds only, after logging)
+        // Sets up reference matchers and default configuration
+        // Runtime toggling is handled by DebugToolsInitializer (OFF by default)
         if (BuildConfig.DEBUG) {
             LeakCanaryConfig.install(this)
         }
 
         // Contract S-1.2: Start DebugToolsInitializer (syncs DataStore to runtime flags)
+        // This will immediately configure LeakCanary to OFF state on first launch
         if (BuildConfig.DEBUG) {
             try {
                 debugBootstrapsProvider.get().start(appScope)

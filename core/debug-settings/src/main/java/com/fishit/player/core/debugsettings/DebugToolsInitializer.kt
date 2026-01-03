@@ -63,15 +63,23 @@ class DebugToolsInitializer
          * Configure LeakCanary based on enabled state.
          *
          * When enabled:
-         * - Enable watchers (Activities, Fragments, ViewModels)
+         * - Enable watchers (Activities, Fragments, ViewModels) via AppWatcher.config.enabled
+         * - Show launcher icon
          * - Allow heap dumps and analysis
          *
          * When disabled (DEFAULT):
-         * - Disable watchers
+         * - Disable watchers via AppWatcher.config.enabled
+         * - Hide launcher icon
          * - Disable automatic heap dumps
          */
         private fun configureLeakCanary(enabled: Boolean) {
             if (enabled) {
+                // Enable watchers (this is the key to actually start/stop watching)
+                AppWatcher.config =
+                    AppWatcher.config.copy(
+                        enabled = true,
+                    )
+
                 // Enable heap dumps
                 LeakCanary.config =
                     LeakCanary.config.copy(
@@ -79,22 +87,28 @@ class DebugToolsInitializer
                         retainedVisibleThreshold = 5, // Dump when 5+ objects retained
                     )
 
-                // Enable watchers via showLeakDisplayActivityLauncherIcon
+                // Show launcher icon for easy access to LeakCanary UI
                 LeakCanary.showLeakDisplayActivityLauncherIcon(true)
 
                 UnifiedLog.i(TAG) { "LeakCanary ENABLED (watchers active, heap dumps allowed)" }
             } else {
-                // Disable heap dumps (DEFAULT)
+                // Disable watchers (DEFAULT) - this actually stops watching for leaks
+                AppWatcher.config =
+                    AppWatcher.config.copy(
+                        enabled = false,
+                    )
+
+                // Disable heap dumps
                 LeakCanary.config =
                     LeakCanary.config.copy(
                         dumpHeapWhenDebugging = false,
                         retainedVisibleThreshold = Int.MAX_VALUE, // Effectively disable auto-dump
                     )
 
-                // Hide LeakCanary icon
+                // Hide launcher icon
                 LeakCanary.showLeakDisplayActivityLauncherIcon(false)
 
-                UnifiedLog.i(TAG) { "LeakCanary DISABLED (no automatic heap dumps)" }
+                UnifiedLog.i(TAG) { "LeakCanary DISABLED (watchers stopped, no automatic heap dumps)" }
             }
         }
 
