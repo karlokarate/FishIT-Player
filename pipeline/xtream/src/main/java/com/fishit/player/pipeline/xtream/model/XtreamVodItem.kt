@@ -16,24 +16,24 @@ package com.fishit.player.pipeline.xtream.model
  * @property tmdbId TMDB movie ID if available from provider (some panels scrape this)
  */
 data class XtreamVodItem(
-        val id: Int,
-        val name: String,
-        val streamIcon: String? = null,
-        val categoryId: String? = null,
-        val containerExtension: String? = null,
-        val added: Long? = null,
-        val rating: Double? = null,
-        val rating5Based: Double? = null,
-        /**
-         * TMDB movie ID from provider (Gold Decision Dec 2025).
-         *
-         * Some Xtream providers scrape TMDB and include the ID.
-         * Maps to ExternalIds.tmdb = TmdbRef(MOVIE, tmdbId).
-         */
-        val tmdbId: Int? = null,
-        // Quick info fields (some panels include these in list response)
-        val year: String? = null,
-        val genre: String? = null,
-        val plot: String? = null,
-        val duration: String? = null,
+    val id: Int,
+    val name: String,
+    val streamIcon: String? = null,
+    val categoryId: String? = null,
+    val containerExtension: String? = null,
+    val added: Long? = null,
+    val rating: Double? = null,
+    val rating5Based: Double? = null,
+    /**
+     * TMDB movie ID from provider (Gold Decision Dec 2025).
+     *
+     * Some Xtream providers scrape TMDB and include the ID.
+     * Maps to ExternalIds.tmdb = TmdbRef(MOVIE, tmdbId).
+     */
+    val tmdbId: Int? = null,
+    // Quick info fields (some panels include these in list response)
+    val year: String? = null,
+    val genre: String? = null,
+    val plot: String? = null,
+    val duration: String? = null,
 )

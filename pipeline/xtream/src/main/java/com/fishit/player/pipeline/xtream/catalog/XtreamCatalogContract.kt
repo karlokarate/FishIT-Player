@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.Flow
  * See: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md for RawMediaMetadata requirements
  */
 interface XtreamCatalogPipeline {
-
     /**
      * Triggers a catalog scan and emits XtreamCatalogEvents.
      *
@@ -67,28 +66,31 @@ data class XtreamCatalogConfig(
         val DEFAULT = XtreamCatalogConfig()
 
         /** VOD only scan. */
-        val VOD_ONLY = XtreamCatalogConfig(
-            includeVod = true,
-            includeSeries = false,
-            includeEpisodes = false,
-            includeLive = false,
-        )
+        val VOD_ONLY =
+            XtreamCatalogConfig(
+                includeVod = true,
+                includeSeries = false,
+                includeEpisodes = false,
+                includeLive = false,
+            )
 
         /** Series and episodes only scan. */
-        val SERIES_ONLY = XtreamCatalogConfig(
-            includeVod = false,
-            includeSeries = true,
-            includeEpisodes = true,
-            includeLive = false,
-        )
+        val SERIES_ONLY =
+            XtreamCatalogConfig(
+                includeVod = false,
+                includeSeries = true,
+                includeEpisodes = true,
+                includeLive = false,
+            )
 
         /** Live channels only scan. */
-        val LIVE_ONLY = XtreamCatalogConfig(
-            includeVod = false,
-            includeSeries = false,
-            includeEpisodes = false,
-            includeLive = true,
-        )
+        val LIVE_ONLY =
+            XtreamCatalogConfig(
+                includeVod = false,
+                includeSeries = false,
+                includeEpisodes = false,
+                includeLive = true,
+            )
     }
 }
 
@@ -96,7 +98,6 @@ data class XtreamCatalogConfig(
  * Events produced by the Xtream catalog pipeline.
  */
 sealed interface XtreamCatalogEvent {
-
     /**
      * A new media item was discovered.
      *

@@ -30,22 +30,15 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamCatalogModule {
+    @Binds
+    @Singleton
+    abstract fun bindXtreamCatalogPipeline(impl: XtreamCatalogPipelineImpl): XtreamCatalogPipeline
 
     @Binds
     @Singleton
-    abstract fun bindXtreamCatalogPipeline(
-            impl: XtreamCatalogPipelineImpl,
-    ): XtreamCatalogPipeline
+    abstract fun bindXtreamCatalogMapper(impl: XtreamCatalogMapperImpl): XtreamCatalogMapper
 
     @Binds
     @Singleton
-    abstract fun bindXtreamCatalogMapper(
-            impl: XtreamCatalogMapperImpl,
-    ): XtreamCatalogMapper
-
-    @Binds
-    @Singleton
-    abstract fun bindXtreamCatalogSource(
-            impl: DefaultXtreamCatalogSource,
-    ): XtreamCatalogSource
+    abstract fun bindXtreamCatalogSource(impl: DefaultXtreamCatalogSource): XtreamCatalogSource
 }
