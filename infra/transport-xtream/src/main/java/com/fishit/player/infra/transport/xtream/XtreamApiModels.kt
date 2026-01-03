@@ -20,11 +20,16 @@ import kotlinx.serialization.Serializable
 /**
  * API Configuration for Xtream client initialization.
  *
+ * **Credential Sanitization (CRITICAL):**
+ * - username: trimmed and ALL whitespace removed (\s+ → "")
+ * - password: trimmed and ALL whitespace removed (\s+ → "")
+ * - This prevents malformed URLs with newlines/spaces in path segments
+ *
  * @param scheme HTTP scheme (http/https)
  * @param host Panel hostname
  * @param port Panel port (null = auto-discover)
- * @param username Account username
- * @param password Account password
+ * @param username Account username (MUST be sanitized before construction)
+ * @param password Account password (MUST be sanitized before construction)
  * @param basePath Optional reverse proxy path (e.g., "/xtream")
  * @param liveExtPrefs Preferred live stream extensions (order matters)
  * @param vodExtPrefs Preferred VOD extensions
@@ -49,14 +54,32 @@ data class XtreamApiConfig(
         require(host.isNotBlank()) { "host must not be blank" }
         require(username.isNotBlank()) { "username must not be blank" }
         require(password.isNotBlank()) { "password must not be blank" }
+        // Defensive check: ensure credentials don't contain whitespace
+        require(!username.contains(Regex("\\s"))) {
+            "username must not contain whitespace (trim and remove all whitespace before construction)"
+        }
+        require(!password.contains(Regex("\\s"))) {
+            "password must not contain whitespace (trim and remove all whitespace before construction)"
+        }
     }
 
-    /**
-     * Create config from M3U get.php URL.
-     *
-     * Example: http://host:8080/get.php?username=user&password=pass&output=ts
-     */
     companion object {
+        /**
+         * Sanitize credential by trimming and removing ALL whitespace characters.
+         *
+         * @param credential Raw credential string (may contain whitespace/newlines)
+         * @return Sanitized credential with no whitespace
+         */
+        fun sanitizeCredential(credential: String): String =
+            credential.trim().replace(Regex("\\s+"), "")
+
+        /**
+         * Create config from M3U get.php URL.
+         *
+         * Example: http://host:8080/get.php?username=user&password=pass&output=ts
+         *
+         * **Note:** Credentials are automatically sanitized by this factory method.
+         */
         fun fromM3uUrl(url: String): XtreamApiConfig? {
             val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return null
             val params =
@@ -75,8 +98,8 @@ data class XtreamApiConfig(
                 scheme = uri.scheme ?: "http",
                 host = host,
                 port = port,
-                username = username,
-                password = password,
+                username = sanitizeCredential(username),
+                password = sanitizeCredential(password),
                 liveExtPrefs =
                     when (output) {
                         "ts" -> listOf("ts", "m3u8")
