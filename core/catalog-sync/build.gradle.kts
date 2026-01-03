@@ -27,7 +27,7 @@ dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":core:source-activation-api"))
-    implementation(project(":core:feature-api"))  // For TelegramAuthRepository (userId validation)
+    implementation(project(":core:feature-api")) // For TelegramAuthRepository (userId validation)
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":core:persistence")) // For CanonicalMediaRepository
     implementation(project(":infra:logging"))

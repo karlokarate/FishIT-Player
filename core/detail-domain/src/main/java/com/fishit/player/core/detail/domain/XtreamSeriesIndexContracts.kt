@@ -39,7 +39,8 @@ data class EpisodeIndexItem(
         get() = System.currentTimeMillis() - lastUpdatedMs > INDEX_TTL_MS
 
     val arePlaybackHintsStale: Boolean
-        get() = playbackHintsUpdatedMs == 0L ||
+        get() =
+            playbackHintsUpdatedMs == 0L ||
                 System.currentTimeMillis() - playbackHintsUpdatedMs > PLAYBACK_HINTS_TTL_MS
 
     val isPlaybackReady: Boolean
@@ -65,7 +66,10 @@ interface XtreamSeriesIndexRepository {
 
     suspend fun hasFreshSeasons(seriesId: Int): Boolean
 
-    suspend fun upsertSeasons(seriesId: Int, seasons: List<SeasonIndexItem>)
+    suspend fun upsertSeasons(
+        seriesId: Int,
+        seasons: List<SeasonIndexItem>,
+    )
 
     suspend fun deleteSeasons(seriesId: Int)
 
@@ -76,21 +80,33 @@ interface XtreamSeriesIndexRepository {
         pageSize: Int = DEFAULT_EPISODE_PAGE_SIZE,
     ): Flow<List<EpisodeIndexItem>>
 
-    suspend fun getEpisodeCount(seriesId: Int, seasonNumber: Int): Int
+    suspend fun getEpisodeCount(
+        seriesId: Int,
+        seasonNumber: Int,
+    ): Int
 
     suspend fun getEpisodeBySourceKey(sourceKey: String): EpisodeIndexItem?
 
-    suspend fun hasFreshEpisodes(seriesId: Int, seasonNumber: Int): Boolean
+    suspend fun hasFreshEpisodes(
+        seriesId: Int,
+        seasonNumber: Int,
+    ): Boolean
 
     suspend fun upsertEpisodes(episodes: List<EpisodeIndexItem>)
 
-    suspend fun updatePlaybackHints(sourceKey: String, hintsJson: String?)
+    suspend fun updatePlaybackHints(
+        sourceKey: String,
+        hintsJson: String?,
+    )
 
     suspend fun getPlaybackHints(sourceKey: String): EpisodePlaybackHints?
 
     suspend fun isPlaybackReady(sourceKey: String): Boolean
 
-    suspend fun deleteEpisodes(seriesId: Int, seasonNumber: Int)
+    suspend fun deleteEpisodes(
+        seriesId: Int,
+        seasonNumber: Int,
+    )
 
     suspend fun deleteAllEpisodesForSeries(seriesId: Int)
 
@@ -106,7 +122,10 @@ interface XtreamSeriesIndexRepository {
 interface XtreamSeriesIndexRefresher {
     suspend fun refreshSeasons(seriesId: Int): Boolean
 
-    suspend fun refreshEpisodes(seriesId: Int, seasonNumber: Int): Boolean
+    suspend fun refreshEpisodes(
+        seriesId: Int,
+        seasonNumber: Int,
+    ): Boolean
 
     suspend fun refreshEpisodePlaybackHints(
         seriesId: Int,

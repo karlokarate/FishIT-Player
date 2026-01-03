@@ -1,8 +1,8 @@
 package com.fishit.player.infra.data.xtream
 
+import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
-import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig

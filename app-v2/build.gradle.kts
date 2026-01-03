@@ -147,7 +147,7 @@ dependencies {
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:firebase"))
     implementation(project(":core:app-startup"))
-    
+
     // Debug settings (debug builds only)
     debugImplementation(project(":core:debug-settings"))
 

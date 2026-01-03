@@ -73,12 +73,12 @@ data class TelegramSyncCheckpoint(
 
             try {
                 val parts = encoded.split(SEPARATOR).drop(1) // Skip prefix
-                val map = parts
-                    .mapNotNull { part ->
-                        val split = part.split("=", limit = 2)
-                        if (split.size == 2) split[0] to split[1] else null
-                    }
-                    .toMap()
+                val map =
+                    parts
+                        .mapNotNull { part ->
+                            val split = part.split("=", limit = 2)
+                            if (split.size == 2) split[0] to split[1] else null
+                        }.toMap()
 
                 val version = map[KEY_VERSION]?.toIntOrNull() ?: 1
                 val userId = map[KEY_USER_ID]?.toLongOrNull()
@@ -86,27 +86,31 @@ data class TelegramSyncCheckpoint(
 
                 // Parse high-water marks: "chatId:msgId,chatId:msgId,..."
                 val hwmString = map[KEY_HWM] ?: ""
-                val highWaterMarks = if (hwmString.isNotEmpty()) {
-                    hwmString.split(",")
-                        .mapNotNull { entry ->
-                            val (chatId, msgId) = entry.split(":", limit = 2)
-                                .takeIf { it.size == 2 }
-                                ?: return@mapNotNull null
-                            val cid = chatId.toLongOrNull() ?: return@mapNotNull null
-                            val mid = msgId.toLongOrNull() ?: return@mapNotNull null
-                            cid to mid
-                        }
-                        .toMap()
-                } else {
-                    emptyMap()
-                }
+                val highWaterMarks =
+                    if (hwmString.isNotEmpty()) {
+                        hwmString
+                            .split(",")
+                            .mapNotNull { entry ->
+                                val (chatId, msgId) =
+                                    entry
+                                        .split(":", limit = 2)
+                                        .takeIf { it.size == 2 }
+                                        ?: return@mapNotNull null
+                                val cid = chatId.toLongOrNull() ?: return@mapNotNull null
+                                val mid = msgId.toLongOrNull() ?: return@mapNotNull null
+                                cid to mid
+                            }.toMap()
+                    } else {
+                        emptyMap()
+                    }
 
                 // Parse processedChatIds (v3+): "chatId1,chatId2,..."
-                val processedChatIds = map[KEY_PROCESSED]
-                    ?.split(",")
-                    ?.mapNotNull { it.toLongOrNull() }
-                    ?.toSet()
-                    ?: emptySet()
+                val processedChatIds =
+                    map[KEY_PROCESSED]
+                        ?.split(",")
+                        ?.mapNotNull { it.toLongOrNull() }
+                        ?.toSet()
+                        ?: emptySet()
 
                 return TelegramSyncCheckpoint(
                     telegramUserId = userId,
@@ -126,36 +130,37 @@ data class TelegramSyncCheckpoint(
      *
      * @return Encoded checkpoint string (never null or empty)
      */
-    fun encode(): String = buildString {
-        append(PREFIX)
-        append(SEPARATOR)
-        append("$KEY_VERSION=$version")
-        append(SEPARATOR)
-        append("$KEY_TIMESTAMP=$lastSyncTimestampMs")
+    fun encode(): String =
+        buildString {
+            append(PREFIX)
+            append(SEPARATOR)
+            append("$KEY_VERSION=$version")
+            append(SEPARATOR)
+            append("$KEY_TIMESTAMP=$lastSyncTimestampMs")
 
-        // Include userId for account switch detection (v2+)
-        telegramUserId?.let { uid ->
-            append(SEPARATOR)
-            append("$KEY_USER_ID=$uid")
-        }
+            // Include userId for account switch detection (v2+)
+            telegramUserId?.let { uid ->
+                append(SEPARATOR)
+                append("$KEY_USER_ID=$uid")
+            }
 
-        if (highWaterMarks.isNotEmpty()) {
-            append(SEPARATOR)
-            append("$KEY_HWM=")
-            append(
-                highWaterMarks.entries
-                    .sortedBy { it.key } // Stable ordering
-                    .joinToString(",") { "${it.key}:${it.value}" }
-            )
+            if (highWaterMarks.isNotEmpty()) {
+                append(SEPARATOR)
+                append("$KEY_HWM=")
+                append(
+                    highWaterMarks.entries
+                        .sortedBy { it.key } // Stable ordering
+                        .joinToString(",") { "${it.key}:${it.value}" },
+                )
+            }
+
+            // PLATINUM: Encode processedChatIds (v3+)
+            if (processedChatIds.isNotEmpty()) {
+                append(SEPARATOR)
+                append("$KEY_PROCESSED=")
+                append(processedChatIds.sorted().joinToString(","))
+            }
         }
-        
-        // PLATINUM: Encode processedChatIds (v3+)
-        if (processedChatIds.isNotEmpty()) {
-            append(SEPARATOR)
-            append("$KEY_PROCESSED=")
-            append(processedChatIds.sorted().joinToString(","))
-        }
-    }
 
     /**
      * Update high-water mark for a specific chat.
@@ -166,7 +171,10 @@ data class TelegramSyncCheckpoint(
      * @param messageId New message ID
      * @return Updated checkpoint
      */
-    fun updateHighWaterMark(chatId: Long, messageId: Long): TelegramSyncCheckpoint {
+    fun updateHighWaterMark(
+        chatId: Long,
+        messageId: Long,
+    ): TelegramSyncCheckpoint {
         val current = highWaterMarks[chatId] ?: 0L
         if (messageId <= current) return this
 
@@ -208,9 +216,10 @@ data class TelegramSyncCheckpoint(
      * @param chatId Chat ID that was fully scanned
      * @return Updated checkpoint with the chatId added
      */
-    fun addProcessedChatId(chatId: Long): TelegramSyncCheckpoint = copy(
-        processedChatIds = processedChatIds + chatId,
-    )
+    fun addProcessedChatId(chatId: Long): TelegramSyncCheckpoint =
+        copy(
+            processedChatIds = processedChatIds + chatId,
+        )
 
     /**
      * PLATINUM: Add multiple processed chat IDs to the checkpoint.
@@ -218,9 +227,10 @@ data class TelegramSyncCheckpoint(
      * @param chatIds Set of chat IDs that were fully scanned
      * @return Updated checkpoint with the chatIds added
      */
-    fun addProcessedChatIds(chatIds: Set<Long>): TelegramSyncCheckpoint = copy(
-        processedChatIds = processedChatIds + chatIds,
-    )
+    fun addProcessedChatIds(chatIds: Set<Long>): TelegramSyncCheckpoint =
+        copy(
+            processedChatIds = processedChatIds + chatIds,
+        )
 
     /**
      * PLATINUM: Clear processed chat IDs (for new sync run).
@@ -229,9 +239,10 @@ data class TelegramSyncCheckpoint(
      *
      * @return Updated checkpoint with empty processedChatIds
      */
-    fun clearProcessedChatIds(): TelegramSyncCheckpoint = copy(
-        processedChatIds = emptySet(),
-    )
+    fun clearProcessedChatIds(): TelegramSyncCheckpoint =
+        copy(
+            processedChatIds = emptySet(),
+        )
 
     /**
      * Mark sync as complete with current timestamp and user ID.
@@ -239,10 +250,11 @@ data class TelegramSyncCheckpoint(
      * @param userId Current Telegram user ID to store for account switch detection
      * @return Updated checkpoint with current timestamp and userId
      */
-    fun markComplete(userId: Long? = this.telegramUserId): TelegramSyncCheckpoint = copy(
-        telegramUserId = userId,
-        lastSyncTimestampMs = System.currentTimeMillis(),
-    )
+    fun markComplete(userId: Long? = this.telegramUserId): TelegramSyncCheckpoint =
+        copy(
+            telegramUserId = userId,
+            lastSyncTimestampMs = System.currentTimeMillis(),
+        )
 
     /**
      * Check if this is a fresh/initial checkpoint (no prior sync).

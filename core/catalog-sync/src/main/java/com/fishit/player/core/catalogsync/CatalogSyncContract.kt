@@ -124,7 +124,7 @@ data class SyncConfig(
     val emitProgressEvery: Int = DEFAULT_PROGRESS_INTERVAL,
 ) {
     companion object {
-        const val DEFAULT_BATCH_SIZE = 150  // Optimized for ObjectBox speed (Dec 2025)
+        const val DEFAULT_BATCH_SIZE = 150 // Optimized for ObjectBox speed (Dec 2025)
         const val DEFAULT_PROGRESS_INTERVAL = 150
 
         val DEFAULT = SyncConfig()

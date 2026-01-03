@@ -106,17 +106,11 @@ class DefaultDebugInfoProvider
         // Cache Sizes - Delegated to CacheManager (no direct file IO)
         // =========================================================================
 
-        override suspend fun getTelegramCacheSize(): Long? {
-            return cacheManager.getTelegramCacheSizeBytes()
-        }
+        override suspend fun getTelegramCacheSize(): Long? = cacheManager.getTelegramCacheSizeBytes()
 
-        override suspend fun getImageCacheSize(): Long? {
-            return cacheManager.getImageCacheSizeBytes()
-        }
+        override suspend fun getImageCacheSize(): Long? = cacheManager.getImageCacheSizeBytes()
 
-        override suspend fun getDatabaseSize(): Long? {
-            return cacheManager.getDatabaseSizeBytes()
-        }
+        override suspend fun getDatabaseSize(): Long? = cacheManager.getDatabaseSizeBytes()
 
         // =========================================================================
         // Content Counts

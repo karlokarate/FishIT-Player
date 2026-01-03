@@ -1,5 +1,8 @@
 package com.fishit.player.infra.data.xtream
 
+import com.fishit.player.core.live.domain.LiveCategory
+import com.fishit.player.core.live.domain.LiveChannel
+import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
@@ -9,9 +12,6 @@ import com.fishit.player.core.persistence.obx.ObxEpgNowNext
 import com.fishit.player.core.persistence.obx.ObxEpgNowNext_
 import com.fishit.player.core.persistence.obx.ObxLive
 import com.fishit.player.core.persistence.obx.ObxLive_
-import com.fishit.player.core.live.domain.LiveCategory
-import com.fishit.player.core.live.domain.LiveChannel
-import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
