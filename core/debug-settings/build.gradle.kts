@@ -39,10 +39,16 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 
     // Chucker HTTP Inspector (for GatedChuckerInterceptor)
-    implementation(libs.chucker)
+    // Debug builds only - use the full library
+    debugImplementation(libs.chucker)
+    // Release builds - use the no-op library to prevent crashes
+    releaseImplementation(libs.chucker.noop)
 
     // LeakCanary (for LeakCanary runtime control)
-    implementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    // Debug builds only - LeakCanary provides its own no-op for release automatically
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    // Release builds - use plumber library which is LeakCanary's no-op
+    releaseImplementation("com.squareup.leakcanary:plumber-android:2.14")
 
     // Logging
     implementation(project(":infra:logging"))
