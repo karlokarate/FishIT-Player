@@ -182,7 +182,7 @@ class XtreamUrlBuilder(
      *
      * **Extension Resolution (containerExtension-first, minimal fallback):**
      * 1. If containerExtension provided and valid → USE IT (SSOT)
-     * 2. If missing, try: mp4 → mkv → FAIL
+     * 2. If missing, fallback to mkv (consistent with DefaultXtreamApiClient)
      * 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
      *
      * @param seriesId Series ID (used only if episodeId is missing - rare fallback)
@@ -205,9 +205,9 @@ class XtreamUrlBuilder(
             if (!containerExtension.isNullOrBlank()) {
                 sanitizeSeriesExtension(containerExtension)
             } else {
-                // Minimal fallback: mp4 → mkv only
+                // Minimal fallback: mkv only (consistent with DefaultXtreamApiClient)
                 config.seriesExtPrefs.firstOrNull()?.let { sanitizeSeriesExtension(it) }
-                    ?: "mp4" // First fallback: mp4
+                    ?: "mkv" // First fallback: mkv
             }
 
         // Direct episodeId path: /series/user/pass/episodeId.ext (standard approach)

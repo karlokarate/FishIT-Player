@@ -39,7 +39,7 @@ data class XtreamApiConfig(
     val basePath: String? = null,
     val liveExtPrefs: List<String> = listOf("m3u8", "ts"),
     val vodExtPrefs: List<String> = listOf("mp4", "mkv", "avi"),
-    val seriesExtPrefs: List<String> = listOf("mp4", "mkv", "avi"),
+    val seriesExtPrefs: List<String> = listOf("mkv", "mp4", "avi"),
 ) {
     init {
         require(
