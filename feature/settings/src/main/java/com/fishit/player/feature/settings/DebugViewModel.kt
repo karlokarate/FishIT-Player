@@ -77,6 +77,10 @@ data class DebugState(
         // === Catalog Sync (SSOT via WorkManager) ===
         val syncState: SyncUiState = SyncUiState.Idle,
 
+        // === Debug Tools Runtime Toggles ===
+        val networkInspectorEnabled: Boolean = false,
+        val leakCanaryEnabled: Boolean = false,
+
         // === LeakCanary (Memory Diagnostics) ===
         val leakSummary: LeakSummary = LeakSummary(0, null, null),
         /** Detailed leak status with noise control */
@@ -127,6 +131,11 @@ constructor(
         @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
+    // Debug tools settings repository (only available in debug builds via :core:debug-settings)
+    // Injected via Provider to avoid compile-time dependency in release builds
+    @Inject
+    lateinit var debugToolsSettingsProvider: dagger.Lazy<com.fishit.player.core.debugsettings.DebugToolsSettingsRepository>
+
     private val _state = MutableStateFlow(DebugState())
     val state: StateFlow<DebugState> = _state.asStateFlow()
 
@@ -135,6 +144,7 @@ constructor(
         loadCredentialStatus()
         loadLeakSummary()
         loadChuckerAvailability()
+        observeDebugToolsSettings() // Observe runtime toggle states
         observeSyncState()
         observeWorkManager()
         observeConnectionStatus()
@@ -183,6 +193,35 @@ constructor(
     /** Load Chucker availability. */
     private fun loadChuckerAvailability() {
         _state.update { it.copy(isChuckerAvailable = chuckerDiagnostics.isAvailable) }
+    }
+
+    /**
+     * Observe debug tools settings (Chucker, LeakCanary runtime toggles).
+     * Only available in debug builds via :core:debug-settings dependency.
+     */
+    private fun observeDebugToolsSettings() {
+        viewModelScope.launch {
+            try {
+                val settingsRepo = debugToolsSettingsProvider.get()
+
+                // Observe network inspector (Chucker) state
+                launch {
+                    settingsRepo.networkInspectorEnabledFlow.collect { enabled ->
+                        _state.update { it.copy(networkInspectorEnabled = enabled) }
+                    }
+                }
+
+                // Observe leak detection (LeakCanary) state
+                launch {
+                    settingsRepo.leakCanaryEnabledFlow.collect { enabled ->
+                        _state.update { it.copy(leakCanaryEnabled = enabled) }
+                    }
+                }
+            } catch (e: Exception) {
+                // Expected in release builds where :core:debug-settings is not available
+                UnifiedLog.d(TAG) { "Debug tools settings not available (expected in release): ${e.message}" }
+            }
+        }
     }
 
     /** Observe sync state from WorkManager via SyncStateObserver. */
@@ -729,6 +768,42 @@ constructor(
             appendLine("Product: ${Build.PRODUCT}")
             appendLine("Board: ${Build.BOARD}")
             appendLine("Hardware: ${Build.HARDWARE}")
+        }
+    }
+
+    // ========== Debug Tools Runtime Toggles ==========
+
+    /**
+     * Toggle network inspector (Chucker) on/off.
+     * Only available in debug builds.
+     */
+    fun setNetworkInspectorEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val settingsRepo = debugToolsSettingsProvider.get()
+                settingsRepo.setNetworkInspectorEnabled(enabled)
+                UnifiedLog.i(TAG) { "Network inspector (Chucker) toggled: enabled=$enabled" }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "Failed to toggle network inspector: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Failed to toggle network inspector") }
+            }
+        }
+    }
+
+    /**
+     * Toggle leak detection (LeakCanary) on/off.
+     * Only available in debug builds.
+     */
+    fun setLeakCanaryEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val settingsRepo = debugToolsSettingsProvider.get()
+                settingsRepo.setLeakCanaryEnabled(enabled)
+                UnifiedLog.i(TAG) { "Leak detection (LeakCanary) toggled: enabled=$enabled" }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "Failed to toggle leak detection: ${e.message}" }
+                _state.update { it.copy(lastActionResult = "Failed to toggle leak detection") }
+            }
         }
     }
 

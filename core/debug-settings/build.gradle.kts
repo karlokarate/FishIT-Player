@@ -1,13 +1,12 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
 
 android {
-    namespace = "com.fishit.player.infra.transport.xtream"
+    namespace = "com.fishit.player.core.debugsettings"
     compileSdk = 35
 
     defaultConfig {
@@ -25,36 +24,35 @@ android {
 }
 
 dependencies {
-    // Core dependencies
-    implementation(project(":core:model"))
-    implementation(project(":infra:logging"))
-    
-    // Debug settings (for GatedChuckerInterceptor in debug builds)
-    debugImplementation(project(":core:debug-settings"))
+    // DataStore for persisted settings
+    implementation("androidx.datastore:datastore-preferences:1.1.2")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
-    // Networking
-    api("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-
-    // Security for credential storage
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-
-    // Hilt DI
+    // Hilt
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
 
-    // Chucker HTTP Inspector (debug builds only)
-    debugImplementation(libs.chucker)
-    releaseImplementation(libs.chucker.noop)
+    // OkHttp for interceptor interface
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+
+    // Chucker HTTP Inspector (for GatedChuckerInterceptor)
+    implementation(libs.chucker)
+
+    // LeakCanary (for LeakCanary runtime control)
+    implementation("com.squareup.leakcanary:leakcanary-android:2.14")
+
+    // Logging
+    implementation(project(":infra:logging"))
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("app.cash.turbine:turbine:1.2.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.14")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")
 }

@@ -39,6 +39,9 @@ dependencies {
     implementation(project(":infra:logging"))
     implementation(project(":infra:cache"))
     
+    // Debug settings (for runtime toggles in DebugViewModel)
+    debugImplementation(project(":core:debug-settings"))
+    
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
