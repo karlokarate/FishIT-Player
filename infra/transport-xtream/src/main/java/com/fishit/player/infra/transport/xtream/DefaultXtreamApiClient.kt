@@ -772,7 +772,7 @@ class DefaultXtreamApiClient(
         //
         // **Extension Resolution (containerExtension-first, minimal fallback):**
         // 1. If containerExtension provided and valid → USE IT (SSOT)
-        // 2. If missing, try: mp4 (first fallback) → no further fallbacks
+        // 2. If missing, try: mkv (first fallback) → no further fallbacks
         // 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
         
         // SSOT: Use containerExtension if provided
@@ -780,9 +780,9 @@ class DefaultXtreamApiClient(
             if (!containerExtension.isNullOrBlank()) {
                 sanitizeSeriesExtension(containerExtension)
             } else {
-                // Minimal fallback: mp4 only
+                // Minimal fallback: mkv only
                 cfg.seriesExtPrefs.firstOrNull()?.let { sanitizeSeriesExtension(it) }
-                    ?: "mp4" // First fallback: mp4
+                    ?: "mkv" // First fallback: mkv
             }
 
         // Direct episodeId path: /series/user/pass/episodeId.ext (standard approach)
