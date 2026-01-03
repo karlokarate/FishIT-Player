@@ -32,9 +32,7 @@ import javax.inject.Singleton
 abstract class DebugSettingsModule {
     @Binds
     @Singleton
-    abstract fun bindDebugToolsSettingsRepository(
-        impl: DataStoreDebugToolsSettingsRepository,
-    ): DebugToolsSettingsRepository
+    abstract fun bindDebugToolsSettingsRepository(impl: DataStoreDebugToolsSettingsRepository): DebugToolsSettingsRepository
 
     companion object {
         /**
@@ -46,7 +44,8 @@ abstract class DebugSettingsModule {
         fun provideChuckerInterceptor(
             @ApplicationContext context: Context,
         ): ChuckerInterceptor =
-            ChuckerInterceptor.Builder(context)
+            ChuckerInterceptor
+                .Builder(context)
                 .maxContentLength(250_000L) // 250KB max body
                 .alwaysReadResponseBody(false) // Don't read bodies by default (performance)
                 .build()

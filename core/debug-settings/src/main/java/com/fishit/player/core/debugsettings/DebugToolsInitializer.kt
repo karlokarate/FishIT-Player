@@ -71,7 +71,12 @@ class DebugToolsInitializer
          * - Disable watchers via AppWatcher.config.enabled
          * - Hide launcher icon
          * - Disable automatic heap dumps
+         *
+         * Note: We use AppWatcher.config which is deprecated in favor of manualInstall(),
+         * but manualInstall() is for different use cases (manual initialization).
+         * For runtime toggling, AppWatcher.config.enabled is still the correct approach.
          */
+        @Suppress("DEPRECATION") // AppWatcher.config is the correct API for runtime toggling
         private fun configureLeakCanary(enabled: Boolean) {
             if (enabled) {
                 // Enable watchers (this is the key to actually start/stop watching)
