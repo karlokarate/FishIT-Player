@@ -121,8 +121,8 @@ class XtreamAuthRepositoryAdapter
                     scheme = config.scheme,
                     host = config.host,
                     port = config.port,
-                    username = config.username,
-                    password = config.password,
+                    username = XtreamApiConfig.sanitizeCredential(config.username),
+                    password = XtreamApiConfig.sanitizeCredential(config.password),
                 )
             credentialsStore.write(storedConfig)
         }
@@ -169,8 +169,8 @@ class XtreamAuthRepositoryAdapter
                 scheme = scheme,
                 host = host,
                 port = port,
-                username = username,
-                password = password,
+                username = XtreamApiConfig.sanitizeCredential(username),
+                password = XtreamApiConfig.sanitizeCredential(password),
             )
 
         private fun TransportConnectionState.toDomainConnectionState(): DomainConnectionState =

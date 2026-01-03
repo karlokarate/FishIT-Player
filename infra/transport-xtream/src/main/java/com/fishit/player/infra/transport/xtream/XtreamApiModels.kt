@@ -70,8 +70,7 @@ data class XtreamApiConfig(
          * @param credential Raw credential string (may contain whitespace/newlines)
          * @return Sanitized credential with no whitespace
          */
-        fun sanitizeCredential(credential: String): String =
-            credential.trim().replace(Regex("\\s+"), "")
+        fun sanitizeCredential(credential: String): String = credential.trim().replace(Regex("\\s+"), "")
 
         /**
          * Create config from M3U get.php URL.

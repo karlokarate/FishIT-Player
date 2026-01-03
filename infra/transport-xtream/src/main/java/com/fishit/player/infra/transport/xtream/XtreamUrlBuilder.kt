@@ -381,6 +381,16 @@ class XtreamUrlBuilder(
 
     companion object {
         /**
+         * Sanitize credential by trimming and removing ALL whitespace characters.
+         *
+         * Delegates to XtreamApiConfig.sanitizeCredential for consistent sanitization.
+         *
+         * @param credential Raw credential string (may contain whitespace/newlines)
+         * @return Sanitized credential with no whitespace
+         */
+        private fun sanitizeCredential(credential: String): String = XtreamApiConfig.sanitizeCredential(credential)
+
+        /**
          * Parse credentials from a get.php or player_api.php URL.
          *
          * Supported formats:
@@ -412,8 +422,8 @@ class XtreamUrlBuilder(
                 host = parsed.host,
                 port = parsed.port.takeIf { it != HttpUrl.defaultPort(parsed.scheme) },
                 scheme = parsed.scheme.uppercase(),
-                username = username,
-                password = password,
+                username = sanitizeCredential(username),
+                password = sanitizeCredential(password),
                 basePath = basePath,
             )
         }
@@ -454,8 +464,8 @@ class XtreamUrlBuilder(
                 host = parsed.host,
                 port = parsed.port.takeIf { it != HttpUrl.defaultPort(parsed.scheme) },
                 scheme = parsed.scheme.uppercase(),
-                username = username,
-                password = password,
+                username = sanitizeCredential(username),
+                password = sanitizeCredential(password),
                 basePath = basePath,
             )
         }
@@ -537,23 +547,23 @@ class XtreamUrlBuilder(
         val lower = ext.lowercase().trim()
         // Valid video container formats (files, not streams)
         val validSeriesFormats = setOf("mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
-        
+
         if (lower in validSeriesFormats) {
             return lower
         }
-        
+
         // Reject streaming formats for series
         if (lower in setOf("m3u8", "ts")) {
             throw IllegalArgumentException(
                 "Invalid extension for series episode: '$ext'. " +
-                "Series episodes require container formats (mp4, mkv, avi, etc.), not streaming formats (m3u8, ts)."
+                    "Series episodes require container formats (mp4, mkv, avi, etc.), not streaming formats (m3u8, ts).",
             )
         }
-        
+
         // Unknown/invalid extension
         throw IllegalArgumentException(
             "Invalid extension for series episode: '$ext'. " +
-            "Valid formats: mp4, mkv, avi, mov, wmv, flv, webm"
+                "Valid formats: mp4, mkv, avi, mov, wmv, flv, webm",
         )
     }
 

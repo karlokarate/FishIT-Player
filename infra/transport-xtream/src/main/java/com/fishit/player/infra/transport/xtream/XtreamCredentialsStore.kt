@@ -54,13 +54,15 @@ data class XtreamStoredConfig(
 ) {
     /**
      * Convert to XtreamApiConfig for initializing the client.
+     *
+     * Credentials are sanitized defensively even though they should already be clean from storage.
      */
     fun toApiConfig(): XtreamApiConfig =
         XtreamApiConfig(
             scheme = scheme,
             host = host,
             port = port,
-            username = username,
-            password = password,
+            username = XtreamApiConfig.sanitizeCredential(username),
+            password = XtreamApiConfig.sanitizeCredential(password),
         )
 }

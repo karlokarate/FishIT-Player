@@ -253,7 +253,7 @@ class XtreamCredentialSanitizationTest {
         // Given: Config with whitespace-polluted credentials
         val config =
             XtreamApiConfig(
-                scheme = "http"),
+                scheme = "http",
                 host = TEST_HOST,
                 port = TEST_PORT,
                 username = XtreamApiConfig.sanitizeCredential(" test user \n"),
@@ -269,13 +269,13 @@ class XtreamCredentialSanitizationTest {
                 seasonNumber = 3,
                 episodeNumber = 4,
                 episodeId = 638139,
-                containerExtension = "mp4"),
+                containerExtension = "mp4",
             )
 
         // Then: URL contains no whitespace in any segment
         assertTrue(
             url.contains("/series/testuser/testpass/638139.mp4"),
-            "URL should have sanitized credentials with no whitespace: $url"),
+            "URL should have sanitized credentials with no whitespace: $url",
         )
         assertTrue(!url.contains(" "), "URL should not contain any spaces: $url")
         assertTrue(!url.contains("\n"), "URL should not contain any newlines: $url")
@@ -320,7 +320,7 @@ class XtreamCredentialSanitizationTest {
         // Note: Real URLs typically won't have unencoded whitespace, but testing defensively
         val config =
             XtreamApiConfig.fromM3uUrl(
-                "http://example.com/get.php?username=test%20user&password=test%20pass"),
+                "http://example.com/get.php?username=test%20user&password=test%20pass",
             )
 
         // Then: Credentials should be sanitized (URL decoding happens first, then sanitization)
