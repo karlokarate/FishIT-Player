@@ -40,7 +40,9 @@ dependencies {
     implementation(project(":infra:cache"))
     
     // Debug settings (for runtime toggles in DebugViewModel)
-    debugImplementation(project(":core:debug-settings"))
+    // Use implementation (not debugImplementation) because DebugViewModel in main source set needs it
+    // The module itself provides debug/release variants with no-op implementations for release
+    implementation(project(":core:debug-settings"))
     
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

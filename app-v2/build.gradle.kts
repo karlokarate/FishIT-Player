@@ -149,7 +149,9 @@ dependencies {
     implementation(project(":core:app-startup"))
     
     // Debug settings (debug builds only)
-    debugImplementation(project(":core:debug-settings"))
+    // Use implementation (not debugImplementation) because it's referenced from main source set
+    // The module provides debug/release variants with no-op implementations for release
+    implementation(project(":core:debug-settings"))
 
     // v2 Domain Modules (extracted from features)
     implementation(project(":core:home-domain"))
