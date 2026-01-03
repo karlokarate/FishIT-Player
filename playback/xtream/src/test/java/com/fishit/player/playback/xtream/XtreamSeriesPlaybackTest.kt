@@ -11,7 +11,7 @@ import org.junit.Test
  * 1. Series episodes MUST use /series/<user>/<pass>/<episodeId>.<ext> (NOT /movie/ or /vod/)
  * 2. Container extension must be preserved (NOT forced to m3u8/ts)
  * 3. episodeId is REQUIRED for playback
- * 4. Fallback to mp4 if containerExtension is missing (NOT m3u8)
+ * 4. Fallback to mkv if containerExtension is missing (consistent with transport layer)
  */
 class XtreamSeriesPlaybackTest {
     companion object {
@@ -91,7 +91,7 @@ class XtreamSeriesPlaybackTest {
     }
 
     @Test
-    fun `series episode URL falls back to mp4 when containerExtension is missing`() {
+    fun `series episode URL falls back to mkv when containerExtension is missing`() {
         // Given: A URL builder for series episodes
         val urlBuilder = createUrlBuilder()
 
@@ -105,12 +105,13 @@ class XtreamSeriesPlaybackTest {
                 containerExtension = null,
             )
 
-        // Then: URL must fallback to mp4 (NOT m3u8)
+        // Then: URL must fallback to mkv (NOT mp4 or m3u8)
         assertTrue(
-            "Series URL must fallback to mp4 when containerExtension is missing",
-            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mp4"),
+            "Series URL must fallback to mkv when containerExtension is missing",
+            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mkv"),
         )
         assertFalse("Series URL must NOT fallback to m3u8", url.endsWith(".m3u8"))
+        assertFalse("Series URL must NOT fallback to mp4", url.endsWith(".mp4"))
     }
 
     @Test

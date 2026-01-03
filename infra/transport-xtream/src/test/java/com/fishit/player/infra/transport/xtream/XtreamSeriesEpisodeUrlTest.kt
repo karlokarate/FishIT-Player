@@ -4,12 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /**
- * Tests for series episode URL building to verify VOD path usage.
+ * Tests for series episode URL building to verify /series/ path usage.
  *
- * Per playback policy, series episodes should use:
- * - /movie/ or /vod/ path (file-based playback, like VOD)
- * - NOT /series/ path
+ * Per Xtream API specification and playback policy:
+ * - Series episodes MUST use /series/ path (NOT /movie/ or /vod/)
  * - container_extension as SSOT
+ * - Fallback to mkv if containerExtension is missing
  */
 class XtreamSeriesEpisodeUrlTest {
     private val config =
@@ -24,7 +24,7 @@ class XtreamSeriesEpisodeUrlTest {
         )
 
     @Test
-    fun `series episode URL uses movie path for direct episodeId`() {
+    fun `series episode URL uses series path for direct episodeId`() {
         // Given a URL builder with vodKind = "movie"
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
@@ -37,15 +37,15 @@ class XtreamSeriesEpisodeUrlTest {
             containerExtension = "mkv",
         )
 
-        // Then URL uses /movie/ path, not /series/
-        assertTrue("URL should contain /movie/", url.contains("/movie/"))
-        assertFalse("URL should NOT contain /series/", url.contains("/series/"))
+        // Then URL uses /series/ path, not /movie/
+        assertTrue("URL should contain /series/", url.contains("/series/"))
+        assertFalse("URL should NOT contain /movie/", url.contains("/movie/"))
         assertTrue("URL should contain episodeId", url.contains("/456."))
         assertTrue("URL should use container extension", url.endsWith(".mkv"))
     }
 
     @Test
-    fun `series episode URL uses vod path when vodKind is vod`() {
+    fun `series episode URL always uses series path regardless of vodKind`() {
         // Given a URL builder with vodKind = "vod"
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "vod")
 
@@ -58,14 +58,14 @@ class XtreamSeriesEpisodeUrlTest {
             containerExtension = "mp4",
         )
 
-        // Then URL uses /vod/ path, not /series/
-        assertTrue("URL should contain /vod/", url.contains("/vod/"))
-        assertFalse("URL should NOT contain /series/", url.contains("/series/"))
+        // Then URL uses /series/ path, NOT /vod/
+        assertTrue("URL should contain /series/", url.contains("/series/"))
+        assertFalse("URL should NOT contain /vod/", url.contains("/vod/"))
         assertTrue("URL should contain episodeId", url.contains("/789."))
     }
 
     @Test
-    fun `series episode URL uses movie path for legacy format`() {
+    fun `series episode URL uses series path for legacy format`() {
         // Given a URL builder with vodKind = "movie"
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
@@ -78,9 +78,9 @@ class XtreamSeriesEpisodeUrlTest {
             containerExtension = "mkv",
         )
 
-        // Then URL uses /movie/ path with seriesId/season/episode structure
-        assertTrue("URL should contain /movie/", url.contains("/movie/"))
-        assertFalse("URL should NOT contain /series/", url.contains("/series/"))
+        // Then URL uses /series/ path with seriesId/season/episode structure
+        assertTrue("URL should contain /series/", url.contains("/series/"))
+        assertFalse("URL should NOT contain /movie/", url.contains("/movie/"))
         assertTrue("URL should contain season/episode structure", url.contains("/123/2/10."))
         assertTrue("URL should use container extension", url.endsWith(".mkv"))
     }
@@ -105,7 +105,7 @@ class XtreamSeriesEpisodeUrlTest {
     }
 
     @Test
-    fun `XtreamUrlBuilder uses VOD path for episode URLs`() {
+    fun `XtreamUrlBuilder uses series path for episode URLs`() {
         // Given a URL builder with vodKind = "movie"
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
@@ -118,17 +118,17 @@ class XtreamSeriesEpisodeUrlTest {
             containerExtension = "mkv",
         )
 
-        // Then URL uses /movie/ path via vodKind
-        assertTrue("URL should contain /movie/", url.contains("/movie/"))
-        assertFalse("URL should NOT contain /series/", url.contains("/series/"))
+        // Then URL uses /series/ path, NOT /movie/
+        assertTrue("URL should contain /series/", url.contains("/series/"))
+        assertFalse("URL should NOT contain /movie/", url.contains("/movie/"))
         
         // Verify the URL structure matches expected format
-        val expectedPattern = "http://example.com:8080/movie/"
+        val expectedPattern = "http://example.com:8080/series/"
         assertTrue("URL should start with expected pattern", url.startsWith(expectedPattern))
     }
 
     @Test
-    fun `series episode URL format matches VOD URL format`() {
+    fun `series episode URL format differs from VOD URL format`() {
         // Given a URL builder
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
@@ -142,18 +142,17 @@ class XtreamSeriesEpisodeUrlTest {
             containerExtension = "mkv",
         )
 
-        // Then both should use /movie/ path and same format (except ID vs episodeId)
+        // Then VOD uses /movie/ path and series uses /series/ path
         val vodPattern = "/movie/testuser/testpass/456.mkv"
-        val seriesPattern = "/movie/testuser/testpass/456.mkv"
+        val seriesPattern = "/series/testuser/testpass/456.mkv"
 
         assertTrue("VOD URL should match expected pattern", vodUrl.contains(vodPattern))
-        assertTrue("Series URL should match VOD pattern", seriesUrl.contains(seriesPattern))
+        assertTrue("Series URL should match expected pattern", seriesUrl.contains(seriesPattern))
 
-        // Both should have same structure
-        assertEquals(
-            "Episode URL should have same structure as VOD URL",
-            vodUrl.substringAfter("/movie/"),
-            seriesUrl.substringAfter("/movie/"),
+        // URLs have different paths
+        assertFalse(
+            "Episode URL should NOT have same path as VOD URL",
+            vodUrl == seriesUrl,
         )
     }
 
