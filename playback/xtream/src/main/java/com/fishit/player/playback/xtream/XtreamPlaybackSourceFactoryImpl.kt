@@ -428,6 +428,13 @@ class XtreamPlaybackSourceFactoryImpl
                 )?.lowercase()
                     ?.trim()
 
+            // Enhanced logging to trace containerExtension value
+            UnifiedLog.d(TAG) {
+                "resolveOutputExtension: contentType=$contentType, containerExt=$containerExt, " +
+                    "hasNewKey=${context.extras.containsKey(PlaybackHintKeys.Xtream.CONTAINER_EXT)}, " +
+                    "hasLegacyKey=${context.extras.containsKey(EXTRA_CONTAINER_EXT)}"
+            }
+
             // Get allowed formats from server (if available)
             val allowedFormatsRaw = context.extras[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS]
             val allowedFormats =
@@ -501,7 +508,7 @@ class XtreamPlaybackSourceFactoryImpl
          *
          * **For SERIES (containerExtension-first, minimal fallback):**
          * 1. containerExtension if provided (mkv, mp4, avi, etc. - the actual file on server) → USE IT
-         * 2. If missing: fallback to mp4 (first choice), mkv is fallback #2 if mp4 fails
+         * 2. If missing: fallback to mkv (consistent with transport layer)
          * 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
          *
          * **For VOD:**
@@ -537,12 +544,13 @@ class XtreamPlaybackSourceFactoryImpl
 
             // Fallback when containerExtension is missing
             if (contentType == CONTENT_TYPE_SERIES) {
-                // SERIES: mp4 (first fallback), mkv is fallback #2 if mp4 fails at playback
+                // SERIES: mkv (first fallback) - consistent with transport layer
+                // This matches DefaultXtreamApiClient.buildSeriesEpisodeUrl fallback
                 UnifiedLog.w(TAG) {
-                    "$contentType: No containerExtension provided. Using fallback: mp4 " +
-                    "(if playback fails, mkv may be attempted as fallback #2)"
+                    "$contentType: No containerExtension provided. Using fallback: mkv " +
+                        "(consistent with transport layer fallback)"
                 }
-                return "mp4"
+                return "mkv"
             } else {
                 // VOD: Fallback to mp4 (most common container format)
                 UnifiedLog.w(TAG) {
