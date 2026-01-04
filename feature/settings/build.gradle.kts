@@ -88,4 +88,7 @@ dependencies {
     // Chucker HTTP Inspector (debug-only for ChuckerDiagnosticsImpl)
     // NOTE: No chucker-noop in release! Release uses ChuckerDiagnosticsImpl stub.
     debugImplementation(libs.chucker)
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
 }
