@@ -27,15 +27,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
 import javax.inject.Inject
+import kotlin.coroutines.coroutineContext
 
 /**
  * ViewModel for unified detail screen with cross-pipeline source selection.
@@ -76,7 +76,7 @@ class UnifiedDetailViewModel
     ) : ViewModel() {
         companion object {
             private const val TAG = "UnifiedDetailVM"
-            
+
             // Retry/Timeout constants
             private const val ENRICHMENT_RETRY_DELAY_MS = 500L
             private const val ENRICHMENT_MAX_RETRIES = 3
@@ -462,7 +462,7 @@ class UnifiedDetailViewModel
                     .cancellable()
                     .onEach { seasonItems ->
                         if (!coroutineContext.isActive) return@onEach
-                        
+
                         val seasons = seasonItems.map { it.seasonNumber }.sorted()
 
                         UnifiedLog.d(TAG) { "Loaded ${seasons.size} seasons for series $seriesId" }
@@ -542,7 +542,7 @@ class UnifiedDetailViewModel
                     .cancellable()
                     .onEach { episodeItems ->
                         if (!coroutineContext.isActive) return@onEach
-                        
+
                         val episodes = episodeItems.map { it.toDetailEpisodeItem() }
 
                         UnifiedLog.d(TAG) { "Loaded ${episodes.size} episodes for season $seasonNumber" }
@@ -614,10 +614,10 @@ class UnifiedDetailViewModel
                         }
                         is EnsureEpisodePlaybackReadyUseCase.Result.Enriching -> {
                             UnifiedLog.i(TAG) { "Episode enrichment in progress: ${episode.id}, waiting..." }
-                            
+
                             // Show loading state
                             _state.update { it.copy(episodesLoading = true) }
-                            
+
                             // Exponential backoff retry
                             var retryCount = 0
                             var retryResult: EnsureEpisodePlaybackReadyUseCase.Result? = null
@@ -625,7 +625,7 @@ class UnifiedDetailViewModel
                             while (retryCount < ENRICHMENT_MAX_RETRIES) {
                                 delay(ENRICHMENT_RETRY_DELAY_MS * (retryCount + 1))
                                 retryResult = ensureEpisodePlaybackReadyUseCase.invoke(episode.id)
-                                
+
                                 if (retryResult is EnsureEpisodePlaybackReadyUseCase.Result.Ready) {
                                     break
                                 }
@@ -664,12 +664,12 @@ class UnifiedDetailViewModel
             val episodeStreamId =
                 hints.streamId
                     ?: throw IllegalStateException("Episode missing streamId: ${episode.id}")
-            
+
             val containerExt = hints.containerExtension
             if (containerExt == null) {
-                UnifiedLog.w(TAG) { 
+                UnifiedLog.w(TAG) {
                     "Episode ${episode.id} missing containerExtension from API, falling back to 'mkv'. " +
-                    "This may cause playback issues if the actual format is different."
+                        "This may cause playback issues if the actual format is different."
                 }
             }
             val finalContainerExt = containerExt ?: "mkv"
