@@ -39,7 +39,8 @@ dependencies {
     implementation(project(":infra:logging"))
     implementation(project(":infra:cache"))
 
-    // Debug settings (for runtime toggles in DebugViewModel)
+    // Debug settings (for runtime toggles in DebugToolsControllerImpl - debug only)
+    // NOTE: Release builds use no-op DebugToolsControllerImpl with ZERO debug-settings references
     debugImplementation(project(":core:debug-settings"))
 
     // Compose
@@ -75,10 +76,16 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:2.56.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    // ========== COMPILE-TIME GATING: LeakCanary & Chucker ==========
+    // These dependencies are ONLY included in debug builds.
+    // Release builds have ZERO references to these libraries (not even no-op stubs).
+    // The DebugToolsController, LeakDiagnostics, and ChuckerDiagnostics interfaces
+    // have separate implementations in debug/ and release/ source sets.
+
     // LeakCanary (debug-only for LeakDiagnosticsImpl)
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 
-    // Chucker HTTP Inspector (debug-only for ChuckerDiagnostics)
+    // Chucker HTTP Inspector (debug-only for ChuckerDiagnosticsImpl)
+    // NOTE: No chucker-noop in release! Release uses ChuckerDiagnosticsImpl stub.
     debugImplementation(libs.chucker)
-    releaseImplementation(libs.chucker.noop)
 }
