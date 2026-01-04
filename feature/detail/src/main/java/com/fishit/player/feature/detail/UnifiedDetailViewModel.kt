@@ -21,11 +21,13 @@ import com.fishit.player.feature.detail.series.LoadSeriesSeasonsUseCase
 import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -434,20 +436,19 @@ class UnifiedDetailViewModel
          * This is called automatically when a SERIES media is loaded.
          */
         private suspend fun loadSeriesDetails(media: CanonicalMediaWithSources) {
-            try {
-                // Extract Xtream series ID from canonical ID
-                // Format: "xtream:series:12345"
-                val seriesId =
-                    extractSeriesId(media.canonicalId) ?: run {
-                        UnifiedLog.w(TAG) { "Cannot load series details: unable to extract series ID from ${media.canonicalId.key.value}" }
-                        return
-                    }
+            // Extract Xtream series ID from canonical ID first (before try block for catch access)
+            val seriesId =
+                extractSeriesId(media.canonicalId) ?: run {
+                    UnifiedLog.w(TAG) { "Cannot load series details: unable to extract series ID from ${media.canonicalId.key.value}" }
+                    return
+                }
 
+            try {
                 UnifiedLog.d(TAG) { "Loading series details for seriesId=$seriesId" }
 
                 // Load seasons
                 loadSeriesSeasonsUseCase.ensureSeasonsLoaded(seriesId)
-                loadSeriesSeasonsUseCase.observeSeasons(seriesId).collect { seasonItems ->
+                loadSeriesSeasonsUseCase.observeSeasons(seriesId).take(1).collect { seasonItems ->
                     val seasons = seasonItems.map { it.seasonNumber }.sorted()
 
                     UnifiedLog.d(TAG) { "Loaded ${seasons.size} seasons for series $seriesId" }
@@ -466,7 +467,8 @@ class UnifiedDetailViewModel
                     }
                 }
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to load series details" }
+                UnifiedLog.e(TAG, e) { "Failed to load series details for seriesId=$seriesId" }
+                _state.update { it.copy(error = "Staffeln konnten nicht geladen werden", seasons = emptyList()) }
             }
         }
 
@@ -483,10 +485,14 @@ class UnifiedDetailViewModel
                 // Try to extract from first Xtream source
                 val xtreamSource = media.sources.find { it.sourceId.value.startsWith("xtream:") }
                 if (xtreamSource != null) {
-                    // Parse source ID: "xtream:series:12345"
+                    // Parse source ID formats:
+                    // - Series: "xtream:series:12345"
+                    // - Episode: "xtream:series:12345:episode:54321"
                     val parts = xtreamSource.sourceId.value.split(":")
-                    if (parts.size >= 3 && parts[1] == "series") {
-                        return parts[2].toIntOrNull()
+                    return when {
+                        parts.size == 3 && parts[1] == "series" -> parts[2].toIntOrNull()
+                        parts.size >= 5 && parts[1] == "series" && parts[3] == "episode" -> parts[2].toIntOrNull()
+                        else -> null
                     }
                 }
             }
@@ -516,7 +522,7 @@ class UnifiedDetailViewModel
                 _state.update { it.copy(episodesLoading = true) }
 
                 loadSeasonEpisodesUseCase.ensureEpisodesLoaded(seriesId, seasonNumber)
-                loadSeasonEpisodesUseCase.observeEpisodes(seriesId, seasonNumber).collect { episodeItems ->
+                loadSeasonEpisodesUseCase.observeEpisodes(seriesId, seasonNumber).take(1).collect { episodeItems ->
                     val episodes = episodeItems.map { it.toDetailEpisodeItem() }
 
                     UnifiedLog.d(TAG) { "Loaded ${episodes.size} episodes for season $seasonNumber" }
@@ -529,8 +535,8 @@ class UnifiedDetailViewModel
                     }
                 }
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to load episodes for season $seasonNumber" }
-                _state.update { it.copy(episodesLoading = false) }
+                UnifiedLog.e(TAG, e) { "Failed to load episodes for seriesId=$seriesId, season=$seasonNumber" }
+                _state.update { it.copy(episodesLoading = false, error = "Episoden konnten nicht geladen werden") }
             }
         }
 
@@ -548,7 +554,11 @@ class UnifiedDetailViewModel
                 season = seasonNumber,
                 episode = episodeNumber,
                 title = title ?: "Episode $episodeNumber",
-                thumbnail = thumbUrl?.let { ImageRef.Http(it) },
+                thumbnail =
+                    thumbUrl
+                        ?.takeIf { url ->
+                            url.isNotBlank() && (url.startsWith("http://") || url.startsWith("https://"))
+                        }?.let { ImageRef.Http(it) },
                 durationMs = durationSecs?.toLong()?.times(1000),
                 plot = plotBrief,
                 sources = emptyList(), // Will be resolved on playback
@@ -579,55 +589,21 @@ class UnifiedDetailViewModel
 
                     when (ensureResult) {
                         is EnsureEpisodePlaybackReadyUseCase.Result.Ready -> {
-                            val hints = ensureResult.hints
-
-                            // Extract episode stream_id and container_extension
-                            val episodeStreamId =
-                                hints.streamId
-                                    ?: throw IllegalStateException("Episode missing streamId: ${episode.id}")
-                            val containerExt = hints.containerExtension ?: "mkv" // Fallback
-
-                            UnifiedLog.d(TAG) {
-                                "Episode playback ready: streamId=$episodeStreamId, containerExt=$containerExt"
-                            }
-
-                            // Get series ID for context
-                            val media = _state.value.media
-                            val seriesId = if (media != null) extractSeriesId(media.canonicalId) else null
-
-                            // Build MediaSourceRef with playback hints
-                            val source =
-                                MediaSourceRef(
-                                    sourceType = SourceType.XTREAM,
-                                    sourceId = PipelineItemId(episode.id),
-                                    sourceLabel = "${episode.title} (S${episode.season}E${episode.episode})",
-                                    durationMs = episode.durationMs,
-                                    playbackHints =
-                                        buildMap {
-                                            put(PlaybackHintKeys.Xtream.CONTENT_TYPE, "series")
-                                            put(PlaybackHintKeys.Xtream.EPISODE_ID, episodeStreamId.toString())
-                                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, containerExt)
-                                            // Include season/episode numbers for metadata purposes (NOT URL construction!)
-                                            put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.season.toString())
-                                            put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episode.toString())
-                                            // Include series ID if available
-                                            if (seriesId != null) {
-                                                put(PlaybackHintKeys.Xtream.SERIES_ID, seriesId.toString())
-                                            }
-                                        },
-                                )
-
-                            _events.emit(
-                                UnifiedDetailEvent.StartPlayback(
-                                    canonicalId = episode.canonicalId,
-                                    source = source,
-                                    resumePositionMs = _state.value.episodeResumes[episode.id]?.positionMs ?: 0,
-                                ),
-                            )
+                            playEpisodeWithHints(episode, ensureResult.hints)
                         }
                         is EnsureEpisodePlaybackReadyUseCase.Result.Enriching -> {
-                            UnifiedLog.i(TAG) { "Episode enrichment in progress: ${episode.id}" }
-                            // Could show loading indicator here
+                            UnifiedLog.i(TAG) { "Episode enrichment in progress: ${episode.id}, waiting..." }
+
+                            // Wait for enrichment to complete (with timeout)
+                            delay(500)
+                            val retryResult = ensureEpisodePlaybackReadyUseCase.invoke(episode.id)
+
+                            if (retryResult is EnsureEpisodePlaybackReadyUseCase.Result.Ready) {
+                                playEpisodeWithHints(episode, retryResult.hints)
+                            } else {
+                                UnifiedLog.w(TAG) { "Episode enrichment timeout: ${episode.id}" }
+                                _events.emit(UnifiedDetailEvent.ShowError("Episode wird vorbereitet, bitte erneut versuchen"))
+                            }
                         }
                         is EnsureEpisodePlaybackReadyUseCase.Result.Failed -> {
                             UnifiedLog.e(TAG) { "Episode not ready: ${ensureResult.reason}" }
@@ -639,6 +615,54 @@ class UnifiedDetailViewModel
                     _events.emit(UnifiedDetailEvent.ShowError("Wiedergabe fehlgeschlagen"))
                 }
             }
+        }
+
+        /**
+         * Internal: Start episode playback with enriched hints.
+         */
+        private suspend fun playEpisodeWithHints(
+            episode: DetailEpisodeItem,
+            hints: com.fishit.player.core.detail.domain.EpisodePlaybackHints,
+        ) {
+            val episodeStreamId =
+                hints.streamId
+                    ?: throw IllegalStateException("Episode missing streamId: ${episode.id}")
+            val containerExt = hints.containerExtension ?: "mkv"
+
+            val media = _state.value.media
+            val seriesId = if (media != null) extractSeriesId(media.canonicalId) else null
+
+            UnifiedLog.d(TAG) {
+                "Episode playback ready [series=$seriesId, season=${episode.season}, episode=${episode.episode}, " +
+                    "episodeId=${episode.id}, streamId=$episodeStreamId, containerExt=$containerExt]"
+            }
+
+            val source =
+                MediaSourceRef(
+                    sourceType = SourceType.XTREAM,
+                    sourceId = PipelineItemId(episode.id),
+                    sourceLabel = "${episode.title} (S${episode.season}E${episode.episode})",
+                    durationMs = episode.durationMs,
+                    playbackHints =
+                        buildMap {
+                            put(PlaybackHintKeys.Xtream.CONTENT_TYPE, "series")
+                            put(PlaybackHintKeys.Xtream.EPISODE_ID, episodeStreamId.toString())
+                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, containerExt)
+                            put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.season.toString())
+                            put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episode.toString())
+                            if (seriesId != null) {
+                                put(PlaybackHintKeys.Xtream.SERIES_ID, seriesId.toString())
+                            }
+                        },
+                )
+
+            _events.emit(
+                UnifiedDetailEvent.StartPlayback(
+                    canonicalId = episode.canonicalId,
+                    source = source,
+                    resumePositionMs = _state.value.episodeResumes[episode.id]?.positionMs ?: 0,
+                ),
+            )
         }
 
         // ==========================================================================
