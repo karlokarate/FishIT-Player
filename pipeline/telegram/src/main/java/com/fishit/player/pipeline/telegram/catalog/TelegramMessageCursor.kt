@@ -89,30 +89,35 @@ internal class TelegramMessageCursor(
         }
 
         // Calculate limit respecting quota
-        val remainingForQuota = (maxMessages?.let { it - scannedMessages } ?: pageSize.toLong())
-            .coerceAtMost(pageSize.toLong())
-            .toInt()
+        val remainingForQuota =
+            (maxMessages?.let { it - scannedMessages } ?: pageSize.toLong())
+                .coerceAtMost(pageSize.toLong())
+                .toInt()
 
         // Fetch page with retry for TDLib async loading
         // TDLib may return empty while loading from server - retry with backoff
         var page: List<TelegramMediaItem> = emptyList()
         var emptyRetries = 0
-        
+
         while (emptyRetries <= EMPTY_PAGE_MAX_RETRIES) {
-            page = adapter.fetchMediaMessages(
-                chatId = chat.chatId,
-                limit = remainingForQuota,
-                offsetMessageId = fromMessageId,
-            )
-            
+            page =
+                adapter.fetchMediaMessages(
+                    chatId = chat.chatId,
+                    limit = remainingForQuota,
+                    offsetMessageId = fromMessageId,
+                )
+
             if (page.isNotEmpty()) {
                 break // Got data, continue processing
             }
-            
+
             // Empty page - might be TDLib async loading, retry with backoff
             if (emptyRetries < EMPTY_PAGE_MAX_RETRIES) {
                 val backoffMs = EMPTY_PAGE_BASE_DELAY_MS * (1 shl emptyRetries) // Exponential: 300, 600, 1200ms
-                UnifiedLog.d(TAG, "Empty page for chat ${chat.chatId}, retry ${emptyRetries + 1}/$EMPTY_PAGE_MAX_RETRIES after ${backoffMs}ms")
+                UnifiedLog.d(
+                    TAG,
+                    "Empty page for chat ${chat.chatId}, retry ${emptyRetries + 1}/$EMPTY_PAGE_MAX_RETRIES after ${backoffMs}ms",
+                )
                 delay(backoffMs)
                 emptyRetries++
             } else {
@@ -135,22 +140,26 @@ internal class TelegramMessageCursor(
         // Incremental sync: Check for high-water mark
         // TDLib returns messages newest-first, so if we see messageId <= stopAtMessageId,
         // we've reached content we've already seen
-        val truncatedPage = if (stopAtMessageId != null) {
-            val hwmIndex = page.indexOfFirst { it.messageId <= stopAtMessageId }
-            if (hwmIndex >= 0) {
-                // Found known content - truncate and stop
-                reachedHighWaterMark = true
-                reachedEnd = true
-                val newItems = page.take(hwmIndex)
-                UnifiedLog.d(TAG, "Chat ${chat.chatId}: Reached high-water mark at messageId=$stopAtMessageId, " +
-                        "returning ${newItems.size} new items (truncated from ${page.size})")
-                newItems
+        val truncatedPage =
+            if (stopAtMessageId != null) {
+                val hwmIndex = page.indexOfFirst { it.messageId <= stopAtMessageId }
+                if (hwmIndex >= 0) {
+                    // Found known content - truncate and stop
+                    reachedHighWaterMark = true
+                    reachedEnd = true
+                    val newItems = page.take(hwmIndex)
+                    UnifiedLog.d(
+                        TAG,
+                        "Chat ${chat.chatId}: Reached high-water mark at messageId=$stopAtMessageId, " +
+                            "returning ${newItems.size} new items (truncated from ${page.size})",
+                    )
+                    newItems
+                } else {
+                    page
+                }
             } else {
                 page
             }
-        } else {
-            page
-        }
 
         scannedMessages += truncatedPage.size
         if (truncatedPage.isNotEmpty()) {
@@ -158,15 +167,16 @@ internal class TelegramMessageCursor(
         }
 
         // Apply timestamp filter
-        val filtered = if (minMessageTimestampMs != null) {
-            val cutoffSeconds = minMessageTimestampMs / 1000
-            truncatedPage.filter { item ->
-                val dateSeconds = item.date ?: 0L
-                dateSeconds >= cutoffSeconds
+        val filtered =
+            if (minMessageTimestampMs != null) {
+                val cutoffSeconds = minMessageTimestampMs / 1000
+                truncatedPage.filter { item ->
+                    val dateSeconds = item.date ?: 0L
+                    dateSeconds >= cutoffSeconds
+                }
+            } else {
+                truncatedPage
             }
-        } else {
-            truncatedPage
-        }
 
         // If all messages were filtered out and we hit quota, we're done
         if (filtered.isEmpty() && maxMessages != null && scannedMessages >= maxMessages) {
@@ -208,13 +218,13 @@ internal class TelegramMessageCursor(
     companion object {
         private const val TAG = "TelegramMessageCursor"
         private const val DEFAULT_PAGE_SIZE = 100
-        
+
         /**
          * Maximum retries when TDLib returns empty page.
          * TDLib may be loading data from server asynchronously.
          */
         private const val EMPTY_PAGE_MAX_RETRIES = 3
-        
+
         /**
          * Base delay for exponential backoff on empty pages (milliseconds).
          * Actual delays: 300ms, 600ms, 1200ms

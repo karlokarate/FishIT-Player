@@ -36,7 +36,10 @@ data class WorkManagerSnapshot(
             appendSection("Tag: source_tmdb / tmdb_enrichment", taggedTmdbWork)
         }
 
-    private fun StringBuilder.appendSection(title: String, items: List<WorkTaskInfo>) {
+    private fun StringBuilder.appendSection(
+        title: String,
+        items: List<WorkTaskInfo>,
+    ) {
         appendLine(title)
         appendLine("-".repeat(title.length))
         if (items.isEmpty()) {

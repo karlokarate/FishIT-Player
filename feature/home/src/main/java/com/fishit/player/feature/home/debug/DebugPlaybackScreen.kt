@@ -40,20 +40,21 @@ import com.fishit.player.ui.PlayerScreen
 @Composable
 fun DebugPlaybackScreen(
     onBack: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showPlayer by remember { mutableStateOf(false) }
 
     if (showPlayer) {
         // Show the actual player
-        val testContext = remember {
-            PlaybackContext(
-                canonicalId = "debug-test-stream",
-                title = "Big Buck Bunny (Test)",
-                sourceType = SourceType.HTTP,
-                uri = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-            )
-        }
+        val testContext =
+            remember {
+                PlaybackContext(
+                    canonicalId = "debug-test-stream",
+                    title = "Big Buck Bunny (Test)",
+                    sourceType = SourceType.HTTP,
+                    uri = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                )
+            }
 
         PlayerScreen(
             context = testContext,
@@ -61,14 +62,14 @@ fun DebugPlaybackScreen(
                 showPlayer = false
                 onBack()
             },
-            modifier = modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize(),
         )
     } else {
         // Show the menu to start playback
         DebugPlaybackMenu(
             onPlayTestStream = { showPlayer = true },
             onBack = onBack,
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -80,26 +81,26 @@ fun DebugPlaybackScreen(
 private fun DebugPlaybackMenu(
     onPlayTestStream: () -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(32.dp),
         ) {
             Text(
                 text = "Debug Playback",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Test the player with a sample video stream.",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
 
             Spacer(modifier = Modifier.height(32.dp))

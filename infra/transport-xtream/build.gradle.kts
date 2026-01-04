@@ -28,7 +28,7 @@ dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":infra:logging"))
-    
+
     // Debug settings (for GatedChuckerInterceptor in debug builds)
     debugImplementation(project(":core:debug-settings"))
 

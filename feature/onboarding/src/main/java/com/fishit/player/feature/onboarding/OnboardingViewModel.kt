@@ -5,9 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
 import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
-import com.fishit.player.core.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
 import com.fishit.player.core.onboarding.domain.XtreamConfig
-import com.fishit.player.core.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +15,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.fishit.player.core.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
+import com.fishit.player.core.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
 
 /**
  * State for the onboarding/start screen
@@ -188,11 +188,14 @@ class OnboardingViewModel
         fun connectXtream() {
             val url = _state.value.xtreamUrl
             // Log only host/port, never credentials (LOGGING_CONTRACT_V2)
-            val safeUrlPreview = runCatching { 
-                java.net.URI(url.trim()).let { uri -> "${uri.scheme ?: "http"}://${uri.host ?: "?"}:${uri.port.takeIf { it > 0 } ?: 80}" }
-            }.getOrElse { "<malformed>" }
+            val safeUrlPreview =
+                runCatching {
+                    java.net.URI(url.trim()).let { uri ->
+                        "${uri.scheme ?: "http"}://${uri.host ?: "?"}:${uri.port.takeIf { it > 0 } ?: 80}"
+                    }
+                }.getOrElse { "<malformed>" }
             UnifiedLog.d(TAG) { "connectXtream: Starting with URL host: $safeUrlPreview" }
-            
+
             if (url.isBlank()) {
                 UnifiedLog.w(TAG) { "connectXtream: URL is blank" }
                 _state.update {
@@ -206,12 +209,16 @@ class OnboardingViewModel
             if (credentials == null) {
                 UnifiedLog.e(TAG) { "connectXtream: Failed to parse URL (host: $safeUrlPreview)" }
                 _state.update {
-                    it.copy(xtreamError = "Invalid Xtream URL. Expected format: http://host:port/get.php?username=X&password=Y or http://user:pass@host:port")
+                    it.copy(
+                        xtreamError = "Invalid Xtream URL. Expected format: http://host:port/get.php?username=X&password=Y or http://user:pass@host:port",
+                    )
                 }
                 return
             }
 
-            UnifiedLog.d(TAG) { "connectXtream: Parsed credentials - host=${credentials.host}, port=${credentials.port}, username=${credentials.username}, useHttps=${credentials.useHttps}" }
+            UnifiedLog.d(TAG) {
+                "connectXtream: Parsed credentials - host=${credentials.host}, port=${credentials.port}, username=${credentials.username}, useHttps=${credentials.useHttps}"
+            }
 
             viewModelScope.launch {
                 val config =
@@ -223,7 +230,9 @@ class OnboardingViewModel
                         password = credentials.password,
                     )
 
-                UnifiedLog.d(TAG) { "connectXtream: Created config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}" }
+                UnifiedLog.d(TAG) {
+                    "connectXtream: Created config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}"
+                }
 
                 val result = xtreamAuthRepository.initialize(config)
                 if (result.isFailure) {
@@ -276,22 +285,23 @@ class OnboardingViewModel
          * - http://host:port/get.php?username=X&password=Y&type=m3u_plus
          * - http://host:port/player_api.php?username=X&password=Y
          * - http://username:password@host:port
-         * 
+         *
          * Also handles malformed URLs where '?' is missing (e.g., get.phpusername=...)
          * by attempting to fix them before parsing.
          */
         fun parseXtreamUrl(url: String): XtreamCredentials? {
             return try {
                 var trimmed = url.trim()
-                
+
                 // Fix common malformed URL: missing '?' before query params
                 // e.g., "get.phpusername=" -> "get.php?username="
                 // e.g., "player_api.phpusername=" -> "player_api.php?username="
                 val malformedPattern = Regex("""(\.php)(username=)""", RegexOption.IGNORE_CASE)
                 if (malformedPattern.containsMatchIn(trimmed)) {
-                    trimmed = malformedPattern.replace(trimmed) { match ->
-                        "${match.groupValues[1]}?${match.groupValues[2]}"
-                    }
+                    trimmed =
+                        malformedPattern.replace(trimmed) { match ->
+                            "${match.groupValues[1]}?${match.groupValues[2]}"
+                        }
                     UnifiedLog.d(TAG) { "parseXtreamUrl: Fixed malformed URL (added missing '?')" }
                 }
 

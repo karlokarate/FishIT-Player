@@ -54,173 +54,153 @@ package com.fishit.player.pipeline.telegram.model
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 data class TelegramMediaItem(
-        val id: Long = 0,
-        val chatId: Long = 0,
-        val messageId: Long = 0,
-        val mediaAlbumId: Long? = null,
-        val mediaType: TelegramMediaType = TelegramMediaType.OTHER,
-        
-        // === File Reference (remoteId only - resolve fileId at runtime) ===
-        /** Stable remote ID for media file. Use getRemoteFile(remoteId) to get fileId. */
-        val remoteId: String? = null,
-        
-        val title: String = "",
-        val fileName: String? = null,
-        val caption: String? = null,
-        val mimeType: String? = null,
-        val sizeBytes: Long? = null,
-        val durationSecs: Int? = null,
-        val width: Int? = null,
-        val height: Int? = null,
-        val supportsStreaming: Boolean? = null,
-        
-        // === Thumbnail Reference (remoteId only - resolve fileId at runtime) ===
-        /** Stable remote ID for thumbnail. Use getRemoteFile(thumbRemoteId) to get fileId. */
-        val thumbRemoteId: String? = null,
-        val thumbnailWidth: Int? = null,
-        val thumbnailHeight: Int? = null,
-        
-        // === Photo Sizes (each has remoteId) ===
-        val photoSizes: List<TelegramPhotoSize> = emptyList(),
-        
-        // === Minithumbnail (inline JPEG bytes for instant blur placeholder) ===
-        val minithumbnailBytes: ByteArray? = null,
-        val minithumbnailWidth: Int? = null,
-        val minithumbnailHeight: Int? = null,
-        
-        val date: Long? = null,
-        val isSeries: Boolean = false,
-        val seriesName: String? = null,
-        val seasonNumber: Int? = null,
-        val episodeNumber: Int? = null,
-        val episodeTitle: String? = null,
-        val year: Int? = null,
-        val genres: String? = null,
-        val description: String? = null,
-        
-        // === Structured Bundle Fields (v2 - TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) ===
-        
-        /**
-         * TMDB ID from structured TEXT message.
-         *
-         * Extracted from tmdbUrl (e.g., "https://themoviedb.org/movie/12345" → 12345).
-         * Pass-through to RawMediaMetadata.externalIds.tmdb (enables downstream unification).
-         * Per Contract R4 Schema Guards: raw extracted, validation happens in extractor.
-         *
-         * @see structuredTmdbType for the media type (MOVIE or TV)
-         */
-        val structuredTmdbId: Int? = null,
-        
-        /**
-         * TMDB media type from structured TEXT message (Gold Decision Dec 2025).
-         *
-         * Extracted from tmdbUrl path:
-         * - "/movie/123" → MOVIE
-         * - "/tv/456" → TV
-         *
-         * Episodes use TV type with season/episode from other fields.
-         * Never use EPISODE type (TMDB has no episode root type).
-         *
-         * @see structuredTmdbId for the numeric ID
-         */
-        val structuredTmdbType: TelegramTmdbType? = null,
-        
-        /**
-         * TMDB rating from structured TEXT message (0.0-10.0 scale).
-         *
-         * Pass-through to RawMediaMetadata.rating.
-         * Per Contract R4 Schema Guards: must be in range 0.0..10.0 else null.
-         */
-        val structuredRating: Double? = null,
-        
-        /**
-         * Year from structured TEXT message.
-         *
-         * Overrides filename-parsed year when present (structured data is more reliable).
-         * Per Contract R4 Schema Guards: must be in range 1800..2100 else null.
-         */
-        val structuredYear: Int? = null,
-        
-        /**
-         * FSK age rating from structured TEXT message.
-         *
-         * Used for Kids profile content filtering.
-         * Per Contract R4 Schema Guards: must be in range 0..21 else null.
-         * Common values: 0 (all ages), 6, 12, 16, 18 (standard FSK), 21 (explicit adult).
-         */
-        val structuredFsk: Int? = null,
-        
-        /**
-         * Genres from structured TEXT message.
-         *
-         * Raw list of genre strings (e.g., ["Action", "Drama"]).
-         * Converted to comma-separated for existing genres field compatibility.
-         */
-        val structuredGenres: List<String>? = null,
-        
-        /**
-         * Director from structured TEXT message.
-         *
-         * Raw director name as provided by source.
-         */
-        val structuredDirector: String? = null,
-        
-        /**
-         * Original title from structured TEXT message.
-         *
-         * Original language title (e.g., "Die Hard" for German release of English film).
-         * Different from title which may be localized.
-         */
-        val structuredOriginalTitle: String? = null,
-        
-        /**
-         * Production country from structured TEXT message.
-         *
-         * ISO country code or full name (e.g., "US", "Germany").
-         */
-        val structuredProductionCountry: String? = null,
-        
-        /**
-         * Runtime in minutes from structured TEXT message.
-         *
-         * Per Contract R4 Schema Guards: must be in range 1..600 else null.
-         * Takes precedence over durationSecs when present.
-         */
-        val structuredLengthMinutes: Int? = null,
-        
-        /**
-         * Bundle type for debugging/logging.
-         *
-         * Indicates how this item was detected: as part of a complete 3-cluster,
-         * compact 2-cluster, or as a single message.
-         */
-        val bundleType: TelegramBundleType = TelegramBundleType.SINGLE,
-        
-        /**
-         * Message ID of TEXT message in bundle (for debugging/logging).
-         *
-         * Null if bundleType is SINGLE or no TEXT message in bundle.
-         */
-        val textMessageId: Long? = null,
-        
-        /**
-         * Message ID of PHOTO message in bundle (for debugging/logging).
-         *
-         * Null if bundleType is SINGLE or no PHOTO message in bundle.
-         */
-        val photoMessageId: Long? = null,
+    val id: Long = 0,
+    val chatId: Long = 0,
+    val messageId: Long = 0,
+    val mediaAlbumId: Long? = null,
+    val mediaType: TelegramMediaType = TelegramMediaType.OTHER,
+    // === File Reference (remoteId only - resolve fileId at runtime) ===
+    /** Stable remote ID for media file. Use getRemoteFile(remoteId) to get fileId. */
+    val remoteId: String? = null,
+    val title: String = "",
+    val fileName: String? = null,
+    val caption: String? = null,
+    val mimeType: String? = null,
+    val sizeBytes: Long? = null,
+    val durationSecs: Int? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val supportsStreaming: Boolean? = null,
+    // === Thumbnail Reference (remoteId only - resolve fileId at runtime) ===
+    /** Stable remote ID for thumbnail. Use getRemoteFile(thumbRemoteId) to get fileId. */
+    val thumbRemoteId: String? = null,
+    val thumbnailWidth: Int? = null,
+    val thumbnailHeight: Int? = null,
+    // === Photo Sizes (each has remoteId) ===
+    val photoSizes: List<TelegramPhotoSize> = emptyList(),
+    // === Minithumbnail (inline JPEG bytes for instant blur placeholder) ===
+    val minithumbnailBytes: ByteArray? = null,
+    val minithumbnailWidth: Int? = null,
+    val minithumbnailHeight: Int? = null,
+    val date: Long? = null,
+    val isSeries: Boolean = false,
+    val seriesName: String? = null,
+    val seasonNumber: Int? = null,
+    val episodeNumber: Int? = null,
+    val episodeTitle: String? = null,
+    val year: Int? = null,
+    val genres: String? = null,
+    val description: String? = null,
+    // === Structured Bundle Fields (v2 - TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) ===
+    /**
+     * TMDB ID from structured TEXT message.
+     *
+     * Extracted from tmdbUrl (e.g., "https://themoviedb.org/movie/12345" → 12345).
+     * Pass-through to RawMediaMetadata.externalIds.tmdb (enables downstream unification).
+     * Per Contract R4 Schema Guards: raw extracted, validation happens in extractor.
+     *
+     * @see structuredTmdbType for the media type (MOVIE or TV)
+     */
+    val structuredTmdbId: Int? = null,
+    /**
+     * TMDB media type from structured TEXT message (Gold Decision Dec 2025).
+     *
+     * Extracted from tmdbUrl path:
+     * - "/movie/123" → MOVIE
+     * - "/tv/456" → TV
+     *
+     * Episodes use TV type with season/episode from other fields.
+     * Never use EPISODE type (TMDB has no episode root type).
+     *
+     * @see structuredTmdbId for the numeric ID
+     */
+    val structuredTmdbType: TelegramTmdbType? = null,
+    /**
+     * TMDB rating from structured TEXT message (0.0-10.0 scale).
+     *
+     * Pass-through to RawMediaMetadata.rating.
+     * Per Contract R4 Schema Guards: must be in range 0.0..10.0 else null.
+     */
+    val structuredRating: Double? = null,
+    /**
+     * Year from structured TEXT message.
+     *
+     * Overrides filename-parsed year when present (structured data is more reliable).
+     * Per Contract R4 Schema Guards: must be in range 1800..2100 else null.
+     */
+    val structuredYear: Int? = null,
+    /**
+     * FSK age rating from structured TEXT message.
+     *
+     * Used for Kids profile content filtering.
+     * Per Contract R4 Schema Guards: must be in range 0..21 else null.
+     * Common values: 0 (all ages), 6, 12, 16, 18 (standard FSK), 21 (explicit adult).
+     */
+    val structuredFsk: Int? = null,
+    /**
+     * Genres from structured TEXT message.
+     *
+     * Raw list of genre strings (e.g., ["Action", "Drama"]).
+     * Converted to comma-separated for existing genres field compatibility.
+     */
+    val structuredGenres: List<String>? = null,
+    /**
+     * Director from structured TEXT message.
+     *
+     * Raw director name as provided by source.
+     */
+    val structuredDirector: String? = null,
+    /**
+     * Original title from structured TEXT message.
+     *
+     * Original language title (e.g., "Die Hard" for German release of English film).
+     * Different from title which may be localized.
+     */
+    val structuredOriginalTitle: String? = null,
+    /**
+     * Production country from structured TEXT message.
+     *
+     * ISO country code or full name (e.g., "US", "Germany").
+     */
+    val structuredProductionCountry: String? = null,
+    /**
+     * Runtime in minutes from structured TEXT message.
+     *
+     * Per Contract R4 Schema Guards: must be in range 1..600 else null.
+     * Takes precedence over durationSecs when present.
+     */
+    val structuredLengthMinutes: Int? = null,
+    /**
+     * Bundle type for debugging/logging.
+     *
+     * Indicates how this item was detected: as part of a complete 3-cluster,
+     * compact 2-cluster, or as a single message.
+     */
+    val bundleType: TelegramBundleType = TelegramBundleType.SINGLE,
+    /**
+     * Message ID of TEXT message in bundle (for debugging/logging).
+     *
+     * Null if bundleType is SINGLE or no TEXT message in bundle.
+     */
+    val textMessageId: Long? = null,
+    /**
+     * Message ID of PHOTO message in bundle (for debugging/logging).
+     *
+     * Null if bundleType is SINGLE or no PHOTO message in bundle.
+     */
+    val photoMessageId: Long? = null,
 ) {
     /**
      * Returns a Telegram URI for this media item in the format:
      * tg://media/<remoteId>?chatId=<chatId>&messageId=<messageId>
      *
      * The remoteId is URL-encoded to handle special characters.
-     * 
+     *
      * **Production Safety:**
      * - Stub URLs (tg://stub/) should NEVER appear in production
      * - If remoteId is null in production, this indicates a bug in message parsing
      * - Use ALLOW_STUB_URLS flag to control behavior (default: false in production)
-     * 
+     *
      * @throws IllegalStateException if remoteId is null and ALLOW_STUB_URLS is false
      */
     fun toTelegramUri(): String {
@@ -228,33 +208,33 @@ data class TelegramMediaItem(
             val encodedRemoteId = java.net.URLEncoder.encode(remoteId, "UTF-8")
             return "tg://media/$encodedRemoteId?chatId=$chatId&messageId=$messageId"
         }
-        
+
         // remoteId is null - check if stub URLs are allowed
         if (ALLOW_STUB_URLS) {
             // Debug/testing: Allow stub URL
             return "tg://stub/$id?chatId=$chatId&messageId=$messageId"
         }
-        
+
         // Production: This is a blocker - throw error
         error(
             "Production BLOCKER: remoteId is null for message $messageId in chat $chatId. " +
                 "This indicates incomplete message parsing from TDLib. " +
                 "Stub URLs are not allowed in production builds. " +
-                "Set ALLOW_STUB_URLS=true only for testing."
+                "Set ALLOW_STUB_URLS=true only for testing.",
         )
     }
-    
+
     companion object {
         /**
          * Feature flag to allow stub URLs when remoteId is null.
-         * 
+         *
          * **Default: false** (production-safe)
-         * 
+         *
          * Set to true ONLY for:
          * - Unit tests
          * - Debug builds during development
          * - Integration testing with incomplete TDLib setup
-         * 
+         *
          * **NEVER** enable in production releases.
          */
         @JvmField
@@ -272,49 +252,49 @@ data class TelegramMediaItem(
         if (this === other) return true
         if (other !is TelegramMediaItem) return false
         return id == other.id &&
-                chatId == other.chatId &&
-                messageId == other.messageId &&
-                mediaAlbumId == other.mediaAlbumId &&
-                mediaType == other.mediaType &&
-                remoteId == other.remoteId &&
-                title == other.title &&
-                fileName == other.fileName &&
-                caption == other.caption &&
-                mimeType == other.mimeType &&
-                sizeBytes == other.sizeBytes &&
-                durationSecs == other.durationSecs &&
-                width == other.width &&
-                height == other.height &&
-                supportsStreaming == other.supportsStreaming &&
-                thumbRemoteId == other.thumbRemoteId &&
-                thumbnailWidth == other.thumbnailWidth &&
-                thumbnailHeight == other.thumbnailHeight &&
-                photoSizes == other.photoSizes &&
-                minithumbnailBytes.contentEquals(other.minithumbnailBytes) &&
-                minithumbnailWidth == other.minithumbnailWidth &&
-                minithumbnailHeight == other.minithumbnailHeight &&
-                date == other.date &&
-                isSeries == other.isSeries &&
-                seriesName == other.seriesName &&
-                seasonNumber == other.seasonNumber &&
-                episodeNumber == other.episodeNumber &&
-                episodeTitle == other.episodeTitle &&
-                year == other.year &&
-                genres == other.genres &&
-                description == other.description &&
-                // Structured Bundle Fields (v2)
-                structuredTmdbId == other.structuredTmdbId &&
-                structuredRating == other.structuredRating &&
-                structuredYear == other.structuredYear &&
-                structuredFsk == other.structuredFsk &&
-                structuredGenres == other.structuredGenres &&
-                structuredDirector == other.structuredDirector &&
-                structuredOriginalTitle == other.structuredOriginalTitle &&
-                structuredProductionCountry == other.structuredProductionCountry &&
-                structuredLengthMinutes == other.structuredLengthMinutes &&
-                bundleType == other.bundleType &&
-                textMessageId == other.textMessageId &&
-                photoMessageId == other.photoMessageId
+            chatId == other.chatId &&
+            messageId == other.messageId &&
+            mediaAlbumId == other.mediaAlbumId &&
+            mediaType == other.mediaType &&
+            remoteId == other.remoteId &&
+            title == other.title &&
+            fileName == other.fileName &&
+            caption == other.caption &&
+            mimeType == other.mimeType &&
+            sizeBytes == other.sizeBytes &&
+            durationSecs == other.durationSecs &&
+            width == other.width &&
+            height == other.height &&
+            supportsStreaming == other.supportsStreaming &&
+            thumbRemoteId == other.thumbRemoteId &&
+            thumbnailWidth == other.thumbnailWidth &&
+            thumbnailHeight == other.thumbnailHeight &&
+            photoSizes == other.photoSizes &&
+            minithumbnailBytes.contentEquals(other.minithumbnailBytes) &&
+            minithumbnailWidth == other.minithumbnailWidth &&
+            minithumbnailHeight == other.minithumbnailHeight &&
+            date == other.date &&
+            isSeries == other.isSeries &&
+            seriesName == other.seriesName &&
+            seasonNumber == other.seasonNumber &&
+            episodeNumber == other.episodeNumber &&
+            episodeTitle == other.episodeTitle &&
+            year == other.year &&
+            genres == other.genres &&
+            description == other.description &&
+            // Structured Bundle Fields (v2)
+            structuredTmdbId == other.structuredTmdbId &&
+            structuredRating == other.structuredRating &&
+            structuredYear == other.structuredYear &&
+            structuredFsk == other.structuredFsk &&
+            structuredGenres == other.structuredGenres &&
+            structuredDirector == other.structuredDirector &&
+            structuredOriginalTitle == other.structuredOriginalTitle &&
+            structuredProductionCountry == other.structuredProductionCountry &&
+            structuredLengthMinutes == other.structuredLengthMinutes &&
+            bundleType == other.bundleType &&
+            textMessageId == other.textMessageId &&
+            photoMessageId == other.photoMessageId
     }
 
     override fun hashCode(): Int {
@@ -324,18 +304,18 @@ data class TelegramMediaItem(
         result = 31 * result + (minithumbnailBytes?.contentHashCode() ?: 0)
         return result
     }
-    
+
     /**
      * Checks if this media item has structured bundle metadata.
      *
      * @return true if any structured field is populated
      */
     fun hasStructuredMetadata(): Boolean =
-            structuredTmdbId != null ||
-                    structuredYear != null ||
-                    structuredFsk != null ||
-                    !structuredGenres.isNullOrEmpty()
-    
+        structuredTmdbId != null ||
+            structuredYear != null ||
+            structuredFsk != null ||
+            !structuredGenres.isNullOrEmpty()
+
     /**
      * Checks if this media item is from a complete structured bundle (FULL_3ER).
      *

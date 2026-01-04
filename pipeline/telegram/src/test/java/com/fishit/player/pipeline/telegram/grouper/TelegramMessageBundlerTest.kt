@@ -25,7 +25,6 @@ import org.junit.Test
  * - Test: Cohesion Gate with albumId (primary discriminator)
  */
 class TelegramMessageBundlerTest {
-
     private lateinit var bundler: TelegramMessageBundler
 
     @Before
@@ -38,11 +37,12 @@ class TelegramMessageBundlerTest {
     @Test
     fun `messages with same timestamp are grouped as BundleCandidate`() {
         val timestamp = 1731704712L
-        val messages = listOf(
-            createPhotoMessage(chatId = 123L, messageId = 100L, timestamp = timestamp),
-            createTextMessage(chatId = 123L, messageId = 101L, timestamp = timestamp),
-            createVideoMessage(chatId = 123L, messageId = 102L, timestamp = timestamp),
-        )
+        val messages =
+            listOf(
+                createPhotoMessage(chatId = 123L, messageId = 100L, timestamp = timestamp),
+                createTextMessage(chatId = 123L, messageId = 101L, timestamp = timestamp),
+                createVideoMessage(chatId = 123L, messageId = 102L, timestamp = timestamp),
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
@@ -53,11 +53,12 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `messages with different timestamps remain separate`() {
-        val messages = listOf(
-            createVideoMessage(chatId = 123L, messageId = 100L, timestamp = 1731704712L),
-            createVideoMessage(chatId = 123L, messageId = 200L, timestamp = 1731704800L),
-            createVideoMessage(chatId = 123L, messageId = 300L, timestamp = 1731704900L),
-        )
+        val messages =
+            listOf(
+                createVideoMessage(chatId = 123L, messageId = 100L, timestamp = 1731704712L),
+                createVideoMessage(chatId = 123L, messageId = 200L, timestamp = 1731704800L),
+                createVideoMessage(chatId = 123L, messageId = 300L, timestamp = 1731704900L),
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
@@ -72,11 +73,12 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `classifies FULL_3ER bundle with PHOTO plus TEXT plus VIDEO`() {
-        val messages = listOf(
-            createPhotoMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
-            createTextMessage(chatId = 123L, messageId = 101L, timestamp = 1L),
-            createVideoMessage(chatId = 123L, messageId = 102L, timestamp = 1L),
-        )
+        val messages =
+            listOf(
+                createPhotoMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
+                createTextMessage(chatId = 123L, messageId = 101L, timestamp = 1L),
+                createVideoMessage(chatId = 123L, messageId = 102L, timestamp = 1L),
+            )
 
         val bundleType = bundler.classifyBundle(messages)
 
@@ -85,10 +87,11 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `classifies COMPACT_2ER bundle with TEXT plus VIDEO`() {
-        val messages = listOf(
-            createTextMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
-            createVideoMessage(chatId = 123L, messageId = 101L, timestamp = 1L),
-        )
+        val messages =
+            listOf(
+                createTextMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
+                createVideoMessage(chatId = 123L, messageId = 101L, timestamp = 1L),
+            )
 
         val bundleType = bundler.classifyBundle(messages)
 
@@ -97,10 +100,11 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `classifies COMPACT_2ER bundle with PHOTO plus VIDEO`() {
-        val messages = listOf(
-            createPhotoMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
-            createVideoMessage(chatId = 123L, messageId = 101L, timestamp = 1L),
-        )
+        val messages =
+            listOf(
+                createPhotoMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
+                createVideoMessage(chatId = 123L, messageId = 101L, timestamp = 1L),
+            )
 
         val bundleType = bundler.classifyBundle(messages)
 
@@ -109,9 +113,10 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `classifies SINGLE for video-only message`() {
-        val messages = listOf(
-            createVideoMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
-        )
+        val messages =
+            listOf(
+                createVideoMessage(chatId = 123L, messageId = 100L, timestamp = 1L),
+            )
 
         val bundleType = bundler.classifyBundle(messages)
 
@@ -123,11 +128,12 @@ class TelegramMessageBundlerTest {
     @Test
     fun `messages within bundle are sorted by messageId`() {
         val timestamp = 1731704712L
-        val messages = listOf(
-            createVideoMessage(chatId = 123L, messageId = 388021760L, timestamp = timestamp),
-            createPhotoMessage(chatId = 123L, messageId = 387924480L, timestamp = timestamp),
-            createTextMessage(chatId = 123L, messageId = 387973120L, timestamp = timestamp),
-        )
+        val messages =
+            listOf(
+                createVideoMessage(chatId = 123L, messageId = 388021760L, timestamp = timestamp),
+                createPhotoMessage(chatId = 123L, messageId = 387924480L, timestamp = timestamp),
+                createTextMessage(chatId = 123L, messageId = 387973120L, timestamp = timestamp),
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
@@ -140,10 +146,11 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `Cohesion Gate accepts valid candidate within MAX_MESSAGE_ID_SPAN`() {
-        val messages = listOf(
-            createVideoMessage(chatId = 123L, messageId = 1000000L, timestamp = 1L),
-            createVideoMessage(chatId = 123L, messageId = 2048576L, timestamp = 1L), // Span = 1,048,576
-        )
+        val messages =
+            listOf(
+                createVideoMessage(chatId = 123L, messageId = 1000000L, timestamp = 1L),
+                createVideoMessage(chatId = 123L, messageId = 2048576L, timestamp = 1L), // Span = 1,048,576
+            )
 
         val isCoherent = bundler.checkCohesion(messages)
 
@@ -154,11 +161,12 @@ class TelegramMessageBundlerTest {
     fun `Cohesion Gate accepts candidate with exact EXPECTED_MESSAGE_ID_STEP`() {
         // Real Telegram pattern: messages differ by exactly 2^20 = 1,048,576
         val baseId = 387924480L
-        val messages = listOf(
-            createPhotoMessage(chatId = 123L, messageId = baseId, timestamp = 1L),
-            createTextMessage(chatId = 123L, messageId = baseId + 1_048_576L, timestamp = 1L),
-            createVideoMessage(chatId = 123L, messageId = baseId + 2_097_152L, timestamp = 1L),
-        )
+        val messages =
+            listOf(
+                createPhotoMessage(chatId = 123L, messageId = baseId, timestamp = 1L),
+                createTextMessage(chatId = 123L, messageId = baseId + 1_048_576L, timestamp = 1L),
+                createVideoMessage(chatId = 123L, messageId = baseId + 2_097_152L, timestamp = 1L),
+            )
 
         val isCoherent = bundler.checkCohesion(messages)
 
@@ -167,10 +175,11 @@ class TelegramMessageBundlerTest {
 
     @Test
     fun `Cohesion Gate rejects invalid candidate with too large span`() {
-        val messages = listOf(
-            createVideoMessage(chatId = 123L, messageId = 1000000L, timestamp = 1L),
-            createVideoMessage(chatId = 123L, messageId = 100000000L, timestamp = 1L), // Span >> 3×2^20
-        )
+        val messages =
+            listOf(
+                createVideoMessage(chatId = 123L, messageId = 1000000L, timestamp = 1L),
+                createVideoMessage(chatId = 123L, messageId = 100000000L, timestamp = 1L), // Span >> 3×2^20
+            )
 
         val isCoherent = bundler.checkCohesion(messages)
 
@@ -180,10 +189,11 @@ class TelegramMessageBundlerTest {
     @Test
     fun `rejected candidate is split into SINGLE bundles`() {
         val timestamp = 1731704712L
-        val messages = listOf(
-            createVideoMessage(chatId = 123L, messageId = 1000000L, timestamp = timestamp),
-            createVideoMessage(chatId = 123L, messageId = 999000000L, timestamp = timestamp), // Too far apart
-        )
+        val messages =
+            listOf(
+                createVideoMessage(chatId = 123L, messageId = 1000000L, timestamp = timestamp),
+                createVideoMessage(chatId = 123L, messageId = 999000000L, timestamp = timestamp), // Too far apart
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
@@ -200,12 +210,13 @@ class TelegramMessageBundlerTest {
     fun `bundle with multiple VIDEOs has correct videoCount`() {
         val timestamp = 1731704712L
         val baseId = 100000000L
-        val messages = listOf(
-            createPhotoMessage(chatId = 123L, messageId = baseId, timestamp = timestamp),
-            createTextMessage(chatId = 123L, messageId = baseId + 1_048_576L, timestamp = timestamp),
-            createVideoMessage(chatId = 123L, messageId = baseId + 2_097_152L, timestamp = timestamp),
-            createVideoMessage(chatId = 123L, messageId = baseId + 3_145_728L, timestamp = timestamp),
-        )
+        val messages =
+            listOf(
+                createPhotoMessage(chatId = 123L, messageId = baseId, timestamp = timestamp),
+                createTextMessage(chatId = 123L, messageId = baseId + 1_048_576L, timestamp = timestamp),
+                createVideoMessage(chatId = 123L, messageId = baseId + 2_097_152L, timestamp = timestamp),
+                createVideoMessage(chatId = 123L, messageId = baseId + 3_145_728L, timestamp = timestamp),
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
@@ -221,18 +232,19 @@ class TelegramMessageBundlerTest {
         val timestamp = 1731704712L
         val chatId = -1001434421634L
         val baseId = 387924480L
-        
-        val messages = listOf(
-            createPhotoMessage(chatId = chatId, messageId = baseId, timestamp = timestamp),
-            createTextMessage(chatId = chatId, messageId = baseId + 1_048_576L, timestamp = timestamp),
-            createVideoMessage(chatId = chatId, messageId = baseId + 2_097_152L, timestamp = timestamp),
-        )
+
+        val messages =
+            listOf(
+                createPhotoMessage(chatId = chatId, messageId = baseId, timestamp = timestamp),
+                createTextMessage(chatId = chatId, messageId = baseId + 1_048_576L, timestamp = timestamp),
+                createVideoMessage(chatId = chatId, messageId = baseId + 2_097_152L, timestamp = timestamp),
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
         assertEquals(1, bundles.size)
         val bundle = bundles[0]
-        
+
         assertEquals(timestamp, bundle.timestamp)
         assertEquals(chatId, bundle.chatId)
         assertEquals(TelegramBundleType.FULL_3ER, bundle.bundleType)
@@ -247,7 +259,7 @@ class TelegramMessageBundlerTest {
     @Test
     fun `SINGLE bundle has no structured metadata or poster`() {
         val message = createVideoMessage(chatId = 123L, messageId = 100L, timestamp = 1L)
-        
+
         val bundle = TelegramMessageBundle.single(message)
 
         assertEquals(TelegramBundleType.SINGLE, bundle.bundleType)
@@ -274,22 +286,23 @@ class TelegramMessageBundlerTest {
         // Real message IDs from JSON export analysis (Section 1.3)
         val timestamp = 1731704712L
         val chatId = -1001434421634L
-        
-        val messages = listOf(
-            // PHOTO (lowest ID)
-            createPhotoMessage(chatId = chatId, messageId = 387924480L, timestamp = timestamp),
-            // TEXT
-            createTextMessage(chatId = chatId, messageId = 387973120L, timestamp = timestamp),
-            // VIDEO (highest ID)
-            createVideoMessage(chatId = chatId, messageId = 388021760L, timestamp = timestamp),
-        )
+
+        val messages =
+            listOf(
+                // PHOTO (lowest ID)
+                createPhotoMessage(chatId = chatId, messageId = 387924480L, timestamp = timestamp),
+                // TEXT
+                createTextMessage(chatId = chatId, messageId = 387973120L, timestamp = timestamp),
+                // VIDEO (highest ID)
+                createVideoMessage(chatId = chatId, messageId = 388021760L, timestamp = timestamp),
+            )
 
         val bundles = bundler.groupByTimestamp(messages)
 
         assertEquals(1, bundles.size)
         assertEquals(TelegramBundleType.FULL_3ER, bundles[0].bundleType)
         assertEquals(chatId, bundles[0].chatId)
-        
+
         // Verify order: PHOTO → TEXT → VIDEO
         val bundle = bundles[0]
         assertEquals(387924480L, bundle.photoMessage?.messageId)
@@ -299,43 +312,58 @@ class TelegramMessageBundlerTest {
 
     // ========== Helper Methods ==========
 
-    private fun createVideoMessage(chatId: Long, messageId: Long, timestamp: Long): TgMessage =
+    private fun createVideoMessage(
+        chatId: Long,
+        messageId: Long,
+        timestamp: Long,
+    ): TgMessage =
         TgMessage(
             messageId = messageId,
             chatId = chatId,
             date = timestamp,
-            content = TgContent.Video(
-                fileId = 1,
-                remoteId = "video_remote_$messageId",
-                fileName = "movie.mkv",
-                mimeType = "video/x-matroska",
-                duration = 7200,
-                width = 1920,
-                height = 1080,
-                fileSize = 5_000_000_000L,
-                supportsStreaming = true,
-            ),
-        )
-
-    private fun createPhotoMessage(chatId: Long, messageId: Long, timestamp: Long): TgMessage =
-        TgMessage(
-            messageId = messageId,
-            chatId = chatId,
-            date = timestamp,
-            content = TgContent.Photo(
-                sizes = listOf(
-                    TgPhotoSize(
-                        fileId = 1,
-                        remoteId = "photo_remote_$messageId",
-                        width = 1000,
-                        height = 1500,
-                        fileSize = 100_000L,
-                    ),
+            content =
+                TgContent.Video(
+                    fileId = 1,
+                    remoteId = "video_remote_$messageId",
+                    fileName = "movie.mkv",
+                    mimeType = "video/x-matroska",
+                    duration = 7200,
+                    width = 1920,
+                    height = 1080,
+                    fileSize = 5_000_000_000L,
+                    supportsStreaming = true,
                 ),
-            ),
         )
 
-    private fun createTextMessage(chatId: Long, messageId: Long, timestamp: Long): TgMessage =
+    private fun createPhotoMessage(
+        chatId: Long,
+        messageId: Long,
+        timestamp: Long,
+    ): TgMessage =
+        TgMessage(
+            messageId = messageId,
+            chatId = chatId,
+            date = timestamp,
+            content =
+                TgContent.Photo(
+                    sizes =
+                        listOf(
+                            TgPhotoSize(
+                                fileId = 1,
+                                remoteId = "photo_remote_$messageId",
+                                width = 1000,
+                                height = 1500,
+                                fileSize = 100_000L,
+                            ),
+                        ),
+                ),
+        )
+
+    private fun createTextMessage(
+        chatId: Long,
+        messageId: Long,
+        timestamp: Long,
+    ): TgMessage =
         TgMessage(
             messageId = messageId,
             chatId = chatId,

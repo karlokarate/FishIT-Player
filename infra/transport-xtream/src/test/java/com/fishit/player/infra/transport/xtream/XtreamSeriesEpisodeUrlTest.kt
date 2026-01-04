@@ -29,13 +29,14 @@ class XtreamSeriesEpisodeUrlTest {
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
         // When building series episode URL with episodeId
-        val url = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeId = 456,
-            containerExtension = "mkv",
-        )
+        val url =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeId = 456,
+                containerExtension = "mkv",
+            )
 
         // Then URL uses /series/ path, not /movie/
         assertTrue("URL should contain /series/", url.contains("/series/"))
@@ -50,13 +51,14 @@ class XtreamSeriesEpisodeUrlTest {
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "vod")
 
         // When building series episode URL with episodeId
-        val url = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeId = 789,
-            containerExtension = "mp4",
-        )
+        val url =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeId = 789,
+                containerExtension = "mp4",
+            )
 
         // Then URL uses /series/ path, NOT /vod/
         assertTrue("URL should contain /series/", url.contains("/series/"))
@@ -70,13 +72,14 @@ class XtreamSeriesEpisodeUrlTest {
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
         // When building series episode URL without episodeId (legacy format)
-        val url = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 2,
-            episodeNumber = 10,
-            episodeId = null,
-            containerExtension = "mkv",
-        )
+        val url =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 2,
+                episodeNumber = 10,
+                episodeId = null,
+                containerExtension = "mkv",
+            )
 
         // Then URL uses /series/ path with seriesId/season/episode structure
         assertTrue("URL should contain /series/", url.contains("/series/"))
@@ -91,13 +94,14 @@ class XtreamSeriesEpisodeUrlTest {
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
         // When building URL with mkv container extension (even though config prefers mp4)
-        val url = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeId = 456,
-            containerExtension = "mkv",
-        )
+        val url =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeId = 456,
+                containerExtension = "mkv",
+            )
 
         // Then URL uses the provided container extension, not config default
         assertTrue("URL should use mkv extension", url.endsWith(".mkv"))
@@ -110,18 +114,19 @@ class XtreamSeriesEpisodeUrlTest {
         val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
 
         // When building series episode URL
-        val url = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeId = 456,
-            containerExtension = "mkv",
-        )
+        val url =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeId = 456,
+                containerExtension = "mkv",
+            )
 
         // Then URL uses /series/ path, NOT /movie/
         assertTrue("URL should contain /series/", url.contains("/series/"))
         assertFalse("URL should NOT contain /movie/", url.contains("/movie/"))
-        
+
         // Verify the URL structure matches expected format
         val expectedPattern = "http://example.com:8080/series/"
         assertTrue("URL should start with expected pattern", url.startsWith(expectedPattern))
@@ -134,13 +139,14 @@ class XtreamSeriesEpisodeUrlTest {
 
         // When building VOD URL and series episode URL with same ID
         val vodUrl = builder.vodUrl(vodId = 456, containerExtension = "mkv")
-        val seriesUrl = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeId = 456,
-            containerExtension = "mkv",
-        )
+        val seriesUrl =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeId = 456,
+                containerExtension = "mkv",
+            )
 
         // Then VOD uses /movie/ path and series uses /series/ path
         val vodPattern = "/movie/testuser/testpass/456.mkv"
@@ -171,13 +177,14 @@ class XtreamSeriesEpisodeUrlTest {
         val builder = XtreamUrlBuilder(specialConfig, resolvedPort = 8080, vodKind = "movie")
 
         // When building series episode URL
-        val url = builder.seriesEpisodeUrl(
-            seriesId = 123,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            episodeId = 456,
-            containerExtension = "mkv",
-        )
+        val url =
+            builder.seriesEpisodeUrl(
+                seriesId = 123,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                episodeId = 456,
+                containerExtension = "mkv",
+            )
 
         // Then credentials should be URL-encoded
         assertTrue("Username should be encoded", url.contains("user%40test"))

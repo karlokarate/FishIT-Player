@@ -24,29 +24,29 @@ package com.fishit.player.pipeline.xtream.model
  * @property tmdbId TMDB TV show ID if available from provider (some panels scrape this)
  */
 data class XtreamSeriesItem(
-        val id: Int,
-        val name: String,
-        val cover: String? = null,
-        val backdrop: String? = null,
-        val categoryId: String? = null,
-        val year: String? = null,
-        val rating: Double? = null,
-        val plot: String? = null,
-        val cast: String? = null,
-        val director: String? = null,
-        val genre: String? = null,
-        val releaseDate: String? = null,
-        val youtubeTrailer: String? = null,
-        val episodeRunTime: String? = null,
-        val lastModified: Long? = null,
-        /**
-         * TMDB TV show ID from provider (Gold Decision Dec 2025).
-         *
-         * Some Xtream providers scrape TMDB and include the ID.
-         * Maps to ExternalIds.tmdb = TmdbRef(TV, tmdbId).
-         * Episodes inherit this from the parent series.
-         */
-        val tmdbId: Int? = null,
+    val id: Int,
+    val name: String,
+    val cover: String? = null,
+    val backdrop: String? = null,
+    val categoryId: String? = null,
+    val year: String? = null,
+    val rating: Double? = null,
+    val plot: String? = null,
+    val cast: String? = null,
+    val director: String? = null,
+    val genre: String? = null,
+    val releaseDate: String? = null,
+    val youtubeTrailer: String? = null,
+    val episodeRunTime: String? = null,
+    val lastModified: Long? = null,
+    /**
+     * TMDB TV show ID from provider (Gold Decision Dec 2025).
+     *
+     * Some Xtream providers scrape TMDB and include the ID.
+     * Maps to ExternalIds.tmdb = TmdbRef(TV, tmdbId).
+     * Episodes inherit this from the parent series.
+     */
+    val tmdbId: Int? = null,
 ) {
     /**
      * Validates if the series ID is valid. Some Xtream panels return negative IDs - we treat them

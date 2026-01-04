@@ -63,13 +63,13 @@ import kotlinx.coroutines.launch
  * - Xtream/Telegram support is optional via DI
  */
 class InternalPlayerSession(
-        private val context: Context,
-        private val sourceResolver: PlaybackSourceResolver,
-        private val resumeManager: ResumeManager,
-        private val kidsPlaybackGate: KidsPlaybackGate,
-        private val codecConfigurator: NextlibCodecConfigurator,
-        private val dataSourceFactories: Map<DataSourceType, DataSource.Factory> = emptyMap(),
-        private val xtreamDataSourceProvider: XtreamDataSourceFactoryProvider? = null,
+    private val context: Context,
+    private val sourceResolver: PlaybackSourceResolver,
+    private val resumeManager: ResumeManager,
+    private val kidsPlaybackGate: KidsPlaybackGate,
+    private val codecConfigurator: NextlibCodecConfigurator,
+    private val dataSourceFactories: Map<DataSourceType, DataSource.Factory> = emptyMap(),
+    private val xtreamDataSourceProvider: XtreamDataSourceFactoryProvider? = null,
 ) {
     companion object {
         private const val TAG = "InternalPlayerSession"
@@ -119,60 +119,60 @@ class InternalPlayerSession(
     fun getPlayer(): Player? = player
 
     private val playerListener =
-            object : Player.Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    val newState =
-                            when (playbackState) {
-                                Player.STATE_IDLE -> PlaybackState.IDLE
-                                Player.STATE_BUFFERING -> PlaybackState.BUFFERING
-                                Player.STATE_READY -> {
-                                    // Log available tracks when player is ready (NextLib
-                                    // integration)
-                                    logCurrentTracks()
-                                    if (player?.isPlaying == true) {
-                                        PlaybackState.PLAYING
-                                    } else {
-                                        PlaybackState.PAUSED
-                                    }
-                                }
-                                Player.STATE_ENDED -> PlaybackState.ENDED
-                                else -> PlaybackState.IDLE
+        object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                val newState =
+                    when (playbackState) {
+                        Player.STATE_IDLE -> PlaybackState.IDLE
+                        Player.STATE_BUFFERING -> PlaybackState.BUFFERING
+                        Player.STATE_READY -> {
+                            // Log available tracks when player is ready (NextLib
+                            // integration)
+                            logCurrentTracks()
+                            if (player?.isPlaying == true) {
+                                PlaybackState.PLAYING
+                            } else {
+                                PlaybackState.PAUSED
                             }
-                    _state.update { it.copy(playbackState = newState) }
-                }
-
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    _state.update {
-                        it.copy(
-                                isPlaying = isPlaying,
-                                playbackState =
-                                        if (isPlaying) {
-                                            PlaybackState.PLAYING
-                                        } else {
-                                            if (it.playbackState == PlaybackState.ENDED) {
-                                                PlaybackState.ENDED
-                                            } else {
-                                                PlaybackState.PAUSED
-                                            }
-                                        },
-                        )
+                        }
+                        Player.STATE_ENDED -> PlaybackState.ENDED
+                        else -> PlaybackState.IDLE
                     }
-                }
+                _state.update { it.copy(playbackState = newState) }
+            }
 
-                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                    UnifiedLog.e(TAG, "Player error: ${error.errorCodeName}", error)
-                    _state.update {
-                        it.copy(
-                                playbackState = PlaybackState.ERROR,
-                                error =
-                                        PlaybackError.unknown(
-                                                message = error.message ?: "Unknown playback error",
-                                                code = error.errorCode,
-                                        ),
-                        )
-                    }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                _state.update {
+                    it.copy(
+                        isPlaying = isPlaying,
+                        playbackState =
+                            if (isPlaying) {
+                                PlaybackState.PLAYING
+                            } else {
+                                if (it.playbackState == PlaybackState.ENDED) {
+                                    PlaybackState.ENDED
+                                } else {
+                                    PlaybackState.PAUSED
+                                }
+                            },
+                    )
                 }
             }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                UnifiedLog.e(TAG, "Player error: ${error.errorCodeName}", error)
+                _state.update {
+                    it.copy(
+                        playbackState = PlaybackState.ERROR,
+                        error =
+                            PlaybackError.unknown(
+                                message = error.message ?: "Unknown playback error",
+                                code = error.errorCode,
+                            ),
+                    )
+                }
+            }
+        }
 
     /**
      * Initializes the player and starts playback.
@@ -201,8 +201,8 @@ class InternalPlayerSession(
                 val source = sourceResolver.resolve(playbackContext)
                 UnifiedLog.d(TAG) {
                     "Source resolved: uri=${source.uri.take(100)}, " +
-                            "mimeType=${source.mimeType}, " +
-                            "headers=${source.headers.keys}, dataSourceType=${source.dataSourceType}"
+                        "mimeType=${source.mimeType}, " +
+                        "headers=${source.headers.keys}, dataSourceType=${source.dataSourceType}"
                 }
 
                 // Build MediaItem
@@ -219,56 +219,58 @@ class InternalPlayerSession(
                 // CRITICAL: Apply HTTP headers for Xtream streams (Referer, User-Agent, etc.)
                 // Without headers, many Xtream panels return 403/406/520
                 val dataSourceFactory =
-                        when (source.dataSourceType) {
-                            DataSourceType.XTREAM_HTTP -> {
-                                // Use Xtream provider if available (optional dependency)
-                                if (xtreamDataSourceProvider != null) {
+                    when (source.dataSourceType) {
+                        DataSourceType.XTREAM_HTTP -> {
+                            // Use Xtream provider if available (optional dependency)
+                            if (xtreamDataSourceProvider != null) {
+                                UnifiedLog.d(TAG) {
+                                    "Using Xtream HTTP DataSource = OkHttpDataSource.Factory (redirect-safe, Chucker-visible)"
+                                }
+                                xtreamDataSourceProvider.create(
+                                    headers = source.headers,
+                                    debugMode = BuildConfig.DEBUG,
+                                )
+                            } else {
+                                // PLATINUM: Fallback with redirect safety
+                                // This path is weaker than OkHttpDataSource but should still
+                                // work
+                                UnifiedLog.w(TAG) {
+                                    "XtreamDataSourceProvider not available, falling back to DefaultHttpDataSource (redirect/header parity may be reduced)"
+                                }
+                                val httpFactory =
+                                    DefaultHttpDataSource
+                                        .Factory()
+                                        .setAllowCrossProtocolRedirects(
+                                            true,
+                                        ) // PLATINUM: Enable HTTP->HTTPS redirects
+                                        .setDefaultRequestProperties(source.headers)
+                                DefaultDataSource.Factory(context, httpFactory)
+                            }
+                        }
+                        else ->
+                            when {
+                                dataSourceFactories.containsKey(source.dataSourceType) ->
+                                    dataSourceFactories[source.dataSourceType]!!
+                                source.headers.isNotEmpty() -> {
+                                    // HTTP streams need headers (legacy fallback)
                                     UnifiedLog.d(TAG) {
-                                        "Using Xtream HTTP DataSource = OkHttpDataSource.Factory (redirect-safe, Chucker-visible)"
-                                    }
-                                    xtreamDataSourceProvider.create(
-                                            headers = source.headers,
-                                            debugMode = BuildConfig.DEBUG,
-                                    )
-                                } else {
-                                    // PLATINUM: Fallback with redirect safety
-                                    // This path is weaker than OkHttpDataSource but should still
-                                    // work
-                                    UnifiedLog.w(TAG) {
-                                        "XtreamDataSourceProvider not available, falling back to DefaultHttpDataSource (redirect/header parity may be reduced)"
+                                        "Applying ${source.headers.size} HTTP headers to DefaultHttpDataSource"
                                     }
                                     val httpFactory =
-                                            DefaultHttpDataSource.Factory()
-                                                    .setAllowCrossProtocolRedirects(
-                                                            true
-                                                    ) // PLATINUM: Enable HTTP->HTTPS redirects
-                                                    .setDefaultRequestProperties(source.headers)
+                                        DefaultHttpDataSource
+                                            .Factory()
+                                            .setDefaultRequestProperties(
+                                                source.headers,
+                                            )
                                     DefaultDataSource.Factory(context, httpFactory)
                                 }
+                                else -> DefaultDataSource.Factory(context)
                             }
-                            else ->
-                                    when {
-                                        dataSourceFactories.containsKey(source.dataSourceType) ->
-                                                dataSourceFactories[source.dataSourceType]!!
-                                        source.headers.isNotEmpty() -> {
-                                            // HTTP streams need headers (legacy fallback)
-                                            UnifiedLog.d(TAG) {
-                                                "Applying ${source.headers.size} HTTP headers to DefaultHttpDataSource"
-                                            }
-                                            val httpFactory =
-                                                    DefaultHttpDataSource.Factory()
-                                                            .setDefaultRequestProperties(
-                                                                    source.headers
-                                                            )
-                                            DefaultDataSource.Factory(context, httpFactory)
-                                        }
-                                        else -> DefaultDataSource.Factory(context)
-                                    }
-                        }
+                    }
 
                 // Create MediaSource.Factory with appropriate DataSource
                 val mediaSourceFactory =
-                        DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory)
+                    DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory)
 
                 // Create RenderersFactory with NextLib FFmpeg codecs
                 val renderersFactory = codecConfigurator.createRenderersFactory(context)
@@ -276,22 +278,23 @@ class InternalPlayerSession(
 
                 // Create and configure player on main thread
                 player =
-                        ExoPlayer.Builder(context)
-                                .setRenderersFactory(renderersFactory)
-                                .setMediaSourceFactory(mediaSourceFactory)
-                                .build()
-                                .apply {
-                                    addListener(playerListener)
-                                    setMediaItem(mediaItem)
+                    ExoPlayer
+                        .Builder(context)
+                        .setRenderersFactory(renderersFactory)
+                        .setMediaSourceFactory(mediaSourceFactory)
+                        .build()
+                        .apply {
+                            addListener(playerListener)
+                            setMediaItem(mediaItem)
 
-                                    // Set start position if resuming
-                                    if (playbackContext.startPositionMs > 0) {
-                                        seekTo(playbackContext.startPositionMs)
-                                    }
+                            // Set start position if resuming
+                            if (playbackContext.startPositionMs > 0) {
+                                seekTo(playbackContext.startPositionMs)
+                            }
 
-                                    prepare()
-                                    playWhenReady = true
-                                }
+                            prepare()
+                            playWhenReady = true
+                        }
 
                 // Attach subtitle track manager (Phase 6)
                 player?.let { exoPlayer -> subtitleTrackManager.attach(exoPlayer, isKidMode) }
@@ -299,9 +302,9 @@ class InternalPlayerSession(
                 // Attach audio track manager (Phase 7)
                 player?.let { exoPlayer ->
                     audioTrackManager.attach(
-                            player = exoPlayer,
-                            preferredLanguage = null, // TODO: Get from user preferences
-                            preferSurroundSound = true, // TODO: Get from user preferences
+                        player = exoPlayer,
+                        preferredLanguage = null, // TODO: Get from user preferences
+                        preferSurroundSound = true, // TODO: Get from user preferences
                     )
                 }
 
@@ -314,12 +317,12 @@ class InternalPlayerSession(
                 UnifiedLog.e(TAG, "Failed to resolve source", e)
                 _state.update {
                     it.copy(
-                            playbackState = PlaybackState.ERROR,
-                            error =
-                                    PlaybackError.sourceNotFound(
-                                            message = "Failed to resolve source: ${e.message}",
-                                            sourceType = playbackContext.sourceType,
-                                    ),
+                        playbackState = PlaybackState.ERROR,
+                        error =
+                            PlaybackError.sourceNotFound(
+                                message = "Failed to resolve source: ${e.message}",
+                                sourceType = playbackContext.sourceType,
+                            ),
                     )
                 }
             }
@@ -436,8 +439,7 @@ class InternalPlayerSession(
      * @param languageCode BCP-47 language code (e.g., "en", "de").
      * @return true if a matching track was found and selected.
      */
-    fun selectAudioByLanguage(languageCode: String): Boolean =
-            audioTrackManager.selectTrackByLanguage(languageCode)
+    fun selectAudioByLanguage(languageCode: String): Boolean = audioTrackManager.selectTrackByLanguage(languageCode)
 
     /**
      * Cycles to the next audio track.
@@ -455,8 +457,8 @@ class InternalPlayerSession(
      * @param preferSurroundSound Whether to prefer surround sound over stereo.
      */
     fun updateAudioPreferences(
-            preferredLanguage: String? = null,
-            preferSurroundSound: Boolean = true,
+        preferredLanguage: String? = null,
+        preferSurroundSound: Boolean = true,
     ) {
         audioTrackManager.updatePreferences(preferredLanguage, preferSurroundSound)
     }
@@ -468,9 +470,9 @@ class InternalPlayerSession(
 
         if (currentState.positionMs > 10_000L && currentState.remainingMs > 10_000L) {
             resumeManager.saveResumePoint(
-                    context = ctx,
-                    positionMs = currentState.positionMs,
-                    durationMs = currentState.durationMs,
+                context = ctx,
+                positionMs = currentState.positionMs,
+                durationMs = currentState.durationMs,
             )
         } else if (currentState.remainingMs <= 10_000L) {
             // Clear resume if near end
@@ -505,13 +507,13 @@ class InternalPlayerSession(
     private fun startPositionUpdates() {
         positionUpdateJob?.cancel()
         positionUpdateJob =
-                scope.launch {
-                    while (isActive) {
-                        updatePositionState()
-                        checkKidsGate()
-                        delay(1000L) // Update every second
-                    }
+            scope.launch {
+                while (isActive) {
+                    updatePositionState()
+                    checkKidsGate()
+                    delay(1000L) // Update every second
                 }
+            }
     }
 
     private fun updatePositionState() {
@@ -519,10 +521,10 @@ class InternalPlayerSession(
             val sessionElapsed = System.currentTimeMillis() - sessionStartTime
             _state.update {
                 it.copy(
-                        positionMs = exo.currentPosition.coerceAtLeast(0L),
-                        durationMs = exo.duration.coerceAtLeast(0L),
-                        bufferedPositionMs = exo.bufferedPosition.coerceAtLeast(0L),
-                        sessionElapsedMs = sessionElapsed,
+                    positionMs = exo.currentPosition.coerceAtLeast(0L),
+                    durationMs = exo.duration.coerceAtLeast(0L),
+                    bufferedPositionMs = exo.bufferedPosition.coerceAtLeast(0L),
+                    sessionElapsedMs = sessionElapsed,
                 )
             }
         }
@@ -559,11 +561,12 @@ class InternalPlayerSession(
             return
         }
 
-        val trackInfo = buildString {
-            appendLine("Available tracks (NextLib FFmpeg enabled):")
+        val trackInfo =
+            buildString {
+                appendLine("Available tracks (NextLib FFmpeg enabled):")
 
-            tracks.groups.forEachIndexed { groupIndex, group ->
-                val trackType =
+                tracks.groups.forEachIndexed { groupIndex, group ->
+                    val trackType =
                         when (group.type) {
                             androidx.media3.common.C.TRACK_TYPE_VIDEO -> "Video"
                             androidx.media3.common.C.TRACK_TYPE_AUDIO -> "Audio"
@@ -571,18 +574,18 @@ class InternalPlayerSession(
                             else -> "Other"
                         }
 
-                for (trackIndex in 0 until group.length) {
-                    val format = group.getTrackFormat(trackIndex)
-                    val isSelected = group.isTrackSelected(trackIndex)
-                    val marker = if (isSelected) "▶" else " "
+                    for (trackIndex in 0 until group.length) {
+                        val format = group.getTrackFormat(trackIndex)
+                        val isSelected = group.isTrackSelected(trackIndex)
+                        val marker = if (isSelected) "▶" else " "
 
-                    appendLine(
+                        appendLine(
                             "  $marker [$trackType] ${format.sampleMimeType ?: "unknown"} " +
-                                    "(${format.language ?: "und"}, ${format.label ?: "no label"})",
-                    )
+                                "(${format.language ?: "und"}, ${format.label ?: "no label"})",
+                        )
+                    }
                 }
             }
-        }
 
         UnifiedLog.d(TAG, trackInfo)
     }

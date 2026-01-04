@@ -17,10 +17,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class LoggingModule {
-
     @Binds
     @Singleton
-    abstract fun bindLogBufferProvider(
-        impl: DefaultLogBufferProvider
-    ): LogBufferProvider
+    abstract fun bindLogBufferProvider(impl: DefaultLogBufferProvider): LogBufferProvider
 }

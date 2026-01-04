@@ -79,11 +79,12 @@ data class XtreamSyncCheckpoint(
             val phase = XtreamSyncPhase.entries.find { it.name == phaseName } ?: return INITIAL
 
             // Parse processedSeriesIds (comma-separated integers)
-            val processedSeriesIds = map[KEY_PROCESSED_SERIES]
-                ?.split(",")
-                ?.mapNotNull { it.toIntOrNull() }
-                ?.toSet()
-                ?: emptySet()
+            val processedSeriesIds =
+                map[KEY_PROCESSED_SERIES]
+                    ?.split(",")
+                    ?.mapNotNull { it.toIntOrNull() }
+                    ?.toSet()
+                    ?: emptySet()
 
             return XtreamSyncCheckpoint(
                 phase = phase,
@@ -181,8 +182,7 @@ data class XtreamSyncCheckpoint(
      * @param seriesId The series ID that completed episode loading
      * @return Updated checkpoint with series added to processed set
      */
-    fun withProcessedSeries(seriesId: Int): XtreamSyncCheckpoint =
-        copy(processedSeriesIds = processedSeriesIds + seriesId)
+    fun withProcessedSeries(seriesId: Int): XtreamSyncCheckpoint = copy(processedSeriesIds = processedSeriesIds + seriesId)
 
     /**
      * Mark multiple series as having their episodes fully processed.
@@ -190,16 +190,14 @@ data class XtreamSyncCheckpoint(
      * @param seriesIds Series IDs that completed episode loading
      * @return Updated checkpoint with all series added to processed set
      */
-    fun withProcessedSeriesAll(seriesIds: Collection<Int>): XtreamSyncCheckpoint =
-        copy(processedSeriesIds = processedSeriesIds + seriesIds)
+    fun withProcessedSeriesAll(seriesIds: Collection<Int>): XtreamSyncCheckpoint = copy(processedSeriesIds = processedSeriesIds + seriesIds)
 
     /**
      * Clear processed series (for force rescan).
      *
      * @return Checkpoint with empty processedSeriesIds
      */
-    fun clearProcessedSeries(): XtreamSyncCheckpoint =
-        copy(processedSeriesIds = emptySet())
+    fun clearProcessedSeries(): XtreamSyncCheckpoint = copy(processedSeriesIds = emptySet())
 
     /**
      * Update last processed VOD info ID.

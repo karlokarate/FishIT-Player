@@ -46,39 +46,43 @@ import dev.g000sha256.tdl.dto.Thumbnail
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 internal class DefaultTelegramRemoteResolver(
-    private val client: TdlClient
+    private val client: TdlClient,
 ) : TelegramRemoteResolver {
-
     companion object {
         private const val TAG = "TelegramRemoteResolver"
     }
 
     override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? {
         UnifiedLog.d(TAG) {
-            "Resolving media: chatId=***${remoteId.chatId.toString().takeLast(3)}, messageId=***${remoteId.messageId.toString().takeLast(3)}"
+            "Resolving media: chatId=***${remoteId.chatId.toString().takeLast(
+                3,
+            )}, messageId=***${remoteId.messageId.toString().takeLast(3)}"
         }
 
         // Fetch message from TDLib
-        val messageResult = client.getMessage(
-            chatId = remoteId.chatId,
-            messageId = remoteId.messageId
-        )
+        val messageResult =
+            client.getMessage(
+                chatId = remoteId.chatId,
+                messageId = remoteId.messageId,
+            )
 
-        val message = when (messageResult) {
-            is TdlResult.Success -> messageResult.result
-            is TdlResult.Failure -> {
-                UnifiedLog.w(TAG) {
-                    "Failed to fetch message (masked): ${messageResult.code} - ${messageResult.message}"
+        val message =
+            when (messageResult) {
+                is TdlResult.Success -> messageResult.result
+                is TdlResult.Failure -> {
+                    UnifiedLog.w(TAG) {
+                        "Failed to fetch message (masked): ${messageResult.code} - ${messageResult.message}"
+                    }
+                    return null
                 }
-                return null
             }
-        }
 
         // Extract media content
-        val content = message.content ?: run {
-            UnifiedLog.d(TAG) { "Message has no content (masked)" }
-            return null
-        }
+        val content =
+            message.content ?: run {
+                UnifiedLog.d(TAG) { "Message has no content (masked)" }
+                return null
+            }
 
         // Map based on content type
         return when (content) {
@@ -100,15 +104,21 @@ internal class DefaultTelegramRemoteResolver(
         val thumbnail = selectBestThumbnail(video.video.thumbnail, null)
 
         // Get local paths if already downloaded
-        val mediaLocalPath = if (videoFile.local.isDownloadingCompleted) {
-            videoFile.local.path.takeIf { it.isNotBlank() }
-        } else null
+        val mediaLocalPath =
+            if (videoFile.local.isDownloadingCompleted) {
+                videoFile.local.path.takeIf { it.isNotBlank() }
+            } else {
+                null
+            }
 
-        val thumbLocalPath = thumbnail?.file?.let { thumbFile ->
-            if (thumbFile.local.isDownloadingCompleted) {
-                thumbFile.local.path.takeIf { it.isNotBlank() }
-            } else null
-        }
+        val thumbLocalPath =
+            thumbnail?.file?.let { thumbFile ->
+                if (thumbFile.local.isDownloadingCompleted) {
+                    thumbFile.local.path.takeIf { it.isNotBlank() }
+                } else {
+                    null
+                }
+            }
 
         return ResolvedTelegramMedia(
             mediaFileId = videoFile.id,
@@ -121,7 +131,7 @@ internal class DefaultTelegramRemoteResolver(
             supportsStreaming = video.video.supportsStreaming,
             mediaLocalPath = mediaLocalPath,
             thumbLocalPath = thumbLocalPath,
-            minithumbnailBytes = video.video.minithumbnail?.data
+            minithumbnailBytes = video.video.minithumbnail?.data,
         )
     }
 
@@ -132,20 +142,27 @@ internal class DefaultTelegramRemoteResolver(
      */
     private suspend fun resolveDocument(document: MessageDocument): ResolvedTelegramMedia {
         val docFile = document.document.document
-        val thumbnail = selectBestThumbnail(
-            document.document.thumbnail,
-            null
-        )
+        val thumbnail =
+            selectBestThumbnail(
+                document.document.thumbnail,
+                null,
+            )
 
-        val mediaLocalPath = if (docFile.local.isDownloadingCompleted) {
-            docFile.local.path.takeIf { it.isNotBlank() }
-        } else null
+        val mediaLocalPath =
+            if (docFile.local.isDownloadingCompleted) {
+                docFile.local.path.takeIf { it.isNotBlank() }
+            } else {
+                null
+            }
 
-        val thumbLocalPath = thumbnail?.file?.let { thumbFile ->
-            if (thumbFile.local.isDownloadingCompleted) {
-                thumbFile.local.path.takeIf { it.isNotBlank() }
-            } else null
-        }
+        val thumbLocalPath =
+            thumbnail?.file?.let { thumbFile ->
+                if (thumbFile.local.isDownloadingCompleted) {
+                    thumbFile.local.path.takeIf { it.isNotBlank() }
+                } else {
+                    null
+                }
+            }
 
         return ResolvedTelegramMedia(
             mediaFileId = docFile.id,
@@ -158,7 +175,7 @@ internal class DefaultTelegramRemoteResolver(
             supportsStreaming = false, // Documents typically don't support streaming
             mediaLocalPath = mediaLocalPath,
             thumbLocalPath = thumbLocalPath,
-            minithumbnailBytes = document.document.minithumbnail?.data
+            minithumbnailBytes = document.document.minithumbnail?.data,
         )
     }
 
@@ -169,20 +186,27 @@ internal class DefaultTelegramRemoteResolver(
      */
     private suspend fun resolveAnimation(animation: MessageAnimation): ResolvedTelegramMedia {
         val animFile = animation.animation.animation
-        val thumbnail = selectBestThumbnail(
-            animation.animation.thumbnail,
-            null
-        )
+        val thumbnail =
+            selectBestThumbnail(
+                animation.animation.thumbnail,
+                null,
+            )
 
-        val mediaLocalPath = if (animFile.local.isDownloadingCompleted) {
-            animFile.local.path.takeIf { it.isNotBlank() }
-        } else null
+        val mediaLocalPath =
+            if (animFile.local.isDownloadingCompleted) {
+                animFile.local.path.takeIf { it.isNotBlank() }
+            } else {
+                null
+            }
 
-        val thumbLocalPath = thumbnail?.file?.let { thumbFile ->
-            if (thumbFile.local.isDownloadingCompleted) {
-                thumbFile.local.path.takeIf { it.isNotBlank() }
-            } else null
-        }
+        val thumbLocalPath =
+            thumbnail?.file?.let { thumbFile ->
+                if (thumbFile.local.isDownloadingCompleted) {
+                    thumbFile.local.path.takeIf { it.isNotBlank() }
+                } else {
+                    null
+                }
+            }
 
         return ResolvedTelegramMedia(
             mediaFileId = animFile.id,
@@ -195,7 +219,7 @@ internal class DefaultTelegramRemoteResolver(
             supportsStreaming = false, // Animations typically don't stream
             mediaLocalPath = mediaLocalPath,
             thumbLocalPath = thumbLocalPath,
-            minithumbnailBytes = animation.animation.minithumbnail?.data
+            minithumbnailBytes = animation.animation.minithumbnail?.data,
         )
     }
 
@@ -216,7 +240,7 @@ internal class DefaultTelegramRemoteResolver(
      */
     private fun selectBestThumbnail(
         thumbnail: Thumbnail?,
-        albumCover: Thumbnail?
+        albumCover: Thumbnail?,
     ): Thumbnail? {
         // Prefer standard thumbnail (usually higher quality)
         if (thumbnail != null) return thumbnail

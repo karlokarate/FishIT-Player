@@ -25,7 +25,6 @@ package com.fishit.player.infra.transport.telegram
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 interface TelegramThumbFetcher {
-
     /**
      * Fetch thumbnail for a Telegram file.
      *
@@ -91,12 +90,12 @@ interface TelegramThumbFetcher {
  * @property format Thumbnail format (jpeg, webp, etc.)
  */
 data class TgThumbnailRef(
-        /** Stable remote identifier - use getRemoteFile(remoteId) to get fileId */
-        val remoteId: String,
-        /** Thumbnail width */
-        val width: Int,
-        /** Thumbnail height */
-        val height: Int,
-        /** Thumbnail format (jpeg, webp, etc.) */
-        val format: String = "jpeg"
+    /** Stable remote identifier - use getRemoteFile(remoteId) to get fileId */
+    val remoteId: String,
+    /** Thumbnail width */
+    val width: Int,
+    /** Thumbnail height */
+    val height: Int,
+    /** Thumbnail format (jpeg, webp, etc.) */
+    val format: String = "jpeg",
 )

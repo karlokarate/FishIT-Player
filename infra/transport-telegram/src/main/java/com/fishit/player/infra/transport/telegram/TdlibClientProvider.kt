@@ -12,9 +12,7 @@ import dev.g000sha256.tdl.TdlClient
  * - Logging config is registered before creating the client.
  */
 internal object TelegramTdlibClientFactory {
-    fun create(
-        loggingConfig: TelegramLoggingConfig = TelegramLoggingConfig.default(),
-    ): TdlClient {
+    fun create(loggingConfig: TelegramLoggingConfig = TelegramLoggingConfig.default()): TdlClient {
         TdLibLogInstaller.install(loggingConfig)
         return TdlClient.create()
     }

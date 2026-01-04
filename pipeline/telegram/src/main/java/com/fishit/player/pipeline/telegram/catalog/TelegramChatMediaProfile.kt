@@ -11,18 +11,19 @@ package com.fishit.player.pipeline.telegram.catalog
  * @property lastMediaAtMillis Timestamp of most recent media message
  */
 data class TelegramChatMediaProfile(
-        val chatId: Long,
-        var totalMessagesSampled: Int = 0,
-        var mediaMessagesSampled: Int = 0,
-        var lastMediaAtMillis: Long? = null,
+    val chatId: Long,
+    var totalMessagesSampled: Int = 0,
+    var mediaMessagesSampled: Int = 0,
+    var lastMediaAtMillis: Long? = null,
 ) {
     /** Ratio of media messages to total messages (0.0 to 1.0). */
     val mediaRatio: Double
         get() =
-                if (totalMessagesSampled == 0) 0.0
-                else {
-                    mediaMessagesSampled.toDouble() / totalMessagesSampled.toDouble()
-                }
+            if (totalMessagesSampled == 0) {
+                0.0
+            } else {
+                mediaMessagesSampled.toDouble() / totalMessagesSampled.toDouble()
+            }
 
     /**
      * Update profile after examining a message.
@@ -30,7 +31,10 @@ data class TelegramChatMediaProfile(
      * @param isMedia Whether the message contains playable media
      * @param timestampMillis Message timestamp in milliseconds
      */
-    fun recordMessage(isMedia: Boolean, timestampMillis: Long?) {
+    fun recordMessage(
+        isMedia: Boolean,
+        timestampMillis: Long?,
+    ) {
         totalMessagesSampled++
         if (isMedia) {
             mediaMessagesSampled++

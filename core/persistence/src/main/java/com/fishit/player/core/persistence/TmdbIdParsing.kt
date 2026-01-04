@@ -11,12 +11,12 @@ fun String.toTmdbIdOrNull(): TmdbId? {
     // - legacy: "tmdb:789"
     // - raw numeric: "789"
     val idString =
-            when {
-                TMDB_TYPED_PATTERN.matches(trimmed) -> trimmed.substringAfterLast(':')
-                TMDB_LEGACY_PATTERN.matches(trimmed) -> trimmed.substringAfter(':')
-                trimmed.matches(Regex("^\\d+$")) -> trimmed
-                else -> return null
-            }
+        when {
+            TMDB_TYPED_PATTERN.matches(trimmed) -> trimmed.substringAfterLast(':')
+            TMDB_LEGACY_PATTERN.matches(trimmed) -> trimmed.substringAfter(':')
+            trimmed.matches(Regex("^\\d+$")) -> trimmed
+            else -> return null
+        }
 
     return idString.toIntOrNull()?.let(::TmdbId)
 }

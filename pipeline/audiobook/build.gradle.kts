@@ -25,7 +25,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

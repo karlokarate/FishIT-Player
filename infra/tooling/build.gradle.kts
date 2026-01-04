@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         minSdk = 24
-        
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -21,7 +21,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    
+
     // Enable unit tests
     testOptions {
         unitTests {
@@ -33,13 +33,13 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
-    
+
     // LeakCanary (debug only, added in Phase 7)
     // debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    
+
     // Test dependencies for architecture tests
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.1.0")

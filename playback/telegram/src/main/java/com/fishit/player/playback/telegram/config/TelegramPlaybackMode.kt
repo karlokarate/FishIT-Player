@@ -46,7 +46,9 @@ enum class TelegramPlaybackMode {
      * - MP4 files with moov at end (not faststart-optimized)
      * - MP4 files with very large moov atoms (> MAX_PREFIX_SCAN_BYTES)
      */
-    FULL_FILE;
+    FULL_FILE,
+
+    ;
 
     /**
      * Returns true if this mode supports progressive streaming (playback before full download).

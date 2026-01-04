@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.Flow
  * See: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md for RawMediaMetadata requirements
  */
 interface TelegramCatalogPipeline {
-
     /**
      * Scan Telegram chats and emit catalog events for all discovered media.
      *
@@ -73,7 +72,7 @@ data class TelegramCatalogConfig(
 ) {
     companion object {
         const val DEFAULT_PAGE_SIZE = 100
-        
+
         /** Default parallelism for chat scanning (3 concurrent chats). */
         const val DEFAULT_CHAT_PARALLELISM = 3
 
@@ -81,7 +80,10 @@ data class TelegramCatalogConfig(
         val DEFAULT = TelegramCatalogConfig()
 
         /** Quick scan: limited messages, recent only. */
-        fun quickScan(maxPerChat: Long = 50, recentDays: Int = 7) = TelegramCatalogConfig(
+        fun quickScan(
+            maxPerChat: Long = 50,
+            recentDays: Int = 7,
+        ) = TelegramCatalogConfig(
             maxMessagesPerChat = maxPerChat,
             minMessageTimestampMs = System.currentTimeMillis() - (recentDays * 24 * 60 * 60 * 1000L),
         )
@@ -93,9 +95,10 @@ data class TelegramCatalogConfig(
          *
          * @param highWaterMarks Map of chatId to highest seen messageId
          */
-        fun incremental(highWaterMarks: Map<Long, Long>) = TelegramCatalogConfig(
-            highWaterMarks = highWaterMarks,
-        )
+        fun incremental(highWaterMarks: Map<Long, Long>) =
+            TelegramCatalogConfig(
+                highWaterMarks = highWaterMarks,
+            )
     }
 
     /**
@@ -134,7 +137,6 @@ data class TelegramLiveUpdatesConfig(
  * Consumers (CatalogSync) process these events to update their storage.
  */
 sealed interface TelegramCatalogEvent {
-
     /**
      * A new media item was discovered in Telegram history.
      *

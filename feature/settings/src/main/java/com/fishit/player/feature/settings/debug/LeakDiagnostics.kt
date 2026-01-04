@@ -23,7 +23,6 @@ import android.net.Uri
  * - Use [getDetailedStatus] for full diagnostics info
  */
 interface LeakDiagnostics {
-
     /**
      * Whether LeakCanary is available in this build.
      * Returns false for release builds.
@@ -52,7 +51,10 @@ interface LeakDiagnostics {
      * @param uri SAF destination URI from CreateDocument
      * @return Result indicating success or failure with error message
      */
-    suspend fun exportLeakReport(context: Context, uri: Uri): Result<Unit>
+    suspend fun exportLeakReport(
+        context: Context,
+        uri: Uri,
+    ): Result<Unit>
 
     /**
      * Get a compact summary of the current leak status.
@@ -93,12 +95,10 @@ data class LeakSummary(
      * May be 0 if no leaks detected or if unavailable.
      */
     val leakCount: Int,
-
     /**
      * Uptime timestamp (ms) of the most recent leak, if available.
      */
     val lastLeakUptimeMs: Long?,
-
     /**
      * Additional note (e.g., "LeakCanary not available in this build").
      */
@@ -117,32 +117,26 @@ data class LeakDetailedStatus(
      * Current number of retained objects (not yet analyzed).
      */
     val retainedObjectCount: Int,
-
     /**
      * Whether any objects are currently retained.
      */
     val hasRetainedObjects: Boolean,
-
     /**
      * Retention severity level for UI display.
      */
     val severity: RetentionSeverity,
-
     /**
      * Human-readable status message.
      */
     val statusMessage: String,
-
     /**
      * LeakCanary configuration info for diagnostics.
      */
     val config: LeakCanaryConfig,
-
     /**
      * Runtime memory statistics.
      */
     val memoryStats: MemoryStats,
-
     /**
      * Timestamp when this status was captured (System.currentTimeMillis).
      */
@@ -155,12 +149,15 @@ data class LeakDetailedStatus(
 enum class RetentionSeverity {
     /** No objects retained - all clear */
     NONE,
+
     /** Few objects retained briefly - likely transient GC delay */
     LOW,
+
     /** Multiple objects retained - may be a leak, investigate */
     MEDIUM,
+
     /** Many objects retained or persisting - likely a real leak */
-    HIGH
+    HIGH,
 }
 
 /**

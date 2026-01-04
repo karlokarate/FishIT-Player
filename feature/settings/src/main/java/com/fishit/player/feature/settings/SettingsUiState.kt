@@ -19,16 +19,13 @@ data class SettingsUiState(
     val xtreamDetails: String? = null,
     val ioActive: Boolean = false,
     val ioDetails: String? = null,
-
     // === Sync State ===
     val syncState: SyncUiState = SyncUiState.Idle,
     val isSyncActionInProgress: Boolean = false,
-
     // === TMDB ===
     val tmdbEnabled: Boolean = false,
     val tmdbApiKeyPresent: Boolean = false,
     val isTmdbRefreshing: Boolean = false,
-
     // === Cache ===
     val telegramCacheSize: String = "—",
     val imageCacheSize: String = "—",
@@ -36,7 +33,6 @@ data class SettingsUiState(
     val isLoadingCacheSizes: Boolean = true,
     val isClearingTelegramCache: Boolean = false,
     val isClearingImageCache: Boolean = false,
-
     // === Feedback ===
     val snackbarMessage: String? = null,
 )

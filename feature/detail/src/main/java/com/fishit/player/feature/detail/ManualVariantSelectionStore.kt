@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap
  * 5. If override exists, that variant is tried first
  */
 object ManualVariantSelectionStore {
-
     /** User-selected variant overrides, keyed by canonicalId. */
     private val overrides = ConcurrentHashMap<CanonicalId, SourceKey>()
 
@@ -32,7 +31,10 @@ object ManualVariantSelectionStore {
      * @param canonicalId The media's canonical global ID
      * @param sourceKey The user-selected variant's source key
      */
-    fun setOverride(canonicalId: CanonicalId?, sourceKey: SourceKey) {
+    fun setOverride(
+        canonicalId: CanonicalId?,
+        sourceKey: SourceKey,
+    ) {
         canonicalId ?: return
         overrides[canonicalId] = sourceKey
     }
@@ -81,7 +83,10 @@ object ManualVariantSelectionStore {
      * @param variants List of variants to reorder
      * @return Reordered list with override first, or original list if no override
      */
-    fun applyOverride(canonicalId: CanonicalId?, variants: List<MediaVariant>): List<MediaVariant> {
+    fun applyOverride(
+        canonicalId: CanonicalId?,
+        variants: List<MediaVariant>,
+    ): List<MediaVariant> {
         val override = getOverride(canonicalId) ?: return variants
 
         val overrideVariant = variants.find { it.sourceKey == override } ?: return variants
@@ -92,20 +97,19 @@ object ManualVariantSelectionStore {
 
 /** UI model for variant selection dialog. */
 data class VariantSelectionItem(
-        val variant: MediaVariant,
-        val displayLabel: String,
-        val isSelected: Boolean,
-        val isAvailable: Boolean,
+    val variant: MediaVariant,
+    val displayLabel: String,
+    val isSelected: Boolean,
+    val isAvailable: Boolean,
 )
 
 /** Convert a list of variants to UI items for selection dialog. */
-fun List<MediaVariant>.toSelectionItems(
-        selectedSourceKey: SourceKey? = null,
-): List<VariantSelectionItem> = map { variant ->
-    VariantSelectionItem(
+fun List<MediaVariant>.toSelectionItems(selectedSourceKey: SourceKey? = null): List<VariantSelectionItem> =
+    map { variant ->
+        VariantSelectionItem(
             variant = variant,
             displayLabel = variant.toDisplayLabel(),
             isSelected = variant.sourceKey == selectedSourceKey,
             isAvailable = variant.available,
-    )
-}
+        )
+    }

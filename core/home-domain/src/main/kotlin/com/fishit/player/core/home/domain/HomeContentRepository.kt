@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
  * - UI features depend only on this interface
  */
 interface HomeContentRepository {
-
     fun observeContinueWatching(): Flow<List<HomeMediaItem>>
 
     fun observeRecentlyAdded(): Flow<List<HomeMediaItem>>

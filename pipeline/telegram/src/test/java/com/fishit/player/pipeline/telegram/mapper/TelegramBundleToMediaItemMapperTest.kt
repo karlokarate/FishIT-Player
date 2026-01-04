@@ -3,7 +3,6 @@ package com.fishit.player.pipeline.telegram.mapper
 import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgMessage
 import com.fishit.player.infra.transport.telegram.api.TgPhotoSize
-import com.fishit.player.pipeline.telegram.grouper.StructuredMetadata
 import com.fishit.player.pipeline.telegram.grouper.TelegramMessageBundle
 import com.fishit.player.pipeline.telegram.grouper.TelegramStructuredMetadataExtractor
 import com.fishit.player.pipeline.telegram.model.TelegramBundleType
@@ -22,7 +21,6 @@ import org.junit.Test
  * - MM-003: Poster selection max pixel area
  */
 class TelegramBundleToMediaItemMapperTest {
-
     private val metadataExtractor = TelegramStructuredMetadataExtractor()
     private val mapper = TelegramBundleToMediaItemMapper(metadataExtractor)
 
@@ -39,35 +37,38 @@ class TelegramBundleToMediaItemMapperTest {
         height: Int = 1080,
         fileSize: Long = 1_000_000_000L,
         caption: String? = null,
-    ): TgMessage = TgMessage(
-        messageId = messageId,
-        chatId = chatId,
-        date = timestamp,
-        content = TgContent.Video(
-            fileId = messageId.toInt(),
-            remoteId = remoteId,
-            fileName = fileName,
-            mimeType = "video/x-matroska",
-            duration = duration,
-            width = width,
-            height = height,
-            fileSize = fileSize,
-            supportsStreaming = true,
-            caption = caption,
-        ),
-    )
+    ): TgMessage =
+        TgMessage(
+            messageId = messageId,
+            chatId = chatId,
+            date = timestamp,
+            content =
+                TgContent.Video(
+                    fileId = messageId.toInt(),
+                    remoteId = remoteId,
+                    fileName = fileName,
+                    mimeType = "video/x-matroska",
+                    duration = duration,
+                    width = width,
+                    height = height,
+                    fileSize = fileSize,
+                    supportsStreaming = true,
+                    caption = caption,
+                ),
+        )
 
     private fun createTextMessage(
         messageId: Long,
         chatId: Long = 123L,
         timestamp: Long = 1000L,
         text: String,
-    ): TgMessage = TgMessage(
-        messageId = messageId,
-        chatId = chatId,
-        date = timestamp,
-        content = TgContent.Text(text = text),
-    )
+    ): TgMessage =
+        TgMessage(
+            messageId = messageId,
+            chatId = chatId,
+            date = timestamp,
+            content = TgContent.Text(text = text),
+        )
 
     private fun createPhotoMessage(
         messageId: Long,
@@ -75,25 +76,27 @@ class TelegramBundleToMediaItemMapperTest {
         timestamp: Long = 1000L,
         sizes: List<TgPhotoSize>,
         caption: String? = null,
-    ): TgMessage = TgMessage(
-        messageId = messageId,
-        chatId = chatId,
-        date = timestamp,
-        content = TgContent.Photo(sizes = sizes, caption = caption),
-    )
+    ): TgMessage =
+        TgMessage(
+            messageId = messageId,
+            chatId = chatId,
+            date = timestamp,
+            content = TgContent.Photo(sizes = sizes, caption = caption),
+        )
 
     private fun createPhotoSize(
         width: Int,
         height: Int,
         remoteId: String = "photo_${width}x$height",
         fileSize: Long = (width * height).toLong(),
-    ): TgPhotoSize = TgPhotoSize(
-        fileId = width * height,
-        remoteId = remoteId,
-        width = width,
-        height = height,
-        fileSize = fileSize,
-    )
+    ): TgPhotoSize =
+        TgPhotoSize(
+            fileId = width * height,
+            remoteId = remoteId,
+            width = width,
+            height = height,
+            fileSize = fileSize,
+        )
 
     // ========== Single Video Bundle Tests ==========
 
@@ -111,16 +114,17 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `mapBundle - video properties are correctly mapped`() {
-        val video = createVideoMessage(
-            messageId = 100,
-            chatId = 456,
-            fileName = "Movie.2020.1080p.BluRay.mkv",
-            duration = 7200,
-            width = 1920,
-            height = 1080,
-            fileSize = 5_000_000_000L,
-            remoteId = "stable_remote_id",
-        )
+        val video =
+            createVideoMessage(
+                messageId = 100,
+                chatId = 456,
+                fileName = "Movie.2020.1080p.BluRay.mkv",
+                duration = 7200,
+                width = 1920,
+                height = 1080,
+                fileSize = 5_000_000_000L,
+                remoteId = "stable_remote_id",
+            )
         val bundle = TelegramMessageBundle.single(video)
 
         val items = mapper.mapBundle(bundle)
@@ -140,22 +144,24 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `mapBundle - uses caption as title fallback`() {
-        val video = TgMessage(
-            messageId = 100,
-            chatId = 123,
-            date = 1000L,
-            content = TgContent.Video(
-                fileId = 1,
-                remoteId = "remote",
-                fileName = null,
-                mimeType = "video/mp4",
-                duration = 120,
-                width = 1920,
-                height = 1080,
-                fileSize = 1000,
-                caption = "This is a great movie!",
-            ),
-        )
+        val video =
+            TgMessage(
+                messageId = 100,
+                chatId = 123,
+                date = 1000L,
+                content =
+                    TgContent.Video(
+                        fileId = 1,
+                        remoteId = "remote",
+                        fileName = null,
+                        mimeType = "video/mp4",
+                        duration = 120,
+                        width = 1920,
+                        height = 1080,
+                        fileSize = 1000,
+                        caption = "This is a great movie!",
+                    ),
+            )
         val bundle = TelegramMessageBundle.single(video)
 
         val items = mapper.mapBundle(bundle)
@@ -171,14 +177,15 @@ class TelegramBundleToMediaItemMapperTest {
         val video2 = createVideoMessage(messageId = 101, fileName = "video2.mkv")
         val video3 = createVideoMessage(messageId = 102, fileName = "video3.mkv")
 
-        val bundle = TelegramMessageBundle(
-            timestamp = 1000L,
-            messages = listOf(video1, video2, video3),
-            bundleType = TelegramBundleType.SINGLE, // 3 videos, no text/photo
-            videoMessages = listOf(video1, video2, video3),
-            textMessage = null,
-            photoMessage = null,
-        )
+        val bundle =
+            TelegramMessageBundle(
+                timestamp = 1000L,
+                messages = listOf(video1, video2, video3),
+                bundleType = TelegramBundleType.SINGLE, // 3 videos, no text/photo
+                videoMessages = listOf(video1, video2, video3),
+                textMessage = null,
+                photoMessage = null,
+            )
 
         val items = mapper.mapBundle(bundle)
 
@@ -192,7 +199,8 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `mapBundle - all videos share same structured metadata (MM-002)`() {
-        val structuredText = """
+        val structuredText =
+            """
             tmdbUrl: https://www.themoviedb.org/movie/550-fight-club
             tmdbRating: 8.4
             year: 1999
@@ -200,20 +208,21 @@ class TelegramBundleToMediaItemMapperTest {
             genres: ["Drama", "Thriller"]
             director: David Fincher
             lengthMinutes: 139
-        """.trimIndent()
+            """.trimIndent()
 
         val text = createTextMessage(messageId = 100, text = structuredText)
         val video1 = createVideoMessage(messageId = 101, fileName = "fightclub_720p.mkv")
         val video2 = createVideoMessage(messageId = 102, fileName = "fightclub_1080p.mkv")
 
-        val bundle = TelegramMessageBundle(
-            timestamp = 1000L,
-            messages = listOf(text, video1, video2),
-            bundleType = TelegramBundleType.COMPACT_2ER,
-            videoMessages = listOf(video1, video2),
-            textMessage = text,
-            photoMessage = null,
-        )
+        val bundle =
+            TelegramMessageBundle(
+                timestamp = 1000L,
+                messages = listOf(text, video1, video2),
+                bundleType = TelegramBundleType.COMPACT_2ER,
+                videoMessages = listOf(video1, video2),
+                textMessage = text,
+                photoMessage = null,
+            )
 
         val items = mapper.mapBundle(bundle)
 
@@ -239,11 +248,12 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `selectBestPhotoSize - selects max pixel area (MM-003)`() {
-        val sizes = listOf(
-            createPhotoSize(width = 320, height = 240),    // 76,800 px
-            createPhotoSize(width = 1280, height = 720),   // 921,600 px
-            createPhotoSize(width = 800, height = 600),    // 480,000 px
-        )
+        val sizes =
+            listOf(
+                createPhotoSize(width = 320, height = 240), // 76,800 px
+                createPhotoSize(width = 1280, height = 720), // 921,600 px
+                createPhotoSize(width = 800, height = 600), // 480,000 px
+            )
 
         val best = TelegramBundleToMediaItemMapper.selectBestPhotoSize(sizes)
 
@@ -255,11 +265,12 @@ class TelegramBundleToMediaItemMapperTest {
     @Test
     fun `selectBestPhotoSize - tie breaking by height then width`() {
         // Same pixel area (1,000,000), different dimensions
-        val sizes = listOf(
-            createPhotoSize(width = 1000, height = 1000, remoteId = "square"),
-            createPhotoSize(width = 2000, height = 500, remoteId = "wide"),
-            createPhotoSize(width = 500, height = 2000, remoteId = "tall"),
-        )
+        val sizes =
+            listOf(
+                createPhotoSize(width = 1000, height = 1000, remoteId = "square"),
+                createPhotoSize(width = 2000, height = 500, remoteId = "wide"),
+                createPhotoSize(width = 500, height = 2000, remoteId = "tall"),
+            )
 
         val best = TelegramBundleToMediaItemMapper.selectBestPhotoSize(sizes)
 
@@ -278,22 +289,24 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `mapBundle - poster attached to all emitted items`() {
-        val photoSizes = listOf(
-            createPhotoSize(width = 320, height = 480, remoteId = "small"),
-            createPhotoSize(width = 1920, height = 1080, remoteId = "large"),
-        )
+        val photoSizes =
+            listOf(
+                createPhotoSize(width = 320, height = 480, remoteId = "small"),
+                createPhotoSize(width = 1920, height = 1080, remoteId = "large"),
+            )
         val photo = createPhotoMessage(messageId = 100, sizes = photoSizes)
         val video1 = createVideoMessage(messageId = 101)
         val video2 = createVideoMessage(messageId = 102)
 
-        val bundle = TelegramMessageBundle(
-            timestamp = 1000L,
-            messages = listOf(photo, video1, video2),
-            bundleType = TelegramBundleType.COMPACT_2ER,
-            videoMessages = listOf(video1, video2),
-            textMessage = null,
-            photoMessage = photo,
-        )
+        val bundle =
+            TelegramMessageBundle(
+                timestamp = 1000L,
+                messages = listOf(photo, video1, video2),
+                bundleType = TelegramBundleType.COMPACT_2ER,
+                videoMessages = listOf(video1, video2),
+                textMessage = null,
+                photoMessage = photo,
+            )
 
         val items = mapper.mapBundle(bundle)
 
@@ -309,25 +322,27 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `mapBundle - FULL_3ER bundle with all components`() {
-        val structuredText = """
+        val structuredText =
+            """
             tmdbUrl: https://www.themoviedb.org/movie/12345
             year: 2020
             fsk: 12
-        """.trimIndent()
+            """.trimIndent()
 
         val photoSizes = listOf(createPhotoSize(width = 1000, height = 1500))
         val photo = createPhotoMessage(messageId = 100, sizes = photoSizes)
         val text = createTextMessage(messageId = 101, text = structuredText)
         val video = createVideoMessage(messageId = 102)
 
-        val bundle = TelegramMessageBundle(
-            timestamp = 1000L,
-            messages = listOf(photo, text, video),
-            bundleType = TelegramBundleType.FULL_3ER,
-            videoMessages = listOf(video),
-            textMessage = text,
-            photoMessage = photo,
-        )
+        val bundle =
+            TelegramMessageBundle(
+                timestamp = 1000L,
+                messages = listOf(photo, text, video),
+                bundleType = TelegramBundleType.FULL_3ER,
+                videoMessages = listOf(video),
+                textMessage = text,
+                photoMessage = photo,
+            )
 
         val items = mapper.mapBundle(bundle)
 
@@ -347,14 +362,15 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `mapBundle - empty video list returns empty`() {
-        val bundle = TelegramMessageBundle(
-            timestamp = 1000L,
-            messages = emptyList(),
-            bundleType = TelegramBundleType.SINGLE,
-            videoMessages = emptyList(),
-            textMessage = null,
-            photoMessage = null,
-        )
+        val bundle =
+            TelegramMessageBundle(
+                timestamp = 1000L,
+                messages = emptyList(),
+                bundleType = TelegramBundleType.SINGLE,
+                videoMessages = emptyList(),
+                textMessage = null,
+                photoMessage = null,
+            )
 
         val items = mapper.mapBundle(bundle)
 
@@ -379,14 +395,15 @@ class TelegramBundleToMediaItemMapperTest {
         val text = createTextMessage(messageId = 100, text = "Just some random text")
         val video = createVideoMessage(messageId = 101)
 
-        val bundle = TelegramMessageBundle(
-            timestamp = 1000L,
-            messages = listOf(text, video),
-            bundleType = TelegramBundleType.COMPACT_2ER,
-            videoMessages = listOf(video),
-            textMessage = text,
-            photoMessage = null,
-        )
+        val bundle =
+            TelegramMessageBundle(
+                timestamp = 1000L,
+                messages = listOf(text, video),
+                bundleType = TelegramBundleType.COMPACT_2ER,
+                videoMessages = listOf(video),
+                textMessage = text,
+                photoMessage = null,
+            )
 
         val items = mapper.mapBundle(bundle)
 
@@ -403,14 +420,15 @@ class TelegramBundleToMediaItemMapperTest {
         val video3 = createVideoMessage(messageId = 201)
 
         val bundle1 = TelegramMessageBundle.single(video1)
-        val bundle2 = TelegramMessageBundle(
-            timestamp = 2000L,
-            messages = listOf(video2, video3),
-            bundleType = TelegramBundleType.SINGLE,
-            videoMessages = listOf(video2, video3),
-            textMessage = null,
-            photoMessage = null,
-        )
+        val bundle2 =
+            TelegramMessageBundle(
+                timestamp = 2000L,
+                messages = listOf(video2, video3),
+                bundleType = TelegramBundleType.SINGLE,
+                videoMessages = listOf(video2, video3),
+                textMessage = null,
+                photoMessage = null,
+            )
 
         val items = mapper.mapBundles(listOf(bundle1, bundle2))
 
@@ -424,10 +442,11 @@ class TelegramBundleToMediaItemMapperTest {
 
     @Test
     fun `convertPhotoSizes - converts TgPhotoSize to TelegramPhotoSize`() {
-        val tgSizes = listOf(
-            TgPhotoSize(fileId = 1, remoteId = "r1", width = 320, height = 240, fileSize = 10000),
-            TgPhotoSize(fileId = 2, remoteId = "r2", width = 1920, height = 1080, fileSize = 100000),
-        )
+        val tgSizes =
+            listOf(
+                TgPhotoSize(fileId = 1, remoteId = "r1", width = 320, height = 240, fileSize = 10000),
+                TgPhotoSize(fileId = 2, remoteId = "r2", width = 1920, height = 1080, fileSize = 100000),
+            )
 
         val converted = TelegramBundleToMediaItemMapper.convertPhotoSizes(tgSizes)
 

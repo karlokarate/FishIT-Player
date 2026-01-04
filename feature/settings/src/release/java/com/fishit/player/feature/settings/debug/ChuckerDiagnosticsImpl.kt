@@ -10,9 +10,10 @@ import javax.inject.Singleton
  * Chucker is not available in release builds.
  */
 @Singleton
-class ChuckerDiagnosticsImpl @Inject constructor() : ChuckerDiagnostics {
+class ChuckerDiagnosticsImpl
+    @Inject
+    constructor() : ChuckerDiagnostics {
+        override val isAvailable: Boolean = false
 
-    override val isAvailable: Boolean = false
-
-    override fun openChuckerUi(context: Context): Boolean = false
-}
+        override fun openChuckerUi(context: Context): Boolean = false
+    }

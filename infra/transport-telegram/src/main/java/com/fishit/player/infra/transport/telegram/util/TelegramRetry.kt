@@ -14,10 +14,10 @@ import kotlin.random.Random
  * @property jitterFactor Jitter factor (0.0 = no jitter, 0.2 = ±20% jitter)
  */
 data class RetryConfig(
-        val maxAttempts: Int = 5,
-        val baseDelayMs: Long = 500L,
-        val maxDelayMs: Long = 30_000L,
-        val jitterFactor: Double = 0.2,
+    val maxAttempts: Int = 5,
+    val baseDelayMs: Long = 500L,
+    val maxDelayMs: Long = 30_000L,
+    val jitterFactor: Double = 0.2,
 ) {
     companion object {
         /** Default retry config for TDLib operations. */
@@ -25,46 +25,48 @@ data class RetryConfig(
 
         /** Aggressive retry config for critical auth operations. */
         val AUTH =
-                RetryConfig(
-                        maxAttempts = 7,
-                        baseDelayMs = 1_000L,
-                        maxDelayMs = 60_000L,
-                )
+            RetryConfig(
+                maxAttempts = 7,
+                baseDelayMs = 1_000L,
+                maxDelayMs = 60_000L,
+            )
 
         /** Quick retry config for transient failures. */
         val QUICK =
-                RetryConfig(
-                        maxAttempts = 3,
-                        baseDelayMs = 200L,
-                        maxDelayMs = 2_000L,
-                )
+            RetryConfig(
+                maxAttempts = 3,
+                baseDelayMs = 200L,
+                maxDelayMs = 2_000L,
+            )
     }
 }
 
 /** Result of a retry operation. */
 sealed class RetryResult<out T> {
     /** Operation succeeded with the given value. */
-    data class Success<T>(val value: T) : RetryResult<T>()
+    data class Success<T>(
+        val value: T,
+    ) : RetryResult<T>()
 
     /** All retry attempts exhausted. */
     data class Exhausted(
-            val attempts: Int,
-            val lastException: Throwable,
+        val attempts: Int,
+        val lastException: Throwable,
     ) : RetryResult<Nothing>()
 
     /** Returns value if success, null if exhausted. */
     fun getOrNull(): T? =
-            when (this) {
-                is Success -> value
-                is Exhausted -> null
-            }
+        when (this) {
+            is Success -> value
+            is Exhausted -> null
+        }
 
     /** Returns value if success, throws lastException if exhausted. */
     fun getOrThrow(): T =
-            when (this) {
-                is Success -> value
-                is Exhausted -> throw lastException
-            }
+        when (this) {
+            is Success -> value
+            is Exhausted -> throw lastException
+        }
 }
 
 /**
@@ -85,7 +87,6 @@ sealed class RetryResult<out T> {
  * @see RetryConfig for configuration options
  */
 object TelegramRetry {
-
     private const val TAG = "TelegramRetry"
 
     /**
@@ -98,10 +99,10 @@ object TelegramRetry {
      * @return [RetryResult] with success value or exhausted info
      */
     suspend fun <T> withRetry(
-            config: RetryConfig = RetryConfig.DEFAULT,
-            operationName: String = "operation",
-            shouldRetry: (Throwable) -> Boolean = { true },
-            operation: suspend () -> T,
+        config: RetryConfig = RetryConfig.DEFAULT,
+        operationName: String = "operation",
+        shouldRetry: (Throwable) -> Boolean = { true },
+        operation: suspend () -> T,
     ): RetryResult<T> {
         var lastException: Throwable? = null
 
@@ -121,8 +122,8 @@ object TelegramRetry {
                 if (isLastAttempt || !isRetryable) {
                     if (isLastAttempt) {
                         UnifiedLog.w(
-                                TAG,
-                                "$operationName failed after $attempt attempts: ${e.message}"
+                            TAG,
+                            "$operationName failed after $attempt attempts: ${e.message}",
                         )
                     } else {
                         UnifiedLog.w(TAG, "$operationName failed (non-retryable): ${e.message}")
@@ -132,8 +133,8 @@ object TelegramRetry {
 
                 val delayMs = calculateDelay(attempt, config)
                 UnifiedLog.d(
-                        TAG,
-                        "$operationName failed (attempt $attempt/${config.maxAttempts}), retrying in ${delayMs}ms: ${e.message}"
+                    TAG,
+                    "$operationName failed (attempt $attempt/${config.maxAttempts}), retrying in ${delayMs}ms: ${e.message}",
                 )
 
                 kotlinx.coroutines.delay(delayMs)
@@ -142,8 +143,8 @@ object TelegramRetry {
 
         // Should not reach here, but handle defensively
         return RetryResult.Exhausted(
-                config.maxAttempts,
-                lastException ?: IllegalStateException("No attempts made")
+            config.maxAttempts,
+            lastException ?: IllegalStateException("No attempts made"),
         )
     }
 
@@ -155,10 +156,10 @@ object TelegramRetry {
      * @see withRetry for full documentation
      */
     suspend fun <T> executeWithRetry(
-            config: RetryConfig = RetryConfig.DEFAULT,
-            operationName: String = "operation",
-            shouldRetry: (Throwable) -> Boolean = { true },
-            operation: suspend () -> T,
+        config: RetryConfig = RetryConfig.DEFAULT,
+        operationName: String = "operation",
+        shouldRetry: (Throwable) -> Boolean = { true },
+        operation: suspend () -> T,
     ): T = withRetry(config, operationName, shouldRetry, operation).getOrThrow()
 
     /**
@@ -166,7 +167,10 @@ object TelegramRetry {
      *
      * Formula: min(baseDelay * 2^(attempt-1), maxDelay) * (1 ± jitter)
      */
-    internal fun calculateDelay(attempt: Int, config: RetryConfig): Long {
+    internal fun calculateDelay(
+        attempt: Int,
+        config: RetryConfig,
+    ): Long {
         // Exponential: base * 2^(attempt-1)
         val exponentialDelay = config.baseDelayMs * 2.0.pow((attempt - 1).toDouble())
 

@@ -24,10 +24,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class SourceActivationModule {
-    
     @Binds
     @Singleton
-    abstract fun bindSourceActivationStore(
-        impl: DefaultSourceActivationStore
-    ): SourceActivationStore
+    abstract fun bindSourceActivationStore(impl: DefaultSourceActivationStore): SourceActivationStore
 }

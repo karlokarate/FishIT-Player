@@ -19,7 +19,6 @@ package com.fishit.player.infra.cache
  * - Callers may invoke from any dispatcher
  */
 interface CacheManager {
-
     /**
      * Get the size of Telegram/TDLib cache in bytes.
      *

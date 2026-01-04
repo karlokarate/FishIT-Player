@@ -14,7 +14,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class CacheModule {
-
     @Binds
     @Singleton
     abstract fun bindCacheManager(impl: DefaultCacheManager): CacheManager

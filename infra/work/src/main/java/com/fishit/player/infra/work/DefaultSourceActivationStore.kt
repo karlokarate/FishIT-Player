@@ -15,7 +15,6 @@ import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -24,204 +23,217 @@ import javax.inject.Singleton
 
 // DataStore singleton extension
 private val Context.sourceActivationDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "source_activation"
+    name = "source_activation",
 )
 
 /**
  * DataStore-backed implementation of [SourceActivationStore].
- * 
+ *
  * Persists source activation states to survive app restarts.
  * Uses Preferences DataStore for simple key-value persistence.
- * 
+ *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2 (W-1)
  * - Sources are independent: Xtream, Telegram, IO can be ACTIVE/INACTIVE separately
  * - No source is ever required
  * - States survive process restart
  */
 @Singleton
-class DefaultSourceActivationStore @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : SourceActivationStore {
-    
-    private val dataStore: DataStore<Preferences> = context.sourceActivationDataStore
-    
-    // In-memory cache updated from DataStore
-    private val _snapshot = MutableStateFlow(SourceActivationSnapshot.EMPTY)
-    
-    init {
-        // Initialize from persisted state
-        runBlocking {
-            try {
-                val preferences = dataStore.data.first()
-                _snapshot.value = preferencesToSnapshot(preferences)
-                UnifiedLog.i(TAG) { "Initialized from persisted state: ${_snapshot.value}" }
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to load persisted state, using defaults" }
+class DefaultSourceActivationStore
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : SourceActivationStore {
+        private val dataStore: DataStore<Preferences> = context.sourceActivationDataStore
+
+        // In-memory cache updated from DataStore
+        private val _snapshot = MutableStateFlow(SourceActivationSnapshot.EMPTY)
+
+        init {
+            // Initialize from persisted state
+            runBlocking {
+                try {
+                    val preferences = dataStore.data.first()
+                    _snapshot.value = preferencesToSnapshot(preferences)
+                    UnifiedLog.i(TAG) { "Initialized from persisted state: ${_snapshot.value}" }
+                } catch (e: Exception) {
+                    UnifiedLog.e(TAG, e) { "Failed to load persisted state, using defaults" }
+                }
             }
         }
-    }
-    
-    // =========================================================================
-    // SourceActivationStore Interface
-    // =========================================================================
-    
-    override fun observeStates(): Flow<SourceActivationSnapshot> {
-        return dataStore.data.map { preferences ->
-            val snapshot = preferencesToSnapshot(preferences)
-            _snapshot.value = snapshot
-            snapshot
+
+        // =========================================================================
+        // SourceActivationStore Interface
+        // =========================================================================
+
+        override fun observeStates(): Flow<SourceActivationSnapshot> =
+            dataStore.data.map { preferences ->
+                val snapshot = preferencesToSnapshot(preferences)
+                _snapshot.value = snapshot
+                snapshot
+            }
+
+        override fun getCurrentSnapshot(): SourceActivationSnapshot = _snapshot.value
+
+        override fun getActiveSources(): Set<SourceId> = _snapshot.value.activeSources
+
+        // =========================================================================
+        // Xtream
+        // =========================================================================
+
+        override suspend fun setXtreamActive() {
+            updateState(SourceId.XTREAM, SourceActivationState.Active)
         }
-    }
-    
-    override fun getCurrentSnapshot(): SourceActivationSnapshot = _snapshot.value
-    
-    override fun getActiveSources(): Set<SourceId> = _snapshot.value.activeSources
-    
-    // =========================================================================
-    // Xtream
-    // =========================================================================
-    
-    override suspend fun setXtreamActive() {
-        updateState(SourceId.XTREAM, SourceActivationState.Active)
-    }
-    
-    override suspend fun setXtreamInactive(reason: SourceErrorReason?) {
-        val state = if (reason != null) {
-            SourceActivationState.Error(reason)
-        } else {
-            SourceActivationState.Inactive
+
+        override suspend fun setXtreamInactive(reason: SourceErrorReason?) {
+            val state =
+                if (reason != null) {
+                    SourceActivationState.Error(reason)
+                } else {
+                    SourceActivationState.Inactive
+                }
+            updateState(SourceId.XTREAM, state)
         }
-        updateState(SourceId.XTREAM, state)
-    }
-    
-    // =========================================================================
-    // Telegram
-    // =========================================================================
-    
-    override suspend fun setTelegramActive() {
-        updateState(SourceId.TELEGRAM, SourceActivationState.Active)
-    }
-    
-    override suspend fun setTelegramInactive(reason: SourceErrorReason?) {
-        val state = if (reason != null) {
-            SourceActivationState.Error(reason)
-        } else {
-            SourceActivationState.Inactive
+
+        // =========================================================================
+        // Telegram
+        // =========================================================================
+
+        override suspend fun setTelegramActive() {
+            updateState(SourceId.TELEGRAM, SourceActivationState.Active)
         }
-        updateState(SourceId.TELEGRAM, state)
-    }
-    
-    // =========================================================================
-    // IO
-    // =========================================================================
-    
-    override suspend fun setIoActive() {
-        updateState(SourceId.IO, SourceActivationState.Active)
-    }
-    
-    override suspend fun setIoInactive(reason: SourceErrorReason?) {
-        val state = if (reason != null) {
-            SourceActivationState.Error(reason)
-        } else {
-            SourceActivationState.Inactive
+
+        override suspend fun setTelegramInactive(reason: SourceErrorReason?) {
+            val state =
+                if (reason != null) {
+                    SourceActivationState.Error(reason)
+                } else {
+                    SourceActivationState.Inactive
+                }
+            updateState(SourceId.TELEGRAM, state)
         }
-        updateState(SourceId.IO, state)
-    }
-    
-    // =========================================================================
-    // Persistence Helpers
-    // =========================================================================
-    
-    private suspend fun updateState(sourceId: SourceId, state: SourceActivationState) {
-        val key = stateKeyFor(sourceId)
-        val reasonKey = reasonKeyFor(sourceId)
-        
-        dataStore.edit { preferences ->
-            preferences[key] = stateToString(state)
+
+        // =========================================================================
+        // IO
+        // =========================================================================
+
+        override suspend fun setIoActive() {
+            updateState(SourceId.IO, SourceActivationState.Active)
+        }
+
+        override suspend fun setIoInactive(reason: SourceErrorReason?) {
+            val state =
+                if (reason != null) {
+                    SourceActivationState.Error(reason)
+                } else {
+                    SourceActivationState.Inactive
+                }
+            updateState(SourceId.IO, state)
+        }
+
+        // =========================================================================
+        // Persistence Helpers
+        // =========================================================================
+
+        private suspend fun updateState(
+            sourceId: SourceId,
+            state: SourceActivationState,
+        ) {
+            val key = stateKeyFor(sourceId)
+            val reasonKey = reasonKeyFor(sourceId)
+
+            dataStore.edit { preferences ->
+                preferences[key] = stateToString(state)
+                when (state) {
+                    is SourceActivationState.Error -> {
+                        preferences[reasonKey] = state.reason.name
+                    }
+                    else -> {
+                        preferences.remove(reasonKey)
+                    }
+                }
+            }
+
+            // Update in-memory cache
+            _snapshot.value = _snapshot.value.updateSource(sourceId, state)
+
+            UnifiedLog.i(TAG) { "Source activation changed: $sourceId -> $state" }
+        }
+
+        private fun preferencesToSnapshot(preferences: Preferences): SourceActivationSnapshot =
+            SourceActivationSnapshot(
+                xtream = readState(preferences, SourceId.XTREAM),
+                telegram = readState(preferences, SourceId.TELEGRAM),
+                io = readState(preferences, SourceId.IO),
+            )
+
+        private fun readState(
+            preferences: Preferences,
+            sourceId: SourceId,
+        ): SourceActivationState {
+            val stateString = preferences[stateKeyFor(sourceId)] ?: return SourceActivationState.Inactive
+            val reasonString = preferences[reasonKeyFor(sourceId)]
+
+            return when (stateString) {
+                STATE_ACTIVE -> SourceActivationState.Active
+                STATE_ERROR -> {
+                    val reason =
+                        reasonString?.let {
+                            runCatching { SourceErrorReason.valueOf(it) }.getOrNull()
+                        } ?: SourceErrorReason.TRANSPORT_ERROR
+                    SourceActivationState.Error(reason)
+                }
+                else -> SourceActivationState.Inactive
+            }
+        }
+
+        private fun stateToString(state: SourceActivationState): String =
             when (state) {
-                is SourceActivationState.Error -> {
-                    preferences[reasonKey] = state.reason.name
-                }
-                else -> {
-                    preferences.remove(reasonKey)
-                }
+                is SourceActivationState.Active -> STATE_ACTIVE
+                is SourceActivationState.Error -> STATE_ERROR
+                is SourceActivationState.Inactive -> STATE_INACTIVE
             }
-        }
-        
-        // Update in-memory cache
-        _snapshot.value = _snapshot.value.updateSource(sourceId, state)
-        
-        UnifiedLog.i(TAG) { "Source activation changed: $sourceId -> $state" }
-    }
-    
-    private fun preferencesToSnapshot(preferences: Preferences): SourceActivationSnapshot {
-        return SourceActivationSnapshot(
-            xtream = readState(preferences, SourceId.XTREAM),
-            telegram = readState(preferences, SourceId.TELEGRAM),
-            io = readState(preferences, SourceId.IO),
-        )
-    }
-    
-    private fun readState(preferences: Preferences, sourceId: SourceId): SourceActivationState {
-        val stateString = preferences[stateKeyFor(sourceId)] ?: return SourceActivationState.Inactive
-        val reasonString = preferences[reasonKeyFor(sourceId)]
-        
-        return when (stateString) {
-            STATE_ACTIVE -> SourceActivationState.Active
-            STATE_ERROR -> {
-                val reason = reasonString?.let { 
-                    runCatching { SourceErrorReason.valueOf(it) }.getOrNull() 
-                } ?: SourceErrorReason.TRANSPORT_ERROR
-                SourceActivationState.Error(reason)
+
+        private fun stateKeyFor(sourceId: SourceId): Preferences.Key<String> =
+            when (sourceId) {
+                SourceId.XTREAM -> KEY_XTREAM_STATE
+                SourceId.TELEGRAM -> KEY_TELEGRAM_STATE
+                SourceId.IO -> KEY_IO_STATE
             }
-            else -> SourceActivationState.Inactive
+
+        private fun reasonKeyFor(sourceId: SourceId): Preferences.Key<String> =
+            when (sourceId) {
+                SourceId.XTREAM -> KEY_XTREAM_REASON
+                SourceId.TELEGRAM -> KEY_TELEGRAM_REASON
+                SourceId.IO -> KEY_IO_REASON
+            }
+
+        private companion object {
+            private const val TAG = "SourceActivationStore"
+
+            // State values
+            private const val STATE_INACTIVE = "inactive"
+            private const val STATE_ACTIVE = "active"
+            private const val STATE_ERROR = "error"
+
+            // Preference keys
+            private val KEY_XTREAM_STATE = stringPreferencesKey("xtream_state")
+            private val KEY_XTREAM_REASON = stringPreferencesKey("xtream_reason")
+            private val KEY_TELEGRAM_STATE = stringPreferencesKey("telegram_state")
+            private val KEY_TELEGRAM_REASON = stringPreferencesKey("telegram_reason")
+            private val KEY_IO_STATE = stringPreferencesKey("io_state")
+            private val KEY_IO_REASON = stringPreferencesKey("io_reason")
         }
     }
-    
-    private fun stateToString(state: SourceActivationState): String = when (state) {
-        is SourceActivationState.Active -> STATE_ACTIVE
-        is SourceActivationState.Error -> STATE_ERROR
-        is SourceActivationState.Inactive -> STATE_INACTIVE
-    }
-    
-    private fun stateKeyFor(sourceId: SourceId): Preferences.Key<String> = when (sourceId) {
-        SourceId.XTREAM -> KEY_XTREAM_STATE
-        SourceId.TELEGRAM -> KEY_TELEGRAM_STATE
-        SourceId.IO -> KEY_IO_STATE
-    }
-    
-    private fun reasonKeyFor(sourceId: SourceId): Preferences.Key<String> = when (sourceId) {
-        SourceId.XTREAM -> KEY_XTREAM_REASON
-        SourceId.TELEGRAM -> KEY_TELEGRAM_REASON
-        SourceId.IO -> KEY_IO_REASON
-    }
-    
-    private companion object {
-        private const val TAG = "SourceActivationStore"
-        
-        // State values
-        private const val STATE_INACTIVE = "inactive"
-        private const val STATE_ACTIVE = "active"
-        private const val STATE_ERROR = "error"
-        
-        // Preference keys
-        private val KEY_XTREAM_STATE = stringPreferencesKey("xtream_state")
-        private val KEY_XTREAM_REASON = stringPreferencesKey("xtream_reason")
-        private val KEY_TELEGRAM_STATE = stringPreferencesKey("telegram_state")
-        private val KEY_TELEGRAM_REASON = stringPreferencesKey("telegram_reason")
-        private val KEY_IO_STATE = stringPreferencesKey("io_state")
-        private val KEY_IO_REASON = stringPreferencesKey("io_reason")
-    }
-}
 
 /**
  * Extension to update a single source in a snapshot.
  */
 private fun SourceActivationSnapshot.updateSource(
     sourceId: SourceId,
-    state: SourceActivationState
-): SourceActivationSnapshot = when (sourceId) {
-    SourceId.XTREAM -> copy(xtream = state)
-    SourceId.TELEGRAM -> copy(telegram = state)
-    SourceId.IO -> copy(io = state)
-}
+    state: SourceActivationState,
+): SourceActivationSnapshot =
+    when (sourceId) {
+        SourceId.XTREAM -> copy(xtream = state)
+        SourceId.TELEGRAM -> copy(telegram = state)
+        SourceId.IO -> copy(io = state)
+    }

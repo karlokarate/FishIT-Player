@@ -12,14 +12,13 @@ import org.junit.Test
  * Verifies that all sensitive patterns are properly redacted.
  */
 class LogRedactorTest {
-
     // ==================== Username/Password Patterns ====================
 
     @Test
     fun `redact replaces username in key=value format`() {
         val input = "Request with username=john.doe&other=param"
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains("username=***"))
         assertFalse(result.contains("john.doe"))
     }
@@ -28,7 +27,7 @@ class LogRedactorTest {
     fun `redact replaces password in key=value format`() {
         val input = "Login attempt: password=SuperSecret123!"
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains("password=***"))
         assertFalse(result.contains("SuperSecret123"))
     }
@@ -37,7 +36,7 @@ class LogRedactorTest {
     fun `redact replaces user and pass Xtream params`() {
         val input = "URL: http://server.com/get.php?user=admin&pass=secret123"
         val result = LogRedactor.redact(input)
-        
+
         assertFalse(result.contains("admin"))
         assertFalse(result.contains("secret123"))
     }
@@ -48,7 +47,7 @@ class LogRedactorTest {
     fun `redact replaces Bearer token`() {
         val input = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test"
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains("Bearer ***"))
         assertFalse(result.contains("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"))
     }
@@ -57,7 +56,7 @@ class LogRedactorTest {
     fun `redact replaces Basic auth`() {
         val input = "Authorization: Basic YWRtaW46cGFzc3dvcmQ="
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains("Basic ***"))
         assertFalse(result.contains("YWRtaW46cGFzc3dvcmQ="))
     }
@@ -66,7 +65,7 @@ class LogRedactorTest {
     fun `redact replaces api_key parameter`() {
         val input = "API call with api_key=sk-12345abcde"
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains("api_key=***"))
         assertFalse(result.contains("sk-12345abcde"))
     }
@@ -77,7 +76,7 @@ class LogRedactorTest {
     fun `redact replaces password in JSON`() {
         val input = """{"username": "admin", "password": "secret123"}"""
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains(""""password":"***""""))
         assertFalse(result.contains("secret123"))
     }
@@ -86,7 +85,7 @@ class LogRedactorTest {
     fun `redact replaces token in JSON`() {
         val input = """{"token": "abc123xyz", "other": "value"}"""
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains(""""token":"***""""))
         assertFalse(result.contains("abc123xyz"))
     }
@@ -97,7 +96,7 @@ class LogRedactorTest {
     fun `redact replaces phone numbers`() {
         val input = "Telegram auth for +49123456789"
         val result = LogRedactor.redact(input)
-        
+
         assertTrue(result.contains("***PHONE***"))
         assertFalse(result.contains("+49123456789"))
     }
@@ -106,7 +105,7 @@ class LogRedactorTest {
     fun `redact does not affect short numbers`() {
         val input = "Error code: 12345"
         val result = LogRedactor.redact(input)
-        
+
         // Short numbers should not be redacted (not phone-like)
         assertTrue(result.contains("12345"))
     }
@@ -133,7 +132,7 @@ class LogRedactorTest {
     fun `redact handles multiple secrets in one string`() {
         val input = "user=admin&password=secret&api_key=xyz123"
         val result = LogRedactor.redact(input)
-        
+
         assertFalse(result.contains("admin"))
         assertFalse(result.contains("secret"))
         assertFalse(result.contains("xyz123"))
@@ -143,15 +142,16 @@ class LogRedactorTest {
 
     @Test
     fun `redact is case insensitive for keywords`() {
-        val inputs = listOf(
-            "USERNAME=test",
-            "Username=test",
-            "PASSWORD=secret",
-            "Password=secret",
-            "API_KEY=key",
-            "Api_Key=key"
-        )
-        
+        val inputs =
+            listOf(
+                "USERNAME=test",
+                "Username=test",
+                "PASSWORD=secret",
+                "Password=secret",
+                "API_KEY=key",
+                "Api_Key=key",
+            )
+
         for (input in inputs) {
             val result = LogRedactor.redact(input)
             assertFalse("Failed for: $input", result.contains("test") || result.contains("secret") || result.contains("key"))
@@ -169,7 +169,7 @@ class LogRedactorTest {
     fun `redactThrowable redacts exception message`() {
         val exception = IllegalArgumentException("Invalid password=secret123")
         val result = LogRedactor.redactThrowable(exception)
-        
+
         assertFalse(result?.contains("secret123") ?: true)
     }
 
@@ -177,16 +177,17 @@ class LogRedactorTest {
 
     @Test
     fun `redactEntry creates redacted copy`() {
-        val entry = BufferedLogEntry(
-            timestamp = System.currentTimeMillis(),
-            priority = android.util.Log.DEBUG,
-            tag = "Test",
-            message = "Login with password=secret123",
-            throwableInfo = null
-        )
-        
+        val entry =
+            BufferedLogEntry(
+                timestamp = System.currentTimeMillis(),
+                priority = android.util.Log.DEBUG,
+                tag = "Test",
+                message = "Login with password=secret123",
+                throwableInfo = null,
+            )
+
         val redacted = LogRedactor.redactEntry(entry)
-        
+
         assertFalse(redacted.message.contains("secret123"))
         assertTrue(redacted.message.contains("password=***"))
         assertEquals(entry.timestamp, redacted.timestamp)
@@ -196,19 +197,21 @@ class LogRedactorTest {
 
     @Test
     fun `redactEntry redacts throwableInfo message`() {
-        val entry = BufferedLogEntry(
-            timestamp = System.currentTimeMillis(),
-            priority = android.util.Log.ERROR,
-            tag = "Test",
-            message = "Error occurred",
-            throwableInfo = RedactedThrowableInfo(
-                type = "IOException",
-                message = "Failed with password=secret456"
+        val entry =
+            BufferedLogEntry(
+                timestamp = System.currentTimeMillis(),
+                priority = android.util.Log.ERROR,
+                tag = "Test",
+                message = "Error occurred",
+                throwableInfo =
+                    RedactedThrowableInfo(
+                        type = "IOException",
+                        message = "Failed with password=secret456",
+                    ),
             )
-        )
-        
+
         val redacted = LogRedactor.redactEntry(entry)
-        
+
         assertNotNull(redacted.throwableInfo)
         assertEquals("IOException", redacted.throwableInfo?.type)
         assertFalse(redacted.throwableInfo?.message?.contains("secret456") ?: true)
@@ -219,15 +222,16 @@ class LogRedactorTest {
 
     @Test
     fun `RedactedThrowableInfo is data-only - no Throwable reference`() {
-        val info = RedactedThrowableInfo(
-            type = "IllegalArgumentException",
-            message = "Test message"
-        )
-        
+        val info =
+            RedactedThrowableInfo(
+                type = "IllegalArgumentException",
+                message = "Test message",
+            )
+
         // Verify it's a data class with expected properties
         assertEquals("IllegalArgumentException", info.type)
         assertEquals("Test message", info.message)
-        
+
         // Verify toString format
         assertEquals("[IllegalArgumentException] Test message", info.toString())
     }
@@ -235,18 +239,19 @@ class LogRedactorTest {
     @Test
     fun `BufferedLogEntry throwableInfo is not a Throwable type`() {
         // This test verifies at compile-time and runtime that no Throwable is stored
-        val entry = BufferedLogEntry(
-            timestamp = 0L,
-            priority = android.util.Log.DEBUG,
-            tag = "Test",
-            message = "Message",
-            throwableInfo = RedactedThrowableInfo("Type", "Message")
-        )
-        
+        val entry =
+            BufferedLogEntry(
+                timestamp = 0L,
+                priority = android.util.Log.DEBUG,
+                tag = "Test",
+                message = "Message",
+                throwableInfo = RedactedThrowableInfo("Type", "Message"),
+            )
+
         // throwableInfo is RedactedThrowableInfo?, not Throwable?
         val info: RedactedThrowableInfo? = entry.throwableInfo
         assertNotNull(info)
-        
+
         // Verify the entry cannot hold a real Throwable (compile-level guarantee)
         // The field type is RedactedThrowableInfo?, not Throwable?
     }

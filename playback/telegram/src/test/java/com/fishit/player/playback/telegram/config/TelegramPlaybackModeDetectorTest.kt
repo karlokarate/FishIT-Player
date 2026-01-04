@@ -15,7 +15,6 @@ import org.junit.Test
  * - Edge cases (null MIME type, unknown types)
  */
 class TelegramPlaybackModeDetectorTest {
-
     // ========== isMp4Container Tests ==========
 
     @Test

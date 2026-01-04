@@ -43,11 +43,11 @@ object WorkerRetryPolicy {
      * @return Result.retry() or Result.failure()
      */
     fun retryOrFail(
-            worker: CoroutineWorker,
-            input: WorkerInputData,
-            reasonOnFail: String,
-            durationMs: Long? = null,
-            logMessage: String? = null,
+        worker: CoroutineWorker,
+        input: WorkerInputData,
+        reasonOnFail: String,
+        durationMs: Long? = null,
+        logMessage: String? = null,
     ): Result {
         val attemptCount = worker.runAttemptCount // 1-based: first run = 1
         val retryLimit = input.retryLimit // AUTO=3, EXPERT=5
@@ -63,10 +63,10 @@ object WorkerRetryPolicy {
                 "${logMessage ?: "Retry limit exceeded"} - failing (attempt=$attemptCount, limit=$retryLimit, reason=$reasonOnFail)"
             }
             Result.failure(
-                    WorkerOutputData.failure(
-                            reason = reasonOnFail,
-                            durationMs = durationMs,
-                    ),
+                WorkerOutputData.failure(
+                    reason = reasonOnFail,
+                    durationMs = durationMs,
+                ),
             )
         }
     }
@@ -81,8 +81,8 @@ object WorkerRetryPolicy {
      * @return true if retries are exhausted
      */
     fun isRetryLimitExceeded(
-            worker: CoroutineWorker,
-            input: WorkerInputData,
+        worker: CoroutineWorker,
+        input: WorkerInputData,
     ): Boolean = worker.runAttemptCount >= input.retryLimit
 
     /**
@@ -93,8 +93,8 @@ object WorkerRetryPolicy {
      * @return Human-readable attempt info string
      */
     fun getAttemptInfo(
-            worker: CoroutineWorker,
-            input: WorkerInputData,
+        worker: CoroutineWorker,
+        input: WorkerInputData,
     ): String {
         val attemptCount = worker.runAttemptCount
         val retryLimit = input.retryLimit

@@ -3,8 +3,8 @@ package com.fishit.player.infra.transport.telegram.auth
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
-import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
 import com.fishit.player.infra.transport.telegram.util.RetryConfig
 import com.fishit.player.infra.transport.telegram.util.TelegramRetry
 import dev.g000sha256.tdl.TdlClient
@@ -19,7 +19,6 @@ import dev.g000sha256.tdl.dto.AuthorizationStateWaitPassword
 import dev.g000sha256.tdl.dto.AuthorizationStateWaitPhoneNumber
 import dev.g000sha256.tdl.dto.AuthorizationStateWaitTdlibParameters
 import dev.g000sha256.tdl.dto.PhoneNumberAuthenticationSettings
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * TDLib Authorization Session Manager (v2 Architecture).
@@ -56,11 +56,10 @@ import kotlinx.coroutines.withTimeout
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
  */
 class TdlibAuthSession(
-        private val client: TdlClient,
-        private val config: TelegramSessionConfig,
-        private val scope: CoroutineScope
+    private val client: TdlClient,
+    private val config: TelegramSessionConfig,
+    private val scope: CoroutineScope,
 ) : TelegramAuthClient {
-
     companion object {
         private const val TAG = "TdlibAuthSession"
         private const val LOGIN_TIMEOUT_MS = 300_000L // 5 minutes
@@ -73,8 +72,8 @@ class TdlibAuthSession(
     private val collectorStarted = AtomicBoolean(false)
     private val tdParamsSet = AtomicBoolean(false)
 
-    private val _authState = MutableStateFlow< TdlibAuthState>( TdlibAuthState.Idle)
-    override val authState: Flow< TdlibAuthState> = _authState.asStateFlow()
+    private val _authState = MutableStateFlow<TdlibAuthState>(TdlibAuthState.Idle)
+    override val authState: Flow<TdlibAuthState> = _authState.asStateFlow()
 
     private val _authEvents = MutableSharedFlow<AuthEvent>(replay = 1)
 
@@ -127,32 +126,31 @@ class TdlibAuthSession(
         }
     }
 
-    override suspend fun isAuthorized(): Boolean {
-        return try {
+    override suspend fun isAuthorized(): Boolean =
+        try {
             val result = client.getAuthorizationState()
             result is TdlResult.Success && result.result is AuthorizationStateReady
         } catch (e: Exception) {
             UnifiedLog.w(TAG, "isAuthorized check failed: ${e.message}")
             false
         }
-    }
 
     override suspend fun sendPhoneNumber(phoneNumber: String) {
         UnifiedLog.d(TAG, "Sending phone number...")
         TelegramRetry.executeWithRetry(
-                config = RetryConfig.AUTH,
-                operationName = "sendPhoneNumber",
+            config = RetryConfig.AUTH,
+            operationName = "sendPhoneNumber",
         ) {
             val settings =
-                    PhoneNumberAuthenticationSettings(
-                            allowFlashCall = false,
-                            allowMissedCall = false,
-                            allowSmsRetrieverApi = false,
-                            hasUnknownPhoneNumber = false,
-                            isCurrentPhoneNumber = false,
-                            firebaseAuthenticationSettings = null,
-                            authenticationTokens = emptyArray(),
-                    )
+                PhoneNumberAuthenticationSettings(
+                    allowFlashCall = false,
+                    allowMissedCall = false,
+                    allowSmsRetrieverApi = false,
+                    hasUnknownPhoneNumber = false,
+                    isCurrentPhoneNumber = false,
+                    firebaseAuthenticationSettings = null,
+                    authenticationTokens = emptyArray(),
+                )
             client.setAuthenticationPhoneNumber(phoneNumber, settings).getOrThrow()
             UnifiedLog.d(TAG, "Phone number submitted successfully")
         }
@@ -161,8 +159,8 @@ class TdlibAuthSession(
     override suspend fun sendCode(code: String) {
         UnifiedLog.d(TAG, "Sending verification code...")
         TelegramRetry.executeWithRetry(
-                config = RetryConfig.QUICK,
-                operationName = "sendCode",
+            config = RetryConfig.QUICK,
+            operationName = "sendCode",
         ) {
             client.checkAuthenticationCode(code).getOrThrow()
             UnifiedLog.d(TAG, "Code submitted successfully")
@@ -172,8 +170,8 @@ class TdlibAuthSession(
     override suspend fun sendPassword(password: String) {
         UnifiedLog.d(TAG, "Sending 2FA password...")
         TelegramRetry.executeWithRetry(
-                config = RetryConfig.QUICK,
-                operationName = "sendPassword",
+            config = RetryConfig.QUICK,
+            operationName = "sendPassword",
         ) {
             client.checkAuthenticationPassword(password).getOrThrow()
             UnifiedLog.d(TAG, "Password submitted successfully")
@@ -191,8 +189,8 @@ class TdlibAuthSession(
         }
     }
 
-    override suspend fun getCurrentUserId(): Long? {
-        return try {
+    override suspend fun getCurrentUserId(): Long? =
+        try {
             val me = client.getMe()
             when (me) {
                 is TdlResult.Success -> {
@@ -209,7 +207,6 @@ class TdlibAuthSession(
             UnifiedLog.w(TAG, "getCurrentUserId error: ${e.message}")
             null
         }
-    }
 
     // ========== Internal Methods ==========
 
@@ -225,7 +222,8 @@ class TdlibAuthSession(
                         }
                         is AuthorizationStateClosing,
                         is AuthorizationStateClosed,
-                        is AuthorizationStateLoggingOut -> {
+                        is AuthorizationStateLoggingOut,
+                        -> {
                             val error = "Fatal auth state: ${s::class.simpleName}"
                             UnifiedLog.e(TAG, error)
                             _authEvents.emit(AuthEvent.Error(error))
@@ -280,11 +278,10 @@ class TdlibAuthSession(
         }
     }
 
-    private fun needsReauth(state: AuthorizationState): Boolean {
-        return state is AuthorizationStateWaitPhoneNumber ||
-                state is AuthorizationStateWaitCode ||
-                state is AuthorizationStateWaitPassword
-    }
+    private fun needsReauth(state: AuthorizationState): Boolean =
+        state is AuthorizationStateWaitPhoneNumber ||
+            state is AuthorizationStateWaitCode ||
+            state is AuthorizationStateWaitPassword
 
     private suspend fun handleAuthState(state: AuthorizationState) {
         when (state) {
@@ -308,28 +305,29 @@ class TdlibAuthSession(
                 }
             }
             else -> {
-                /* No automatic handling */
+                // No automatic handling
             }
         }
     }
 
     private suspend fun setTdlibParameters() {
-        val result = client.setTdlibParameters(
-            useTestDc = false,
-            databaseDirectory = config.databasePath,
-            filesDirectory = config.filesPath,
-            databaseEncryptionKey = ByteArray(0),
-            useFileDatabase = true,
-            useChatInfoDatabase = true,
-            useMessageDatabase = true,
-            useSecretChats = false,
-            apiId = config.apiId,
-            apiHash = config.apiHash,
-            systemLanguageCode = "en",
-            deviceModel = config.deviceModel,
-            systemVersion = config.systemVersion,
-            applicationVersion = config.appVersion,
-        )
+        val result =
+            client.setTdlibParameters(
+                useTestDc = false,
+                databaseDirectory = config.databasePath,
+                filesDirectory = config.filesPath,
+                databaseEncryptionKey = ByteArray(0),
+                useFileDatabase = true,
+                useChatInfoDatabase = true,
+                useMessageDatabase = true,
+                useSecretChats = false,
+                apiId = config.apiId,
+                apiHash = config.apiHash,
+                systemLanguageCode = "en",
+                deviceModel = config.deviceModel,
+                systemVersion = config.systemVersion,
+                applicationVersion = config.appVersion,
+            )
 
         when (result) {
             is TdlResult.Success -> UnifiedLog.d(TAG, "TDLib parameters set successfully")
@@ -343,46 +341,53 @@ class TdlibAuthSession(
 
     private fun updateAuthState(state: AuthorizationState) {
         _authState.value =
-                when (state) {
-                    is AuthorizationStateWaitTdlibParameters -> TdlibAuthState.Connecting
-                    is AuthorizationStateWaitPhoneNumber -> TdlibAuthState.WaitPhoneNumber()
-                    is AuthorizationStateWaitCode -> {
-                        // Note: codeInfo.type doesn't directly expose length in g00sha256 wrapper
-                        // We use null and let UI request code without length hint
-                        TdlibAuthState.WaitCode(codeLength = null)
-                    }
-                    is AuthorizationStateWaitPassword -> {
-                        TdlibAuthState.WaitPassword(
-                            passwordHint = state.passwordHint,
-                            hasRecoveryEmail = state.hasRecoveryEmailAddress
-                        )
-                    }
-                    is AuthorizationStateReady -> TdlibAuthState.Ready
-                    is AuthorizationStateLoggingOut -> TdlibAuthState.LoggingOut
-                    is AuthorizationStateClosed -> TdlibAuthState.Closed
-                    else -> TdlibAuthState.Idle
+            when (state) {
+                is AuthorizationStateWaitTdlibParameters -> TdlibAuthState.Connecting
+                is AuthorizationStateWaitPhoneNumber -> TdlibAuthState.WaitPhoneNumber()
+                is AuthorizationStateWaitCode -> {
+                    // Note: codeInfo.type doesn't directly expose length in g00sha256 wrapper
+                    // We use null and let UI request code without length hint
+                    TdlibAuthState.WaitCode(codeLength = null)
                 }
+                is AuthorizationStateWaitPassword -> {
+                    TdlibAuthState.WaitPassword(
+                        passwordHint = state.passwordHint,
+                        hasRecoveryEmail = state.hasRecoveryEmailAddress,
+                    )
+                }
+                is AuthorizationStateReady -> TdlibAuthState.Ready
+                is AuthorizationStateLoggingOut -> TdlibAuthState.LoggingOut
+                is AuthorizationStateClosed -> TdlibAuthState.Closed
+                else -> TdlibAuthState.Idle
+            }
     }
 }
 
 /** Extension function to convert TdlResult to value or throw exception. */
 private fun <T> TdlResult<T>.getOrThrow(): T =
-        when (this) {
-            is TdlResult.Success -> result
-            is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
-        }
+    when (this) {
+        is TdlResult.Success -> result
+        is TdlResult.Failure -> throw RuntimeException("TDLib error $code: $message")
+    }
 
 /** Authentication state events emitted during login flow. */
 sealed class AuthEvent {
     /** Auth state changed to a new TDLib state */
-    data class StateChanged(val state: AuthorizationState) : AuthEvent()
+    data class StateChanged(
+        val state: AuthorizationState,
+    ) : AuthEvent()
 
     /** Error occurred during auth */
-    data class Error(val message: String, val code: Int? = null) : AuthEvent()
+    data class Error(
+        val message: String,
+        val code: Int? = null,
+    ) : AuthEvent()
 
     /** Successfully authorized and ready */
     data object Ready : AuthEvent()
 
     /** Reauth required (was Ready, now needs login again) */
-    data class ReauthRequired(val reason: String) : AuthEvent()
+    data class ReauthRequired(
+        val reason: String,
+    ) : AuthEvent()
 }

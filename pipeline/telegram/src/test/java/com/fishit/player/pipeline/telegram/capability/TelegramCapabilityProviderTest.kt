@@ -12,7 +12,6 @@ import org.junit.Test
  * These are **pipeline capabilities**, not App Features.
  */
 class TelegramCapabilityProviderTest {
-
     // -------------------------------------------------------------------------
     // TelegramFullHistoryCapabilityProvider Tests
     // -------------------------------------------------------------------------

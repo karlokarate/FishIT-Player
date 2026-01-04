@@ -79,151 +79,153 @@ import javax.inject.Inject
 // =============================================================================
 
 @HiltViewModel
-class DbInspectorEntityTypesViewModel @Inject constructor(
-    private val inspector: ObxDatabaseInspector,
-) : ViewModel() {
+class DbInspectorEntityTypesViewModel
+    @Inject
+    constructor(
+        private val inspector: ObxDatabaseInspector,
+    ) : ViewModel() {
+        data class State(
+            val isLoading: Boolean = true,
+            val entityTypes: List<DbEntityTypeInfo> = emptyList(),
+            val error: String? = null,
+        )
 
-    data class State(
-        val isLoading: Boolean = true,
-        val entityTypes: List<DbEntityTypeInfo> = emptyList(),
-        val error: String? = null,
-    )
+        private val _state = MutableStateFlow(State())
+        val state: StateFlow<State> = _state.asStateFlow()
 
-    private val _state = MutableStateFlow(State())
-    val state: StateFlow<State> = _state.asStateFlow()
+        init {
+            load()
+        }
 
-    init {
-        load()
-    }
-
-    fun load() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { inspector.listEntityTypes() }
-                .onSuccess { types -> _state.update { it.copy(isLoading = false, entityTypes = types) } }
-                .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
+        fun load() {
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true, error = null) }
+                runCatching { inspector.listEntityTypes() }
+                    .onSuccess { types -> _state.update { it.copy(isLoading = false, entityTypes = types) } }
+                    .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
+            }
         }
     }
-}
 
 @HiltViewModel
-class DbInspectorRowsViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val inspector: ObxDatabaseInspector,
-) : ViewModel() {
+class DbInspectorRowsViewModel
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        private val inspector: ObxDatabaseInspector,
+    ) : ViewModel() {
+        val entityTypeId: String = savedStateHandle[DbInspectorNavArgs.ARG_ENTITY_TYPE] ?: ""
 
-    val entityTypeId: String = savedStateHandle[DbInspectorNavArgs.ARG_ENTITY_TYPE] ?: ""
+        data class State(
+            val isLoading: Boolean = true,
+            val page: DbPage<DbRowPreview>? = null,
+            val error: String? = null,
+        )
 
-    data class State(
-        val isLoading: Boolean = true,
-        val page: DbPage<DbRowPreview>? = null,
-        val error: String? = null,
-    )
+        private val _state = MutableStateFlow(State())
+        val state: StateFlow<State> = _state.asStateFlow()
 
-    private val _state = MutableStateFlow(State())
-    val state: StateFlow<State> = _state.asStateFlow()
+        private var currentOffset = 0L
+        private val pageSize = 50L
 
-    private var currentOffset = 0L
-    private val pageSize = 50L
+        init {
+            loadPage(0)
+        }
 
-    init {
-        loadPage(0)
-    }
+        fun loadPage(offset: Long) {
+            currentOffset = offset
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true, error = null) }
+                runCatching { inspector.listRows(entityTypeId, offset, pageSize) }
+                    .onSuccess { page -> _state.update { it.copy(isLoading = false, page = page) } }
+                    .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
+            }
+        }
 
-    fun loadPage(offset: Long) {
-        currentOffset = offset
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { inspector.listRows(entityTypeId, offset, pageSize) }
-                .onSuccess { page -> _state.update { it.copy(isLoading = false, page = page) } }
-                .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
+        fun nextPage() {
+            val p = _state.value.page ?: return
+            if (p.offset + p.limit < p.total) {
+                loadPage(p.offset + p.limit)
+            }
+        }
+
+        fun prevPage() {
+            val p = _state.value.page ?: return
+            if (p.offset > 0) {
+                loadPage(maxOf(0, p.offset - p.limit))
+            }
         }
     }
-
-    fun nextPage() {
-        val p = _state.value.page ?: return
-        if (p.offset + p.limit < p.total) {
-            loadPage(p.offset + p.limit)
-        }
-    }
-
-    fun prevPage() {
-        val p = _state.value.page ?: return
-        if (p.offset > 0) {
-            loadPage(maxOf(0, p.offset - p.limit))
-        }
-    }
-}
 
 @HiltViewModel
-class DbInspectorDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val inspector: ObxDatabaseInspector,
-) : ViewModel() {
+class DbInspectorDetailViewModel
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        private val inspector: ObxDatabaseInspector,
+    ) : ViewModel() {
+        val entityTypeId: String = savedStateHandle[DbInspectorNavArgs.ARG_ENTITY_TYPE] ?: ""
+        val rowId: Long = savedStateHandle[DbInspectorNavArgs.ARG_ROW_ID] ?: 0L
 
-    val entityTypeId: String = savedStateHandle[DbInspectorNavArgs.ARG_ENTITY_TYPE] ?: ""
-    val rowId: Long = savedStateHandle[DbInspectorNavArgs.ARG_ROW_ID] ?: 0L
+        data class State(
+            val isLoading: Boolean = true,
+            val dump: DbEntityDump? = null,
+            val error: String? = null,
+            val snackbar: String? = null,
+            val deleted: Boolean = false,
+        )
 
-    data class State(
-        val isLoading: Boolean = true,
-        val dump: DbEntityDump? = null,
-        val error: String? = null,
-        val snackbar: String? = null,
-        val deleted: Boolean = false,
-    )
+        private val _state = MutableStateFlow(State())
+        val state: StateFlow<State> = _state.asStateFlow()
 
-    private val _state = MutableStateFlow(State())
-    val state: StateFlow<State> = _state.asStateFlow()
+        init {
+            load()
+        }
 
-    init {
-        load()
-    }
+        fun load() {
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true, error = null) }
+                runCatching { inspector.getEntity(entityTypeId, rowId) }
+                    .onSuccess { dump ->
+                        if (dump == null) {
+                            _state.update { it.copy(isLoading = false, error = "Row not found") }
+                        } else {
+                            _state.update { it.copy(isLoading = false, dump = dump) }
+                        }
+                    }.onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
+            }
+        }
 
-    fun load() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { inspector.getEntity(entityTypeId, rowId) }
-                .onSuccess { dump ->
-                    if (dump == null) {
-                        _state.update { it.copy(isLoading = false, error = "Row not found") }
-                    } else {
-                        _state.update { it.copy(isLoading = false, dump = dump) }
-                    }
+        fun saveChanges(patch: Map<String, String?>) {
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true) }
+                val result = inspector.updateFields(entityTypeId, rowId, patch)
+                if (result.isSuccess) {
+                    _state.update { it.copy(snackbar = "Saved ${result.applied} field(s)") }
+                    load()
+                } else {
+                    _state.update { it.copy(isLoading = false, snackbar = result.errors.joinToString("; ")) }
                 }
-                .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
-        }
-    }
-
-    fun saveChanges(patch: Map<String, String?>) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            val result = inspector.updateFields(entityTypeId, rowId, patch)
-            if (result.isSuccess) {
-                _state.update { it.copy(snackbar = "Saved ${result.applied} field(s)") }
-                load()
-            } else {
-                _state.update { it.copy(isLoading = false, snackbar = result.errors.joinToString("; ")) }
             }
         }
-    }
 
-    fun deleteRow(onDeleted: () -> Unit) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            val ok = inspector.deleteEntity(entityTypeId, rowId)
-            if (ok) {
-                _state.update { it.copy(deleted = true, snackbar = "Row deleted") }
-                onDeleted()
-            } else {
-                _state.update { it.copy(isLoading = false, snackbar = "Delete failed") }
+        fun deleteRow(onDeleted: () -> Unit) {
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true) }
+                val ok = inspector.deleteEntity(entityTypeId, rowId)
+                if (ok) {
+                    _state.update { it.copy(deleted = true, snackbar = "Row deleted") }
+                    onDeleted()
+                } else {
+                    _state.update { it.copy(isLoading = false, snackbar = "Delete failed") }
+                }
             }
         }
-    }
 
-    fun clearSnackbar() {
-        _state.update { it.copy(snackbar = null) }
+        fun clearSnackbar() {
+            _state.update { it.copy(snackbar = null) }
+        }
     }
-}
 
 // =============================================================================
 // Screens
@@ -243,10 +245,11 @@ fun DbInspectorEntityTypesScreen(
         },
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 state.isLoading -> {
@@ -288,10 +291,11 @@ fun DbInspectorRowsScreen(
         },
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 state.isLoading -> {
@@ -368,10 +372,11 @@ fun DbInspectorDetailScreen(
         },
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 state.isLoading -> {
@@ -387,10 +392,11 @@ fun DbInspectorDetailScreen(
                 state.dump != null -> {
                     val dump = state.dump!!
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
                     ) {
                         // Action buttons
                         Row(
@@ -452,9 +458,10 @@ fun DbInspectorDetailScreen(
             // Snackbar
             state.snackbar?.let { msg ->
                 Snackbar(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp),
                     action = {
                         TextButton(onClick = viewModel::clearSnackbar) {
                             Text("OK")
@@ -503,10 +510,11 @@ private fun InspectorTopBar(
     onRefresh: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
@@ -538,15 +546,17 @@ private fun EntityTypeCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -575,15 +585,17 @@ private fun RowPreviewCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -630,9 +642,10 @@ private fun PaginationRow(
     val start = offset + 1
     val end = minOf(offset + limit, total)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -700,22 +713,26 @@ private fun FieldRow(
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily.Monospace,
                 color = if (isEdited) MaterialTheme.colorScheme.tertiary else Color.Unspecified,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        shape = MaterialTheme.shapes.small,
-                    )
-                    .padding(8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            shape = MaterialTheme.shapes.small,
+                        ).padding(8.dp),
             )
         }
     }
 }
 
-private fun inferKeyboardType(typeStr: String): KeyboardType {
-    return when {
-        typeStr.startsWith("Long") || typeStr.startsWith("Int") || typeStr.startsWith("Short") || typeStr.startsWith("Byte") -> KeyboardType.Number
+private fun inferKeyboardType(typeStr: String): KeyboardType =
+    when {
+        typeStr.startsWith(
+            "Long",
+        ) ||
+            typeStr.startsWith("Int") ||
+            typeStr.startsWith("Short") ||
+            typeStr.startsWith("Byte") -> KeyboardType.Number
         typeStr.startsWith("Double") || typeStr.startsWith("Float") -> KeyboardType.Decimal
         else -> KeyboardType.Text
     }
-}

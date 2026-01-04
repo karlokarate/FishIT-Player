@@ -54,16 +54,16 @@ import com.fishit.player.core.model.ImageRef
  */
 @Composable
 fun FishImage(
-        imageRef: ImageRef?,
-        contentDescription: String?,
-        modifier: Modifier = Modifier,
-        contentScale: ContentScale = ContentScale.Crop,
-        alignment: Alignment = Alignment.Center,
-        colorFilter: ColorFilter? = null,
-        filterQuality: FilterQuality = FilterQuality.Low,
-        placeholder: @Composable (() -> Unit)? = null,
-        error: @Composable (() -> Unit)? = null,
-        onState: ((AsyncImagePainter.State) -> Unit)? = null,
+    imageRef: ImageRef?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    alignment: Alignment = Alignment.Center,
+    colorFilter: ColorFilter? = null,
+    filterQuality: FilterQuality = FilterQuality.Low,
+    placeholder: @Composable (() -> Unit)? = null,
+    error: @Composable (() -> Unit)? = null,
+    onState: ((AsyncImagePainter.State) -> Unit)? = null,
 ) {
     if (imageRef == null) {
         // Show error or placeholder for null refs
@@ -84,33 +84,33 @@ fun FishImage(
     }
 
     val request =
-            ImageRequest.Builder(context)
-                    .data(imageRef)
-                    .apply {
-                        // Apply preferred size if specified
-                        val width = imageRef.preferredWidth
-                        val height = imageRef.preferredHeight
-                        if (width != null && height != null) {
-                            size(Size(width, height))
-                        }
-                        // If only one dimension specified, let Coil determine the other
-                        // (avoiding explicit Dimension.Undefined usage which has API issues)
-                    }
-                    .build()
+        ImageRequest
+            .Builder(context)
+            .data(imageRef)
+            .apply {
+                // Apply preferred size if specified
+                val width = imageRef.preferredWidth
+                val height = imageRef.preferredHeight
+                if (width != null && height != null) {
+                    size(Size(width, height))
+                }
+                // If only one dimension specified, let Coil determine the other
+                // (avoiding explicit Dimension.Undefined usage which has API issues)
+            }.build()
 
     Box(modifier = modifier) {
         AsyncImage(
-                model = request,
-                contentDescription = contentDescription,
-                modifier = Modifier.matchParentSize(),
-                contentScale = contentScale,
-                alignment = alignment,
-                colorFilter = colorFilter,
-                filterQuality = filterQuality,
-                onState = { state ->
-                    imageState = state
-                    onState?.invoke(state)
-                },
+            model = request,
+            contentDescription = contentDescription,
+            modifier = Modifier.matchParentSize(),
+            contentScale = contentScale,
+            alignment = alignment,
+            colorFilter = colorFilter,
+            filterQuality = filterQuality,
+            onState = { state ->
+                imageState = state
+                onState?.invoke(state)
+            },
         )
 
         // Show placeholder while loading
@@ -135,22 +135,22 @@ fun FishImage(
  */
 @Composable
 fun FishImage(
-        imageRef: ImageRef?,
-        contentDescription: String?,
-        modifier: Modifier = Modifier,
-        contentScale: ContentScale = ContentScale.Crop,
+    imageRef: ImageRef?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
 ) {
     FishImage(
-            imageRef = imageRef,
-            contentDescription = contentDescription,
-            modifier = modifier,
-            contentScale = contentScale,
-            alignment = Alignment.Center,
-            colorFilter = null,
-            filterQuality = FilterQuality.Low,
-            placeholder = null,
-            error = null,
-            onState = null,
+        imageRef = imageRef,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        alignment = Alignment.Center,
+        colorFilter = null,
+        filterQuality = FilterQuality.Low,
+        placeholder = null,
+        error = null,
+        onState = null,
     )
 }
 
@@ -166,20 +166,20 @@ fun FishImage(
  */
 @Composable
 fun FishImageWithStates(
-        imageRef: ImageRef?,
-        contentDescription: String?,
-        modifier: Modifier = Modifier,
-        contentScale: ContentScale = ContentScale.Crop,
-        loading: @Composable () -> Unit = {},
-        error: @Composable () -> Unit = {},
+    imageRef: ImageRef?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    loading: @Composable () -> Unit = {},
+    error: @Composable () -> Unit = {},
 ) {
     FishImage(
-            imageRef = imageRef,
-            contentDescription = contentDescription,
-            modifier = modifier,
-            contentScale = contentScale,
-            placeholder = loading,
-            error = error,
+        imageRef = imageRef,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        placeholder = loading,
+        error = error,
     )
 }
 
@@ -211,13 +211,13 @@ fun FishImageWithStates(
  */
 @Composable
 fun FishImageTiered(
-        placeholderRef: ImageRef?,
-        imageRef: ImageRef?,
-        contentDescription: String?,
-        modifier: Modifier = Modifier,
-        contentScale: ContentScale = ContentScale.Crop,
-        blurRadius: Int = 8,
-        error: @Composable (() -> Unit)? = null,
+    placeholderRef: ImageRef?,
+    imageRef: ImageRef?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    blurRadius: Int = 8,
+    error: @Composable (() -> Unit)? = null,
 ) {
     // Track main image loading state
     var mainImageState by remember {
@@ -232,19 +232,19 @@ fun FishImageTiered(
     Box(modifier = modifier) {
         // Layer 1: Blurred placeholder (shown instantly from memory, fades out when main loads)
         AnimatedVisibility(
-                visible = !mainImageLoaded && placeholderRef != null,
-                enter = fadeIn(),
-                exit = fadeOut(),
+            visible = !mainImageLoaded && placeholderRef != null,
+            enter = fadeIn(),
+            exit = fadeOut(),
         ) {
             if (placeholderRef != null) {
                 val placeholderRequest = ImageRequest.Builder(context).data(placeholderRef).build()
 
                 AsyncImage(
-                        model = placeholderRequest,
-                        contentDescription = null, // Decorative placeholder
-                        modifier = Modifier.matchParentSize().blur(blurRadius.dp),
-                        contentScale = contentScale,
-                        filterQuality = FilterQuality.Low,
+                    model = placeholderRequest,
+                    contentDescription = null, // Decorative placeholder
+                    modifier = Modifier.matchParentSize().blur(blurRadius.dp),
+                    contentScale = contentScale,
+                    filterQuality = FilterQuality.Low,
                 )
             }
         }
@@ -252,27 +252,27 @@ fun FishImageTiered(
         // Layer 2: Full image (single loader with crossfade built-in)
         if (imageRef != null) {
             val mainRequest =
-                    ImageRequest.Builder(context)
-                            .data(imageRef)
-                            .apply {
-                                val width = imageRef.preferredWidth
-                                val height = imageRef.preferredHeight
-                                if (width != null && height != null) {
-                                    size(Size(width, height))
-                                }
-                            }
-                            .build()
+                ImageRequest
+                    .Builder(context)
+                    .data(imageRef)
+                    .apply {
+                        val width = imageRef.preferredWidth
+                        val height = imageRef.preferredHeight
+                        if (width != null && height != null) {
+                            size(Size(width, height))
+                        }
+                    }.build()
 
             // Use alpha to crossfade from placeholder to loaded image
             val alpha = if (mainImageLoaded) 1f else 0f
 
             AsyncImage(
-                    model = mainRequest,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.matchParentSize().graphicsLayer { this.alpha = alpha },
-                    contentScale = contentScale,
-                    filterQuality = FilterQuality.Low,
-                    onState = { state -> mainImageState = state },
+                model = mainRequest,
+                contentDescription = contentDescription,
+                modifier = Modifier.matchParentSize().graphicsLayer { this.alpha = alpha },
+                contentScale = contentScale,
+                filterQuality = FilterQuality.Low,
+                onState = { state -> mainImageState = state },
             )
         }
 

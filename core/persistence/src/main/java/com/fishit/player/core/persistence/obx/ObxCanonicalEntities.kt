@@ -45,97 +45,98 @@ import io.objectbox.relation.ToMany
  */
 @Entity
 data class ObxCanonicalMedia(
-        @Id var id: Long = 0,
+    @Id var id: Long = 0,
     /** Unique canonical identity key (e.g., "tmdb:movie:550" or "movie:fight-club:1999") */
-        @Unique @Index var canonicalKey: String = "",
-        /** Media kind: "movie" or "episode" */
-        @Index var kind: String = "movie",
-        /** Media type: MOVIE, SERIES, SERIES_EPISODE, LIVE, CLIP, AUDIOBOOK, MUSIC, PODCAST, UNKNOWN */
-        @Index var mediaType: String = "UNKNOWN",
-        /** Normalized/cleaned title */
-        @Index var canonicalTitle: String = "",
-        /** Lowercase title for case-insensitive search */
-        @Index var canonicalTitleLower: String = "",
-        /** Release year */
-        @Index var year: Int? = null,
-        /** Season number (episodes only) */
-        var season: Int? = null,
-        /** Episode number (episodes only) */
-        var episode: Int? = null,
-        // === External IDs (for cross-referencing) ===
-        /** TMDB ID - primary identity when available */
-        @Index var tmdbId: String? = null,
-        /** IMDB ID (e.g., "tt0137523") */
-        @Index var imdbId: String? = null,
-        /** TVDB ID (for series) */
-        @Index var tvdbId: String? = null,
-        // === Display metadata (aggregated from best source) ===
-        /**
-         * Best available poster ImageRef.
-         * Stored as JSON via [ImageRefConverter] to preserve type information
-         * (Http, TelegramThumb, LocalFile, InlineBytes).
-         */
-        @Convert(converter = ImageRefConverter::class, dbType = String::class)
-        var poster: ImageRef? = null,
-        /**
-         * Best available backdrop ImageRef.
-         * Stored as JSON via [ImageRefConverter].
-         */
-        @Convert(converter = ImageRefConverter::class, dbType = String::class)
-        var backdrop: ImageRef? = null,
-        /**
-         * Thumbnail ImageRef for list views.
-         * Stored as JSON via [ImageRefConverter].
-         */
-        @Convert(converter = ImageRefConverter::class, dbType = String::class)
-        var thumbnail: ImageRef? = null,
-        /** Plot/description text */
-        var plot: String? = null,
-        /** Rating (0-10 scale) */
-        var rating: Double? = null,
-        /** Runtime in milliseconds */
-        var durationMs: Long? = null,
-        /** Comma-separated genres */
-        var genres: String? = null,
-        /** Director name(s) */
-        var director: String? = null,
-        /** Comma-separated cast */
-        var cast: String? = null,
-        /** YouTube trailer URL */
-        var trailer: String? = null,
-        /** Release date (YYYY-MM-DD) */
-        var releaseDate: String? = null,
-        // === TMDB Resolve State (per TMDB_ENRICHMENT_CONTRACT.md T-15/T-16) ===
-        /**
-         * TMDB resolution state.
-         *
-         * Per TMDB_ENRICHMENT_CONTRACT.md T-16:
-         * UNRESOLVED, RESOLVED, UNRESOLVABLE_PERMANENT, STALE_REFRESH_REQUIRED.
-         *
-         * @see com.fishit.player.core.model.TmdbResolveState
-         */
-        @Index var tmdbResolveState: String = "UNRESOLVED",
-        /** Number of TMDB search attempts for this item */
-        var tmdbResolveAttempts: Int = 0,
-        /** Timestamp of last TMDB resolution attempt */
-        var lastTmdbAttemptAt: Long? = null,
-        /** Next eligible timestamp for TMDB resolution (cooldown enforcement) */
-        @Index var tmdbNextEligibleAt: Long? = null,
-        /** Last failure reason (diagnostics). */
-        var tmdbLastFailureReason: String? = null,
-        /** Timestamp when TMDB resolution succeeded */
-        var tmdbLastResolvedAt: Long? = null,
-        /**
-         * How the item was resolved: PASS_THROUGH, DETAILS_BY_ID, SEARCH_MATCH, MANUAL_OVERRIDE.
-         * @see TmdbResolvedBy
-         */
-        var tmdbResolvedBy: String? = null,
-        // === Timestamps ===
-        @Index var createdAt: Long = System.currentTimeMillis(),
-        @Index var updatedAt: Long = System.currentTimeMillis(),
+    @Unique @Index var canonicalKey: String = "",
+    /** Media kind: "movie" or "episode" */
+    @Index var kind: String = "movie",
+    /** Media type: MOVIE, SERIES, SERIES_EPISODE, LIVE, CLIP, AUDIOBOOK, MUSIC, PODCAST, UNKNOWN */
+    @Index var mediaType: String = "UNKNOWN",
+    /** Normalized/cleaned title */
+    @Index var canonicalTitle: String = "",
+    /** Lowercase title for case-insensitive search */
+    @Index var canonicalTitleLower: String = "",
+    /** Release year */
+    @Index var year: Int? = null,
+    /** Season number (episodes only) */
+    var season: Int? = null,
+    /** Episode number (episodes only) */
+    var episode: Int? = null,
+    // === External IDs (for cross-referencing) ===
+    /** TMDB ID - primary identity when available */
+    @Index var tmdbId: String? = null,
+    /** IMDB ID (e.g., "tt0137523") */
+    @Index var imdbId: String? = null,
+    /** TVDB ID (for series) */
+    @Index var tvdbId: String? = null,
+    // === Display metadata (aggregated from best source) ===
+    /**
+     * Best available poster ImageRef.
+     * Stored as JSON via [ImageRefConverter] to preserve type information
+     * (Http, TelegramThumb, LocalFile, InlineBytes).
+     */
+    @Convert(converter = ImageRefConverter::class, dbType = String::class)
+    var poster: ImageRef? = null,
+    /**
+     * Best available backdrop ImageRef.
+     * Stored as JSON via [ImageRefConverter].
+     */
+    @Convert(converter = ImageRefConverter::class, dbType = String::class)
+    var backdrop: ImageRef? = null,
+    /**
+     * Thumbnail ImageRef for list views.
+     * Stored as JSON via [ImageRefConverter].
+     */
+    @Convert(converter = ImageRefConverter::class, dbType = String::class)
+    var thumbnail: ImageRef? = null,
+    /** Plot/description text */
+    var plot: String? = null,
+    /** Rating (0-10 scale) */
+    var rating: Double? = null,
+    /** Runtime in milliseconds */
+    var durationMs: Long? = null,
+    /** Comma-separated genres */
+    var genres: String? = null,
+    /** Director name(s) */
+    var director: String? = null,
+    /** Comma-separated cast */
+    var cast: String? = null,
+    /** YouTube trailer URL */
+    var trailer: String? = null,
+    /** Release date (YYYY-MM-DD) */
+    var releaseDate: String? = null,
+    // === TMDB Resolve State (per TMDB_ENRICHMENT_CONTRACT.md T-15/T-16) ===
+    /**
+     * TMDB resolution state.
+     *
+     * Per TMDB_ENRICHMENT_CONTRACT.md T-16:
+     * UNRESOLVED, RESOLVED, UNRESOLVABLE_PERMANENT, STALE_REFRESH_REQUIRED.
+     *
+     * @see com.fishit.player.core.model.TmdbResolveState
+     */
+    @Index var tmdbResolveState: String = "UNRESOLVED",
+    /** Number of TMDB search attempts for this item */
+    var tmdbResolveAttempts: Int = 0,
+    /** Timestamp of last TMDB resolution attempt */
+    var lastTmdbAttemptAt: Long? = null,
+    /** Next eligible timestamp for TMDB resolution (cooldown enforcement) */
+    @Index var tmdbNextEligibleAt: Long? = null,
+    /** Last failure reason (diagnostics). */
+    var tmdbLastFailureReason: String? = null,
+    /** Timestamp when TMDB resolution succeeded */
+    var tmdbLastResolvedAt: Long? = null,
+    /**
+     * How the item was resolved: PASS_THROUGH, DETAILS_BY_ID, SEARCH_MATCH, MANUAL_OVERRIDE.
+     * @see TmdbResolvedBy
+     */
+    var tmdbResolvedBy: String? = null,
+    // === Timestamps ===
+    @Index var createdAt: Long = System.currentTimeMillis(),
+    @Index var updatedAt: Long = System.currentTimeMillis(),
 ) {
     /** Backlink to all source references */
-    @Backlink(to = "canonicalMedia") lateinit var sources: ToMany<ObxMediaSourceRef>
+    @Backlink(to = "canonicalMedia")
+    lateinit var sources: ToMany<ObxMediaSourceRef>
 }
 
 /**
@@ -167,56 +168,56 @@ data class ObxCanonicalMedia(
  */
 @Entity
 data class ObxMediaSourceRef(
-        @Id var id: Long = 0,
-        /** Pipeline type: TELEGRAM, XTREAM, IO, AUDIOBOOK, PLEX, OTHER */
-        @Index var sourceType: String = "",
-        /** Unique identifier within pipeline (e.g., "telegram:123:456", "xtream:vod:789") */
-        @Unique @Index var sourceId: String = "",
-        /** Human-readable label (e.g., "Telegram: Movie Group", "Xtream: Provider A") */
-        var sourceLabel: String = "",
-        // === Quality & Format (JSON for flexibility) ===
-        /** JSON: {"resolution":1080,"codec":"HEVC","hdr":"HDR10"} */
-        var qualityJson: String? = null,
-        /** JSON: {"audioLanguages":["de","en"],"primaryAudio":"de","isDubbed":false} */
-        var languagesJson: String? = null,
-        /** JSON: {"container":"mkv","audioCodec":"dts","audioChannels":"5.1"} */
-        var formatJson: String? = null,
-        /** File size in bytes (differs per source!) */
-        @Index var sizeBytes: Long? = null,
-        /**
-         * Duration in milliseconds (differs per source!). CRITICAL for cross-source resume
-         * calculation. Different sources of the same movie can have ±5 minute differences.
-         */
-        var durationMs: Long? = null,
-        /** Priority for selection (higher = preferred) */
-        var priority: Int = 0,
-        // === Availability tracking ===
-        /** Whether source is currently reachable/valid */
-        @Index var isAvailable: Boolean = true,
-        /** Last verification timestamp */
-        var lastVerifiedAt: Long? = null,
-        // === Playback-specific data ===
-        /** Direct playback URL/URI if applicable */
-        var playbackUri: String? = null,
-        /** Original poster URL from this source */
-        var posterUrl: String? = null,
-        /**
-         * JSON-serialized playback hints (source-specific data for URL construction).
-         *
-         * Contains data needed by PlaybackSourceFactory that is NOT part of media identity.
-         * Examples:
-         * - Xtream episodeId (stream ID different from episode number)
-         * - Xtream containerExtension (mp4, mkv, ts)
-         * - Telegram fileId, chatId, messageId
-         *
-         * Format: {"key":"value",...} using keys from PlaybackHintKeys
-         * Empty map serialized as null to save space.
-         *
-         * @see com.fishit.player.core.model.PlaybackHintKeys
-         */
-        var playbackHintsJson: String? = null,
-        // === Timestamps ===
-        @Index var addedAt: Long = System.currentTimeMillis(),
+    @Id var id: Long = 0,
+    /** Pipeline type: TELEGRAM, XTREAM, IO, AUDIOBOOK, PLEX, OTHER */
+    @Index var sourceType: String = "",
+    /** Unique identifier within pipeline (e.g., "telegram:123:456", "xtream:vod:789") */
+    @Unique @Index var sourceId: String = "",
+    /** Human-readable label (e.g., "Telegram: Movie Group", "Xtream: Provider A") */
+    var sourceLabel: String = "",
+    // === Quality & Format (JSON for flexibility) ===
+    /** JSON: {"resolution":1080,"codec":"HEVC","hdr":"HDR10"} */
+    var qualityJson: String? = null,
+    /** JSON: {"audioLanguages":["de","en"],"primaryAudio":"de","isDubbed":false} */
+    var languagesJson: String? = null,
+    /** JSON: {"container":"mkv","audioCodec":"dts","audioChannels":"5.1"} */
+    var formatJson: String? = null,
+    /** File size in bytes (differs per source!) */
+    @Index var sizeBytes: Long? = null,
+    /**
+     * Duration in milliseconds (differs per source!). CRITICAL for cross-source resume
+     * calculation. Different sources of the same movie can have ±5 minute differences.
+     */
+    var durationMs: Long? = null,
+    /** Priority for selection (higher = preferred) */
+    var priority: Int = 0,
+    // === Availability tracking ===
+    /** Whether source is currently reachable/valid */
+    @Index var isAvailable: Boolean = true,
+    /** Last verification timestamp */
+    var lastVerifiedAt: Long? = null,
+    // === Playback-specific data ===
+    /** Direct playback URL/URI if applicable */
+    var playbackUri: String? = null,
+    /** Original poster URL from this source */
+    var posterUrl: String? = null,
+    /**
+     * JSON-serialized playback hints (source-specific data for URL construction).
+     *
+     * Contains data needed by PlaybackSourceFactory that is NOT part of media identity.
+     * Examples:
+     * - Xtream episodeId (stream ID different from episode number)
+     * - Xtream containerExtension (mp4, mkv, ts)
+     * - Telegram fileId, chatId, messageId
+     *
+     * Format: {"key":"value",...} using keys from PlaybackHintKeys
+     * Empty map serialized as null to save space.
+     *
+     * @see com.fishit.player.core.model.PlaybackHintKeys
+     */
+    var playbackHintsJson: String? = null,
+    // === Timestamps ===
+    @Index var addedAt: Long = System.currentTimeMillis(),
 ) {
     /** Relation to canonical media */
     lateinit var canonicalMedia: io.objectbox.relation.ToOne<ObxCanonicalMedia>
@@ -246,32 +247,32 @@ data class ObxMediaSourceRef(
  */
 @Entity
 data class ObxCanonicalResumeMark(
-        @Id var id: Long = 0,
-        /** Canonical media key (matches ObxCanonicalMedia.canonicalKey) */
-        @Index var canonicalKey: String = "",
-        /** Profile ID for multi-profile support */
-        @Index var profileId: Long = 0,
-        /**
-         * Position as percentage (0.0 - 1.0). PRIMARY resume indicator for cross-source playback.
-         * When switching sources, this percentage is applied to the new source's duration.
-         */
-        var positionPercent: Float = 0f,
-        /** Playback position in milliseconds from LAST source played */
-        var positionMs: Long = 0,
-        /** Total duration in milliseconds from LAST source played */
-        var durationMs: Long = 0,
-        /** Last pipeline used (TELEGRAM, XTREAM, IO, etc.) */
-        var lastSourceType: String? = null,
-        /** Last source ID used for playback */
-        var lastSourceId: String? = null,
-        /** Duration of the last source in milliseconds (for accurate cross-source conversion) */
-        var lastSourceDurationMs: Long? = null,
-        /** Number of complete watches */
-        var watchedCount: Int = 0,
-        /** Whether watched to completion (>90%) */
-        @Index var isCompleted: Boolean = false,
-        /** Last update timestamp */
-        @Index var updatedAt: Long = System.currentTimeMillis(),
+    @Id var id: Long = 0,
+    /** Canonical media key (matches ObxCanonicalMedia.canonicalKey) */
+    @Index var canonicalKey: String = "",
+    /** Profile ID for multi-profile support */
+    @Index var profileId: Long = 0,
+    /**
+     * Position as percentage (0.0 - 1.0). PRIMARY resume indicator for cross-source playback.
+     * When switching sources, this percentage is applied to the new source's duration.
+     */
+    var positionPercent: Float = 0f,
+    /** Playback position in milliseconds from LAST source played */
+    var positionMs: Long = 0,
+    /** Total duration in milliseconds from LAST source played */
+    var durationMs: Long = 0,
+    /** Last pipeline used (TELEGRAM, XTREAM, IO, etc.) */
+    var lastSourceType: String? = null,
+    /** Last source ID used for playback */
+    var lastSourceId: String? = null,
+    /** Duration of the last source in milliseconds (for accurate cross-source conversion) */
+    var lastSourceDurationMs: Long? = null,
+    /** Number of complete watches */
+    var watchedCount: Int = 0,
+    /** Whether watched to completion (>90%) */
+    @Index var isCompleted: Boolean = false,
+    /** Last update timestamp */
+    @Index var updatedAt: Long = System.currentTimeMillis(),
 ) {
     /**
      * Calculate resume position for a different source with a different duration.
@@ -282,9 +283,7 @@ data class ObxCanonicalResumeMark(
      * @param targetDurationMs Duration of the new source in milliseconds
      * @return Position in milliseconds to seek to in the new source
      */
-    fun calculatePositionForSource(targetDurationMs: Long): Long {
-        return (positionPercent * targetDurationMs).toLong()
-    }
+    fun calculatePositionForSource(targetDurationMs: Long): Long = (positionPercent * targetDurationMs).toLong()
 
     /**
      * Check if the resume is for the same source (exact match). When same source, use positionMs
@@ -309,21 +308,25 @@ object CanonicalKeyGenerator {
         message = "Ambiguous TMDB ID without type. Prefer fromTmdbId(TmdbRef) for tmdb:movie:/tmdb:tv:.",
     )
     fun fromTmdbId(tmdbId: com.fishit.player.core.model.ids.TmdbId): String = "$TMDB_PREFIX${tmdbId.value}"
-    
-    /** 
+
+    /**
      * Generate canonical key from typed TmdbRef (preferred).
      * Per Gold Decision Dec 2025: Format is tmdb:{type}:{id}
      */
     fun fromTmdbId(tmdbRef: com.fishit.player.core.model.TmdbRef): String {
-        val typePath = when (tmdbRef.type) {
-            com.fishit.player.core.model.TmdbMediaType.MOVIE -> "movie"
-            com.fishit.player.core.model.TmdbMediaType.TV -> "tv"
-        }
+        val typePath =
+            when (tmdbRef.type) {
+                com.fishit.player.core.model.TmdbMediaType.MOVIE -> "movie"
+                com.fishit.player.core.model.TmdbMediaType.TV -> "tv"
+            }
         return "$TMDB_PREFIX$typePath:${tmdbRef.id}"
     }
 
     /** Generate canonical key for a movie without TMDB ID. Uses normalized title + year. */
-    fun forMovie(canonicalTitle: String, year: Int?): String {
+    fun forMovie(
+        canonicalTitle: String,
+        year: Int?,
+    ): String {
         val normalized = normalizeForKey(canonicalTitle)
         return if (year != null) {
             "$MOVIE_PREFIX$normalized:$year"
@@ -336,7 +339,11 @@ object CanonicalKeyGenerator {
      * Generate canonical key for an episode without TMDB ID. Uses normalized series title + season
      * + episode.
      */
-    fun forEpisode(seriesTitle: String, season: Int, episode: Int): String {
+    fun forEpisode(
+        seriesTitle: String,
+        season: Int,
+        episode: Int,
+    ): String {
         val normalized = normalizeForKey(seriesTitle)
         return "$EPISODE_PREFIX$normalized:S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}"
     }
@@ -349,20 +356,21 @@ object CanonicalKeyGenerator {
      * - Collapse multiple hyphens
      */
     private fun normalizeForKey(title: String): String =
-            title.lowercase()
-                    .replace(Regex("[^a-z0-9\\s-]"), "")
-                    .replace(Regex("\\s+"), "-")
-                    .replace(Regex("-+"), "-")
-                    .trim('-')
+        title
+            .lowercase()
+            .replace(Regex("[^a-z0-9\\s-]"), "")
+            .replace(Regex("\\s+"), "-")
+            .replace(Regex("-+"), "-")
+            .trim('-')
 
     /** Parse canonical key to determine kind. */
     fun kindFromKey(key: String): String =
-            when {
-                key.startsWith(TMDB_PREFIX) -> "movie" // May be refined by TMDB lookup
-                key.startsWith(MOVIE_PREFIX) -> "movie"
-                key.startsWith(EPISODE_PREFIX) -> "episode"
-                else -> "movie"
-            }
+        when {
+            key.startsWith(TMDB_PREFIX) -> "movie" // May be refined by TMDB lookup
+            key.startsWith(MOVIE_PREFIX) -> "movie"
+            key.startsWith(EPISODE_PREFIX) -> "episode"
+            else -> "movie"
+        }
 
     /** Check if key is TMDB-based (high confidence). */
     fun isTmdbBased(key: String): Boolean = key.startsWith(TMDB_PREFIX)

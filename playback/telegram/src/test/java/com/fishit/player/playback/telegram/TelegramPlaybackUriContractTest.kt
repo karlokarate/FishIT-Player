@@ -18,44 +18,46 @@ import org.junit.Test
  * - Validation (valid and invalid cases)
  */
 class TelegramPlaybackUriContractTest {
-
     // ==================== buildUri Tests ====================
 
     @Test
     fun `buildUri with all fields creates valid URI`() {
-        val uri = TelegramPlaybackUriContract.buildUri(
-            fileId = 123,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = "AgACAgIAAxkBAAI...",
-            mimeType = "video/mp4",
-        )
+        val uri =
+            TelegramPlaybackUriContract.buildUri(
+                fileId = 123,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = "AgACAgIAAxkBAAI...",
+                mimeType = "video/mp4",
+            )
 
         assertEquals("tg://file/123?chatId=-1001234567890&messageId=42&remoteId=AgACAgIAAxkBAAI...&mimeType=video%2Fmp4", uri)
     }
 
     @Test
     fun `buildUri with zero fileId but valid remoteId creates valid URI`() {
-        val uri = TelegramPlaybackUriContract.buildUri(
-            fileId = 0,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = "AgACAgIAAxkBAAI...",
-            mimeType = null,
-        )
+        val uri =
+            TelegramPlaybackUriContract.buildUri(
+                fileId = 0,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = "AgACAgIAAxkBAAI...",
+                mimeType = null,
+            )
 
         assertEquals("tg://file/0?chatId=-1001234567890&messageId=42&remoteId=AgACAgIAAxkBAAI...", uri)
     }
 
     @Test
     fun `buildUri with fileId but no remoteId creates valid URI`() {
-        val uri = TelegramPlaybackUriContract.buildUri(
-            fileId = 999,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = null,
-            mimeType = "video/mp4",
-        )
+        val uri =
+            TelegramPlaybackUriContract.buildUri(
+                fileId = 999,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = null,
+                mimeType = "video/mp4",
+            )
 
         assertEquals("tg://file/999?chatId=-1001234567890&messageId=42&mimeType=video%2Fmp4", uri)
     }
@@ -108,12 +110,13 @@ class TelegramPlaybackUriContractTest {
 
     @Test
     fun `buildUriFromExtras with standard keys creates valid URI`() {
-        val extras = mapOf(
-            PlaybackHintKeys.Telegram.CHAT_ID to "-1001234567890",
-            PlaybackHintKeys.Telegram.MESSAGE_ID to "42",
-            PlaybackHintKeys.Telegram.REMOTE_ID to "AgACAgIAAxkBAAI...",
-            PlaybackHintKeys.Telegram.MIME_TYPE to "video/mp4",
-        )
+        val extras =
+            mapOf(
+                PlaybackHintKeys.Telegram.CHAT_ID to "-1001234567890",
+                PlaybackHintKeys.Telegram.MESSAGE_ID to "42",
+                PlaybackHintKeys.Telegram.REMOTE_ID to "AgACAgIAAxkBAAI...",
+                PlaybackHintKeys.Telegram.MIME_TYPE to "video/mp4",
+            )
 
         val uri = TelegramPlaybackUriContract.buildUriFromExtras(extras, fileId = 123)
 
@@ -124,11 +127,12 @@ class TelegramPlaybackUriContractTest {
 
     @Test
     fun `buildUriFromExtras with legacy keys creates valid URI`() {
-        val extras = mapOf(
-            "chatId" to "-1001234567890",
-            "messageId" to "42",
-            "remoteId" to "AgACAgIAAxkBAAI...",
-        )
+        val extras =
+            mapOf(
+                "chatId" to "-1001234567890",
+                "messageId" to "42",
+                "remoteId" to "AgACAgIAAxkBAAI...",
+            )
 
         val uri = TelegramPlaybackUriContract.buildUriFromExtras(extras, fileId = 0)
 
@@ -139,9 +143,10 @@ class TelegramPlaybackUriContractTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun `buildUriFromExtras without required fields throws`() {
-        val extras = mapOf(
-            PlaybackHintKeys.Telegram.MIME_TYPE to "video/mp4",
-        )
+        val extras =
+            mapOf(
+                PlaybackHintKeys.Telegram.MIME_TYPE to "video/mp4",
+            )
 
         TelegramPlaybackUriContract.buildUriFromExtras(extras, fileId = 0)
     }
@@ -198,65 +203,70 @@ class TelegramPlaybackUriContractTest {
 
     @Test
     fun `ParsedUri isResolvable returns true when fileId is valid`() {
-        val parsed = TelegramPlaybackUriContract.ParsedUri(
-            fileId = 123,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = null,
-            mimeType = null,
-        )
+        val parsed =
+            TelegramPlaybackUriContract.ParsedUri(
+                fileId = 123,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = null,
+                mimeType = null,
+            )
 
         assertTrue(parsed.isResolvable)
     }
 
     @Test
     fun `ParsedUri isResolvable returns true when remoteId is present`() {
-        val parsed = TelegramPlaybackUriContract.ParsedUri(
-            fileId = 0,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = "AgACAgIAAxkBAAI...",
-            mimeType = null,
-        )
+        val parsed =
+            TelegramPlaybackUriContract.ParsedUri(
+                fileId = 0,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = "AgACAgIAAxkBAAI...",
+                mimeType = null,
+            )
 
         assertTrue(parsed.isResolvable)
     }
 
     @Test
     fun `ParsedUri isResolvable returns false when no file locator`() {
-        val parsed = TelegramPlaybackUriContract.ParsedUri(
-            fileId = 0,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = null,
-            mimeType = null,
-        )
+        val parsed =
+            TelegramPlaybackUriContract.ParsedUri(
+                fileId = 0,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = null,
+                mimeType = null,
+            )
 
         assertFalse(parsed.isResolvable)
     }
 
     @Test
     fun `ParsedUri hasMessageLocator returns true when chatId and messageId present`() {
-        val parsed = TelegramPlaybackUriContract.ParsedUri(
-            fileId = 0,
-            chatId = -1001234567890,
-            messageId = 42,
-            remoteId = "AgACAgIAAxkBAAI...",
-            mimeType = null,
-        )
+        val parsed =
+            TelegramPlaybackUriContract.ParsedUri(
+                fileId = 0,
+                chatId = -1001234567890,
+                messageId = 42,
+                remoteId = "AgACAgIAAxkBAAI...",
+                mimeType = null,
+            )
 
         assertTrue(parsed.hasMessageLocator)
     }
 
     @Test
     fun `ParsedUri hasMessageLocator returns false when chatId missing`() {
-        val parsed = TelegramPlaybackUriContract.ParsedUri(
-            fileId = 123,
-            chatId = null,
-            messageId = 42,
-            remoteId = "AgACAgIAAxkBAAI...",
-            mimeType = null,
-        )
+        val parsed =
+            TelegramPlaybackUriContract.ParsedUri(
+                fileId = 123,
+                chatId = null,
+                messageId = 42,
+                remoteId = "AgACAgIAAxkBAAI...",
+                mimeType = null,
+            )
 
         assertFalse(parsed.hasMessageLocator)
     }

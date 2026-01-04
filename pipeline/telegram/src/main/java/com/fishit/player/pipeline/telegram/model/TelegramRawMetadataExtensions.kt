@@ -59,70 +59,71 @@ import com.fishit.player.core.model.TmdbRef
  * @return RawMediaMetadata with Telegram-specific fields and ImageRefs
  */
 fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
-        val rawTitle = extractRawTitle()
-        // Structured year takes precedence over filename-parsed year
-        val effectiveYear = structuredYear ?: year
-        // Structured duration takes precedence over video duration
-        // Convert to milliseconds: structuredLengthMinutes (minutes) or durationSecs (seconds)
-        val effectiveDurationMs: Long? =
-                when {
-                        structuredLengthMinutes != null ->
-                                structuredLengthMinutes.toLong() * 60_000L
-                        durationSecs != null -> durationSecs.toLong() * 1000L
-                        else -> null
-                }
-        // Build ExternalIds with structured TMDB ID if available
-        val externalIds = buildExternalIds()
+    val rawTitle = extractRawTitle()
+    // Structured year takes precedence over filename-parsed year
+    val effectiveYear = structuredYear ?: year
+    // Structured duration takes precedence over video duration
+    // Convert to milliseconds: structuredLengthMinutes (minutes) or durationSecs (seconds)
+    val effectiveDurationMs: Long? =
+        when {
+            structuredLengthMinutes != null ->
+                structuredLengthMinutes.toLong() * 60_000L
+            durationSecs != null -> durationSecs.toLong() * 1000L
+            else -> null
+        }
+    // Build ExternalIds with structured TMDB ID if available
+    val externalIds = buildExternalIds()
 
-        // Resolve genres: structured > simple field
-        val effectiveGenres = structuredGenres?.joinToString(", ") ?: genres
+    // Resolve genres: structured > simple field
+    val effectiveGenres = structuredGenres?.joinToString(", ") ?: genres
 
-        // Resolve plot/description: description field (description is canonical plot)
-        val effectivePlot = description
+    // Resolve plot/description: description field (description is canonical plot)
+    val effectivePlot = description
 
-        // Playback hints (v2 SSOT): keep non-secret playback identifiers OUT of sourceId
-        val playbackHints = buildMap {
-                put(PlaybackHintKeys.Telegram.CHAT_ID, chatId.toString())
-                put(PlaybackHintKeys.Telegram.MESSAGE_ID, messageId.toString())
-                remoteId?.takeIf { it.isNotBlank() }?.let {
-                        put(PlaybackHintKeys.Telegram.REMOTE_ID, it)
-                }
-                mimeType?.takeIf { it.isNotBlank() }?.let {
-                        put(PlaybackHintKeys.Telegram.MIME_TYPE, it)
-                }
+    // Playback hints (v2 SSOT): keep non-secret playback identifiers OUT of sourceId
+    val playbackHints =
+        buildMap {
+            put(PlaybackHintKeys.Telegram.CHAT_ID, chatId.toString())
+            put(PlaybackHintKeys.Telegram.MESSAGE_ID, messageId.toString())
+            remoteId?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Telegram.REMOTE_ID, it)
+            }
+            mimeType?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Telegram.MIME_TYPE, it)
+            }
         }
 
-        return RawMediaMetadata(
-                originalTitle = rawTitle,
-                mediaType = mapTelegramMediaType(),
-                year = effectiveYear,
-                season = seasonNumber,
-                episode = episodeNumber,
-                durationMs = effectiveDurationMs,
-                externalIds = externalIds,
-                sourceType = SourceType.TELEGRAM,
-                sourceLabel = buildTelegramSourceLabel(),
-                // Stable pipeline item ID: message identity (remoteId moves to playbackHints)
-                sourceId = "msg:$chatId:$messageId",
-                // === Pipeline Identity (v2) ===
-                pipelineIdTag = PipelineIdTag.TELEGRAM,
-                // === ImageRef from TelegramImageRefExtensions ===
-                poster = toPosterImageRef(), // Photo or null for video
-                backdrop = null, // Telegram doesn't provide backdrops
-                thumbnail = toThumbnailImageRef(), // Video thumbnail or best photo size
-                // === Minithumbnail for instant blur placeholder (Netflix-style tiered loading) ===
-                placeholderThumbnail = toMinithumbnailImageRef(),
-                // === Structured Bundle Rating Fields (v2.2) ===
-                rating = structuredRating,
-                ageRating = structuredFsk,
-                // === Rich Metadata (v2) - from structured bundles ===
-                plot = effectivePlot,
-                genres = effectiveGenres,
-                director = structuredDirector,
-                cast = null, // Telegram structured bundles don't provide cast
-                // === Playback Hints (v2) ===
-                playbackHints = playbackHints,
-        )
+    return RawMediaMetadata(
+        originalTitle = rawTitle,
+        mediaType = mapTelegramMediaType(),
+        year = effectiveYear,
+        season = seasonNumber,
+        episode = episodeNumber,
+        durationMs = effectiveDurationMs,
+        externalIds = externalIds,
+        sourceType = SourceType.TELEGRAM,
+        sourceLabel = buildTelegramSourceLabel(),
+        // Stable pipeline item ID: message identity (remoteId moves to playbackHints)
+        sourceId = "msg:$chatId:$messageId",
+        // === Pipeline Identity (v2) ===
+        pipelineIdTag = PipelineIdTag.TELEGRAM,
+        // === ImageRef from TelegramImageRefExtensions ===
+        poster = toPosterImageRef(), // Photo or null for video
+        backdrop = null, // Telegram doesn't provide backdrops
+        thumbnail = toThumbnailImageRef(), // Video thumbnail or best photo size
+        // === Minithumbnail for instant blur placeholder (Netflix-style tiered loading) ===
+        placeholderThumbnail = toMinithumbnailImageRef(),
+        // === Structured Bundle Rating Fields (v2.2) ===
+        rating = structuredRating,
+        ageRating = structuredFsk,
+        // === Rich Metadata (v2) - from structured bundles ===
+        plot = effectivePlot,
+        genres = effectiveGenres,
+        director = structuredDirector,
+        cast = null, // Telegram structured bundles don't provide cast
+        // === Playback Hints (v2) ===
+        playbackHints = playbackHints,
+    )
 }
 
 /**
@@ -135,21 +136,22 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
  * - Episodes use TV type with series ID (season/episode from other fields)
  */
 private fun TelegramMediaItem.buildExternalIds(): ExternalIds {
-        if (structuredTmdbId == null) {
-                return ExternalIds() // Telegram doesn't provide external IDs for non-structured
-                // content
-        }
+    if (structuredTmdbId == null) {
+        return ExternalIds() // Telegram doesn't provide external IDs for non-structured
+        // content
+    }
 
-        // Need both ID and type for typed TmdbRef
-        val tmdbType = structuredTmdbType
-        if (tmdbType == null) {
-                // Legacy: Have ID but no type - store as legacy for migration
-                @Suppress("DEPRECATION") return ExternalIds(legacyTmdbId = structuredTmdbId)
-        }
+    // Need both ID and type for typed TmdbRef
+    val tmdbType = structuredTmdbType
+    if (tmdbType == null) {
+        // Legacy: Have ID but no type - store as legacy for migration
+        @Suppress("DEPRECATION")
+        return ExternalIds(legacyTmdbId = structuredTmdbId)
+    }
 
-        // Create typed TmdbRef
-        val tmdbRef = TmdbRef(tmdbType.toTmdbMediaType(), structuredTmdbId)
-        return ExternalIds(tmdb = tmdbRef)
+    // Create typed TmdbRef
+    val tmdbRef = TmdbRef(tmdbType.toTmdbMediaType(), structuredTmdbId)
+    return ExternalIds(tmdb = tmdbRef)
 }
 
 /**
@@ -164,27 +166,27 @@ private fun TelegramMediaItem.buildExternalIds(): ExternalIds {
  * - "[GER] Show Name Episode 5" → returned AS-IS
  */
 private fun TelegramMediaItem.extractRawTitle(): String =
-        when {
-                title.isNotBlank() -> title
-                episodeTitle?.isNotBlank() == true -> episodeTitle
-                caption?.isNotBlank() == true -> caption
-                fileName?.isNotBlank() == true -> fileName
-                else -> "Untitled Media $messageId"
-        }
+    when {
+        title.isNotBlank() -> title
+        episodeTitle?.isNotBlank() == true -> episodeTitle
+        caption?.isNotBlank() == true -> caption
+        fileName?.isNotBlank() == true -> fileName
+        else -> "Untitled Media $messageId"
+    }
 
 /** Maps TelegramMediaType to core MediaType. */
 private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
-        when {
-                isSeries || seasonNumber != null || episodeNumber != null ->
-                        MediaType.SERIES_EPISODE
-                // IMPORTANT: keep VIDEO items UNKNOWN unless we have explicit S/E markers.
-                // This allows :core:metadata-normalizer to classify movies vs episodes
-                // from scene-style filenames (SxxEyy, year tags, etc.).
-                mediaType == TelegramMediaType.VIDEO -> MediaType.UNKNOWN
-                mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
-                mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
-                else -> MediaType.UNKNOWN
-        }
+    when {
+        isSeries || seasonNumber != null || episodeNumber != null ->
+            MediaType.SERIES_EPISODE
+        // IMPORTANT: keep VIDEO items UNKNOWN unless we have explicit S/E markers.
+        // This allows :core:metadata-normalizer to classify movies vs episodes
+        // from scene-style filenames (SxxEyy, year tags, etc.).
+        mediaType == TelegramMediaType.VIDEO -> MediaType.UNKNOWN
+        mediaType == TelegramMediaType.AUDIO -> MediaType.MUSIC
+        mediaType == TelegramMediaType.DOCUMENT -> MediaType.UNKNOWN // Could be anything
+        else -> MediaType.UNKNOWN
+    }
 
 /**
  * Builds a human-readable source label.
@@ -194,7 +196,7 @@ private fun TelegramMediaItem.mapTelegramMediaType(): MediaType =
  * - "Telegram Chat: 123456789" (fallback)
  */
 private fun TelegramMediaItem.buildTelegramSourceLabel(): String =
-        when {
-                seriesName?.isNotBlank() == true -> "Telegram: $seriesName"
-                else -> "Telegram Chat: $chatId"
-        }
+    when {
+        seriesName?.isNotBlank() == true -> "Telegram: $seriesName"
+        else -> "Telegram Chat: $chatId"
+    }

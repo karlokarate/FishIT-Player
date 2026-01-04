@@ -26,11 +26,11 @@ dependencies {
     implementation(project(":core:player-model"))
     implementation(project(":core:persistence"))
     implementation(project(":infra:logging"))
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    
+
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")

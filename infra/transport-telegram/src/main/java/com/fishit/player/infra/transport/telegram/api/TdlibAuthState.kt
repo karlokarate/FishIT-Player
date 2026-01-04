@@ -15,7 +15,6 @@ package com.fishit.player.infra.transport.telegram.api
  * This is transport-level TDLib state; domain state is in core/feature-api.
  */
 sealed interface TdlibAuthState {
-
     /**
      * Client is ready and authorized.
      * Normal operations can proceed.
@@ -52,7 +51,9 @@ sealed interface TdlibAuthState {
      *
      * @property hint Optional hint about expected format
      */
-    data class WaitPhoneNumber(val hint: String? = null) : TdlibAuthState
+    data class WaitPhoneNumber(
+        val hint: String? = null,
+    ) : TdlibAuthState
 
     /**
      * Waiting for verification code.
@@ -62,7 +63,7 @@ sealed interface TdlibAuthState {
      */
     data class WaitCode(
         val phoneNumber: String? = null,
-        val codeLength: Int? = null
+        val codeLength: Int? = null,
     ) : TdlibAuthState
 
     /**
@@ -73,7 +74,7 @@ sealed interface TdlibAuthState {
      */
     data class WaitPassword(
         val passwordHint: String? = null,
-        val hasRecoveryEmail: Boolean = false
+        val hasRecoveryEmail: Boolean = false,
     ) : TdlibAuthState
 
     /**
@@ -93,14 +94,18 @@ sealed interface TdlibAuthState {
      *
      * @property message Error description
      */
-    data class Error(val message: String) : TdlibAuthState
+    data class Error(
+        val message: String,
+    ) : TdlibAuthState
 
     /**
      * Unknown or unmapped TDLib state.
      *
      * @property raw String representation for debugging
      */
-    data class Unknown(val raw: String) : TdlibAuthState
+    data class Unknown(
+        val raw: String,
+    ) : TdlibAuthState
 }
 
 /**
@@ -108,5 +113,5 @@ sealed interface TdlibAuthState {
  */
 class TelegramAuthException(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception(message, cause)

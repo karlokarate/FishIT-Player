@@ -1,6 +1,5 @@
 package com.fishit.player.pipeline.telegram.debug
 
-import com.fishit.player.core.model.MediaType
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.catalog.ChatMediaClass
 import com.fishit.player.pipeline.telegram.catalog.TelegramChatMediaClassifier
@@ -21,7 +20,6 @@ class TelegramDebugServiceImpl(
     private val classifier: TelegramChatMediaClassifier = TelegramChatMediaClassifier(),
     private val sessionDir: String = "",
 ) : TelegramDebugService {
-
     override suspend fun getStatus(): TelegramStatus {
         val chats = adapter.getChats(limit = 200)
 
@@ -32,11 +30,12 @@ class TelegramDebugServiceImpl(
 
         for (chat in chats) {
             // Sample messages for classification
-            val sample = try {
-                adapter.fetchMessages(chatId = chat.chatId, limit = TelegramChatMediaClassifier.SAMPLE_SIZE)
-            } catch (e: Exception) {
-                emptyList()
-            }
+            val sample =
+                try {
+                    adapter.fetchMessages(chatId = chat.chatId, limit = TelegramChatMediaClassifier.SAMPLE_SIZE)
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
             classifier.recordSample(chat.chatId, sample)
             val profile = classifier.getProfile(chat.chatId)
@@ -59,7 +58,10 @@ class TelegramDebugServiceImpl(
         )
     }
 
-    override suspend fun listChats(filter: ChatFilter, limit: Int): List<TelegramChatSummary> {
+    override suspend fun listChats(
+        filter: ChatFilter,
+        limit: Int,
+    ): List<TelegramChatSummary> {
         val chats = adapter.getChats(limit = 200)
         val result = mutableListOf<TelegramChatSummary>()
 
@@ -67,23 +69,25 @@ class TelegramDebugServiceImpl(
             if (result.size >= limit) break
 
             // Sample and classify
-            val sample = try {
-                adapter.fetchMessages(chatId = chat.chatId, limit = TelegramChatMediaClassifier.SAMPLE_SIZE)
-            } catch (e: Exception) {
-                emptyList()
-            }
+            val sample =
+                try {
+                    adapter.fetchMessages(chatId = chat.chatId, limit = TelegramChatMediaClassifier.SAMPLE_SIZE)
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
             classifier.recordSample(chat.chatId, sample)
             val profile = classifier.getProfile(chat.chatId)
             val classification = classifier.classify(profile)
 
             // Apply filter
-            val matchesFilter = when (filter) {
-                ChatFilter.ALL -> true
-                ChatFilter.HOT -> classification == ChatMediaClass.MEDIA_HOT
-                ChatFilter.WARM -> classification == ChatMediaClass.MEDIA_WARM
-                ChatFilter.COLD -> classification == ChatMediaClass.MEDIA_COLD
-            }
+            val matchesFilter =
+                when (filter) {
+                    ChatFilter.ALL -> true
+                    ChatFilter.HOT -> classification == ChatMediaClass.MEDIA_HOT
+                    ChatFilter.WARM -> classification == ChatMediaClass.MEDIA_WARM
+                    ChatFilter.COLD -> classification == ChatMediaClass.MEDIA_COLD
+                }
 
             if (matchesFilter) {
                 result.add(
@@ -92,7 +96,7 @@ class TelegramDebugServiceImpl(
                         title = chat.title,
                         mediaClass = classification.name.removePrefix("MEDIA_"),
                         mediaCountEstimate = profile.mediaMessagesSampled,
-                    )
+                    ),
                 )
             }
         }
@@ -100,7 +104,10 @@ class TelegramDebugServiceImpl(
         return result
     }
 
-    override suspend fun sampleMedia(chatId: Long, limit: Int): List<TelegramMediaSummary> {
+    override suspend fun sampleMedia(
+        chatId: Long,
+        limit: Int,
+    ): List<TelegramMediaSummary> {
         // Use fetchMediaMessages which returns TelegramMediaItem directly
         val mediaItems = adapter.fetchMediaMessages(chatId = chatId, limit = limit)
         val result = mutableListOf<TelegramMediaSummary>()
@@ -117,7 +124,7 @@ class TelegramDebugServiceImpl(
                     sizeBytes = mediaItem.sizeBytes,
                     normalizedTitle = rawMeta.originalTitle,
                     normalizedMediaType = rawMeta.mediaType,
-                )
+                ),
             )
         }
 

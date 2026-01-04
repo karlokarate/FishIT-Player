@@ -13,17 +13,20 @@ package com.fishit.player.core.playermodel
  * @property error Optional error message if subtitle loading failed.
  */
 data class SubtitleSelectionState(
-        val availableTracks: List<SubtitleTrack> = emptyList(),
-        val selectedTrackId: SubtitleTrackId = SubtitleTrackId.OFF,
-        val isEnabled: Boolean = false,
-        val isLoading: Boolean = false,
-        val error: String? = null
+    val availableTracks: List<SubtitleTrack> = emptyList(),
+    val selectedTrackId: SubtitleTrackId = SubtitleTrackId.OFF,
+    val isEnabled: Boolean = false,
+    val isLoading: Boolean = false,
+    val error: String? = null,
 ) {
     /** The currently selected track, or null if subtitles are disabled. */
     val selectedTrack: SubtitleTrack?
         get() =
-                if (selectedTrackId == SubtitleTrackId.OFF) null
-                else availableTracks.find { it.id == selectedTrackId }
+            if (selectedTrackId == SubtitleTrackId.OFF) {
+                null
+            } else {
+                availableTracks.find { it.id == selectedTrackId }
+            }
 
     /** Whether any subtitle tracks are available. */
     val hasAvailableTracks: Boolean

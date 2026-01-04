@@ -28,7 +28,7 @@ dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":infra:logging"))
-    
+
     // Transport layer (provides XtreamApiClient)
     api(project(":infra:transport-xtream"))
 

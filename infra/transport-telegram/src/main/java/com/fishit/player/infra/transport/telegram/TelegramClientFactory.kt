@@ -6,11 +6,11 @@ import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
 import dev.g000sha256.tdl.dto.AuthorizationStateClosed
 import dev.g000sha256.tdl.dto.AuthorizationStateReady
-import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.withTimeout
+import java.io.File
 
 /**
  * Factory for creating Telegram clients from existing sessions.
@@ -36,7 +36,6 @@ import kotlinx.coroutines.withTimeout
  * - App DI uses [TelegramTransportModule] which also creates via [DefaultTelegramClient]
  */
 object TelegramClientFactory {
-
     private const val TAG = "TelegramClientFactory"
     private const val AUTH_TIMEOUT_MS = 30_000L
 
@@ -53,8 +52,8 @@ object TelegramClientFactory {
      * @throws TelegramSessionException if session is invalid or auth fails
      */
     suspend fun createUnifiedClient(
-            config: TelegramSessionConfig,
-            scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        config: TelegramSessionConfig,
+        scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     ): TelegramClient {
         UnifiedLog.i(TAG, "Creating unified client from session: db=${config.databaseDir}")
 
@@ -69,12 +68,12 @@ object TelegramClientFactory {
 
         // Create unified client
         val client =
-                DefaultTelegramClient(
-                        tdlClient = tdlClient,
-                        sessionConfig = config,
-                        authScope = scope,
-                        fileScope = scope,
-                )
+            DefaultTelegramClient(
+                tdlClient = tdlClient,
+                sessionConfig = config,
+                authScope = scope,
+                fileScope = scope,
+            )
 
         // Ensure authorized
         try {
@@ -113,7 +112,7 @@ object TelegramClientFactory {
             }
             is TdlResult.Failure -> {
                 throw TelegramSessionException(
-                        "Failed to get auth state: ${authResult.code} - ${authResult.message}"
+                    "Failed to get auth state: ${authResult.code} - ${authResult.message}",
                 )
             }
         }
@@ -125,7 +124,7 @@ object TelegramClientFactory {
 
         if (!dbDir.exists()) {
             throw TelegramSessionException(
-                    "TDLib database directory does not exist: ${config.databaseDir}"
+                "TDLib database directory does not exist: ${config.databaseDir}",
             )
         }
 
@@ -136,13 +135,11 @@ object TelegramClientFactory {
         }
     }
 
-    private fun createTdlClient(): TdlClient {
-        return TdlClient.create()
-    }
+    private fun createTdlClient(): TdlClient = TdlClient.create()
 }
 
 /** Exception thrown when TDLib session operations fail. */
 class TelegramSessionException(
-        message: String,
-        cause: Throwable? = null,
+    message: String,
+    cause: Throwable? = null,
 ) : Exception(message, cause)

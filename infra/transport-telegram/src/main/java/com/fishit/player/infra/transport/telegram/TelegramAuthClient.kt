@@ -1,7 +1,7 @@
 package com.fishit.player.infra.transport.telegram
 
-import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
 import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -22,14 +22,13 @@ import kotlinx.coroutines.flow.Flow
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
  */
 interface TelegramAuthClient {
-
     /**
      * Current authentication state.
      *
      * Emits updates whenever auth state changes. UI/Domain should observe this
      * to handle interactive auth steps (code entry, password entry).
      */
-    val authState: Flow< TdlibAuthState>
+    val authState: Flow<TdlibAuthState>
 
     /**
      * Ensure the TDLib client is authorized and ready.

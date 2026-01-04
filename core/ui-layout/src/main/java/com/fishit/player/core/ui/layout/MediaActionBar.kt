@@ -27,7 +27,7 @@ data class MediaAction(
     val enabled: Boolean = true,
     val primary: Boolean = false,
     val badge: String? = null,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
 )
 
 /**
@@ -43,7 +43,7 @@ enum class MediaActionId {
     Share,
     AddToKids,
     Download,
-    MarkWatched
+    MarkWatched,
 }
 
 /**
@@ -52,41 +52,44 @@ enum class MediaActionId {
 @Composable
 fun MediaActionButton(
     action: MediaAction,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val backgroundColor = if (action.primary) {
-        FishColors.Primary
-    } else {
-        FishColors.SurfaceVariant
-    }
+    val backgroundColor =
+        if (action.primary) {
+            FishColors.Primary
+        } else {
+            FishColors.SurfaceVariant
+        }
 
-    val contentColor = if (action.primary) {
-        FishColors.OnPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val contentColor =
+        if (action.primary) {
+            FishColors.OnPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
 
     Row(
-        modifier = modifier
-            .background(backgroundColor, FishShapes.Button)
-            .clickable(enabled = action.enabled, onClick = action.onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .background(backgroundColor, FishShapes.Button)
+                .clickable(enabled = action.enabled, onClick = action.onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         action.icon?.let { icon ->
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
 
         Text(
             text = action.badge?.let { "${action.label} • $it" } ?: action.label,
             style = MaterialTheme.typography.labelLarge,
-            color = if (action.enabled) contentColor else contentColor.copy(alpha = 0.5f)
+            color = if (action.enabled) contentColor else contentColor.copy(alpha = 0.5f),
         )
     }
 }
@@ -97,12 +100,12 @@ fun MediaActionButton(
 @Composable
 fun MediaActionBar(
     actions: List<MediaAction>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         actions.forEach { action ->
             MediaActionButton(action = action)

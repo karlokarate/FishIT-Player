@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,7 +69,7 @@ import com.fishit.player.core.live.domain.LiveChannel
 fun LiveScreen(
     viewModel: LiveViewModel = hiltViewModel(),
     onChannelClick: (LiveChannel) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val channels by viewModel.channels.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
@@ -82,7 +81,7 @@ fun LiveScreen(
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         // Header with tabs and search
         LiveHeader(
@@ -91,7 +90,7 @@ fun LiveScreen(
             searchQuery = searchQuery,
             onViewModeChange = viewModel::setViewMode,
             onSearchActiveChange = viewModel::setSearchActive,
-            onSearchQueryChange = viewModel::search
+            onSearchQueryChange = viewModel::search,
         )
 
         if (isSearchActive) {
@@ -102,12 +101,12 @@ fun LiveScreen(
                     viewModel.onChannelPlayed(channel)
                     onChannelClick(channel)
                 },
-                onFavoriteClick = viewModel::toggleFavorite
+                onFavoriteClick = viewModel::toggleFavorite,
             )
         } else {
             // Main content
             LazyColumn(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 // Recent channels
                 if (recentChannels.isNotEmpty() && viewMode == LiveViewModel.ViewMode.ALL) {
@@ -117,7 +116,7 @@ fun LiveScreen(
                             onChannelClick = { channel ->
                                 viewModel.onChannelPlayed(channel)
                                 onChannelClick(channel)
-                            }
+                            },
                         )
                     }
                 }
@@ -128,7 +127,7 @@ fun LiveScreen(
                         CategoryFilterRow(
                             categories = categories,
                             selectedId = selectedCategoryId,
-                            onCategorySelect = viewModel::selectCategory
+                            onCategorySelect = viewModel::selectCategory,
                         )
                     }
                 }
@@ -141,7 +140,7 @@ fun LiveScreen(
                             viewModel.onChannelPlayed(channel)
                             onChannelClick(channel)
                         },
-                        onFavoriteClick = viewModel::toggleFavorite
+                        onFavoriteClick = viewModel::toggleFavorite,
                     )
                 }
             }
@@ -157,25 +156,26 @@ private fun LiveHeader(
     onViewModeChange: (LiveViewModel.ViewMode) -> Unit,
     onSearchActiveChange: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Live TV",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
 
             IconButton(onClick = { onSearchActiveChange(!isSearchActive) }) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
+                    contentDescription = "Search",
                 )
             }
         }
@@ -185,28 +185,29 @@ private fun LiveHeader(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 placeholder = { Text("Search channels...") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                 singleLine = true,
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
-                }
+                },
             )
         } else {
             TabRow(
                 selectedTabIndex = viewMode.ordinal,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Tab(
                     selected = viewMode == LiveViewModel.ViewMode.ALL,
                     onClick = { onViewModeChange(LiveViewModel.ViewMode.ALL) },
-                    text = { Text("All Channels") }
+                    text = { Text("All Channels") },
                 )
                 Tab(
                     selected = viewMode == LiveViewModel.ViewMode.FAVORITES,
                     onClick = { onViewModeChange(LiveViewModel.ViewMode.FAVORITES) },
-                    text = { Text("Favorites") }
+                    text = { Text("Favorites") },
                 )
             }
         }
@@ -217,23 +218,23 @@ private fun LiveHeader(
 private fun RecentChannelsRow(
     channels: List<LiveChannel>,
     onChannelClick: (LiveChannel) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
             text = "Recently Watched",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(channels, key = { it.id }) { channel ->
                 RecentChannelItem(
                     channel = channel,
-                    onClick = { onChannelClick(channel) }
+                    onClick = { onChannelClick(channel) },
                 )
             }
         }
@@ -244,26 +245,28 @@ private fun RecentChannelsRow(
 private fun RecentChannelItem(
     channel: LiveChannel,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .width(80.dp)
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .width(80.dp)
+                .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Logo placeholder
         Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = channel.name.take(2).uppercase(),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -274,7 +277,7 @@ private fun RecentChannelItem(
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -284,18 +287,18 @@ private fun CategoryFilterRow(
     categories: List<LiveCategory>,
     selectedId: String?,
     onCategorySelect: (String?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyRow(
         modifier = modifier.padding(vertical = 8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
             FilterChip(
                 selected = selectedId == null,
                 onClick = { onCategorySelect(null) },
-                label = { Text("All") }
+                label = { Text("All") },
             )
         }
 
@@ -303,7 +306,7 @@ private fun CategoryFilterRow(
             FilterChip(
                 selected = selectedId == category.id,
                 onClick = { onCategorySelect(category.id) },
-                label = { Text("${category.name} (${category.channelCount})") }
+                label = { Text("${category.name} (${category.channelCount})") },
             )
         }
     }
@@ -314,19 +317,20 @@ private fun ChannelGrid(
     channels: List<LiveChannel>,
     onChannelClick: (LiveChannel) -> Unit,
     onFavoriteClick: (LiveChannel) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (channels.isEmpty()) {
         Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "No channels found",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -334,22 +338,23 @@ private fun ChannelGrid(
 
     // Using Column with chunked items instead of LazyVerticalGrid inside LazyColumn
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         channels.chunked(3).forEach { rowChannels ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 rowChannels.forEach { channel ->
                     ChannelCard(
                         channel = channel,
                         onClick = { onChannelClick(channel) },
                         onFavoriteClick = { onFavoriteClick(channel) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
                 // Fill empty slots
@@ -366,37 +371,40 @@ private fun ChannelCard(
     channel: LiveChannel,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column {
             // Logo area
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
             ) {
                 // Channel number badge
                 channel.channelNumber?.let { num ->
                     Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(4.dp),
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     ) {
                         Text(
                             text = num.toString(),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
                 }
@@ -405,33 +413,34 @@ private fun ChannelCard(
                 Text(
                     text = channel.name.take(3).uppercase(),
                     style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 // Favorite button
                 IconButton(
                     onClick = onFavoriteClick,
-                    modifier = Modifier.align(Alignment.TopEnd)
+                    modifier = Modifier.align(Alignment.TopEnd),
                 ) {
                     Icon(
                         imageVector = if (channel.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = if (channel.isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = if (channel.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (channel.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
             // Channel info
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
             ) {
                 Text(
                     text = channel.name,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 channel.currentProgram?.let { program ->
@@ -441,7 +450,7 @@ private fun ChannelCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -454,19 +463,20 @@ private fun SearchResultsContent(
     results: List<LiveChannel>,
     onChannelClick: (LiveChannel) -> Unit,
     onFavoriteClick: (LiveChannel) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (results.isEmpty()) {
         Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "No channels found",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         return
@@ -474,17 +484,18 @@ private fun SearchResultsContent(
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(results, key = { it.id }) { channel ->
             ChannelCard(
                 channel = channel,
                 onClick = { onChannelClick(channel) },
-                onFavoriteClick = { onFavoriteClick(channel) }
+                onFavoriteClick = { onFavoriteClick(channel) },
             )
         }
     }

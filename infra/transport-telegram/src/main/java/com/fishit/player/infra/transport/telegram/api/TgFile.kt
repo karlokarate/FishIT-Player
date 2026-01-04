@@ -32,7 +32,7 @@ data class TgFile(
     val isDownloadingActive: Boolean = false,
     val isDownloadingCompleted: Boolean = false,
     val downloadedSize: Long = 0L,
-    val downloadedPrefixSize: Long = 0L
+    val downloadedPrefixSize: Long = 0L,
 ) {
     /**
      * Alias for [id] for compatibility with existing code referencing fileId.

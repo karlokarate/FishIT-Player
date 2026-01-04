@@ -21,16 +21,11 @@ import dagger.multibindings.IntoSet
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class TelegramCapabilityModule {
+    @Binds
+    @IntoSet
+    abstract fun bindFullHistoryCapability(impl: TelegramFullHistoryCapabilityProvider): FeatureProvider
 
     @Binds
     @IntoSet
-    abstract fun bindFullHistoryCapability(
-        impl: TelegramFullHistoryCapabilityProvider
-    ): FeatureProvider
-
-    @Binds
-    @IntoSet
-    abstract fun bindLazyThumbnailsCapability(
-        impl: TelegramLazyThumbnailsCapabilityProvider
-    ): FeatureProvider
+    abstract fun bindLazyThumbnailsCapability(impl: TelegramLazyThumbnailsCapabilityProvider): FeatureProvider
 }

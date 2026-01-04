@@ -42,7 +42,6 @@ import com.fishit.player.core.model.ImageRef
  * ```
  */
 interface TelegramThumbFetcher {
-
     /**
      * Fetch the Telegram thumbnail for the given reference.
      *
@@ -51,7 +50,10 @@ interface TelegramThumbFetcher {
      * @return FetchResult with the resolved image data
      * @throws IOException if the file cannot be resolved or downloaded
      */
-    suspend fun fetch(ref: ImageRef.TelegramThumb, options: Options): FetchResult
+    suspend fun fetch(
+        ref: ImageRef.TelegramThumb,
+        options: Options,
+    ): FetchResult
 
     /**
      * Factory for creating [TelegramThumbFetcher] instances.
@@ -62,7 +64,10 @@ interface TelegramThumbFetcher {
         /**
          * Create a fetcher for the given TelegramThumb reference.
          */
-        fun create(ref: ImageRef.TelegramThumb, options: Options): TelegramThumbFetcher
+        fun create(
+            ref: ImageRef.TelegramThumb,
+            options: Options,
+        ): TelegramThumbFetcher
     }
 }
 
@@ -72,19 +77,22 @@ interface TelegramThumbFetcher {
  * Used when Telegram support is not configured.
  */
 object NoOpTelegramThumbFetcher : TelegramThumbFetcher {
-    override suspend fun fetch(ref: ImageRef.TelegramThumb, options: Options): FetchResult {
+    override suspend fun fetch(
+        ref: ImageRef.TelegramThumb,
+        options: Options,
+    ): FetchResult =
         throw UnsupportedOperationException(
             "Telegram thumbnail support not available. " +
-                "Configure TelegramThumbFetcher.Factory in GlobalImageLoader to enable."
+                "Configure TelegramThumbFetcher.Factory in GlobalImageLoader to enable.",
         )
-    }
 
     /**
      * Factory that always returns [NoOpTelegramThumbFetcher].
      */
     object Factory : TelegramThumbFetcher.Factory {
-        override fun create(ref: ImageRef.TelegramThumb, options: Options): TelegramThumbFetcher {
-            return NoOpTelegramThumbFetcher
-        }
+        override fun create(
+            ref: ImageRef.TelegramThumb,
+            options: Options,
+        ): TelegramThumbFetcher = NoOpTelegramThumbFetcher
     }
 }

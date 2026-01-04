@@ -22,7 +22,6 @@ import org.junit.Test
  * - Test: Schema Guards (year, rating, fsk, length ranges)
  */
 class TelegramStructuredMetadataExtractorTest {
-
     private lateinit var extractor: TelegramStructuredMetadataExtractor
 
     @Before
@@ -34,12 +33,13 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `extractStructuredMetadata extracts MOVIE tmdbType from movie URL`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "https://www.themoviedb.org/movie/12345-movie-name""""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "https://www.themoviedb.org/movie/12345-movie-name"""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNotNull(metadata)
         assertEquals(12345, metadata?.tmdbId)
         assertEquals(TelegramTmdbType.MOVIE, metadata?.tmdbType)
@@ -48,12 +48,13 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `extractStructuredMetadata extracts TV tmdbType from tv URL`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "https://www.themoviedb.org/tv/98765-show-name""""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "https://www.themoviedb.org/tv/98765-show-name"""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNotNull(metadata)
         assertEquals(98765, metadata?.tmdbId)
         assertEquals(TelegramTmdbType.TV, metadata?.tmdbType)
@@ -63,43 +64,44 @@ class TelegramStructuredMetadataExtractorTest {
     @Test
     fun `extractTmdbIdFromUrl parses movie URL`() {
         val url = "https://www.themoviedb.org/movie/12345-movie-name"
-        
+
         @Suppress("DEPRECATION")
         val tmdbId = extractor.extractTmdbIdFromUrl(url)
-        
+
         assertEquals(12345, tmdbId)
     }
 
     @Test
     fun `extractTmdbIdFromUrl parses TV URL`() {
         val url = "https://www.themoviedb.org/tv/98765-show-name"
-        
+
         @Suppress("DEPRECATION")
         val tmdbId = extractor.extractTmdbIdFromUrl(url)
-        
+
         assertEquals(98765, tmdbId)
     }
 
     @Test
     fun `extractTmdbIdFromUrl parses URL without protocol`() {
         val url = "themoviedb.org/movie/54321"
-        
+
         @Suppress("DEPRECATION")
         val tmdbId = extractor.extractTmdbIdFromUrl(url)
-        
+
         assertEquals(54321, tmdbId)
     }
 
     @Test
     fun `extractTmdbIdFromUrl returns null for invalid format`() {
-        val invalidUrls = listOf(
-            "https://imdb.com/title/tt1234567",
-            "https://example.com/movie/12345",
-            "not-a-url",
-            "",
-            null,
-        )
-        
+        val invalidUrls =
+            listOf(
+                "https://imdb.com/title/tt1234567",
+                "https://example.com/movie/12345",
+                "not-a-url",
+                "",
+                null,
+            )
+
         invalidUrls.forEach { url ->
             @Suppress("DEPRECATION")
             val tmdbId = extractor.extractTmdbIdFromUrl(url)
@@ -111,104 +113,114 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `Schema Guard accepts valid year`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", year: 2020"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", year: 2020""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNotNull(metadata)
         assertEquals(2020, metadata?.year)
     }
 
     @Test
     fun `Schema Guard rejects year outside 1800-2100`() {
-        val message1 = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", year: 1700"""
-        )
-        val message2 = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", year: 2200"""
-        )
-        
+        val message1 =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", year: 1700""",
+            )
+        val message2 =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", year: 2200""",
+            )
+
         val metadata1 = extractor.extractStructuredMetadata(message1)
         val metadata2 = extractor.extractStructuredMetadata(message2)
-        
+
         assertNull(metadata1?.year)
         assertNull(metadata2?.year)
     }
 
     @Test
     fun `Schema Guard accepts valid rating`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", tmdbRating: 7.5"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", tmdbRating: 7.5""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNotNull(metadata)
         assertEquals(7.5, metadata?.tmdbRating)
     }
 
     @Test
     fun `Schema Guard rejects rating outside 0-10`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", tmdbRating: 15.0"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", tmdbRating: 15.0""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNull(metadata?.tmdbRating)
     }
 
     @Test
     fun `Schema Guard accepts valid FSK values`() {
         val fskValues = listOf(0, 6, 12, 16, 18, 21)
-        
+
         fskValues.forEach { fsk ->
-            val message = createTextMessageWithCaption(
-                """tmdbUrl: "themoviedb.org/movie/123", fsk: $fsk"""
-            )
-            
+            val message =
+                createTextMessageWithCaption(
+                    """tmdbUrl: "themoviedb.org/movie/123", fsk: $fsk""",
+                )
+
             val metadata = extractor.extractStructuredMetadata(message)
-            
+
             assertEquals("FSK $fsk should be valid", fsk, metadata?.fsk)
         }
     }
 
     @Test
     fun `Schema Guard rejects FSK outside 0-21`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", fsk: 25"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", fsk: 25""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNull(metadata?.fsk)
     }
 
     @Test
     fun `Schema Guard accepts valid length`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", lengthMinutes: 120"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", lengthMinutes: 120""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertEquals(120, metadata?.lengthMinutes)
     }
 
     @Test
     fun `Schema Guard rejects length outside 1-600`() {
-        val message1 = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", lengthMinutes: 0"""
-        )
-        val message2 = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", lengthMinutes: 700"""
-        )
-        
+        val message1 =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", lengthMinutes: 0""",
+            )
+        val message2 =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", lengthMinutes: 700""",
+            )
+
         val metadata1 = extractor.extractStructuredMetadata(message1)
         val metadata2 = extractor.extractStructuredMetadata(message2)
-        
+
         assertNull(metadata1?.lengthMinutes)
         assertNull(metadata2?.lengthMinutes)
     }
@@ -217,34 +229,37 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `extracts genre list`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", genres: ["Action", "Comedy", "Drama"]"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", genres: ["Action", "Comedy", "Drama"]""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertEquals(listOf("Action", "Comedy", "Drama"), metadata?.genres)
     }
 
     @Test
     fun `extracts genres with single quotes`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", genres: ['Action', 'Sci-Fi']"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", genres: ['Action', 'Sci-Fi']""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertEquals(listOf("Action", "Sci-Fi"), metadata?.genres)
     }
 
     @Test
     fun `empty genres returns empty list`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", genres: []"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", genres: []""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertEquals(emptyList<String>(), metadata?.genres)
     }
 
@@ -252,22 +267,23 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `extracts complete structured metadata`() {
-        val message = createTextMessageWithCaption(
-            """
-            tmdbUrl: "https://www.themoviedb.org/movie/957-spaceballs"
-            tmdbRating: 6.9
-            year: 1987
-            fsk: 12
-            director: "Mel Brooks"
-            originalTitle: "Spaceballs"
-            lengthMinutes: 96
-            productionCountry: "US"
-            genres: ["Comedy", "Science Fiction"]
-            """.trimIndent()
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """
+                tmdbUrl: "https://www.themoviedb.org/movie/957-spaceballs"
+                tmdbRating: 6.9
+                year: 1987
+                fsk: 12
+                director: "Mel Brooks"
+                originalTitle: "Spaceballs"
+                lengthMinutes: 96
+                productionCountry: "US"
+                genres: ["Comedy", "Science Fiction"]
+                """.trimIndent(),
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNotNull(metadata)
         assertEquals(957, metadata?.tmdbId)
         assertEquals(TelegramTmdbType.MOVIE, metadata?.tmdbType)
@@ -284,12 +300,13 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `handles missing optional fields`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", year: 2020"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", year: 2020""",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNotNull(metadata)
         assertEquals(123, metadata?.tmdbId)
         assertEquals(2020, metadata?.year)
@@ -304,34 +321,37 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `hasStructuredFields returns true for structured message`() {
-        val message = createTextMessageWithCaption(
-            """tmdbUrl: "themoviedb.org/movie/123", year: 2020"""
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                """tmdbUrl: "themoviedb.org/movie/123", year: 2020""",
+            )
+
         val hasFields = extractor.hasStructuredFields(message)
-        
+
         assertTrue(hasFields)
     }
 
     @Test
     fun `hasStructuredFields returns false for non-structured message`() {
-        val message = createTextMessageWithCaption(
-            "Just a regular caption with no structured data"
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                "Just a regular caption with no structured data",
+            )
+
         val hasFields = extractor.hasStructuredFields(message)
-        
+
         assertFalse(hasFields)
     }
 
     @Test
     fun `returns null for non-structured message`() {
-        val message = createTextMessageWithCaption(
-            "Movie title 2020 - just a regular caption"
-        )
-        
+        val message =
+            createTextMessageWithCaption(
+                "Movie title 2020 - just a regular caption",
+            )
+
         val metadata = extractor.extractStructuredMetadata(message)
-        
+
         assertNull(metadata)
     }
 
@@ -339,45 +359,47 @@ class TelegramStructuredMetadataExtractorTest {
 
     @Test
     fun `hasTmdbId returns true when tmdbId is set`() {
-        val metadata = StructuredMetadata(
-            tmdbId = 123,
-            tmdbType = TelegramTmdbType.MOVIE,
-            tmdbRating = null,
-            year = null,
-            fsk = null,
-            genres = emptyList(),
-            director = null,
-            originalTitle = null,
-            lengthMinutes = null,
-            productionCountry = null,
-        )
-        
+        val metadata =
+            StructuredMetadata(
+                tmdbId = 123,
+                tmdbType = TelegramTmdbType.MOVIE,
+                tmdbRating = null,
+                year = null,
+                fsk = null,
+                genres = emptyList(),
+                director = null,
+                originalTitle = null,
+                lengthMinutes = null,
+                productionCountry = null,
+            )
+
         assertTrue(metadata.hasTmdbId)
         assertTrue(metadata.hasTypedTmdb)
     }
 
     @Test
     fun `hasAnyField returns true when any field is set`() {
-        val metadata = StructuredMetadata(
-            tmdbId = null,
-            tmdbType = null,
-            tmdbRating = null,
-            year = 2020,
-            fsk = null,
-            genres = emptyList(),
-            director = null,
-            originalTitle = null,
-            lengthMinutes = null,
-            productionCountry = null,
-        )
-        
+        val metadata =
+            StructuredMetadata(
+                tmdbId = null,
+                tmdbType = null,
+                tmdbRating = null,
+                year = 2020,
+                fsk = null,
+                genres = emptyList(),
+                director = null,
+                originalTitle = null,
+                lengthMinutes = null,
+                productionCountry = null,
+            )
+
         assertTrue(metadata.hasAnyField)
     }
 
     @Test
     fun `EMPTY has no fields`() {
         val empty = StructuredMetadata.EMPTY
-        
+
         assertFalse(empty.hasTmdbId)
         assertFalse(empty.hasAnyField)
     }
@@ -389,16 +411,17 @@ class TelegramStructuredMetadataExtractorTest {
             messageId = 100L,
             chatId = 123L,
             date = 1731704712L,
-            content = TgContent.Video(
-                fileId = 1,
-                remoteId = "test",
-                fileName = "test.mkv",
-                mimeType = "video/mp4",
-                duration = 100,
-                width = 1920,
-                height = 1080,
-                fileSize = 1000L,
-                caption = caption,
-            ),
+            content =
+                TgContent.Video(
+                    fileId = 1,
+                    remoteId = "test",
+                    fileName = "test.mkv",
+                    mimeType = "video/mp4",
+                    duration = 100,
+                    width = 1920,
+                    height = 1080,
+                    fileSize = 1000L,
+                    caption = caption,
+                ),
         )
 }

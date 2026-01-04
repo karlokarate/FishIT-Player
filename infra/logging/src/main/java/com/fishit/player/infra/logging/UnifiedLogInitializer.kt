@@ -27,7 +27,10 @@ object UnifiedLogInitializer {
      * @param enableLogBuffer true to enable in-memory log buffering for DebugScreen
      *                        (default: same as isDebug)
      */
-    fun init(isDebug: Boolean, enableLogBuffer: Boolean = isDebug) {
+    fun init(
+        isDebug: Boolean,
+        enableLogBuffer: Boolean = isDebug,
+    ) {
         // Clear any existing trees (useful for tests)
         Timber.uprootAll()
 

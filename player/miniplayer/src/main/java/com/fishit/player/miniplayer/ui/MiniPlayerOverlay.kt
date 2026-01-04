@@ -15,7 +15,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -33,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,12 +47,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.fishit.player.ui.api.MiniPlayerStateSnapshot
 import com.fishit.player.miniplayer.MiniPlayerAnchor
 import com.fishit.player.miniplayer.MiniPlayerManager
 import com.fishit.player.miniplayer.MiniPlayerMode
 import com.fishit.player.miniplayer.MiniPlayerState
 import com.fishit.player.miniplayer.SAFE_MARGIN_DP
+import com.fishit.player.ui.api.MiniPlayerStateSnapshot
 import kotlin.math.roundToInt
 
 /**
@@ -119,26 +117,26 @@ fun MiniPlayerOverlay(
     val animatedWidth by animateDpAsState(
         targetValue = miniPlayerState.size.width,
         animationSpec = tween(ANIMATION_DURATION_MS),
-        label = "miniPlayerWidth"
+        label = "miniPlayerWidth",
     )
     val animatedHeight by animateDpAsState(
         targetValue = miniPlayerState.size.height,
         animationSpec = tween(ANIMATION_DURATION_MS),
-        label = "miniPlayerHeight"
+        label = "miniPlayerHeight",
     )
 
     // Scale up slightly when in resize mode for visual feedback
     val scale by animateFloatAsState(
         targetValue = if (isResizeMode) RESIZE_SCALE else 1f,
         animationSpec = tween(ANIMATION_DURATION_MS),
-        label = "miniPlayerScale"
+        label = "miniPlayerScale",
     )
 
     AnimatedVisibility(
         visible = miniPlayerState.visible,
         enter = fadeIn(tween(ANIMATION_DURATION_MS)) + slideInVertically(tween(ANIMATION_DURATION_MS)) { it },
         exit = fadeOut(tween(ANIMATION_DURATION_MS)) + slideOutVertically(tween(ANIMATION_DURATION_MS)) { it },
-        modifier = modifier
+        modifier = modifier,
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val screenWidthPx = constraints.maxWidth.toFloat()
@@ -148,59 +146,66 @@ fun MiniPlayerOverlay(
             val miniHeightPx = with(density) { animatedHeight.toPx() }
 
             // Calculate position based on anchor
-            val anchorOffset = calculateAnchorOffset(
-                anchor = miniPlayerState.anchor,
-                screenWidthPx = screenWidthPx,
-                screenHeightPx = screenHeightPx,
-                miniWidthPx = miniWidthPx,
-                miniHeightPx = miniHeightPx,
-                safeMarginPx = safeMarginPx
-            )
+            val anchorOffset =
+                calculateAnchorOffset(
+                    anchor = miniPlayerState.anchor,
+                    screenWidthPx = screenWidthPx,
+                    screenHeightPx = screenHeightPx,
+                    miniWidthPx = miniWidthPx,
+                    miniHeightPx = miniHeightPx,
+                    safeMarginPx = safeMarginPx,
+                )
 
             // Apply custom position offset if set
-            val totalOffset = Offset(
-                x = anchorOffset.x + (miniPlayerState.position?.x ?: 0f),
-                y = anchorOffset.y + (miniPlayerState.position?.y ?: 0f)
-            )
+            val totalOffset =
+                Offset(
+                    x = anchorOffset.x + (miniPlayerState.position?.x ?: 0f),
+                    y = anchorOffset.y + (miniPlayerState.position?.y ?: 0f),
+                )
 
             // Track drag state
             var dragOffset by remember { mutableStateOf(Offset.Zero) }
 
             Surface(
-                modifier = Modifier
-                    .offset { IntOffset(totalOffset.x.roundToInt(), totalOffset.y.roundToInt()) }
-                    .size(animatedWidth, animatedHeight)
-                    .graphicsLayer { scaleX = scale; scaleY = scale }
-                    .shadow(SHADOW_ELEVATION, RoundedCornerShape(CORNER_RADIUS))
-                    .clip(RoundedCornerShape(CORNER_RADIUS))
-                    .pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = {
-                                if (!isResizeMode) {
-                                    miniPlayerManager.enterResizeMode()
-                                }
-                            },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                miniPlayerManager.moveBy(dragAmount)
-                            },
-                            onDragEnd = {
-                                miniPlayerManager.snapToNearestAnchor(
-                                    screenWidthPx = screenWidthPx,
-                                    screenHeightPx = screenHeightPx,
-                                    density = density
-                                )
-                                miniPlayerManager.confirmResize()
-                            }
-                        )
-                    }
-                    .clickable { onRequestFullPlayer() },
+                modifier =
+                    Modifier
+                        .offset { IntOffset(totalOffset.x.roundToInt(), totalOffset.y.roundToInt()) }
+                        .size(animatedWidth, animatedHeight)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        }.shadow(SHADOW_ELEVATION, RoundedCornerShape(CORNER_RADIUS))
+                        .clip(RoundedCornerShape(CORNER_RADIUS))
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = {
+                                    if (!isResizeMode) {
+                                        miniPlayerManager.enterResizeMode()
+                                    }
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    miniPlayerManager.moveBy(dragAmount)
+                                },
+                                onDragEnd = {
+                                    miniPlayerManager.snapToNearestAnchor(
+                                        screenWidthPx = screenWidthPx,
+                                        screenHeightPx = screenHeightPx,
+                                        density = density,
+                                    )
+                                    miniPlayerManager.confirmResize()
+                                },
+                            )
+                        }.clickable { onRequestFullPlayer() },
                 shape = RoundedCornerShape(CORNER_RADIUS),
-                border = if (isResizeMode) {
-                    BorderStroke(RESIZE_BORDER_WIDTH, MaterialTheme.colorScheme.primary)
-                } else null,
+                border =
+                    if (isResizeMode) {
+                        BorderStroke(RESIZE_BORDER_WIDTH, MaterialTheme.colorScheme.primary)
+                    } else {
+                        null
+                    },
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shadowElevation = SHADOW_ELEVATION
+                shadowElevation = SHADOW_ELEVATION,
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     // Video content slot
@@ -208,25 +213,27 @@ fun MiniPlayerOverlay(
 
                     // Semi-transparent control overlay
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f))
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f)),
                     )
 
                     // Control buttons
                     Row(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(8.dp),
+                        modifier =
+                            Modifier
+                                .align(Alignment.Center)
+                                .padding(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         // Play/Pause button
                         IconButton(onClick = onTogglePlayPause) {
                             Icon(
                                 imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (playerState.isPlaying) "Pause" else "Play",
-                                tint = Color.White
+                                tint = Color.White,
                             )
                         }
 
@@ -235,7 +242,7 @@ fun MiniPlayerOverlay(
                             Icon(
                                 imageVector = Icons.Default.Fullscreen,
                                 contentDescription = "Expand",
-                                tint = Color.White
+                                tint = Color.White,
                             )
                         }
                     }
@@ -243,14 +250,15 @@ fun MiniPlayerOverlay(
                     // Close button in corner
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = Color.White
+                            tint = Color.White,
                         )
                     }
 
@@ -260,14 +268,14 @@ fun MiniPlayerOverlay(
                             text = "Resize Mode",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(4.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(4.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        shape = RoundedCornerShape(4.dp),
+                                    ).padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
                 }
@@ -285,23 +293,25 @@ private fun calculateAnchorOffset(
     screenHeightPx: Float,
     miniWidthPx: Float,
     miniHeightPx: Float,
-    safeMarginPx: Float
-): Offset {
-    return when (anchor) {
+    safeMarginPx: Float,
+): Offset =
+    when (anchor) {
         MiniPlayerAnchor.TOP_LEFT -> Offset(safeMarginPx, safeMarginPx)
         MiniPlayerAnchor.TOP_RIGHT -> Offset(screenWidthPx - miniWidthPx - safeMarginPx, safeMarginPx)
         MiniPlayerAnchor.BOTTOM_LEFT -> Offset(safeMarginPx, screenHeightPx - miniHeightPx - safeMarginPx)
-        MiniPlayerAnchor.BOTTOM_RIGHT -> Offset(
-            screenWidthPx - miniWidthPx - safeMarginPx,
-            screenHeightPx - miniHeightPx - safeMarginPx
-        )
-        MiniPlayerAnchor.CENTER_TOP -> Offset(
-            (screenWidthPx - miniWidthPx) / 2,
-            safeMarginPx
-        )
-        MiniPlayerAnchor.CENTER_BOTTOM -> Offset(
-            (screenWidthPx - miniWidthPx) / 2,
-            screenHeightPx - miniHeightPx - safeMarginPx
-        )
+        MiniPlayerAnchor.BOTTOM_RIGHT ->
+            Offset(
+                screenWidthPx - miniWidthPx - safeMarginPx,
+                screenHeightPx - miniHeightPx - safeMarginPx,
+            )
+        MiniPlayerAnchor.CENTER_TOP ->
+            Offset(
+                (screenWidthPx - miniWidthPx) / 2,
+                safeMarginPx,
+            )
+        MiniPlayerAnchor.CENTER_BOTTOM ->
+            Offset(
+                (screenWidthPx - miniWidthPx) / 2,
+                screenHeightPx - miniHeightPx - safeMarginPx,
+            )
     }
-}

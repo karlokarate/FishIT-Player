@@ -73,7 +73,10 @@ object TelegramPlaybackUriContract {
      */
     sealed class ValidationResult {
         object Valid : ValidationResult()
-        data class Invalid(val reason: String) : ValidationResult()
+
+        data class Invalid(
+            val reason: String,
+        ) : ValidationResult()
     }
 
     /**
@@ -146,25 +149,28 @@ object TelegramPlaybackUriContract {
         extras: Map<String, String>,
         fileId: Int = 0,
     ): String {
-        val chatId = (extras[PlaybackHintKeys.Telegram.CHAT_ID] ?: extras["chatId"])
-            ?.toLongOrNull()
-            ?: throw IllegalArgumentException("Missing chatId in extras")
+        val chatId =
+            (extras[PlaybackHintKeys.Telegram.CHAT_ID] ?: extras["chatId"])
+                ?.toLongOrNull()
+                ?: throw IllegalArgumentException("Missing chatId in extras")
 
-        val messageId = (extras[PlaybackHintKeys.Telegram.MESSAGE_ID] ?: extras["messageId"])
-            ?.toLongOrNull()
-            ?: throw IllegalArgumentException("Missing messageId in extras")
+        val messageId =
+            (extras[PlaybackHintKeys.Telegram.MESSAGE_ID] ?: extras["messageId"])
+                ?.toLongOrNull()
+                ?: throw IllegalArgumentException("Missing messageId in extras")
 
         val remoteId = extras[PlaybackHintKeys.Telegram.REMOTE_ID] ?: extras["remoteId"]
-        val explicitFileId = (extras[PlaybackHintKeys.Telegram.FILE_ID] ?: extras["fileId"])
-            ?.toIntOrNull()
-            ?: fileId
+        val explicitFileId =
+            (extras[PlaybackHintKeys.Telegram.FILE_ID] ?: extras["fileId"])
+                ?.toIntOrNull()
+                ?: fileId
         val mimeType = extras[PlaybackHintKeys.Telegram.MIME_TYPE] ?: extras["mimeType"]
 
         // Validate resolution capability
         if (explicitFileId <= 0 && remoteId.isNullOrBlank()) {
             throw IllegalArgumentException(
                 "Neither fileId > 0 nor remoteId available - cannot resolve Telegram file. " +
-                    "chatId=$chatId, messageId=$messageId"
+                    "chatId=$chatId, messageId=$messageId",
             )
         }
 
@@ -184,11 +190,12 @@ object TelegramPlaybackUriContract {
      * @return ParsedUri with extracted components (null for missing/invalid values)
      */
     fun parseUri(uriString: String): ParsedUri? {
-        val uri = try {
-            Uri.parse(uriString)
-        } catch (e: Exception) {
-            return null
-        }
+        val uri =
+            try {
+                Uri.parse(uriString)
+            } catch (e: Exception) {
+                return null
+            }
 
         if (uri.scheme != SCHEME || uri.host != HOST) {
             return null
@@ -215,8 +222,9 @@ object TelegramPlaybackUriContract {
      * @return ValidationResult.Valid or ValidationResult.Invalid with reason
      */
     fun validate(uriString: String): ValidationResult {
-        val parsed = parseUri(uriString)
-            ?: return ValidationResult.Invalid("Failed to parse URI: $uriString")
+        val parsed =
+            parseUri(uriString)
+                ?: return ValidationResult.Invalid("Failed to parse URI: $uriString")
 
         if (parsed.chatId == null || parsed.chatId == 0L) {
             return ValidationResult.Invalid("Missing or invalid chatId")
@@ -228,7 +236,7 @@ object TelegramPlaybackUriContract {
 
         if (!parsed.hasFileLocator) {
             return ValidationResult.Invalid(
-                "No file locator: fileId=${parsed.fileId}, remoteId=${parsed.remoteId}"
+                "No file locator: fileId=${parsed.fileId}, remoteId=${parsed.remoteId}",
             )
         }
 
@@ -238,15 +246,12 @@ object TelegramPlaybackUriContract {
     /**
      * Checks if a URI string looks like a Telegram playback URI.
      */
-    fun isTelegramUri(uriString: String?): Boolean {
-        return uriString?.startsWith("$SCHEME://$HOST/") == true
-    }
+    fun isTelegramUri(uriString: String?): Boolean = uriString?.startsWith("$SCHEME://$HOST/") == true
 
-    private fun encodeParam(value: String): String {
-        return try {
+    private fun encodeParam(value: String): String =
+        try {
             URLEncoder.encode(value, "UTF-8")
         } catch (e: Exception) {
             value
         }
-    }
 }

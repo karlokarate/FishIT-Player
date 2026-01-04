@@ -17,7 +17,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NextlibCodecsModule {
-    
     /**
      * Provides the NextLib codec configurator.
      *
@@ -26,7 +25,5 @@ object NextlibCodecsModule {
      */
     @Provides
     @Singleton
-    fun provideNextlibCodecConfigurator(): NextlibCodecConfigurator {
-        return DefaultNextlibCodecConfigurator()
-    }
+    fun provideNextlibCodecConfigurator(): NextlibCodecConfigurator = DefaultNextlibCodecConfigurator()
 }

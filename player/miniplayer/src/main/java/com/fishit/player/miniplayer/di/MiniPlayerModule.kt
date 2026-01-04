@@ -19,7 +19,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class MiniPlayerModule {
-
     @Binds
     @Singleton
     abstract fun bindMiniPlayerManager(impl: DefaultMiniPlayerManager): MiniPlayerManager

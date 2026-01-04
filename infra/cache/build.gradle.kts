@@ -26,19 +26,19 @@ android {
 dependencies {
     // Logging (via UnifiedLog facade only - no direct Timber)
     implementation(project(":infra:logging"))
-    
+
     // Coil ImageLoader type (provided via core:ui-imaging api dependency)
     // NOTE: ImageLoader is injected via Hilt from app-v2 ImagingModule
     implementation(project(":core:ui-imaging"))
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    
+
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
-    
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")

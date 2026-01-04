@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.Flow
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
  */
 interface TelegramHistoryClient {
-
     /**
      * Stream of incoming messages (live updates).
      *
@@ -76,7 +75,7 @@ interface TelegramHistoryClient {
         chatId: Long,
         limit: Int = 100,
         fromMessageId: Long = 0,
-        offset: Int = 0
+        offset: Int = 0,
     ): List<TgMessage>
 
     /**
@@ -98,7 +97,7 @@ interface TelegramHistoryClient {
         chatId: Long,
         pageSize: Int = 100,
         maxMessages: Int = 10000,
-        onProgress: ((loaded: Int) -> Unit)? = null
+        onProgress: ((loaded: Int) -> Unit)? = null,
     ): List<TgMessage>
 
     /**
@@ -112,6 +111,6 @@ interface TelegramHistoryClient {
     suspend fun searchMessages(
         chatId: Long,
         query: String,
-        limit: Int = 100
+        limit: Int = 100,
     ): List<TgMessage>
 }

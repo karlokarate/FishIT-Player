@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,45 +101,44 @@ fun Modifier.tvFocusable(
     focusGlowColor: Color = FishColors.FocusGlow,
     focusGlowWidth: Dp? = null,
     cornerRadius: Dp? = null,
-): Modifier = composed {
-    val dimens = LocalFishDimens.current
-    var isFocused by remember { mutableStateOf(false) }
+): Modifier =
+    composed {
+        val dimens = LocalFishDimens.current
+        var isFocused by remember { mutableStateOf(false) }
 
-    // Determine actual scale (parameter > dimens)
-    val actualScale = focusScale ?: dimens.focusScale
+        // Determine actual scale (parameter > dimens)
+        val actualScale = focusScale ?: dimens.focusScale
 
-    // Determine actual glow config (parameter > dimens)
-    val actualGlowWidth = focusGlowWidth ?: dimens.focusBorderWidth
-    val actualCornerRadius = cornerRadius ?: dimens.tileCorner
+        // Determine actual glow config (parameter > dimens)
+        val actualGlowWidth = focusGlowWidth ?: dimens.focusBorderWidth
+        val actualCornerRadius = cornerRadius ?: dimens.tileCorner
 
-    // Animate scale on focus
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused && enableScale) actualScale else 1f,
-        animationSpec = tween(durationMillis = FishTheme.motion.focusScaleDurationMs),
-        label = "tvFocusScale"
-    )
-
-    this
-        .focusable(enabled)
-        .onFocusChanged { focusState ->
-            isFocused = focusState.isFocused
-            onFocusChanged?.invoke(focusState.isFocused)
-        }
-        .scale(scale)
-        .then(
-            if (enableGlow) {
-                Modifier.tvFocusGlow(
-                    isFocused = isFocused,
-                    glowColor = focusGlowColor,
-                    glowWidth = actualGlowWidth,
-                    cornerRadius = actualCornerRadius
-                )
-            } else {
-                Modifier
-            }
+        // Animate scale on focus
+        val scale by animateFloatAsState(
+            targetValue = if (isFocused && enableScale) actualScale else 1f,
+            animationSpec = tween(durationMillis = FishTheme.motion.focusScaleDurationMs),
+            label = "tvFocusScale",
         )
-        .clickable(enabled = enabled, onClick = onClick)
-}
+
+        this
+            .focusable(enabled)
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+                onFocusChanged?.invoke(focusState.isFocused)
+            }.scale(scale)
+            .then(
+                if (enableGlow) {
+                    Modifier.tvFocusGlow(
+                        isFocused = isFocused,
+                        glowColor = focusGlowColor,
+                        glowWidth = actualGlowWidth,
+                        cornerRadius = actualCornerRadius,
+                    )
+                } else {
+                    Modifier
+                },
+            ).clickable(enabled = enabled, onClick = onClick)
+    }
 
 /**
  * Simplified TV-focusable for items that only need click + focus tracking.
@@ -155,10 +153,11 @@ fun Modifier.tvFocusableBasic(
     enabled: Boolean = true,
     onClick: () -> Unit,
     onFocusChanged: (Boolean) -> Unit,
-): Modifier = this
-    .focusable(enabled)
-    .onFocusChanged { onFocusChanged(it.isFocused) }
-    .clickable(enabled = enabled, onClick = onClick)
+): Modifier =
+    this
+        .focusable(enabled)
+        .onFocusChanged { onFocusChanged(it.isFocused) }
+        .clickable(enabled = enabled, onClick = onClick)
 
 /**
  * Draws a focus glow border around a composable.
@@ -176,16 +175,17 @@ fun Modifier.tvFocusGlow(
     glowColor: Color = FishColors.FocusGlow,
     glowWidth: Dp = 2.dp,
     cornerRadius: Dp = 8.dp,
-): Modifier = this.drawBehind {
-    if (isFocused) {
-        val strokeWidth = glowWidth.toPx()
-        val halfStroke = strokeWidth / 2
-        drawRoundRect(
-            color = glowColor,
-            topLeft = Offset(halfStroke, halfStroke),
-            size = Size(size.width - strokeWidth, size.height - strokeWidth),
-            cornerRadius = CornerRadius(cornerRadius.toPx()),
-            style = Stroke(width = strokeWidth)
-        )
+): Modifier =
+    this.drawBehind {
+        if (isFocused) {
+            val strokeWidth = glowWidth.toPx()
+            val halfStroke = strokeWidth / 2
+            drawRoundRect(
+                color = glowColor,
+                topLeft = Offset(halfStroke, halfStroke),
+                size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                cornerRadius = CornerRadius(cornerRadius.toPx()),
+                style = Stroke(width = strokeWidth),
+            )
+        }
     }
-}

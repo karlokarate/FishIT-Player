@@ -20,18 +20,15 @@ data class FishDimens(
     val tileHeight: Dp = 270.dp,
     val tileCorner: Dp = 14.dp,
     val tileSpacing: Dp = 12.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Series Tile (16:9 landscape)
     // ═══════════════════════════════════════════════════════════════════
     val seriesTileWidth: Dp = 280.dp,
     val seriesTileHeight: Dp = 157.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Live TV Tile (1:1 square)
     // ═══════════════════════════════════════════════════════════════════
     val liveTileSize: Dp = 120.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Focus Effects
     // ═══════════════════════════════════════════════════════════════════
@@ -39,7 +36,6 @@ data class FishDimens(
     val focusScaleExperience: Float = 1.15f,
     val focusBorderWidth: Dp = 2.5.dp,
     val focusGlowRadius: Dp = 8.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Row Layout
     // ═══════════════════════════════════════════════════════════════════
@@ -47,24 +43,20 @@ data class FishDimens(
     val rowSpacing: Dp = 24.dp,
     val contentPaddingHorizontal: Dp = 48.dp,
     val contentPaddingVertical: Dp = 16.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Header
     // ═══════════════════════════════════════════════════════════════════
     val headerHeight: Dp = 56.dp,
     val headerPaddingHorizontal: Dp = 48.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Overlay
     // ═══════════════════════════════════════════════════════════════════
     val overlayWidth: Dp = 400.dp,
     val overlayPadding: Dp = 20.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Progress Bar
     // ═══════════════════════════════════════════════════════════════════
     val progressBarHeight: Dp = 3.dp,
-
     // ═══════════════════════════════════════════════════════════════════
     // Experience Skin Options
     // ═══════════════════════════════════════════════════════════════════
@@ -72,7 +64,7 @@ data class FishDimens(
     val enableParallax: Boolean = false,
     val parallaxDepth: Float = 0.05f,
     val reflectionAlpha: Float = 0.18f,
-    val showTitleWhenUnfocused: Boolean = false
+    val showTitleWhenUnfocused: Boolean = false,
 )
 
 /**
@@ -84,25 +76,26 @@ val LocalFishDimens = staticCompositionLocalOf { FishDimens() }
  * Preset configurations for different skins
  */
 object FishDimensPresets {
-
     /**
      * Classic Skin: No glow, no parallax, stable and calm
      */
-    val Classic = FishDimens(
-        enableGlow = false,
-        enableParallax = false,
-        focusScale = 1.08f,
-        showTitleWhenUnfocused = true
-    )
+    val Classic =
+        FishDimens(
+            enableGlow = false,
+            enableParallax = false,
+            focusScale = 1.08f,
+            showTitleWhenUnfocused = true,
+        )
 
     /**
      * Experience Skin: Glow, parallax, cinematic feel
      */
-    val Experience = FishDimens(
-        enableGlow = true,
-        enableParallax = true,
-        focusScale = 1.12f,
-        parallaxDepth = 0.05f,
-        showTitleWhenUnfocused = false
-    )
+    val Experience =
+        FishDimens(
+            enableGlow = true,
+            enableParallax = true,
+            focusScale = 1.12f,
+            parallaxDepth = 0.05f,
+            showTitleWhenUnfocused = false,
+        )
 }

@@ -19,7 +19,6 @@ import com.fishit.player.pipeline.xtream.model.XtreamVodItem
  * ```
  */
 interface XtreamDebugService {
-
     /**
      * Get current Xtream pipeline status.
      *

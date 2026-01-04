@@ -16,7 +16,6 @@ package com.fishit.player.playback.telegram.config
  * @see TelegramPlaybackMode for mode definitions
  */
 object TelegramPlaybackModeDetector {
-
     /**
      * Determines if a MIME type indicates an MP4-like container that supports moov validation.
      *
@@ -77,13 +76,12 @@ object TelegramPlaybackModeDetector {
      * @param mimeType MIME type from file metadata (null = unknown, assumes MP4)
      * @return Initial playback mode to attempt
      */
-    fun selectInitialMode(mimeType: String?): TelegramPlaybackMode {
-        return if (requiresFullDownload(mimeType)) {
+    fun selectInitialMode(mimeType: String?): TelegramPlaybackMode =
+        if (requiresFullDownload(mimeType)) {
             TelegramPlaybackMode.FULL_FILE
         } else {
             TelegramPlaybackMode.PROGRESSIVE_FILE
         }
-    }
 
     /**
      * Returns a human-readable description of the playback mode decision.
@@ -99,12 +97,13 @@ object TelegramPlaybackModeDetector {
         val normalizedMime = mimeType?.lowercase()
         return when {
             requiresFullDownload(mimeType) -> {
-                val containerName = when {
-                    normalizedMime?.contains("matroska") == true || normalizedMime?.contains("mkv") == true -> "MKV"
-                    normalizedMime?.contains("webm") == true -> "WebM"
-                    normalizedMime?.contains("avi") == true -> "AVI"
-                    else -> "Non-progressive"
-                }
+                val containerName =
+                    when {
+                        normalizedMime?.contains("matroska") == true || normalizedMime?.contains("mkv") == true -> "MKV"
+                        normalizedMime?.contains("webm") == true -> "WebM"
+                        normalizedMime?.contains("avi") == true -> "AVI"
+                        else -> "Non-progressive"
+                    }
                 "$containerName container, requires full download"
             }
             isMp4Container(mimeType) -> {

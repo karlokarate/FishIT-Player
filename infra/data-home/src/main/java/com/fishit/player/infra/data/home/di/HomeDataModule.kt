@@ -25,7 +25,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class HomeDataModule {
-
     /**
      * Binds the adapter that implements the feature's repository interface.
      *
@@ -34,7 +33,5 @@ abstract class HomeDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindHomeContentRepository(
-        adapter: HomeContentRepositoryAdapter
-    ): HomeContentRepository
+    abstract fun bindHomeContentRepository(adapter: HomeContentRepositoryAdapter): HomeContentRepository
 }

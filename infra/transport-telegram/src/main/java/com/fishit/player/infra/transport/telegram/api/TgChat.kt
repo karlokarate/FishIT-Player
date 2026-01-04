@@ -9,20 +9,22 @@ enum class TgChatType {
     SUPERGROUP,
     CHANNEL,
     SECRET,
-    UNKNOWN;
+    UNKNOWN,
+    ;
 
     companion object {
         /**
          * Parse from string representation used by mappers.
          */
-        fun fromString(value: String): TgChatType = when (value.lowercase()) {
-            "private" -> PRIVATE
-            "basicgroup" -> BASIC_GROUP
-            "supergroup" -> SUPERGROUP
-            "channel" -> CHANNEL
-            "secret" -> SECRET
-            else -> UNKNOWN
-        }
+        fun fromString(value: String): TgChatType =
+            when (value.lowercase()) {
+                "private" -> PRIVATE
+                "basicgroup" -> BASIC_GROUP
+                "supergroup" -> SUPERGROUP
+                "channel" -> CHANNEL
+                "secret" -> SECRET
+                else -> UNKNOWN
+            }
     }
 }
 
@@ -50,7 +52,7 @@ data class TgChat(
     val type: String,
     val memberCount: Int = 0,
     val lastMessageId: Long? = null,
-    val lastMessageDate: Long? = null
+    val lastMessageDate: Long? = null,
 ) {
     /**
      * Alias for [chatId] for compatibility with existing code.

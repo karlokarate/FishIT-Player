@@ -42,13 +42,13 @@ data class StructuredMetadata(
      * Whether this metadata has a TMDB ID for downstream unification.
      */
     val hasTmdbId: Boolean get() = tmdbId != null
-    
+
     /**
      * Whether this metadata has a typed TMDB reference (ID + type).
      * Per Gold Decision Dec 2025: Both ID and type required for typed canonical ID.
      */
     val hasTypedTmdb: Boolean get() = tmdbId != null && tmdbType != null
-    
+
     /**
      * Whether this metadata has any useful fields.
      */
@@ -62,22 +62,23 @@ data class StructuredMetadata(
             originalTitle != null ||
             lengthMinutes != null ||
             productionCountry != null
-    
+
     companion object {
         /**
          * Empty metadata instance for when extraction fails.
          */
-        val EMPTY = StructuredMetadata(
-            tmdbId = null,
-            tmdbType = null,
-            tmdbRating = null,
-            year = null,
-            fsk = null,
-            genres = emptyList(),
-            director = null,
-            originalTitle = null,
-            lengthMinutes = null,
-            productionCountry = null,
-        )
+        val EMPTY =
+            StructuredMetadata(
+                tmdbId = null,
+                tmdbType = null,
+                tmdbRating = null,
+                year = null,
+                fsk = null,
+                genres = emptyList(),
+                director = null,
+                originalTitle = null,
+                lengthMinutes = null,
+                productionCountry = null,
+            )
     }
 }

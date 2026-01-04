@@ -12,49 +12,48 @@ import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
  * @param adapter Pipeline adapter for Xtream transport
  */
 class XtreamDebugServiceImpl(
-        private val adapter: XtreamPipelineAdapter,
+    private val adapter: XtreamPipelineAdapter,
 ) : XtreamDebugService {
-
     override suspend fun getStatus(): XtreamStatus {
         val authState = adapter.authState.value
         val isAuthenticated = authState is XtreamAuthState.Authenticated
 
         // Get counts by loading items
         val vodCount =
-                try {
-                    adapter.loadVodItems().size
-                } catch (e: Exception) {
-                    0
-                }
+            try {
+                adapter.loadVodItems().size
+            } catch (e: Exception) {
+                0
+            }
 
         val seriesCount =
-                try {
-                    adapter.loadSeriesItems().size
-                } catch (e: Exception) {
-                    0
-                }
+            try {
+                adapter.loadSeriesItems().size
+            } catch (e: Exception) {
+                0
+            }
 
         val liveCount =
-                try {
-                    adapter.loadLiveChannels().size
-                } catch (e: Exception) {
-                    0
-                }
+            try {
+                adapter.loadLiveChannels().size
+            } catch (e: Exception) {
+                0
+            }
 
         // Get base URL from connection state
         val baseUrl =
-                when (val conn = adapter.connectionState.value) {
-                    is com.fishit.player.infra.transport.xtream.XtreamConnectionState.Connected ->
-                            conn.baseUrl
-                    else -> "unknown"
-                }
+            when (val conn = adapter.connectionState.value) {
+                is com.fishit.player.infra.transport.xtream.XtreamConnectionState.Connected ->
+                    conn.baseUrl
+                else -> "unknown"
+            }
 
         return XtreamStatus(
-                baseUrl = baseUrl,
-                isAuthenticated = isAuthenticated,
-                vodCountEstimate = vodCount,
-                seriesCountEstimate = seriesCount,
-                liveCountEstimate = liveCount,
+            baseUrl = baseUrl,
+            isAuthenticated = isAuthenticated,
+            vodCountEstimate = vodCount,
+            seriesCountEstimate = seriesCount,
+            liveCountEstimate = liveCount,
         )
     }
 
@@ -63,12 +62,12 @@ class XtreamDebugServiceImpl(
         return items.take(limit).map { item ->
             val rawMeta = item.toRawMediaMetadata()
             XtreamVodSummary(
-                    streamId = item.id,
-                    title = item.name,
-                    year = null, // VOD list doesn't include year
-                    categoryName = item.categoryId,
-                    extension = item.containerExtension,
-                    normalizedMediaType = rawMeta.mediaType,
+                streamId = item.id,
+                title = item.name,
+                year = null, // VOD list doesn't include year
+                categoryName = item.categoryId,
+                extension = item.containerExtension,
+                normalizedMediaType = rawMeta.mediaType,
             )
         }
     }
@@ -77,11 +76,11 @@ class XtreamDebugServiceImpl(
         val items = adapter.loadSeriesItems()
         return items.take(limit).map { item ->
             XtreamSeriesSummary(
-                    seriesId = item.id,
-                    title = item.name,
-                    year = item.year?.toIntOrNull(),
-                    categoryName = item.categoryId,
-                    rating = item.rating,
+                seriesId = item.id,
+                title = item.name,
+                year = item.year?.toIntOrNull(),
+                categoryName = item.categoryId,
+                rating = item.rating,
             )
         }
     }
@@ -90,10 +89,10 @@ class XtreamDebugServiceImpl(
         val channels = adapter.loadLiveChannels()
         return channels.take(limit).map { channel ->
             XtreamLiveSummary(
-                    channelId = channel.id,
-                    name = channel.name,
-                    categoryName = channel.categoryId,
-                    hasTvArchive = channel.tvArchive > 0,
+                channelId = channel.id,
+                name = channel.name,
+                categoryName = channel.categoryId,
+                hasTvArchive = channel.tvArchive > 0,
             )
         }
     }
@@ -103,8 +102,8 @@ class XtreamDebugServiceImpl(
         val item = items.find { it.id == streamId } ?: return null
 
         return XtreamVodDetails(
-                raw = item,
-                rawMedia = item.toRawMediaMetadata(),
+            raw = item,
+            rawMedia = item.toRawMediaMetadata(),
         )
     }
 }

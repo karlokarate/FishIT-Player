@@ -9,7 +9,6 @@ import org.junit.Test
 
 /** Tests for CanonicalKeyGenerator. */
 class CanonicalKeyGeneratorTest {
-
     // ========== TMDB Key Generation ==========
 
     @Test
@@ -189,16 +188,16 @@ class CanonicalKeyGeneratorTest {
     @Test
     fun `handles real movie titles`() {
         val testCases =
-                mapOf(
-                        Pair("Inception", 2010) to "movie:inception:2010",
-                        Pair("The Dark Knight", 2008) to "movie:the-dark-knight:2008",
-                        Pair("Pulp Fiction", 1994) to "movie:pulp-fiction:1994",
-                        Pair("The Lord of the Rings: The Fellowship of the Ring", 2001) to
-                                "movie:the-lord-of-the-rings-the-fellowship-of-the-ring:2001",
-                        Pair("WALL·E", 2008) to "movie:walle:2008",
-                        Pair("Amélie", 2001) to "movie:amlie:2001",
-                        Pair("Léon: The Professional", 1994) to "movie:lon-the-professional:1994",
-                )
+            mapOf(
+                Pair("Inception", 2010) to "movie:inception:2010",
+                Pair("The Dark Knight", 2008) to "movie:the-dark-knight:2008",
+                Pair("Pulp Fiction", 1994) to "movie:pulp-fiction:1994",
+                Pair("The Lord of the Rings: The Fellowship of the Ring", 2001) to
+                    "movie:the-lord-of-the-rings-the-fellowship-of-the-ring:2001",
+                Pair("WALL·E", 2008) to "movie:walle:2008",
+                Pair("Amélie", 2001) to "movie:amlie:2001",
+                Pair("Léon: The Professional", 1994) to "movie:lon-the-professional:1994",
+            )
 
         testCases.forEach { (input, expected) ->
             val key = CanonicalKeyGenerator.forMovie(input.first, input.second)
@@ -209,13 +208,13 @@ class CanonicalKeyGeneratorTest {
     @Test
     fun `handles real series titles`() {
         val testCases =
-                mapOf(
-                        Triple("Breaking Bad", 1, 1) to "episode:breaking-bad:S01E01",
-                        Triple("Game of Thrones", 8, 6) to "episode:game-of-thrones:S08E06",
-                        Triple("The Office (US)", 9, 23) to "episode:the-office-us:S09E23",
-                        Triple("Stranger Things", 4, 9) to "episode:stranger-things:S04E09",
-                        Triple("The Mandalorian", 3, 8) to "episode:the-mandalorian:S03E08",
-                )
+            mapOf(
+                Triple("Breaking Bad", 1, 1) to "episode:breaking-bad:S01E01",
+                Triple("Game of Thrones", 8, 6) to "episode:game-of-thrones:S08E06",
+                Triple("The Office (US)", 9, 23) to "episode:the-office-us:S09E23",
+                Triple("Stranger Things", 4, 9) to "episode:stranger-things:S04E09",
+                Triple("The Mandalorian", 3, 8) to "episode:the-mandalorian:S03E08",
+            )
 
         testCases.forEach { (input, expected) ->
             val key = CanonicalKeyGenerator.forEpisode(input.first, input.second, input.third)

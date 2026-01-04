@@ -16,13 +16,15 @@ import javax.inject.Inject
  *
  * See: docs/v2/features/telegram/FEATURE_telegram.lazy_thumbnails.md
  */
-class TelegramLazyThumbnailsCapabilityProvider @Inject constructor() : FeatureProvider {
+class TelegramLazyThumbnailsCapabilityProvider
+    @Inject
+    constructor() : FeatureProvider {
+        override val featureId = TelegramFeatures.LAZY_THUMBNAILS
 
-    override val featureId = TelegramFeatures.LAZY_THUMBNAILS
+        override val scope = FeatureScope.PIPELINE
 
-    override val scope = FeatureScope.PIPELINE
-
-    override val owner = FeatureOwner(
-        moduleName = "pipeline:telegram",
-    )
-}
+        override val owner =
+            FeatureOwner(
+                moduleName = "pipeline:telegram",
+            )
+    }

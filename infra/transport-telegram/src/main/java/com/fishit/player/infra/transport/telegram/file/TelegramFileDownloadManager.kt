@@ -7,7 +7,6 @@ import com.fishit.player.infra.transport.telegram.TgStorageStats
 import com.fishit.player.infra.transport.telegram.api.TgFile
 import dev.g000sha256.tdl.TdlClient
 import dev.g000sha256.tdl.TdlResult
-import java.util.PriorityQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.PriorityQueue
 
 /**
  * TDLib File Download Manager (v2 Architecture - Transport Layer Only).
@@ -52,10 +52,9 @@ import kotlinx.coroutines.sync.withLock
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md Section 5.1
  */
 class TelegramFileDownloadManager(
-        private val client: TdlClient,
-        private val scope: CoroutineScope,
+    private val client: TdlClient,
+    private val scope: CoroutineScope,
 ) : TelegramFileClient {
-
     companion object {
         private const val TAG = "TelegramFileDownloadManager"
 
@@ -81,11 +80,11 @@ class TelegramFileDownloadManager(
     private val queueMutex = Mutex()
     private val activeDownloads = mutableSetOf<Int>() // fileIds currently downloading
     private val pendingQueue =
-            PriorityQueue<QueuedDownload>(
-                    compareByDescending<QueuedDownload> { it.priority }.thenBy {
-                        it.enqueuedAt
-                    }, // FIFO for equal priority
-            )
+        PriorityQueue<QueuedDownload>(
+            compareByDescending<QueuedDownload> { it.priority }.thenBy {
+                it.enqueuedAt
+            }, // FIFO for equal priority
+        )
 
     init {
         // Collect file updates from TDLib
@@ -104,14 +103,14 @@ class TelegramFileDownloadManager(
     // ========== TelegramFileClient Implementation ==========
 
     override suspend fun startDownload(
-            fileId: Int,
-            priority: Int,
-            offset: Long,
-            limit: Long,
+        fileId: Int,
+        priority: Int,
+        offset: Long,
+        limit: Long,
     ) {
         UnifiedLog.d(
-                TAG,
-                "startDownload(fileId=$fileId, priority=$priority, offset=$offset, limit=$limit)"
+            TAG,
+            "startDownload(fileId=$fileId, priority=$priority, offset=$offset, limit=$limit)",
         )
 
         // Streaming priority bypasses queue for immediate playback
@@ -132,17 +131,17 @@ class TelegramFileDownloadManager(
             if (activeDownloads.size < MAX_ACTIVE_DOWNLOADS) {
                 activeDownloads.add(fileId)
                 UnifiedLog.d(
-                        TAG,
-                        "Starting download immediately (active=${activeDownloads.size}/$MAX_ACTIVE_DOWNLOADS)"
+                    TAG,
+                    "Starting download immediately (active=${activeDownloads.size}/$MAX_ACTIVE_DOWNLOADS)",
                 )
             } else {
                 // Queue for later
                 pendingQueue.add(
-                        QueuedDownload(fileId, priority, offset, limit, System.currentTimeMillis())
+                    QueuedDownload(fileId, priority, offset, limit, System.currentTimeMillis()),
                 )
                 UnifiedLog.d(
-                        TAG,
-                        "Queued download (pending=${pendingQueue.size}, active=${activeDownloads.size})"
+                    TAG,
+                    "Queued download (pending=${pendingQueue.size}, active=${activeDownloads.size})",
                 )
                 return
             }
@@ -152,19 +151,19 @@ class TelegramFileDownloadManager(
     }
 
     private suspend fun executeDownloadNow(
-            fileId: Int,
-            priority: Int,
-            offset: Long,
-            limit: Long,
+        fileId: Int,
+        priority: Int,
+        offset: Long,
+        limit: Long,
     ) {
         val result =
-                client.downloadFile(
-                        fileId = fileId,
-                        priority = priority,
-                        offset = offset,
-                        limit = limit,
-                        synchronous = false,
-                )
+            client.downloadFile(
+                fileId = fileId,
+                priority = priority,
+                offset = offset,
+                limit = limit,
+                synchronous = false,
+            )
 
         when (result) {
             is TdlResult.Success -> {
@@ -180,17 +179,20 @@ class TelegramFileDownloadManager(
         }
     }
 
-    override suspend fun cancelDownload(fileId: Int, deleteLocalCopy: Boolean) {
+    override suspend fun cancelDownload(
+        fileId: Int,
+        deleteLocalCopy: Boolean,
+    ) {
         UnifiedLog.d(TAG, "cancelDownload(fileId=$fileId, delete=$deleteLocalCopy)")
 
         // Remove from queue if pending
         queueMutex.withLock { pendingQueue.removeIf { it.fileId == fileId } }
 
         val result =
-                client.cancelDownloadFile(
-                        fileId = fileId,
-                        onlyIfPending = false,
-                )
+            client.cancelDownloadFile(
+                fileId = fileId,
+                onlyIfPending = false,
+            )
 
         when (result) {
             is TdlResult.Success -> {
@@ -221,10 +223,10 @@ class TelegramFileDownloadManager(
         UnifiedLog.d(TAG, "resolveRemoteId: $remoteId")
 
         val result =
-                client.getRemoteFile(
-                        remoteFileId = remoteId,
-                        fileType = null,
-                )
+            client.getRemoteFile(
+                remoteFileId = remoteId,
+                fileType = null,
+            )
 
         return when (result) {
             is TdlResult.Success -> {
@@ -250,12 +252,12 @@ class TelegramFileDownloadManager(
             is TdlResult.Success -> {
                 val stats = result.result
                 TgStorageStats(
-                        totalSize = stats.filesSize,
-                        photoCount = stats.fileCount, // Simplified - would need type breakdown
-                        videoCount = 0,
-                        documentCount = 0,
-                        audioCount = 0,
-                        otherCount = 0,
+                    totalSize = stats.filesSize,
+                    photoCount = stats.fileCount, // Simplified - would need type breakdown
+                    videoCount = 0,
+                    documentCount = 0,
+                    audioCount = 0,
+                    otherCount = 0,
                 )
             }
             is TdlResult.Failure -> {
@@ -265,26 +267,29 @@ class TelegramFileDownloadManager(
         }
     }
 
-    override suspend fun optimizeStorage(maxSizeBytes: Long, maxAgeDays: Int): Long {
+    override suspend fun optimizeStorage(
+        maxSizeBytes: Long,
+        maxAgeDays: Int,
+    ): Long {
         UnifiedLog.d(
-                TAG,
-                "optimizeStorage(maxSize=${maxSizeBytes / 1024 / 1024}MB, maxAge=${maxAgeDays}d)"
+            TAG,
+            "optimizeStorage(maxSize=${maxSizeBytes / 1024 / 1024}MB, maxAge=${maxAgeDays}d)",
         )
 
         val ttl = maxAgeDays * 24 * 60 * 60 // Convert to seconds
 
         val result =
-                client.optimizeStorage(
-                        size = maxSizeBytes,
-                        ttl = ttl,
-                        count = Int.MAX_VALUE,
-                        immunityDelay = 3600, // 1 hour immunity for recently accessed files
-                        fileTypes = emptyArray(), // All types
-                        chatIds = longArrayOf(), // All chats
-                        excludeChatIds = longArrayOf(),
-                        returnDeletedFileStatistics = true,
-                        chatLimit = 0,
-                )
+            client.optimizeStorage(
+                size = maxSizeBytes,
+                ttl = ttl,
+                count = Int.MAX_VALUE,
+                immunityDelay = 3600, // 1 hour immunity for recently accessed files
+                fileTypes = emptyArray(), // All types
+                chatIds = longArrayOf(), // All chats
+                excludeChatIds = longArrayOf(),
+                returnDeletedFileStatistics = true,
+                chatLimit = 0,
+            )
 
         return when (result) {
             is TdlResult.Success -> {
@@ -312,12 +317,12 @@ class TelegramFileDownloadManager(
             }
             local.isDownloadingActive -> {
                 _fileUpdates.emit(
-                        TgFileUpdate.Progress(
-                                fileId = fileId,
-                                downloadedSize = local.downloadedSize,
-                                totalSize = file.size,
-                                downloadedPrefixSize = local.downloadedPrefixSize,
-                        ),
+                    TgFileUpdate.Progress(
+                        fileId = fileId,
+                        downloadedSize = local.downloadedSize,
+                        totalSize = file.size,
+                        downloadedPrefixSize = local.downloadedPrefixSize,
+                    ),
                 )
             }
             !local.isDownloadingActive && !local.isDownloadingCompleted -> {
@@ -333,26 +338,26 @@ class TelegramFileDownloadManager(
      */
     private suspend fun onDownloadFinished(fileId: Int) {
         val nextDownload =
-                queueMutex.withLock {
-                    activeDownloads.remove(fileId)
+            queueMutex.withLock {
+                activeDownloads.remove(fileId)
 
-                    // Get next from queue if we have capacity
-                    if (activeDownloads.size < MAX_ACTIVE_DOWNLOADS && pendingQueue.isNotEmpty()) {
-                        val next = pendingQueue.poll()
-                        if (next != null) {
-                            activeDownloads.add(next.fileId)
-                        }
-                        next
-                    } else {
-                        null
+                // Get next from queue if we have capacity
+                if (activeDownloads.size < MAX_ACTIVE_DOWNLOADS && pendingQueue.isNotEmpty()) {
+                    val next = pendingQueue.poll()
+                    if (next != null) {
+                        activeDownloads.add(next.fileId)
                     }
+                    next
+                } else {
+                    null
                 }
+            }
 
         // Start next download outside lock
         nextDownload?.let { queued ->
             UnifiedLog.d(
-                    TAG,
-                    "Starting queued download fileId=${queued.fileId} (was pending, priority=${queued.priority})"
+                TAG,
+                "Starting queued download fileId=${queued.fileId} (was pending, priority=${queued.priority})",
             )
             executeDownloadNow(queued.fileId, queued.priority, queued.offset, queued.limit)
         }
@@ -366,27 +371,26 @@ class TelegramFileDownloadManager(
         }
     }
 
-    private fun mapFile(file: dev.g000sha256.tdl.dto.File): TgFile {
-        return TgFile(
-                id = file.id,
-                remoteId = file.remote?.id ?: "",
-                uniqueId = file.remote?.uniqueId ?: "",
-                size = file.size,
-                expectedSize = file.expectedSize,
-                localPath = file.local.path.takeIf { it.isNotEmpty() },
-                isDownloadingActive = file.local.isDownloadingActive,
-                isDownloadingCompleted = file.local.isDownloadingCompleted,
-                downloadedSize = file.local.downloadedSize,
-                downloadedPrefixSize = file.local.downloadedPrefixSize,
+    private fun mapFile(file: dev.g000sha256.tdl.dto.File): TgFile =
+        TgFile(
+            id = file.id,
+            remoteId = file.remote?.id ?: "",
+            uniqueId = file.remote?.uniqueId ?: "",
+            size = file.size,
+            expectedSize = file.expectedSize,
+            localPath = file.local.path.takeIf { it.isNotEmpty() },
+            isDownloadingActive = file.local.isDownloadingActive,
+            isDownloadingCompleted = file.local.isDownloadingCompleted,
+            downloadedSize = file.local.downloadedSize,
+            downloadedPrefixSize = file.local.downloadedPrefixSize,
         )
-    }
 
     /** Queued download request waiting for concurrency slot. */
     private data class QueuedDownload(
-            val fileId: Int,
-            val priority: Int,
-            val offset: Long,
-            val limit: Long,
-            val enqueuedAt: Long,
+        val fileId: Int,
+        val priority: Int,
+        val offset: Long,
+        val limit: Long,
+        val enqueuedAt: Long,
     )
 }

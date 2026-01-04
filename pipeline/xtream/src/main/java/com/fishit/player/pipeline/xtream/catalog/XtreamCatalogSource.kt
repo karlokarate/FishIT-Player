@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.Flow
  * - Uses batch loading (not reactive) for catalog sync
  */
 interface XtreamCatalogSource {
-
     /**
      * Load all VOD items.
      *
@@ -54,7 +53,7 @@ interface XtreamCatalogSource {
      */
     @Deprecated(
         message = "Use loadEpisodesStreaming() for parallel loading with checkpoint support",
-        replaceWith = ReplaceWith("loadEpisodesStreaming()")
+        replaceWith = ReplaceWith("loadEpisodesStreaming()"),
     )
     suspend fun loadEpisodes(): List<XtreamEpisode>
 

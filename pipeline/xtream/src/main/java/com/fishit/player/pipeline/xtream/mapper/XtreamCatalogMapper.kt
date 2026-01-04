@@ -19,7 +19,6 @@ import javax.inject.Inject
  * - All processing delegated to :core:metadata-normalizer
  */
 interface XtreamCatalogMapper {
-
     /**
      * Map a VOD item to catalog item.
      *
@@ -28,8 +27,8 @@ interface XtreamCatalogMapper {
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromVod(
-            item: XtreamVodItem,
-            imageAuthHeaders: Map<String, String>,
+        item: XtreamVodItem,
+        imageAuthHeaders: Map<String, String>,
     ): XtreamCatalogItem
 
     /**
@@ -40,8 +39,8 @@ interface XtreamCatalogMapper {
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromSeries(
-            item: XtreamSeriesItem,
-            imageAuthHeaders: Map<String, String>,
+        item: XtreamSeriesItem,
+        imageAuthHeaders: Map<String, String>,
     ): XtreamCatalogItem
 
     /**
@@ -53,9 +52,9 @@ interface XtreamCatalogMapper {
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromEpisode(
-            episode: XtreamEpisode,
-            seriesName: String? = null,
-            imageAuthHeaders: Map<String, String>,
+        episode: XtreamEpisode,
+        seriesName: String? = null,
+        imageAuthHeaders: Map<String, String>,
     ): XtreamCatalogItem
 
     /**
@@ -66,8 +65,8 @@ interface XtreamCatalogMapper {
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromChannel(
-            channel: XtreamChannel,
-            imageAuthHeaders: Map<String, String>,
+        channel: XtreamChannel,
+        imageAuthHeaders: Map<String, String>,
     ): XtreamCatalogItem
 }
 
@@ -76,47 +75,48 @@ interface XtreamCatalogMapper {
  *
  * Uses the existing toRawMediaMetadata() extensions from XtreamRawMetadataExtensions.
  */
-class XtreamCatalogMapperImpl @Inject constructor() : XtreamCatalogMapper {
-
-    override fun fromVod(
+class XtreamCatalogMapperImpl
+    @Inject
+    constructor() : XtreamCatalogMapper {
+        override fun fromVod(
             item: XtreamVodItem,
             imageAuthHeaders: Map<String, String>,
-    ): XtreamCatalogItem =
+        ): XtreamCatalogItem =
             XtreamCatalogItem(
-                    raw = item.toRawMediaMetadata(imageAuthHeaders),
-                    kind = XtreamItemKind.VOD,
-                    vodId = item.id,
+                raw = item.toRawMediaMetadata(imageAuthHeaders),
+                kind = XtreamItemKind.VOD,
+                vodId = item.id,
             )
 
-    override fun fromSeries(
+        override fun fromSeries(
             item: XtreamSeriesItem,
             imageAuthHeaders: Map<String, String>,
-    ): XtreamCatalogItem =
+        ): XtreamCatalogItem =
             XtreamCatalogItem(
-                    raw = item.toRawMediaMetadata(imageAuthHeaders),
-                    kind = XtreamItemKind.SERIES,
-                    seriesId = item.id,
+                raw = item.toRawMediaMetadata(imageAuthHeaders),
+                kind = XtreamItemKind.SERIES,
+                seriesId = item.id,
             )
 
-    override fun fromEpisode(
+        override fun fromEpisode(
             episode: XtreamEpisode,
             seriesName: String?,
             imageAuthHeaders: Map<String, String>,
-    ): XtreamCatalogItem =
+        ): XtreamCatalogItem =
             XtreamCatalogItem(
-                    raw = episode.toRawMediaMetadata(seriesName, imageAuthHeaders),
-                    kind = XtreamItemKind.EPISODE,
-                    seriesId = episode.seriesId,
-                    episodeId = episode.id,
+                raw = episode.toRawMediaMetadata(seriesName, imageAuthHeaders),
+                kind = XtreamItemKind.EPISODE,
+                seriesId = episode.seriesId,
+                episodeId = episode.id,
             )
 
-    override fun fromChannel(
+        override fun fromChannel(
             channel: XtreamChannel,
             imageAuthHeaders: Map<String, String>,
-    ): XtreamCatalogItem =
+        ): XtreamCatalogItem =
             XtreamCatalogItem(
-                    raw = channel.toRawMediaMetadata(imageAuthHeaders),
-                    kind = XtreamItemKind.LIVE,
-                    channelId = channel.id,
+                raw = channel.toRawMediaMetadata(imageAuthHeaders),
+                kind = XtreamItemKind.LIVE,
+                channelId = channel.id,
             )
-}
+    }

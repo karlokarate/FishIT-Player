@@ -21,6 +21,5 @@ import javax.inject.Singleton
 object DebugInterceptorModule {
     @Provides
     @Singleton
-    fun provideChuckerInterceptor(gatedChuckerInterceptor: GatedChuckerInterceptor): Interceptor =
-        gatedChuckerInterceptor
+    fun provideChuckerInterceptor(gatedChuckerInterceptor: GatedChuckerInterceptor): Interceptor = gatedChuckerInterceptor
 }

@@ -15,12 +15,12 @@ package com.fishit.player.pipeline.xtream.model
  * @property added Unix epoch timestamp when channel was added to provider catalog
  */
 data class XtreamChannel(
-        val id: Int,
-        val name: String,
-        val streamIcon: String? = null,
-        val epgChannelId: String? = null,
-        val tvArchive: Int = 0,
-        val tvArchiveDuration: Int = 0,
-        val categoryId: String? = null,
-        val added: Long? = null,
+    val id: Int,
+    val name: String,
+    val streamIcon: String? = null,
+    val epgChannelId: String? = null,
+    val tvArchive: Int = 0,
+    val tvArchiveDuration: Int = 0,
+    val categoryId: String? = null,
+    val added: Long? = null,
 )

@@ -42,27 +42,27 @@ data class TelegramMessageBundle(
      * Per Contract R7 (Lossless Emission): Each VIDEO becomes one RawMediaMetadata.
      */
     val videoCount: Int get() = videoMessages.size
-    
+
     /**
      * Whether this bundle has structured metadata from a TEXT message.
      */
     val hasStructuredMetadata: Boolean get() = textMessage != null
-    
+
     /**
      * Whether this bundle has a poster image from a PHOTO message.
      */
     val hasPoster: Boolean get() = photoMessage != null
-    
+
     /**
      * Whether this is a complete 3-cluster bundle (PHOTO + TEXT + VIDEO).
      */
     val isComplete: Boolean get() = bundleType == TelegramBundleType.FULL_3ER
-    
+
     /**
      * ChatId from the first message (all messages share the same chatId).
      */
     val chatId: Long get() = messages.firstOrNull()?.chatId ?: 0L
-    
+
     /**
      * MessageId range for logging/debugging.
      */
@@ -71,18 +71,19 @@ data class TelegramMessageBundle(
             val ids = messages.map { it.messageId }
             return (ids.minOrNull() ?: 0L)..(ids.maxOrNull() ?: 0L)
         }
-    
+
     companion object {
         /**
          * Creates a SINGLE bundle from a standalone message.
          */
-        fun single(message: TgMessage): TelegramMessageBundle = TelegramMessageBundle(
-            timestamp = message.date,
-            messages = listOf(message),
-            bundleType = TelegramBundleType.SINGLE,
-            videoMessages = listOf(message),
-            textMessage = null,
-            photoMessage = null,
-        )
+        fun single(message: TgMessage): TelegramMessageBundle =
+            TelegramMessageBundle(
+                timestamp = message.date,
+                messages = listOf(message),
+                bundleType = TelegramBundleType.SINGLE,
+                videoMessages = listOf(message),
+                textMessage = null,
+                photoMessage = null,
+            )
     }
 }

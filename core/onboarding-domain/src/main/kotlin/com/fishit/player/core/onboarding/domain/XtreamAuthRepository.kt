@@ -34,7 +34,9 @@ sealed class XtreamConnectionState {
 
     data object Connected : XtreamConnectionState()
 
-    data class Error(val message: String) : XtreamConnectionState()
+    data class Error(
+        val message: String,
+    ) : XtreamConnectionState()
 }
 
 sealed class XtreamAuthState {
@@ -42,7 +44,11 @@ sealed class XtreamAuthState {
 
     data object Authenticated : XtreamAuthState()
 
-    data class Failed(val message: String) : XtreamAuthState()
+    data class Failed(
+        val message: String,
+    ) : XtreamAuthState()
 
-    data class Expired(val expDate: String?) : XtreamAuthState()
+    data class Expired(
+        val expDate: String?,
+    ) : XtreamAuthState()
 }
