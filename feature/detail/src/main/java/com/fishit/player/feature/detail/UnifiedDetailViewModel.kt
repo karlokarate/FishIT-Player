@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.coroutines.coroutineContext
 import javax.inject.Inject
 
 /**
@@ -460,7 +461,7 @@ class UnifiedDetailViewModel
                     .take(1)
                     .cancellable()
                     .onEach { seasonItems ->
-                        if (!isActive) return@onEach
+                        if (!coroutineContext.isActive) return@onEach
                         
                         val seasons = seasonItems.map { it.seasonNumber }.sorted()
 
@@ -540,7 +541,7 @@ class UnifiedDetailViewModel
                     .take(1)
                     .cancellable()
                     .onEach { episodeItems ->
-                        if (!isActive) return@onEach
+                        if (!coroutineContext.isActive) return@onEach
                         
                         val episodes = episodeItems.map { it.toDetailEpisodeItem() }
 
@@ -663,14 +664,22 @@ class UnifiedDetailViewModel
             val episodeStreamId =
                 hints.streamId
                     ?: throw IllegalStateException("Episode missing streamId: ${episode.id}")
-            val containerExt = hints.containerExtension ?: "mkv"
+            
+            val containerExt = hints.containerExtension
+            if (containerExt == null) {
+                UnifiedLog.w(TAG) { 
+                    "Episode ${episode.id} missing containerExtension from API, falling back to 'mkv'. " +
+                    "This may cause playback issues if the actual format is different."
+                }
+            }
+            val finalContainerExt = containerExt ?: "mkv"
 
             val media = _state.value.media
             val seriesId = if (media != null) extractSeriesId(media.canonicalId) else null
 
             UnifiedLog.d(TAG) {
                 "Episode playback ready [series=$seriesId, season=${episode.season}, episode=${episode.episode}, " +
-                    "episodeId=${episode.id}, streamId=$episodeStreamId, containerExt=$containerExt]"
+                    "episodeId=${episode.id}, streamId=$episodeStreamId, containerExt=$finalContainerExt]"
             }
 
             val source =
@@ -683,7 +692,7 @@ class UnifiedDetailViewModel
                         buildMap {
                             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, "series")
                             put(PlaybackHintKeys.Xtream.EPISODE_ID, episodeStreamId.toString())
-                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, containerExt)
+                            put(PlaybackHintKeys.Xtream.CONTAINER_EXT, finalContainerExt)
                             put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.season.toString())
                             put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episode.toString())
                             if (seriesId != null) {
