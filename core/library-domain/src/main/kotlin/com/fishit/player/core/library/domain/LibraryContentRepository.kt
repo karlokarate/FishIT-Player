@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 // - Contract lives in core modules
 // - Implementations live in infra modules
 interface LibraryContentRepository {
-
     fun observeVod(categoryId: String? = null): Flow<List<LibraryMediaItem>>
 
     fun observeSeries(categoryId: String? = null): Flow<List<LibraryMediaItem>>
@@ -17,7 +16,10 @@ interface LibraryContentRepository {
 
     fun observeSeriesCategories(): Flow<List<LibraryCategory>>
 
-    suspend fun search(query: String, limit: Int = 50): List<LibraryMediaItem>
+    suspend fun search(
+        query: String,
+        limit: Int = 50,
+    ): List<LibraryMediaItem>
 }
 
 data class LibraryCategory(

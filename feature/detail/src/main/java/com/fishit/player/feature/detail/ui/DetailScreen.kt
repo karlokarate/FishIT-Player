@@ -90,12 +90,12 @@ import com.fishit.player.feature.detail.ui.helper.DetailSeriesSectionSeasonSelec
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun DetailScreen(
-        mediaId: String,
-        sourceType: SourceType,
-        onBack: () -> Unit,
-        onPlayback: (UnifiedDetailEvent.StartPlayback) -> Unit,
-        modifier: Modifier = Modifier,
-        viewModel: UnifiedDetailViewModel = hiltViewModel()
+    mediaId: String,
+    sourceType: SourceType,
+    onBack: () -> Unit,
+    onPlayback: (UnifiedDetailEvent.StartPlayback) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: UnifiedDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -108,7 +108,7 @@ fun DetailScreen(
             when (event) {
                 is UnifiedDetailEvent.StartPlayback -> onPlayback(event)
                 else -> {
-                    /* Handle other events */
+                    // Handle other events
                 }
             }
         }
@@ -124,15 +124,15 @@ fun DetailScreen(
             }
             state.media != null -> {
                 DetailContent(
-                        state = state,
-                        onBack = onBack,
-                        onPlay = { if (state.isLive) viewModel.playLive() else viewModel.play() },
-                        onResume = viewModel::resume,
-                        onPlayFromStart = viewModel::playFromStart,
-                        onShowSourcePicker = viewModel::showSourcePicker,
-                        onSelectSource = viewModel::selectSource,
-                        onSeasonSelected = viewModel::selectSeason,
-                        onEpisodeClick = viewModel::playEpisode,
+                    state = state,
+                    onBack = onBack,
+                    onPlay = { if (state.isLive) viewModel.playLive() else viewModel.play() },
+                    onResume = viewModel::resume,
+                    onPlayFromStart = viewModel::playFromStart,
+                    onShowSourcePicker = viewModel::showSourcePicker,
+                    onSelectSource = viewModel::selectSource,
+                    onSeasonSelected = viewModel::selectSeason,
+                    onEpisodeClick = viewModel::playEpisode,
                 )
             }
         }
@@ -142,15 +142,15 @@ fun DetailScreen(
 @Suppress("UNUSED_PARAMETER")
 @Composable
 private fun DetailContent(
-        state: UnifiedDetailState,
-        onBack: () -> Unit,
-        onPlay: () -> Unit,
-        onResume: () -> Unit,
-        onPlayFromStart: () -> Unit,
-        onShowSourcePicker: () -> Unit,
-        onSelectSource: (MediaSourceRef) -> Unit,
-        onSeasonSelected: (Int) -> Unit,
-        onEpisodeClick: (DetailEpisodeItem) -> Unit,
+    state: UnifiedDetailState,
+    onBack: () -> Unit,
+    onPlay: () -> Unit,
+    onResume: () -> Unit,
+    onPlayFromStart: () -> Unit,
+    onShowSourcePicker: () -> Unit,
+    onSelectSource: (MediaSourceRef) -> Unit,
+    onSeasonSelected: (Int) -> Unit,
+    onEpisodeClick: (DetailEpisodeItem) -> Unit,
 ) {
     val media = state.media ?: return
     val scrollState = rememberScrollState()
@@ -160,72 +160,75 @@ private fun DetailContent(
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             // Backdrop image
             FishImage(
-                    imageRef = media.backdrop ?: media.poster,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                imageRef = media.backdrop ?: media.poster,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
 
             // Gradient overlay for text readability
             Box(
-                    modifier =
-                            Modifier.fillMaxSize()
-                                    .background(
-                                            Brush.verticalGradient(
-                                                    colors =
-                                                            listOf(
-                                                                    Color.Black.copy(alpha = 0.3f),
-                                                                    Color.Black.copy(alpha = 0.1f),
-                                                                    Color.Black.copy(alpha = 0.7f)
-                                                            )
-                                            )
-                                    )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.3f),
+                                        Color.Black.copy(alpha = 0.1f),
+                                        Color.Black.copy(alpha = 0.7f),
+                                    ),
+                            ),
+                        ),
             )
 
             // Back button
             IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.align(Alignment.TopStart).padding(16.dp)
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
             ) {
                 Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
                 )
             }
 
             // Live badge for live content
             if (state.isLive) {
                 DetailLiveSectionBadge(
-                        isLive = true,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                    isLive = true,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                 )
             }
 
             // Title overlay at bottom
             Column(modifier = Modifier.align(Alignment.BottomStart).padding(24.dp)) {
                 Text(
-                        text = media.canonicalTitle,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                    text = media.canonicalTitle,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Meta chips row (adapted by media type)
                 MetaChipsRow(
-                        mediaType = state.effectiveMediaType,
-                        year = media.year,
-                        rating = media.rating?.toFloat(),
-                        durationMs =
-                                if (!state.isLive) {
-                                    state.activeSource?.durationMs ?: media.durationMs
-                                } else null,
-                        quality = state.activeSourceQualityLabel,
-                        season = media.season,
-                        episode = media.episode,
+                    mediaType = state.effectiveMediaType,
+                    year = media.year,
+                    rating = media.rating?.toFloat(),
+                    durationMs =
+                        if (!state.isLive) {
+                            state.activeSource?.durationMs ?: media.durationMs
+                        } else {
+                            null
+                        },
+                    quality = state.activeSourceQualityLabel,
+                    season = media.season,
+                    episode = media.episode,
                 )
             }
         }
@@ -235,9 +238,9 @@ private fun DetailContent(
             // Source badges if multiple sources
             if (state.hasMultipleSources) {
                 SourceBadgesRow(
-                        sourceTypes = state.availableSourceTypes,
-                        activeSource = state.activeSource,
-                        onShowPicker = onShowSourcePicker
+                    sourceTypes = state.availableSourceTypes,
+                    activeSource = state.activeSource,
+                    onShowPicker = onShowSourcePicker,
                 )
                 Spacer(modifier = Modifier.height(20.dp))
             }
@@ -248,10 +251,10 @@ private fun DetailContent(
                     // Live: Show now playing info
                     state.liveNowPlaying?.let { program ->
                         DetailLiveSectionNowPlaying(
-                                programTitle = program.title,
-                                programDescription = program.description,
-                                startTime = program.startTime,
-                                endTime = program.endTime,
+                            programTitle = program.title,
+                            programDescription = program.description,
+                            startTime = program.startTime,
+                            endTime = program.endTime,
                         )
                         Spacer(modifier = Modifier.height(20.dp))
                     }
@@ -260,10 +263,11 @@ private fun DetailContent(
                     // Series: Show season selector
                     if (state.seasons.isNotEmpty()) {
                         DetailSeriesSectionSeasonSelector(
-                                seasons = state.seasons,
-                                selectedSeason = state.selectedSeason
-                                                ?: state.seasons.firstOrNull() ?: 1,
-                                onSeasonSelected = onSeasonSelected,
+                            seasons = state.seasons,
+                            selectedSeason =
+                                state.selectedSeason
+                                    ?: state.seasons.firstOrNull() ?: 1,
+                            onSeasonSelected = onSeasonSelected,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -272,12 +276,12 @@ private fun DetailContent(
 
             // Action buttons (adapted for media type)
             ActionButtonsRow(
-                    mediaType = state.effectiveMediaType,
-                    canResume = state.canResume && !state.isLive,
-                    resumeProgress = state.resumeProgressPercent,
-                    onPlay = onPlay,
-                    onResume = onResume,
-                    onPlayFromStart = onPlayFromStart
+                mediaType = state.effectiveMediaType,
+                canResume = state.canResume && !state.isLive,
+                resumeProgress = state.resumeProgressPercent,
+                onPlay = onPlay,
+                onResume = onResume,
+                onPlayFromStart = onPlayFromStart,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -285,8 +289,8 @@ private fun DetailContent(
             // Series episodes (AFTER action buttons)
             if (state.isSeries && state.displayedEpisodes.isNotEmpty()) {
                 DetailSeriesSectionEpisodeList(
-                        episodes = state.displayedEpisodes,
-                        onEpisodeClick = onEpisodeClick,
+                    episodes = state.displayedEpisodes,
+                    onEpisodeClick = onEpisodeClick,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -295,15 +299,15 @@ private fun DetailContent(
             if (!state.isLive) {
                 media.plot?.let { overview ->
                     Text(
-                            text = "Overview",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground
+                        text = "Overview",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = overview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -312,15 +316,15 @@ private fun DetailContent(
                 media.genres?.let { genreString ->
                     if (genreString.isNotEmpty()) {
                         Text(
-                                text = "Genres",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onBackground
+                            text = "Genres",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                                text = genreString,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = genreString,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -330,15 +334,15 @@ private fun DetailContent(
                     if (director.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                                text = "Director",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onBackground
+                            text = "Director",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                                text = director,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = director,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -348,15 +352,15 @@ private fun DetailContent(
                     if (cast.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                                text = "Cast",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onBackground
+                            text = "Cast",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onBackground,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                                text = cast,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = cast,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -370,24 +374,24 @@ private fun DetailContent(
 
 @Composable
 private fun MetaChipsRow(
-        mediaType: MediaType,
-        year: Int?,
-        rating: Float?,
-        durationMs: Long?,
-        quality: String?,
-        season: Int? = null,
-        episode: Int? = null,
+    mediaType: MediaType,
+    year: Int?,
+    rating: Float?,
+    durationMs: Long?,
+    quality: String?,
+    season: Int? = null,
+    episode: Int? = null,
 ) {
     Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Season/Episode chip for episodes
         if (mediaType == MediaType.SERIES_EPISODE && season != null && episode != null) {
             MetaChip(
-                    icon = null,
-                    text = "S${season}E${episode}",
-                    backgroundColor = FishColors.Primary.copy(alpha = 0.8f)
+                icon = null,
+                text = "S${season}E$episode",
+                backgroundColor = FishColors.Primary.copy(alpha = 0.8f),
             )
         }
 
@@ -395,9 +399,9 @@ private fun MetaChipsRow(
 
         rating?.let {
             MetaChip(
-                    icon = Icons.Default.Star,
-                    text = String.format("%.1f", it),
-                    iconTint = FishColors.Rating
+                icon = Icons.Default.Star,
+                text = String.format("%.1f", it),
+                iconTint = FishColors.Rating,
             )
         }
 
@@ -414,24 +418,25 @@ private fun MetaChipsRow(
 
 @Composable
 private fun MetaChip(
-        icon: ImageVector?,
-        text: String,
-        iconTint: Color = Color.White.copy(alpha = 0.8f),
-        backgroundColor: Color = Color.Black.copy(alpha = 0.4f)
+    icon: ImageVector?,
+    text: String,
+    iconTint: Color = Color.White.copy(alpha = 0.8f),
+    backgroundColor: Color = Color.Black.copy(alpha = 0.4f),
 ) {
     Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier =
-                    Modifier.clip(FishShapes.Chip)
-                            .background(backgroundColor)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .clip(FishShapes.Chip)
+                .background(backgroundColor)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         icon?.let {
             Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(16.dp)
+                imageVector = it,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(16.dp),
             )
             Spacer(modifier = Modifier.width(6.dp))
         }
@@ -442,18 +447,18 @@ private fun MetaChip(
 @Suppress("UNUSED_PARAMETER")
 @Composable
 private fun SourceBadgesRow(
-        sourceTypes: List<SourceType>,
-        activeSource: MediaSourceRef?,
-        onShowPicker: () -> Unit
+    sourceTypes: List<SourceType>,
+    activeSource: MediaSourceRef?,
+    onShowPicker: () -> Unit,
 ) {
     Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-                text = "Available from:",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "Available from:",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         sourceTypes.forEach { type -> SourceBadgeChip(sourceType = type) }
@@ -461,9 +466,9 @@ private fun SourceBadgesRow(
         if (sourceTypes.size > 1) {
             OutlinedButton(onClick = onShowPicker, modifier = Modifier.height(32.dp)) {
                 Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = "Pick source",
-                        modifier = Modifier.size(16.dp)
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Pick source",
+                    modifier = Modifier.size(16.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Pick", style = MaterialTheme.typography.labelSmall)
@@ -474,29 +479,29 @@ private fun SourceBadgesRow(
 
 @Composable
 private fun ActionButtonsRow(
-        mediaType: MediaType,
-        canResume: Boolean,
-        resumeProgress: Int,
-        onPlay: () -> Unit,
-        onResume: () -> Unit,
-        onPlayFromStart: () -> Unit
+    mediaType: MediaType,
+    canResume: Boolean,
+    resumeProgress: Int,
+    onPlay: () -> Unit,
+    onResume: () -> Unit,
+    onPlayFromStart: () -> Unit,
 ) {
     // Determine button label based on media type
     val playLabel =
-            when (mediaType) {
-                MediaType.LIVE -> "Watch Live"
-                MediaType.AUDIOBOOK, MediaType.PODCAST -> "Listen"
-                MediaType.SERIES -> "Play Latest"
-                else -> "Play"
-            }
+        when (mediaType) {
+            MediaType.LIVE -> "Watch Live"
+            MediaType.AUDIOBOOK, MediaType.PODCAST -> "Listen"
+            MediaType.SERIES -> "Play Latest"
+            else -> "Play"
+        }
 
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
         if (canResume) {
             // Resume button (primary)
             Button(
-                    onClick = onResume,
-                    colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
-                    modifier = Modifier.weight(1f).height(56.dp)
+                onClick = onResume,
+                colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
+                modifier = Modifier.weight(1f).height(56.dp),
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -505,8 +510,8 @@ private fun ActionButtonsRow(
 
             // Play from start (secondary)
             OutlinedButton(
-                    onClick = onPlayFromStart,
-                    modifier = Modifier.weight(1f).height(56.dp)
+                onClick = onPlayFromStart,
+                modifier = Modifier.weight(1f).height(56.dp),
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -515,9 +520,9 @@ private fun ActionButtonsRow(
         } else {
             // Single play button
             Button(
-                    onClick = onPlay,
-                    colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
-                    modifier = Modifier.fillMaxWidth().height(56.dp)
+                onClick = onPlay,
+                colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -534,30 +539,33 @@ private fun LoadingContent() {
             CircularProgressIndicator(color = FishColors.Primary, modifier = Modifier.size(48.dp))
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                    text = "Loading details...",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Loading details...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
 @Composable
-private fun ErrorContent(error: String, onBack: () -> Unit) {
+private fun ErrorContent(
+    error: String,
+    onBack: () -> Unit,
+) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(text = "😿", style = MaterialTheme.typography.displayMedium)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                    text = "Couldn't load details",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground
+                text = "Couldn't load details",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                    text = error,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = error,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = onBack) { Text("Go Back") }

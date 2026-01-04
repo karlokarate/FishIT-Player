@@ -7,7 +7,6 @@ package com.fishit.player.core.persistence.inspector
  * navigation. Do not surface this in normal user flows.
  */
 interface ObxDatabaseInspector {
-
     /**
      * List all registered ObjectBox entity types (tables) with their row counts.
      */

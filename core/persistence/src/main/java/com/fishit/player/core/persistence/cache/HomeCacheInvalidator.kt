@@ -22,41 +22,52 @@ import javax.inject.Singleton
  * - No UI or feature dependencies
  */
 @Singleton
-class HomeCacheInvalidator @Inject constructor(private val homeContentCache: HomeContentCache) {
-    companion object {
-        private const val TAG = "HomeCacheInvalidator"
+class HomeCacheInvalidator
+    @Inject
+    constructor(
+        private val homeContentCache: HomeContentCache,
+    ) {
+        companion object {
+            private const val TAG = "HomeCacheInvalidator"
+        }
+
+        /**
+         * Invalidate all Home content cache entries.
+         *
+         * **Use Cases:**
+         * - After Xtream catalog scan completes
+         * - After Telegram history scan completes
+         * - After IO scan completes
+         * - After manual "Refresh" action
+         *
+         * **Thread Safety:**
+         * - Safe to call from Worker threads
+         * - Safe to call from multiple workers (idempotent)
+         */
+        suspend fun invalidateAllAfterSync(
+            source: String,
+            syncRunId: String,
+        ) {
+            UnifiedLog.i(TAG) { "INVALIDATE_ALL source=$source sync_run_id=$syncRunId" }
+
+            homeContentCache.invalidateAll()
+
+            UnifiedLog.d(TAG) { "Cache invalidated: Home UI will refresh from DB on next query" }
+        }
+
+        /**
+         * Invalidate specific cache key (optional fine-grained control).
+         *
+         * **Use Case:** If sync only affected movies, invalidate only Movies cache. Currently not used
+         * (Phase 2 uses full invalidation).
+         */
+        suspend fun invalidateKey(
+            key: CacheKey,
+            source: String,
+            syncRunId: String,
+        ) {
+            UnifiedLog.i(TAG) { "INVALIDATE_KEY key=${key.name} source=$source sync_run_id=$syncRunId" }
+
+            homeContentCache.invalidate(key)
+        }
     }
-
-    /**
-     * Invalidate all Home content cache entries.
-     *
-     * **Use Cases:**
-     * - After Xtream catalog scan completes
-     * - After Telegram history scan completes
-     * - After IO scan completes
-     * - After manual "Refresh" action
-     *
-     * **Thread Safety:**
-     * - Safe to call from Worker threads
-     * - Safe to call from multiple workers (idempotent)
-     */
-    suspend fun invalidateAllAfterSync(source: String, syncRunId: String) {
-        UnifiedLog.i(TAG) { "INVALIDATE_ALL source=$source sync_run_id=$syncRunId" }
-
-        homeContentCache.invalidateAll()
-
-        UnifiedLog.d(TAG) { "Cache invalidated: Home UI will refresh from DB on next query" }
-    }
-
-    /**
-     * Invalidate specific cache key (optional fine-grained control).
-     *
-     * **Use Case:** If sync only affected movies, invalidate only Movies cache. Currently not used
-     * (Phase 2 uses full invalidation).
-     */
-    suspend fun invalidateKey(key: CacheKey, source: String, syncRunId: String) {
-        UnifiedLog.i(TAG) { "INVALIDATE_KEY key=${key.name} source=$source sync_run_id=$syncRunId" }
-
-        homeContentCache.invalidate(key)
-    }
-}

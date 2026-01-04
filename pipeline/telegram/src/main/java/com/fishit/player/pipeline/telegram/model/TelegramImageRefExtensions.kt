@@ -51,10 +51,10 @@ fun TelegramMediaItem.toMinithumbnailImageRef(): ImageRef? {
     if (bytes.isEmpty()) return null
 
     return ImageRef.InlineBytes(
-            bytes = bytes,
-            mimeType = "image/jpeg",
-            preferredWidth = minithumbnailWidth,
-            preferredHeight = minithumbnailHeight,
+        bytes = bytes,
+        mimeType = "image/jpeg",
+        preferredWidth = minithumbnailWidth,
+        preferredHeight = minithumbnailHeight,
     )
 }
 
@@ -73,11 +73,11 @@ fun TelegramMediaItem.toThumbnailImageRef(): ImageRef? {
     // Priority 1: TelegramThumb reference (video/document thumbnail)
     thumbRemoteId?.takeIf { it.isNotBlank() }?.let { remoteId ->
         return ImageRef.TelegramThumb(
-                remoteId = remoteId,
-                chatId = chatId,
-                messageId = messageId,
-                preferredWidth = thumbnailWidth,
-                preferredHeight = thumbnailHeight,
+            remoteId = remoteId,
+            chatId = chatId,
+            messageId = messageId,
+            preferredWidth = thumbnailWidth,
+            preferredHeight = thumbnailHeight,
         )
     }
 
@@ -99,8 +99,7 @@ fun TelegramMediaItem.toPosterImageRef(): ImageRef? {
 }
 
 /** Check if this media item has any thumbnail available. */
-fun TelegramMediaItem.hasThumbnail(): Boolean =
-        thumbRemoteId?.isNotBlank() == true || photoSizes.isNotEmpty()
+fun TelegramMediaItem.hasThumbnail(): Boolean = thumbRemoteId?.isNotBlank() == true || photoSizes.isNotEmpty()
 
 // =============================================================================
 // TelegramPhotoSize Extensions
@@ -115,7 +114,10 @@ fun TelegramMediaItem.hasThumbnail(): Boolean =
  * @param messageId Message ID for context
  * @return ImageRef.TelegramThumb or null if empty
  */
-fun List<TelegramPhotoSize>.toBestImageRef(chatId: Long, messageId: Long): ImageRef? {
+fun List<TelegramPhotoSize>.toBestImageRef(
+    chatId: Long,
+    messageId: Long,
+): ImageRef? {
     if (isEmpty()) return null
 
     // Select largest by pixel count
@@ -133,15 +135,17 @@ fun List<TelegramPhotoSize>.toBestImageRef(chatId: Long, messageId: Long): Image
  * @param messageId Message ID for context
  * @return ImageRef.TelegramThumb
  */
-fun TelegramPhotoSize.toImageRef(chatId: Long, messageId: Long): ImageRef {
-    return ImageRef.TelegramThumb(
-            remoteId = remoteId,
-            chatId = chatId,
-            messageId = messageId,
-            preferredWidth = width,
-            preferredHeight = height,
+fun TelegramPhotoSize.toImageRef(
+    chatId: Long,
+    messageId: Long,
+): ImageRef =
+    ImageRef.TelegramThumb(
+        remoteId = remoteId,
+        chatId = chatId,
+        messageId = messageId,
+        preferredWidth = width,
+        preferredHeight = height,
     )
-}
 
 /**
  * Find the thumbnail-sized photo (smallest).
@@ -150,7 +154,10 @@ fun TelegramPhotoSize.toImageRef(chatId: Long, messageId: Long): ImageRef {
  * @param messageId Message ID for context
  * @return ImageRef for smallest size, or null if empty
  */
-fun List<TelegramPhotoSize>.toThumbnailImageRef(chatId: Long, messageId: Long): ImageRef? {
+fun List<TelegramPhotoSize>.toThumbnailImageRef(
+    chatId: Long,
+    messageId: Long,
+): ImageRef? {
     if (isEmpty()) return null
 
     // Select smallest by pixel count (thumbnail)

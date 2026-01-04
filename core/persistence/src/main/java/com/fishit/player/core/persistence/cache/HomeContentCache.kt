@@ -1,8 +1,8 @@
 package com.fishit.player.core.persistence.cache
 
+import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Multi-layer cache for Home screen content.
@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.Flow
  * - Sync-triggered invalidation
  */
 interface HomeContentCache {
-
     /**
      * Get cached section with TTL check.
      * Returns null if not cached or expired.
@@ -38,7 +37,10 @@ interface HomeContentCache {
      * **Thread Safety:** Safe to call from any thread (ConcurrentHashMap write)
      * **Non-blocking:** Synchronous operation, no suspend needed
      */
-    fun <T> put(key: CacheKey, section: CachedSection<T>)
+    fun <T> put(
+        key: CacheKey,
+        section: CachedSection<T>,
+    )
 
     /**
      * Invalidate specific section.
@@ -66,12 +68,19 @@ interface HomeContentCache {
  * - Keys are stable across app restarts
  * - Keys are used for invalidation targeting
  */
-sealed class CacheKey(val name: String) {
+sealed class CacheKey(
+    val name: String,
+) {
     data object ContinueWatching : CacheKey("continue_watching")
+
     data object RecentlyAdded : CacheKey("recently_added")
+
     data object Movies : CacheKey("movies")
+
     data object Series : CacheKey("series")
+
     data object Clips : CacheKey("clips")
+
     data object LiveTV : CacheKey("live_tv")
 }
 
@@ -85,16 +94,14 @@ sealed class CacheKey(val name: String) {
  * - Generic type T for items (domain-agnostic)
  */
 data class CachedSection<T>(
-        val items: List<T>,
-        val timestamp: Long = System.currentTimeMillis(),
-        val ttl: Duration = 300.seconds // 5 minutes default
+    val items: List<T>,
+    val timestamp: Long = System.currentTimeMillis(),
+    val ttl: Duration = 300.seconds, // 5 minutes default
 ) {
     /**
      * Check if cache entry is expired based on TTL.
      *
      * **Thread Safety:** Safe to call from any thread (pure computation)
      */
-    fun isExpired(): Boolean {
-        return System.currentTimeMillis() - timestamp > ttl.inWholeMilliseconds
-    }
+    fun isExpired(): Boolean = System.currentTimeMillis() - timestamp > ttl.inWholeMilliseconds
 }

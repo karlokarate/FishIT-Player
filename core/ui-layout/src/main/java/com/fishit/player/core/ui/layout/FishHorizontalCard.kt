@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,11 +49,12 @@ fun FishHorizontalCard(
     Surface(
         shape = FishShapes.Small,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = modifier
-            .fillMaxWidth()
-            .tvFocusable(
-                onClick = onClick,
-            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .tvFocusable(
+                    onClick = onClick,
+                ),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -63,9 +63,10 @@ fun FishHorizontalCard(
         ) {
             if (thumbnail != null) {
                 Box(
-                    modifier = Modifier
-                        .size(width = 120.dp, height = 68.dp)
-                        .clip(FishShapes.TileSmall),
+                    modifier =
+                        Modifier
+                            .size(width = 120.dp, height = 68.dp)
+                            .clip(FishShapes.TileSmall),
                 ) {
                     FishImage(
                         imageRef = thumbnail,
@@ -117,12 +118,11 @@ fun FishHorizontalCard(
 
 /** Helper overlay: darken thumbnail background. */
 @Composable
-fun BoxScope.FishThumbnailScrim(
-    alpha: Float = 0.3f,
-) {
+fun BoxScope.FishThumbnailScrim(alpha: Float = 0.3f) {
     Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(Color.Black.copy(alpha = alpha)),
+        modifier =
+            Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = alpha)),
     )
 }

@@ -22,25 +22,25 @@ package com.fishit.player.pipeline.xtream.model
  * @property seriesTmdbId TMDB TV show ID inherited from parent series (Gold Decision Dec 2025)
  */
 data class XtreamEpisode(
-        val id: Int,
-        val seriesId: Int,
-        val seriesName: String? = null,
-        val seasonNumber: Int,
-        val episodeNumber: Int,
-        val title: String,
-        val containerExtension: String? = null,
-        val plot: String? = null,
-        val duration: String? = null,
-        val releaseDate: String? = null,
-        val rating: Double? = null,
-        val thumbnail: String? = null,
-        val added: Long? = null,
-        /**
-         * TMDB TV show ID inherited from parent series (Gold Decision Dec 2025).
-         *
-         * Episodes use the series TMDB ID (TV type) combined with season/episode numbers.
-         * Maps to ExternalIds.tmdb = TmdbRef(TV, seriesTmdbId).
-         * TMDB API: GET /tv/{seriesTmdbId}/season/{seasonNumber}/episode/{episodeNumber}
-         */
-        val seriesTmdbId: Int? = null,
+    val id: Int,
+    val seriesId: Int,
+    val seriesName: String? = null,
+    val seasonNumber: Int,
+    val episodeNumber: Int,
+    val title: String,
+    val containerExtension: String? = null,
+    val plot: String? = null,
+    val duration: String? = null,
+    val releaseDate: String? = null,
+    val rating: Double? = null,
+    val thumbnail: String? = null,
+    val added: Long? = null,
+    /**
+     * TMDB TV show ID inherited from parent series (Gold Decision Dec 2025).
+     *
+     * Episodes use the series TMDB ID (TV type) combined with season/episode numbers.
+     * Maps to ExternalIds.tmdb = TmdbRef(TV, seriesTmdbId).
+     * TMDB API: GET /tv/{seriesTmdbId}/season/{seasonNumber}/episode/{episodeNumber}
+     */
+    val seriesTmdbId: Int? = null,
 )

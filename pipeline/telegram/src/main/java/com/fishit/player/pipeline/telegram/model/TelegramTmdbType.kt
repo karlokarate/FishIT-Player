@@ -21,15 +21,18 @@ enum class TelegramTmdbType {
     MOVIE,
 
     /** TMDB TV Show - /tv/{id} path (episodes use this with season/episode) */
-    TV;
+    TV,
+
+    ;
 
     /**
      * Convert to core model TmdbMediaType.
      */
-    fun toTmdbMediaType(): TmdbMediaType = when (this) {
-        MOVIE -> TmdbMediaType.MOVIE
-        TV -> TmdbMediaType.TV
-    }
+    fun toTmdbMediaType(): TmdbMediaType =
+        when (this) {
+            MOVIE -> TmdbMediaType.MOVIE
+            TV -> TmdbMediaType.TV
+        }
 
     companion object {
         /**
@@ -49,7 +52,7 @@ enum class TelegramTmdbType {
             if (!TMDB_HOST_PATTERN.containsMatchIn(url)) {
                 return null
             }
-            
+
             val movieMatch = MOVIE_PATH_PATTERN.find(url)
             if (movieMatch != null) {
                 val id = movieMatch.groupValues[1].toIntOrNull() ?: return null
@@ -67,11 +70,11 @@ enum class TelegramTmdbType {
 
         // Verify URL contains themoviedb.org (with or without www)
         private val TMDB_HOST_PATTERN = Regex("""(www\.)?themoviedb\.org""", RegexOption.IGNORE_CASE)
-        
+
         // Match /movie/123 or /movie/123-slug path segment
         private val MOVIE_PATH_PATTERN = Regex("""/movie/(\d+)""")
-        
-        // Match /tv/123 or /tv/123-slug path segment  
+
+        // Match /tv/123 or /tv/123-slug path segment
         private val TV_PATH_PATTERN = Regex("""/tv/(\d+)""")
     }
 }

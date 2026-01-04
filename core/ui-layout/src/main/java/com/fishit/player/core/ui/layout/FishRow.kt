@@ -14,19 +14,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.ui.theme.FishTheme
 import com.fishit.player.core.ui.theme.LocalFishDimens
 
 /**
@@ -36,7 +31,7 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
 fun FishRowHeader(
     title: String,
     count: Int? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dimens = LocalFishDimens.current
 
@@ -44,10 +39,11 @@ fun FishRowHeader(
         text = if (count != null) "$title ($count)" else title,
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier.padding(
-            horizontal = dimens.contentPaddingHorizontal,
-            vertical = 8.dp
-        )
+        modifier =
+            modifier.padding(
+                horizontal = dimens.contentPaddingHorizontal,
+                vertical = 8.dp,
+            ),
     )
 }
 
@@ -71,36 +67,38 @@ fun <T> FishRow(
     itemKey: ((T) -> Any)? = null,
     count: Int? = null,
     onRowFocused: ((Boolean) -> Unit)? = null,
-    itemContent: @Composable (item: T, index: Int, isFocused: Boolean) -> Unit
+    itemContent: @Composable (item: T, index: Int, isFocused: Boolean) -> Unit,
 ) {
     val dimens = LocalFishDimens.current
     val listState = rememberLazyListState()
     var focusedIndex by remember { mutableIntStateOf(-1) }
 
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         FishRowHeader(
             title = title,
-            count = count ?: items.size
+            count = count ?: items.size,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(
-                horizontal = dimens.contentPaddingHorizontal,
-                vertical = 8.dp
-            ),
+            contentPadding =
+                PaddingValues(
+                    horizontal = dimens.contentPaddingHorizontal,
+                    vertical = 8.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(dimens.tileSpacing),
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusGroup()
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusGroup(),
         ) {
             items(
                 items = items,
-                key = itemKey
+                key = itemKey,
             ) { item ->
                 val index = items.indexOf(item)
                 val isFocused = focusedIndex == index
@@ -125,13 +123,13 @@ fun <T> FishRowSimple(
     getSourceColors: (T) -> List<Color> = { emptyList() },
     getResumeFraction: (T) -> Float? = { null },
     isNew: (T) -> Boolean = { false },
-    onItemClick: (T) -> Unit
+    onItemClick: (T) -> Unit,
 ) {
     FishRow(
         title = title,
         items = items,
         modifier = modifier,
-        itemKey = itemKey
+        itemKey = itemKey,
     ) { item, index, isFocused ->
         FishTile(
             title = getTitle(item),
@@ -139,7 +137,7 @@ fun <T> FishRowSimple(
             sourceColors = getSourceColors(item),
             resumeFraction = getResumeFraction(item),
             isNew = isNew(item),
-            onClick = { onItemClick(item) }
+            onClick = { onItemClick(item) },
         )
     }
 }
@@ -151,12 +149,12 @@ fun <T> FishRowSimple(
 fun FishRowEmpty(
     title: String,
     message: String = "No content available",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dimens = LocalFishDimens.current
 
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         FishRowHeader(title = title, count = 0)
 
@@ -164,10 +162,11 @@ fun FishRowEmpty(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(
-                horizontal = dimens.contentPaddingHorizontal,
-                vertical = 16.dp
-            )
+            modifier =
+                Modifier.padding(
+                    horizontal = dimens.contentPaddingHorizontal,
+                    vertical = 16.dp,
+                ),
         )
     }
 }

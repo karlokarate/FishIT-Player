@@ -46,73 +46,73 @@ import kotlinx.coroutines.isActive
  */
 @HiltWorker
 class TelegramFullHistoryScanWorker
-@AssistedInject
-constructor(
+    @AssistedInject
+    constructor(
         @Assisted context: Context,
         @Assisted workerParams: WorkerParameters,
         private val catalogSyncService: DefaultCatalogSyncService,
         private val checkpointStore: SyncCheckpointStore,
         private val homeCacheInvalidator: HomeCacheInvalidator, // ✅ Phase 2: Cache invalidation
-) : CoroutineWorker(context, workerParams) {
-    companion object {
-        private const val TAG = "TelegramFullHistoryScanWorker"
+    ) : CoroutineWorker(context, workerParams) {
+        companion object {
+            private const val TAG = "TelegramFullHistoryScanWorker"
 
-        /** Default parallel chat count (lower than Xtream due to TDLib rate limits) */
-        private const val DEFAULT_CHAT_PARALLELISM = TelegramCatalogConfig.DEFAULT_CHAT_PARALLELISM
-    }
-
-    override suspend fun doWork(): Result {
-        val input = WorkerInputData.from(inputData)
-        val startTimeMs = System.currentTimeMillis()
-        var itemsPersisted = 0L
-        var lastCheckpoint: String? = null
-
-        // PLATINUM: Track processed chats for checkpoint resume
-        val processedChatIds = mutableSetOf<Long>()
-        val newHighWaterMarks = mutableMapOf<Long, Long>()
-
-        UnifiedLog.i(TAG) {
-            "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM kind=FULL_HISTORY_PLATINUM"
+            /** Default parallel chat count (lower than Xtream due to TDLib rate limits) */
+            private const val DEFAULT_CHAT_PARALLELISM = TelegramCatalogConfig.DEFAULT_CHAT_PARALLELISM
         }
 
-        // Check runtime guards (respects sync mode - manual syncs skip battery guards)
-        val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
-        if (guardReason != null) {
-            UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
-            return Result.retry()
-        }
+        override suspend fun doWork(): Result {
+            val input = WorkerInputData.from(inputData)
+            val startTimeMs = System.currentTimeMillis()
+            var itemsPersisted = 0L
+            var lastCheckpoint: String? = null
 
-        // PLATINUM: Load existing checkpoint for resume
-        val existingCheckpoint =
+            // PLATINUM: Track processed chats for checkpoint resume
+            val processedChatIds = mutableSetOf<Long>()
+            val newHighWaterMarks = mutableMapOf<Long, Long>()
+
+            UnifiedLog.i(TAG) {
+                "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=TELEGRAM kind=FULL_HISTORY_PLATINUM"
+            }
+
+            // Check runtime guards (respects sync mode - manual syncs skip battery guards)
+            val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+            if (guardReason != null) {
+                UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
+                return Result.retry()
+            }
+
+            // PLATINUM: Load existing checkpoint for resume
+            val existingCheckpoint =
                 checkpointStore.getTelegramCheckpoint()?.let { TelegramSyncCheckpoint.decode(it) }
-                        ?: TelegramSyncCheckpoint.INITIAL
+                    ?: TelegramSyncCheckpoint.INITIAL
 
-        // Add previously processed chats to our tracking set (for HWM preservation)
-        processedChatIds.addAll(existingCheckpoint.processedChatIds)
+            // Add previously processed chats to our tracking set (for HWM preservation)
+            processedChatIds.addAll(existingCheckpoint.processedChatIds)
 
-        UnifiedLog.i(TAG) {
-            "PLATINUM checkpoint: already_processed=${existingCheckpoint.processedChatIds.size} chats"
-        }
+            UnifiedLog.i(TAG) {
+                "PLATINUM checkpoint: already_processed=${existingCheckpoint.processedChatIds.size} chats"
+            }
 
-        // Build sync config based on device class (W-17)
-        val syncConfig =
+            // Build sync config based on device class (W-17)
+            val syncConfig =
                 SyncConfig(
-                        batchSize = input.batchSize,
-                        enableNormalization = true,
-                        emitProgressEvery = input.batchSize,
+                    batchSize = input.batchSize,
+                    enableNormalization = true,
+                    emitProgressEvery = input.batchSize,
                 )
 
-        try {
-            // W-2: Call CatalogSyncService with PLATINUM parameters
-            // Note: chatIds = null means scan all chats (full history)
-            catalogSyncService.syncTelegramPlatinum(
-                            chatIds = null, // Full history - no artificial limits
-                            syncConfig = syncConfig,
-                            excludeChatIds =
-                                    existingCheckpoint.processedChatIds, // Resume from checkpoint
-                            chatParallelism = DEFAULT_CHAT_PARALLELISM,
-                    )
-                    .collect { status ->
+            try {
+                // W-2: Call CatalogSyncService with PLATINUM parameters
+                // Note: chatIds = null means scan all chats (full history)
+                catalogSyncService
+                    .syncTelegramPlatinum(
+                        chatIds = null, // Full history - no artificial limits
+                        syncConfig = syncConfig,
+                        excludeChatIds =
+                            existingCheckpoint.processedChatIds, // Resume from checkpoint
+                        chatParallelism = DEFAULT_CHAT_PARALLELISM,
+                    ).collect { status ->
                         // Check if worker is cancelled
                         if (!currentCoroutineContext().isActive) {
                             UnifiedLog.w(TAG) { "Worker cancelled, saving checkpoint" }
@@ -163,9 +163,9 @@ constructor(
                                 // Save checkpoint periodically (every 5 chats)
                                 if (processedChatIds.size % 5 == 0) {
                                     saveCheckpoint(
-                                            existingCheckpoint,
-                                            processedChatIds,
-                                            newHighWaterMarks
+                                        existingCheckpoint,
+                                        processedChatIds,
+                                        newHighWaterMarks,
                                     )
                                 }
                             }
@@ -176,17 +176,17 @@ constructor(
                                 // newHighWaterMarks
                                 // Clear processedChatIds since sync is complete (no resume needed)
                                 val finalCheckpoint =
-                                        existingCheckpoint
-                                                .updateHighWaterMarks(
-                                                        newHighWaterMarks
-                                                ) // Merge new HWMs
-                                                .clearProcessedChatIds() // Reset for next sync
-                                                .markComplete() // Update timestamp
+                                    existingCheckpoint
+                                        .updateHighWaterMarks(
+                                            newHighWaterMarks,
+                                        ) // Merge new HWMs
+                                        .clearProcessedChatIds() // Reset for next sync
+                                        .markComplete() // Update timestamp
                                 checkpointStore.saveTelegramCheckpoint(finalCheckpoint.encode())
 
                                 UnifiedLog.i(TAG) {
                                     "PLATINUM sync completed: ${status.totalItems} items in ${status.durationMs}ms, " +
-                                            "${newHighWaterMarks.size} HWMs updated"
+                                        "${newHighWaterMarks.size} HWMs updated"
                                 }
                             }
                             is SyncStatus.Cancelled -> {
@@ -194,9 +194,9 @@ constructor(
 
                                 // Save checkpoint for resume
                                 saveCheckpoint(
-                                        existingCheckpoint,
-                                        processedChatIds,
-                                        newHighWaterMarks
+                                    existingCheckpoint,
+                                    processedChatIds,
+                                    newHighWaterMarks,
                                 )
 
                                 UnifiedLog.w(TAG) {
@@ -206,9 +206,9 @@ constructor(
                             is SyncStatus.Error -> {
                                 // Save checkpoint before error propagation
                                 saveCheckpoint(
-                                        existingCheckpoint,
-                                        processedChatIds,
-                                        newHighWaterMarks
+                                    existingCheckpoint,
+                                    processedChatIds,
+                                    newHighWaterMarks,
                                 )
 
                                 UnifiedLog.e(TAG) {
@@ -218,75 +218,75 @@ constructor(
                             }
                             // Ignore Xtream-specific events
                             is SyncStatus.SeriesEpisodeComplete -> {
-                                /* not applicable */
+                                // not applicable
                             }
                         }
                     }
 
-            val durationMs = System.currentTimeMillis() - startTimeMs
-            UnifiedLog.i(TAG) {
-                "✅ SUCCESS duration_ms=$durationMs persisted_count=$itemsPersisted chats_processed=${processedChatIds.size} source=TELEGRAM kind=FULL_HISTORY_PLATINUM"
-            }
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.i(TAG) {
+                    "✅ SUCCESS duration_ms=$durationMs persisted_count=$itemsPersisted chats_processed=${processedChatIds.size} source=TELEGRAM kind=FULL_HISTORY_PLATINUM"
+                }
 
-            // ✅ Phase 2: Invalidate Home cache after successful sync
-            homeCacheInvalidator.invalidateAllAfterSync(
+                // ✅ Phase 2: Invalidate Home cache after successful sync
+                homeCacheInvalidator.invalidateAllAfterSync(
                     source = "TELEGRAM",
-                    syncRunId = input.syncRunId
-            )
+                    syncRunId = input.syncRunId,
+                )
 
-            return Result.success(
+                return Result.success(
                     WorkerOutputData.success(
-                            itemsPersisted = itemsPersisted,
-                            durationMs = durationMs,
-                            checkpointCursor = lastCheckpoint,
+                        itemsPersisted = itemsPersisted,
+                        durationMs = durationMs,
+                        checkpointCursor = lastCheckpoint,
                     ),
-            )
-        } catch (e: CancellationException) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
+                )
+            } catch (e: CancellationException) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
 
-            // Save checkpoint for resume
-            saveCheckpoint(existingCheckpoint, processedChatIds, newHighWaterMarks)
+                // Save checkpoint for resume
+                saveCheckpoint(existingCheckpoint, processedChatIds, newHighWaterMarks)
 
-            UnifiedLog.w(TAG) {
-                "⏸️ CANCELLED after ${durationMs}ms, persisted $itemsPersisted items, checkpointed ${processedChatIds.size} chats"
-            }
+                UnifiedLog.w(TAG) {
+                    "⏸️ CANCELLED after ${durationMs}ms, persisted $itemsPersisted items, checkpointed ${processedChatIds.size} chats"
+                }
 
-            // Return success so checkpoint is preserved
-            return Result.success(
+                // Return success so checkpoint is preserved
+                return Result.success(
                     WorkerOutputData.success(
-                            itemsPersisted = itemsPersisted,
-                            durationMs = durationMs,
-                            checkpointCursor = "processed_chats=${processedChatIds.size}",
+                        itemsPersisted = itemsPersisted,
+                        durationMs = durationMs,
+                        checkpointCursor = "processed_chats=${processedChatIds.size}",
                     ),
-            )
-        } catch (e: Exception) {
-            val durationMs = System.currentTimeMillis() - startTimeMs
+                )
+            } catch (e: Exception) {
+                val durationMs = System.currentTimeMillis() - startTimeMs
 
-            // Save checkpoint for resume
-            saveCheckpoint(existingCheckpoint, processedChatIds, newHighWaterMarks)
+                // Save checkpoint for resume
+                saveCheckpoint(existingCheckpoint, processedChatIds, newHighWaterMarks)
 
-            UnifiedLog.e(TAG, e) {
-                "❌ FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs chats_checkpointed=${processedChatIds.size} source=TELEGRAM"
+                UnifiedLog.e(TAG, e) {
+                    "❌ FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs chats_checkpointed=${processedChatIds.size} source=TELEGRAM"
+                }
+
+                // Transient error - retry (bounded by WorkManager backoff)
+                return Result.retry()
             }
-
-            // Transient error - retry (bounded by WorkManager backoff)
-            return Result.retry()
         }
-    }
 
-    /** Save checkpoint with processed chat IDs and high-water marks. */
-    private suspend fun saveCheckpoint(
+        /** Save checkpoint with processed chat IDs and high-water marks. */
+        private suspend fun saveCheckpoint(
             existingCheckpoint: TelegramSyncCheckpoint,
             processedChatIds: Set<Long>,
             newHighWaterMarks: Map<Long, Long>,
-    ) {
-        val checkpoint =
+        ) {
+            val checkpoint =
                 existingCheckpoint
-                        .addProcessedChatIds(processedChatIds)
-                        .updateHighWaterMarks(newHighWaterMarks)
-        checkpointStore.saveTelegramCheckpoint(checkpoint.encode())
-        UnifiedLog.d(TAG) {
-            "Checkpoint saved: ${processedChatIds.size} chats, ${newHighWaterMarks.size} HWMs"
+                    .addProcessedChatIds(processedChatIds)
+                    .updateHighWaterMarks(newHighWaterMarks)
+            checkpointStore.saveTelegramCheckpoint(checkpoint.encode())
+            UnifiedLog.d(TAG) {
+                "Checkpoint saved: ${processedChatIds.size} chats, ${newHighWaterMarks.size} HWMs"
+            }
         }
     }
-}

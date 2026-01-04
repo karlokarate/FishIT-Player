@@ -9,13 +9,12 @@ import androidx.compose.ui.graphics.Color
  * Designed for TV and mobile, supporting both Classic and Experience skins.
  */
 object FishColors {
-
     // ═══════════════════════════════════════════════════════════════════
     // Primary Accents (Green-based)
     // ═══════════════════════════════════════════════════════════════════
 
-    val Primary = Color(0xFF2EC27E)          // Sattes Grün - Hauptakzent
-    val OnPrimary = Color(0xFF00140A)        // Text auf Primary
+    val Primary = Color(0xFF2EC27E) // Sattes Grün - Hauptakzent
+    val OnPrimary = Color(0xFF00140A) // Text auf Primary
     val PrimaryContainer = Color(0xFF1E8F61)
     val OnPrimaryContainer = Color(0xFFEAF5EF)
 
@@ -33,7 +32,7 @@ object FishColors {
     // Moss Background (Dark Green)
     // ═══════════════════════════════════════════════════════════════════
 
-    val Background = Color(0xFF0F2418)        // Dunkelgrüner Hintergrund
+    val Background = Color(0xFF0F2418) // Dunkelgrüner Hintergrund
     val OnBackground = Color(0xFFEAF5EF)
 
     val Surface = Color(0xFF15301F)
@@ -61,9 +60,10 @@ object FishColors {
     val OnError = Color(0xFF1A0000)
     val ErrorContainer = Color(0xFF4D1F1F)
     val OnErrorContainer = Color(0xFFFFDADA)
-    
+
     /** Success state indicator color */
     val Success = Color(0xFF4CAF50)
+
     /** Warning state indicator color */
     val Warning = Color(0xFFFFC107)
 
@@ -71,34 +71,34 @@ object FishColors {
     // Source Colors (for Multi-Source Frame)
     // ═══════════════════════════════════════════════════════════════════
 
-    val SourceTelegram = Color(0xFF26A5E4)   // Telegram Blue
-    val SourceXtream = Color(0xFFE53935)     // Xtream Red
-    val SourceLocal = Color(0xFF4CAF50)      // Local Green
-    val SourcePlex = Color(0xFFE5A00D)       // Plex Gold
-    val SourceJellyfin = Color(0xFF9C27B0)   // Jellyfin Purple
+    val SourceTelegram = Color(0xFF26A5E4) // Telegram Blue
+    val SourceXtream = Color(0xFFE53935) // Xtream Red
+    val SourceLocal = Color(0xFF4CAF50) // Local Green
+    val SourcePlex = Color(0xFFE5A00D) // Plex Gold
+    val SourceJellyfin = Color(0xFF9C27B0) // Jellyfin Purple
     val SourceMultiBlend = Color(0xFF9C27B0) // Purple blend for multi-source gradient (Xtream Red + Telegram Blue)
 
     // ═══════════════════════════════════════════════════════════════════
     // Design Tokens
     // ═══════════════════════════════════════════════════════════════════
 
-    val Accent = Color(0xFF3DDC84)            // App-Icon Grün
-    val KidAccent = Color(0xFFFF5E5B)         // Kid-Profile Rot
+    val Accent = Color(0xFF3DDC84) // App-Icon Grün
+    val KidAccent = Color(0xFFFF5E5B) // Kid-Profile Rot
 
     // Tile glow colors
     val FocusGlow = Color(0xFF2EC27E)
     val FocusGlowExperience = Color(0xFF3DDC84)
 
     // Rating star color
-    val Rating = Color(0xFFFFD700)            // Gold for star ratings
+    val Rating = Color(0xFFFFD700) // Gold for star ratings
 
     // ═══════════════════════════════════════════════════════════════════
     // Scrim & Overlay
     // ═══════════════════════════════════════════════════════════════════
 
-    val Scrim = Color(0xCC000000)             // 80% Black
-    val ScrimLight = Color(0x99000000)        // 60% Black
-    val Overlay = Color(0xE6121212)           // 90% Dark
+    val Scrim = Color(0xCC000000) // 80% Black
+    val ScrimLight = Color(0x99000000) // 60% Black
+    val Overlay = Color(0xE6121212) // 90% Dark
 }
 
 /**

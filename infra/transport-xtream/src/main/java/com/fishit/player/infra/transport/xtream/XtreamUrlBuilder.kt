@@ -537,23 +537,23 @@ class XtreamUrlBuilder(
         val lower = ext.lowercase().trim()
         // Valid video container formats (files, not streams)
         val validSeriesFormats = setOf("mkv", "mp4", "avi", "mov", "wmv", "flv", "webm")
-        
+
         if (lower in validSeriesFormats) {
             return lower
         }
-        
+
         // Reject streaming formats for series
         if (lower in setOf("m3u8", "ts")) {
             throw IllegalArgumentException(
                 "Invalid extension for series episode: '$ext'. " +
-                "Series episodes require container formats (mp4, mkv, avi, etc.), not streaming formats (m3u8, ts)."
+                    "Series episodes require container formats (mp4, mkv, avi, etc.), not streaming formats (m3u8, ts).",
             )
         }
-        
+
         // Unknown/invalid extension
         throw IllegalArgumentException(
             "Invalid extension for series episode: '$ext'. " +
-            "Valid formats: mp4, mkv, avi, mov, wmv, flv, webm"
+                "Valid formats: mp4, mkv, avi, mov, wmv, flv, webm",
         )
     }
 

@@ -9,13 +9,15 @@ package com.fishit.player.infra.transport.telegram.api
 sealed interface TelegramConnectionState {
     /** Not connected to Telegram servers. */
     data object Disconnected : TelegramConnectionState
-    
+
     /** Establishing connection to Telegram servers. */
     data object Connecting : TelegramConnectionState
-    
+
     /** Successfully connected to Telegram servers. */
     data object Connected : TelegramConnectionState
-    
+
     /** Connection error occurred. */
-    data class Error(val message: String) : TelegramConnectionState
+    data class Error(
+        val message: String,
+    ) : TelegramConnectionState
 }

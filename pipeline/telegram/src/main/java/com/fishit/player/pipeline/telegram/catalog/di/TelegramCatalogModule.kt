@@ -24,10 +24,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class TelegramCatalogModule {
-
     @Binds
     @Singleton
-    abstract fun bindTelegramCatalogPipeline(
-        impl: TelegramCatalogPipelineImpl,
-    ): TelegramCatalogPipeline
+    abstract fun bindTelegramCatalogPipeline(impl: TelegramCatalogPipelineImpl): TelegramCatalogPipeline
 }

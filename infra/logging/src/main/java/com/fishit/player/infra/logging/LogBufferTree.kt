@@ -25,7 +25,7 @@ import kotlin.concurrent.write
  */
 data class RedactedThrowableInfo(
     val type: String?,
-    val message: String?
+    val message: String?,
 ) {
     override fun toString(): String = "[$type] $message"
 }
@@ -44,7 +44,7 @@ data class BufferedLogEntry(
     val priority: Int,
     val tag: String?,
     val message: String,
-    val throwableInfo: RedactedThrowableInfo? = null
+    val throwableInfo: RedactedThrowableInfo? = null,
 ) {
     /**
      * Format timestamp as HH:mm:ss.SSS
@@ -57,15 +57,16 @@ data class BufferedLogEntry(
     /**
      * Get priority as string (DEBUG, INFO, WARN, ERROR, etc.)
      */
-    fun priorityString(): String = when (priority) {
-        Log.VERBOSE -> "VERBOSE"
-        Log.DEBUG -> "DEBUG"
-        Log.INFO -> "INFO"
-        Log.WARN -> "WARN"
-        Log.ERROR -> "ERROR"
-        Log.ASSERT -> "ASSERT"
-        else -> "UNKNOWN"
-    }
+    fun priorityString(): String =
+        when (priority) {
+            Log.VERBOSE -> "VERBOSE"
+            Log.DEBUG -> "DEBUG"
+            Log.INFO -> "INFO"
+            Log.WARN -> "WARN"
+            Log.ERROR -> "ERROR"
+            Log.ASSERT -> "ASSERT"
+            else -> "UNKNOWN"
+        }
 }
 
 /**
@@ -86,9 +87,8 @@ data class BufferedLogEntry(
  * @param maxEntries Maximum number of log entries to retain (default: 500)
  */
 class LogBufferTree(
-    private val maxEntries: Int = DEFAULT_BUFFER_SIZE
+    private val maxEntries: Int = DEFAULT_BUFFER_SIZE,
 ) : Timber.Tree() {
-
     private val lock = ReentrantReadWriteLock()
     private val buffer = ArrayDeque<BufferedLogEntry>(maxEntries)
     private val _entriesFlow = MutableStateFlow<List<BufferedLogEntry>>(emptyList())
@@ -102,9 +102,10 @@ class LogBufferTree(
     /**
      * Get current buffered entries (snapshot).
      */
-    fun getEntries(): List<BufferedLogEntry> = lock.read {
-        buffer.toList()
-    }
+    fun getEntries(): List<BufferedLogEntry> =
+        lock.read {
+            buffer.toList()
+        }
 
     /**
      * Clear all buffered entries.
@@ -121,25 +122,32 @@ class LogBufferTree(
      */
     fun size(): Int = lock.read { buffer.size }
 
-    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+    override fun log(
+        priority: Int,
+        tag: String?,
+        message: String,
+        t: Throwable?,
+    ) {
         // MANDATORY: Redact sensitive information before buffering
         // Contract: No secrets may persist in memory (LOGGING_CONTRACT_V2)
         // Contract: No real Throwable references may be stored (prevents memory leaks & secret retention)
         val redactedMessage = LogRedactor.redact(message)
-        val redactedThrowableInfo = t?.let { original ->
-            RedactedThrowableInfo(
-                type = original::class.simpleName,
-                message = LogRedactor.redact(original.message ?: "")
-            )
-        }
+        val redactedThrowableInfo =
+            t?.let { original ->
+                RedactedThrowableInfo(
+                    type = original::class.simpleName,
+                    message = LogRedactor.redact(original.message ?: ""),
+                )
+            }
 
-        val entry = BufferedLogEntry(
-            timestamp = System.currentTimeMillis(),
-            priority = priority,
-            tag = tag,
-            message = redactedMessage,
-            throwableInfo = redactedThrowableInfo
-        )
+        val entry =
+            BufferedLogEntry(
+                timestamp = System.currentTimeMillis(),
+                priority = priority,
+                tag = tag,
+                message = redactedMessage,
+                throwableInfo = redactedThrowableInfo,
+            )
 
         lock.write {
             // Ring buffer: remove oldest if at capacity
@@ -172,11 +180,10 @@ class LogBufferTree(
          * @return The singleton LogBufferTree
          */
         @JvmStatic
-        fun getInstance(maxEntries: Int = DEFAULT_BUFFER_SIZE): LogBufferTree {
-            return instance ?: synchronized(this) {
+        fun getInstance(maxEntries: Int = DEFAULT_BUFFER_SIZE): LogBufferTree =
+            instance ?: synchronized(this) {
                 instance ?: LogBufferTree(maxEntries).also { instance = it }
             }
-        }
 
         /**
          * Get singleton instance or null if not initialized.
@@ -229,26 +236,22 @@ interface LogBufferProvider {
  * Default implementation of [LogBufferProvider] using [LogBufferTree].
  */
 @Singleton
-class DefaultLogBufferProvider @Inject constructor() : LogBufferProvider {
+class DefaultLogBufferProvider
+    @Inject
+    constructor() : LogBufferProvider {
+        private val tree: LogBufferTree
+            get() = LogBufferTree.getInstance()
 
-    private val tree: LogBufferTree
-        get() = LogBufferTree.getInstance()
+        override fun observeLogs(limit: Int): Flow<List<BufferedLogEntry>> =
+            tree.entriesFlow.map { entries ->
+                entries.takeLast(limit)
+            }
 
-    override fun observeLogs(limit: Int): Flow<List<BufferedLogEntry>> {
-        return tree.entriesFlow.map { entries ->
-            entries.takeLast(limit)
+        override fun getLogs(limit: Int): List<BufferedLogEntry> = tree.getEntries().takeLast(limit)
+
+        override fun clearLogs() {
+            tree.clear()
         }
-    }
 
-    override fun getLogs(limit: Int): List<BufferedLogEntry> {
-        return tree.getEntries().takeLast(limit)
+        override fun getLogCount(): Int = tree.size()
     }
-
-    override fun clearLogs() {
-        tree.clear()
-    }
-
-    override fun getLogCount(): Int {
-        return tree.size()
-    }
-}

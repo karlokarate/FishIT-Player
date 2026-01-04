@@ -45,12 +45,11 @@ import kotlinx.coroutines.flow.asStateFlow
  * the unified [TelegramClient] interface.
  */
 internal class DefaultTelegramClient(
-        tdlClient: TdlClient,
-        sessionConfig: TelegramSessionConfig,
-        authScope: CoroutineScope,
-        fileScope: CoroutineScope,
+    tdlClient: TdlClient,
+    sessionConfig: TelegramSessionConfig,
+    authScope: CoroutineScope,
+    fileScope: CoroutineScope,
 ) : TelegramClient {
-
     // Composed implementations
     private val authSession = TdlibAuthSession(tdlClient, sessionConfig, authScope)
     private val chatBrowser = TelegramChatBrowser(tdlClient)
@@ -60,7 +59,7 @@ internal class DefaultTelegramClient(
 
     // Connection state (internal, exposed via TelegramTransportClient if needed)
     private val _connectionState =
-            MutableStateFlow<TelegramConnectionState>(TelegramConnectionState.Disconnected)
+        MutableStateFlow<TelegramConnectionState>(TelegramConnectionState.Disconnected)
     val connectionState: Flow<TelegramConnectionState> = _connectionState.asStateFlow()
 
     // ========== TelegramAuthClient ==========
@@ -74,7 +73,7 @@ internal class DefaultTelegramClient(
             _connectionState.value = TelegramConnectionState.Connected
         } catch (e: Exception) {
             _connectionState.value =
-                    TelegramConnectionState.Error(e.message ?: "Authorization failed")
+                TelegramConnectionState.Error(e.message ?: "Authorization failed")
             throw e
         }
     }
@@ -97,9 +96,7 @@ internal class DefaultTelegramClient(
         authSession.logout()
     }
 
-    override suspend fun getCurrentUserId(): Long? {
-        return authSession.getCurrentUserId()
-    }
+    override suspend fun getCurrentUserId(): Long? = authSession.getCurrentUserId()
 
     // ========== TelegramHistoryClient ==========
 
@@ -110,23 +107,23 @@ internal class DefaultTelegramClient(
     override suspend fun getChat(chatId: Long): TgChat? = chatBrowser.getChat(chatId)
 
     override suspend fun fetchMessages(
-            chatId: Long,
-            limit: Int,
-            fromMessageId: Long,
-            offset: Int,
+        chatId: Long,
+        limit: Int,
+        fromMessageId: Long,
+        offset: Int,
     ): List<TgMessage> = chatBrowser.fetchMessages(chatId, limit, fromMessageId, offset)
 
     override suspend fun loadAllMessages(
-            chatId: Long,
-            pageSize: Int,
-            maxMessages: Int,
-            onProgress: ((loaded: Int) -> Unit)?,
+        chatId: Long,
+        pageSize: Int,
+        maxMessages: Int,
+        onProgress: ((loaded: Int) -> Unit)?,
     ): List<TgMessage> = chatBrowser.loadAllMessages(chatId, pageSize, maxMessages, onProgress)
 
     override suspend fun searchMessages(
-            chatId: Long,
-            query: String,
-            limit: Int,
+        chatId: Long,
+        query: String,
+        limit: Int,
     ): List<TgMessage> = chatBrowser.searchMessages(chatId, query, limit)
 
     // ========== TelegramFileClient ==========
@@ -134,38 +131,39 @@ internal class DefaultTelegramClient(
     override val fileUpdates: Flow<TgFileUpdate> = fileDownloadManager.fileUpdates
 
     override suspend fun startDownload(
-            fileId: Int,
-            priority: Int,
-            offset: Long,
-            limit: Long,
+        fileId: Int,
+        priority: Int,
+        offset: Long,
+        limit: Long,
     ) {
         fileDownloadManager.startDownload(fileId, priority, offset, limit)
     }
 
-    override suspend fun cancelDownload(fileId: Int, deleteLocalCopy: Boolean) {
+    override suspend fun cancelDownload(
+        fileId: Int,
+        deleteLocalCopy: Boolean,
+    ) {
         fileDownloadManager.cancelDownload(fileId, deleteLocalCopy)
     }
 
     override suspend fun getFile(fileId: Int): TgFile? = fileDownloadManager.getFile(fileId)
 
-    override suspend fun resolveRemoteId(remoteId: String): TgFile? =
-            fileDownloadManager.resolveRemoteId(remoteId)
+    override suspend fun resolveRemoteId(remoteId: String): TgFile? = fileDownloadManager.resolveRemoteId(remoteId)
 
-    override suspend fun getDownloadedPrefixSize(fileId: Int): Long =
-            fileDownloadManager.getDownloadedPrefixSize(fileId)
+    override suspend fun getDownloadedPrefixSize(fileId: Int): Long = fileDownloadManager.getDownloadedPrefixSize(fileId)
 
     override suspend fun getStorageStats(): TgStorageStats = fileDownloadManager.getStorageStats()
 
-    override suspend fun optimizeStorage(maxSizeBytes: Long, maxAgeDays: Int): Long =
-            fileDownloadManager.optimizeStorage(maxSizeBytes, maxAgeDays)
+    override suspend fun optimizeStorage(
+        maxSizeBytes: Long,
+        maxAgeDays: Int,
+    ): Long = fileDownloadManager.optimizeStorage(maxSizeBytes, maxAgeDays)
 
     // ========== TelegramThumbFetcher ==========
 
-    override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String? =
-            thumbFetcher.fetchThumbnail(thumbRef)
+    override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String? = thumbFetcher.fetchThumbnail(thumbRef)
 
-    override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean =
-            thumbFetcher.isCached(thumbRef)
+    override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean = thumbFetcher.isCached(thumbRef)
 
     override suspend fun prefetch(thumbRefs: List<TgThumbnailRef>) {
         thumbFetcher.prefetch(thumbRefs)
@@ -177,6 +175,5 @@ internal class DefaultTelegramClient(
 
     // ========== TelegramRemoteResolver ==========
 
-    override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? =
-        remoteResolver.resolveMedia(remoteId)
+    override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? = remoteResolver.resolveMedia(remoteId)
 }

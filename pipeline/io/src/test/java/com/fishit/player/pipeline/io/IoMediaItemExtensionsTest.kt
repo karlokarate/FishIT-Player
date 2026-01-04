@@ -3,12 +3,12 @@ package com.fishit.player.pipeline.io
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.playermodel.SourceType as PlayerSourceType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.fishit.player.core.playermodel.SourceType as PlayerSourceType
 
 /**
  * Tests for IoMediaItem extension functions.

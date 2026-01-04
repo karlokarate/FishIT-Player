@@ -12,9 +12,9 @@ import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramFileClient
 import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
-import com.fishit.player.infra.transport.telegram.TelegramTdlibClientFactory
 import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
+import com.fishit.player.infra.transport.telegram.TelegramTdlibClientFactory
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
 import com.fishit.player.infra.transport.telegram.imaging.TelegramThumbDownloader
 import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
@@ -23,11 +23,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.g000sha256.tdl.TdlClient
-import javax.inject.Named
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import javax.inject.Named
+import javax.inject.Singleton
 
 /**
  * Hilt module for Telegram transport layer - SSOT Implementation.
@@ -65,28 +65,25 @@ import kotlinx.coroutines.SupervisorJob
 @Module
 @InstallIn(SingletonComponent::class)
 object TelegramTransportModule {
-
     private const val TELEGRAM_AUTH_SCOPE = "TelegramAuthScope"
     private const val TELEGRAM_FILE_SCOPE = "TelegramFileScope"
 
-        /** Provides the shared TdlClient instance (exactly one per process). */
-        @Provides
-        @Singleton
-        fun provideTdlClient(): TdlClient = TelegramTdlibClientFactory.create()
+    /** Provides the shared TdlClient instance (exactly one per process). */
+    @Provides
+    @Singleton
+    fun provideTdlClient(): TdlClient = TelegramTdlibClientFactory.create()
 
     /** Provides a dedicated coroutine scope for Telegram auth operations. */
     @Provides
     @Singleton
     @Named(TELEGRAM_AUTH_SCOPE)
-    fun provideTelegramAuthScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideTelegramAuthScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Provides a dedicated coroutine scope for Telegram file operations. */
     @Provides
     @Singleton
     @Named(TELEGRAM_FILE_SCOPE)
-    fun provideTelegramFileScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideTelegramFileScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * Provides the SINGLE unified TelegramClient instance (SSOT).
@@ -100,18 +97,17 @@ object TelegramTransportModule {
     @Provides
     @Singleton
     fun provideTelegramClient(
-            tdlClient: TdlClient,
-            sessionConfig: TelegramSessionConfig,
-            @Named(TELEGRAM_AUTH_SCOPE) authScope: CoroutineScope,
-            @Named(TELEGRAM_FILE_SCOPE) fileScope: CoroutineScope,
-    ): TelegramClient {
-        return DefaultTelegramClient(
-                tdlClient = tdlClient,
-                sessionConfig = sessionConfig,
-                authScope = authScope,
-                fileScope = fileScope,
+        tdlClient: TdlClient,
+        sessionConfig: TelegramSessionConfig,
+        @Named(TELEGRAM_AUTH_SCOPE) authScope: CoroutineScope,
+        @Named(TELEGRAM_FILE_SCOPE) fileScope: CoroutineScope,
+    ): TelegramClient =
+        DefaultTelegramClient(
+            tdlClient = tdlClient,
+            sessionConfig = sessionConfig,
+            authScope = authScope,
+            fileScope = fileScope,
         )
-    }
 
     /**
      * Provides TelegramAuthClient - resolves to the SAME TelegramClient instance.
@@ -120,8 +116,7 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramAuthClient(telegramClient: TelegramClient): TelegramAuthClient =
-            telegramClient
+    fun provideTelegramAuthClient(telegramClient: TelegramClient): TelegramAuthClient = telegramClient
 
     /**
      * Provides TelegramHistoryClient - resolves to the SAME TelegramClient instance.
@@ -135,8 +130,7 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramHistoryClient(telegramClient: TelegramClient): TelegramHistoryClient =
-            telegramClient
+    fun provideTelegramHistoryClient(telegramClient: TelegramClient): TelegramHistoryClient = telegramClient
 
     /**
      * Provides TelegramFileClient - resolves to the SAME TelegramClient instance.
@@ -149,8 +143,7 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramFileClient(telegramClient: TelegramClient): TelegramFileClient =
-            telegramClient
+    fun provideTelegramFileClient(telegramClient: TelegramClient): TelegramFileClient = telegramClient
 
     /**
      * Provides TelegramThumbFetcher - resolves to the SAME TelegramClient instance.
@@ -162,8 +155,7 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramThumbFetcher(telegramClient: TelegramClient): TelegramThumbFetcher =
-            telegramClient
+    fun provideTelegramThumbFetcher(telegramClient: TelegramClient): TelegramThumbFetcher = telegramClient
 
     /**
      * Provides TelegramRemoteResolver - resolves to the SAME TelegramClient instance.
@@ -176,8 +168,7 @@ object TelegramTransportModule {
      */
     @Provides
     @Singleton
-    fun provideTelegramRemoteResolver(telegramClient: TelegramClient): TelegramRemoteResolver =
-            telegramClient
+    fun provideTelegramRemoteResolver(telegramClient: TelegramClient): TelegramRemoteResolver = telegramClient
 
     /**
      * Provides TelegramThumbDownloader for thumbnail upgrade strategy.
@@ -197,6 +188,6 @@ object TelegramTransportModule {
     @Singleton
     fun provideTelegramThumbDownloader(
         remoteResolver: TelegramRemoteResolver,
-        fileClient: TelegramFileClient
+        fileClient: TelegramFileClient,
     ): TelegramThumbDownloader = TelegramThumbDownloader(remoteResolver, fileClient)
 }

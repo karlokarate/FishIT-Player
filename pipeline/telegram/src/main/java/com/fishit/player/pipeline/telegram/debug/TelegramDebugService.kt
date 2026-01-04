@@ -17,7 +17,6 @@ import com.fishit.player.core.model.MediaType
  * ```
  */
 interface TelegramDebugService {
-
     /**
      * Get current Telegram pipeline status.
      *
@@ -32,7 +31,10 @@ interface TelegramDebugService {
      * @param limit Maximum number of chats to return
      * @return List of chat summaries
      */
-    suspend fun listChats(filter: ChatFilter, limit: Int = 20): List<TelegramChatSummary>
+    suspend fun listChats(
+        filter: ChatFilter,
+        limit: Int = 20,
+    ): List<TelegramChatSummary>
 
     /**
      * Sample media messages from a specific chat.
@@ -41,7 +43,10 @@ interface TelegramDebugService {
      * @param limit Maximum number of messages to sample
      * @return List of media summaries with normalized titles
      */
-    suspend fun sampleMedia(chatId: Long, limit: Int = 10): List<TelegramMediaSummary>
+    suspend fun sampleMedia(
+        chatId: Long,
+        limit: Int = 10,
+    ): List<TelegramMediaSummary>
 }
 
 /**
@@ -50,10 +55,13 @@ interface TelegramDebugService {
 enum class ChatFilter {
     /** All chats regardless of classification */
     ALL,
+
     /** Only media-hot chats (high media density) */
     HOT,
+
     /** Only media-warm chats (moderate media) */
     WARM,
+
     /** Only media-cold chats (low/no media) */
     COLD,
 }

@@ -31,7 +31,6 @@ interface NextlibCodecConfigurator {
  * NextLib is GPL-3.0 licensed due to FFmpeg.
  */
 class DefaultNextlibCodecConfigurator : NextlibCodecConfigurator {
-
     companion object {
         private const val TAG = "NextlibCodecs"
     }
@@ -42,10 +41,10 @@ class DefaultNextlibCodecConfigurator : NextlibCodecConfigurator {
         val factory = NextRenderersFactory(context)
 
         UnifiedLog.d(
-                TAG,
-                "NextRenderersFactory configured with FFmpeg decoders for: " +
-                        "Audio(Vorbis, Opus, FLAC, ALAC, MP3, AAC, AC3, EAC3, DTS, TrueHD), " +
-                        "Video(H.264, HEVC, VP8, VP9)"
+            TAG,
+            "NextRenderersFactory configured with FFmpeg decoders for: " +
+                "Audio(Vorbis, Opus, FLAC, ALAC, MP3, AAC, AC3, EAC3, DTS, TrueHD), " +
+                "Video(H.264, HEVC, VP8, VP9)",
         )
 
         return factory

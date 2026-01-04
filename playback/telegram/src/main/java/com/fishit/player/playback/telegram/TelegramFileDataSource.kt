@@ -236,16 +236,19 @@ class TelegramFileDataSource(
             val usedFastPath =
                 (fileId != null && fileId > 0 && capturedChatId == null && capturedMessageId == null && remoteId == null)
 
-            UnifiedLog.d(TAG) { "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode, fastPath=$usedFastPath)" }
+            UnifiedLog.d(TAG) {
+                "Resolved fileId: $resolvedFileId, triggering readiness check (mime=$mimeType, attemptMode=$attemptMode, fastPath=$usedFastPath)"
+            }
 
             try {
                 // Use TelegramFileReadyEnsurer for non-blocking readiness
                 // Pass MIME type and attemptMode to enable appropriate strategy
-                val localPath = if (attemptMode != null) {
-                    readyEnsurer.ensureReadyForAttempt(resolvedFileId, attemptMode, mimeType)
-                } else {
-                    readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
-                }
+                val localPath =
+                    if (attemptMode != null) {
+                        readyEnsurer.ensureReadyForAttempt(resolvedFileId, attemptMode, mimeType)
+                    } else {
+                        readyEnsurer.ensureReadyForPlayback(resolvedFileId, mimeType)
+                    }
 
                 val localFile = File(localPath)
                 if (!localFile.exists()) {
@@ -267,22 +270,26 @@ class TelegramFileDataSource(
                 // If fast-path failed and we have chatId+messageId, retry with RemoteResolver
                 if (usedFastPath && capturedChatId != null && capturedMessageId != null) {
                     UnifiedLog.i(TAG) {
-                        "Fast-path fileId=$fileId failed (${e.message}), retrying with RemoteResolver (chatId=***${capturedChatId.toString().takeLast(3)}, messageId=***${capturedMessageId.toString().takeLast(3)})"
+                        "Fast-path fileId=$fileId failed (${e.message}), retrying with RemoteResolver (chatId=***${capturedChatId.toString().takeLast(
+                            3,
+                        )}, messageId=***${capturedMessageId.toString().takeLast(3)})"
                     }
-                    
+
                     // Re-resolve via RemoteResolver to get fresh fileId
-                    val resolved = remoteResolver.resolveMedia(TelegramRemoteId(capturedChatId, capturedMessageId))
-                        ?: throw IOException("RemoteResolver retry failed: could not resolve media", e)
-                    
+                    val resolved =
+                        remoteResolver.resolveMedia(TelegramRemoteId(capturedChatId, capturedMessageId))
+                            ?: throw IOException("RemoteResolver retry failed: could not resolve media", e)
+
                     val freshFileId = resolved.mediaFileId
                     UnifiedLog.d(TAG) { "RemoteResolver retry: fresh fileId=$freshFileId" }
-                    
+
                     // Retry readiness check with fresh fileId
-                    val retryLocalPath = if (attemptMode != null) {
-                        readyEnsurer.ensureReadyForAttempt(freshFileId, attemptMode, mimeType)
-                    } else {
-                        readyEnsurer.ensureReadyForPlayback(freshFileId, mimeType)
-                    }
+                    val retryLocalPath =
+                        if (attemptMode != null) {
+                            readyEnsurer.ensureReadyForAttempt(freshFileId, attemptMode, mimeType)
+                        } else {
+                            readyEnsurer.ensureReadyForPlayback(freshFileId, mimeType)
+                        }
 
                     val retryLocalFile = File(retryLocalPath)
                     if (!retryLocalFile.exists()) {
@@ -337,12 +344,15 @@ class TelegramFileDataSource(
             // Path 1: RemoteId-First (chatId + messageId) - PREFERRED
             chatId != null && messageId != null -> {
                 UnifiedLog.d(TAG) {
-                    "Resolving via TelegramRemoteResolver (RemoteId-First): chatId=***${chatId.toString().takeLast(3)}, messageId=***${messageId.toString().takeLast(3)}"
+                    "Resolving via TelegramRemoteResolver (RemoteId-First): chatId=***${chatId.toString().takeLast(
+                        3,
+                    )}, messageId=***${messageId.toString().takeLast(3)}"
                 }
-                val resolved = remoteResolver.resolveMedia(TelegramRemoteId(chatId, messageId))
-                    ?: throw TelegramFileException(
-                        "Could not resolve media via RemoteId (masked)"
-                    )
+                val resolved =
+                    remoteResolver.resolveMedia(TelegramRemoteId(chatId, messageId))
+                        ?: throw TelegramFileException(
+                            "Could not resolve media via RemoteId (masked)",
+                        )
                 UnifiedLog.d(TAG) {
                     "Resolved via RemoteResolver: fileId=${resolved.mediaFileId}, " +
                         "localPath=${resolved.mediaLocalPath != null}, " +
@@ -367,7 +377,7 @@ class TelegramFileDataSource(
             }
             // Path 4: No resolution method available
             else -> throw TelegramFileException(
-                "Cannot resolve fileId: no chatId+messageId, no valid fileId, and no remoteId"
+                "Cannot resolve fileId: no chatId+messageId, no valid fileId, and no remoteId",
             )
         }
 

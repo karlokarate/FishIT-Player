@@ -302,7 +302,7 @@ class UnifiedLogTest {
         UnifiedLog.setMinLevel(UnifiedLog.Level.DEBUG) // VERBOSE is filtered
         var counter = 0
 
-        UnifiedLog.v("TestTag") { 
+        UnifiedLog.v("TestTag") {
             counter++
             "verbose message"
         }

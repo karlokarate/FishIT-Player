@@ -29,7 +29,7 @@ data class TelegramSessionConfig(
     val phoneNumber: String? = null,
     val deviceModel: String = "FishIT-Player",
     val systemVersion: String = "1.0",
-    val appVersion: String = "1.0"
+    val appVersion: String = "1.0",
 ) {
     /** Alias for [databaseDir] for compatibility with TdlibAuthSession. */
     val databasePath: String get() = databaseDir
@@ -57,10 +57,12 @@ data class TelegramSessionConfig(
             val apiHash = System.getenv("TG_API_HASH") ?: return null
 
             val defaultSessionRoot = "/workspace/.cache/tdlib-user/tdlib"
-            val databaseDir = System.getenv("TDLIB_DATABASE_DIR")
-                ?: "$defaultSessionRoot/db"
-            val filesDir = System.getenv("TDLIB_FILES_DIR")
-                ?: "$defaultSessionRoot/files"
+            val databaseDir =
+                System.getenv("TDLIB_DATABASE_DIR")
+                    ?: "$defaultSessionRoot/db"
+            val filesDir =
+                System.getenv("TDLIB_FILES_DIR")
+                    ?: "$defaultSessionRoot/files"
             val phoneNumber = System.getenv("TG_PHONE_NUMBER")
 
             return TelegramSessionConfig(

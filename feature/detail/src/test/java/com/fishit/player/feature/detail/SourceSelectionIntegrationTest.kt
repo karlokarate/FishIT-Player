@@ -26,7 +26,6 @@ import kotlin.test.assertTrue
  * 4. NEW code derives activeSource from SSOT media.sources → playback works
  */
 class SourceSelectionIntegrationTest {
-
     // ==========================================================================
     // The Bug Scenario: Stale selectedSource vs SSOT
     // ==========================================================================
@@ -57,11 +56,12 @@ class SourceSelectionIntegrationTest {
         assertNull(oldStyleSelectedSource.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT])
 
         // NEW BEHAVIOR (SSOT): Derive activeSource from current media.sources
-        val activeSource = SourceSelection.resolveActiveSource(
-            media = enrichedMedia,
-            selectedSourceKey = initialSource.sourceId, // We only stored the KEY
-            resume = null,
-        )
+        val activeSource =
+            SourceSelection.resolveActiveSource(
+                media = enrichedMedia,
+                selectedSourceKey = initialSource.sourceId, // We only stored the KEY
+                resume = null,
+            )
 
         // NEW BEHAVIOR: activeSource has the containerExtension!
         assertNotNull(activeSource)
@@ -127,11 +127,12 @@ class SourceSelectionIntegrationTest {
         // Later, Telegram source is removed (e.g., message deleted)
         val mediaWithoutTelegram = createMedia(sources = listOf(xtreamSource))
 
-        val activeSource = SourceSelection.resolveActiveSource(
-            media = mediaWithoutTelegram,
-            selectedSourceKey = manualKey, // Still has old key
-            resume = null,
-        )
+        val activeSource =
+            SourceSelection.resolveActiveSource(
+                media = mediaWithoutTelegram,
+                selectedSourceKey = manualKey, // Still has old key
+                resume = null,
+            )
 
         // Should fall back to Xtream source
         assertNotNull(activeSource)
@@ -155,11 +156,12 @@ class SourceSelectionIntegrationTest {
         val enrichedMedia = createMedia(sources = listOf(enrichedXtreamSource, telegramSource))
 
         // Selection should still prefer resume source (Telegram), not enriched Xtream
-        val activeSource = SourceSelection.resolveActiveSource(
-            media = enrichedMedia,
-            selectedSourceKey = null, // No manual selection
-            resume = resume,
-        )
+        val activeSource =
+            SourceSelection.resolveActiveSource(
+                media = enrichedMedia,
+                selectedSourceKey = null, // No manual selection
+                resume = resume,
+            )
 
         assertNotNull(activeSource)
         assertEquals(telegramSource.sourceId, activeSource.sourceId)
@@ -169,30 +171,30 @@ class SourceSelectionIntegrationTest {
     // Test Data Builders
     // ==========================================================================
 
-    private fun createMedia(
-        sources: List<MediaSourceRef> = emptyList()
-    ): CanonicalMediaWithSources = CanonicalMediaWithSources(
-        canonicalId = CanonicalMediaId(
-            key = CanonicalKey.of("movie:test:2024"),
-            kind = MediaKind.MOVIE,
-        ),
-        canonicalTitle = "Test Movie",
-        mediaType = MediaType.MOVIE,
-        year = 2024,
-        tmdbId = null,
-        imdbId = null,
-        poster = null,
-        backdrop = null,
-        thumbnail = null,
-        plot = null,
-        rating = null,
-        durationMs = 7200000L,
-        genres = null,
-        director = null,
-        cast = null,
-        trailer = null,
-        sources = sources,
-    )
+    private fun createMedia(sources: List<MediaSourceRef> = emptyList()): CanonicalMediaWithSources =
+        CanonicalMediaWithSources(
+            canonicalId =
+                CanonicalMediaId(
+                    key = CanonicalKey.of("movie:test:2024"),
+                    kind = MediaKind.MOVIE,
+                ),
+            canonicalTitle = "Test Movie",
+            mediaType = MediaType.MOVIE,
+            year = 2024,
+            tmdbId = null,
+            imdbId = null,
+            poster = null,
+            backdrop = null,
+            thumbnail = null,
+            plot = null,
+            rating = null,
+            durationMs = 7200000L,
+            genres = null,
+            director = null,
+            cast = null,
+            trailer = null,
+            sources = sources,
+        )
 
     private fun createXtreamVodSource(
         vodId: Int = 123,
@@ -224,44 +226,47 @@ class SourceSelectionIntegrationTest {
         chatId: Long = 789,
         priority: Int = 0,
         resolution: Int? = 720,
-    ): MediaSourceRef = MediaSourceRef(
-        sourceType = SourceType.TELEGRAM,
-        sourceId = PipelineItemId.of("msg:$chatId:$messageId"),
-        sourceLabel = "Telegram Message $messageId",
-        quality = MediaSourceRef.QualityInfo(resolution = resolution),
-        languages = null,
-        format = null,
-        sizeBytes = null,
-        durationMs = 7200000L,
-        addedAt = System.currentTimeMillis(),
-        priority = priority,
-        playbackHints = emptyMap(),
-    )
+    ): MediaSourceRef =
+        MediaSourceRef(
+            sourceType = SourceType.TELEGRAM,
+            sourceId = PipelineItemId.of("msg:$chatId:$messageId"),
+            sourceLabel = "Telegram Message $messageId",
+            quality = MediaSourceRef.QualityInfo(resolution = resolution),
+            languages = null,
+            format = null,
+            sizeBytes = null,
+            durationMs = 7200000L,
+            addedAt = System.currentTimeMillis(),
+            priority = priority,
+            playbackHints = emptyMap(),
+        )
 
     private fun createXtreamLiveSource(
         channelId: Int = 111,
         priority: Int = 0,
-    ): MediaSourceRef = MediaSourceRef(
-        sourceType = SourceType.XTREAM,
-        sourceId = PipelineItemId.of("xtream:live:$channelId"),
-        sourceLabel = "Channel #$channelId",
-        quality = null,
-        languages = null,
-        format = null,
-        sizeBytes = null,
-        durationMs = null,
-        addedAt = System.currentTimeMillis(),
-        priority = priority,
-        playbackHints = emptyMap(),
-    )
+    ): MediaSourceRef =
+        MediaSourceRef(
+            sourceType = SourceType.XTREAM,
+            sourceId = PipelineItemId.of("xtream:live:$channelId"),
+            sourceLabel = "Channel #$channelId",
+            quality = null,
+            languages = null,
+            format = null,
+            sizeBytes = null,
+            durationMs = null,
+            addedAt = System.currentTimeMillis(),
+            priority = priority,
+            playbackHints = emptyMap(),
+        )
 
     private fun createResume(
         lastSourceId: PipelineItemId,
         positionMs: Long = 3600000L,
         durationMs: Long = 7200000L,
-    ): CanonicalResumeInfo = CanonicalResumeInfo(
-        lastSourceId = lastSourceId,
-        positionMs = positionMs,
-        durationMs = durationMs,
-    )
+    ): CanonicalResumeInfo =
+        CanonicalResumeInfo(
+            lastSourceId = lastSourceId,
+            positionMs = positionMs,
+            durationMs = durationMs,
+        )
 }

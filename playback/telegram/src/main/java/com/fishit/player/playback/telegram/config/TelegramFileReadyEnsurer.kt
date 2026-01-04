@@ -136,11 +136,12 @@ class TelegramFileReadyEnsurer(
 
         // Wait for readiness based on mode
         // Use different timeouts for PROGRESSIVE vs FULL_FILE modes
-        val timeout = if (initialMode == TelegramPlaybackMode.FULL_FILE) {
-            TelegramStreamingConfig.FULL_FILE_DOWNLOAD_TIMEOUT_MS
-        } else {
-            TelegramStreamingConfig.ENSURE_READY_TIMEOUT_MS
-        }
+        val timeout =
+            if (initialMode == TelegramPlaybackMode.FULL_FILE) {
+                TelegramStreamingConfig.FULL_FILE_DOWNLOAD_TIMEOUT_MS
+            } else {
+                TelegramStreamingConfig.ENSURE_READY_TIMEOUT_MS
+            }
 
         return try {
             withTimeout(timeout) {
@@ -157,13 +158,14 @@ class TelegramFileReadyEnsurer(
             }
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             // Provide context-specific timeout message
-            val message = if (initialMode == TelegramPlaybackMode.FULL_FILE) {
-                "Download too slow: file not ready after ${timeout / 1000}s. " +
-                    "Network may be too slow for this file size, or connection interrupted."
-            } else {
-                "Playback readiness timeout after ${timeout / 1000}s. " +
-                    "Check network connectivity or file integrity."
-            }
+            val message =
+                if (initialMode == TelegramPlaybackMode.FULL_FILE) {
+                    "Download too slow: file not ready after ${timeout / 1000}s. " +
+                        "Network may be too slow for this file size, or connection interrupted."
+                } else {
+                    "Playback readiness timeout after ${timeout / 1000}s. " +
+                        "Check network connectivity or file integrity."
+                }
             throw TelegramStreamingException(message, cause = e)
         }
     }
@@ -343,8 +345,9 @@ class TelegramFileReadyEnsurer(
                             Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS
                         ) {
                             // Timeout waiting for moov to complete - switch to FULL_FILE mode
-                            val reason = "Moov incomplete after ${Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS}ms, " +
-                                "moovSize=${moovResult.moovSize}B, available=${prefixSize}B"
+                            val reason =
+                                "Moov incomplete after ${Mp4MoovValidationConfig.MOOV_VALIDATION_TIMEOUT_MS}ms, " +
+                                    "moovSize=${moovResult.moovSize}B, available=${prefixSize}B"
                             UnifiedLog.i(TAG) { "$reason, switching to FULL_FILE mode" }
                             if (throwOnFallback) {
                                 throw FallbackToFullFileException(reason)
@@ -356,8 +359,9 @@ class TelegramFileReadyEnsurer(
                     !moovResult.found &&
                         prefixSize >= TelegramStreamingConfig.MAX_PREFIX_SCAN_BYTES -> {
                         // Scanned max prefix, moov not found - switch to FULL_FILE mode (NOT an error!)
-                        val reason = "Moov atom not found after scanning ${prefixSize / 1024}KB (mime=$mimeType). " +
-                            "This is normal for non-faststart MP4 files."
+                        val reason =
+                            "Moov atom not found after scanning ${prefixSize / 1024}KB (mime=$mimeType). " +
+                                "This is normal for non-faststart MP4 files."
                         UnifiedLog.i(TAG) { "$reason, switching to FULL_FILE mode" }
                         if (throwOnFallback) {
                             throw FallbackToFullFileException(reason)
@@ -408,11 +412,12 @@ class TelegramFileReadyEnsurer(
             if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
                 now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
             ) {
-                val progress = if (totalSize > 0) {
-                    "${(downloadedSize * 100 / totalSize)}%"
-                } else {
-                    "${downloadedSize / 1024}KB"
-                }
+                val progress =
+                    if (totalSize > 0) {
+                        "${(downloadedSize * 100 / totalSize)}%"
+                    } else {
+                        "${downloadedSize / 1024}KB"
+                    }
                 UnifiedLog.d(TAG) {
                     "FULL_FILE download: $progress (${downloadedSize / 1024}KB / ${totalSize / 1024}KB)"
                 }
@@ -457,13 +462,12 @@ class TelegramFileReadyEnsurer(
         fileId: Int,
         validateMoov: Boolean,
         minBytes: Long = TelegramStreamingConfig.MIN_PREFIX_FOR_VALIDATION_BYTES,
-    ): String {
-        return if (validateMoov) {
+    ): String =
+        if (validateMoov) {
             pollUntilReadyProgressive(fileId, mimeType = null)
         } else {
             pollUntilReadyFullFile(fileId)
         }
-    }
 
     /**
      * Polls until file is ready for seek at the specified position.
@@ -581,7 +585,10 @@ class TelegramFileReadyEnsurer(
      * @param mimeType Optional MIME type for advisory moov checks
      * @return Local file path with 5MB buffer
      */
-    private suspend fun pollUntilBuffered5MB(fileId: Int, mimeType: String?): String {
+    private suspend fun pollUntilBuffered5MB(
+        fileId: Int,
+        mimeType: String?,
+    ): String {
         var lastLogTime = 0L
         val targetBytes = TelegramStreamingConfig.BUFFERED_5MB_THRESHOLD_BYTES
 
@@ -598,11 +605,12 @@ class TelegramFileReadyEnsurer(
             if (TelegramStreamingConfig.ENABLE_VERBOSE_LOGGING ||
                 now - lastLogTime >= TelegramStreamingConfig.PROGRESS_DEBOUNCE_MS
             ) {
-                val progress = if (prefixSize < targetBytes) {
-                    "${(prefixSize * 100 / targetBytes)}%"
-                } else {
-                    "100%"
-                }
+                val progress =
+                    if (prefixSize < targetBytes) {
+                        "${(prefixSize * 100 / targetBytes)}%"
+                    } else {
+                        "100%"
+                    }
                 UnifiedLog.d(TAG) {
                     "BUFFERED_5MB: $progress (${prefixSize / 1024}KB / ${targetBytes / 1024}KB)"
                 }

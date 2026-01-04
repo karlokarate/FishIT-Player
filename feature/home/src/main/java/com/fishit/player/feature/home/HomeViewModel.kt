@@ -11,7 +11,6 @@ import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,12 +23,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * Predefined genre filters for quick access. Maps display name to keywords that match in genres
  * field.
  */
-enum class GenreFilter(val displayName: String, val keywords: List<String>) {
+enum class GenreFilter(
+    val displayName: String,
+    val keywords: List<String>,
+) {
     ALL("Alle", emptyList()),
     ACTION("Action", listOf("action")),
     HORROR("Horror", listOf("horror", "thriller")),
@@ -39,7 +42,8 @@ enum class GenreFilter(val displayName: String, val keywords: List<String>) {
     DOCUMENTARY("Dokus", listOf("documentary", "dokumentation", "doku")),
     KIDS("Kids", listOf("kids", "kinder", "animation", "family", "familie")),
     ROMANCE("Romance", listOf("romance", "romantik", "love")),
-    CRIME("Crime", listOf("crime", "krimi", "criminal"));
+    CRIME("Crime", listOf("crime", "krimi", "criminal")),
+    ;
 
     companion object {
         val all: List<GenreFilter> = entries.toList()
@@ -54,42 +58,42 @@ enum class GenreFilter(val displayName: String, val keywords: List<String>) {
  * - sourceActivation: Shows which sources are active for meaningful empty states
  */
 data class HomeState(
-        val isLoading: Boolean = true,
-        val continueWatchingItems: List<HomeMediaItem> = emptyList(),
-        val recentlyAddedItems: List<HomeMediaItem> = emptyList(),
-        // Cross-pipeline unified rows (canonical system)
-        val moviesItems: List<HomeMediaItem> = emptyList(),
-        val seriesItems: List<HomeMediaItem> = emptyList(),
-        val clipsItems: List<HomeMediaItem> = emptyList(),
-        // Source-specific rows (Live is intentionally outside canonical - ephemeral streams,
-        // EPG-based)
-        val xtreamLiveItems: List<HomeMediaItem> = emptyList(),
-        val error: String? = null,
-        val hasTelegramSource: Boolean = false,
-        val hasXtreamSource: Boolean = false,
-        /** Current catalog sync state: Idle, Running, Success, or Failed */
-        val syncState: SyncUiState = SyncUiState.Idle,
-        /** Current source activation state snapshot */
-        val sourceActivation: SourceActivationSnapshot = SourceActivationSnapshot.EMPTY,
-        // === Search & Filter ===
-        /** Current search query (empty = no search active) */
-        val searchQuery: String = "",
-        /** Currently selected genre filter */
-        val selectedGenre: GenreFilter = GenreFilter.ALL,
-        /** Whether search/filter panel is visible */
-        val isSearchVisible: Boolean = false,
-        /** All available genres extracted from content (for dynamic filtering) */
-        val availableGenres: List<String> = emptyList()
+    val isLoading: Boolean = true,
+    val continueWatchingItems: List<HomeMediaItem> = emptyList(),
+    val recentlyAddedItems: List<HomeMediaItem> = emptyList(),
+    // Cross-pipeline unified rows (canonical system)
+    val moviesItems: List<HomeMediaItem> = emptyList(),
+    val seriesItems: List<HomeMediaItem> = emptyList(),
+    val clipsItems: List<HomeMediaItem> = emptyList(),
+    // Source-specific rows (Live is intentionally outside canonical - ephemeral streams,
+    // EPG-based)
+    val xtreamLiveItems: List<HomeMediaItem> = emptyList(),
+    val error: String? = null,
+    val hasTelegramSource: Boolean = false,
+    val hasXtreamSource: Boolean = false,
+    /** Current catalog sync state: Idle, Running, Success, or Failed */
+    val syncState: SyncUiState = SyncUiState.Idle,
+    /** Current source activation state snapshot */
+    val sourceActivation: SourceActivationSnapshot = SourceActivationSnapshot.EMPTY,
+    // === Search & Filter ===
+    /** Current search query (empty = no search active) */
+    val searchQuery: String = "",
+    /** Currently selected genre filter */
+    val selectedGenre: GenreFilter = GenreFilter.ALL,
+    /** Whether search/filter panel is visible */
+    val isSearchVisible: Boolean = false,
+    /** All available genres extracted from content (for dynamic filtering) */
+    val availableGenres: List<String> = emptyList(),
 ) {
     /** True if there is any content to display */
     val hasContent: Boolean
         get() =
-                continueWatchingItems.isNotEmpty() ||
-                        recentlyAddedItems.isNotEmpty() ||
-                        moviesItems.isNotEmpty() ||
-                        seriesItems.isNotEmpty() ||
-                        clipsItems.isNotEmpty() ||
-                        xtreamLiveItems.isNotEmpty()
+            continueWatchingItems.isNotEmpty() ||
+                recentlyAddedItems.isNotEmpty() ||
+                moviesItems.isNotEmpty() ||
+                seriesItems.isNotEmpty() ||
+                clipsItems.isNotEmpty() ||
+                xtreamLiveItems.isNotEmpty()
 
     /** True if search or filter is active */
     val isFilterActive: Boolean
@@ -110,22 +114,22 @@ data class HomeState(
  * @property xtreamLive Xtream live channel items
  */
 data class HomeContentStreams(
-        val continueWatching: List<HomeMediaItem> = emptyList(),
-        val recentlyAdded: List<HomeMediaItem> = emptyList(),
-        val movies: List<HomeMediaItem> = emptyList(),
-        val series: List<HomeMediaItem> = emptyList(),
-        val clips: List<HomeMediaItem> = emptyList(),
-        val xtreamLive: List<HomeMediaItem> = emptyList()
+    val continueWatching: List<HomeMediaItem> = emptyList(),
+    val recentlyAdded: List<HomeMediaItem> = emptyList(),
+    val movies: List<HomeMediaItem> = emptyList(),
+    val series: List<HomeMediaItem> = emptyList(),
+    val clips: List<HomeMediaItem> = emptyList(),
+    val xtreamLive: List<HomeMediaItem> = emptyList(),
 ) {
     /** True if any content stream has items */
     val hasContent: Boolean
         get() =
-                continueWatching.isNotEmpty() ||
-                        recentlyAdded.isNotEmpty() ||
-                        movies.isNotEmpty() ||
-                        series.isNotEmpty() ||
-                        clips.isNotEmpty() ||
-                        xtreamLive.isNotEmpty()
+            continueWatching.isNotEmpty() ||
+                recentlyAdded.isNotEmpty() ||
+                movies.isNotEmpty() ||
+                series.isNotEmpty() ||
+                clips.isNotEmpty() ||
+                xtreamLive.isNotEmpty()
 }
 
 /**
@@ -138,10 +142,10 @@ data class HomeContentStreams(
  * combine overload limit.
  */
 internal data class HomeContentPartial(
-        val continueWatching: List<HomeMediaItem>,
-        val recentlyAdded: List<HomeMediaItem>,
-        val movies: List<HomeMediaItem>,
-        val xtreamLive: List<HomeMediaItem>
+    val continueWatching: List<HomeMediaItem>,
+    val recentlyAdded: List<HomeMediaItem>,
+    val movies: List<HomeMediaItem>,
+    val xtreamLive: List<HomeMediaItem>,
 )
 
 /**
@@ -159,318 +163,316 @@ internal data class HomeContentPartial(
  */
 @HiltViewModel
 class HomeViewModel
-@Inject
-constructor(
+    @Inject
+    constructor(
         private val homeContentRepository: HomeContentRepository,
         private val syncStateObserver: SyncStateObserver,
-        private val sourceActivationStore: SourceActivationStore
-) : ViewModel() {
+        private val sourceActivationStore: SourceActivationStore,
+    ) : ViewModel() {
+        private val errorState = MutableStateFlow<String?>(null)
 
-    private val errorState = MutableStateFlow<String?>(null)
+        // ==================== Content Flows ====================
 
-    // ==================== Content Flows ====================
-
-    private val continueWatchingItems: Flow<List<HomeMediaItem>> =
+        private val continueWatchingItems: Flow<List<HomeMediaItem>> =
             homeContentRepository.observeContinueWatching().toHomeItems()
 
-    private val recentlyAddedItems: Flow<List<HomeMediaItem>> =
+        private val recentlyAddedItems: Flow<List<HomeMediaItem>> =
             homeContentRepository.observeRecentlyAdded().toHomeItems()
 
-    private val moviesItems: Flow<List<HomeMediaItem>> =
+        private val moviesItems: Flow<List<HomeMediaItem>> =
             homeContentRepository.observeMovies().toHomeItems()
 
-    private val seriesItems: Flow<List<HomeMediaItem>> =
+        private val seriesItems: Flow<List<HomeMediaItem>> =
             homeContentRepository.observeSeries().toHomeItems()
 
-    private val clipsItems: Flow<List<HomeMediaItem>> =
+        private val clipsItems: Flow<List<HomeMediaItem>> =
             homeContentRepository.observeClips().toHomeItems()
 
-    private val xtreamLiveItems: Flow<List<HomeMediaItem>> =
+        private val xtreamLiveItems: Flow<List<HomeMediaItem>> =
             homeContentRepository.observeXtreamLive().toHomeItems()
 
-    // ==================== Type-Safe Content Aggregation ====================
+        // ==================== Type-Safe Content Aggregation ====================
 
-    /**
-     * Stage 1: Combine first 4 flows into HomeContentPartial.
-     *
-     * Uses the 4-parameter combine overload (type-safe, no casts needed).
-     */
-    private val contentPartial: Flow<HomeContentPartial> =
+        /**
+         * Stage 1: Combine first 4 flows into HomeContentPartial.
+         *
+         * Uses the 4-parameter combine overload (type-safe, no casts needed).
+         */
+        private val contentPartial: Flow<HomeContentPartial> =
             combine(continueWatchingItems, recentlyAddedItems, moviesItems, xtreamLiveItems) {
-                    continueWatching,
-                    recentlyAdded,
-                    movies,
-                    live ->
+                continueWatching,
+                recentlyAdded,
+                movies,
+                live,
+                ->
                 HomeContentPartial(
-                        continueWatching = continueWatching,
-                        recentlyAdded = recentlyAdded,
-                        movies = movies,
-                        xtreamLive = live
+                    continueWatching = continueWatching,
+                    recentlyAdded = recentlyAdded,
+                    movies = movies,
+                    xtreamLive = live,
                 )
             }
 
-    /**
-     * Stage 2: Combine partial with remaining flows into HomeContentStreams.
-     *
-     * Uses the 3-parameter combine overload (type-safe, no casts needed). All 6 content flows are
-     * now aggregated without any Array<Any?> or index access.
-     */
-    private val contentStreams: Flow<HomeContentStreams> =
+        /**
+         * Stage 2: Combine partial with remaining flows into HomeContentStreams.
+         *
+         * Uses the 3-parameter combine overload (type-safe, no casts needed). All 6 content flows are
+         * now aggregated without any Array<Any?> or index access.
+         */
+        private val contentStreams: Flow<HomeContentStreams> =
             combine(contentPartial, seriesItems, clipsItems) { partial, series, clips ->
                 HomeContentStreams(
-                        continueWatching = partial.continueWatching,
-                        recentlyAdded = partial.recentlyAdded,
-                        movies = partial.movies,
-                        xtreamLive = partial.xtreamLive,
-                        series = series,
-                        clips = clips
+                    continueWatching = partial.continueWatching,
+                    recentlyAdded = partial.recentlyAdded,
+                    movies = partial.movies,
+                    xtreamLive = partial.xtreamLive,
+                    series = series,
+                    clips = clips,
                 )
             }
 
-    // ==================== Search & Filter State ====================
+        // ==================== Search & Filter State ====================
 
-    private val _searchQuery = MutableStateFlow("")
-    private val _selectedGenre = MutableStateFlow(GenreFilter.ALL)
-    private val _isSearchVisible = MutableStateFlow(false)
+        private val _searchQuery = MutableStateFlow("")
+        private val _selectedGenre = MutableStateFlow(GenreFilter.ALL)
+        private val _isSearchVisible = MutableStateFlow(false)
 
-    /**
-     * Debounced search query to prevent excessive filtering on every keystroke.
-     *
-     * ✅ Phase 1 Quick Win:
-     * - 300ms debounce prevents rapid filter() calls
-     * - distinctUntilChanged() prevents duplicate queries
-     * - Triggers filter only after user stops typing
-     */
-    private val debouncedSearchQuery =
+        /**
+         * Debounced search query to prevent excessive filtering on every keystroke.
+         *
+         * ✅ Phase 1 Quick Win:
+         * - 300ms debounce prevents rapid filter() calls
+         * - distinctUntilChanged() prevents duplicate queries
+         * - Triggers filter only after user stops typing
+         */
+        private val debouncedSearchQuery =
             _searchQuery
-                    .debounce(300) // 300ms wait after last keystroke
-                    .distinctUntilChanged()
-                    .stateIn(
-                            scope = viewModelScope,
-                            started = SharingStarted.WhileSubscribed(5_000),
-                            initialValue = ""
-                    )
+                .debounce(300) // 300ms wait after last keystroke
+                .distinctUntilChanged()
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = "",
+                )
 
-    /**
-     * Final home state combining content with metadata (errors, sync state, source activation).
-     *
-     * Uses the 4-parameter combine overload to maintain type safety throughout. No Array<Any?>
-     * values, no index access, no casts.
-     */
-    val state: StateFlow<HomeState> =
+        /**
+         * Final home state combining content with metadata (errors, sync state, source activation).
+         *
+         * Uses the 4-parameter combine overload to maintain type safety throughout. No Array<Any?>
+         * values, no index access, no casts.
+         */
+        val state: StateFlow<HomeState> =
             combine(
-                            contentStreams,
-                            errorState,
-                            syncStateObserver.observeSyncState(),
-                            sourceActivationStore.observeStates(),
-                            debouncedSearchQuery // ✅ Phase 1: Use debounced query
-                    ) { content, error, syncState, sourceActivation, query ->
-                        HomeState(
-                                isLoading = false,
-                                continueWatchingItems = content.continueWatching,
-                                recentlyAddedItems = content.recentlyAdded,
-                                moviesItems = content.movies,
-                                seriesItems = content.series,
-                                clipsItems = content.clips,
-                                xtreamLiveItems = content.xtreamLive,
-                                error = error,
-                                hasTelegramSource =
-                                        content.clips.isNotEmpty() ||
-                                                content.movies.any {
-                                                    it.sourceTypes.contains(SourceType.TELEGRAM)
-                                                },
-                                hasXtreamSource =
-                                        content.xtreamLive.isNotEmpty() ||
-                                                content.movies.any {
-                                                    it.sourceTypes.contains(SourceType.XTREAM)
-                                                },
-                                syncState = syncState,
-                                sourceActivation = sourceActivation,
-                                searchQuery = query, // ✅ Phase 1: Use debounced parameter
-                                selectedGenre = _selectedGenre.value,
-                                isSearchVisible = _isSearchVisible.value,
-                                availableGenres = extractAvailableGenres(content)
+                contentStreams,
+                errorState,
+                syncStateObserver.observeSyncState(),
+                sourceActivationStore.observeStates(),
+                debouncedSearchQuery, // ✅ Phase 1: Use debounced query
+            ) { content, error, syncState, sourceActivation, query ->
+                HomeState(
+                    isLoading = false,
+                    continueWatchingItems = content.continueWatching,
+                    recentlyAddedItems = content.recentlyAdded,
+                    moviesItems = content.movies,
+                    seriesItems = content.series,
+                    clipsItems = content.clips,
+                    xtreamLiveItems = content.xtreamLive,
+                    error = error,
+                    hasTelegramSource =
+                        content.clips.isNotEmpty() ||
+                            content.movies.any {
+                                it.sourceTypes.contains(SourceType.TELEGRAM)
+                            },
+                    hasXtreamSource =
+                        content.xtreamLive.isNotEmpty() ||
+                            content.movies.any {
+                                it.sourceTypes.contains(SourceType.XTREAM)
+                            },
+                    syncState = syncState,
+                    sourceActivation = sourceActivation,
+                    searchQuery = query, // ✅ Phase 1: Use debounced parameter
+                    selectedGenre = _selectedGenre.value,
+                    isSearchVisible = _isSearchVisible.value,
+                    availableGenres = extractAvailableGenres(content),
+                )
+            }.distinctUntilChanged() // ✅ Phase 1: Prevent unnecessary recompositions
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = HomeState(),
+                )
+
+        /**
+         * Filtered state that applies search query, genre filter, and search visibility.
+         *
+         * This is the primary state to use in UI when filtering is desired. Combines 4 flows: base
+         * state + searchQuery + selectedGenre + isSearchVisible
+         */
+        val filteredState: StateFlow<HomeState> =
+            combine(
+                state,
+                debouncedSearchQuery, // ✅ Phase 1: Use debounced query
+                _selectedGenre,
+                _isSearchVisible,
+            ) { currentState, query, genre, isSearchVisible ->
+                val baseState =
+                    if (query.isBlank() && genre == GenreFilter.ALL) {
+                        currentState
+                    } else {
+                        currentState.copy(
+                            continueWatchingItems =
+                                filterItems(
+                                    currentState.continueWatchingItems,
+                                    query,
+                                    genre,
+                                ),
+                            recentlyAddedItems =
+                                filterItems(
+                                    currentState.recentlyAddedItems,
+                                    query,
+                                    genre,
+                                ),
+                            moviesItems =
+                                filterItems(
+                                    currentState.moviesItems,
+                                    query,
+                                    genre,
+                                ),
+                            seriesItems =
+                                filterItems(
+                                    currentState.seriesItems,
+                                    query,
+                                    genre,
+                                ),
+                            clipsItems =
+                                filterItems(
+                                    currentState.clipsItems,
+                                    query,
+                                    genre,
+                                ),
+                            xtreamLiveItems =
+                                filterItems(
+                                    currentState.xtreamLiveItems,
+                                    query,
+                                    genre,
+                                ),
                         )
                     }
-                    .distinctUntilChanged() // ✅ Phase 1: Prevent unnecessary recompositions
-                    .stateIn(
-                            scope = viewModelScope,
-                            started = SharingStarted.WhileSubscribed(5_000),
-                            initialValue = HomeState()
-                    )
+                // Always update search/filter state from flows
+                baseState.copy(
+                    searchQuery = query,
+                    selectedGenre = genre,
+                    isSearchVisible = isSearchVisible,
+                )
+            }.distinctUntilChanged() // ✅ Phase 1: Prevent duplicate filter states
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = HomeState(),
+                )
 
-    /**
-     * Filtered state that applies search query, genre filter, and search visibility.
-     *
-     * This is the primary state to use in UI when filtering is desired. Combines 4 flows: base
-     * state + searchQuery + selectedGenre + isSearchVisible
-     */
-    val filteredState: StateFlow<HomeState> =
-            combine(
-                            state,
-                            debouncedSearchQuery, // ✅ Phase 1: Use debounced query
-                            _selectedGenre,
-                            _isSearchVisible
-                    ) { currentState, query, genre, isSearchVisible ->
-                        val baseState =
-                                if (query.isBlank() && genre == GenreFilter.ALL) {
-                                    currentState
-                                } else {
-                                    currentState.copy(
-                                            continueWatchingItems =
-                                                    filterItems(
-                                                            currentState.continueWatchingItems,
-                                                            query,
-                                                            genre
-                                                    ),
-                                            recentlyAddedItems =
-                                                    filterItems(
-                                                            currentState.recentlyAddedItems,
-                                                            query,
-                                                            genre
-                                                    ),
-                                            moviesItems =
-                                                    filterItems(
-                                                            currentState.moviesItems,
-                                                            query,
-                                                            genre
-                                                    ),
-                                            seriesItems =
-                                                    filterItems(
-                                                            currentState.seriesItems,
-                                                            query,
-                                                            genre
-                                                    ),
-                                            clipsItems =
-                                                    filterItems(
-                                                            currentState.clipsItems,
-                                                            query,
-                                                            genre
-                                                    ),
-                                            xtreamLiveItems =
-                                                    filterItems(
-                                                            currentState.xtreamLiveItems,
-                                                            query,
-                                                            genre
-                                                    )
-                                    )
-                                }
-                        // Always update search/filter state from flows
-                        baseState.copy(
-                                searchQuery = query,
-                                selectedGenre = genre,
-                                isSearchVisible = isSearchVisible
-                        )
-                    }
-                    .distinctUntilChanged() // ✅ Phase 1: Prevent duplicate filter states
-                    .stateIn(
-                            scope = viewModelScope,
-                            started = SharingStarted.WhileSubscribed(5_000),
-                            initialValue = HomeState()
-                    )
+        // ==================== Public Actions ====================
 
-    // ==================== Public Actions ====================
-
-    fun refresh() {
-        viewModelScope.launch {
-            // Clears UI error state only.
-            // Data reload is handled by background CatalogSync, not by Home.
-            errorState.emit(null)
+        fun refresh() {
+            viewModelScope.launch {
+                // Clears UI error state only.
+                // Data reload is handled by background CatalogSync, not by Home.
+                errorState.emit(null)
+            }
         }
-    }
 
-    fun onItemClicked(item: HomeMediaItem) {
-        // TODO: Navigate to detail screen
-        // Will be handled by navigation callback from UI
-    }
+        fun onItemClicked(item: HomeMediaItem) {
+            // TODO: Navigate to detail screen
+            // Will be handled by navigation callback from UI
+        }
 
-    /** Toggle search panel visibility */
-    fun toggleSearch() {
-        _isSearchVisible.value = !_isSearchVisible.value
-        if (!_isSearchVisible.value) {
-            // Clear search when closing
+        /** Toggle search panel visibility */
+        fun toggleSearch() {
+            _isSearchVisible.value = !_isSearchVisible.value
+            if (!_isSearchVisible.value) {
+                // Clear search when closing
+                _searchQuery.value = ""
+            }
+        }
+
+        /** Update search query */
+        fun setSearchQuery(query: String) {
+            _searchQuery.value = query
+        }
+
+        /** Update selected genre filter */
+        fun setGenreFilter(genre: GenreFilter) {
+            _selectedGenre.value = genre
+        }
+
+        /** Clear all filters */
+        fun clearFilters() {
             _searchQuery.value = ""
+            _selectedGenre.value = GenreFilter.ALL
         }
-    }
 
-    /** Update search query */
-    fun setSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
+        // ==================== Private Helpers ====================
 
-    /** Update selected genre filter */
-    fun setGenreFilter(genre: GenreFilter) {
-        _selectedGenre.value = genre
-    }
-
-    /** Clear all filters */
-    fun clearFilters() {
-        _searchQuery.value = ""
-        _selectedGenre.value = GenreFilter.ALL
-    }
-
-    // ==================== Private Helpers ====================
-
-    /**
-     * Filter items by search query and genre.
-     *
-     * Search matches:
-     * - Title (case-insensitive)
-     * - Year (if query is a 4-digit number)
-     *
-     * Genre matches:
-     * - Any keyword from GenreFilter.keywords in item.genres field
-     */
-    private fun filterItems(
+        /**
+         * Filter items by search query and genre.
+         *
+         * Search matches:
+         * - Title (case-insensitive)
+         * - Year (if query is a 4-digit number)
+         *
+         * Genre matches:
+         * - Any keyword from GenreFilter.keywords in item.genres field
+         */
+        private fun filterItems(
             items: List<HomeMediaItem>,
             query: String,
-            genre: GenreFilter
-    ): List<HomeMediaItem> {
-        val queryLower = query.lowercase().trim()
-        val yearQuery = queryLower.toIntOrNull()?.takeIf { it in 1900..2100 }
+            genre: GenreFilter,
+        ): List<HomeMediaItem> {
+            val queryLower = query.lowercase().trim()
+            val yearQuery = queryLower.toIntOrNull()?.takeIf { it in 1900..2100 }
 
-        return items.filter { item ->
-            val matchesQuery =
+            return items.filter { item ->
+                val matchesQuery =
                     queryLower.isBlank() ||
-                            item.title.lowercase().contains(queryLower) ||
-                            (yearQuery != null && item.year == yearQuery)
+                        item.title.lowercase().contains(queryLower) ||
+                        (yearQuery != null && item.year == yearQuery)
 
-            val matchesGenre =
+                val matchesGenre =
                     genre == GenreFilter.ALL ||
-                            genre.keywords.any { keyword ->
-                                item.genres?.lowercase()?.contains(keyword) == true
-                            }
+                        genre.keywords.any { keyword ->
+                            item.genres?.lowercase()?.contains(keyword) == true
+                        }
 
-            matchesQuery && matchesGenre
+                matchesQuery && matchesGenre
+            }
         }
-    }
 
-    /** Extract all unique genres from content for dynamic genre discovery. */
-    private fun extractAvailableGenres(content: HomeContentStreams): List<String> {
-        val allItems =
+        /** Extract all unique genres from content for dynamic genre discovery. */
+        private fun extractAvailableGenres(content: HomeContentStreams): List<String> {
+            val allItems =
                 content.continueWatching +
-                        content.recentlyAdded +
-                        content.movies +
-                        content.series +
-                        content.clips +
-                        content.xtreamLive
-        return allItems
+                    content.recentlyAdded +
+                    content.movies +
+                    content.series +
+                    content.clips +
+                    content.xtreamLive
+            return allItems
                 .mapNotNull { it.genres }
                 .flatMap { it.split(",", ";") }
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
                 .distinct()
                 .sorted()
-    }
+        }
 
-    private fun Flow<List<HomeMediaItem>>.toHomeItems(): Flow<List<HomeMediaItem>> =
+        private fun Flow<List<HomeMediaItem>>.toHomeItems(): Flow<List<HomeMediaItem>> =
             this.distinctUntilChanged().onStart { emit(emptyList()) }.catch { throwable ->
                 UnifiedLog.e(TAG, throwable) { "Error loading home content" }
                 errorState.emit(throwable.message ?: "Unknown error loading content")
                 emit(emptyList())
             }
 
-    private companion object {
-        const val TAG = "HomeViewModel"
+        private companion object {
+            const val TAG = "HomeViewModel"
+        }
     }
-}

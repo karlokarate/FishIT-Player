@@ -46,12 +46,13 @@ data class PlaybackContext(
         fun testVod(
             url: String,
             title: String = "Test Video",
-        ): PlaybackContext = PlaybackContext(
-            canonicalId = "test:${url.hashCode()}",
-            sourceType = SourceType.HTTP,
-            uri = url,
-            title = title,
-        )
+        ): PlaybackContext =
+            PlaybackContext(
+                canonicalId = "test:${url.hashCode()}",
+                sourceType = SourceType.HTTP,
+                uri = url,
+                title = title,
+            )
 
         /**
          * Creates a Telegram playback context.
@@ -62,13 +63,14 @@ data class PlaybackContext(
             fileId: Int,
             remoteId: String,
             title: String,
-        ): PlaybackContext = PlaybackContext(
-            canonicalId = "telegram:$chatId:$messageId",
-            sourceType = SourceType.TELEGRAM,
-            uri = "tg://file/$fileId?chatId=$chatId&messageId=$messageId&remoteId=$remoteId",
-            sourceKey = remoteId,
-            title = title,
-        )
+        ): PlaybackContext =
+            PlaybackContext(
+                canonicalId = "telegram:$chatId:$messageId",
+                sourceType = SourceType.TELEGRAM,
+                uri = "tg://file/$fileId?chatId=$chatId&messageId=$messageId&remoteId=$remoteId",
+                sourceKey = remoteId,
+                title = title,
+            )
 
         /**
          * Creates an Xtream VOD playback context.
@@ -78,13 +80,14 @@ data class PlaybackContext(
             streamUrl: String,
             title: String,
             headers: Map<String, String> = emptyMap(),
-        ): PlaybackContext = PlaybackContext(
-            canonicalId = "xtream:vod:$vodId",
-            sourceType = SourceType.XTREAM,
-            uri = streamUrl,
-            title = title,
-            headers = headers,
-        )
+        ): PlaybackContext =
+            PlaybackContext(
+                canonicalId = "xtream:vod:$vodId",
+                sourceType = SourceType.XTREAM,
+                uri = streamUrl,
+                title = title,
+                headers = headers,
+            )
 
         /**
          * Creates an Xtream Live playback context.
@@ -94,14 +97,15 @@ data class PlaybackContext(
             streamUrl: String,
             title: String,
             headers: Map<String, String> = emptyMap(),
-        ): PlaybackContext = PlaybackContext(
-            canonicalId = "xtream:live:$channelId",
-            sourceType = SourceType.XTREAM,
-            uri = streamUrl,
-            title = title,
-            headers = headers,
-            isLive = true,
-            isSeekable = false,
-        )
+        ): PlaybackContext =
+            PlaybackContext(
+                canonicalId = "xtream:live:$channelId",
+                sourceType = SourceType.XTREAM,
+                uri = streamUrl,
+                title = title,
+                headers = headers,
+                isLive = true,
+                isSeekable = false,
+            )
     }
 }

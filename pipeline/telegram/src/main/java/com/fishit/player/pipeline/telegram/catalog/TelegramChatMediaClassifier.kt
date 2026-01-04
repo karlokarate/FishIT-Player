@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap
  * Recent only | Periodic | On-demand | | COLD | No | Monitor only | No |
  */
 class TelegramChatMediaClassifier {
-
     /** Optional callback fired when a previously COLD chat warms up. */
     var onChatWarmUp: ((chatId: Long, newClass: ChatMediaClass) -> Unit)? = null
 
@@ -50,9 +49,7 @@ class TelegramChatMediaClassifier {
     private val suppressedChats = ConcurrentHashMap.newKeySet<Long>()
 
     /** Get or create a profile for a chat. */
-    fun getProfile(chatId: Long): TelegramChatMediaProfile {
-        return profiles.computeIfAbsent(chatId) { TelegramChatMediaProfile(chatId) }
-    }
+    fun getProfile(chatId: Long): TelegramChatMediaProfile = profiles.computeIfAbsent(chatId) { TelegramChatMediaProfile(chatId) }
 
     /**
      * Classify a chat based on its profile.
@@ -60,20 +57,19 @@ class TelegramChatMediaClassifier {
      * @param profile Chat's media profile
      * @return Classification (HOT, WARM, or COLD)
      */
-    fun classify(profile: TelegramChatMediaProfile): ChatMediaClass {
-        return when {
+    fun classify(profile: TelegramChatMediaProfile): ChatMediaClass =
+        when {
             // HOT: High media density
             profile.mediaMessagesSampled >= HOT_MEDIA_COUNT_THRESHOLD ||
-                    profile.mediaRatio >= HOT_MEDIA_RATIO_THRESHOLD -> ChatMediaClass.MEDIA_HOT
+                profile.mediaRatio >= HOT_MEDIA_RATIO_THRESHOLD -> ChatMediaClass.MEDIA_HOT
 
             // WARM: Moderate media presence
             profile.mediaMessagesSampled >= WARM_MEDIA_COUNT_THRESHOLD &&
-                    profile.mediaRatio >= WARM_MEDIA_RATIO_THRESHOLD -> ChatMediaClass.MEDIA_WARM
+                profile.mediaRatio >= WARM_MEDIA_RATIO_THRESHOLD -> ChatMediaClass.MEDIA_WARM
 
             // COLD: Low or no media
             else -> ChatMediaClass.MEDIA_COLD
         }
-    }
 
     /**
      * Record a message and update classification.
@@ -110,7 +106,10 @@ class TelegramChatMediaClassifier {
      * @param messages Messages from the chat
      * @return Classification after sampling
      */
-    fun recordSample(chatId: Long, messages: List<TgMessage>): ChatMediaClass {
+    fun recordSample(
+        chatId: Long,
+        messages: List<TgMessage>,
+    ): ChatMediaClass {
         val profile = getProfile(chatId)
         val previousClass = classify(profile)
 
@@ -139,11 +138,10 @@ class TelegramChatMediaClassifier {
     fun isSuppressed(chatId: Long): Boolean = suppressedChats.contains(chatId)
 
     /** Get all non-suppressed chats with their classifications. */
-    fun getActiveChats(): Map<Long, ChatMediaClass> {
-        return profiles.filter { !suppressedChats.contains(it.key) }.mapValues {
+    fun getActiveChats(): Map<Long, ChatMediaClass> =
+        profiles.filter { !suppressedChats.contains(it.key) }.mapValues {
             classify(it.value)
         }
-    }
 
     /** Clear all profiles (for testing or reset). */
     fun clear() {

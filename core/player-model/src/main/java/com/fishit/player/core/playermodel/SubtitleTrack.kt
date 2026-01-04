@@ -6,7 +6,9 @@ package com.fishit.player.core.playermodel
  * Wraps a string ID that corresponds to Media3's track group/format indices.
  */
 @JvmInline
-value class SubtitleTrackId(val value: String) {
+value class SubtitleTrackId(
+    val value: String,
+) {
     companion object {
         /** Special ID indicating no subtitle track is selected. */
         val OFF = SubtitleTrackId("OFF")
@@ -22,7 +24,7 @@ enum class SubtitleSourceType {
     SIDECAR,
 
     /** HLS/DASH manifest subtitle track. */
-    MANIFEST
+    MANIFEST,
 }
 
 /**
@@ -41,14 +43,14 @@ enum class SubtitleSourceType {
  * @property mimeType Optional MIME type (e.g., "text/vtt", "application/x-subrip").
  */
 data class SubtitleTrack(
-        val id: SubtitleTrackId,
-        val language: String?,
-        val label: String,
-        val isDefault: Boolean = false,
-        val isForced: Boolean = false,
-        val isClosedCaption: Boolean = false,
-        val sourceType: SubtitleSourceType = SubtitleSourceType.EMBEDDED,
-        val mimeType: String? = null
+    val id: SubtitleTrackId,
+    val language: String?,
+    val label: String,
+    val isDefault: Boolean = false,
+    val isForced: Boolean = false,
+    val isClosedCaption: Boolean = false,
+    val sourceType: SubtitleSourceType = SubtitleSourceType.EMBEDDED,
+    val mimeType: String? = null,
 ) {
     companion object {
         /**
@@ -64,24 +66,24 @@ data class SubtitleTrack(
          * @param mimeType MIME type.
          */
         fun fromMedia3(
-                groupIndex: Int,
-                trackIndex: Int,
-                language: String?,
-                label: String?,
-                isDefault: Boolean = false,
-                isForced: Boolean = false,
-                isClosedCaption: Boolean = false,
-                mimeType: String? = null
+            groupIndex: Int,
+            trackIndex: Int,
+            language: String?,
+            label: String?,
+            isDefault: Boolean = false,
+            isForced: Boolean = false,
+            isClosedCaption: Boolean = false,
+            mimeType: String? = null,
         ): SubtitleTrack =
-                SubtitleTrack(
-                        id = SubtitleTrackId("$groupIndex:$trackIndex"),
-                        language = language,
-                        label = label ?: language ?: "Track ${trackIndex + 1}",
-                        isDefault = isDefault,
-                        isForced = isForced,
-                        isClosedCaption = isClosedCaption,
-                        sourceType = SubtitleSourceType.EMBEDDED,
-                        mimeType = mimeType
-                )
+            SubtitleTrack(
+                id = SubtitleTrackId("$groupIndex:$trackIndex"),
+                language = language,
+                label = label ?: language ?: "Track ${trackIndex + 1}",
+                isDefault = isDefault,
+                isForced = isForced,
+                isClosedCaption = isClosedCaption,
+                sourceType = SubtitleSourceType.EMBEDDED,
+                mimeType = mimeType,
+            )
     }
 }

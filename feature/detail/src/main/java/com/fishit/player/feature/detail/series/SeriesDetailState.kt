@@ -3,7 +3,6 @@ package com.fishit.player.feature.detail.series
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaSourceRef
-import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 
 /**
@@ -32,11 +31,12 @@ data class SeriesDetailState(
         get() = seasons.size > 1
 
     val displayedEpisodes: List<EpisodeItem>
-        get() = if (selectedSeason != null) {
-            episodes.filter { it.season == selectedSeason }
-        } else {
-            episodes
-        }
+        get() =
+            if (selectedSeason != null) {
+                episodes.filter { it.season == selectedSeason }
+            } else {
+                episodes
+            }
 }
 
 /**
@@ -71,7 +71,7 @@ data class EpisodeItem(
     val sources: List<MediaSourceRef>,
 ) {
     val displayTitle: String
-        get() = "S${season}E${episode} - $title"
+        get() = "S${season}E$episode - $title"
 
     val durationMinutes: Int?
         get() = durationMs?.let { (it / 60_000).toInt() }

@@ -3,8 +3,6 @@ package com.fishit.player.miniplayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -20,7 +18,6 @@ import org.junit.Test
  * ════════════════════════════════════════════════════════════════════════════════
  */
 class DefaultMiniPlayerManagerTest {
-
     private lateinit var manager: DefaultMiniPlayerManager
 
     @Before
@@ -43,7 +40,7 @@ class DefaultMiniPlayerManagerTest {
             fromRoute = "library",
             mediaId = 123L,
             rowIndex = 2,
-            itemIndex = 5
+            itemIndex = 5,
         )
 
         val state = manager.state.value

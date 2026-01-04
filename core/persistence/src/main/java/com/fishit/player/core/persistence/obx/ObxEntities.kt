@@ -217,28 +217,22 @@ data class ObxScreenTimeEntry(
 @Entity
 data class ObxTelegramMessage(
     @Id var id: Long = 0,
-    
     // === Stable Identifiers (ALWAYS persist) ===
     @Index var chatId: Long = 0,
     @Index var messageId: Long = 0,
-    
     // === File References (remoteId only - resolve fileId at runtime) ===
     /** Stable remote ID for video/media file. Use getRemoteFile(remoteId) to get fileId. */
     @Index var remoteId: String? = null,
-    
     /** Stable remote ID for thumbnail. Use getRemoteFile(thumbRemoteId) to get fileId. */
     var thumbRemoteId: String? = null,
-    
     /** Stable remote ID for poster image. Use getRemoteFile(posterRemoteId) to get fileId. */
     var posterRemoteId: String? = null,
-    
     // === Media Properties ===
     var supportsStreaming: Boolean? = null,
     var caption: String? = null,
     @Index var captionLower: String? = null,
     var date: Long? = null,
     var fileName: String? = null,
-    
     // === Enriched Metadata (from TDLib) ===
     var durationSecs: Int? = null,
     var mimeType: String? = null,
@@ -246,14 +240,12 @@ data class ObxTelegramMessage(
     var width: Int? = null,
     var height: Int? = null,
     @Index var language: String? = null,
-    
     // === Movie Metadata (from structured 3-message pattern) ===
     var title: String? = null,
     var year: Int? = null,
     var genres: String? = null, // Comma-separated
     var fsk: Int? = null,
     var description: String? = null,
-    
     // === Series Metadata (for episode grouping) ===
     @Index var isSeries: Boolean = false,
     @Index var seriesName: String? = null,
@@ -261,7 +253,6 @@ data class ObxTelegramMessage(
     var seasonNumber: Int? = null,
     var episodeNumber: Int? = null,
     var episodeTitle: String? = null,
-    
     // === External IDs (for canonical unification) ===
     /** TMDB ID for cross-pipeline canonical identity (e.g., "550" for Fight Club) */
     @Index var tmdbId: String? = null,
@@ -335,25 +326,18 @@ data class ObxIndexQuality(
 @Entity
 data class ObxSeasonIndex(
     @Id var id: Long = 0,
-    
     /** Parent series ID (Xtream series_id) */
     @Index var seriesId: Int = 0,
-    
     /** Season number (1, 2, 3...) */
     @Index var seasonNumber: Int = 0,
-    
     /** Number of episodes in this season (optional, for UI hints) */
     var episodeCount: Int? = null,
-    
     /** Season name/title (optional) */
     var name: String? = null,
-    
     /** Cover image for this season (optional) */
     var coverUrl: String? = null,
-    
     /** Air date of first episode (optional) */
     var airDate: String? = null,
-    
     /** Last update timestamp for TTL check */
     @Index var lastUpdatedMs: Long = System.currentTimeMillis(),
 )
@@ -385,47 +369,35 @@ data class ObxSeasonIndex(
 @Entity
 data class ObxEpisodeIndex(
     @Id var id: Long = 0,
-    
     /** Parent series ID (Xtream series_id) */
     @Index var seriesId: Int = 0,
-    
     /** Season number */
     @Index var seasonNumber: Int = 0,
-    
     /** Episode number within season */
     @Index var episodeNumber: Int = 0,
-    
     /**
      * Stable source key for lookups.
      * Format: "xtream:episode:{seriesId}:{seasonNum}:{episodeNum}"
      * Used by EnsureEpisodePlaybackReadyUseCase
      */
     @Index var sourceKey: String = "",
-    
     /**
      * Xtream episode ID (stream_id from API).
      * Critical for playback URL construction.
      */
     @Index var episodeId: Int? = null,
-    
     /** Episode title */
     var title: String? = null,
-    
     /** Thumbnail URL */
     var thumbUrl: String? = null,
-    
     /** Duration in seconds */
     var durationSecs: Int? = null,
-    
     /** Plot/description (brief, for list display) */
     var plotBrief: String? = null,
-    
     /** Rating (optional) */
     var rating: Double? = null,
-    
     /** Air date (optional) */
     var airDate: String? = null,
-    
     /**
      * JSON-serialized playback hints.
      * Contains keys like "stream_id", "container_extension", etc.
@@ -434,30 +406,29 @@ data class ObxEpisodeIndex(
      * Example: {"stream_id":"12345","container_extension":"mkv"}
      */
     var playbackHintsJson: String? = null,
-    
     /** Last update timestamp for episode index TTL (7 days) */
     @Index var lastUpdatedMs: Long = System.currentTimeMillis(),
-    
     /** Last update timestamp for playback hints TTL (30 days) */
     @Index var playbackHintsUpdatedMs: Long = 0,
 ) {
     companion object {
         /** Episode index TTL: 7 days in milliseconds */
         const val INDEX_TTL_MS = 7 * 24 * 60 * 60 * 1000L
-        
+
         /** Playback hints TTL: 30 days in milliseconds */
         const val PLAYBACK_HINTS_TTL_MS = 30 * 24 * 60 * 60 * 1000L
     }
-    
+
     /** Check if episode index is stale (older than 7 days) */
     val isIndexStale: Boolean
         get() = System.currentTimeMillis() - lastUpdatedMs > INDEX_TTL_MS
-    
+
     /** Check if playback hints are stale (older than 30 days) */
     val arePlaybackHintsStale: Boolean
-        get() = playbackHintsUpdatedMs == 0L || 
+        get() =
+            playbackHintsUpdatedMs == 0L ||
                 System.currentTimeMillis() - playbackHintsUpdatedMs > PLAYBACK_HINTS_TTL_MS
-    
+
     /** Check if episode is ready for playback (has valid hints) */
     val isPlaybackReady: Boolean
         get() = !playbackHintsJson.isNullOrEmpty() && !arePlaybackHintsStale

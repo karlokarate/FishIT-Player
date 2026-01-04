@@ -20,32 +20,27 @@ package com.fishit.player.infra.logging
  * - No internal mutable state
  */
 object LogRedactor {
-
     // Regex patterns for sensitive data
-    private val PATTERNS: List<Pair<Regex, String>> = listOf(
-        // Standard key=value patterns (case insensitive)
-        Regex("""(?i)(username|user|login)\s*=\s*[^\s&,;]+""") to "$1=***",
-        Regex("""(?i)(password|pass|passwd|pwd)\s*=\s*[^\s&,;]+""") to "$1=***",
-        Regex("""(?i)(api_key|apikey|api-key)\s*=\s*[^\s&,;]+""") to "$1=***",
-        Regex("""(?i)(token|access_token|auth_token)\s*=\s*[^\s&,;]+""") to "$1=***",
-        Regex("""(?i)(secret|client_secret)\s*=\s*[^\s&,;]+""") to "$1=***",
-        
-        // Bearer token pattern
-        Regex("""Bearer\s+[A-Za-z0-9\-._~+/]+=*""") to "Bearer ***",
-        
-        // Basic auth header
-        Regex("""Basic\s+[A-Za-z0-9+/]+=*""") to "Basic ***",
-        
-        // Xtream-specific URL query params
-        Regex("""(?i)[?&](username|user)=[^&\s]+""") to "$1=***",
-        Regex("""(?i)[?&](password|pass)=[^&\s]+""") to "$1=***",
-        
-        // JSON-like patterns
-        Regex(""""(password|pass|passwd|pwd|token|api_key|secret)"\s*:\s*"[^"]*"""") to """"$1":"***"""",
-        
-        // Phone numbers (for Telegram auth)
-        Regex("""(?<!\d)\+?\d{10,15}(?!\d)""") to "***PHONE***"
-    )
+    private val PATTERNS: List<Pair<Regex, String>> =
+        listOf(
+            // Standard key=value patterns (case insensitive)
+            Regex("""(?i)(username|user|login)\s*=\s*[^\s&,;]+""") to "$1=***",
+            Regex("""(?i)(password|pass|passwd|pwd)\s*=\s*[^\s&,;]+""") to "$1=***",
+            Regex("""(?i)(api_key|apikey|api-key)\s*=\s*[^\s&,;]+""") to "$1=***",
+            Regex("""(?i)(token|access_token|auth_token)\s*=\s*[^\s&,;]+""") to "$1=***",
+            Regex("""(?i)(secret|client_secret)\s*=\s*[^\s&,;]+""") to "$1=***",
+            // Bearer token pattern
+            Regex("""Bearer\s+[A-Za-z0-9\-._~+/]+=*""") to "Bearer ***",
+            // Basic auth header
+            Regex("""Basic\s+[A-Za-z0-9+/]+=*""") to "Basic ***",
+            // Xtream-specific URL query params
+            Regex("""(?i)[?&](username|user)=[^&\s]+""") to "$1=***",
+            Regex("""(?i)[?&](password|pass)=[^&\s]+""") to "$1=***",
+            // JSON-like patterns
+            Regex(""""(password|pass|passwd|pwd|token|api_key|secret)"\s*:\s*"[^"]*"""") to """"$1":"***"""",
+            // Phone numbers (for Telegram auth)
+            Regex("""(?<!\d)\+?\d{10,15}(?!\d)""") to "***PHONE***",
+        )
 
     /**
      * Redact sensitive information from a log message.
@@ -55,7 +50,7 @@ object LogRedactor {
      */
     fun redact(message: String): String {
         if (message.isBlank()) return message
-        
+
         var result = message
         for ((pattern, replacement) in PATTERNS) {
             result = pattern.replace(result, replacement)
@@ -80,16 +75,16 @@ object LogRedactor {
      * @param entry The original log entry
      * @return A new entry with redacted message and throwable info
      */
-    fun redactEntry(entry: BufferedLogEntry): BufferedLogEntry {
-        return entry.copy(
+    fun redactEntry(entry: BufferedLogEntry): BufferedLogEntry =
+        entry.copy(
             message = redact(entry.message),
             // Re-redact throwable info (already data-only, no Throwable reference)
-            throwableInfo = entry.throwableInfo?.let { info ->
-                RedactedThrowableInfo(
-                    type = info.type,
-                    message = redact(info.message ?: "")
-                )
-            }
+            throwableInfo =
+                entry.throwableInfo?.let { info ->
+                    RedactedThrowableInfo(
+                        type = info.type,
+                        message = redact(info.message ?: ""),
+                    )
+                },
         )
-    }
 }

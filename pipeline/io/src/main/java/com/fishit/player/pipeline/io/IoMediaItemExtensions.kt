@@ -3,9 +3,9 @@ package com.fishit.player.pipeline.io
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.SourceType as CoreSourceType
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
+import com.fishit.player.core.model.SourceType as CoreSourceType
 
 /**
  * Extension functions for converting IO pipeline models to core models.
@@ -64,9 +64,7 @@ private fun IoMediaItem.inferMediaType(): MediaType =
  * @param startPositionMs Starting position for resume (optional).
  * @return PlaybackContext suitable for InternalPlayerEntry.
  */
-fun IoMediaItem.toPlaybackContext(
-    startPositionMs: Long = 0L,
-): PlaybackContext =
+fun IoMediaItem.toPlaybackContext(startPositionMs: Long = 0L): PlaybackContext =
     PlaybackContext(
         canonicalId = "io:${toContentId()}",
         sourceType = SourceType.FILE,

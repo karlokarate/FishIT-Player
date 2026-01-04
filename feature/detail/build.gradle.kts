@@ -41,7 +41,7 @@ dependencies {
     implementation(project(":infra:logging"))
 
     // NOTE: Feature modules MUST NOT depend on transport/pipeline/data modules directly.
-    
+
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
@@ -49,26 +49,26 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    
+
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.4")
-    
+
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    
+
     // Serialization (for playback hints JSON)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
-    
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    
+
     // Coil for images
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
 }

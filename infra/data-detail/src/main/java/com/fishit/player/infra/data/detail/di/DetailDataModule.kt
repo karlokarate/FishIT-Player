@@ -11,7 +11,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DetailDataModule {
-
     @Binds
     @Singleton
     abstract fun bindDetailEnrichmentService(impl: DetailEnrichmentServiceImpl): DetailEnrichmentService

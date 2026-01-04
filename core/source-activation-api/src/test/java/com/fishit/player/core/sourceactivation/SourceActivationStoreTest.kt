@@ -19,7 +19,6 @@ import kotlin.test.assertTrue
  * This test uses a simple in-memory implementation to validate the contract.
  */
 class SourceActivationStoreTest {
-
     private lateinit var store: TestSourceActivationStore
 
     @Before
@@ -38,87 +37,94 @@ class SourceActivationStoreTest {
     }
 
     @Test
-    fun `setXtreamActive marks Xtream as active`() = runTest {
-        store.setXtreamActive()
-        
-        val snapshot = store.getCurrentSnapshot()
-        assertEquals(SourceActivationState.Active, snapshot.xtream)
-        assertTrue(snapshot.hasActiveSources)
-        assertTrue(SourceId.XTREAM in snapshot.activeSources)
-    }
+    fun `setXtreamActive marks Xtream as active`() =
+        runTest {
+            store.setXtreamActive()
+
+            val snapshot = store.getCurrentSnapshot()
+            assertEquals(SourceActivationState.Active, snapshot.xtream)
+            assertTrue(snapshot.hasActiveSources)
+            assertTrue(SourceId.XTREAM in snapshot.activeSources)
+        }
 
     @Test
-    fun `setXtreamInactive marks Xtream as inactive`() = runTest {
-        store.setXtreamActive()
-        store.setXtreamInactive()
-        
-        val snapshot = store.getCurrentSnapshot()
-        assertEquals(SourceActivationState.Inactive, snapshot.xtream)
-    }
+    fun `setXtreamInactive marks Xtream as inactive`() =
+        runTest {
+            store.setXtreamActive()
+            store.setXtreamInactive()
+
+            val snapshot = store.getCurrentSnapshot()
+            assertEquals(SourceActivationState.Inactive, snapshot.xtream)
+        }
 
     @Test
-    fun `setXtreamInactive with error reason sets Error state`() = runTest {
-        store.setXtreamActive()
-        store.setXtreamInactive(SourceErrorReason.TRANSPORT_ERROR)
-        
-        val snapshot = store.getCurrentSnapshot()
-        val expectedState = SourceActivationState.Error(SourceErrorReason.TRANSPORT_ERROR)
-        assertEquals(expectedState, snapshot.xtream)
-        assertFalse(snapshot.xtream.isActive)
-    }
+    fun `setXtreamInactive with error reason sets Error state`() =
+        runTest {
+            store.setXtreamActive()
+            store.setXtreamInactive(SourceErrorReason.TRANSPORT_ERROR)
+
+            val snapshot = store.getCurrentSnapshot()
+            val expectedState = SourceActivationState.Error(SourceErrorReason.TRANSPORT_ERROR)
+            assertEquals(expectedState, snapshot.xtream)
+            assertFalse(snapshot.xtream.isActive)
+        }
 
     @Test
-    fun `setTelegramActive marks Telegram as active`() = runTest {
-        store.setTelegramActive()
-        
-        val snapshot = store.getCurrentSnapshot()
-        assertEquals(SourceActivationState.Active, snapshot.telegram)
-        assertTrue(SourceId.TELEGRAM in snapshot.activeSources)
-    }
+    fun `setTelegramActive marks Telegram as active`() =
+        runTest {
+            store.setTelegramActive()
+
+            val snapshot = store.getCurrentSnapshot()
+            assertEquals(SourceActivationState.Active, snapshot.telegram)
+            assertTrue(SourceId.TELEGRAM in snapshot.activeSources)
+        }
 
     @Test
-    fun `setIoActive marks IO as active`() = runTest {
-        store.setIoActive()
-        
-        val snapshot = store.getCurrentSnapshot()
-        assertEquals(SourceActivationState.Active, snapshot.io)
-        assertTrue(SourceId.IO in snapshot.activeSources)
-    }
+    fun `setIoActive marks IO as active`() =
+        runTest {
+            store.setIoActive()
+
+            val snapshot = store.getCurrentSnapshot()
+            assertEquals(SourceActivationState.Active, snapshot.io)
+            assertTrue(SourceId.IO in snapshot.activeSources)
+        }
 
     @Test
-    fun `observeStates emits state changes`() = runTest {
-        val states = mutableListOf<SourceActivationSnapshot>()
-        
-        // Collect initial state
-        states.add(store.observeStates().first())
-        
-        // Activate Xtream
-        store.setXtreamActive()
-        states.add(store.getCurrentSnapshot())
-        
-        // Activate Telegram
-        store.setTelegramActive()
-        states.add(store.getCurrentSnapshot())
-        
-        // Verify progression
-        assertEquals(3, states.size)
-        assertFalse(states[0].hasActiveSources) // Initial: all inactive
-        assertTrue(states[1].xtream.isActive)   // After Xtream activation
-        assertTrue(states[2].telegram.isActive) // After Telegram activation
-    }
+    fun `observeStates emits state changes`() =
+        runTest {
+            val states = mutableListOf<SourceActivationSnapshot>()
+
+            // Collect initial state
+            states.add(store.observeStates().first())
+
+            // Activate Xtream
+            store.setXtreamActive()
+            states.add(store.getCurrentSnapshot())
+
+            // Activate Telegram
+            store.setTelegramActive()
+            states.add(store.getCurrentSnapshot())
+
+            // Verify progression
+            assertEquals(3, states.size)
+            assertFalse(states[0].hasActiveSources) // Initial: all inactive
+            assertTrue(states[1].xtream.isActive) // After Xtream activation
+            assertTrue(states[2].telegram.isActive) // After Telegram activation
+        }
 
     @Test
-    fun `multiple sources can be active simultaneously`() = runTest {
-        store.setXtreamActive()
-        store.setTelegramActive()
-        store.setIoActive()
-        
-        val snapshot = store.getCurrentSnapshot()
-        assertEquals(3, snapshot.activeSources.size)
-        assertTrue(SourceId.XTREAM in snapshot.activeSources)
-        assertTrue(SourceId.TELEGRAM in snapshot.activeSources)
-        assertTrue(SourceId.IO in snapshot.activeSources)
-    }
+    fun `multiple sources can be active simultaneously`() =
+        runTest {
+            store.setXtreamActive()
+            store.setTelegramActive()
+            store.setIoActive()
+
+            val snapshot = store.getCurrentSnapshot()
+            assertEquals(3, snapshot.activeSources.size)
+            assertTrue(SourceId.XTREAM in snapshot.activeSources)
+            assertTrue(SourceId.TELEGRAM in snapshot.activeSources)
+            assertTrue(SourceId.IO in snapshot.activeSources)
+        }
 
     @Test
     fun `SourceActivationSnapshot_EMPTY has all inactive`() {
@@ -146,11 +152,12 @@ class SourceActivationStoreTest {
         }
 
         override suspend fun setXtreamInactive(reason: SourceErrorReason?) {
-            val state = if (reason != null) {
-                SourceActivationState.Error(reason)
-            } else {
-                SourceActivationState.Inactive
-            }
+            val state =
+                if (reason != null) {
+                    SourceActivationState.Error(reason)
+                } else {
+                    SourceActivationState.Inactive
+                }
             _state.value = _state.value.copy(xtream = state)
         }
 
@@ -159,11 +166,12 @@ class SourceActivationStoreTest {
         }
 
         override suspend fun setTelegramInactive(reason: SourceErrorReason?) {
-            val state = if (reason != null) {
-                SourceActivationState.Error(reason)
-            } else {
-                SourceActivationState.Inactive
-            }
+            val state =
+                if (reason != null) {
+                    SourceActivationState.Error(reason)
+                } else {
+                    SourceActivationState.Inactive
+                }
             _state.value = _state.value.copy(telegram = state)
         }
 
@@ -172,11 +180,12 @@ class SourceActivationStoreTest {
         }
 
         override suspend fun setIoInactive(reason: SourceErrorReason?) {
-            val state = if (reason != null) {
-                SourceActivationState.Error(reason)
-            } else {
-                SourceActivationState.Inactive
-            }
+            val state =
+                if (reason != null) {
+                    SourceActivationState.Error(reason)
+                } else {
+                    SourceActivationState.Inactive
+                }
             _state.value = _state.value.copy(io = state)
         }
     }

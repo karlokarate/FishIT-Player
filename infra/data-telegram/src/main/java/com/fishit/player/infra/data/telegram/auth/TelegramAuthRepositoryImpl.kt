@@ -69,9 +69,7 @@ class TelegramAuthRepositoryImpl internal constructor(
         transport.logout()
     }
 
-    override suspend fun getCurrentUserId(): Long? {
-        return transport.getCurrentUserId()
-    }
+    override suspend fun getCurrentUserId(): Long? = transport.getCurrentUserId()
 
     private fun observeTransportAuthState() {
         scope.launch {

@@ -25,12 +25,12 @@ import kotlinx.serialization.json.Json
  * - Pipelines produce ImageRef, persistence stores it, UI consumes it
  */
 class ImageRefConverter : PropertyConverter<ImageRef?, String?> {
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = false
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = false
+            isLenient = true
+        }
 
     override fun convertToEntityProperty(databaseValue: String?): ImageRef? {
         if (databaseValue.isNullOrBlank()) return null
@@ -67,22 +67,24 @@ class ImageRefConverter : PropertyConverter<ImageRef?, String?> {
  *
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
-private fun ImageRef.toUriString(): String = when (this) {
-    is ImageRef.Http -> url
-    is ImageRef.TelegramThumb -> buildString {
-        append("tg://thumb/")
-        append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
-        val params = mutableListOf<String>()
-        chatId?.let { params.add("chatId=$it") }
-        messageId?.let { params.add("messageId=$it") }
-        if (params.isNotEmpty()) {
-            append("?")
-            append(params.joinToString("&"))
-        }
+private fun ImageRef.toUriString(): String =
+    when (this) {
+        is ImageRef.Http -> url
+        is ImageRef.TelegramThumb ->
+            buildString {
+                append("tg://thumb/")
+                append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
+                val params = mutableListOf<String>()
+                chatId?.let { params.add("chatId=$it") }
+                messageId?.let { params.add("messageId=$it") }
+                if (params.isNotEmpty()) {
+                    append("?")
+                    append(params.joinToString("&"))
+                }
+            }
+        is ImageRef.LocalFile -> "file://$path"
+        is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
     }
-    is ImageRef.LocalFile -> "file://$path"
-    is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
-}
 
 // =============================================================================
 // Serialization DTO
@@ -105,12 +107,13 @@ private sealed class ImageRefDto {
         val preferredWidth: Int? = null,
         val preferredHeight: Int? = null,
     ) : ImageRefDto() {
-        override fun toImageRef() = ImageRef.Http(
-            url = url,
-            headers = headers,
-            preferredWidth = preferredWidth,
-            preferredHeight = preferredHeight,
-        )
+        override fun toImageRef() =
+            ImageRef.Http(
+                url = url,
+                headers = headers,
+                preferredWidth = preferredWidth,
+                preferredHeight = preferredHeight,
+            )
     }
 
     /**
@@ -132,13 +135,14 @@ private sealed class ImageRefDto {
         val preferredWidth: Int? = null,
         val preferredHeight: Int? = null,
     ) : ImageRefDto() {
-        override fun toImageRef() = ImageRef.TelegramThumb(
-            remoteId = remoteId,
-            chatId = chatId,
-            messageId = messageId,
-            preferredWidth = preferredWidth,
-            preferredHeight = preferredHeight,
-        )
+        override fun toImageRef() =
+            ImageRef.TelegramThumb(
+                remoteId = remoteId,
+                chatId = chatId,
+                messageId = messageId,
+                preferredWidth = preferredWidth,
+                preferredHeight = preferredHeight,
+            )
     }
 
     @Serializable
@@ -148,11 +152,12 @@ private sealed class ImageRefDto {
         val preferredWidth: Int? = null,
         val preferredHeight: Int? = null,
     ) : ImageRefDto() {
-        override fun toImageRef() = ImageRef.LocalFile(
-            path = path,
-            preferredWidth = preferredWidth,
-            preferredHeight = preferredHeight,
-        )
+        override fun toImageRef() =
+            ImageRef.LocalFile(
+                path = path,
+                preferredWidth = preferredWidth,
+                preferredHeight = preferredHeight,
+            )
     }
 
     @Serializable
@@ -163,43 +168,50 @@ private sealed class ImageRefDto {
         val preferredWidth: Int? = null,
         val preferredHeight: Int? = null,
     ) : ImageRefDto() {
-        override fun toImageRef() = ImageRef.InlineBytes(
-            bytes = android.util.Base64.decode(bytesBase64, android.util.Base64.DEFAULT),
-            mimeType = mimeType,
-            preferredWidth = preferredWidth,
-            preferredHeight = preferredHeight,
-        )
+        override fun toImageRef() =
+            ImageRef.InlineBytes(
+                bytes = android.util.Base64.decode(bytesBase64, android.util.Base64.DEFAULT),
+                mimeType = mimeType,
+                preferredWidth = preferredWidth,
+                preferredHeight = preferredHeight,
+            )
     }
 
     companion object {
-        fun fromImageRef(ref: ImageRef): ImageRefDto = when (ref) {
-            is ImageRef.Http -> HttpDto(
-                url = ref.url,
-                headers = ref.headers,
-                preferredWidth = ref.preferredWidth,
-                preferredHeight = ref.preferredHeight,
-            )
-            is ImageRef.TelegramThumb -> TelegramThumbDto(
-                remoteId = ref.remoteId,
-                chatId = ref.chatId,
-                messageId = ref.messageId,
-                preferredWidth = ref.preferredWidth,
-                preferredHeight = ref.preferredHeight,
-            )
-            is ImageRef.LocalFile -> LocalFileDto(
-                path = ref.path,
-                preferredWidth = ref.preferredWidth,
-                preferredHeight = ref.preferredHeight,
-            )
-            is ImageRef.InlineBytes -> InlineBytesDto(
-                bytesBase64 = android.util.Base64.encodeToString(
-                    ref.bytes,
-                    android.util.Base64.NO_WRAP
-                ),
-                mimeType = ref.mimeType,
-                preferredWidth = ref.preferredWidth,
-                preferredHeight = ref.preferredHeight,
-            )
-        }
+        fun fromImageRef(ref: ImageRef): ImageRefDto =
+            when (ref) {
+                is ImageRef.Http ->
+                    HttpDto(
+                        url = ref.url,
+                        headers = ref.headers,
+                        preferredWidth = ref.preferredWidth,
+                        preferredHeight = ref.preferredHeight,
+                    )
+                is ImageRef.TelegramThumb ->
+                    TelegramThumbDto(
+                        remoteId = ref.remoteId,
+                        chatId = ref.chatId,
+                        messageId = ref.messageId,
+                        preferredWidth = ref.preferredWidth,
+                        preferredHeight = ref.preferredHeight,
+                    )
+                is ImageRef.LocalFile ->
+                    LocalFileDto(
+                        path = ref.path,
+                        preferredWidth = ref.preferredWidth,
+                        preferredHeight = ref.preferredHeight,
+                    )
+                is ImageRef.InlineBytes ->
+                    InlineBytesDto(
+                        bytesBase64 =
+                            android.util.Base64.encodeToString(
+                                ref.bytes,
+                                android.util.Base64.NO_WRAP,
+                            ),
+                        mimeType = ref.mimeType,
+                        preferredWidth = ref.preferredWidth,
+                        preferredHeight = ref.preferredHeight,
+                    )
+            }
     }
 }

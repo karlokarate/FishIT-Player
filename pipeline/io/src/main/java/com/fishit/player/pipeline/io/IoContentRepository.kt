@@ -14,7 +14,10 @@ interface IoContentRepository {
     /**
      * Lists media items in a specific directory or source.
      */
-    fun listItems(source: IoSource, recursive: Boolean = false): Flow<List<IoMediaItem>>
+    fun listItems(
+        source: IoSource,
+        recursive: Boolean = false,
+    ): Flow<List<IoMediaItem>>
 
     /**
      * Searches for media items by title or filename.

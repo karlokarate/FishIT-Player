@@ -39,7 +39,6 @@ package com.fishit.player.infra.transport.telegram
  * @see TelegramFileClient for file download operations
  */
 interface TelegramRemoteResolver {
-
     /**
      * Resolves a remote identifier to current TDLib file references.
      *
@@ -76,7 +75,7 @@ interface TelegramRemoteResolver {
  */
 data class TelegramRemoteId(
     val chatId: Long,
-    val messageId: Long
+    val messageId: Long,
 ) {
     /**
      * Encodes as a stable string for use in sourceKey or URIs.
@@ -147,7 +146,7 @@ data class ResolvedTelegramMedia(
     val supportsStreaming: Boolean = false,
     val mediaLocalPath: String? = null,
     val thumbLocalPath: String? = null,
-    val minithumbnailBytes: ByteArray? = null
+    val minithumbnailBytes: ByteArray? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

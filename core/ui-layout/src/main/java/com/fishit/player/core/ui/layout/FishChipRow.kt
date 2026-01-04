@@ -76,14 +76,14 @@ private fun FishChip(
         color = if (selected) FishColors.Primary else MaterialTheme.colorScheme.surfaceVariant,
         contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
         shape = FishShapes.Chip,
-        modifier = modifier
-            .clip(FishShapes.Chip)
-            .tvFocusable(
-                onClick = onClick,
-                enableScale = true,
-                enableGlow = true,
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .clip(FishShapes.Chip)
+                .tvFocusable(
+                    onClick = onClick,
+                    enableScale = true,
+                    enableGlow = true,
+                ).padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Text(
             text = label,

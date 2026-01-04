@@ -16,13 +16,15 @@ import javax.inject.Inject
  *
  * See: docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md
  */
-class TelegramFullHistoryCapabilityProvider @Inject constructor() : FeatureProvider {
+class TelegramFullHistoryCapabilityProvider
+    @Inject
+    constructor() : FeatureProvider {
+        override val featureId = TelegramFeatures.FULL_HISTORY_STREAMING
 
-    override val featureId = TelegramFeatures.FULL_HISTORY_STREAMING
+        override val scope = FeatureScope.PIPELINE
 
-    override val scope = FeatureScope.PIPELINE
-
-    override val owner = FeatureOwner(
-        moduleName = "pipeline:telegram",
-    )
-}
+        override val owner =
+            FeatureOwner(
+                moduleName = "pipeline:telegram",
+            )
+    }

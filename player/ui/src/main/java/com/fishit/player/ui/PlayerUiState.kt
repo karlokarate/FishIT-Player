@@ -30,5 +30,7 @@ sealed interface PlayerUiState {
      *
      * @param message Human-readable error message
      */
-    data class Error(val message: String) : PlayerUiState
+    data class Error(
+        val message: String,
+    ) : PlayerUiState
 }

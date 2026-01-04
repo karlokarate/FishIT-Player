@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -41,12 +40,9 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -70,16 +66,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.catalogsync.SyncUiState
-import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
-import com.fishit.player.core.sourceactivation.SourceId
-import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.ui.layout.FishRow
-import com.fishit.player.core.ui.layout.FishRowEmpty
+import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.core.ui.layout.FishTile
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.LocalFishDimens
-import com.fishit.player.core.home.domain.HomeMediaItem
 
 /**
  * Home Screen - Main content browsing screen
@@ -99,16 +91,17 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onDebugClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
     // Use filteredState for search/filter support
     val state by viewModel.filteredState.collectAsState()
     val dimens = LocalFishDimens.current
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Top Bar with sync indicator and search button
@@ -118,21 +111,21 @@ fun HomeScreen(
                 onSearchClick = viewModel::toggleSearch,
                 onRefreshClick = viewModel::refresh,
                 onSettingsClick = onSettingsClick,
-                onDebugClick = onDebugClick
+                onDebugClick = onDebugClick,
             )
 
             // Search & Filter Panel
             AnimatedVisibility(
                 visible = state.isSearchVisible,
                 enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
+                exit = shrinkVertically() + fadeOut(),
             ) {
                 SearchFilterPanel(
                     searchQuery = state.searchQuery,
                     selectedGenre = state.selectedGenre,
                     onSearchQueryChange = viewModel::setSearchQuery,
                     onGenreSelected = viewModel::setGenreFilter,
-                    onClearFilters = viewModel::clearFilters
+                    onClearFilters = viewModel::clearFilters,
                 )
             }
 
@@ -145,7 +138,7 @@ fun HomeScreen(
                 state.error != null -> {
                     ErrorContent(
                         error = state.error!!,
-                        onRetry = viewModel::refresh
+                        onRetry = viewModel::refresh,
                     )
                 }
 
@@ -153,7 +146,7 @@ fun HomeScreen(
                     HomeContent(
                         state = state,
                         onItemClick = onItemClick,
-                        onAddSourceClick = onSettingsClick
+                        onAddSourceClick = onSettingsClick,
                     )
                 }
             }
@@ -168,28 +161,29 @@ private fun HomeTopBar(
     onSearchClick: () -> Unit,
     onRefreshClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onDebugClick: () -> Unit
+    onDebugClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Logo/Title
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "🐟",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = "FishIT",
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -202,14 +196,14 @@ private fun HomeTopBar(
 
         // Actions - use LazyRow would be better but Row is sufficient for fixed items
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Search Button with active indicator
             IconButton(onClick = onSearchClick) {
                 Icon(
                     Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = if (isSearchActive) FishColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (isSearchActive) FishColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -217,7 +211,7 @@ private fun HomeTopBar(
                 Icon(
                     Icons.Default.Refresh,
                     contentDescription = "Refresh",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -225,7 +219,7 @@ private fun HomeTopBar(
                 Icon(
                     Icons.Default.Info,
                     contentDescription = "Debug",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -233,7 +227,7 @@ private fun HomeTopBar(
                 Icon(
                     Icons.Default.Settings,
                     contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -242,19 +236,19 @@ private fun HomeTopBar(
 
 /**
  * Sync status indicator showing current catalog sync state.
- * 
+ *
  * Contract: STARTUP_TRIGGER_CONTRACT (O-1)
  * - Passive indicator: IDLE, RUNNING, SUCCESS, FAILED
  */
 @Composable
 private fun SyncStatusIndicator(
     syncState: SyncUiState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         when (syncState) {
             is SyncUiState.Idle -> {
@@ -264,13 +258,13 @@ private fun SyncStatusIndicator(
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
-                    color = FishColors.Primary
+                    color = FishColors.Primary,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Syncing…",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             is SyncUiState.Success -> {
@@ -278,13 +272,13 @@ private fun SyncStatusIndicator(
                     Icons.Default.CheckCircle,
                     contentDescription = "Sync complete",
                     modifier = Modifier.size(16.dp),
-                    tint = FishColors.Success
+                    tint = FishColors.Success,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Synced",
                     style = MaterialTheme.typography.labelMedium,
-                    color = FishColors.Success
+                    color = FishColors.Success,
                 )
             }
             is SyncUiState.Failed -> {
@@ -292,13 +286,13 @@ private fun SyncStatusIndicator(
                     Icons.Default.Error,
                     contentDescription = "Sync failed",
                     modifier = Modifier.size(16.dp),
-                    tint = FishColors.Error
+                    tint = FishColors.Error,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = syncState.reason.toDisplayString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = FishColors.Error
+                    color = FishColors.Error,
                 )
             }
         }
@@ -308,19 +302,18 @@ private fun SyncStatusIndicator(
 /**
  * Convert SyncFailureReason to user-friendly display string.
  */
-private fun com.fishit.player.core.catalogsync.SyncFailureReason.toDisplayString(): String {
-    return when (this) {
+private fun com.fishit.player.core.catalogsync.SyncFailureReason.toDisplayString(): String =
+    when (this) {
         com.fishit.player.core.catalogsync.SyncFailureReason.LOGIN_REQUIRED -> "Login required"
         com.fishit.player.core.catalogsync.SyncFailureReason.INVALID_CREDENTIALS -> "Invalid credentials"
         com.fishit.player.core.catalogsync.SyncFailureReason.PERMISSION_MISSING -> "Permission missing"
         com.fishit.player.core.catalogsync.SyncFailureReason.NETWORK_GUARD -> "Network unavailable"
         com.fishit.player.core.catalogsync.SyncFailureReason.UNKNOWN -> "Sync failed"
     }
-}
 
 /**
  * Search and Genre Filter Panel
- * 
+ *
  * Provides:
  * - Text search field (searches title + year)
  * - Genre filter chips (horizontal scrollable row)
@@ -333,59 +326,62 @@ private fun SearchFilterPanel(
     onSearchQueryChange: (String) -> Unit,
     onGenreSelected: (GenreFilter) -> Unit,
     onClearFilters: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dimens = LocalFishDimens.current
     val focusRequester = remember { FocusRequester() }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .padding(horizontal = dimens.contentPaddingHorizontal, vertical = 12.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                .padding(horizontal = dimens.contentPaddingHorizontal, vertical = 12.dp),
     ) {
         // Search Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Search TextField
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(
-                        width = 1.dp,
-                        color = if (searchQuery.isNotEmpty()) FishColors.Primary else MaterialTheme.colorScheme.outline,
-                        shape = RoundedCornerShape(24.dp)
-                    )
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(
+                            width = 1.dp,
+                            color = if (searchQuery.isNotEmpty()) FishColors.Primary else MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(24.dp),
+                        ).padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(
                         Icons.Default.Search,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     BasicTextField(
                         value = searchQuery,
                         onValueChange = onSearchQueryChange,
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequester),
-                        textStyle = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
-                        ),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .focusRequester(focusRequester),
+                        textStyle =
+                            TextStyle(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                            ),
                         singleLine = true,
                         cursorBrush = SolidColor(FishColors.Primary),
                         decorationBox = { innerTextField ->
@@ -394,23 +390,23 @@ private fun SearchFilterPanel(
                                     Text(
                                         text = "Suche nach Titel, Jahr...",
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                                 innerTextField()
                             }
-                        }
+                        },
                     )
                     if (searchQuery.isNotEmpty()) {
                         IconButton(
                             onClick = { onSearchQueryChange("") },
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(24.dp),
                         ) {
                             Icon(
                                 Icons.Default.Clear,
                                 contentDescription = "Clear search",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                         }
                     }
@@ -423,7 +419,7 @@ private fun SearchFilterPanel(
                     Icon(
                         Icons.Default.Clear,
                         contentDescription = "Clear all filters",
-                        tint = FishColors.Error
+                        tint = FishColors.Error,
                     )
                 }
             }
@@ -434,7 +430,7 @@ private fun SearchFilterPanel(
         // Genre Filter Chips
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             items(GenreFilter.all) { genre ->
                 FilterChip(
@@ -443,13 +439,14 @@ private fun SearchFilterPanel(
                     label = {
                         Text(
                             text = genre.displayName,
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
                         )
                     },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = FishColors.Primary,
-                        selectedLabelColor = Color.White
-                    )
+                    colors =
+                        FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = FishColors.Primary,
+                            selectedLabelColor = Color.White,
+                        ),
                 )
             }
         }
@@ -460,7 +457,7 @@ private fun SearchFilterPanel(
 private fun HomeContent(
     state: HomeState,
     onItemClick: (HomeMediaItem) -> Unit,
-    onAddSourceClick: () -> Unit
+    onAddSourceClick: () -> Unit,
 ) {
     val listState = rememberLazyListState()
 
@@ -468,7 +465,7 @@ private fun HomeContent(
         state = listState,
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         // Continue Watching
         if (state.continueWatchingItems.isNotEmpty()) {
@@ -477,7 +474,7 @@ private fun HomeContent(
                     title = "Continue Watching",
                     icon = Icons.Default.PlayCircle,
                     items = state.continueWatchingItems,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -489,7 +486,7 @@ private fun HomeContent(
                     title = "Recently Added",
                     icon = Icons.Default.Home,
                     items = state.recentlyAddedItems,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -502,7 +499,7 @@ private fun HomeContent(
                     icon = Icons.Default.LiveTv,
                     iconTint = FishColors.SourceXtream,
                     items = state.xtreamLiveItems,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -514,7 +511,7 @@ private fun HomeContent(
                     title = "Movies",
                     icon = Icons.Default.Movie,
                     items = state.moviesItems,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -526,7 +523,7 @@ private fun HomeContent(
                     title = "Series",
                     icon = Icons.Default.Tv,
                     items = state.seriesItems,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -539,7 +536,7 @@ private fun HomeContent(
                     icon = Icons.Default.VideoLibrary,
                     iconTint = FishColors.SourceTelegram,
                     items = state.clipsItems,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -553,7 +550,7 @@ private fun HomeContent(
                     hasActiveSources = state.sourceActivation.hasActiveSources,
                     syncState = state.syncState,
                     activeSources = state.sourceActivation.activeSources,
-                    onAddSourceClick = onAddSourceClick
+                    onAddSourceClick = onAddSourceClick,
                 )
             }
         }
@@ -570,7 +567,7 @@ private fun MediaRow(
     items: List<HomeMediaItem>,
     onItemClick: (HomeMediaItem) -> Unit,
     modifier: Modifier = Modifier,
-    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     val dimens = LocalFishDimens.current
     val listState = rememberLazyListState()
@@ -581,34 +578,35 @@ private fun MediaRow(
     val otherCount = items.size - telegramCount - xtreamCount
 
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         // Row Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(
-                horizontal = dimens.contentPaddingHorizontal,
-                vertical = 8.dp
-            )
+            modifier =
+                Modifier.padding(
+                    horizontal = dimens.contentPaddingHorizontal,
+                    vertical = 8.dp,
+                ),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconTint,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.width(8.dp))
             // Source-specific counts with colors
             SourceCountBadge(
                 telegramCount = telegramCount,
                 xtreamCount = xtreamCount,
-                otherCount = otherCount
+                otherCount = otherCount,
             )
         }
 
@@ -617,18 +615,20 @@ private fun MediaRow(
         // Tiles Row
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(
-                horizontal = dimens.contentPaddingHorizontal,
-                vertical = 8.dp
-            ),
+            contentPadding =
+                PaddingValues(
+                    horizontal = dimens.contentPaddingHorizontal,
+                    vertical = 8.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(dimens.tileSpacing),
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusGroup()
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusGroup(),
         ) {
             items(
                 items = items,
-                key = { it.id }
+                key = { it.id },
             ) { item ->
                 FishTile(
                     title = item.title,
@@ -637,7 +637,7 @@ private fun MediaRow(
                     sourceColors = getSourceColors(item.sourceTypes),
                     resumeFraction = item.resumeFraction,
                     isNew = item.isNew,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
                 )
             }
         }
@@ -648,20 +648,20 @@ private fun MediaRow(
 private fun LoadingContent() {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             CircularProgressIndicator(
                 color = FishColors.Primary,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Loading content...",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -670,30 +670,30 @@ private fun LoadingContent() {
 @Composable
 private fun ErrorContent(
     error: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "😿",
-                style = MaterialTheme.typography.displayMedium
+                style = MaterialTheme.typography.displayMedium,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Something went wrong",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = error,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
             androidx.compose.material3.Button(onClick = onRetry) {
@@ -709,16 +709,16 @@ private fun EmptyHomeContent() {
         hasActiveSources = false,
         syncState = SyncUiState.Idle,
         activeSources = emptySet(),
-        onAddSourceClick = {}
+        onAddSourceClick = {},
     )
 }
 
 /**
  * Smart empty content that shows different states based on source activation and sync status.
- * 
+ *
  * Contract: STARTUP_TRIGGER_CONTRACT (U-1)
  * - No sources → "Add source" button
- * - Sources active + syncing → "Sync pending" with indicator  
+ * - Sources active + syncing → "Sync pending" with indicator
  * - Sources active + after sync → "No content found"
  */
 @Composable
@@ -726,111 +726,112 @@ private fun SmartEmptyContent(
     hasActiveSources: Boolean,
     syncState: SyncUiState,
     activeSources: Set<SourceId>,
-    onAddSourceClick: () -> Unit
+    onAddSourceClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when {
                 // No sources configured → Prompt to add source
                 !hasActiveSources -> {
                     Text(
                         text = "🐟",
-                        style = MaterialTheme.typography.displayLarge
+                        style = MaterialTheme.typography.displayLarge,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = "No sources configured",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Connect Telegram or an Xtream server to start browsing",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(onClick = onAddSourceClick) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Add Source")
                     }
                 }
-                
+
                 // Sources active but sync is running → Show sync pending
                 syncState is SyncUiState.Running -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(48.dp),
-                        color = FishColors.Primary
+                        color = FishColors.Primary,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = "Syncing catalog…",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = buildActiveSourcesText(activeSources),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                
+
                 // Sources active, sync failed → Show error with retry hint
                 syncState is SyncUiState.Failed -> {
                     Text(
                         text = "😿",
-                        style = MaterialTheme.typography.displayLarge
+                        style = MaterialTheme.typography.displayLarge,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = "Sync failed",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = syncState.reason.toDisplayString(),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = FishColors.Error
+                        color = FishColors.Error,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Check your connection and try again",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                
+
                 // Sources active, sync complete, but no content → Library is empty
                 else -> {
                     Text(
                         text = "🐟",
-                        style = MaterialTheme.typography.displayLarge
+                        style = MaterialTheme.typography.displayLarge,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = "No content found",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Your connected sources don't have any media yet",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -843,15 +844,16 @@ private fun SmartEmptyContent(
  */
 private fun buildActiveSourcesText(activeSources: Set<SourceId>): String {
     if (activeSources.isEmpty()) return "Checking sources…"
-    
-    val sourceNames = activeSources.map { source ->
-        when (source) {
-            SourceId.XTREAM -> "Xtream"
-            SourceId.TELEGRAM -> "Telegram"
-            SourceId.IO -> "Local Files"
+
+    val sourceNames =
+        activeSources.map { source ->
+            when (source) {
+                SourceId.XTREAM -> "Xtream"
+                SourceId.TELEGRAM -> "Telegram"
+                SourceId.IO -> "Local Files"
+            }
         }
-    }
-    
+
     return when (sourceNames.size) {
         1 -> "Fetching from ${sourceNames.first()}"
         2 -> "Fetching from ${sourceNames[0]} and ${sourceNames[1]}"
@@ -861,12 +863,12 @@ private fun buildActiveSourcesText(activeSources: Set<SourceId>): String {
 
 /**
  * Displays source-specific counts in a compact format.
- * 
+ *
  * Shows counts like "848/442" with:
  * - Telegram count in blue (FishColors.SourceTelegram)
  * - Xtream count in red (FishColors.SourceXtream)
  * - Other counts in gray (if present)
- * 
+ *
  * Examples:
  * - "848/442" (848 from Telegram, 442 from Xtream)
  * - "848" (only Telegram)
@@ -878,11 +880,11 @@ private fun SourceCountBadge(
     telegramCount: Int,
     xtreamCount: Int,
     otherCount: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val hasTelegram = telegramCount > 0
         val hasXtream = xtreamCount > 0
@@ -891,7 +893,7 @@ private fun SourceCountBadge(
         Text(
             text = "(",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         when {
@@ -900,23 +902,23 @@ private fun SourceCountBadge(
                 Text(
                     text = "$telegramCount",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = FishColors.SourceTelegram
+                    color = FishColors.SourceTelegram,
                 )
                 Text(
                     text = "/",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = "$xtreamCount",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = FishColors.SourceXtream
+                    color = FishColors.SourceXtream,
                 )
                 if (hasOther) {
                     Text(
                         text = "+$otherCount",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -925,13 +927,13 @@ private fun SourceCountBadge(
                 Text(
                     text = "$telegramCount",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = FishColors.SourceTelegram
+                    color = FishColors.SourceTelegram,
                 )
                 if (hasOther) {
                     Text(
                         text = "+$otherCount",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -940,13 +942,13 @@ private fun SourceCountBadge(
                 Text(
                     text = "$xtreamCount",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = FishColors.SourceXtream
+                    color = FishColors.SourceXtream,
                 )
                 if (hasOther) {
                     Text(
                         text = "+$otherCount",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -955,7 +957,7 @@ private fun SourceCountBadge(
                 Text(
                     text = "$otherCount",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             // Empty (shouldn't happen but handle gracefully)
@@ -963,7 +965,7 @@ private fun SourceCountBadge(
                 Text(
                     text = "0",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -971,7 +973,7 @@ private fun SourceCountBadge(
         Text(
             text = ")",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -984,10 +986,12 @@ private fun SourceCountBadge(
  */
 private fun getSourceColors(sourceTypes: List<SourceType>): List<Color> {
     // Filter to only include known sources with colors
-    val relevantSources = sourceTypes.filter { 
-        it == SourceType.XTREAM || it == SourceType.TELEGRAM || it == SourceType.LOCAL 
-    }.distinct()
-    
+    val relevantSources =
+        sourceTypes
+            .filter {
+                it == SourceType.XTREAM || it == SourceType.TELEGRAM || it == SourceType.LOCAL
+            }.distinct()
+
     return when {
         relevantSources.isEmpty() -> emptyList()
         relevantSources.size == 1 -> {
@@ -997,20 +1001,21 @@ private fun getSourceColors(sourceTypes: List<SourceType>): List<Color> {
         else -> {
             // Multi-source: gradient with purple blend in the middle
             // Sort: XTREAM first (red on left), TELEGRAM second (blue on right)
-            val sorted = relevantSources.sortedByDescending { source ->
-                when (source) {
-                    SourceType.XTREAM -> 3
-                    SourceType.TELEGRAM -> 2
-                    SourceType.LOCAL -> 1
-                    else -> 0
+            val sorted =
+                relevantSources.sortedByDescending { source ->
+                    when (source) {
+                        SourceType.XTREAM -> 3
+                        SourceType.TELEGRAM -> 2
+                        SourceType.LOCAL -> 1
+                        else -> 0
+                    }
                 }
-            }
             // Create gradient: first color -> purple blend -> second color
             if (sorted.size >= 2) {
                 listOf(
-                    sourceTypeToColor(sorted[0]),  // Xtream Red
-                    FishColors.SourceMultiBlend,   // Purple blend in middle
-                    sourceTypeToColor(sorted[1])   // Telegram Blue
+                    sourceTypeToColor(sorted[0]), // Xtream Red
+                    FishColors.SourceMultiBlend, // Purple blend in middle
+                    sourceTypeToColor(sorted[1]), // Telegram Blue
                 )
             } else {
                 sorted.map { sourceTypeToColor(it) }
@@ -1022,11 +1027,10 @@ private fun getSourceColors(sourceTypes: List<SourceType>): List<Color> {
 /**
  * Map a single SourceType to its display color.
  */
-private fun sourceTypeToColor(sourceType: SourceType): Color {
-    return when (sourceType) {
+private fun sourceTypeToColor(sourceType: SourceType): Color =
+    when (sourceType) {
         SourceType.TELEGRAM -> FishColors.SourceTelegram
         SourceType.XTREAM -> FishColors.SourceXtream
         SourceType.LOCAL -> FishColors.SourceLocal
         else -> Color.Transparent
     }
-}

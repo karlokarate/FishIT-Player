@@ -1,7 +1,6 @@
 package com.fishit.player.infra.data.home
 
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -12,86 +11,90 @@ import org.junit.Test
  * XTREAM > TELEGRAM > IO > UNKNOWN
  */
 class HomeContentSourceSelectionTest {
-
     /**
      * Test data helper - creates a mock ObxMediaSourceRef with given sourceType.
      */
-    private fun createSourceRef(sourceType: String): TestSourceRef {
-        return TestSourceRef(sourceType = sourceType)
-    }
+    private fun createSourceRef(sourceType: String): TestSourceRef = TestSourceRef(sourceType = sourceType)
 
     /**
      * Simple test class mimicking ObxMediaSourceRef for testing purposes.
      * We can't use the real entity in unit tests without ObjectBox runtime.
      */
-    data class TestSourceRef(val sourceType: String)
+    data class TestSourceRef(
+        val sourceType: String,
+    )
 
     @Test
     fun `selectBestSourceType returns XTREAM when available`() {
-        val sources = listOf(
-            createSourceRef("TELEGRAM"),
-            createSourceRef("XTREAM"),
-            createSourceRef("IO")
-        )
-        
+        val sources =
+            listOf(
+                createSourceRef("TELEGRAM"),
+                createSourceRef("XTREAM"),
+                createSourceRef("IO"),
+            )
+
         val result = selectBestSourceType(sources)
-        
+
         assertEquals(SourceType.XTREAM, result)
     }
 
     @Test
     fun `selectBestSourceType returns TELEGRAM when XTREAM not available`() {
-        val sources = listOf(
-            createSourceRef("TELEGRAM"),
-            createSourceRef("IO")
-        )
-        
+        val sources =
+            listOf(
+                createSourceRef("TELEGRAM"),
+                createSourceRef("IO"),
+            )
+
         val result = selectBestSourceType(sources)
-        
+
         assertEquals(SourceType.TELEGRAM, result)
     }
 
     @Test
     fun `selectBestSourceType returns IO when only IO available`() {
-        val sources = listOf(
-            createSourceRef("IO")
-        )
-        
+        val sources =
+            listOf(
+                createSourceRef("IO"),
+            )
+
         val result = selectBestSourceType(sources)
-        
+
         assertEquals(SourceType.IO, result)
     }
 
     @Test
     fun `selectBestSourceType returns UNKNOWN for empty list`() {
         val sources = emptyList<TestSourceRef>()
-        
+
         val result = selectBestSourceType(sources)
-        
+
         assertEquals(SourceType.UNKNOWN, result)
     }
 
     @Test
     fun `selectBestSourceType returns UNKNOWN for unsupported source types`() {
-        val sources = listOf(
-            createSourceRef("PLEX"),
-            createSourceRef("AUDIOBOOK")
-        )
-        
+        val sources =
+            listOf(
+                createSourceRef("PLEX"),
+                createSourceRef("AUDIOBOOK"),
+            )
+
         val result = selectBestSourceType(sources)
-        
+
         assertEquals(SourceType.UNKNOWN, result)
     }
 
     @Test
     fun `selectBestSourceType is case insensitive`() {
-        val sources = listOf(
-            createSourceRef("telegram"),
-            createSourceRef("Xtream")
-        )
-        
+        val sources =
+            listOf(
+                createSourceRef("telegram"),
+                createSourceRef("Xtream"),
+            )
+
         val result = selectBestSourceType(sources)
-        
+
         assertEquals(SourceType.XTREAM, result)
     }
 
@@ -114,7 +117,6 @@ class HomeContentSourceSelectionTest {
  * Tests for source type string conversion.
  */
 class SourceTypeConversionTest {
-
     @Test
     fun `toSourceType returns TELEGRAM for telegram string`() {
         assertEquals(SourceType.TELEGRAM, "TELEGRAM".toSourceType())
@@ -149,13 +151,20 @@ class SourceTypeConversionTest {
     @Test
     fun `toSourceType never returns OTHER`() {
         // Verify no input can produce SourceType.OTHER
-        val testInputs = listOf(
-            "OTHER", "other", "UNKNOWN", "PLEX", "JELLYFIN", "", "invalid"
-        )
+        val testInputs =
+            listOf(
+                "OTHER",
+                "other",
+                "UNKNOWN",
+                "PLEX",
+                "JELLYFIN",
+                "",
+                "invalid",
+            )
         testInputs.forEach { input ->
             val result = input.toSourceType()
-            assert(result != SourceType.OTHER) { 
-                "Input '$input' should not produce SourceType.OTHER, got $result" 
+            assert(result != SourceType.OTHER) {
+                "Input '$input' should not produce SourceType.OTHER, got $result"
             }
         }
     }
@@ -163,11 +172,12 @@ class SourceTypeConversionTest {
     /**
      * Copy of the actual implementation for testing.
      */
-    private fun String.toSourceType(): SourceType = when (this.uppercase()) {
-        "TELEGRAM" -> SourceType.TELEGRAM
-        "XTREAM" -> SourceType.XTREAM
-        "IO", "LOCAL" -> SourceType.IO
-        "AUDIOBOOK" -> SourceType.AUDIOBOOK
-        else -> SourceType.UNKNOWN
-    }
+    private fun String.toSourceType(): SourceType =
+        when (this.uppercase()) {
+            "TELEGRAM" -> SourceType.TELEGRAM
+            "XTREAM" -> SourceType.XTREAM
+            "IO", "LOCAL" -> SourceType.IO
+            "AUDIOBOOK" -> SourceType.AUDIOBOOK
+            else -> SourceType.UNKNOWN
+        }
 }

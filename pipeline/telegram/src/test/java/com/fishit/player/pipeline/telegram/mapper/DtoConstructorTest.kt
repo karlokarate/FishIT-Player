@@ -18,7 +18,6 @@ import kotlin.test.assertNotNull
  * - Transport is the only layer that sees TDLib.
  */
 class DtoConstructorTest {
-
     @Test
     fun `transport wrapper DTOs can be constructed`() {
         val file = TgFile(id = 1, remoteId = "remote:1")
@@ -52,11 +51,12 @@ class DtoConstructorTest {
         assertEquals(100, message.id)
         assertNotNull((message.content as TgContent.Video).thumbnail)
 
-        val photo = TgContent.Photo(
-            sizes = listOf(TgPhotoSize(fileId = 3, remoteId = "remote:3", width = 1280, height = 720, fileSize = 10_000)),
-            caption = null,
-            minithumbnail = null,
-        )
+        val photo =
+            TgContent.Photo(
+                sizes = listOf(TgPhotoSize(fileId = 3, remoteId = "remote:3", width = 1280, height = 720, fileSize = 10_000)),
+                caption = null,
+                minithumbnail = null,
+            )
         assertEquals(1, photo.sizes.size)
     }
 }

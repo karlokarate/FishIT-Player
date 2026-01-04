@@ -29,9 +29,8 @@ import kotlinx.coroutines.withContext
  * Ported from v1 AppImageLoader.preload() with ImageRef support.
  */
 class ImagePreloader(
-        private val imageLoader: ImageLoader,
+    private val imageLoader: ImageLoader,
 ) {
-
     /** Default preload configuration. */
     object Config {
         /** Maximum images to preload in a single batch */
@@ -52,13 +51,19 @@ class ImagePreloader(
      * @param limit Maximum number to preload (default 8)
      */
     suspend fun preload(
-            context: Context,
-            imageRefs: Collection<ImageRef?>,
-            limit: Int = Config.DEFAULT_LIMIT,
+        context: Context,
+        imageRefs: Collection<ImageRef?>,
+        limit: Int = Config.DEFAULT_LIMIT,
     ) {
         if (imageRefs.isEmpty()) return
 
-        val candidates = imageRefs.asSequence().filterNotNull().distinct().take(limit).toList()
+        val candidates =
+            imageRefs
+                .asSequence()
+                .filterNotNull()
+                .distinct()
+                .take(limit)
+                .toList()
 
         if (candidates.isEmpty()) return
 
@@ -81,10 +86,10 @@ class ImagePreloader(
      * @param limit Maximum number to preload
      */
     suspend fun <T> preloadFrom(
-            context: Context,
-            items: Collection<T>,
-            selector: (T) -> ImageRef?,
-            limit: Int = Config.DEFAULT_LIMIT,
+        context: Context,
+        items: Collection<T>,
+        selector: (T) -> ImageRef?,
+        limit: Int = Config.DEFAULT_LIMIT,
     ) {
         preload(context, items.map(selector), limit)
     }
@@ -100,10 +105,10 @@ class ImagePreloader(
      * @param limit Maximum total images to preload
      */
     suspend fun <T> preloadMultipleFrom(
-            context: Context,
-            items: Collection<T>,
-            vararg selectors: (T) -> ImageRef?,
-            limit: Int = Config.DEFAULT_LIMIT,
+        context: Context,
+        items: Collection<T>,
+        vararg selectors: (T) -> ImageRef?,
+        limit: Int = Config.DEFAULT_LIMIT,
     ) {
         val refs = items.flatMap { item -> selectors.mapNotNull { selector -> selector(item) } }
         preload(context, refs, limit)

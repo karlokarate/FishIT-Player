@@ -21,7 +21,9 @@ sealed class IoSource {
      *
      * @property path Absolute file path on the device.
      */
-    data class LocalFile(val path: String) : IoSource()
+    data class LocalFile(
+        val path: String,
+    ) : IoSource()
 
     /**
      * Android Storage Access Framework (SAF) URI.
@@ -30,7 +32,9 @@ sealed class IoSource {
      *
      * @property uri SAF content:// URI.
      */
-    data class Saf(val uri: String) : IoSource()
+    data class Saf(
+        val uri: String,
+    ) : IoSource()
 
     /**
      * SMB network share.
@@ -39,14 +43,18 @@ sealed class IoSource {
      *
      * @property smbUri SMB URI (e.g., smb://server/share/path).
      */
-    data class Smb(val smbUri: String) : IoSource()
+    data class Smb(
+        val smbUri: String,
+    ) : IoSource()
 
     /**
      * Generic URI fallback for other schemes.
      *
      * @property uri Generic URI string.
      */
-    data class GenericUri(val uri: String) : IoSource()
+    data class GenericUri(
+        val uri: String,
+    ) : IoSource()
 
     /**
      * Returns the URI representation of this source.

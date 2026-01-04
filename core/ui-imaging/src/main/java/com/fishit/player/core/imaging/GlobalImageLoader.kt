@@ -10,8 +10,8 @@ import coil3.request.crossfade
 import com.fishit.player.core.imaging.fetcher.ImageRefFetcher
 import com.fishit.player.core.imaging.fetcher.ImageRefKeyer
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
-import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 /**
  * Global ImageLoader configuration for FishIT-Player v2.
@@ -42,7 +42,6 @@ import okhttp3.OkHttpClient
  * ```
  */
 object GlobalImageLoader {
-
     /** Default cache sizes optimized for TV/mobile hybrid. */
     object CacheConfig {
         /** Memory cache: 25% of available heap (Coil default) */
@@ -84,90 +83,97 @@ object GlobalImageLoader {
      * @param crossfadeDurationMs Crossfade duration (default 200ms)
      */
     fun create(
-            context: Context,
-            okHttpClient: OkHttpClient? = null,
-            telegramThumbFetcher: TelegramThumbFetcher.Factory? = null,
-            enableCrossfade: Boolean = true,
-            crossfadeDurationMs: Int = 200,
+        context: Context,
+        okHttpClient: OkHttpClient? = null,
+        telegramThumbFetcher: TelegramThumbFetcher.Factory? = null,
+        enableCrossfade: Boolean = true,
+        crossfadeDurationMs: Int = 200,
     ): ImageLoader {
         val client = okHttpClient ?: createDefaultOkHttpClient()
 
-        return ImageLoader.Builder(context)
-                // Memory cache (25% of heap)
-                .memoryCache {
-                    MemoryCache.Builder()
-                            .maxSizePercent(context, CacheConfig.MEMORY_CACHE_PERCENT)
-                            .build()
+        return ImageLoader
+            .Builder(context)
+            // Memory cache (25% of heap)
+            .memoryCache {
+                MemoryCache
+                    .Builder()
+                    .maxSizePercent(context, CacheConfig.MEMORY_CACHE_PERCENT)
+                    .build()
+            }
+            // Disk cache (512 MB)
+            .diskCache {
+                DiskCache
+                    .Builder()
+                    .directory(context.cacheDir.resolve(CacheConfig.DISK_CACHE_DIR))
+                    .maxSizeBytes(CacheConfig.DISK_CACHE_SIZE_BYTES)
+                    .build()
+            }
+            // Default policies
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .networkCachePolicy(CachePolicy.ENABLED)
+            // Crossfade (disabled on TV for perf)
+            .apply {
+                if (enableCrossfade) {
+                    crossfade(crossfadeDurationMs)
                 }
-                // Disk cache (512 MB)
-                .diskCache {
-                    DiskCache.Builder()
-                            .directory(context.cacheDir.resolve(CacheConfig.DISK_CACHE_DIR))
-                            .maxSizeBytes(CacheConfig.DISK_CACHE_SIZE_BYTES)
-                            .build()
-                }
-                // Default policies
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .networkCachePolicy(CachePolicy.ENABLED)
-                // Crossfade (disabled on TV for perf)
-                .apply {
-                    if (enableCrossfade) {
-                        crossfade(crossfadeDurationMs)
-                    }
-                }
-                // Custom fetchers and keyer
-                .components {
-                    // Keyer for stable cache keys (uses uniqueId for TelegramThumb)
-                    add(ImageRefKeyer())
-                    // ImageRef fetcher (handles all ImageRef variants)
-                    add(ImageRefFetcher.Factory(client, telegramThumbFetcher))
-                }
-                .build()
+            }
+            // Custom fetchers and keyer
+            .components {
+                // Keyer for stable cache keys (uses uniqueId for TelegramThumb)
+                add(ImageRefKeyer())
+                // ImageRef fetcher (handles all ImageRef variants)
+                add(ImageRefFetcher.Factory(client, telegramThumbFetcher))
+            }.build()
     }
 
     /** Create a default OkHttpClient optimized for image loading. */
-    fun createDefaultOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-                .connectTimeout(HttpConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .readTimeout(HttpConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .writeTimeout(HttpConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true)
-                // Configure dispatcher
-                .dispatcher(
-                        okhttp3.Dispatcher().apply {
-                            maxRequests = HttpConfig.MAX_REQUESTS
-                            maxRequestsPerHost = HttpConfig.MAX_REQUESTS_PER_HOST
-                        }
-                )
-                .build()
-    }
+    fun createDefaultOkHttpClient(): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .connectTimeout(HttpConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(HttpConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(HttpConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            // Configure dispatcher
+            .dispatcher(
+                okhttp3.Dispatcher().apply {
+                    maxRequests = HttpConfig.MAX_REQUESTS
+                    maxRequestsPerHost = HttpConfig.MAX_REQUESTS_PER_HOST
+                },
+            ).build()
 
     /** Builder for easier configuration with Kotlin DSL. */
-    class Builder(private val context: Context) {
+    class Builder(
+        private val context: Context,
+    ) {
         private var okHttpClient: OkHttpClient? = null
         private var telegramThumbFetcher: TelegramThumbFetcher.Factory? = null
         private var enableCrossfade: Boolean = true
         private var crossfadeDurationMs: Int = 200
 
         fun okHttpClient(client: OkHttpClient) = apply { okHttpClient = client }
-        fun telegramThumbFetcher(factory: TelegramThumbFetcher.Factory) = apply {
-            telegramThumbFetcher = factory
-        }
+
+        fun telegramThumbFetcher(factory: TelegramThumbFetcher.Factory) =
+            apply {
+                telegramThumbFetcher = factory
+            }
+
         fun enableCrossfade(enable: Boolean) = apply { enableCrossfade = enable }
+
         fun crossfadeDurationMs(duration: Int) = apply { crossfadeDurationMs = duration }
 
         /** Disable crossfade (recommended for TV). */
         fun disableCrossfadeForTv() = apply { enableCrossfade = false }
 
         fun build(): ImageLoader =
-                create(
-                        context = context,
-                        okHttpClient = okHttpClient,
-                        telegramThumbFetcher = telegramThumbFetcher,
-                        enableCrossfade = enableCrossfade,
-                        crossfadeDurationMs = crossfadeDurationMs,
-                )
+            create(
+                context = context,
+                okHttpClient = okHttpClient,
+                telegramThumbFetcher = telegramThumbFetcher,
+                enableCrossfade = enableCrossfade,
+                crossfadeDurationMs = crossfadeDurationMs,
+            )
     }
 
     /**
@@ -184,11 +190,12 @@ object GlobalImageLoader {
     fun computeDynamicDiskCacheSize(cacheDir: java.io.File): Long {
         val MB = 1024L * 1024L
         val is64Bit =
-                try {
-                    android.os.Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
-                } catch (_: Throwable) {
-                    false
-                }
+            try {
+                android.os.Build.SUPPORTED_64_BIT_ABIS
+                    .isNotEmpty()
+            } catch (_: Throwable) {
+                false
+            }
 
         // Base and caps tuned for image workloads
         val baseMiB = if (is64Bit) 512 else 256
@@ -211,37 +218,39 @@ object GlobalImageLoader {
      * capabilities instead of a fixed 512 MB.
      */
     fun createWithDynamicCache(
-            context: Context,
-            okHttpClient: OkHttpClient? = null,
-            telegramThumbFetcher: TelegramThumbFetcher.Factory? = null,
-            enableCrossfade: Boolean = true,
-            crossfadeDurationMs: Int = 200,
+        context: Context,
+        okHttpClient: OkHttpClient? = null,
+        telegramThumbFetcher: TelegramThumbFetcher.Factory? = null,
+        enableCrossfade: Boolean = true,
+        crossfadeDurationMs: Int = 200,
     ): ImageLoader {
         val client = okHttpClient ?: createDefaultOkHttpClient()
         val cacheDir = context.cacheDir.resolve(CacheConfig.DISK_CACHE_DIR).apply { mkdirs() }
         val dynamicCacheSize = computeDynamicDiskCacheSize(cacheDir)
 
-        return ImageLoader.Builder(context)
-                .memoryCache {
-                    MemoryCache.Builder()
-                            .maxSizePercent(context, CacheConfig.MEMORY_CACHE_PERCENT)
-                            .build()
+        return ImageLoader
+            .Builder(context)
+            .memoryCache {
+                MemoryCache
+                    .Builder()
+                    .maxSizePercent(context, CacheConfig.MEMORY_CACHE_PERCENT)
+                    .build()
+            }.diskCache {
+                DiskCache
+                    .Builder()
+                    .directory(cacheDir)
+                    .maxSizeBytes(dynamicCacheSize)
+                    .build()
+            }.memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .networkCachePolicy(CachePolicy.ENABLED)
+            .apply {
+                if (enableCrossfade) {
+                    crossfade(crossfadeDurationMs)
                 }
-                .diskCache {
-                    DiskCache.Builder().directory(cacheDir).maxSizeBytes(dynamicCacheSize).build()
-                }
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .networkCachePolicy(CachePolicy.ENABLED)
-                .apply {
-                    if (enableCrossfade) {
-                        crossfade(crossfadeDurationMs)
-                    }
-                }
-                .components {
-                    add(ImageRefKeyer())
-                    add(ImageRefFetcher.Factory(client, telegramThumbFetcher))
-                }
-                .build()
+            }.components {
+                add(ImageRefKeyer())
+                add(ImageRefFetcher.Factory(client, telegramThumbFetcher))
+            }.build()
     }
 }

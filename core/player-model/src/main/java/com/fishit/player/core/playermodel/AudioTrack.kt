@@ -6,7 +6,9 @@ package com.fishit.player.core.playermodel
  * Wraps a string ID that corresponds to Media3's track group/format indices.
  */
 @JvmInline
-value class AudioTrackId(val value: String) {
+value class AudioTrackId(
+    val value: String,
+) {
     companion object {
         /** Special ID indicating the default/first audio track. */
         val DEFAULT = AudioTrackId("DEFAULT")
@@ -31,18 +33,20 @@ enum class AudioChannelLayout {
     ATMOS,
 
     /** Unknown or unsupported layout. */
-    UNKNOWN;
+    UNKNOWN,
+
+    ;
 
     companion object {
         /** Determines channel layout from channel count. */
         fun fromChannelCount(channelCount: Int): AudioChannelLayout =
-                when (channelCount) {
-                    1 -> MONO
-                    2 -> STEREO
-                    6 -> SURROUND_5_1
-                    8 -> SURROUND_7_1
-                    else -> if (channelCount > 8) ATMOS else UNKNOWN
-                }
+            when (channelCount) {
+                1 -> MONO
+                2 -> STEREO
+                6 -> SURROUND_5_1
+                8 -> SURROUND_7_1
+                else -> if (channelCount > 8) ATMOS else UNKNOWN
+            }
     }
 }
 
@@ -58,7 +62,8 @@ enum class AudioCodecType {
     VORBIS,
     MP3,
     PCM,
-    UNKNOWN;
+    UNKNOWN,
+    ;
 
     companion object {
         /**
@@ -67,25 +72,25 @@ enum class AudioCodecType {
          * Note: Order matters! EAC3/EC-3 must be checked before AC3 since "eac3" contains "ac3".
          */
         fun fromMimeType(mimeType: String?): AudioCodecType =
-                when {
-                    mimeType == null -> UNKNOWN
-                    mimeType.contains("aac", ignoreCase = true) -> AAC
-                    // EAC3 must be checked BEFORE AC3 (eac3 contains ac3)
-                    mimeType.contains("eac3", ignoreCase = true) ||
-                            mimeType.contains("ec-3", ignoreCase = true) -> EAC3
-                    mimeType.contains("ac3", ignoreCase = true) -> AC3
-                    mimeType.contains("dts", ignoreCase = true) -> DTS
-                    mimeType.contains("truehd", ignoreCase = true) ||
-                            mimeType.contains("mlp", ignoreCase = true) -> TRUEHD
-                    mimeType.contains("flac", ignoreCase = true) -> FLAC
-                    mimeType.contains("opus", ignoreCase = true) -> OPUS
-                    mimeType.contains("vorbis", ignoreCase = true) -> VORBIS
-                    mimeType.contains("mp3", ignoreCase = true) ||
-                            mimeType.contains("mpeg", ignoreCase = true) -> MP3
-                    mimeType.contains("pcm", ignoreCase = true) ||
-                            mimeType.contains("raw", ignoreCase = true) -> PCM
-                    else -> UNKNOWN
-                }
+            when {
+                mimeType == null -> UNKNOWN
+                mimeType.contains("aac", ignoreCase = true) -> AAC
+                // EAC3 must be checked BEFORE AC3 (eac3 contains ac3)
+                mimeType.contains("eac3", ignoreCase = true) ||
+                    mimeType.contains("ec-3", ignoreCase = true) -> EAC3
+                mimeType.contains("ac3", ignoreCase = true) -> AC3
+                mimeType.contains("dts", ignoreCase = true) -> DTS
+                mimeType.contains("truehd", ignoreCase = true) ||
+                    mimeType.contains("mlp", ignoreCase = true) -> TRUEHD
+                mimeType.contains("flac", ignoreCase = true) -> FLAC
+                mimeType.contains("opus", ignoreCase = true) -> OPUS
+                mimeType.contains("vorbis", ignoreCase = true) -> VORBIS
+                mimeType.contains("mp3", ignoreCase = true) ||
+                    mimeType.contains("mpeg", ignoreCase = true) -> MP3
+                mimeType.contains("pcm", ignoreCase = true) ||
+                    mimeType.contains("raw", ignoreCase = true) -> PCM
+                else -> UNKNOWN
+            }
     }
 }
 
@@ -98,7 +103,7 @@ enum class AudioSourceType {
     EXTERNAL,
 
     /** From HLS/DASH manifest. */
-    MANIFEST
+    MANIFEST,
 }
 
 /**
@@ -120,17 +125,17 @@ enum class AudioSourceType {
  * @property mimeType MIME type of the audio format.
  */
 data class AudioTrack(
-        val id: AudioTrackId,
-        val language: String?,
-        val label: String,
-        val channelLayout: AudioChannelLayout = AudioChannelLayout.UNKNOWN,
-        val codecType: AudioCodecType = AudioCodecType.UNKNOWN,
-        val isDefault: Boolean = false,
-        val isDescriptive: Boolean = false,
-        val sourceType: AudioSourceType = AudioSourceType.EMBEDDED,
-        val bitrate: Int? = null,
-        val sampleRate: Int? = null,
-        val mimeType: String? = null
+    val id: AudioTrackId,
+    val language: String?,
+    val label: String,
+    val channelLayout: AudioChannelLayout = AudioChannelLayout.UNKNOWN,
+    val codecType: AudioCodecType = AudioCodecType.UNKNOWN,
+    val isDefault: Boolean = false,
+    val isDescriptive: Boolean = false,
+    val sourceType: AudioSourceType = AudioSourceType.EMBEDDED,
+    val bitrate: Int? = null,
+    val sampleRate: Int? = null,
+    val mimeType: String? = null,
 ) {
     companion object {
         /**
@@ -148,16 +153,16 @@ data class AudioTrack(
          * @param mimeType MIME type.
          */
         fun fromMedia3(
-                groupIndex: Int,
-                trackIndex: Int,
-                language: String?,
-                label: String?,
-                channelCount: Int,
-                isDefault: Boolean = false,
-                isDescriptive: Boolean = false,
-                bitrate: Int = 0,
-                sampleRate: Int = 0,
-                mimeType: String? = null
+            groupIndex: Int,
+            trackIndex: Int,
+            language: String?,
+            label: String?,
+            channelCount: Int,
+            isDefault: Boolean = false,
+            isDescriptive: Boolean = false,
+            bitrate: Int = 0,
+            sampleRate: Int = 0,
+            mimeType: String? = null,
         ): AudioTrack {
             val id = AudioTrackId("$groupIndex:$trackIndex")
             val channelLayout = AudioChannelLayout.fromChannelCount(channelCount)
@@ -165,35 +170,35 @@ data class AudioTrack(
 
             // Build descriptive label if not provided
             val displayLabel =
-                    label ?: buildLabel(language, channelLayout, codecType, isDescriptive)
+                label ?: buildLabel(language, channelLayout, codecType, isDescriptive)
 
             return AudioTrack(
-                    id = id,
-                    language = language,
-                    label = displayLabel,
-                    channelLayout = channelLayout,
-                    codecType = codecType,
-                    isDefault = isDefault,
-                    isDescriptive = isDescriptive,
-                    sourceType = AudioSourceType.EMBEDDED,
-                    bitrate = if (bitrate > 0) bitrate else null,
-                    sampleRate = if (sampleRate > 0) sampleRate else null,
-                    mimeType = mimeType
+                id = id,
+                language = language,
+                label = displayLabel,
+                channelLayout = channelLayout,
+                codecType = codecType,
+                isDefault = isDefault,
+                isDescriptive = isDescriptive,
+                sourceType = AudioSourceType.EMBEDDED,
+                bitrate = if (bitrate > 0) bitrate else null,
+                sampleRate = if (sampleRate > 0) sampleRate else null,
+                mimeType = mimeType,
             )
         }
 
         /** Builds a human-readable label from track properties. */
         private fun buildLabel(
-                language: String?,
-                channelLayout: AudioChannelLayout,
-                codecType: AudioCodecType,
-                isDescriptive: Boolean
+            language: String?,
+            channelLayout: AudioChannelLayout,
+            codecType: AudioCodecType,
+            isDescriptive: Boolean,
         ): String {
             val parts = mutableListOf<String>()
 
             // Language name
             language?.let { lang -> parts.add(getLanguageDisplayName(lang)) }
-                    ?: parts.add("Unknown")
+                ?: parts.add("Unknown")
 
             // Channel layout
             when (channelLayout) {
@@ -203,7 +208,7 @@ data class AudioTrack(
                 AudioChannelLayout.SURROUND_7_1 -> parts.add("7.1")
                 AudioChannelLayout.ATMOS -> parts.add("Atmos")
                 AudioChannelLayout.UNKNOWN -> {
-                    /* skip */
+                    // skip
                 }
             }
 
@@ -213,7 +218,7 @@ data class AudioTrack(
                 AudioCodecType.DTS -> parts.add("DTS")
                 AudioCodecType.TRUEHD -> parts.add("TrueHD")
                 else -> {
-                    /* skip common codecs */
+                    // skip common codecs
                 }
             }
 
@@ -229,8 +234,8 @@ data class AudioTrack(
          * Gets a display name for a BCP-47 language code. Falls back to the code itself if not
          * recognized.
          */
-        private fun getLanguageDisplayName(languageCode: String): String {
-            return when (languageCode.lowercase().take(2)) {
+        private fun getLanguageDisplayName(languageCode: String): String =
+            when (languageCode.lowercase().take(2)) {
                 "en" -> "English"
                 "de" -> "Deutsch"
                 "es" -> "Español"
@@ -262,6 +267,5 @@ data class AudioTrack(
                 "und" -> "Unknown"
                 else -> languageCode.uppercase()
             }
-        }
     }
 }

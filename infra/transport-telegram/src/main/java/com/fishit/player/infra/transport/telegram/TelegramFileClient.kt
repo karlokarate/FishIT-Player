@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.Flow
  * @see contracts/TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md
  */
 interface TelegramFileClient {
-
     /**
      * Stream of file download updates.
      *
@@ -58,7 +57,7 @@ interface TelegramFileClient {
         fileId: Int,
         priority: Int = 1,
         offset: Long = 0,
-        limit: Long = 0
+        limit: Long = 0,
     )
 
     /**
@@ -67,7 +66,10 @@ interface TelegramFileClient {
      * @param fileId TDLib file ID
      * @param deleteLocalCopy Whether to delete partially downloaded file
      */
-    suspend fun cancelDownload(fileId: Int, deleteLocalCopy: Boolean = false)
+    suspend fun cancelDownload(
+        fileId: Int,
+        deleteLocalCopy: Boolean = false,
+    )
 
     /**
      * Get current file state.
@@ -124,7 +126,7 @@ interface TelegramFileClient {
      */
     suspend fun optimizeStorage(
         maxSizeBytes: Long = 5L * 1024 * 1024 * 1024, // 5GB default
-        maxAgeDays: Int = 30
+        maxAgeDays: Int = 30,
     ): Long
 }
 
@@ -147,7 +149,7 @@ sealed class TgFileUpdate {
         override val fileId: Int,
         val downloadedSize: Long,
         val totalSize: Long,
-        val downloadedPrefixSize: Long
+        val downloadedPrefixSize: Long,
     ) : TgFileUpdate()
 
     /**
@@ -158,7 +160,7 @@ sealed class TgFileUpdate {
      */
     data class Completed(
         override val fileId: Int,
-        val localPath: String
+        val localPath: String,
     ) : TgFileUpdate()
 
     /**
@@ -171,7 +173,7 @@ sealed class TgFileUpdate {
     data class Failed(
         override val fileId: Int,
         val error: String,
-        val errorCode: Int? = null
+        val errorCode: Int? = null,
     ) : TgFileUpdate()
 }
 
@@ -184,5 +186,5 @@ data class TgStorageStats(
     val videoCount: Int,
     val documentCount: Int,
     val audioCount: Int,
-    val otherCount: Int
+    val otherCount: Int,
 )

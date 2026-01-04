@@ -22,6 +22,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class CacheModule {
-
-    @Binds @Singleton abstract fun bindHomeContentCache(impl: InMemoryHomeCache): HomeContentCache
+    @Binds @Singleton
+    abstract fun bindHomeContentCache(impl: InMemoryHomeCache): HomeContentCache
 }

@@ -8,9 +8,9 @@ import com.fishit.player.infra.data.xtream.LiveContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.ObxXtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamLiveRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamSeriesIndexRepository
-import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRefresherImpl
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRefresherImpl
 import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRepository
 import dagger.Binds
 import dagger.Module

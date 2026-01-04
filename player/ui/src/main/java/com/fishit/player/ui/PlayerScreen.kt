@@ -5,19 +5,12 @@ import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -81,9 +74,10 @@ fun PlayerScreen(
     }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(Color.Black),
     ) {
         when (val currentState = state) {
             is PlayerUiState.Idle -> {
@@ -97,14 +91,14 @@ fun PlayerScreen(
             is PlayerUiState.Playing -> {
                 PlayingView(
                     viewModel = viewModel,
-                    context = context
+                    context = context,
                 )
             }
 
             is PlayerUiState.Error -> {
                 ErrorView(
                     message = currentState.message,
-                    onRetry = { viewModel.retry() }
+                    onRetry = { viewModel.retry() },
                 )
             }
         }
@@ -112,14 +106,15 @@ fun PlayerScreen(
         // Back button (always visible in top-left)
         IconButton(
             onClick = onExit,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White
+                tint = Color.White,
             )
         }
     }
@@ -129,7 +124,7 @@ fun PlayerScreen(
 private fun LoadingView() {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(color = Color.White)
@@ -137,7 +132,7 @@ private fun LoadingView() {
             Text(
                 text = "Starting playback...",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
+                color = Color.White,
             )
         }
     }
@@ -154,22 +149,23 @@ private fun LoadingView() {
 @Composable
 private fun PlayingView(
     viewModel: PlayerUiViewModel,
-    context: PlaybackContext
+    context: PlaybackContext,
 ) {
     val player: Player? = viewModel.getPlayer()
     val localContext = LocalContext.current
-    
+
     // Observe player state for play/pause button
     val isPlaying = remember { mutableStateOf(true) }
-    
+
     // Update isPlaying state based on player state
     LaunchedEffect(player) {
         player?.let { p ->
-            val listener = object : Player.Listener {
-                override fun onIsPlayingChanged(playing: Boolean) {
-                    isPlaying.value = playing
+            val listener =
+                object : Player.Listener {
+                    override fun onIsPlayingChanged(playing: Boolean) {
+                        isPlaying.value = playing
+                    }
                 }
-            }
             p.addListener(listener)
         }
     }
@@ -181,10 +177,11 @@ private fun PlayingView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         this.player = player
-                        layoutParams = FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
+                        layoutParams =
+                            FrameLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                            )
                         // Use built-in controls from Media3
                         useController = true
                         setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
@@ -193,9 +190,9 @@ private fun PlayingView(
                 update = { playerView ->
                     playerView.player = player
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
-            
+
             // Cleanup when composable is disposed
             DisposableEffect(player) {
                 onDispose {
@@ -206,24 +203,24 @@ private fun PlayingView(
             // Fallback when player is not yet available
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
+                    modifier = Modifier.padding(32.dp),
                 ) {
                     CircularProgressIndicator(color = Color.White)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Preparing video...",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White
+                        color = Color.White,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = context.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = Color.White.copy(alpha = 0.8f),
                     )
                 }
             }
@@ -234,26 +231,26 @@ private fun PlayingView(
 @Composable
 private fun ErrorView(
     message: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(32.dp),
         ) {
             Text(
                 text = "❌ Playback Error",
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White
+                color = Color.White,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.White.copy(alpha = 0.8f),
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = onRetry) {

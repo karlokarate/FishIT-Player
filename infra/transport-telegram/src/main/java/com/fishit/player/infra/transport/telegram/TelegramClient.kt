@@ -27,4 +27,8 @@ package com.fishit.player.infra.transport.telegram
  * you need the legacy interface for migration purposes, use it directly.
  */
 interface TelegramClient :
-        TelegramAuthClient, TelegramHistoryClient, TelegramFileClient, TelegramThumbFetcher, TelegramRemoteResolver
+    TelegramAuthClient,
+    TelegramHistoryClient,
+    TelegramFileClient,
+    TelegramThumbFetcher,
+    TelegramRemoteResolver

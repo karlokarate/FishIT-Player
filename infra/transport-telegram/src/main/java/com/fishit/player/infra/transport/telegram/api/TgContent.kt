@@ -17,7 +17,7 @@ data class TgPhotoSize(
     val remoteId: String,
     val width: Int,
     val height: Int,
-    val fileSize: Long
+    val fileSize: Long,
 )
 
 /**
@@ -34,7 +34,7 @@ data class TgThumbnail(
     val remoteId: String,
     val width: Int,
     val height: Int,
-    val fileSize: Long
+    val fileSize: Long,
 )
 
 /**
@@ -47,7 +47,7 @@ data class TgThumbnail(
 data class TgMinithumbnail(
     val width: Int,
     val height: Int,
-    val data: ByteArray
+    val data: ByteArray,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -80,7 +80,6 @@ data class TgMinithumbnail(
  * - `remoteId` is stable and can be used to re-resolve files
  */
 sealed interface TgContent {
-
     /**
      * Video content (MP4, MOV, etc.)
      *
@@ -107,7 +106,7 @@ sealed interface TgContent {
         val supportsStreaming: Boolean = false,
         val caption: String? = null,
         val thumbnail: TgThumbnail? = null,
-        val minithumbnail: TgMinithumbnail? = null
+        val minithumbnail: TgMinithumbnail? = null,
     ) : TgContent
 
     /**
@@ -134,7 +133,7 @@ sealed interface TgContent {
         val fileSize: Long,
         val caption: String? = null,
         val albumCoverThumbnail: TgThumbnail? = null,
-        val albumCoverMinithumbnail: TgMinithumbnail? = null
+        val albumCoverMinithumbnail: TgMinithumbnail? = null,
     ) : TgContent
 
     /**
@@ -155,7 +154,7 @@ sealed interface TgContent {
         val fileSize: Long,
         val caption: String? = null,
         val thumbnail: TgThumbnail? = null,
-        val minithumbnail: TgMinithumbnail? = null
+        val minithumbnail: TgMinithumbnail? = null,
     ) : TgContent
 
     /**
@@ -167,7 +166,7 @@ sealed interface TgContent {
     data class Photo(
         val sizes: List<TgPhotoSize>,
         val caption: String? = null,
-        val minithumbnail: TgMinithumbnail? = null
+        val minithumbnail: TgMinithumbnail? = null,
     ) : TgContent
 
     /**
@@ -186,7 +185,7 @@ sealed interface TgContent {
         val duration: Int,
         val mimeType: String?,
         val fileSize: Long,
-        val caption: String? = null
+        val caption: String? = null,
     ) : TgContent
 
     /**
@@ -205,7 +204,7 @@ sealed interface TgContent {
         val length: Int,
         val fileSize: Long,
         val thumbnail: TgThumbnail? = null,
-        val minithumbnail: TgMinithumbnail? = null
+        val minithumbnail: TgMinithumbnail? = null,
     ) : TgContent
 
     /**
@@ -232,7 +231,7 @@ sealed interface TgContent {
         val fileSize: Long,
         val caption: String? = null,
         val thumbnail: TgThumbnail? = null,
-        val minithumbnail: TgMinithumbnail? = null
+        val minithumbnail: TgMinithumbnail? = null,
     ) : TgContent
 
     /**
@@ -243,7 +242,7 @@ sealed interface TgContent {
      * @property text The message text content
      */
     data class Text(
-        val text: String
+        val text: String,
     ) : TgContent
 
     /**
@@ -251,5 +250,7 @@ sealed interface TgContent {
      *
      * @property kind String describing the content type for debugging
      */
-    data class Unknown(val kind: String) : TgContent
+    data class Unknown(
+        val kind: String,
+    ) : TgContent
 }

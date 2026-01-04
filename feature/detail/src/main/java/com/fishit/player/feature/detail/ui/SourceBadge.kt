@@ -53,10 +53,13 @@ import com.fishit.player.core.model.SourceType
 enum class SourceBadgeStyle {
     /** Icon + Text (e.g., "📱 TG") - default for detail screens */
     FULL,
+
     /** Icon only - for tiles and compact spaces */
     ICON_ONLY,
+
     /** Text only (e.g., "TG") - for lists */
     TEXT_ONLY,
+
     /** Compact dot with letter - for tight spaces */
     COMPACT,
 }
@@ -71,26 +74,26 @@ object SourceBadgeColors {
     val Other = Color(0xFF9E9E9E) // Material grey
 
     fun forSourceType(type: SourceType): Color =
-            when (type) {
-                SourceType.TELEGRAM -> Telegram
-                SourceType.XTREAM -> Xtream
-                SourceType.IO -> Io
-                SourceType.LOCAL -> Io
-                SourceType.AUDIOBOOK -> Audiobook
-                SourceType.PLEX -> Plex
-                SourceType.OTHER -> Other
-                SourceType.UNKNOWN -> Other
-            }
+        when (type) {
+            SourceType.TELEGRAM -> Telegram
+            SourceType.XTREAM -> Xtream
+            SourceType.IO -> Io
+            SourceType.LOCAL -> Io
+            SourceType.AUDIOBOOK -> Audiobook
+            SourceType.PLEX -> Plex
+            SourceType.OTHER -> Other
+            SourceType.UNKNOWN -> Other
+        }
 
     fun forBadge(badge: SourceBadge): Color =
-            when (badge) {
-                SourceBadge.TELEGRAM -> Telegram
-                SourceBadge.XTREAM -> Xtream
-                SourceBadge.IO -> Io
-                SourceBadge.AUDIOBOOK -> Audiobook
-                SourceBadge.PLEX -> Plex
-                SourceBadge.OTHER -> Other
-            }
+        when (badge) {
+            SourceBadge.TELEGRAM -> Telegram
+            SourceBadge.XTREAM -> Xtream
+            SourceBadge.IO -> Io
+            SourceBadge.AUDIOBOOK -> Audiobook
+            SourceBadge.PLEX -> Plex
+            SourceBadge.OTHER -> Other
+        }
 }
 
 /**
@@ -102,9 +105,9 @@ object SourceBadgeColors {
  */
 @Composable
 fun SourceBadgeChip(
-        sourceType: SourceType,
-        modifier: Modifier = Modifier,
-        style: SourceBadgeStyle = SourceBadgeStyle.FULL,
+    sourceType: SourceType,
+    modifier: Modifier = Modifier,
+    style: SourceBadgeStyle = SourceBadgeStyle.FULL,
 ) {
     val badge = SourceBadge.fromSourceType(sourceType)
     SourceBadgeChip(badge = badge, modifier = modifier, style = style)
@@ -113,9 +116,9 @@ fun SourceBadgeChip(
 /** Source badge chip from SourceBadge enum. */
 @Composable
 fun SourceBadgeChip(
-        badge: SourceBadge,
-        modifier: Modifier = Modifier,
-        style: SourceBadgeStyle = SourceBadgeStyle.FULL,
+    badge: SourceBadge,
+    modifier: Modifier = Modifier,
+    style: SourceBadgeStyle = SourceBadgeStyle.FULL,
 ) {
     val color = SourceBadgeColors.forBadge(badge)
     val icon = iconForBadge(badge)
@@ -132,33 +135,34 @@ fun SourceBadgeChip(
 /** Full badge with icon and text. */
 @Composable
 private fun FullBadge(
-        color: Color,
-        icon: ImageVector,
-        text: String,
-        modifier: Modifier = Modifier,
+    color: Color,
+    icon: ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-            modifier =
-                    modifier.clip(RoundedCornerShape(12.dp))
-                            .background(color.copy(alpha = 0.9f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(color.copy(alpha = 0.9f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = Color.White,
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = Color.White,
         )
         Text(
-                text = text,
-                style =
-                        MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp,
-                        ),
-                color = Color.White,
+            text = text,
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp,
+                ),
+            color = Color.White,
         )
     }
 }
@@ -166,20 +170,20 @@ private fun FullBadge(
 /** Icon-only badge (for tiles). */
 @Composable
 private fun IconOnlyBadge(
-        color: Color,
-        icon: ImageVector,
-        modifier: Modifier = Modifier,
-        size: Dp = 20.dp,
+    color: Color,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    size: Dp = 20.dp,
 ) {
     Box(
-            modifier = modifier.size(size).clip(CircleShape).background(color.copy(alpha = 0.9f)),
-            contentAlignment = Alignment.Center,
+        modifier = modifier.size(size).clip(CircleShape).background(color.copy(alpha = 0.9f)),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(size * 0.6f),
-                tint = Color.White,
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(size * 0.6f),
+            tint = Color.White,
         )
     }
 }
@@ -187,25 +191,26 @@ private fun IconOnlyBadge(
 /** Text-only badge (for lists). */
 @Composable
 private fun TextOnlyBadge(
-        color: Color,
-        text: String,
-        modifier: Modifier = Modifier,
+    color: Color,
+    text: String,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-            modifier =
-                    modifier.clip(RoundedCornerShape(4.dp))
-                            .background(color.copy(alpha = 0.9f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-            contentAlignment = Alignment.Center,
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(color.copy(alpha = 0.9f))
+                .padding(horizontal = 6.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-                text = text,
-                style =
-                        MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp,
-                        ),
-                color = Color.White,
+            text = text,
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 9.sp,
+                ),
+            color = Color.White,
         )
     }
 }
@@ -213,41 +218,42 @@ private fun TextOnlyBadge(
 /** Compact dot badge with single letter (for tight spaces). */
 @Composable
 private fun CompactBadge(
-        color: Color,
-        letter: Char,
-        modifier: Modifier = Modifier,
-        size: Dp = 16.dp,
+    color: Color,
+    letter: Char,
+    modifier: Modifier = Modifier,
+    size: Dp = 16.dp,
 ) {
     Box(
-            modifier =
-                    modifier.size(size)
-                            .clip(CircleShape)
-                            .background(color.copy(alpha = 0.9f))
-                            .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
-            contentAlignment = Alignment.Center,
+        modifier =
+            modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(color.copy(alpha = 0.9f))
+                .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-                text = letter.toString(),
-                style =
-                        MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = (size.value * 0.5f).sp,
-                        ),
-                color = Color.White,
+            text = letter.toString(),
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (size.value * 0.5f).sp,
+                ),
+            color = Color.White,
         )
     }
 }
 
 /** Get icon for badge type. */
 private fun iconForBadge(badge: SourceBadge): ImageVector =
-        when (badge) {
-            SourceBadge.TELEGRAM -> TelegramIcon
-            SourceBadge.XTREAM -> Icons.Default.PlayCircle
-            SourceBadge.IO -> Icons.Default.Folder
-            SourceBadge.AUDIOBOOK -> Icons.Default.Headphones
-            SourceBadge.PLEX -> PlexIcon
-            SourceBadge.OTHER -> Icons.Default.Help
-        }
+    when (badge) {
+        SourceBadge.TELEGRAM -> TelegramIcon
+        SourceBadge.XTREAM -> Icons.Default.PlayCircle
+        SourceBadge.IO -> Icons.Default.Folder
+        SourceBadge.AUDIOBOOK -> Icons.Default.Headphones
+        SourceBadge.PLEX -> PlexIcon
+        SourceBadge.OTHER -> Icons.Default.Help
+    }
 
 /**
  * Custom Telegram icon (simplified paper plane). Note: In production, use a proper vector asset.
@@ -269,22 +275,22 @@ private val PlexIcon: ImageVector
  */
 @Composable
 fun SourceBadgeRow(
-        sourceTypes: List<SourceType>,
-        modifier: Modifier = Modifier,
-        style: SourceBadgeStyle = SourceBadgeStyle.COMPACT,
-        onSourceClick: ((SourceType) -> Unit)? = null,
+    sourceTypes: List<SourceType>,
+    modifier: Modifier = Modifier,
+    style: SourceBadgeStyle = SourceBadgeStyle.COMPACT,
+    onSourceClick: ((SourceType) -> Unit)? = null,
 ) {
     if (sourceTypes.isEmpty()) return
 
     Row(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         sourceTypes.forEach { sourceType ->
             SourceBadgeChip(
-                    sourceType = sourceType,
-                    style = style,
+                sourceType = sourceType,
+                style = style,
             )
         }
     }
@@ -297,25 +303,25 @@ fun SourceBadgeRow(
  */
 @Composable
 fun AvailableOnSection(
-        sourceTypes: List<SourceType>,
-        modifier: Modifier = Modifier,
-        label: String = "Available on",
+    sourceTypes: List<SourceType>,
+    modifier: Modifier = Modifier,
+    label: String = "Available on",
 ) {
     if (sourceTypes.isEmpty()) return
 
     Row(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         SourceBadgeRow(
-                sourceTypes = sourceTypes,
-                style = SourceBadgeStyle.FULL,
+            sourceTypes = sourceTypes,
+            style = SourceBadgeStyle.FULL,
         )
     }
 }
@@ -327,39 +333,40 @@ fun AvailableOnSection(
  */
 @Composable
 fun QualityBadge(
-        label: String,
-        modifier: Modifier = Modifier,
-        isHdr: Boolean = false,
-        is4K: Boolean = false,
+    label: String,
+    modifier: Modifier = Modifier,
+    isHdr: Boolean = false,
+    is4K: Boolean = false,
 ) {
     val backgroundColor =
-            when {
-                is4K && isHdr -> Color(0xFF6200EE) // Deep purple for 4K HDR
-                is4K -> Color(0xFF1976D2) // Blue for 4K
-                isHdr -> Color(0xFFE65100) // Orange for HDR
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
+        when {
+            is4K && isHdr -> Color(0xFF6200EE) // Deep purple for 4K HDR
+            is4K -> Color(0xFF1976D2) // Blue for 4K
+            isHdr -> Color(0xFFE65100) // Orange for HDR
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        }
 
     val textColor =
-            when {
-                is4K || isHdr -> Color.White
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
+        when {
+            is4K || isHdr -> Color.White
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
 
     Box(
-            modifier =
-                    modifier.clip(RoundedCornerShape(4.dp))
-                            .background(backgroundColor)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(backgroundColor)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
-                text = label,
-                style =
-                        MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 9.sp,
-                        ),
-                color = textColor,
+            text = label,
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 9.sp,
+                ),
+            color = textColor,
         )
     }
 }
@@ -384,50 +391,50 @@ fun QualityBadge(
  */
 @Composable
 fun SourceComparisonCard(
-        sourceRef: MediaSourceRef,
-        modifier: Modifier = Modifier,
-        isSelected: Boolean = false,
-        resumePositionMs: Long? = null,
-        onClick: () -> Unit = {},
+    sourceRef: MediaSourceRef,
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    resumePositionMs: Long? = null,
+    onClick: () -> Unit = {},
 ) {
     val borderColor =
-            if (isSelected) {
-                SourceBadgeColors.forSourceType(sourceRef.sourceType)
-            } else {
-                Color.Transparent
-            }
+        if (isSelected) {
+            SourceBadgeColors.forSourceType(sourceRef.sourceType)
+        } else {
+            Color.Transparent
+        }
 
     Card(
-            modifier =
-                    modifier.border(
-                            width = if (isSelected) 2.dp else 0.dp,
-                            color = borderColor,
-                            shape = RoundedCornerShape(8.dp)
-                    ),
-            onClick = onClick,
+        modifier =
+            modifier.border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(8.dp),
+            ),
+        onClick = onClick,
     ) {
         Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Header: Badge + Label
             Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 SourceBadgeChip(sourceRef.sourceType, style = SourceBadgeStyle.FULL)
                 Text(
-                        text = sourceRef.sourceLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        maxLines = 1,
+                    text = sourceRef.sourceLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
                 )
             }
 
             // Details row: Quality, Size, Duration
             Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Quality
                 sourceRef.quality?.toDisplayLabel()?.takeIf { it.isNotBlank() }?.let { q ->
@@ -442,17 +449,17 @@ fun SourceComparisonCard(
                 // Duration (IMPORTANT: varies per source!)
                 sourceRef.durationMs?.let { duration ->
                     SourceDetailChip(
-                            label = formatDuration(duration),
-                            icon = "⏱️",
-                            emphasis = true // Highlight that duration differs
+                        label = formatDuration(duration),
+                        icon = "⏱️",
+                        emphasis = true, // Highlight that duration differs
                     )
                 }
             }
 
             // Format and language info
             Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 sourceRef.format?.container?.let { container ->
                     SourceDetailChip(label = container.uppercase(), icon = "📦")
@@ -468,9 +475,9 @@ fun SourceComparisonCard(
                 val duration = sourceRef.durationMs ?: 0L
                 val percent = if (duration > 0) (pos.toFloat() / duration * 100).toInt() else 0
                 SourceResumeIndicator(
-                        positionMs = pos,
-                        durationMs = duration,
-                        percent = percent,
+                    positionMs = pos,
+                    durationMs = duration,
+                    percent = percent,
                 )
             }
         }
@@ -480,32 +487,32 @@ fun SourceComparisonCard(
 /** Detail chip for source comparison. */
 @Composable
 private fun SourceDetailChip(
-        label: String,
-        icon: String,
-        modifier: Modifier = Modifier,
-        emphasis: Boolean = false,
+    label: String,
+    icon: String,
+    modifier: Modifier = Modifier,
+    emphasis: Boolean = false,
 ) {
     Row(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-                text = icon,
-                style = MaterialTheme.typography.labelSmall,
+            text = icon,
+            style = MaterialTheme.typography.labelSmall,
         )
         Text(
-                text = label,
-                style =
-                        MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (emphasis) FontWeight.Bold else FontWeight.Normal,
-                        ),
-                color =
-                        if (emphasis) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+            text = label,
+            style =
+                MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = if (emphasis) FontWeight.Bold else FontWeight.Normal,
+                ),
+            color =
+                if (emphasis) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
         )
     }
 }
@@ -513,45 +520,47 @@ private fun SourceDetailChip(
 /** Resume progress indicator for a specific source. */
 @Composable
 private fun SourceResumeIndicator(
-        positionMs: Long,
-        durationMs: Long,
-        percent: Int,
-        modifier: Modifier = Modifier,
+    positionMs: Long,
+    durationMs: Long,
+    percent: Int,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                    text = "▶️ Resume at ${formatDuration(positionMs)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
+                text = "▶️ Resume at ${formatDuration(positionMs)}",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                    text = "(${percent}%)",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "($percent%)",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         // Progress bar
         Box(
-                modifier =
-                        Modifier.fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
         ) {
             Box(
-                    modifier =
-                            Modifier.fillMaxWidth(percent / 100f)
-                                    .height(4.dp)
-                                    .background(MaterialTheme.colorScheme.primary)
+                modifier =
+                    Modifier
+                        .fillMaxWidth(percent / 100f)
+                        .height(4.dp)
+                        .background(MaterialTheme.colorScheme.primary),
             )
         }
     }
@@ -565,32 +574,33 @@ private fun SourceResumeIndicator(
  */
 @Composable
 fun ResumeApproximationNotice(
-        originalSourceLabel: String,
-        currentSourceLabel: String,
-        percent: Int,
-        modifier: Modifier = Modifier,
+    originalSourceLabel: String,
+    currentSourceLabel: String,
+    percent: Int,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-            modifier =
-                    modifier.clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.tertiaryContainer)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.tertiaryContainer)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = "ℹ️", style = MaterialTheme.typography.bodyMedium)
         Column {
             Text(
-                    text = "Resume position approximated",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                text = "Resume position approximated",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
             )
             Text(
-                    text =
-                            "Last watched on $originalSourceLabel • Resuming at ~$percent% on $currentSourceLabel",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+                text =
+                    "Last watched on $originalSourceLabel • Resuming at ~$percent% on $currentSourceLabel",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
             )
         }
     }

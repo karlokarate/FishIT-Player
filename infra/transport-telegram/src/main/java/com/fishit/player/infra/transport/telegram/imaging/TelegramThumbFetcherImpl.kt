@@ -42,9 +42,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */
 class TelegramThumbFetcherImpl(
-        private val fileClient: TelegramFileClient,
+    private val fileClient: TelegramFileClient,
 ) : TelegramThumbFetcher {
-
     companion object {
         private const val TAG = "TelegramThumbFetcher"
         private const val DOWNLOAD_PRIORITY = 16 // Medium priority
@@ -59,33 +58,33 @@ class TelegramThumbFetcherImpl(
 
     // Bounded LRU set of failed remoteIds to prevent repeated fetch attempts
     private val failedRemoteIds: MutableSet<String> =
-            object : LinkedHashSet<String>() {
-                override fun add(element: String): Boolean {
-                    val added = super.add(element)
-                    // Evict oldest entries if over capacity
-                    while (size > MAX_FAILED_CACHE_SIZE) {
-                        iterator().apply {
-                            if (hasNext()) {
-                                next()
-                                remove()
-                            }
+        object : LinkedHashSet<String>() {
+            override fun add(element: String): Boolean {
+                val added = super.add(element)
+                // Evict oldest entries if over capacity
+                while (size > MAX_FAILED_CACHE_SIZE) {
+                    iterator().apply {
+                        if (hasNext()) {
+                            next()
+                            remove()
                         }
                     }
-                    return added
                 }
+                return added
             }
+        }
 
     // ========== TelegramThumbFetcher Implementation ==========
 
     override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String? {
         val remoteId = thumbRef.remoteId
-        
+
         // Skip empty remoteId
         if (remoteId.isBlank()) {
             UnifiedLog.w(TAG, "Empty remoteId in thumbnail reference")
             return null
         }
-        
+
         // Skip if already known to fail (thread-safe check)
         if (isKnownFailed(remoteId)) {
             return null
@@ -98,7 +97,7 @@ class TelegramThumbFetcherImpl(
             markAsFailed(remoteId)
             return null
         }
-        
+
         val fileId = resolved.id
         UnifiedLog.d(TAG, "Resolved remoteId → fileId: $remoteId → $fileId")
 
@@ -122,7 +121,7 @@ class TelegramThumbFetcherImpl(
     override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean {
         val remoteId = thumbRef.remoteId
         if (remoteId.isBlank()) return false
-        
+
         // Resolve remoteId → fileId first
         val resolved = fileClient.resolveRemoteId(remoteId) ?: return false
         return isCachedInternal(resolved.id) != null
@@ -140,8 +139,8 @@ class TelegramThumbFetcherImpl(
         for (ref in thumbRefs) {
             if (prefetchCount >= MAX_PREFETCH_BATCH) {
                 UnifiedLog.d(
-                        TAG,
-                        "Prefetch limit reached ($MAX_PREFETCH_BATCH), skipping remaining ${thumbRefs.size - prefetchCount}"
+                    TAG,
+                    "Prefetch limit reached ($MAX_PREFETCH_BATCH), skipping remaining ${thumbRefs.size - prefetchCount}",
                 )
                 break
             }
@@ -162,10 +161,10 @@ class TelegramThumbFetcherImpl(
             // Start low-priority download (don't wait for completion)
             try {
                 fileClient.startDownload(
-                        fileId = fileId,
-                        priority = PREFETCH_PRIORITY,
-                        offset = 0,
-                        limit = 0,
+                    fileId = fileId,
+                    priority = PREFETCH_PRIORITY,
+                    offset = 0,
+                    limit = 0,
                 )
                 prefetchCount++
             } catch (e: Exception) {
@@ -205,14 +204,14 @@ class TelegramThumbFetcherImpl(
         }
     }
 
-    private suspend fun tryDownload(fileId: Int): String? {
-        return try {
+    private suspend fun tryDownload(fileId: Int): String? =
+        try {
             // Start download
             fileClient.startDownload(
-                    fileId = fileId,
-                    priority = DOWNLOAD_PRIORITY,
-                    offset = 0,
-                    limit = 0,
+                fileId = fileId,
+                priority = DOWNLOAD_PRIORITY,
+                offset = 0,
+                limit = 0,
             )
 
             // Wait for completion
@@ -221,11 +220,11 @@ class TelegramThumbFetcherImpl(
             UnifiedLog.w(TAG, "Download failed for fileId=$fileId: ${e.message}")
             null
         }
-    }
 
     private suspend fun waitForCompletion(fileId: Int): String? {
         // Poll for completion
-        repeat(100) { // Max 10 seconds with 100ms intervals
+        repeat(100) {
+            // Max 10 seconds with 100ms intervals
             val file = fileClient.getFile(fileId)
             if (file?.isDownloadingCompleted == true && file.localPath != null) {
                 return file.localPath

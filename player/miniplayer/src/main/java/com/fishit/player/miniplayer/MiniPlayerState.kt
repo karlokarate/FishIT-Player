@@ -118,18 +118,18 @@ val CENTER_SNAP_THRESHOLD_DP = 80.dp
  */
 @Immutable
 data class MiniPlayerState(
-        val visible: Boolean = false,
-        val mode: MiniPlayerMode = MiniPlayerMode.NORMAL,
-        val anchor: MiniPlayerAnchor = MiniPlayerAnchor.BOTTOM_RIGHT,
-        val size: DpSize = DEFAULT_MINI_SIZE,
-        val position: Offset? = null,
-        val returnRoute: String? = null,
-        val returnMediaId: Long? = null,
-        val returnRowIndex: Int? = null,
-        val returnItemIndex: Int? = null,
-        val previousSize: DpSize? = null,
-        val previousPosition: Offset? = null,
-        val hasShownFirstTimeHint: Boolean = false,
+    val visible: Boolean = false,
+    val mode: MiniPlayerMode = MiniPlayerMode.NORMAL,
+    val anchor: MiniPlayerAnchor = MiniPlayerAnchor.BOTTOM_RIGHT,
+    val size: DpSize = DEFAULT_MINI_SIZE,
+    val position: Offset? = null,
+    val returnRoute: String? = null,
+    val returnMediaId: Long? = null,
+    val returnRowIndex: Int? = null,
+    val returnItemIndex: Int? = null,
+    val previousSize: DpSize? = null,
+    val previousPosition: Offset? = null,
+    val hasShownFirstTimeHint: Boolean = false,
 ) {
     companion object {
         /** Default/initial state */

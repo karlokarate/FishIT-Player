@@ -24,7 +24,6 @@ import com.fishit.player.core.model.repository.CanonicalResumeInfo
  * 5. First available source (stable order)
  */
 object SourceSelection {
-
     /**
      * Resolve the active source for playback/display from current media.sources.
      *
@@ -64,9 +63,10 @@ object SourceSelection {
         }
 
         // Priority 4: By quality (resolution)
-        val byQuality = sources
-            .filter { it.quality?.resolution != null }
-            .maxByOrNull { it.quality!!.resolution!! }
+        val byQuality =
+            sources
+                .filter { it.quality?.resolution != null }
+                .maxByOrNull { it.quality!!.resolution!! }
         if (byQuality != null) return byQuality
 
         // Priority 5: First source (stable order)
@@ -81,14 +81,14 @@ object SourceSelection {
      */
     fun getMissingPlaybackHints(source: MediaSourceRef?): List<String> {
         if (source == null) return listOf("source")
-        
+
         val missing = mutableListOf<String>()
-        
+
         when (source.sourceType) {
             SourceType.XTREAM -> {
                 val hints = source.playbackHints
                 val sourceId = source.sourceId.value
-                
+
                 when {
                     // VOD
                     sourceId.startsWith("xtream:vod:") -> {
@@ -129,13 +129,12 @@ object SourceSelection {
                 // Other source types: no specific validation
             }
         }
-        
+
         return missing
     }
 
     /**
      * Check if a source is ready for immediate playback (all required hints present).
      */
-    fun isPlaybackReady(source: MediaSourceRef?): Boolean =
-        getMissingPlaybackHints(source).isEmpty()
+    fun isPlaybackReady(source: MediaSourceRef?): Boolean = getMissingPlaybackHints(source).isEmpty()
 }

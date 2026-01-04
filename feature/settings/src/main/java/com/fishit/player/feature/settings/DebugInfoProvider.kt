@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.Flow
  * - Provided via Hilt @Binds
  */
 interface DebugInfoProvider {
-
     // =========================================================================
     // Connection Status
     // =========================================================================
@@ -131,7 +130,7 @@ interface DebugInfoProvider {
  */
 data class ConnectionInfo(
     val isConnected: Boolean,
-    val details: String? = null
+    val details: String? = null,
 )
 
 /**
@@ -155,7 +154,7 @@ data class ContentCounts(
     val telegramMediaCount: Int = 0,
     val xtreamVodCount: Int = 0,
     val xtreamSeriesCount: Int = 0,
-    val xtreamLiveCount: Int = 0
+    val xtreamLiveCount: Int = 0,
 )
 
 /**

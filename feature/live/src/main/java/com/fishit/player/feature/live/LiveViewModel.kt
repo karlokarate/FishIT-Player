@@ -29,143 +29,147 @@ import javax.inject.Inject
  * - Search functionality
  */
 @HiltViewModel
-class LiveViewModel @Inject constructor(
-    private val repository: LiveContentRepository
-) : ViewModel() {
+class LiveViewModel
+    @Inject
+    constructor(
+        private val repository: LiveContentRepository,
+    ) : ViewModel() {
+        /** Selected category filter (null = all) */
+        private val _selectedCategoryId = MutableStateFlow<String?>(null)
+        val selectedCategoryId: StateFlow<String?> = _selectedCategoryId.asStateFlow()
 
-    /** Selected category filter (null = all) */
-    private val _selectedCategoryId = MutableStateFlow<String?>(null)
-    val selectedCategoryId: StateFlow<String?> = _selectedCategoryId.asStateFlow()
+        /** Search query */
+        private val _searchQuery = MutableStateFlow("")
+        val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    /** Search query */
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+        /** Search results */
+        private val _searchResults = MutableStateFlow<List<LiveChannel>>(emptyList())
+        val searchResults: StateFlow<List<LiveChannel>> = _searchResults.asStateFlow()
 
-    /** Search results */
-    private val _searchResults = MutableStateFlow<List<LiveChannel>>(emptyList())
-    val searchResults: StateFlow<List<LiveChannel>> = _searchResults.asStateFlow()
+        /** Whether search mode is active */
+        private val _isSearchActive = MutableStateFlow(false)
+        val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
 
-    /** Whether search mode is active */
-    private val _isSearchActive = MutableStateFlow(false)
-    val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
+        /** Current view mode */
+        private val _viewMode = MutableStateFlow(ViewMode.ALL)
+        val viewMode: StateFlow<ViewMode> = _viewMode.asStateFlow()
 
-    /** Current view mode */
-    private val _viewMode = MutableStateFlow(ViewMode.ALL)
-    val viewMode: StateFlow<ViewMode> = _viewMode.asStateFlow()
+        /** Categories */
+        val categories: StateFlow<List<LiveCategory>> =
+            repository
+                .observeCategories()
+                .catch { emit(emptyList()) }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = emptyList(),
+                )
 
-    /** Categories */
-    val categories: StateFlow<List<LiveCategory>> = repository.observeCategories()
-        .catch { emit(emptyList()) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+        /** Channels filtered by selected category */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val channels: StateFlow<List<LiveChannel>> =
+            combine(
+                _selectedCategoryId,
+                _viewMode,
+            ) { categoryId, mode ->
+                categoryId to mode
+            }.flatMapLatest { (categoryId, mode) ->
+                when (mode) {
+                    ViewMode.ALL -> repository.observeChannels(categoryId)
+                    ViewMode.FAVORITES -> repository.observeFavorites()
+                }
+            }.catch {
+                emit(emptyList())
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
 
-    /** Channels filtered by selected category */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val channels: StateFlow<List<LiveChannel>> = combine(
-        _selectedCategoryId,
-        _viewMode
-    ) { categoryId, mode ->
-        categoryId to mode
-    }.flatMapLatest { (categoryId, mode) ->
-        when (mode) {
-            ViewMode.ALL -> repository.observeChannels(categoryId)
-            ViewMode.FAVORITES -> repository.observeFavorites()
+        /** Recent channels */
+        private val _recentChannels = MutableStateFlow<List<LiveChannel>>(emptyList())
+        val recentChannels: StateFlow<List<LiveChannel>> = _recentChannels.asStateFlow()
+
+        init {
+            loadRecentChannels()
         }
-    }.catch { 
-        emit(emptyList()) 
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
 
-    /** Recent channels */
-    private val _recentChannels = MutableStateFlow<List<LiveChannel>>(emptyList())
-    val recentChannels: StateFlow<List<LiveChannel>> = _recentChannels.asStateFlow()
-
-    init {
-        loadRecentChannels()
-    }
-
-    private fun loadRecentChannels() {
-        viewModelScope.launch {
-            try {
-                _recentChannels.value = repository.getRecentChannels()
-            } catch (e: Exception) {
-                _recentChannels.value = emptyList()
+        private fun loadRecentChannels() {
+            viewModelScope.launch {
+                try {
+                    _recentChannels.value = repository.getRecentChannels()
+                } catch (e: Exception) {
+                    _recentChannels.value = emptyList()
+                }
             }
         }
-    }
 
-    /**
-     * Select a category to filter channels.
-     *
-     * @param categoryId Category ID or null for all
-     */
-    fun selectCategory(categoryId: String?) {
-        _selectedCategoryId.value = categoryId
-    }
-
-    /**
-     * Switch view mode.
-     */
-    fun setViewMode(mode: ViewMode) {
-        _viewMode.value = mode
-    }
-
-    /**
-     * Update search query and perform search.
-     */
-    fun search(query: String) {
-        _searchQuery.value = query
-        if (query.isBlank()) {
-            _searchResults.value = emptyList()
-            return
+        /**
+         * Select a category to filter channels.
+         *
+         * @param categoryId Category ID or null for all
+         */
+        fun selectCategory(categoryId: String?) {
+            _selectedCategoryId.value = categoryId
         }
-        viewModelScope.launch {
-            try {
-                _searchResults.value = repository.search(query)
-            } catch (e: Exception) {
+
+        /**
+         * Switch view mode.
+         */
+        fun setViewMode(mode: ViewMode) {
+            _viewMode.value = mode
+        }
+
+        /**
+         * Update search query and perform search.
+         */
+        fun search(query: String) {
+            _searchQuery.value = query
+            if (query.isBlank()) {
+                _searchResults.value = emptyList()
+                return
+            }
+            viewModelScope.launch {
+                try {
+                    _searchResults.value = repository.search(query)
+                } catch (e: Exception) {
+                    _searchResults.value = emptyList()
+                }
+            }
+        }
+
+        /**
+         * Toggle search mode.
+         */
+        fun setSearchActive(active: Boolean) {
+            _isSearchActive.value = active
+            if (!active) {
+                _searchQuery.value = ""
                 _searchResults.value = emptyList()
             }
         }
-    }
 
-    /**
-     * Toggle search mode.
-     */
-    fun setSearchActive(active: Boolean) {
-        _isSearchActive.value = active
-        if (!active) {
-            _searchQuery.value = ""
-            _searchResults.value = emptyList()
+        /**
+         * Toggle favorite status for a channel.
+         */
+        fun toggleFavorite(channel: LiveChannel) {
+            viewModelScope.launch {
+                repository.setFavorite(channel.id, !channel.isFavorite)
+            }
+        }
+
+        /**
+         * Called when a channel is played (for recent channels tracking).
+         */
+        fun onChannelPlayed(channel: LiveChannel) {
+            viewModelScope.launch {
+                repository.recordWatched(channel.id)
+                loadRecentChannels()
+            }
+        }
+
+        enum class ViewMode {
+            ALL,
+            FAVORITES,
         }
     }
-
-    /**
-     * Toggle favorite status for a channel.
-     */
-    fun toggleFavorite(channel: LiveChannel) {
-        viewModelScope.launch {
-            repository.setFavorite(channel.id, !channel.isFavorite)
-        }
-    }
-
-    /**
-     * Called when a channel is played (for recent channels tracking).
-     */
-    fun onChannelPlayed(channel: LiveChannel) {
-        viewModelScope.launch {
-            repository.recordWatched(channel.id)
-            loadRecentChannels()
-        }
-    }
-
-    enum class ViewMode {
-        ALL,
-        FAVORITES
-    }
-}

@@ -37,7 +37,6 @@ import kotlinx.coroutines.withContext
  * @see <a href="/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md">ObjectBox Reactive Patterns</a>
  */
 object ObjectBoxFlow {
-
     /**
      * Convert an ObjectBox [Query] to a lifecycle-safe [Flow] of lists.
      *
@@ -50,28 +49,30 @@ object ObjectBoxFlow {
      *
      * @return Flow that emits List<T> on each data change
      */
-    fun <T> Query<T>.asFlow(): Flow<List<T>> = callbackFlow {
-        val query = this@asFlow
+    fun <T> Query<T>.asFlow(): Flow<List<T>> =
+        callbackFlow {
+            val query = this@asFlow
 
-        // Emit initial result immediately
-        val initial = withContext(Dispatchers.IO) { query.find() }
-        trySend(initial)
+            // Emit initial result immediately
+            val initial = withContext(Dispatchers.IO) { query.find() }
+            trySend(initial)
 
-        // Subscribe to changes - observer is a trigger only, not a data receiver.
-        // ObjectBox will call onData() when relevant entities change.
-        // We must re-query to get the actual updated data.
-        var subscription: DataSubscription? = null
-        subscription = query.subscribe().observer { _ ->
-            // Re-query on each change notification
-            val updated = query.find()
-            trySend(updated)
-        }
+            // Subscribe to changes - observer is a trigger only, not a data receiver.
+            // ObjectBox will call onData() when relevant entities change.
+            // We must re-query to get the actual updated data.
+            var subscription: DataSubscription? = null
+            subscription =
+                query.subscribe().observer { _ ->
+                    // Re-query on each change notification
+                    val updated = query.find()
+                    trySend(updated)
+                }
 
-        // Wait for cancellation and clean up subscription
-        awaitClose {
-            subscription.cancel()
-        }
-    }.flowOn(Dispatchers.IO)
+            // Wait for cancellation and clean up subscription
+            awaitClose {
+                subscription.cancel()
+            }
+        }.flowOn(Dispatchers.IO)
 
     /**
      * Convert an ObjectBox [Query] to a lifecycle-safe [Flow] of single nullable result.
@@ -87,24 +88,26 @@ object ObjectBoxFlow {
      *
      * @return Flow that emits T? on each data change
      */
-    fun <T> Query<T>.asSingleFlow(): Flow<T?> = callbackFlow {
-        val query = this@asSingleFlow
+    fun <T> Query<T>.asSingleFlow(): Flow<T?> =
+        callbackFlow {
+            val query = this@asSingleFlow
 
-        // Emit initial result immediately
-        val initial = withContext(Dispatchers.IO) { query.findFirst() }
-        trySend(initial)
+            // Emit initial result immediately
+            val initial = withContext(Dispatchers.IO) { query.findFirst() }
+            trySend(initial)
 
-        // Subscribe to changes - observer is a trigger only
-        var subscription: DataSubscription? = null
-        subscription = query.subscribe().observer { _ ->
-            // Re-query on each change notification
-            val updated = query.findFirst()
-            trySend(updated)
-        }
+            // Subscribe to changes - observer is a trigger only
+            var subscription: DataSubscription? = null
+            subscription =
+                query.subscribe().observer { _ ->
+                    // Re-query on each change notification
+                    val updated = query.findFirst()
+                    trySend(updated)
+                }
 
-        // Wait for cancellation and clean up subscription
-        awaitClose {
-            subscription.cancel()
-        }
-    }.flowOn(Dispatchers.IO)
+            // Wait for cancellation and clean up subscription
+            awaitClose {
+                subscription.cancel()
+            }
+        }.flowOn(Dispatchers.IO)
 }

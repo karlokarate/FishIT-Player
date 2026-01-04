@@ -45,10 +45,10 @@ interface MiniPlayerManager {
      * @param itemIndex Optional item index within row for focus restoration
      */
     fun enterMiniPlayer(
-            fromRoute: String,
-            mediaId: Long? = null,
-            rowIndex: Int? = null,
-            itemIndex: Int? = null,
+        fromRoute: String,
+        mediaId: Long? = null,
+        rowIndex: Int? = null,
+        itemIndex: Int? = null,
     )
 
     /**
@@ -176,9 +176,9 @@ interface MiniPlayerManager {
      * @param density Density for dp to px conversion
      */
     fun snapToNearestAnchor(
-            screenWidthPx: Float,
-            screenHeightPx: Float,
-            density: Density,
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
     )
 
     /**
@@ -191,9 +191,9 @@ interface MiniPlayerManager {
      * @param density Density for dp to px conversion
      */
     fun clampToSafeArea(
-            screenWidthPx: Float,
-            screenHeightPx: Float,
-            density: Density,
+        screenWidthPx: Float,
+        screenHeightPx: Float,
+        density: Density,
     )
 
     /** Mark the first-time hint as shown. */

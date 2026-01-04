@@ -26,7 +26,7 @@ data class TgMessage(
     val date: Long,
     val content: TgContent?,
     val replyToMessageId: Long? = null,
-    val forwardInfo: String? = null
+    val forwardInfo: String? = null,
 ) {
     /**
      * Alias for [messageId] for compatibility with existing code.

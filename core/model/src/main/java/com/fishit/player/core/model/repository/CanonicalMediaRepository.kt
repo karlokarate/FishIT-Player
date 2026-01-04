@@ -49,8 +49,8 @@ interface CanonicalMediaRepository {
      * @param source The source reference to add/update
      */
     suspend fun addOrUpdateSourceRef(
-            canonicalId: CanonicalMediaId,
-            source: MediaSourceRef,
+        canonicalId: CanonicalMediaId,
+        source: MediaSourceRef,
     )
 
     /**
@@ -81,9 +81,9 @@ interface CanonicalMediaRepository {
      * @return The media with all linked sources, or null if not found
      */
     suspend fun findByExternalId(
-            tmdbId: TmdbId? = null,
-            imdbId: String? = null,
-            tvdbId: String? = null,
+        tmdbId: TmdbId? = null,
+        imdbId: String? = null,
+        tvdbId: String? = null,
     ): CanonicalMediaWithSources?
 
     /**
@@ -97,9 +97,9 @@ interface CanonicalMediaRepository {
      * @return List of matching media with sources
      */
     suspend fun findByTitleAndYear(
-            canonicalTitle: String,
-            year: Int? = null,
-            kind: MediaKind? = null,
+        canonicalTitle: String,
+        year: Int? = null,
+        kind: MediaKind? = null,
     ): List<CanonicalMediaWithSources>
 
     /**
@@ -129,9 +129,9 @@ interface CanonicalMediaRepository {
      * @return Matching media with sources
      */
     suspend fun search(
-            query: String,
-            kind: MediaKind? = null,
-            limit: Int = 50,
+        query: String,
+        kind: MediaKind? = null,
+        limit: Int = 50,
     ): List<CanonicalMediaWithSources>
 
     // ========== Cross-Pipeline Resume ==========
@@ -144,8 +144,8 @@ interface CanonicalMediaRepository {
      * @return Resume info or null if no resume exists
      */
     suspend fun getCanonicalResume(
-            canonicalId: CanonicalMediaId,
-            profileId: Long,
+        canonicalId: CanonicalMediaId,
+        profileId: Long,
     ): CanonicalResumeInfo?
 
     /**
@@ -160,11 +160,11 @@ interface CanonicalMediaRepository {
      * @param sourceRef The source currently being played
      */
     suspend fun setCanonicalResume(
-            canonicalId: CanonicalMediaId,
-            profileId: Long,
-            positionMs: Long,
-            durationMs: Long,
-            sourceRef: MediaSourceRef,
+        canonicalId: CanonicalMediaId,
+        profileId: Long,
+        positionMs: Long,
+        durationMs: Long,
+        sourceRef: MediaSourceRef,
     )
 
     /**
@@ -174,8 +174,8 @@ interface CanonicalMediaRepository {
      * @param profileId The user profile ID
      */
     suspend fun markCompleted(
-            canonicalId: CanonicalMediaId,
-            profileId: Long,
+        canonicalId: CanonicalMediaId,
+        profileId: Long,
     )
 
     /**
@@ -185,8 +185,8 @@ interface CanonicalMediaRepository {
      * @param profileId The user profile ID
      */
     suspend fun clearCanonicalResume(
-            canonicalId: CanonicalMediaId,
-            profileId: Long,
+        canonicalId: CanonicalMediaId,
+        profileId: Long,
     )
 
     /**
@@ -199,8 +199,8 @@ interface CanonicalMediaRepository {
      * @return Media with resume info, sorted by last updated
      */
     suspend fun getResumeList(
-            profileId: Long,
-            limit: Int = 20,
+        profileId: Long,
+        limit: Int = 20,
     ): List<CanonicalMediaWithResume>
 
     // ========== TMDB Resolution Queries (per TMDB_ENRICHMENT_CONTRACT.md T-17) ==========
@@ -227,8 +227,8 @@ interface CanonicalMediaRepository {
      * @return Items eligible for TMDB search
      */
     suspend fun findCandidatesMissingTmdbRefEligible(
-            limit: Int,
-            now: Long,
+        limit: Int,
+        now: Long,
     ): List<CanonicalMediaId>
 
     /**
@@ -242,10 +242,10 @@ interface CanonicalMediaRepository {
      * @param resolvedAt Timestamp of resolution
      */
     suspend fun markTmdbDetailsApplied(
-            canonicalId: CanonicalMediaId,
-            tmdbId: TmdbId,
-            resolvedBy: TmdbResolvedBy,
-            resolvedAt: Long,
+        canonicalId: CanonicalMediaId,
+        tmdbId: TmdbId,
+        resolvedBy: TmdbResolvedBy,
+        resolvedAt: Long,
     )
 
     /**
@@ -259,10 +259,10 @@ interface CanonicalMediaRepository {
      * @param nextEligibleAt When the item can be retried
      */
     suspend fun markTmdbResolveAttemptFailed(
-            canonicalId: CanonicalMediaId,
-            reason: String,
-            attemptAt: Long,
-            nextEligibleAt: Long,
+        canonicalId: CanonicalMediaId,
+        reason: String,
+        attemptAt: Long,
+        nextEligibleAt: Long,
     )
 
     /**
@@ -276,10 +276,10 @@ interface CanonicalMediaRepository {
      * @param resolvedAt Timestamp of resolution
      */
     suspend fun markTmdbResolved(
-            canonicalId: CanonicalMediaId,
-            tmdbId: TmdbId,
-            resolvedBy: TmdbResolvedBy,
-            resolvedAt: Long,
+        canonicalId: CanonicalMediaId,
+        tmdbId: TmdbId,
+        resolvedBy: TmdbResolvedBy,
+        resolvedAt: Long,
     )
 
     /**
@@ -296,10 +296,10 @@ interface CanonicalMediaRepository {
      * @param resolvedAt Timestamp of enrichment
      */
     suspend fun updateTmdbEnriched(
-            canonicalId: CanonicalMediaId,
-            enriched: NormalizedMediaMetadata,
-            resolvedBy: TmdbResolvedBy,
-            resolvedAt: Long,
+        canonicalId: CanonicalMediaId,
+        enriched: NormalizedMediaMetadata,
+        resolvedBy: TmdbResolvedBy,
+        resolvedAt: Long,
     )
 
     // ========== Maintenance Operations ==========
@@ -325,25 +325,25 @@ interface CanonicalMediaRepository {
 
 /** Canonical media with all linked sources. */
 data class CanonicalMediaWithSources(
-        val canonicalId: CanonicalMediaId,
-        val canonicalTitle: String,
-        val mediaType: MediaType = MediaType.UNKNOWN,
-        val year: Int?,
-        val season: Int?,
-        val episode: Int?,
-        val tmdbId: TmdbId?,
-        val imdbId: String?,
-        val poster: ImageRef?,
-        val backdrop: ImageRef?,
-        val thumbnail: ImageRef?,
-        val plot: String?,
-        val rating: Double?,
-        val durationMs: Long?,
-        val genres: String?,
-        val director: String?,
-        val cast: String?,
-        val trailer: String?,
-        val sources: List<MediaSourceRef>,
+    val canonicalId: CanonicalMediaId,
+    val canonicalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
+    val year: Int?,
+    val season: Int?,
+    val episode: Int?,
+    val tmdbId: TmdbId?,
+    val imdbId: String?,
+    val poster: ImageRef?,
+    val backdrop: ImageRef?,
+    val thumbnail: ImageRef?,
+    val plot: String?,
+    val rating: Double?,
+    val durationMs: Long?,
+    val genres: String?,
+    val director: String?,
+    val cast: String?,
+    val trailer: String?,
+    val sources: List<MediaSourceRef>,
 ) {
     /** Best quality source (by priority) */
     val bestSource: MediaSourceRef?
@@ -371,22 +371,22 @@ data class CanonicalMediaWithSources(
  * 3. If different: calculate position = `progressPercent * newSourceDuration`
  */
 data class CanonicalResumeInfo(
-        val canonicalKey: CanonicalId,
-        /** Percentage position (0.0 - 1.0) - PRIMARY for cross-source resume */
-        val progressPercent: Float,
-        /** Position in ms from LAST source played (use only for same-source resume) */
-        val positionMs: Long,
-        /** Duration in ms from LAST source played */
-        val durationMs: Long,
-        /** Last pipeline type used */
-        val lastSourceType: String?,
-        /** Last source ID used (for same-source detection) */
-        val lastSourceId: PipelineItemId?,
-        /** Duration of last source in ms (for conversion calculations) */
-        val lastSourceDurationMs: Long?,
-        val isCompleted: Boolean,
-        val watchedCount: Int,
-        val updatedAt: Long,
+    val canonicalKey: CanonicalId,
+    /** Percentage position (0.0 - 1.0) - PRIMARY for cross-source resume */
+    val progressPercent: Float,
+    /** Position in ms from LAST source played (use only for same-source resume) */
+    val positionMs: Long,
+    /** Duration in ms from LAST source played */
+    val durationMs: Long,
+    /** Last pipeline type used */
+    val lastSourceType: String?,
+    /** Last source ID used (for same-source detection) */
+    val lastSourceId: PipelineItemId?,
+    /** Duration of last source in ms (for conversion calculations) */
+    val lastSourceDurationMs: Long?,
+    val isCompleted: Boolean,
+    val watchedCount: Int,
+    val updatedAt: Long,
 ) {
     /** Whether resume is significant (>2% and <95%) */
     val hasSignificantProgress: Boolean
@@ -401,21 +401,21 @@ data class CanonicalResumeInfo(
      * resume
      */
     fun calculatePositionForSource(
-            sourceId: PipelineItemId,
-            sourceDurationMs: Long,
+        sourceId: PipelineItemId,
+        sourceDurationMs: Long,
     ): ResumePosition =
-            if (sourceId == lastSourceId && lastSourceDurationMs == sourceDurationMs) {
-                // Same source with same duration - use exact position
-                ResumePosition(positionMs = positionMs, isExact = true, note = null)
-            } else {
-                // Different source or different duration - use percentage
-                val calculatedPosition = (progressPercent * sourceDurationMs).toLong()
-                ResumePosition(
-                        positionMs = calculatedPosition,
-                        isExact = false,
-                        note = "Resume approximated from ${formatPercent(progressPercent)}",
-                )
-            }
+        if (sourceId == lastSourceId && lastSourceDurationMs == sourceDurationMs) {
+            // Same source with same duration - use exact position
+            ResumePosition(positionMs = positionMs, isExact = true, note = null)
+        } else {
+            // Different source or different duration - use percentage
+            val calculatedPosition = (progressPercent * sourceDurationMs).toLong()
+            ResumePosition(
+                positionMs = calculatedPosition,
+                isExact = false,
+                note = "Resume approximated from ${formatPercent(progressPercent)}",
+            )
+        }
 
     /** Format remaining time as string (based on last source) */
     fun remainingTimeLabel(): String {
@@ -439,25 +439,25 @@ data class CanonicalResumeInfo(
  * @property note Optional UI note explaining approximation
  */
 data class ResumePosition(
-        val positionMs: Long,
-        val isExact: Boolean,
-        val note: String?,
+    val positionMs: Long,
+    val isExact: Boolean,
+    val note: String?,
 )
 
 /** Canonical media with resume information. */
 data class CanonicalMediaWithResume(
-        val media: CanonicalMediaWithSources,
-        val resume: CanonicalResumeInfo,
+    val media: CanonicalMediaWithSources,
+    val resume: CanonicalResumeInfo,
 )
 
 /** Statistics about the canonical media database. */
 data class CanonicalMediaStats(
-        val totalCanonicalMedia: Long,
-        val totalSourceRefs: Long,
-        val movieCount: Long,
-        val episodeCount: Long,
-        val withTmdbId: Long,
-        val withMultipleSources: Long,
-        val orphanedCount: Long,
-        val sourcesByType: Map<String, Long>,
+    val totalCanonicalMedia: Long,
+    val totalSourceRefs: Long,
+    val movieCount: Long,
+    val episodeCount: Long,
+    val withTmdbId: Long,
+    val withMultipleSources: Long,
+    val orphanedCount: Long,
+    val sourcesByType: Map<String, Long>,
 )

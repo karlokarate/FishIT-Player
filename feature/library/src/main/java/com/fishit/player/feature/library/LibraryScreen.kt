@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,10 +47,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryMediaItem
+import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.MediaType
 
 /**
  * Library Screen - Browse VOD and Series content.
@@ -70,7 +69,7 @@ import com.fishit.player.core.library.domain.LibraryMediaItem
 fun LibraryScreen(
     onItemClick: (LibraryMediaItem) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: LibraryViewModel = hiltViewModel()
+    viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -84,15 +83,16 @@ fun LibraryScreen(
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         }
                     }
-                }
+                },
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             // Search bar (when active)
             if (state.isSearchActive) {
@@ -100,24 +100,24 @@ fun LibraryScreen(
                     query = state.searchQuery,
                     onQueryChange = { viewModel.search(it) },
                     onClose = { viewModel.cancelSearch() },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             } else {
                 // Tabs
                 TabRow(
-                    selectedTabIndex = if (state.currentTab == LibraryTab.VOD) 0 else 1
+                    selectedTabIndex = if (state.currentTab == LibraryTab.VOD) 0 else 1,
                 ) {
                     Tab(
                         selected = state.currentTab == LibraryTab.VOD,
                         onClick = { viewModel.selectTab(LibraryTab.VOD) },
                         text = { Text("Movies") },
-                        icon = { Icon(Icons.Default.Theaters, contentDescription = null) }
+                        icon = { Icon(Icons.Default.Theaters, contentDescription = null) },
                     )
                     Tab(
                         selected = state.currentTab == LibraryTab.SERIES,
                         onClick = { viewModel.selectTab(LibraryTab.SERIES) },
                         text = { Text("Series") },
-                        icon = { Icon(Icons.Default.PlayCircle, contentDescription = null) }
+                        icon = { Icon(Icons.Default.PlayCircle, contentDescription = null) },
                     )
                 }
 
@@ -127,7 +127,7 @@ fun LibraryScreen(
                         categories = state.currentCategories,
                         selectedCategory = state.currentSelectedCategory,
                         onCategorySelected = { viewModel.selectCategory(it) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
             }
@@ -137,7 +137,7 @@ fun LibraryScreen(
                 state.isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -146,7 +146,7 @@ fun LibraryScreen(
                 state.currentItems.isEmpty() -> {
                     EmptyState(
                         isSearchActive = state.isSearchActive,
-                        currentTab = state.currentTab
+                        currentTab = state.currentTab,
                     )
                 }
 
@@ -154,7 +154,7 @@ fun LibraryScreen(
                     MediaGrid(
                         items = state.currentItems,
                         onItemClick = onItemClick,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
@@ -167,7 +167,7 @@ private fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = query,
@@ -180,7 +180,7 @@ private fun SearchBar(
                 Icon(Icons.Default.Close, contentDescription = "Close search")
             }
         },
-        singleLine = true
+        singleLine = true,
     )
 }
 
@@ -189,7 +189,7 @@ private fun CategoryFilterRow(
     categories: List<LibraryCategory>,
     selectedCategory: String?,
     onCategorySelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedCategoryName = categories.find { it.id == selectedCategory }?.name ?: "All"
@@ -197,30 +197,30 @@ private fun CategoryFilterRow(
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = "Category:",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
 
         Box {
             FilterChip(
                 selected = selectedCategory != null,
                 onClick = { expanded = true },
-                label = { Text(selectedCategoryName) }
+                label = { Text(selectedCategoryName) },
             )
 
             DropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
             ) {
                 DropdownMenuItem(
                     text = { Text("All") },
                     onClick = {
                         onCategorySelected(null)
                         expanded = false
-                    }
+                    },
                 )
                 categories.forEach { category ->
                     DropdownMenuItem(
@@ -228,7 +228,7 @@ private fun CategoryFilterRow(
                         onClick = {
                             onCategorySelected(category.id)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }
@@ -240,19 +240,19 @@ private fun CategoryFilterRow(
 private fun MediaGrid(
     items: List<LibraryMediaItem>,
     onItemClick: (LibraryMediaItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 120.dp),
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(items, key = { it.id }) { item ->
             MediaCard(
                 item = item,
-                onClick = { onItemClick(item) }
+                onClick = { onItemClick(item) },
             )
         }
     }
@@ -263,45 +263,48 @@ private fun MediaGrid(
 private fun MediaCard(
     item: LibraryMediaItem,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         onClick = onClick,
         modifier = modifier.width(120.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column {
             // Poster
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
             ) {
-                val posterModel = when (val poster = item.poster) {
-                    is ImageRef.Http -> poster.url
-                    is ImageRef.LocalFile -> poster.path
-                    else -> null
-                }
+                val posterModel =
+                    when (val poster = item.poster) {
+                        is ImageRef.Http -> poster.url
+                        is ImageRef.LocalFile -> poster.path
+                        else -> null
+                    }
                 if (posterModel != null) {
                     AsyncImage(
                         model = posterModel,
                         contentDescription = item.title,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
                 } else {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = if (item.mediaType == MediaType.MOVIE) {
-                                Icons.Default.Theaters
-                            } else {
-                                Icons.Default.PlayCircle
-                            },
+                            imageVector =
+                                if (item.mediaType == MediaType.MOVIE) {
+                                    Icons.Default.Theaters
+                                } else {
+                                    Icons.Default.PlayCircle
+                                },
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -312,29 +315,30 @@ private fun MediaCard(
                         text = String.format("%.1f", rating),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp),
                     )
                 }
             }
 
             // Title
             Column(
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             ) {
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 item.year?.let { year ->
                     Text(
                         text = year.toString(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -346,35 +350,36 @@ private fun MediaCard(
 private fun EmptyState(
     isSearchActive: Boolean,
     currentTab: LibraryTab,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
                 imageVector = if (currentTab == LibraryTab.VOD) Icons.Default.Theaters else Icons.Default.PlayCircle,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = if (isSearchActive) {
-                    "No results found"
-                } else {
-                    "No ${if (currentTab == LibraryTab.VOD) "movies" else "series"} available"
-                },
+                text =
+                    if (isSearchActive) {
+                        "No results found"
+                    } else {
+                        "No ${if (currentTab == LibraryTab.VOD) "movies" else "series"} available"
+                    },
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (!isSearchActive) {
                 Text(
                     text = "Add an Xtream source to see content",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

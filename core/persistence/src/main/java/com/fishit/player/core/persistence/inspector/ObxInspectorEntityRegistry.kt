@@ -3,8 +3,8 @@ package com.fishit.player.core.persistence.inspector
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
 import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark
 import com.fishit.player.core.persistence.obx.ObxCategory
-import com.fishit.player.core.persistence.obx.ObxEpisode
 import com.fishit.player.core.persistence.obx.ObxEpgNowNext
+import com.fishit.player.core.persistence.obx.ObxEpisode
 import com.fishit.player.core.persistence.obx.ObxIndexGenre
 import com.fishit.player.core.persistence.obx.ObxIndexLang
 import com.fishit.player.core.persistence.obx.ObxIndexProvider
@@ -29,7 +29,6 @@ import com.fishit.player.core.persistence.obx.ObxVod
  * instances is awkward and not worth the complexity for a debug tool.
  */
 internal object ObxInspectorEntityRegistry {
-
     data class EntitySpec<T : Any>(
         val id: String,
         val displayName: String,
@@ -45,7 +44,6 @@ internal object ObxInspectorEntityRegistry {
             EntitySpec("ObxSeries", "Series", ObxSeries::class.java),
             EntitySpec("ObxEpisode", "Episode", ObxEpisode::class.java),
             EntitySpec("ObxEpgNowNext", "EPG Now/Next", ObxEpgNowNext::class.java),
-
             EntitySpec("ObxProfile", "Profile", ObxProfile::class.java),
             EntitySpec("ObxProfilePermissions", "Profile Permissions", ObxProfilePermissions::class.java),
             EntitySpec("ObxKidContentAllow", "Kid Allow: Content", ObxKidContentAllow::class.java),
@@ -53,14 +51,12 @@ internal object ObxInspectorEntityRegistry {
             EntitySpec("ObxKidContentBlock", "Kid Block: Content", ObxKidContentBlock::class.java),
             EntitySpec("ObxScreenTimeEntry", "Screen Time", ObxScreenTimeEntry::class.java),
             EntitySpec("ObxTelegramMessage", "Telegram Message", ObxTelegramMessage::class.java),
-
             // Aggregated index tables
             EntitySpec("ObxIndexProvider", "Index: Provider", ObxIndexProvider::class.java),
             EntitySpec("ObxIndexYear", "Index: Year", ObxIndexYear::class.java),
             EntitySpec("ObxIndexGenre", "Index: Genre", ObxIndexGenre::class.java),
             EntitySpec("ObxIndexLang", "Index: Language", ObxIndexLang::class.java),
             EntitySpec("ObxIndexQuality", "Index: Quality", ObxIndexQuality::class.java),
-
             // Canonical identity (v2 SSOT)
             EntitySpec("ObxCanonicalMedia", "Canonical Media", ObxCanonicalMedia::class.java),
             EntitySpec("ObxMediaSourceRef", "Canonical Source Ref", ObxMediaSourceRef::class.java),

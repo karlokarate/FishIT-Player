@@ -3,7 +3,6 @@ package com.fishit.player.feature.telegram
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
-import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -19,7 +18,6 @@ import org.junit.Test
  * InternalPlayerSession is a final class and cannot be mocked.
  */
 class TelegramTapToPlayUseCaseTest {
-
     @Test
     fun `buildPlaybackContext converts Telegram item with correct sourceType`() {
         // Given
@@ -31,7 +29,7 @@ class TelegramTapToPlayUseCaseTest {
         // Then
         assertEquals(
             com.fishit.player.core.playermodel.SourceType.TELEGRAM,
-            context.sourceType
+            context.sourceType,
         )
         assertEquals("msg:123:456", context.canonicalId)
         assertEquals("Test Video", context.title)
@@ -48,23 +46,23 @@ class TelegramTapToPlayUseCaseTest {
 
         // Then
         val extras = context.extras
-        
+
         // Should contain chatId, messageId
         assertEquals("123", extras["chatId"])
         assertEquals("456", extras["messageId"])
-        
+
         // Should NOT contain secrets like auth tokens
         assertEquals(false, extras.containsKey("authToken"))
         assertEquals(false, extras.containsKey("apiHash"))
         assertEquals(false, extras.containsKey("apiId"))
         assertEquals(false, extras.containsKey("phoneNumber"))
-        
+
         // Should NOT contain URI-like strings
         extras.values.forEach { value ->
             assertEquals(
                 "Extras should not contain URI-like strings",
                 false,
-                value.startsWith("http://") || value.startsWith("https://") || value.startsWith("tg://")
+                value.startsWith("http://") || value.startsWith("https://") || value.startsWith("tg://"),
             )
         }
     }
@@ -97,10 +95,11 @@ class TelegramTapToPlayUseCaseTest {
     @Test
     fun `buildPlaybackContext extracts chatId and messageId`() {
         // Given
-        val telegramItem = createTestTelegramItem().copy(
-            chatId = 9876L,
-            messageId = 5432L
-        )
+        val telegramItem =
+            createTestTelegramItem().copy(
+                chatId = 9876L,
+                messageId = 5432L,
+            )
 
         // When
         val context = buildPlaybackContext(telegramItem)
@@ -113,10 +112,11 @@ class TelegramTapToPlayUseCaseTest {
     @Test
     fun `buildPlaybackContext handles null chatId and messageId`() {
         // Given
-        val telegramItem = createTestTelegramItem().copy(
-            chatId = null,
-            messageId = null
-        )
+        val telegramItem =
+            createTestTelegramItem().copy(
+                chatId = null,
+                messageId = null,
+            )
 
         // When
         val context = buildPlaybackContext(telegramItem)
@@ -137,7 +137,7 @@ class TelegramTapToPlayUseCaseTest {
         // Then - canonicalId and sourceKey should use stable mediaId
         assertEquals("msg:123:456", context.canonicalId)
         assertEquals("msg:123:456", context.sourceKey ?: "")
-        
+
         // Should NOT be URI-like strings
         assertEquals(false, context.canonicalId.startsWith("http://"))
         assertEquals(false, context.canonicalId.startsWith("https://"))
@@ -155,12 +155,12 @@ class TelegramTapToPlayUseCaseTest {
         // Then - must use SourceType.TELEGRAM
         assertEquals(
             com.fishit.player.core.playermodel.SourceType.TELEGRAM,
-            context.sourceType
+            context.sourceType,
         )
     }
 
-    private fun createTestTelegramItem(): TelegramMediaItem {
-        return TelegramMediaItem(
+    private fun createTestTelegramItem(): TelegramMediaItem =
+        TelegramMediaItem(
             mediaId = "msg:123:456",
             title = "Test Video",
             sourceLabel = "Telegram Chat",
@@ -170,17 +170,17 @@ class TelegramTapToPlayUseCaseTest {
             chatId = 123L,
             messageId = 456L,
         )
-    }
 
     /**
      * Helper to build PlaybackContext for testing.
      * Mirrors the logic in TelegramTapToPlayUseCase.buildPlaybackContext.
      */
     private fun buildPlaybackContext(item: TelegramMediaItem): PlaybackContext {
-        val extras = buildMap<String, String> {
-            item.chatId?.let { put("chatId", it.toString()) }
-            item.messageId?.let { put("messageId", it.toString()) }
-        }
+        val extras =
+            buildMap<String, String> {
+                item.chatId?.let { put("chatId", it.toString()) }
+                item.messageId?.let { put("messageId", it.toString()) }
+            }
 
         return PlaybackContext(
             canonicalId = item.mediaId,
@@ -196,5 +196,3 @@ class TelegramTapToPlayUseCaseTest {
         )
     }
 }
-
-

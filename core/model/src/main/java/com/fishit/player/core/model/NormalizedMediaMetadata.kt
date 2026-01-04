@@ -36,71 +36,71 @@ package com.fishit.player.core.model
  * loads)
  */
 data class NormalizedMediaMetadata(
-        val canonicalTitle: String,
-        val mediaType: MediaType = MediaType.UNKNOWN,
-        val year: Int? = null,
-        val season: Int? = null,
-        val episode: Int? = null,
-        /**
-         * Typed TMDB reference from resolver or trusted upstream source.
-         *
-         * Use directly for TMDB API calls:
-         * - MOVIE → GET /movie/{id}
-         * - TV → GET /tv/{id}
-         * - Episode: GET /tv/{id}/season/{season}/episode/{episode}
-         */
-        val tmdb: TmdbRef? = null,
-        val externalIds: ExternalIds = ExternalIds(),
-        // === Imaging Fields (v2) ===
-        val poster: ImageRef? = null,
-        val backdrop: ImageRef? = null,
-        val thumbnail: ImageRef? = null,
-        /**
-         * Minithumbnail (inline JPEG bytes) for instant blur placeholder before full thumbnail
-         * loads
-         */
-        val placeholderThumbnail: ImageRef? = null,
-        // === Rich Metadata Fields (v2 - Pipeline Passthrough) ===
-        /**
-         * Plot/description passed through from source.
-         *
-         * May be enriched/replaced by TMDB resolver.
-         */
-        val plot: String? = null,
-        /**
-         * Comma-separated genre list passed through from source.
-         *
-         * May be enriched/replaced by TMDB resolver.
-         */
-        val genres: String? = null,
-        /**
-         * Director name(s) passed through from source.
-         *
-         * May be enriched/replaced by TMDB resolver.
-         */
-        val director: String? = null,
-        /**
-         * Comma-separated cast list passed through from source.
-         *
-         * May be enriched/replaced by TMDB resolver.
-         */
-        val cast: String? = null,
-        /**
-         * Rating (0.0-10.0 scale) passed through from source.
-         *
-         * Xtream provides this from TMDB scraping. May be updated by TMDB resolver.
-         */
-        val rating: Double? = null,
-        /**
-         * Runtime in milliseconds passed through from source.
-         *
-         * Useful for display before TMDB enrichment.
-         */
-        val durationMs: Long? = null,
-        /**
-         * Trailer URL passed through from source.
-         *
-         * May be a YouTube URL or video ID. May be enriched by TMDB resolver.
-         */
-        val trailer: String? = null,
+    val canonicalTitle: String,
+    val mediaType: MediaType = MediaType.UNKNOWN,
+    val year: Int? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    /**
+     * Typed TMDB reference from resolver or trusted upstream source.
+     *
+     * Use directly for TMDB API calls:
+     * - MOVIE → GET /movie/{id}
+     * - TV → GET /tv/{id}
+     * - Episode: GET /tv/{id}/season/{season}/episode/{episode}
+     */
+    val tmdb: TmdbRef? = null,
+    val externalIds: ExternalIds = ExternalIds(),
+    // === Imaging Fields (v2) ===
+    val poster: ImageRef? = null,
+    val backdrop: ImageRef? = null,
+    val thumbnail: ImageRef? = null,
+    /**
+     * Minithumbnail (inline JPEG bytes) for instant blur placeholder before full thumbnail
+     * loads
+     */
+    val placeholderThumbnail: ImageRef? = null,
+    // === Rich Metadata Fields (v2 - Pipeline Passthrough) ===
+    /**
+     * Plot/description passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val plot: String? = null,
+    /**
+     * Comma-separated genre list passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val genres: String? = null,
+    /**
+     * Director name(s) passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val director: String? = null,
+    /**
+     * Comma-separated cast list passed through from source.
+     *
+     * May be enriched/replaced by TMDB resolver.
+     */
+    val cast: String? = null,
+    /**
+     * Rating (0.0-10.0 scale) passed through from source.
+     *
+     * Xtream provides this from TMDB scraping. May be updated by TMDB resolver.
+     */
+    val rating: Double? = null,
+    /**
+     * Runtime in milliseconds passed through from source.
+     *
+     * Useful for display before TMDB enrichment.
+     */
+    val durationMs: Long? = null,
+    /**
+     * Trailer URL passed through from source.
+     *
+     * May be a YouTube URL or video ID. May be enriched by TMDB resolver.
+     */
+    val trailer: String? = null,
 )

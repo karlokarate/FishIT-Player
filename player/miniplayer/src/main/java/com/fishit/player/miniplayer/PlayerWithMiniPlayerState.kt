@@ -19,10 +19,10 @@ import kotlinx.coroutines.flow.stateIn
  * layers that need to coordinate both.
  */
 data class PlayerWithMiniPlayerState(
-        /** Full player state from InternalPlayerSession */
-        val playerState: InternalPlayerState,
-        /** MiniPlayer overlay state */
-        val miniPlayerState: MiniPlayerState
+    /** Full player state from InternalPlayerSession */
+    val playerState: InternalPlayerState,
+    /** MiniPlayer overlay state */
+    val miniPlayerState: MiniPlayerState,
 ) {
     /** Whether the MiniPlayer overlay is currently visible */
     val isMiniPlayerVisible: Boolean
@@ -38,10 +38,10 @@ data class PlayerWithMiniPlayerState(
 
     companion object {
         val INITIAL =
-                PlayerWithMiniPlayerState(
-                        playerState = InternalPlayerState.INITIAL,
-                        miniPlayerState = MiniPlayerState.INITIAL
-                )
+            PlayerWithMiniPlayerState(
+                playerState = InternalPlayerState.INITIAL,
+                miniPlayerState = MiniPlayerState.INITIAL,
+            )
     }
 }
 
@@ -55,15 +55,13 @@ data class PlayerWithMiniPlayerState(
  * @return Combined StateFlow
  */
 fun InternalPlayerSession.withMiniPlayer(
-        miniPlayerManager: MiniPlayerManager,
-        scope: CoroutineScope
-): StateFlow<PlayerWithMiniPlayerState> {
-    return combine(this.state, miniPlayerManager.state) { playerState, miniState ->
-                PlayerWithMiniPlayerState(playerState, miniState)
-            }
-            .stateIn(
-                    scope = scope,
-                    started = SharingStarted.WhileSubscribed(5000),
-                    initialValue = PlayerWithMiniPlayerState.INITIAL
-            )
-}
+    miniPlayerManager: MiniPlayerManager,
+    scope: CoroutineScope,
+): StateFlow<PlayerWithMiniPlayerState> =
+    combine(this.state, miniPlayerManager.state) { playerState, miniState ->
+        PlayerWithMiniPlayerState(playerState, miniState)
+    }.stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = PlayerWithMiniPlayerState.INITIAL,
+    )

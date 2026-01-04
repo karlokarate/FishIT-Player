@@ -13,20 +13,19 @@ import org.junit.Test
  * logic and MIME type detection.
  */
 class ImageRefFetcherTest {
-
     @Test
     fun `guessMimeType returns correct type for common extensions`() {
         val mimeTypes =
-                mapOf(
-                        "jpg" to "image/jpeg",
-                        "jpeg" to "image/jpeg",
-                        "png" to "image/png",
-                        "gif" to "image/gif",
-                        "webp" to "image/webp",
-                        "bmp" to "image/bmp",
-                        "heic" to "image/heic",
-                        "avif" to "image/avif",
-                )
+            mapOf(
+                "jpg" to "image/jpeg",
+                "jpeg" to "image/jpeg",
+                "png" to "image/png",
+                "gif" to "image/gif",
+                "webp" to "image/webp",
+                "bmp" to "image/bmp",
+                "heic" to "image/heic",
+                "avif" to "image/avif",
+            )
 
         mimeTypes.forEach { (ext, expected) ->
             val actual = guessMimeTypeTestHelper("/path/to/image.$ext")
@@ -45,12 +44,12 @@ class ImageRefFetcherTest {
     fun `ImageRef Http preserves url and headers`() {
         val headers = mapOf("Authorization" to "Bearer token")
         val ref =
-                ImageRef.Http(
-                        url = "https://example.com/image.jpg",
-                        headers = headers,
-                        preferredWidth = 200,
-                        preferredHeight = 300,
-                )
+            ImageRef.Http(
+                url = "https://example.com/image.jpg",
+                headers = headers,
+                preferredWidth = 200,
+                preferredHeight = 300,
+            )
 
         assertEquals("https://example.com/image.jpg", ref.url)
         assertEquals(headers, ref.headers)
@@ -61,13 +60,13 @@ class ImageRefFetcherTest {
     @Test
     fun `ImageRef TelegramThumb preserves all fields`() {
         val ref =
-                ImageRef.TelegramThumb(
-                        remoteId = "AgACAgIAAxkBAAI12345",
-                        chatId = 100L,
-                        messageId = 200L,
-                        preferredWidth = 100,
-                        preferredHeight = 100,
-                )
+            ImageRef.TelegramThumb(
+                remoteId = "AgACAgIAAxkBAAI12345",
+                chatId = 100L,
+                messageId = 200L,
+                preferredWidth = 100,
+                preferredHeight = 100,
+            )
 
         assertEquals("AgACAgIAAxkBAAI12345", ref.remoteId)
         assertEquals(100L, ref.chatId)
@@ -77,11 +76,11 @@ class ImageRefFetcherTest {
     @Test
     fun `ImageRef LocalFile preserves path`() {
         val ref =
-                ImageRef.LocalFile(
-                        path = "/data/local/tmp/image.png",
-                        preferredWidth = 150,
-                        preferredHeight = 150,
-                )
+            ImageRef.LocalFile(
+                path = "/data/local/tmp/image.png",
+                preferredWidth = 150,
+                preferredHeight = 150,
+            )
 
         assertEquals("/data/local/tmp/image.png", ref.path)
         assertEquals(150, ref.preferredWidth)
@@ -141,12 +140,12 @@ class ImageRefFetcherTest {
     fun `ImageRef InlineBytes preserves bytes and mimeType`() {
         val testBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte()) // JPEG magic bytes
         val ref =
-                ImageRef.InlineBytes(
-                        bytes = testBytes,
-                        mimeType = "image/jpeg",
-                        preferredWidth = 40,
-                        preferredHeight = 40,
-                )
+            ImageRef.InlineBytes(
+                bytes = testBytes,
+                mimeType = "image/jpeg",
+                preferredWidth = 40,
+                preferredHeight = 40,
+            )
 
         assertEquals(3, ref.bytes.size)
         assertEquals("image/jpeg", ref.mimeType)
@@ -195,12 +194,11 @@ class ImageRefFetcherTest {
     }
 
     /** Helper to test keyer (mirrors ImageRefKeyer.key logic). */
-    private fun keyerTestHelper(ref: ImageRef): String {
-        return when (ref) {
+    private fun keyerTestHelper(ref: ImageRef): String =
+        when (ref) {
             is ImageRef.Http -> ref.url
             is ImageRef.TelegramThumb -> "tg:${ref.remoteId}"
             is ImageRef.LocalFile -> "file:${ref.path}"
             is ImageRef.InlineBytes -> "inline:${ref.bytes.contentHashCode()}"
         }
-    }
 }

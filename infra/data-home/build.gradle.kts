@@ -26,10 +26,10 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
-    implementation(project(":core:persistence"))  // For ObjectBox canonical media queries
+    implementation(project(":core:persistence")) // For ObjectBox canonical media queries
     implementation(project(":infra:logging"))
     implementation(project(":core:home-domain"))
-    
+
     // Data layer dependencies
     implementation(project(":infra:data-telegram"))
     implementation(project(":infra:data-xtream"))

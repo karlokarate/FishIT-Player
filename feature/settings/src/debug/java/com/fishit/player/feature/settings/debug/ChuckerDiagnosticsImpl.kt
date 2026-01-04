@@ -12,23 +12,23 @@ import javax.inject.Singleton
  * Opens the Chucker HTTP Inspector UI which shows all captured HTTP requests.
  */
 @Singleton
-class ChuckerDiagnosticsImpl @Inject constructor() : ChuckerDiagnostics {
+class ChuckerDiagnosticsImpl
+    @Inject
+    constructor() : ChuckerDiagnostics {
+        override val isAvailable: Boolean = true
 
-    override val isAvailable: Boolean = true
+        override fun openChuckerUi(context: Context): Boolean =
+            try {
+                val intent = Chucker.getLaunchIntent(context)
+                context.startActivity(intent)
+                UnifiedLog.i(TAG) { "Opened Chucker HTTP Inspector UI" }
+                true
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "Failed to open Chucker UI: ${e.message}" }
+                false
+            }
 
-    override fun openChuckerUi(context: Context): Boolean {
-        return try {
-            val intent = Chucker.getLaunchIntent(context)
-            context.startActivity(intent)
-            UnifiedLog.i(TAG) { "Opened Chucker HTTP Inspector UI" }
-            true
-        } catch (e: Exception) {
-            UnifiedLog.w(TAG) { "Failed to open Chucker UI: ${e.message}" }
-            false
+        private companion object {
+            private const val TAG = "ChuckerDiagnostics"
         }
     }
-
-    private companion object {
-        private const val TAG = "ChuckerDiagnostics"
-    }
-}
