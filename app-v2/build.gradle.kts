@@ -58,6 +58,13 @@ android {
                 ?: ""
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
 
+        // ⭐ NEW: Compile-time gating for debug tools
+        // These flags control whether LeakCanary and Chucker are included in the build
+        // - debug: Both tools enabled for memory leak detection and network inspection
+        // - release: Both tools completely removed (no stubs, no imports, no UI)
+        buildConfigField("boolean", "INCLUDE_LEAKCANARY", "true")
+        buildConfigField("boolean", "INCLUDE_CHUCKER", "true")
+
         // ABI configuration is handled via splits when useSplits=true
         // Otherwise, use NDK abiFilters for single-ABI builds
     }
@@ -115,10 +122,18 @@ android {
             } else {
                 println("⚠️  V2 Release will be UNSIGNED (no keystore found).")
             }
+
+            // Override: Debug tools MUST be disabled in release builds
+            buildConfigField("boolean", "INCLUDE_LEAKCANARY", "false")
+            buildConfigField("boolean", "INCLUDE_CHUCKER", "false")
         }
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
+
+            // Explicit: Debug tools enabled
+            buildConfigField("boolean", "INCLUDE_LEAKCANARY", "true")
+            buildConfigField("boolean", "INCLUDE_CHUCKER", "true")
         }
     }
 
@@ -252,6 +267,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 
     // LeakCanary (debug-only memory leak detection)
+    // Controlled by BuildConfig.INCLUDE_LEAKCANARY - will be removed in future phases
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 }
 
