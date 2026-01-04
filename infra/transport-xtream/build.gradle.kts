@@ -47,9 +47,11 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
 
-    // Chucker HTTP Inspector (debug builds only)
+    // ========== COMPILE-TIME GATING: Chucker ==========
+    // Chucker is ONLY included in debug builds via :core:debug-settings.
+    // Release builds have ZERO Chucker references - DebugInterceptorModule provides no-op interceptor.
+    // NOTE: No chucker-noop needed! The release DebugInterceptorModule already provides a no-op.
     debugImplementation(libs.chucker)
-    releaseImplementation(libs.chucker.noop)
 
     // Testing
     testImplementation("junit:junit:4.13.2")
