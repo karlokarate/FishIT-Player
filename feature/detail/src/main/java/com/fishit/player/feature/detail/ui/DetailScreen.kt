@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -287,11 +289,94 @@ private fun DetailContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Series episodes (AFTER action buttons)
-            if (state.isSeries && state.displayedEpisodes.isNotEmpty()) {
-                DetailSeriesSectionEpisodeList(
-                    episodes = state.displayedEpisodes,
-                    onEpisodeClick = onEpisodeClick,
-                )
+            if (state.isSeries) {
+                if (state.episodesLoading) {
+                    // Show loading indicator
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Loading episodes...",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                } else if (state.displayedEpisodes.isNotEmpty()) {
+                    DetailSeriesSectionEpisodeList(
+                        episodes = state.displayedEpisodes,
+                        onEpisodeClick = onEpisodeClick,
+                    )
+                } else {
+                    // DEBUG: Show why no episodes are displayed
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "🐛 DEBUG INFO:",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                "Seasons loaded: ${state.seasons}",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                            Text(
+                                "Selected season: ${state.selectedSeason}",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                            Text(
+                                "Total episodes count: ${state.episodes.size}",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                            Text(
+                                "Displayed episodes count: ${state.displayedEpisodes.size}",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+
+                            if (state.episodes.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "First episode season number: ${state.episodes.first().season}",
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                                Text(
+                                    "First episode title: ${state.episodes.first().title}",
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+
+                                // Show season distribution
+                                val seasonDistribution = state.episodes.groupingBy { it.season }.eachCount()
+                                Text(
+                                    "Episodes per season: $seasonDistribution",
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Filter condition: selectedSeason=${state.selectedSeason}, episodes filtered by season=${state.selectedSeason}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 

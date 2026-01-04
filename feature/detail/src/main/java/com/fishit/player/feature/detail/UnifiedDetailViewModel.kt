@@ -457,7 +457,8 @@ class UnifiedDetailViewModel
 
                 // Load seasons
                 loadSeriesSeasonsUseCase.ensureSeasonsLoaded(seriesId)
-                loadSeriesSeasonsUseCase.observeSeasons(seriesId)
+                loadSeriesSeasonsUseCase
+                    .observeSeasons(seriesId)
                     .take(1)
                     .cancellable()
                     .onEach { seasonItems ->
@@ -479,8 +480,7 @@ class UnifiedDetailViewModel
                         if (firstSeason != null) {
                             loadEpisodesForSeason(seriesId, firstSeason)
                         }
-                    }
-                    .launchIn(viewModelScope)
+                    }.launchIn(viewModelScope)
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, e) { "Failed to load series details for seriesId=$seriesId" }
                 _state.update { it.copy(error = "Staffeln konnten nicht geladen werden", seasons = emptyList()) }
@@ -537,7 +537,8 @@ class UnifiedDetailViewModel
                 _state.update { it.copy(episodesLoading = true) }
 
                 loadSeasonEpisodesUseCase.ensureEpisodesLoaded(seriesId, seasonNumber)
-                loadSeasonEpisodesUseCase.observeEpisodes(seriesId, seasonNumber)
+                loadSeasonEpisodesUseCase
+                    .observeEpisodes(seriesId, seasonNumber)
                     .take(1)
                     .cancellable()
                     .onEach { episodeItems ->
@@ -553,8 +554,7 @@ class UnifiedDetailViewModel
                                 episodesLoading = false,
                             )
                         }
-                    }
-                    .launchIn(viewModelScope)
+                    }.launchIn(viewModelScope)
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, e) { "Failed to load episodes for seriesId=$seriesId, season=$seasonNumber" }
                 _state.update { it.copy(episodesLoading = false, error = "Episoden konnten nicht geladen werden") }
