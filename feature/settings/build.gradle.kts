@@ -6,12 +6,24 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+// Read debug tool flags from root project properties (passed from app-v2 via CI)
+// Default: true for debug builds (tools available), but can be disabled via -PincludeChucker=false
+val includeChucker = project.findProperty("includeChucker")?.toString()?.toBoolean() ?: true
+val includeLeakCanary = project.findProperty("includeLeakCanary")?.toString()?.toBoolean() ?: true
+
 android {
     namespace = "com.fishit.player.feature.settings"
     compileSdk = 35
 
     defaultConfig {
         minSdk = 24
+
+        // ⭐ Compile-time gating for debug tools (Issue #564)
+        // These flags control whether the UI shows debug tool sections.
+        // The actual tool dependencies are still controlled by debugImplementation,
+        // but the UI will hide sections when tools are disabled via Gradle properties.
+        buildConfigField("boolean", "INCLUDE_CHUCKER", includeChucker.toString())
+        buildConfigField("boolean", "INCLUDE_LEAKCANARY", includeLeakCanary.toString())
     }
 
     compileOptions {
@@ -25,6 +37,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

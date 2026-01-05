@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import com.fishit.player.feature.settings.BuildConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,12 +42,16 @@ import javax.inject.Singleton
  * - Summary of detected leaks
  * - Detailed status with noise control
  * - Path to latest heap dump (if available)
+ *
+ * **Issue #564 Compliance:**
+ * - [isAvailable] checks BuildConfig.INCLUDE_LEAKCANARY which can be disabled via Gradle properties
+ * - When disabled, the UI will not show LeakCanary-related options
  */
 @Singleton
 class LeakDiagnosticsImpl
     @Inject
     constructor() : LeakDiagnostics {
-        override val isAvailable: Boolean = true
+        override val isAvailable: Boolean = BuildConfig.INCLUDE_LEAKCANARY
 
         override fun openLeakUi(context: Context): Boolean =
             try {
