@@ -3,11 +3,11 @@ package com.fishit.player.v2.debug
 /**
  * No-op stub for release builds.
  *
- * LeakCanary is not included in release builds, so this provides
- * empty implementations to allow shared code to compile.
+ * Debug tools (LeakCanary, etc.) are not included in release builds,
+ * so this provides empty implementations to allow shared code to compile.
  */
 @Suppress("UNUSED_PARAMETER")
-object LeakCanaryConfig {
+object DebugToolsConfig {
     fun install(app: android.app.Application) {
         // No-op in release
     }

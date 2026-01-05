@@ -8,6 +8,9 @@ on:
         required: false
         default: 'copilot/implement-phase-3-ui-gating'
 
+permissions:
+  contents: read
+
 jobs:
   validate-phase3:
     name: Validate Debug Tools Isolation
@@ -32,7 +35,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
-          build-tools:  34.0.0
+          build-tools: 34.0.0
           ndk-version: 26.1.10909125
       
       - name: Install bc (required for APK size calculation)
@@ -43,11 +46,37 @@ jobs:
       
       - name: Run Phase 3 Validation
         id: validation
+        shell: bash
         run: |
-          set +e  # Don't exit on error, we want to capture output
-          ./test_phase3_validation.sh > validation_output.txt 2>&1
-          EXIT_CODE=$?
-          cat validation_output.txt
+          # Run validation script, capture stdout and stderr separately
+          # Show all output in real-time, don't suppress anything
+          ./test_phase3_validation.sh 2>&1 | tee validation_output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          
+          echo ""
+          echo "========================================"
+          echo "VALIDATION EXIT CODE: $EXIT_CODE"
+          echo "========================================"
+          
+          # If validation failed, extract and highlight errors
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "::error::Phase 3 Validation FAILED with exit code $EXIT_CODE"
+            echo ""
+            echo "========================================"
+            echo "ERRORS AND WARNINGS SUMMARY:"
+            echo "========================================"
+            
+            # Extract lines containing errors, failures, or warnings
+            grep -iE "(error|fail|warning|exception|❌)" validation_output.txt || echo "No explicit error messages found in output"
+            
+            echo ""
+            echo "========================================"
+            echo "FULL BUILD LOG (last 100 lines):"
+            echo "========================================"
+            tail -100 validation_output.txt
+          fi
+          
           exit $EXIT_CODE
       
       - name: Upload validation report
@@ -65,6 +94,7 @@ jobs:
           name: debug-apk
           path: app-v2/build/outputs/apk/debug/*.apk
           retention-days: 7
+          if-no-files-found: warn
       
       - name: Upload Release APK
         if: always()
@@ -73,6 +103,7 @@ jobs:
           name: release-apk
           path: app-v2/build/outputs/apk/release/*.apk
           retention-days: 7
+          if-no-files-found: warn
       
       - name: Comment on PR (if applicable)
         if: always() && github.event_name == 'pull_request'
@@ -81,7 +112,7 @@ jobs:
           script: |
             const fs = require('fs');
             const output = fs.readFileSync('validation_output.txt', 'utf8');
-            const passed = ! output.includes('❌ FAIL');
+            const passed = !output.includes('❌ FAIL');
             
             const comment = `## 🧪 Phase 3 Validation Results
             
@@ -118,6 +149,10 @@ jobs:
               exit 0
             else
               echo "❌ Validation failed"
+              echo ""
+              echo "::group::Error Summary"
+              grep -iE "(error|fail|warning|exception|❌)" validation_output.txt || echo "Check full log for details"
+              echo "::endgroup::"
               exit 1
             fi
           else

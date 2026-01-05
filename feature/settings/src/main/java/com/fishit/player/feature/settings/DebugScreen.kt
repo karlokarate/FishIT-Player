@@ -410,54 +410,49 @@ fun DebugScreen(
                     }
                 }
 
-                // Chucker HTTP Inspector Section
-                item {
-                    DebugSection(title = "HTTP Inspector", icon = Icons.Default.Cloud) {
-                        if (state.isChuckerAvailable) {
+                // Chucker HTTP Inspector Section - Only show if available
+                if (state.isChuckerAvailable) {
+                    item {
+                        DebugSection(title = "HTTP Inspector", icon = Icons.Default.Cloud) {
                             Text(
                                 text = "Chucker captures all HTTP requests for debugging.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        } else {
-                            Text(
-                                text = "Chucker not available (release build)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        Button(
-                            onClick = { viewModel.openChuckerUi() },
-                            enabled = state.isChuckerAvailable,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.BugReport,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Open HTTP Inspector")
+                            Button(
+                                onClick = { viewModel.openChuckerUi() },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BugReport,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Open HTTP Inspector")
+                            }
                         }
                     }
                 }
 
-                // Memory / LeakCanary Section
-                item {
-                    LeakCanaryDiagnosticsSection(
-                        state = state,
-                        onOpenLeakCanary = { viewModel.openLeakCanaryUi() },
-                        onRefresh = { viewModel.refreshLeakSummary() },
-                        onRequestGc = { viewModel.requestGarbageCollection() },
-                        onTriggerHeapDump = { viewModel.triggerHeapDump() },
-                        onExportReport = {
-                            val fileName = buildLeakExportFileName()
-                            exportLeakReportLauncher.launch(fileName)
-                        },
-                    )
+                // Memory / LeakCanary Section - Only show if available
+                if (state.isLeakCanaryAvailable) {
+                    item {
+                        LeakCanaryDiagnosticsSection(
+                            state = state,
+                            onOpenLeakCanary = { viewModel.openLeakCanaryUi() },
+                            onRefresh = { viewModel.refreshLeakSummary() },
+                            onRequestGc = { viewModel.requestGarbageCollection() },
+                            onTriggerHeapDump = { viewModel.triggerHeapDump() },
+                            onExportReport = {
+                                val fileName = buildLeakExportFileName()
+                                exportLeakReportLauncher.launch(fileName)
+                            },
+                        )
+                    }
                 }
 
                 // Database Tools
@@ -1329,51 +1324,43 @@ private fun LeakCanaryDiagnosticsSection(
     onExportReport: () -> Unit,
 ) {
     DebugSection(title = "Memory / LeakCanary", icon = Icons.Default.Memory) {
-        if (state.isLeakCanaryAvailable) {
-            val detailedStatus = state.leakDetailedStatus
+        val detailedStatus = state.leakDetailedStatus
 
-            // Severity Banner
-            if (detailedStatus != null) {
-                LeakSeverityBanner(
-                    severity = detailedStatus.severity,
-                    statusMessage = detailedStatus.statusMessage,
-                    retainedCount = detailedStatus.retainedObjectCount,
-                )
+        // Severity Banner
+        if (detailedStatus != null) {
+            LeakSeverityBanner(
+                severity = detailedStatus.severity,
+                statusMessage = detailedStatus.statusMessage,
+                retainedCount = detailedStatus.retainedObjectCount,
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Memory Stats
-                MemoryStatsRow(memoryStats = detailedStatus.memoryStats)
+            // Memory Stats
+            MemoryStatsRow(memoryStats = detailedStatus.memoryStats)
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Config Info (collapsed by default)
-                Text(
-                    text =
-                        "Watch: ${detailedStatus.config.watchDurationMillis}ms | Threshold: ${detailedStatus.config.retainedVisibleThreshold}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                // Fallback to simple summary
-                Text(
-                    text = "Retained objects: ${state.leakSummary.leakCount}",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                state.leakSummary.note?.let { note ->
-                    Text(
-                        text = note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        } else {
+            // Config Info (collapsed by default)
             Text(
-                text = "LeakCanary not available (release build)",
-                style = MaterialTheme.typography.bodySmall,
+                text =
+                    "Watch: ${detailedStatus.config.watchDurationMillis}ms | Threshold: ${detailedStatus.config.retainedVisibleThreshold}",
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        } else {
+            // Fallback to simple summary
+            Text(
+                text = "Retained objects: ${state.leakSummary.leakCount}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            state.leakSummary.note?.let { note ->
+                Text(
+                    text = note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1385,7 +1372,6 @@ private fun LeakCanaryDiagnosticsSection(
         ) {
             Button(
                 onClick = onOpenLeakCanary,
-                enabled = state.isLeakCanaryAvailable,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -1399,7 +1385,6 @@ private fun LeakCanaryDiagnosticsSection(
 
             OutlinedButton(
                 onClick = onRefresh,
-                enabled = state.isLeakCanaryAvailable,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -1421,7 +1406,6 @@ private fun LeakCanaryDiagnosticsSection(
         ) {
             OutlinedButton(
                 onClick = onRequestGc,
-                enabled = state.isLeakCanaryAvailable,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -1435,7 +1419,6 @@ private fun LeakCanaryDiagnosticsSection(
 
             OutlinedButton(
                 onClick = onTriggerHeapDump,
-                enabled = state.isLeakCanaryAvailable,
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -1453,7 +1436,6 @@ private fun LeakCanaryDiagnosticsSection(
         // Export Action
         OutlinedButton(
             onClick = onExportReport,
-            enabled = state.isLeakCanaryAvailable,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
