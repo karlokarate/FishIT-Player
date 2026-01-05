@@ -46,6 +46,7 @@ jobs:
       
       - name: Run Phase 3 Validation
         id: validation
+        shell: bash
         run: |
           # Run validation script, capture stdout and stderr separately
           # Show all output in real-time, don't suppress anything

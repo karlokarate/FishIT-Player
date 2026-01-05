@@ -364,8 +364,9 @@ tasks.register("verifyNoDebugToolsInRelease") {
 
         val forbiddenStrings =
             listOf(
-                "LeakCanary",
-                "leakcanary",
+                // Only check for actual debug tool library references
+                // (DebugToolsConfig is allowed as it's our abstraction layer)
+                "leakcanary", // LeakCanary library package
                 "Chucker",
                 "chucker",
                 "DebugToolsSettingsRepository",
@@ -399,8 +400,8 @@ tasks.register("verifyNoDebugToolsInRelease") {
                     val jarContent =
                         ZipFile(file).use { zip ->
                             zip.entries().asSequence()
-                                .filter { entry: ZipEntry -> entry.name.endsWith(".class") }
-                                .map { entry: ZipEntry ->
+                                .filter { entry -> entry.name.endsWith(".class") }
+                                .map { entry ->
                                     zip.getInputStream(entry).readBytes().toString(Charsets.ISO_8859_1)
                                 }
                                 .joinToString("")

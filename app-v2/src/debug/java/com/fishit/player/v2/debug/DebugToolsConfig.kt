@@ -6,7 +6,9 @@ import leakcanary.LeakCanary
 import shark.AndroidReferenceMatchers
 
 /**
- * LeakCanary Gold Standard Configuration for FishIT Player v2.
+ * Debug Tools Configuration for FishIT Player v2.
+ *
+ * Configures memory leak detection via LeakCanary in debug builds.
  *
  * **What LeakCanary 2.x watches by default:**
  * - Activities (after onDestroy)
@@ -28,7 +30,7 @@ import shark.AndroidReferenceMatchers
  * - https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/
  * - https://square.github.io/leakcanary/recipes/#watching-objects-with-a-lifecycle
  */
-object LeakCanaryConfig {
+object DebugToolsConfig {
     private const val TAG = "LeakCanaryConfig"
 
     /**

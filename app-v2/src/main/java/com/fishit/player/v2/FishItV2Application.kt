@@ -9,7 +9,7 @@ import coil3.SingletonImageLoader
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.logging.UnifiedLogInitializer
 import com.fishit.player.infra.work.SourceActivationObserver
-import com.fishit.player.v2.debug.LeakCanaryConfig
+import com.fishit.player.v2.debug.DebugToolsConfig
 import com.fishit.player.v2.di.AppScopeModule
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -76,15 +76,15 @@ class FishItV2Application :
         // Contract S-1: UnifiedLog MUST be initialized BEFORE any other subsystem
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
 
-        // Contract S-1.1: LeakCanary base configuration (debug builds only, after logging)
-        // Sets up reference matchers and default configuration
+        // Contract S-1.1: Debug tools base configuration (debug builds only, after logging)
+        // Sets up reference matchers and default configuration for memory leak detection
         // Runtime toggling is handled by DebugToolsInitializer (OFF by default)
         if (BuildConfig.DEBUG) {
-            LeakCanaryConfig.install(this)
+            DebugToolsConfig.install(this)
         }
 
         // Contract S-1.2: Start DebugToolsInitializer (syncs DataStore to runtime flags)
-        // This will immediately configure LeakCanary to OFF state on first launch
+        // This will immediately configure debug tools to OFF state on first launch
         if (BuildConfig.DEBUG) {
             try {
                 debugBootstrapsProvider.get().start(appScope)

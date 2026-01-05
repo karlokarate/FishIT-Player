@@ -2,7 +2,7 @@
 
 # Phase 3 Automated Validation Script
 # Tests PR #569 - Complete compile-time isolation for debug tools
-# Issue: #568, #564
+# Issue: #564 (compile-time gating parent issue)
 
 set -e  # Exit on error
 
@@ -264,7 +264,7 @@ else
 fi
 
 # Check that it's NOT implementation or releaseImplementation
-if grep -r "^\s*implementation.*:core:debug-settings\|releaseImplementation.*:core:debug-settings" --include="build.gradle.kts" . > /dev/null; then
+if grep -E -r "^\s*implementation.*:core:debug-settings|releaseImplementation.*:core:debug-settings" --include="build.gradle.kts" . > /dev/null; then
     test_fail "core:debug-settings incorrectly referenced as implementation or releaseImplementation"
 else
     test_pass "core:debug-settings NOT in release dependencies"
