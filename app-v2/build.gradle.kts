@@ -308,3 +308,88 @@ tasks.register<Exec>("checkNoWorkManagerInitializer") {
 tasks.matching { it.name.startsWith("assemble") }.configureEach {
     finalizedBy("checkNoWorkManagerInitializer")
 }
+
+/**
+ * Phase 3 CI Validation: Verify no debug tool references in release builds.
+ *
+ * This task scans compiled release classes to ensure LeakCanary and Chucker
+ * are completely removed from release builds (not just disabled).
+ *
+ * Validates Issue #564 compile-time gating requirements.
+ * Forbidden references include:
+ * - LeakCanary classes and imports
+ * - Chucker classes and imports
+ * - Debug settings infrastructure (DebugToolsSettingsRepository, etc.)
+ *
+ * Run: ./gradlew assembleRelease
+ * The task runs automatically after release assembly.
+ */
+tasks.register("verifyNoDebugToolsInRelease") {
+    group = "verification"
+    description = "Verifies that no LeakCanary/Chucker references exist in release builds"
+
+    doLast {
+        val releaseClasses = layout.buildDirectory.dir("intermediates/javac/release/classes").get().asFile
+
+        if (!releaseClasses.exists()) {
+            logger.warn("⚠️  Release classes not found at ${releaseClasses.absolutePath}")
+            logger.warn("    Skipping verification. Run 'assembleRelease' first.")
+            return@doLast
+        }
+
+        val forbiddenStrings =
+            listOf(
+                "LeakCanary",
+                "leakcanary",
+                "Chucker",
+                "chucker",
+                "DebugToolsSettingsRepository",
+                "DebugFlagsHolder",
+                "DebugToolsInitializer",
+                "GatedChuckerInterceptor",
+            )
+
+        val violations = mutableListOf<String>()
+
+        releaseClasses.walkTopDown().forEach { file ->
+            if (file.extension == "class") {
+                val content = file.readBytes().toString(Charsets.ISO_8859_1)
+                forbiddenStrings.forEach { forbidden ->
+                    if (content.contains(forbidden)) {
+                        violations.add("Found '$forbidden' in ${file.relativeTo(releaseClasses)}")
+                    }
+                }
+            }
+        }
+
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                """
+                |
+                |❌ DEBUG TOOL LEAKAGE DETECTED IN RELEASE BUILD!
+                |
+                |The following debug tool references were found in release classes:
+                |${violations.joinToString("\n|")}
+                |
+                |This violates Issue #564 compile-time gating requirements.
+                |Debug tools must be completely removed from release builds.
+                |
+                |Possible causes:
+                |1. Direct references to debug tools in production code
+                |2. Debug module not properly gated with debugImplementation
+                |3. BuildConfig flags not properly enforced
+                |
+                |See docs/v2/DEBUG_TOOLS_COMPILE_TIME_GATING.md for guidance.
+                |
+                """.trimMargin(),
+            )
+        } else {
+            logger.lifecycle("✅ Release build is clean - no debug tool references found")
+        }
+    }
+}
+
+// Hook into release build process
+tasks.named("assembleRelease") {
+    finalizedBy("verifyNoDebugToolsInRelease")
+}
