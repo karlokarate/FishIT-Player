@@ -58,12 +58,15 @@ android {
                 ?: ""
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
 
-        // ⭐ NEW: Compile-time gating for debug tools
-        // These flags control whether LeakCanary and Chucker are included in the build
-        // - debug: Both tools enabled for memory leak detection and network inspection
+        // ⭐ Compile-time gating for debug tools (Issue #564)
+        // These flags control whether LeakCanary and Chucker are included in the build.
+        // - debug default: Both tools enabled for memory leak detection and network inspection
         // - release: Both tools completely removed (no stubs, no imports, no UI)
-        buildConfigField("boolean", "INCLUDE_LEAKCANARY", "true")
-        buildConfigField("boolean", "INCLUDE_CHUCKER", "true")
+        // Override via Gradle properties: -PincludeChucker=true -PincludeLeakCanary=true
+        val includeChucker = project.findProperty("includeChucker")?.toString()?.toBoolean() ?: true
+        val includeLeakCanary = project.findProperty("includeLeakCanary")?.toString()?.toBoolean() ?: true
+        buildConfigField("boolean", "INCLUDE_LEAKCANARY", includeLeakCanary.toString())
+        buildConfigField("boolean", "INCLUDE_CHUCKER", includeChucker.toString())
 
         // ABI configuration is handled via splits when useSplits=true
         // Otherwise, use NDK abiFilters for single-ABI builds
