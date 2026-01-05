@@ -14,13 +14,16 @@ on:
 jobs:
   # WICHTIG: Name darf NICHT geändert werden
   copilot-setup-steps:
-    # Wenn du größere Runner konfiguriert hast, z.B. ubuntu-4-core verwenden
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04 für stabilen, schnellen Build
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     # Minimal nötige Rechte – Copilot bekommt später seinen eigenen Token
     permissions:
       contents: write
+
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
 
     steps:
       - name: Checkout repo (inkl. Submodules)
@@ -41,7 +44,18 @@ jobs:
       - name: Set up Android SDK (Tools + Plattformen)
         uses: android-actions/setup-android@v3.2.2
 
+      - name: Cache Android SDK packages
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_SDK_ROOT }}/platforms
+            ${{ env.ANDROID_SDK_ROOT }}/build-tools
+            ${{ env.ANDROID_SDK_ROOT }}/platform-tools
+          key: sdk-${{ runner.os }}-android-24-34-35-bt35
+
       - name: Install Android SDK packages
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
         run: |
           set -euxo pipefail
           echo ">>> Accepting SDK licenses..."
@@ -51,6 +65,7 @@ jobs:
             "platform-tools" \
             "platforms;android-24" \
             "platforms;android-34" \
+            "platforms;android-35" \
             "build-tools;35.0.0" || true
           echo "SDK installation completed."
 
