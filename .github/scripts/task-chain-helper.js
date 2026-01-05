@@ -22,7 +22,6 @@ if (!GITHUB_TOKEN || !GITHUB_REPOSITORY) {
  */
 function githubApi(method, path, data = null) {
   return new Promise((resolve, reject) => {
-    const [owner, repo] = GITHUB_REPOSITORY.split('/');
     const options = {
       hostname: 'api.github.com',
       path: path,

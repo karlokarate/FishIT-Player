@@ -100,6 +100,6 @@ gh run view <run-id> --log
 
 ## References
 
-- Full documentation: `.github/workflows/README-task-chain.md`
+- Full documentation: `.github/docs/README-task-chain.md`
 - Parent issue: #573
 - Task issues: #575, #576, #577, #578, #579

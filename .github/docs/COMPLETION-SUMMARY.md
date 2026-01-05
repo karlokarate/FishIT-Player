@@ -7,12 +7,12 @@ A complete automated workflow system has been implemented to process sub-issues 
 ## 📦 What Was Created
 
 ### Core Workflow Files
-1. **`.github/workflows/task-chain-agent.yml`** (470 lines)
+1. **`.github/workflows/task-chain-agent.yml`** (536 lines)
    - Main orchestration workflow with 8 jobs
    - Handles all triggers and state transitions
    - Fully automated review cycle management
 
-2. **`.github/scripts/task-chain-helper.js`** (396 lines)
+2. **`.github/scripts/task-chain-helper.js`** (394 lines)
    - Node.js helper for GitHub API operations
    - Zero external dependencies
    - 9 commands: find-next, check-completed, add-labels, remove-label, close-issue, post-comment, extract-issue-from-pr, check-issue-label

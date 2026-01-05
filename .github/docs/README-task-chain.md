@@ -195,9 +195,10 @@ permissions:
 2. **find-next-task** - Finds the next open task from parent issue
 3. **process-task** - Starts the agent on a task
 4. **approve-task** - Marks task as complete
-5. **fix-task** - Requests fixes from agent
-6. **check-completion** - Checks if all tasks are done
-7. **continue-chain** - Automatically triggers next task
+5. **mark-for-review** - Adds needs-review label when PR is opened
+6. **fix-task** - Requests fixes from agent
+7. **check-completion** - Checks if all tasks are done
+8. **continue-chain** - Automatically triggers next task
 
 ## Contributing
 

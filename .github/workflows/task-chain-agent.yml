@@ -34,6 +34,10 @@ permissions:
   pull-requests: write
   actions: write
 
+concurrency:
+  group: task-chain-agent-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   # Job to determine what action to take
   dispatch:
@@ -55,6 +59,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_LABELS: ${{ toJson(github.event.issue.labels) }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
         run: |
@@ -80,17 +85,22 @@ jobs:
           
           # Handle issue comments
           elif [ "$EVENT_NAME" = "issue_comment" ]; then
-            comment=$(echo "$COMMENT_BODY" | tr '[:upper:]' '[:lower:]' | xargs)
-            echo "Comment: $comment"
-            
-            if [ "$comment" = "/agent-next" ]; then
-              action="find-next"
-            elif [ "$comment" = "/agent-continue" ] || [ "$comment" = "/agent-approve" ]; then
-              action="approve"
-              issue_number="$ISSUE_NUMBER"
-            elif [ "$comment" = "/agent-fix" ]; then
-              action="fix"
-              issue_number="$ISSUE_NUMBER"
+            # Check if issue has task-chain label before processing commands
+            if echo "$ISSUE_LABELS" | grep -q '"name":[[:space:]]*"task-chain"'; then
+              comment=$(echo "$COMMENT_BODY" | tr '[:upper:]' '[:lower:]' | xargs)
+              echo "Comment on task-chain issue: $comment"
+              
+              if [ "$comment" = "/agent-next" ]; then
+                action="find-next"
+              elif [ "$comment" = "/agent-continue" ] || [ "$comment" = "/agent-approve" ]; then
+                action="approve"
+                issue_number="$ISSUE_NUMBER"
+              elif [ "$comment" = "/agent-fix" ]; then
+                action="fix"
+                issue_number="$ISSUE_NUMBER"
+              fi
+            else
+              echo "Issue comment ignored: issue does not have task-chain label"
             fi
           
           # Handle PR events
@@ -103,16 +113,20 @@ jobs:
               action="mark-review"
               issue_number="${{ github.event.pull_request.number }}"
             elif [ "$pr_action" = "closed" ] && [ "$PR_MERGED" = "true" ]; then
-              # Check if PR has task-chain label or references task-chain issue
-              if echo "$PR_LABELS" | grep -q '"name":\s*"task-chain"'; then
+              # Check if PR has task-chain label
+              if echo "$PR_LABELS" | grep -q '"name":[[:space:]]*"task-chain"'; then
                 echo "PR with task-chain label merged, finding next task"
                 action="find-next"
               else
-                echo "PR merged, will check if it references a task-chain issue"
-                action="check-pr-merge"
-                issue_number="${{ github.event.pull_request.number }}"
+                echo "PR merged without task-chain label; no task-chain action will be taken"
               fi
             fi
+          fi
+          
+          # Set default action if none was determined
+          if [ -z "$action" ]; then
+            echo "No valid action determined for this event"
+            action="no-op"
           fi
           
           echo "action=$action" >> $GITHUB_OUTPUT
@@ -225,23 +239,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          PARENT_ISSUE: ${{ needs.dispatch.outputs.parent_issue }}
         run: |
           issue="${{ steps.issue.outputs.issue }}"
           
-          # Post comment to trigger Copilot Coding Agent
-          # The agent will be triggered by the @copilot mention
-          node .github/scripts/task-chain-helper.js post-comment $issue "@copilot Please analyze and implement this task.
+          # Build comment to avoid shell escaping issues
+          comment="@copilot Please analyze and implement this task.
 
           🤖 **Task Chain Agent**: Starting automated work on this issue.
 
-          This task is part of the automated task chain for parent issue #${{ needs.dispatch.outputs.parent_issue }}.
-          
+          This task is part of the automated task chain for parent issue #${PARENT_ISSUE}.
+
           ---
-          
+
           **Commands:**
           - \`/agent-fix\` - Request fixes based on review comments
           - \`/agent-approve\` - Approve and move to next task
           - \`/agent-continue\` - Continue after manual review"
+          
+          # Post comment to trigger Copilot Coding Agent
+          node .github/scripts/task-chain-helper.js post-comment "$issue" "$comment"
       
       - name: Add task-chain label for PR tracking
         env:
@@ -291,20 +308,23 @@ jobs:
           # Close the issue
           node .github/scripts/task-chain-helper.js close-issue $issue
           
-          # Post completion comment with review trigger
-          node .github/scripts/task-chain-helper.js post-comment $issue "✅ **Task completed!**
+          # Build completion comment with review trigger
+          comment="✅ **Task completed!**
 
           This task has been marked as \`platinum-done\` and closed.
-          
+
           ## Summary
           - Status: 🏆 Platinum Done
           - All changes have been merged
-          
+
           The task chain will now proceed to the next task automatically.
-          
+
           ---
-          
+
           @copilot review this task and find all bugs"
+          
+          # Post completion comment
+          node .github/scripts/task-chain-helper.js post-comment "$issue" "$comment"
       
       - name: Summary
         run: |
@@ -406,16 +426,19 @@ jobs:
           issue="${{ steps.extract.outputs.issue_number }}"
           pr_url="${{ github.event.pull_request.html_url }}"
           
-          node .github/scripts/task-chain-helper.js post-comment $issue "📝 **PR Created and Ready for Review**
+          # Build review comment
+          comment="📝 **PR Created and Ready for Review**
 
           A pull request has been created: $pr_url
-          
+
           Please review the changes. When ready:
           - ✅ Comment \`/agent-approve\` or \`/agent-continue\` to approve and move to the next task
           - 🔧 Comment \`/agent-fix\` if changes are needed
           - 💬 Leave review comments on the PR for specific feedback
-          
+
           The agent will respond to your feedback and make any necessary adjustments."
+          
+          node .github/scripts/task-chain-helper.js post-comment "$issue" "$comment"
       
       - name: Summary
         run: |
@@ -466,18 +489,21 @@ jobs:
               # Close parent issue
               node .github/scripts/task-chain-helper.js close-issue $PARENT_ISSUE
               
-              # Post success comment
-              node .github/scripts/task-chain-helper.js post-comment $PARENT_ISSUE "🎉 **All sub-tasks completed!**
+              # Build success comment
+              success_comment="🎉 **All sub-tasks completed!**
 
               All tasks in this task chain have been successfully completed and marked as \`platinum-done\`.
-              
+
               This parent issue is now being closed automatically.
-              
+
               ## Summary
               - All sub-issues: ✅ Completed
               - Status: 🏆 Platinum Done
-              
+
               Great work! 🚀"
+              
+              # Post success comment
+              node .github/scripts/task-chain-helper.js post-comment "$PARENT_ISSUE" "$success_comment"
               
               echo "## 🎉 Task Chain Complete!" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
