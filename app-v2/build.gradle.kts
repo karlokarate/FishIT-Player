@@ -6,6 +6,9 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+
 /**
  * Keystore configuration for release signing.
  * Reads from Gradle properties or environment variables (set by CI workflow).
@@ -329,12 +332,34 @@ tasks.register("verifyNoDebugToolsInRelease") {
     description = "Verifies that no LeakCanary/Chucker references exist in release builds"
 
     doLast {
-        val releaseClasses = layout.buildDirectory.dir("intermediates/javac/release/classes").get().asFile
+        // Define all possible class output directories
+        val classPathsToScan =
+            listOf(
+                // Kotlin compiler output (primary for Kotlin projects)
+                layout.buildDirectory.dir("tmp/kotlin-classes/release").get().asFile,
+                // Java compiler output (for Java sources)
+                layout.buildDirectory.dir("intermediates/javac/release/classes").get().asFile,
+                // Compiled library classes (merged from dependencies)
+                layout.buildDirectory.dir("intermediates/compile_library_classes_jar/release").get().asFile,
+                // Final DEX output (most reliable, but only available after dexing)
+                layout.buildDirectory.dir("intermediates/dex/release").get().asFile,
+            )
 
-        if (!releaseClasses.exists()) {
-            logger.warn("⚠️  Release classes not found at ${releaseClasses.absolutePath}")
+        // Filter to existing directories
+        val existingPaths = classPathsToScan.filter { it.exists() }
+
+        if (existingPaths.isEmpty()) {
+            logger.warn("⚠️  No release class output found in any of:")
+            classPathsToScan.forEach { path ->
+                logger.warn("    - ${path.absolutePath}")
+            }
             logger.warn("    Skipping verification. Run 'assembleRelease' first.")
             return@doLast
+        }
+
+        logger.lifecycle("🔍 Scanning ${existingPaths.size} output directories:")
+        existingPaths.forEach { path ->
+            logger.lifecycle("    - ${path.name}/")
         }
 
         val forbiddenStrings =
@@ -350,17 +375,63 @@ tasks.register("verifyNoDebugToolsInRelease") {
             )
 
         val violations = mutableListOf<String>()
+        var scannedFilesCount = 0
 
-        releaseClasses.walkTopDown().forEach { file ->
-            if (file.extension == "class") {
-                val content = file.readBytes().toString(Charsets.ISO_8859_1)
-                forbiddenStrings.forEach { forbidden ->
-                    if (content.contains(forbidden)) {
-                        violations.add("Found '$forbidden' in ${file.relativeTo(releaseClasses)}")
+        existingPaths.forEach { rootDir ->
+            rootDir.walkTopDown().forEach { file ->
+                // Scan .class files (Java/Kotlin bytecode)
+                if (file.extension == "class") {
+                    scannedFilesCount++
+                    val content = file.readBytes().toString(Charsets.ISO_8859_1)
+                    forbiddenStrings.forEach { forbidden ->
+                        if (content.contains(forbidden)) {
+                            violations.add(
+                                "Found '$forbidden' in ${file.relativeTo(rootDir)} " +
+                                    "(from ${rootDir.name})",
+                            )
+                        }
+                    }
+                }
+
+                // Scan .jar files (library dependencies)
+                if (file.extension == "jar") {
+                    scannedFilesCount++
+                    val jarContent =
+                        ZipFile(file).use { zip ->
+                            zip.entries().asSequence()
+                                .filter { entry: ZipEntry -> entry.name.endsWith(".class") }
+                                .map { entry: ZipEntry ->
+                                    zip.getInputStream(entry).readBytes().toString(Charsets.ISO_8859_1)
+                                }
+                                .joinToString("")
+                        }
+                    forbiddenStrings.forEach { forbidden ->
+                        if (jarContent.contains(forbidden)) {
+                            violations.add(
+                                "Found '$forbidden' in JAR ${file.name} " +
+                                    "(from ${rootDir.name})",
+                            )
+                        }
+                    }
+                }
+
+                // Scan .dex files (final Android bytecode)
+                if (file.extension == "dex") {
+                    scannedFilesCount++
+                    val dexContent = file.readBytes().toString(Charsets.ISO_8859_1)
+                    forbiddenStrings.forEach { forbidden ->
+                        if (dexContent.contains(forbidden)) {
+                            violations.add(
+                                "Found '$forbidden' in DEX ${file.name} " +
+                                    "(from ${rootDir.name})",
+                            )
+                        }
                     }
                 }
             }
         }
+
+        logger.lifecycle("📊 Scanned $scannedFilesCount files")
 
         if (violations.isNotEmpty()) {
             throw GradleException(
@@ -368,11 +439,14 @@ tasks.register("verifyNoDebugToolsInRelease") {
                 |
                 |❌ DEBUG TOOL LEAKAGE DETECTED IN RELEASE BUILD!
                 |
-                |The following debug tool references were found in release classes:
+                |The following debug tool references were found in release output:
                 |${violations.joinToString("\n|")}
                 |
                 |This violates Issue #564 compile-time gating requirements.
                 |Debug tools must be completely removed from release builds.
+                |
+                |Scanned locations:
+                |${existingPaths.joinToString("\n|") { "  - ${it.name}/" }}
                 |
                 |Possible causes:
                 |1. Direct references to debug tools in production code
@@ -385,6 +459,7 @@ tasks.register("verifyNoDebugToolsInRelease") {
             )
         } else {
             logger.lifecycle("✅ Release build is clean - no debug tool references found")
+            logger.lifecycle("   ($scannedFilesCount files scanned)")
         }
     }
 }

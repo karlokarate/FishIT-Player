@@ -221,14 +221,33 @@ tasks.register("verifyNoDebugToolsInRelease") {
     description = "Verifies that no LeakCanary/Chucker references exist in release builds"
 
     doLast {
-        val releaseClasses = layout.buildDirectory
-            .dir("intermediates/javac/release/classes")
-            .get()
-            .asFile
+        // Define all possible class output directories
+        val classPathsToScan = listOf(
+            // Kotlin compiler output (primary for Kotlin projects)
+            layout.buildDirectory.dir("tmp/kotlin-classes/release").get().asFile,
+            // Java compiler output (for Java sources)
+            layout.buildDirectory.dir("intermediates/javac/release/classes").get().asFile,
+            // Compiled library classes (merged from dependencies)
+            layout.buildDirectory.dir("intermediates/compile_library_classes_jar/release").get().asFile,
+            // Final DEX output (most reliable, but only available after dexing)
+            layout.buildDirectory.dir("intermediates/dex/release").get().asFile,
+        )
 
-        if (!releaseClasses.exists()) {
-            logger.warn("Release classes not found, skipping verification")
+        // Filter to existing directories
+        val existingPaths = classPathsToScan.filter { it.exists() }
+
+        if (existingPaths.isEmpty()) {
+            logger.warn("No release class output found in any of:")
+            classPathsToScan.forEach { path ->
+                logger.warn("  - ${path.absolutePath}")
+            }
+            logger.warn("Skipping verification. Run 'assembleRelease' first.")
             return@doLast
+        }
+
+        logger.lifecycle("🔍 Scanning ${existingPaths.size} output directories:")
+        existingPaths.forEach { path ->
+            logger.lifecycle("    - ${path.name}/")
         }
 
         val forbiddenStrings = listOf(
@@ -243,17 +262,62 @@ tasks.register("verifyNoDebugToolsInRelease") {
         )
 
         val violations = mutableListOf<String>()
+        var scannedFilesCount = 0
 
-        releaseClasses.walkTopDown().forEach { file ->
-            if (file.extension == "class") {
-                val content = file.readBytes().toString(Charsets.ISO_8859_1)
-                forbiddenStrings.forEach { forbidden ->
-                    if (content.contains(forbidden)) {
-                        violations.add("Found '$forbidden' in ${file.relativeTo(releaseClasses)}")
+        existingPaths.forEach { rootDir ->
+            rootDir.walkTopDown().forEach { file ->
+                // Scan .class files (Java/Kotlin bytecode)
+                if (file.extension == "class") {
+                    scannedFilesCount++
+                    val content = file.readBytes().toString(Charsets.ISO_8859_1)
+                    forbiddenStrings.forEach { forbidden ->
+                        if (content.contains(forbidden)) {
+                            violations.add(
+                                "Found '$forbidden' in ${file.relativeTo(rootDir)} " +
+                                "(from ${rootDir.name})"
+                            )
+                        }
+                    }
+                }
+                
+                // Scan .jar files (library dependencies)
+                if (file.extension == "jar") {
+                    scannedFilesCount++
+                    val jarContent = java.util.zip.ZipFile(file).use { zip ->
+                        zip.entries().asSequence()
+                            .filter { it.name.endsWith(".class") }
+                            .map { entry ->
+                                zip.getInputStream(entry).readBytes().toString(Charsets.ISO_8859_1)
+                            }
+                            .joinToString("")
+                    }
+                    forbiddenStrings.forEach { forbidden ->
+                        if (jarContent.contains(forbidden)) {
+                            violations.add(
+                                "Found '$forbidden' in JAR ${file.name} " +
+                                "(from ${rootDir.name})"
+                            )
+                        }
+                    }
+                }
+                
+                // Scan .dex files (final Android bytecode)
+                if (file.extension == "dex") {
+                    scannedFilesCount++
+                    val dexContent = file.readBytes().toString(Charsets.ISO_8859_1)
+                    forbiddenStrings.forEach { forbidden ->
+                        if (dexContent.contains(forbidden)) {
+                            violations.add(
+                                "Found '$forbidden' in DEX ${file.name} " +
+                                "(from ${rootDir.name})"
+                            )
+                        }
                     }
                 }
             }
         }
+
+        logger.lifecycle("📊 Scanned $scannedFilesCount files")
 
         if (violations.isNotEmpty()) {
             throw GradleException(
@@ -263,34 +327,54 @@ tasks.register("verifyNoDebugToolsInRelease") {
                 The following debug tool references were found:
                 ${violations.joinToString("\n")}
                 
+                Scanned locations:
+                ${existingPaths.joinToString("\n") { "  - ${it.name}/" }}
+                
                 This violates Issue #564 compile-time gating requirements.
                 """.trimIndent()
             )
         } else {
             logger.lifecycle("✅ Release build is clean - no debug tool references found")
+            logger.lifecycle("   ($scannedFilesCount files scanned)")
         }
     }
 }
 
 // Hook into release build
-tasks.named("assembleRelease") {
-    finalizedBy("verifyNoDebugToolsInRelease")
+tasks.whenTaskAdded {
+    if (name == "assembleRelease") {
+        finalizedBy("verifyNoDebugToolsInRelease")
+    }
 }
 ```
 
 **How It Works:**
 
-1. **Automatic Execution:** Runs after `assembleRelease` completes
-2. **Class Scanning:** Walks through all compiled `.class` files in release build
-3. **String Detection:** Searches for forbidden strings in bytecode
-4. **Fail-Fast:** Throws `GradleException` if violations found
-5. **CI Integration:** Task failure breaks CI/CD pipeline
+1. **Multi-Path Scanning:** Checks multiple output directories to support both Java and Kotlin:
+   - `tmp/kotlin-classes/release/` - Kotlin compiler output (primary for Kotlin projects)
+   - `intermediates/javac/release/classes/` - Java compiler output
+   - `intermediates/compile_library_classes_jar/release/` - Library JARs
+   - `intermediates/dex/release/` - Final DEX files
+
+2. **Flexible Scanning:** Scans existing directories only, adapts to project structure
+3. **File Type Support:** Handles `.class`, `.jar`, and `.dex` files
+4. **String Detection:** Searches for forbidden strings in bytecode
+5. **Fail-Fast:** Throws `GradleException` if violations found
+6. **CI Integration:** Task failure breaks CI/CD pipeline
 
 **Manual Execution:**
 
 ```bash
 # Build release and verify
 ./gradlew assembleRelease
+
+# Expected output:
+# 🔍 Scanning 2 output directories:
+#     - kotlin-classes/
+#     - dex/
+# 📊 Scanned 1234 files
+# ✅ Release build is clean - no debug tool references found
+#    (1234 files scanned)
 
 # Or verify existing build
 ./gradlew verifyNoDebugToolsInRelease
