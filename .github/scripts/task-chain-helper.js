@@ -243,6 +243,38 @@ async function checkAllCompleted(parentIssueNumber) {
 }
 
 /**
+ * Get PR details
+ */
+async function getPR(prNumber) {
+  const [owner, repo] = GITHUB_REPOSITORY.split('/');
+  return await githubApi('GET', `/repos/${owner}/${repo}/pulls/${prNumber}`);
+}
+
+/**
+ * Extract issue numbers from text (PR body, title, etc.)
+ */
+function extractIssueNumbers(text) {
+  if (!text) return [];
+  
+  const issues = new Set();
+  
+  // Pattern: Fixes #123, Closes #123, Resolves #123
+  const keywordPattern = /(?:fix(?:es|ed)?|close(?:s|d)?|resolve(?:s|d)?)\s+#(\d+)/gi;
+  let match;
+  while ((match = keywordPattern.exec(text)) !== null) {
+    issues.add(parseInt(match[1], 10));
+  }
+  
+  // Pattern: #123 at start of line or after whitespace
+  const hashPattern = /(?:^|\s)#(\d+)/g;
+  while ((match = hashPattern.exec(text)) !== null) {
+    issues.add(parseInt(match[1], 10));
+  }
+  
+  return Array.from(issues);
+}
+
+/**
  * Set GitHub Actions output
  */
 function setOutput(name, value) {
@@ -318,9 +350,37 @@ async function main() {
         await postComment(issueNum4, commentBody);
         break;
         
+      case 'extract-issue-from-pr':
+        const prNum = process.argv[3];
+        if (!prNum) {
+          throw new Error('Usage: extract-issue-from-pr <pr-number>');
+        }
+        const pr = await getPR(prNum);
+        const issueNumbers = extractIssueNumbers(`${pr.title} ${pr.body}`);
+        if (issueNumbers.length > 0) {
+          setOutput('issue_number', issueNumbers[0].toString());
+          console.log(`Found issue #${issueNumbers[0]} in PR #${prNum}`);
+        } else {
+          setOutput('issue_number', '');
+          console.log(`No issue found in PR #${prNum}`);
+        }
+        break;
+        
+      case 'check-issue-label':
+        const issueNum5 = process.argv[3];
+        const labelToCheck = process.argv[4];
+        if (!issueNum5 || !labelToCheck) {
+          throw new Error('Usage: check-issue-label <issue-number> <label>');
+        }
+        const issue5 = await getIssue(issueNum5);
+        const hasTheLabel = hasLabel(issue5, labelToCheck);
+        setOutput('has_label', hasTheLabel ? 'true' : 'false');
+        console.log(`Issue #${issueNum5} ${hasTheLabel ? 'has' : 'does not have'} label: ${labelToCheck}`);
+        break;
+        
       default:
         console.error(`Unknown command: ${command}`);
-        console.error('Available commands: find-next, check-completed, add-labels, remove-label, close-issue, post-comment');
+        console.error('Available commands: find-next, check-completed, add-labels, remove-label, close-issue, post-comment, extract-issue-from-pr, check-issue-label');
         process.exit(1);
     }
     
