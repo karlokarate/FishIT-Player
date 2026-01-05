@@ -229,12 +229,12 @@ jobs:
           issue="${{ steps.issue.outputs.issue }}"
           
           # Post comment to trigger Copilot Coding Agent
-          # The agent will be triggered by the comment and start working on the issue
-          node .github/scripts/task-chain-helper.js post-comment $issue "🤖 **Task Chain Agent**: Starting automated work on this issue.
+          # The agent will be triggered by the @copilot mention
+          node .github/scripts/task-chain-helper.js post-comment $issue "@copilot Please analyze and implement this task.
+
+          🤖 **Task Chain Agent**: Starting automated work on this issue.
 
           This task is part of the automated task chain for parent issue #${{ needs.dispatch.outputs.parent_issue }}.
-          
-          The Copilot Coding Agent will now analyze and work on this task.
           
           ---
           
@@ -291,12 +291,20 @@ jobs:
           # Close the issue
           node .github/scripts/task-chain-helper.js close-issue $issue
           
-          # Post completion comment
+          # Post completion comment with review trigger
           node .github/scripts/task-chain-helper.js post-comment $issue "✅ **Task completed!**
 
           This task has been marked as \`platinum-done\` and closed.
           
-          The task chain will now proceed to the next task automatically."
+          ## Summary
+          - Status: 🏆 Platinum Done
+          - All changes have been merged
+          
+          The task chain will now proceed to the next task automatically.
+          
+          ---
+          
+          @copilot review this task and find all bugs"
       
       - name: Summary
         run: |
