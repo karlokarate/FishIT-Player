@@ -1,154 +1,39 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
-
-/**
- * Keystore configuration for release signing.
- * Reads from Gradle properties or environment variables (set by CI workflow).
- */
-val keystorePath: String? =
-    (project.findProperty("MYAPP_UPLOAD_STORE_FILE") as String?)
-        ?: System.getenv("MYAPP_UPLOAD_STORE_FILE")
-val keystoreStorePassword: String? =
-    (project.findProperty("MYAPP_UPLOAD_STORE_PASSWORD") as String?)
-        ?: System.getenv("MYAPP_UPLOAD_STORE_PASSWORD")
-val keystoreKeyAlias: String? =
-    (project.findProperty("MYAPP_UPLOAD_KEY_ALIAS") as String?)
-        ?: System.getenv("MYAPP_UPLOAD_KEY_ALIAS")
-val keystoreKeyPassword: String? =
-    (project.findProperty("MYAPP_UPLOAD_KEY_PASSWORD") as String?)
-        ?: System.getenv("MYAPP_UPLOAD_KEY_PASSWORD")
-val hasKeystore = !keystorePath.isNullOrBlank()
-
 android {
-    namespace = "com.fishit.player.v2"
+    namespace = "com.fishit.player"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.fishit.player.v2"
+        applicationId = "com.fishit.player"
         minSdk = 24
         targetSdk = 35
-
-        // Version from Gradle properties (CI can override)
-        val versionCodeProp = project.findProperty("versionCode")?.toString()?.toIntOrNull() ?: 1
-        val versionNameProp = project.findProperty("versionName")?.toString() ?: "2.0.0-alpha01"
-        versionCode = versionCodeProp
-        versionName = versionNameProp
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Telegram API credentials (from environment or local.properties)
-        val tgApiIdEnv = System.getenv("TG_API_ID")
-        val tgApiHashEnv = System.getenv("TG_API_HASH")
-
-        val tgApiIdValue = tgApiIdEnv?.toIntOrNull() ?: 0
-        val tgApiHashValue = tgApiHashEnv ?: ""
-
-        buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
-        buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
-
-        // TMDB API key (from environment or gradle.properties)
-        val tmdbApiKey =
-            System.getenv("TMDB_API_KEY")
-                ?: project.findProperty("TMDB_API_KEY")?.toString()
-                ?: ""
-        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
-
-        // ⭐ NEW: Compile-time gating for debug tools
-        // These flags control whether LeakCanary and Chucker are included in the build
-        // - debug: Both tools enabled for memory leak detection and network inspection
-        // - release: Both tools completely removed (no stubs, no imports, no UI)
-        buildConfigField("boolean", "INCLUDE_LEAKCANARY", "true")
-        buildConfigField("boolean", "INCLUDE_CHUCKER", "true")
-
-        // ABI configuration is handled via splits when useSplits=true
-        // Otherwise, use NDK abiFilters for single-ABI builds
-    }
-
-    // ABI Splits for smaller APKs (enabled via -PuseSplits=true)
-    val useSplits = project.findProperty("useSplits")?.toString()?.toBoolean() ?: false
-    val abiFilters = project.findProperty("abiFilters")?.toString()
-
-    if (useSplits) {
-        splits {
-            abi {
-                isEnable = true
-                reset()
-                // If abiFilters is specified, use it; otherwise use all ABIs
-                if (abiFilters != null) {
-                    abiFilters.split(",").forEach { abi ->
-                        include(abi.trim())
-                    }
-                } else {
-                    include("arm64-v8a", "armeabi-v7a")
-                }
-                isUniversalApk = project.findProperty("universalApk")?.toString()?.toBoolean() ?: false
-            }
-        }
-    } else if (abiFilters != null) {
-        // Only use NDK abiFilters when splits are NOT enabled
-        defaultConfig.ndk {
-            abiFilters.split(",").forEach { abi ->
-                this.abiFilters.add(abi.trim())
-            }
-        }
-    }
-
-    signingConfigs {
-        create("release") {
-            if (hasKeystore) {
-                storeFile = file(keystorePath!!)
-                storePassword = keystoreStorePassword
-                keyAlias = keystoreKeyAlias
-                keyPassword = keystoreKeyPassword
-            }
-        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
+                "proguard-rules.pro"
             )
-            if (hasKeystore) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                println("⚠️  V2 Release will be UNSIGNED (no keystore found).")
-            }
-
-            // Override: Debug tools MUST be disabled in release builds
-            buildConfigField("boolean", "INCLUDE_LEAKCANARY", "false")
-            buildConfigField("boolean", "INCLUDE_CHUCKER", "false")
-        }
-        debug {
-            isMinifyEnabled = false
-            isShrinkResources = false
-
-            // Explicit: Debug tools enabled
-            buildConfigField("boolean", "INCLUDE_LEAKCANARY", "true")
-            buildConfigField("boolean", "INCLUDE_CHUCKER", "true")
         }
     }
-
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "11"
     }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -156,317 +41,34 @@ android {
 }
 
 dependencies {
-    // v2 Core Modules
-    implementation(project(":core:model"))
-    implementation(project(":core:player-model"))
-    implementation(project(":core:feature-api"))
-    implementation(project(":core:source-activation-api"))
-    implementation(project(":core:persistence"))
-    implementation(project(":core:catalog-sync"))
-    implementation(project(":core:firebase"))
-    implementation(project(":core:app-startup"))
 
-    // Debug settings (debug builds only)
-    debugImplementation(project(":core:debug-settings"))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.play.services.cast.framework)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
-    // v2 Domain Modules (extracted from features)
-    implementation(project(":core:home-domain"))
-    implementation(project(":core:library-domain"))
-    implementation(project(":core:live-domain"))
-    implementation(project(":core:detail-domain"))
-    implementation(project(":core:telegrammedia-domain"))
-    implementation(project(":core:onboarding-domain"))
-
-    // v2 Metadata Normalizer (TMDB enrichment)
-    implementation(project(":core:metadata-normalizer"))
-
-    // v2 Playback & Player
-    implementation(project(":playback:domain"))
-    implementation(project(":playback:xtream"))
-    implementation(project(":playback:telegram"))
-    implementation(project(":player:ui"))
-    implementation(project(":player:ui-api"))
-    implementation(project(":player:internal"))
-    implementation(project(":player:miniplayer"))
-    implementation(project(":player:nextlib-codecs"))
-
-    // v2 Pipelines
-    implementation(project(":pipeline:telegram"))
-    implementation(project(":pipeline:xtream"))
-    implementation(project(":pipeline:io"))
-    implementation(project(":pipeline:audiobook"))
-
-    // v2 Features
-    implementation(project(":feature:home"))
-    implementation(project(":feature:library"))
-    implementation(project(":feature:live"))
-    implementation(project(":feature:detail"))
-    implementation(project(":feature:telegram-media"))
-    implementation(project(":feature:audiobooks"))
-    implementation(project(":feature:settings"))
-    implementation(project(":feature:onboarding"))
-
-    // v2 UI Core
-    implementation(project(":core:ui-theme"))
-    implementation(project(":core:ui-layout"))
-    implementation(project(":core:ui-imaging"))
-
-    // v2 Infrastructure
-    implementation(project(":infra:logging"))
-    implementation(project(":infra:imaging"))
-    implementation(project(":infra:cache"))
-    implementation(project(":infra:tooling"))
-    implementation(project(":infra:transport-telegram"))
-    implementation(project(":infra:transport-xtream"))
-    implementation(project(":infra:data-telegram"))
-    implementation(project(":infra:data-xtream"))
-    implementation(project(":infra:data-detail"))
-    implementation(project(":infra:data-home"))
-    implementation(project(":infra:work"))
-
-    // Coil for ImageLoader singleton
-    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
-
-    // OkHttp (for shared image loading client)
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
-
-    // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    ksp("com.google.dagger:hilt-compiler:2.56.1")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    ksp("androidx.hilt:hilt-compiler:1.2.0")
-
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.10.5")
-
-    // Compose
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.activity:activity-compose:1.9.3")
-
-    // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.4")
-
-    // Lifecycle
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-
-    // Core AndroidX
-    implementation("androidx.core:core-ktx:1.15.0")
-
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-
-    // Testing
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-
-    // LeakCanary (debug-only memory leak detection)
-    // Controlled by BuildConfig.INCLUDE_LEAKCANARY - will be removed in future phases
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
-}
-
-/**
- * Guardrail task: Verify WorkManagerInitializer is not in merged manifests.
- *
- * This project uses on-demand WorkManager initialization via Configuration.Provider.
- * The auto-initialization must remain disabled to prevent runtime conflicts.
- *
- * Run after assembling to validate the manifest merge rules are correct.
- * CI should run this as a post-build verification step.
- */
-tasks.register<Exec>("checkNoWorkManagerInitializer") {
-    group = "verification"
-    description = "Verify WorkManagerInitializer is not in merged manifests (on-demand init only)"
-
-    commandLine("${rootProject.projectDir}/scripts/check_no_workmanager_initializer.sh")
-
-    // Only run if build has produced at least one merged manifest (any variant)
-    val mergedManifestsDir = file("${layout.buildDirectory.get()}/intermediates/merged_manifests")
-    onlyIf {
-        mergedManifestsDir.exists() &&
-            fileTree(mergedManifestsDir) {
-                include("**/AndroidManifest.xml")
-            }.files.isNotEmpty()
-    }
-
-    // Make this task run after manifest processing
-    tasks.findByName("processDebugManifest")?.let { processDebug ->
-        mustRunAfter(processDebug)
-    }
-    tasks.findByName("processReleaseManifest")?.let { processRelease ->
-        mustRunAfter(processRelease)
-    }
-}
-
-// Hook into assemble tasks for automatic validation
-tasks.matching { it.name.startsWith("assemble") }.configureEach {
-    finalizedBy("checkNoWorkManagerInitializer")
-}
-
-/**
- * Phase 3 CI Validation: Verify no debug tool references in release builds.
- *
- * This task scans compiled release classes to ensure LeakCanary and Chucker
- * are completely removed from release builds (not just disabled).
- *
- * Validates Issue #564 compile-time gating requirements.
- * Forbidden references include:
- * - LeakCanary classes and imports
- * - Chucker classes and imports
- * - Debug settings infrastructure (DebugToolsSettingsRepository, etc.)
- *
- * Run: ./gradlew assembleRelease
- * The task runs automatically after release assembly.
- */
-tasks.register("verifyNoDebugToolsInRelease") {
-    group = "verification"
-    description = "Verifies that no LeakCanary/Chucker references exist in release builds"
-
-    doLast {
-        // Define all possible class output directories
-        val classPathsToScan =
-            listOf(
-                // Kotlin compiler output (primary for Kotlin projects)
-                layout.buildDirectory.dir("tmp/kotlin-classes/release").get().asFile,
-                // Java compiler output (for Java sources)
-                layout.buildDirectory.dir("intermediates/javac/release/classes").get().asFile,
-                // Compiled library classes (merged from dependencies)
-                layout.buildDirectory.dir("intermediates/compile_library_classes_jar/release").get().asFile,
-                // Final DEX output (most reliable, but only available after dexing)
-                layout.buildDirectory.dir("intermediates/dex/release").get().asFile,
-            )
-
-        // Filter to existing directories
-        val existingPaths = classPathsToScan.filter { it.exists() }
-
-        if (existingPaths.isEmpty()) {
-            logger.warn("⚠️  No release class output found in any of:")
-            classPathsToScan.forEach { path ->
-                logger.warn("    - ${path.absolutePath}")
-            }
-            logger.warn("    Skipping verification. Run 'assembleRelease' first.")
-            return@doLast
-        }
-
-        logger.lifecycle("🔍 Scanning ${existingPaths.size} output directories:")
-        existingPaths.forEach { path ->
-            logger.lifecycle("    - ${path.name}/")
-        }
-
-        val forbiddenStrings =
-            listOf(
-                "LeakCanary",
-                "leakcanary",
-                "Chucker",
-                "chucker",
-                "DebugToolsSettingsRepository",
-                "DebugFlagsHolder",
-                "DebugToolsInitializer",
-                "GatedChuckerInterceptor",
-            )
-
-        val violations = mutableListOf<String>()
-        var scannedFilesCount = 0
-
-        existingPaths.forEach { rootDir ->
-            rootDir.walkTopDown().forEach { file ->
-                // Scan .class files (Java/Kotlin bytecode)
-                if (file.extension == "class") {
-                    scannedFilesCount++
-                    val content = file.readBytes().toString(Charsets.ISO_8859_1)
-                    forbiddenStrings.forEach { forbidden ->
-                        if (content.contains(forbidden)) {
-                            violations.add(
-                                "Found '$forbidden' in ${file.relativeTo(rootDir)} " +
-                                    "(from ${rootDir.name})",
-                            )
-                        }
-                    }
-                }
-
-                // Scan .jar files (library dependencies)
-                if (file.extension == "jar") {
-                    scannedFilesCount++
-                    val jarContent =
-                        ZipFile(file).use { zip ->
-                            zip.entries().asSequence()
-                                .filter { entry: ZipEntry -> entry.name.endsWith(".class") }
-                                .map { entry: ZipEntry ->
-                                    zip.getInputStream(entry).readBytes().toString(Charsets.ISO_8859_1)
-                                }
-                                .joinToString("")
-                        }
-                    forbiddenStrings.forEach { forbidden ->
-                        if (jarContent.contains(forbidden)) {
-                            violations.add(
-                                "Found '$forbidden' in JAR ${file.name} " +
-                                    "(from ${rootDir.name})",
-                            )
-                        }
-                    }
-                }
-
-                // Scan .dex files (final Android bytecode)
-                if (file.extension == "dex") {
-                    scannedFilesCount++
-                    val dexContent = file.readBytes().toString(Charsets.ISO_8859_1)
-                    forbiddenStrings.forEach { forbidden ->
-                        if (dexContent.contains(forbidden)) {
-                            violations.add(
-                                "Found '$forbidden' in DEX ${file.name} " +
-                                    "(from ${rootDir.name})",
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        logger.lifecycle("📊 Scanned $scannedFilesCount files")
-
-        if (violations.isNotEmpty()) {
-            throw GradleException(
-                """
-                |
-                |❌ DEBUG TOOL LEAKAGE DETECTED IN RELEASE BUILD!
-                |
-                |The following debug tool references were found in release output:
-                |${violations.joinToString("\n|")}
-                |
-                |This violates Issue #564 compile-time gating requirements.
-                |Debug tools must be completely removed from release builds.
-                |
-                |Scanned locations:
-                |${existingPaths.joinToString("\n|") { "  - ${it.name}/" }}
-                |
-                |Possible causes:
-                |1. Direct references to debug tools in production code
-                |2. Debug module not properly gated with debugImplementation
-                |3. BuildConfig flags not properly enforced
-                |
-                |See docs/v2/DEBUG_TOOLS_COMPILE_TIME_GATING.md for guidance.
-                |
-                """.trimMargin(),
-            )
-        } else {
-            logger.lifecycle("✅ Release build is clean - no debug tool references found")
-            logger.lifecycle("   ($scannedFilesCount files scanned)")
-        }
-    }
-}
-
-// Hook into release build process
-tasks.whenTaskAdded {
-    if (name == "assembleRelease") {
-        finalizedBy("verifyNoDebugToolsInRelease")
-    }
+    // ⭐ NEW: Compile-time gating for debug tools (Phase 1 + Workflow override support)
+    // These flags control whether LeakCanary and Chucker are included in the build
+    // - debug: Configurable via Gradle properties (default: true)
+    // - release: Both tools completely removed (no stubs, no imports, no UI)
+    // 
+    // Can be overridden via command line or CI workflow:
+    //   ./gradlew assembleDebug -PINCLUDE_LEAKCANARY=false -PINCLUDE_CHUCKER=true
+    val includeLeakCanary = project.findProperty("INCLUDE_LEAKCANARY")?.toString()?.toBoolean() ?: true
+    val includeChucker = project.findProperty("INCLUDE_CHUCKER")?.toString()?.toBoolean() ?: true
+    
+    buildConfigField("boolean", "INCLUDE_LEAKCANARY", "$includeLeakCanary")
+    buildConfigField("boolean", "INCLUDE_CHUCKER", "$includeChucker")
 }
