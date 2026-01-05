@@ -29,43 +29,11 @@ jobs:
           # fetch-depth wird von Copilot intern überschrieben
           submodules: recursive
 
-      - name: Set up JDK (für AGP 8.x / moderne Gradle-Versionen)
-        uses: actions/setup-java@v4
+      - name: Set up Android Environment (JDK, SDK, NDK mit Caching)
+        uses: ./.github/actions/android-env
         with:
-          distribution: temurin
-          # Für AGP >= 8.6 ist Java 21 empfohlen; falls dein Build
-          # noch strikt auf 17 besteht, kannst du hier auf '17' zurückstellen.
           java-version: '21'
-          cache: gradle
-
-      - name: Set up Android SDK (Tools + Plattformen)
-        uses: android-actions/setup-android@v3.2.2
-
-      - name: Install Android SDK packages
-        run: |
-          set -euxo pipefail
-          echo ">>> Accepting SDK licenses..."
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          echo ">>> Installing SDK packages..."
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-24" \
-            "platforms;android-34" \
-            "build-tools;35.0.0" || true
-          echo "SDK installation completed."
-
-      - name: Set up Android NDK r27c (für TDLib- und native Builds)
-        id: setup-ndk
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r27c
-          link-to-sdk: true
-          local-cache: true
-
-      - name: Export ANDROID_NDK_* environment variables
-        run: |
-          echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
+          ndk-version: 'r27c'
 
       - name: Verify toolchain (Gradle, Java, Android SDK/NDK)
         run: |

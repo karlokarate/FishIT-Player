@@ -1,0 +1,66 @@
+name: 'Setup Android Environment'
+description: 'Sets up JDK, Android SDK, and NDK with optimized caching'
+
+inputs:
+  java-version:
+    description: 'Java version to use'
+    required: false
+    default: '21'
+  ndk-version:
+    description: 'NDK version to use'
+    required: false
+    default: 'r27c'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache Android SDK
+      id: cache-android-sdk
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/local/lib/android/sdk/platforms
+          /usr/local/lib/android/sdk/build-tools
+          /usr/local/lib/android/sdk/platform-tools
+        key: android-sdk-${{ runner.os }}-35-35.0.0
+        restore-keys: |
+          android-sdk-${{ runner.os }}-
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+        cache: gradle
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3.2.2
+
+    - name: Install SDK packages
+      if: steps.cache-android-sdk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euxo pipefail
+        echo ">>> Accepting SDK licenses..."
+        yes | sdkmanager --licenses >/dev/null 2>&1 || true
+        echo ">>> Installing SDK packages..."
+        sdkmanager --install \
+          "platform-tools" \
+          "platforms;android-24" \
+          "platforms;android-34" \
+          "build-tools;35.0.0" || true
+        echo "SDK installation completed."
+
+    - name: Set up NDK
+      id: setup-ndk
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: ${{ inputs.ndk-version }}
+        link-to-sdk: true
+        local-cache: true
+
+    - name: Export NDK environment variables
+      shell: bash
+      run: |
+        echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
+        echo "ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }}" >> "$GITHUB_ENV"
