@@ -23,6 +23,10 @@ on:
   # Trigger after PR merge with task-chain label
   pull_request:
     types: [closed]
+  
+  # Trigger from other workflow runs
+  repository_dispatch:
+    types: [task-chain-next]
 
 permissions:
   contents: write
@@ -60,8 +64,13 @@ jobs:
           
           echo "Event: $EVENT_NAME"
           
+          # Handle repository_dispatch
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            action="find-next"
+            parent_issue="${{ github.event.client_payload.parent_issue || '573' }}"
+          
           # Handle workflow_dispatch
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             if [ -n "${{ github.event.inputs.force_issue }}" ]; then
               action="process"
               issue_number="${{ github.event.inputs.force_issue }}"
@@ -389,18 +398,12 @@ jobs:
     timeout-minutes: 5
     
     steps:
-      - name: Trigger next task
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Trigger next task via repository dispatch
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: task-chain-next
           client-payload: '{"parent_issue": "${{ needs.dispatch.outputs.parent_issue }}"}'
-      
-      - name: Alternative - Trigger workflow directly
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Trigger this workflow again to find and process next task
-          gh workflow run task-chain-agent.yml \
-            -f parent_issue="${{ needs.dispatch.outputs.parent_issue }}" \
-            -r ${{ github.ref_name }}

@@ -1,0 +1,136 @@
+name: Setup Task Chain Labels
+
+# One-time workflow to create required labels for task-chain-agent
+# Run this once to set up your repository
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Create ready-for-agent label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'ready-for-agent',
+                color: '0E8A16',
+                description: 'Task is ready for the agent to start'
+              });
+              console.log('✓ Created label: ready-for-agent');
+            } catch (error) {
+              if (error.status === 422) {
+                console.log('✓ Label already exists: ready-for-agent');
+              } else {
+                throw error;
+              }
+            }
+      
+      - name: Create in-progress label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'in-progress',
+                color: 'FBCA04',
+                description: 'Task is currently being worked on'
+              });
+              console.log('✓ Created label: in-progress');
+            } catch (error) {
+              if (error.status === 422) {
+                console.log('✓ Label already exists: in-progress');
+              } else {
+                throw error;
+              }
+            }
+      
+      - name: Create needs-review label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'needs-review',
+                color: 'D93F0B',
+                description: 'Task is waiting for review'
+              });
+              console.log('✓ Created label: needs-review');
+            } catch (error) {
+              if (error.status === 422) {
+                console.log('✓ Label already exists: needs-review');
+              } else {
+                throw error;
+              }
+            }
+      
+      - name: Create platinum-done label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'platinum-done',
+                color: '7057FF',
+                description: 'Task is perfectly completed'
+              });
+              console.log('✓ Created label: platinum-done');
+            } catch (error) {
+              if (error.status === 422) {
+                console.log('✓ Label already exists: platinum-done');
+              } else {
+                throw error;
+              }
+            }
+      
+      - name: Create task-chain label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'task-chain',
+                color: '0075CA',
+                description: 'Marks PRs as part of the task chain'
+              });
+              console.log('✓ Created label: task-chain');
+            } catch (error) {
+              if (error.status === 422) {
+                console.log('✓ Label already exists: task-chain');
+              } else {
+                throw error;
+              }
+            }
+      
+      - name: Summary
+        run: |
+          echo "## Labels Created ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following labels are now available:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟢 \`ready-for-agent\` - Task is ready for the agent to start" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟡 \`in-progress\` - Task is currently being worked on" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟠 \`needs-review\` - Task is waiting for review" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟣 \`platinum-done\` - Task is perfectly completed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔵 \`task-chain\` - Marks PRs as part of the task chain" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Add \`ready-for-agent\` label to issue #575" >> $GITHUB_STEP_SUMMARY
+          echo "2. Run the task-chain-agent workflow" >> $GITHUB_STEP_SUMMARY
