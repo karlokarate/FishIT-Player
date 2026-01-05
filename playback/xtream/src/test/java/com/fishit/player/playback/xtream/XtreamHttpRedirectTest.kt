@@ -21,6 +21,10 @@ import kotlin.test.assertNotNull
  * - Cross-host redirects work (common with CDN setups)
  * - Headers are preserved across redirects
  * - No real media playback required - just HTTP contract validation
+ *
+ * **Note (Issue #564):**
+ * Tests run with debug source set configuration (Robolectric uses debug variant by default).
+ * The debugMode parameter has been removed - behavior is now compile-time via source sets.
  */
 @RunWith(RobolectricTestRunner::class)
 class XtreamHttpRedirectTest {
@@ -75,7 +79,6 @@ class XtreamHttpRedirectTest {
                 XtreamHttpDataSourceFactory(
                     context = context,
                     headers = headers,
-                    debugMode = false,
                 )
 
             val dataSource = factory.createDataSource()
@@ -137,7 +140,6 @@ class XtreamHttpRedirectTest {
                 XtreamHttpDataSourceFactory(
                     context = context,
                     headers = headers,
-                    debugMode = false,
                 )
 
             val dataSource = factory.createDataSource()
@@ -170,7 +172,6 @@ class XtreamHttpRedirectTest {
                 XtreamHttpDataSourceFactory(
                     context = context,
                     headers = headers,
-                    debugMode = false,
                 )
 
             // The factory should be created successfully with SSL redirect support
@@ -201,7 +202,6 @@ class XtreamHttpRedirectTest {
                 XtreamHttpDataSourceFactory(
                     context = context,
                     headers = customHeaders,
-                    debugMode = false,
                 )
 
             val dataSource = factory.createDataSource()

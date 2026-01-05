@@ -224,11 +224,12 @@ class InternalPlayerSession(
                             // Use Xtream provider if available (optional dependency)
                             if (xtreamDataSourceProvider != null) {
                                 UnifiedLog.d(TAG) {
-                                    "Using Xtream HTTP DataSource = OkHttpDataSource.Factory (redirect-safe, Chucker-visible)"
+                                    "Using Xtream HTTP DataSource = OkHttpDataSource.Factory (redirect-safe)"
                                 }
+                                // Issue #564: debugMode is now compile-time via source sets
+                                // Debug builds automatically include Chucker, release builds don't
                                 xtreamDataSourceProvider.create(
                                     headers = source.headers,
-                                    debugMode = BuildConfig.DEBUG,
                                 )
                             } else {
                                 // PLATINUM: Fallback with redirect safety

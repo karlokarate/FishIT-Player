@@ -44,9 +44,12 @@ dependencies {
     // OkHttp for reliable redirect handling
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 
-    // Chucker HTTP Inspector (debug builds only)
+    // ========== COMPILE-TIME GATING: Chucker (Issue #564) ==========
+    // Chucker is ONLY included in debug builds via XtreamOkHttpClientProviderImpl.
+    // Release builds have ZERO Chucker code (no chucker-noop dependency).
+    // See: src/debug/ and src/release/ source sets for implementations.
     debugImplementation(libs.chucker)
-    releaseImplementation(libs.chucker.noop)
+    // NOTE: No releaseImplementation(libs.chucker.noop) - completely removed per Issue #564
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")

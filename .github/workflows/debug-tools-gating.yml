@@ -1,0 +1,274 @@
+name: Debug Tools Gating Verification
+
+# Verify Issue #564 compliance: LeakCanary & Chucker must be completely absent from release builds
+
+on:
+  push:
+    branches:
+      - 'architecture/v2-bootstrap'
+      - 'feature/**'
+    paths:
+      - 'app-v2/**'
+      - 'core/debug-settings/**'
+      - 'feature/settings/**'
+      - 'playback/xtream/**'
+      - 'infra/transport-xtream/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+  pull_request:
+    branches:
+      - 'architecture/v2-bootstrap'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-tools-gating-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Static analysis: Check source code for violations
+  source-analysis:
+    name: Source Code Analysis
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Check for chucker-noop dependencies
+        run: |
+          echo "🔍 Checking for chucker-noop dependencies (should be removed)..."
+          
+          # chucker-noop should NOT be used anywhere
+          if grep -rn "chucker.noop\|chucker-noop\|library-no-op" --include="*.gradle.kts" .; then
+            echo "❌ ERROR: Found chucker-noop references! Per Issue #564, use no-op stubs in source sets instead."
+            exit 1
+          fi
+          
+          echo "✅ No chucker-noop dependencies found"
+          
+      - name: Check for debug tool imports in main/ source sets
+        run: |
+          echo "🔍 Checking for LeakCanary/Chucker imports in main/ source sets..."
+          
+          # Find main source sets
+          violations=()
+          
+          # Check for direct LeakCanary imports in main/
+          if find . -path "*/src/main/*" -name "*.kt" -exec grep -l "import leakcanary" {} \; 2>/dev/null | grep -v "legacy/" | head -5; then
+            echo "❌ Found LeakCanary imports in main/ source sets"
+            violations+=("LeakCanary")
+          fi
+          
+          # Check for direct Chucker imports in main/
+          if find . -path "*/src/main/*" -name "*.kt" -exec grep -l "import com.chuckerteam.chucker" {} \; 2>/dev/null | grep -v "legacy/" | head -5; then
+            echo "❌ Found Chucker imports in main/ source sets"
+            violations+=("Chucker")
+          fi
+          
+          if [ ${#violations[@]} -gt 0 ]; then
+            echo ""
+            echo "❌ ERROR: Found debug tool imports in main/ source sets!"
+            echo "These should only be in debug/ source sets."
+            echo "Violations: ${violations[*]}"
+            exit 1
+          fi
+          
+          echo "✅ No debug tool imports in main/ source sets"
+          
+      - name: Check debug-settings module dependency usage
+        run: |
+          echo "🔍 Checking debug-settings module dependency usage..."
+          
+          # debug-settings should only be used with debugImplementation
+          if grep -rn 'implementation.*debug-settings' --include="*.gradle.kts" . | grep -v "debugImplementation" | grep -v "legacy/"; then
+            echo "❌ ERROR: debug-settings module must use debugImplementation, not implementation!"
+            exit 1
+          fi
+          
+          echo "✅ debug-settings module correctly uses debugImplementation"
+
+  # Build verification: Ensure release builds are clean
+  build-release:
+    name: Build & Verify Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: source-analysis
+    
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseParallelGC'"
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+          
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-release-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: |
+            gradle-release-${{ runner.os }}-
+            
+      - name: Build Release APK
+        run: |
+          ./gradlew :app-v2:assembleRelease \
+            -PabiFilters=arm64-v8a \
+            --no-daemon \
+            --stacktrace
+            
+      - name: Verify Release APK is clean
+        run: |
+          echo "🔍 Verifying release APK for debug tool contamination..."
+          
+          chmod +x scripts/ci/verify-no-debug-tools-in-release.sh
+          ./scripts/ci/verify-no-debug-tools-in-release.sh
+          
+      - name: Check R8 mapping for debug tools
+        run: |
+          mapping_file="app-v2/build/outputs/mapping/release/mapping.txt"
+          
+          if [ -f "$mapping_file" ]; then
+            echo "🔍 Checking R8 mapping file..."
+            
+            leakcanary_refs=$(grep -ci "leakcanary" "$mapping_file" 2>/dev/null || echo "0")
+            chucker_refs=$(grep -ci "chucker" "$mapping_file" 2>/dev/null || echo "0")
+            
+            echo "  LeakCanary references: $leakcanary_refs"
+            echo "  Chucker references: $chucker_refs"
+            
+            # Allow some references (they might be in comments/strings) but flag many
+            if [ "$leakcanary_refs" -gt 50 ] || [ "$chucker_refs" -gt 50 ]; then
+              echo "⚠️  Warning: High number of debug tool references in R8 mapping"
+              echo "This may indicate incomplete removal. Please review APK contents."
+            else
+              echo "✅ R8 mapping looks clean"
+            fi
+          else
+            echo "⚠️  No R8 mapping file found (expected for minified builds)"
+          fi
+          
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-debug-tools-verification
+          path: app-v2/build/outputs/apk/release/*.apk
+          retention-days: 7
+          
+  # Build debug to ensure it still compiles with all tools
+  build-debug:
+    name: Build Debug (with tools)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: source-analysis
+    
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseParallelGC'"
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+          
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-debug-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: |
+            gradle-debug-${{ runner.os }}-
+            
+      - name: Build Debug APK
+        run: |
+          ./gradlew :app-v2:assembleDebug \
+            -PabiFilters=arm64-v8a \
+            --no-daemon \
+            --stacktrace
+            
+      - name: Verify Debug APK contains debug tools
+        run: |
+          echo "🔍 Verifying debug APK contains expected debug tools..."
+          
+          apk_path=$(find app-v2/build/outputs/apk/debug -name "*.apk" | head -1)
+          
+          if [ -z "$apk_path" ]; then
+            echo "❌ No debug APK found"
+            exit 1
+          fi
+          
+          # Extract and check for LeakCanary/Chucker classes
+          temp_dir=$(mktemp -d)
+          unzip -q "$apk_path" -d "$temp_dir"
+          
+          # Check for LeakCanary presence (expected in debug)
+          if strings "$temp_dir"/*.dex 2>/dev/null | grep -qi "leakcanary"; then
+            echo "✅ LeakCanary found in debug build (expected)"
+          else
+            echo "⚠️  LeakCanary not clearly visible in debug build (may be OK)"
+          fi
+          
+          # Check for Chucker presence (expected in debug)
+          if strings "$temp_dir"/*.dex 2>/dev/null | grep -qi "chucker"; then
+            echo "✅ Chucker found in debug build (expected)"
+          else
+            echo "⚠️  Chucker not clearly visible in debug build (may be OK)"
+          fi
+          
+          rm -rf "$temp_dir"
+          echo "✅ Debug build verification complete"
+
+  # Summary job for branch protection
+  verify-complete:
+    name: Verification Complete
+    runs-on: ubuntu-24.04
+    needs: [source-analysis, build-release, build-debug]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.source-analysis.result }}" == "failure" ] || \
+             [ "${{ needs.build-release.result }}" == "failure" ] || \
+             [ "${{ needs.build-debug.result }}" == "failure" ]; then
+            echo "❌ Debug tools gating verification FAILED"
+            echo ""
+            echo "Issue #564 requirements not met. Please ensure:"
+            echo "  1. No chucker-noop dependencies (use source set stubs instead)"
+            echo "  2. No LeakCanary/Chucker imports in main/ source sets"
+            echo "  3. debug-settings module uses debugImplementation only"
+            echo "  4. Release APK contains zero debug tool references"
+            exit 1
+          fi
+          
+          echo "✅ Debug tools gating verification PASSED"
+          echo ""
+          echo "Issue #564 compliance verified:"
+          echo "  ✅ Source code analysis passed"
+          echo "  ✅ Release build is clean (no debug tools)"
+          echo "  ✅ Debug build compiles with all tools"

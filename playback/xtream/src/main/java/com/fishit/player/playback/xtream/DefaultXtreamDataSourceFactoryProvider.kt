@@ -12,6 +12,10 @@ import javax.inject.Singleton
  * Creates [XtreamHttpDataSourceFactory] instances with per-request configuration.
  * This indirection maintains player layer source-agnosticism by hiding the concrete
  * Xtream implementation behind an interface.
+ *
+ * **Compile-time Gating (Issue #564):**
+ * Debug/release behavior is handled by [XtreamOkHttpClientProviderImpl] in debug/ and release/
+ * source sets. No runtime flag needed.
  */
 @Singleton
 class DefaultXtreamDataSourceFactoryProvider
@@ -21,6 +25,5 @@ class DefaultXtreamDataSourceFactoryProvider
     ) : XtreamDataSourceFactoryProvider {
         override fun create(
             headers: Map<String, String>,
-            debugMode: Boolean,
-        ): DataSource.Factory = XtreamHttpDataSourceFactory(context, headers, debugMode)
+        ): DataSource.Factory = XtreamHttpDataSourceFactory(context, headers)
     }

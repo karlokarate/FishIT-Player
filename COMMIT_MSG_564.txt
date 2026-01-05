@@ -1,0 +1,34 @@
+feat(#564): Compile-time gating for Chucker/LeakCanary - Platin
+
+BREAKING CHANGE: Remove debugMode runtime parameter from XtreamDataSourceFactoryProvider
+
+## Summary
+Release builds now have ZERO Chucker/LeakCanary references - no classes,
+imports, stubs, or UI toggles. Achieved through compile-time gating via
+Gradle source sets.
+
+## Changes
+
+### New Files
+- playback/xtream/src/main/.../XtreamOkHttpClientProvider.kt (interface)
+- playback/xtream/src/debug/.../XtreamOkHttpClientProviderImpl.kt (Chucker)
+- playback/xtream/src/release/.../XtreamOkHttpClientProviderImpl.kt (minimal)
+- scripts/ci/verify-no-debug-tools-in-release.sh (APK verification)
+- .github/workflows/debug-tools-gating.yml (CI pipeline)
+- docs/ISSUE_564_DEBUG_TOOLS_GATING_COMPLETE.md (documentation)
+
+### Modified Files
+- playback/xtream/build.gradle.kts: Remove chucker-noop
+- infra/transport-xtream/build.gradle.kts: Remove chucker-noop
+- XtreamHttpDataSourceFactory.kt: Use provider pattern, no Chucker import
+- XtreamDataSourceFactoryProvider.kt: Remove debugMode parameter
+- DefaultXtreamDataSourceFactoryProvider.kt: Remove debugMode parameter
+- InternalPlayerSession.kt: Remove debugMode = BuildConfig.DEBUG
+- XtreamHttpRedirectTest.kt: Update tests
+
+## Architecture Pattern
+- Interface in main/ source set (no debug tool imports)
+- Debug implementation in debug/ source set (with Chucker)
+- Release implementation in release/ source set (zero overhead)
+
+Closes #564
