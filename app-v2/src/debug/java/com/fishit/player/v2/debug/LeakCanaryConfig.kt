@@ -1,14 +1,16 @@
 package com.fishit.player.v2.debug
 
 import android.app.Application
-import leakcanary.AppWatcher
-import leakcanary.LeakCanary
-import shark.AndroidReferenceMatchers
 
 /**
- * LeakCanary Gold Standard Configuration for FishIT Player v2.
+ * LeakCanary Configuration for FishIT Player v2.
  *
- * **What LeakCanary 2.x watches by default:**
+ * **Issue #564 Compile-Time Gating:**
+ * - Uses reflection to access LeakCanary APIs
+ * - When LeakCanary is not in the classpath (disabled via Gradle properties),
+ *   all methods become no-ops
+ *
+ * **What LeakCanary 2.x watches by default (when available):**
  * - Activities (after onDestroy)
  * - Fragments (after onDestroy/onDetach)
  * - Fragment Views (after onDestroyView)
@@ -31,53 +33,100 @@ import shark.AndroidReferenceMatchers
 object LeakCanaryConfig {
     private const val TAG = "LeakCanaryConfig"
 
+    /** Checks if LeakCanary is available in the classpath */
+    val isAvailable: Boolean by lazy {
+        try {
+            Class.forName("leakcanary.LeakCanary")
+            true
+        } catch (e: ClassNotFoundException) {
+            false
+        }
+    }
+
     /**
      * Install LeakCanary with FishIT-specific configuration.
      *
      * Must be called from Application.onCreate() AFTER Hilt injection.
+     * No-op if LeakCanary is not available.
      */
     fun install(app: Application) {
-        // Configure LeakCanary behavior
-        LeakCanary.config =
-            LeakCanary.config.copy(
-                // Dump heap when 5 retained objects are detected (default is 5)
-                retainedVisibleThreshold = 5,
-                // Show notification for leaks
-                dumpHeapWhenDebugging = false, // Don't auto-dump when debugger attached
-                // Reference matchers - include known Android framework leaks
-                referenceMatchers =
-                    AndroidReferenceMatchers.appDefaults +
-                        // Add FishIT-specific known leaks to ignore (if any framework bugs exist)
-                        listOf(
-                            // Example: If we find a framework leak, add it here
-                            // AndroidReferenceMatchers.instanceFieldLeak(
-                            //     className = "android.app.ActivityThread",
-                            //     fieldName = "mLastIntentSender",
-                            //     description = "Framework leak in ActivityThread"
-                            // )
-                        ),
-                // Compute retained heap size (slightly slower but more informative)
-                computeRetainedHeapSize = true,
-                // Max stored heap dumps (prevents filling storage)
-                maxStoredHeapDumps = 7,
-                // Request write external storage permission for heap dump export
-                requestWriteExternalStoragePermission = false, // We use SAF
-            )
+        if (!isAvailable) {
+            android.util.Log.i(TAG, "LeakCanary not available (disabled via compile-time gating)")
+            return
+        }
 
-        // Configure AppWatcher for additional object types
-        AppWatcher.config =
-            AppWatcher.config.copy(
-                // Watch all default types
-                watchActivities = true,
-                watchFragments = true,
-                watchFragmentViews = true,
-                watchViewModels = true,
-                // Delay before considering object retained (default 5s, we use 10s for player)
-                // This gives player more time to clean up after screen rotation
-                watchDurationMillis = 10_000L,
-            )
+        try {
+            // Get LeakCanary and AppWatcher classes
+            val leakCanaryClass = Class.forName("leakcanary.LeakCanary")
+            val appWatcherClass = Class.forName("leakcanary.AppWatcher")
+            val androidReferenceMatchersClass = Class.forName("shark.AndroidReferenceMatchers")
 
-        android.util.Log.i(TAG, "LeakCanary configured for FishIT Player v2")
+            // Get current LeakCanary config
+            val leakCanaryConfigField = leakCanaryClass.getField("config")
+            val currentLeakCanaryConfig = leakCanaryConfigField.get(null)
+            val leakCanaryConfigClass = currentLeakCanaryConfig.javaClass
+
+            // Get default reference matchers
+            val appDefaultsMethod = androidReferenceMatchersClass.getMethod("appDefaults")
+            @Suppress("UNCHECKED_CAST")
+            val appDefaults = appDefaultsMethod.invoke(null) as List<Any>
+
+            // Configure LeakCanary via reflection
+            val copyMethod = leakCanaryConfigClass.methods.firstOrNull { 
+                it.name == "copy" && it.parameterCount > 5 
+            }
+            
+            if (copyMethod != null) {
+                // Use default parameter values where possible
+                val newConfig = leakCanaryConfigClass.getMethod(
+                    "copy",
+                    Int::class.java,           // retainedVisibleThreshold
+                    Boolean::class.java,       // dumpHeapWhenDebugging
+                    List::class.java,          // referenceMatchers
+                    Boolean::class.java,       // computeRetainedHeapSize
+                    Int::class.java,           // maxStoredHeapDumps
+                    Boolean::class.java        // requestWriteExternalStoragePermission
+                ).invoke(
+                    currentLeakCanaryConfig,
+                    5,                         // retainedVisibleThreshold
+                    false,                     // dumpHeapWhenDebugging
+                    appDefaults,               // referenceMatchers
+                    true,                      // computeRetainedHeapSize
+                    7,                         // maxStoredHeapDumps
+                    false                      // requestWriteExternalStoragePermission
+                )
+                leakCanaryConfigField.set(null, newConfig)
+            }
+
+            // Get current AppWatcher config
+            val appWatcherConfigField = appWatcherClass.getField("config")
+            val currentAppWatcherConfig = appWatcherConfigField.get(null)
+            val appWatcherConfigClass = currentAppWatcherConfig.javaClass
+
+            // Configure AppWatcher via reflection
+            val appWatcherCopyMethod = appWatcherConfigClass.getMethod(
+                "copy",
+                Boolean::class.java,    // watchActivities
+                Boolean::class.java,    // watchFragments
+                Boolean::class.java,    // watchFragmentViews
+                Boolean::class.java,    // watchViewModels
+                Long::class.java        // watchDurationMillis
+            )
+            
+            val newAppWatcherConfig = appWatcherCopyMethod.invoke(
+                currentAppWatcherConfig,
+                true,                   // watchActivities
+                true,                   // watchFragments
+                true,                   // watchFragmentViews
+                true,                   // watchViewModels
+                10_000L                 // watchDurationMillis (10s for player)
+            )
+            appWatcherConfigField.set(null, newAppWatcherConfig)
+
+            android.util.Log.i(TAG, "LeakCanary configured for FishIT Player v2")
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "Failed to configure LeakCanary: ${e.message}")
+        }
     }
 
     /**
@@ -85,6 +134,7 @@ object LeakCanaryConfig {
      *
      * Call this when a player session is being destroyed to ensure
      * it gets garbage collected properly.
+     * No-op if LeakCanary is not available.
      *
      * @param watchedObject The object to watch (e.g., PlayerSession, PlayerView)
      * @param description Human-readable description for leak reports
@@ -93,16 +143,14 @@ object LeakCanaryConfig {
         watchedObject: Any,
         description: String,
     ) {
-        AppWatcher.objectWatcher.expectWeaklyReachable(
-            watchedObject = watchedObject,
-            description = "Player: $description",
-        )
+        watchObject(watchedObject, "Player: $description")
     }
 
     /**
      * Watch a TDLib-related object for leaks.
      *
      * TDLib objects may hold native resources and MUST be properly released.
+     * No-op if LeakCanary is not available.
      *
      * @param watchedObject The object to watch
      * @param description Human-readable description
@@ -111,10 +159,7 @@ object LeakCanaryConfig {
         watchedObject: Any,
         description: String,
     ) {
-        AppWatcher.objectWatcher.expectWeaklyReachable(
-            watchedObject = watchedObject,
-            description = "TDLib: $description",
-        )
+        watchObject(watchedObject, "TDLib: $description")
     }
 
     /**
@@ -122,6 +167,7 @@ object LeakCanaryConfig {
      *
      * Note: LeakCanary already watches ViewModels by default,
      * but this allows explicit tracking of specific VMs.
+     * No-op if LeakCanary is not available.
      *
      * @param watchedObject The ViewModel to watch
      * @param description Human-readable description
@@ -130,10 +176,28 @@ object LeakCanaryConfig {
         watchedObject: Any,
         description: String,
     ) {
-        AppWatcher.objectWatcher.expectWeaklyReachable(
-            watchedObject = watchedObject,
-            description = "ViewModel: $description",
-        )
+        watchObject(watchedObject, "ViewModel: $description")
+    }
+
+    /**
+     * Internal helper to watch objects via reflection.
+     */
+    private fun watchObject(watchedObject: Any, description: String) {
+        if (!isAvailable) return
+        
+        try {
+            val appWatcherClass = Class.forName("leakcanary.AppWatcher")
+            val objectWatcherField = appWatcherClass.getField("objectWatcher")
+            val objectWatcher = objectWatcherField.get(null)
+            val expectWeaklyReachableMethod = objectWatcher.javaClass.getMethod(
+                "expectWeaklyReachable",
+                Any::class.java,
+                String::class.java
+            )
+            expectWeaklyReachableMethod.invoke(objectWatcher, watchedObject, description)
+        } catch (e: Exception) {
+            // Silently ignore - LeakCanary might not be fully initialized
+        }
     }
 
     /**
@@ -141,20 +205,57 @@ object LeakCanaryConfig {
      *
      * This returns objects that are retained but not yet analyzed.
      * For full leak history, use LeakCanary UI.
+     *
+     * @return retained object count, or 0 if LeakCanary not available
      */
-    fun getRetainedObjectCount(): Int = AppWatcher.objectWatcher.retainedObjectCount
+    fun getRetainedObjectCount(): Int {
+        if (!isAvailable) return 0
+        
+        return try {
+            val appWatcherClass = Class.forName("leakcanary.AppWatcher")
+            val objectWatcherField = appWatcherClass.getField("objectWatcher")
+            val objectWatcher = objectWatcherField.get(null)
+            val countMethod = objectWatcher.javaClass.getMethod("getRetainedObjectCount")
+            countMethod.invoke(objectWatcher) as Int
+        } catch (e: Exception) {
+            0
+        }
+    }
 
     /**
      * Check if there are any retained objects waiting for analysis.
+     *
+     * @return true if retained objects exist, false otherwise or if LeakCanary not available
      */
-    fun hasRetainedObjects(): Boolean = AppWatcher.objectWatcher.hasRetainedObjects
+    fun hasRetainedObjects(): Boolean {
+        if (!isAvailable) return false
+        
+        return try {
+            val appWatcherClass = Class.forName("leakcanary.AppWatcher")
+            val objectWatcherField = appWatcherClass.getField("objectWatcher")
+            val objectWatcher = objectWatcherField.get(null)
+            val hasRetainedMethod = objectWatcher.javaClass.getMethod("getHasRetainedObjects")
+            hasRetainedMethod.invoke(objectWatcher) as Boolean
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     /**
      * Trigger a heap dump and analysis now.
      *
      * Use sparingly - this freezes the app for several seconds.
+     * No-op if LeakCanary is not available.
      */
     fun dumpHeapNow() {
-        LeakCanary.dumpHeap()
+        if (!isAvailable) return
+        
+        try {
+            val leakCanaryClass = Class.forName("leakcanary.LeakCanary")
+            val dumpHeapMethod = leakCanaryClass.getMethod("dumpHeap")
+            dumpHeapMethod.invoke(null)
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "Failed to dump heap: ${e.message}")
+        }
     }
 }

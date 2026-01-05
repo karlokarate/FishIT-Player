@@ -1,7 +1,6 @@
 package com.fishit.player.playback.xtream
 
 import android.content.Context
-import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.fishit.player.infra.logging.UnifiedLog
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -11,19 +10,48 @@ import okhttp3.Response
  * Debug implementation of [XtreamOkHttpClientProvider].
  *
  * **Adds debug-only interceptors:**
- * - ChuckerInterceptor: HTTP traffic inspection
+ * - ChuckerInterceptor: HTTP traffic inspection (when Chucker is available)
  * - RedirectLoggingInterceptor: Logs redirect chains for debugging
  *
  * **Compile-time Gating (Issue #564):**
- * This file is in debug/ source set and is ONLY compiled for debug builds.
- * The `import com.chuckerteam.chucker.*` import is safe here.
+ * - Uses reflection to check if Chucker is available
+ * - When -PincludeChucker=false, Chucker is not in the APK and will be skipped
+ * - RedirectLoggingInterceptor is always added for debugging
  */
 class XtreamOkHttpClientProviderImpl : XtreamOkHttpClientProvider {
-    override fun createClient(context: Context): OkHttpClient =
-        createBaseOkHttpClientBuilder()
-            .addInterceptor(ChuckerInterceptor.Builder(context).build())
+    override fun createClient(context: Context): OkHttpClient {
+        val builder = createBaseOkHttpClientBuilder()
             .addNetworkInterceptor(RedirectLoggingInterceptor())
-            .build()
+        
+        // Conditionally add Chucker interceptor if available (compile-time gating)
+        createChuckerInterceptor(context)?.let { chucker ->
+            builder.addInterceptor(chucker)
+            UnifiedLog.d(TAG) { "Chucker interceptor added" }
+        } ?: run {
+            UnifiedLog.d(TAG) { "Chucker not available (disabled via compile-time gating)" }
+        }
+        
+        return builder.build()
+    }
+
+    /**
+     * Creates ChuckerInterceptor via reflection to avoid compile-time dependency.
+     * Returns null if Chucker classes are not available (disabled via Gradle properties).
+     */
+    private fun createChuckerInterceptor(context: Context): Interceptor? =
+        try {
+            val builderClass = Class.forName("com.chuckerteam.chucker.api.ChuckerInterceptor\$Builder")
+            val constructor = builderClass.getConstructor(Context::class.java)
+            val builder = constructor.newInstance(context)
+            val buildMethod = builderClass.getMethod("build")
+            buildMethod.invoke(builder) as Interceptor
+        } catch (e: ClassNotFoundException) {
+            // Chucker not in classpath - this is expected when disabled
+            null
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG) { "Failed to create Chucker interceptor: ${e.message}" }
+            null
+        }
 
     /**
      * Network interceptor for logging redirect chains (DEBUG BUILDS ONLY).

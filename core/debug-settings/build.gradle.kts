@@ -5,6 +5,12 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+// ⭐ COMPILE-TIME GATING (Issue #564): Read Gradle properties for conditional dependencies
+// This module is only included via debugImplementation when tools are enabled.
+// The dependencies below are conditional to avoid pulling in unused libraries.
+val includeChucker = project.findProperty("includeChucker")?.toString()?.toBoolean() ?: true
+val includeLeakCanary = project.findProperty("includeLeakCanary")?.toString()?.toBoolean() ?: true
+
 android {
     namespace = "com.fishit.player.core.debugsettings"
     compileSdk = 35
@@ -38,11 +44,19 @@ dependencies {
     // OkHttp for interceptor interface
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 
+    // ========== COMPILE-TIME GATING: Chucker & LeakCanary (Issue #564) ==========
+    // These dependencies are ONLY included when enabled via Gradle properties.
+    // When disabled, the library is NOT in the APK at all.
+
     // Chucker HTTP Inspector (for GatedChuckerInterceptor)
-    implementation(libs.chucker)
+    if (includeChucker) {
+        implementation(libs.chucker)
+    }
 
     // LeakCanary (for LeakCanary runtime control)
-    implementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    if (includeLeakCanary) {
+        implementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    }
 
     // Logging
     implementation(project(":infra:logging"))

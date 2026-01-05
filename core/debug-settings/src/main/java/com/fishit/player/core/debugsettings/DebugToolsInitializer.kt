@@ -4,29 +4,26 @@ import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import leakcanary.AppWatcher
-import leakcanary.LeakCanary
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Initializer that syncs DataStore settings to runtime flags and configures debug tools.
  *
+ * **Issue #564 Compile-Time Gating:**
+ * - Uses reflection to configure LeakCanary when available
+ * - When LeakCanary is not in the classpath (disabled via Gradle properties),
+ *   the configuration is silently skipped
+ *
  * **Contract:**
  * - Starts on app launch (called from Application.onCreate)
  * - Collects settings flows and updates DebugFlagsHolder atomics
- * - Configures LeakCanary watchers based on settings
+ * - Configures LeakCanary watchers based on settings (when available)
  * - Logs toggle state transitions
  *
  * **Lifecycle:**
  * - Application scope (stays active for entire app lifecycle)
  * - No memory leaks (uses app-scoped CoroutineScope)
- *
- * **Usage:**
- * ```kotlin
- * // In FishItV2Application.onCreate():
- * debugToolsInitializer.start(appScope)
- * ```
  */
 @Singleton
 class DebugToolsInitializer
@@ -35,6 +32,15 @@ class DebugToolsInitializer
         private val settingsRepo: DebugToolsSettingsRepository,
         private val flagsHolder: DebugFlagsHolder,
     ) {
+        private val isLeakCanaryAvailable: Boolean by lazy {
+            try {
+                Class.forName("leakcanary.LeakCanary")
+                true
+            } catch (e: ClassNotFoundException) {
+                false
+            }
+        }
+
         /**
          * Start observing settings and updating runtime flags.
          *
@@ -52,68 +58,82 @@ class DebugToolsInitializer
             settingsRepo.leakCanaryEnabledFlow
                 .onEach { enabled ->
                     flagsHolder.leakCanaryEnabled.set(enabled)
-                    configureLeakCanary(enabled)
-                    UnifiedLog.i(TAG) { "LeakCanary enabled=$enabled" }
+                    if (isLeakCanaryAvailable) {
+                        configureLeakCanary(enabled)
+                    } else {
+                        UnifiedLog.d(TAG) { "LeakCanary not available (disabled via compile-time gating)" }
+                    }
+                    UnifiedLog.i(TAG) { "LeakCanary enabled=$enabled (available=$isLeakCanaryAvailable)" }
                 }.launchIn(appScope)
 
-            UnifiedLog.i(TAG) { "DebugToolsInitializer started" }
+            UnifiedLog.i(TAG) { "DebugToolsInitializer started (LeakCanary available=$isLeakCanaryAvailable)" }
         }
 
         /**
-         * Configure LeakCanary based on enabled state.
+         * Configure LeakCanary based on enabled state using reflection.
          *
          * When enabled:
-         * - Enable watchers (Activities, Fragments, ViewModels) via AppWatcher.config.enabled
+         * - Enable watchers (Activities, Fragments, ViewModels)
          * - Show launcher icon
          * - Allow heap dumps and analysis
          *
          * When disabled (DEFAULT):
-         * - Disable watchers via AppWatcher.config.enabled
+         * - Disable watchers
          * - Hide launcher icon
          * - Disable automatic heap dumps
-         *
-         * Note: We use AppWatcher.config which is deprecated in favor of manualInstall(),
-         * but manualInstall() is for different use cases (manual initialization).
-         * For runtime toggling, AppWatcher.config.enabled is still the correct approach.
          */
-        @Suppress("DEPRECATION") // AppWatcher.config is the correct API for runtime toggling
         private fun configureLeakCanary(enabled: Boolean) {
-            if (enabled) {
-                // Enable watchers (this is the key to actually start/stop watching)
-                AppWatcher.config =
-                    AppWatcher.config.copy(
-                        enabled = true,
+            try {
+                val appWatcherClass = Class.forName("leakcanary.AppWatcher")
+                val leakCanaryClass = Class.forName("leakcanary.LeakCanary")
+                
+                // Get current configs
+                val appWatcherConfigField = appWatcherClass.getField("config")
+                val leakCanaryConfigField = leakCanaryClass.getField("config")
+                
+                val currentAppWatcherConfig = appWatcherConfigField.get(null)
+                val currentLeakCanaryConfig = leakCanaryConfigField.get(null)
+                
+                val appWatcherConfigClass = currentAppWatcherConfig.javaClass
+                val leakCanaryConfigClass = currentLeakCanaryConfig.javaClass
+
+                if (enabled) {
+                    // Enable watchers
+                    val copyMethod = appWatcherConfigClass.getMethod("copy", 
+                        Boolean::class.java, // watchActivities
+                        Boolean::class.java, // watchFragments
+                        Boolean::class.java, // watchFragmentViews
+                        Boolean::class.java, // watchViewModels
+                        Boolean::class.java  // enabled
                     )
+                    val newConfig = copyMethod.invoke(currentAppWatcherConfig, true, true, true, true, true)
+                    appWatcherConfigField.set(null, newConfig)
 
-                // Enable heap dumps
-                LeakCanary.config =
-                    LeakCanary.config.copy(
-                        dumpHeapWhenDebugging = false, // Still don't auto-dump when debugger attached
-                        retainedVisibleThreshold = 5, // Dump when 5+ objects retained
+                    // Show launcher icon
+                    val showIconMethod = leakCanaryClass.getMethod("showLeakDisplayActivityLauncherIcon", Boolean::class.java)
+                    showIconMethod.invoke(null, true)
+
+                    UnifiedLog.i(TAG) { "LeakCanary ENABLED (watchers active, heap dumps allowed)" }
+                } else {
+                    // Disable watchers
+                    val copyMethod = appWatcherConfigClass.getMethod("copy", 
+                        Boolean::class.java, // watchActivities
+                        Boolean::class.java, // watchFragments
+                        Boolean::class.java, // watchFragmentViews
+                        Boolean::class.java, // watchViewModels
+                        Boolean::class.java  // enabled
                     )
+                    val newConfig = copyMethod.invoke(currentAppWatcherConfig, false, false, false, false, false)
+                    appWatcherConfigField.set(null, newConfig)
 
-                // Show launcher icon for easy access to LeakCanary UI
-                LeakCanary.showLeakDisplayActivityLauncherIcon(true)
+                    // Hide launcher icon
+                    val showIconMethod = leakCanaryClass.getMethod("showLeakDisplayActivityLauncherIcon", Boolean::class.java)
+                    showIconMethod.invoke(null, false)
 
-                UnifiedLog.i(TAG) { "LeakCanary ENABLED (watchers active, heap dumps allowed)" }
-            } else {
-                // Disable watchers (DEFAULT) - this actually stops watching for leaks
-                AppWatcher.config =
-                    AppWatcher.config.copy(
-                        enabled = false,
-                    )
-
-                // Disable heap dumps
-                LeakCanary.config =
-                    LeakCanary.config.copy(
-                        dumpHeapWhenDebugging = false,
-                        retainedVisibleThreshold = Int.MAX_VALUE, // Effectively disable auto-dump
-                    )
-
-                // Hide launcher icon
-                LeakCanary.showLeakDisplayActivityLauncherIcon(false)
-
-                UnifiedLog.i(TAG) { "LeakCanary DISABLED (watchers stopped, no automatic heap dumps)" }
+                    UnifiedLog.i(TAG) { "LeakCanary DISABLED (watchers stopped, no automatic heap dumps)" }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "Failed to configure LeakCanary: ${e.message}" }
             }
         }
 

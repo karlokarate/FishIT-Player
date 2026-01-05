@@ -6,6 +6,9 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+// ⭐ COMPILE-TIME GATING (Issue #564): Read Gradle properties for conditional dependencies
+val includeChucker = project.findProperty("includeChucker")?.toString()?.toBoolean() ?: true
+
 android {
     namespace = "com.fishit.player.infra.transport.xtream"
     compileSdk = 35
@@ -30,6 +33,8 @@ dependencies {
     implementation(project(":infra:logging"))
 
     // Debug settings (for GatedChuckerInterceptor in debug builds)
+    // This module is always included in debug builds for the gating infrastructure.
+    // The actual Chucker library is conditionally included below.
     debugImplementation(project(":core:debug-settings"))
 
     // Coroutines
@@ -48,10 +53,12 @@ dependencies {
     ksp("com.google.dagger:hilt-compiler:2.56.1")
 
     // ========== COMPILE-TIME GATING: Chucker (Issue #564) ==========
-    // Chucker is ONLY included in debug builds via DebugInterceptorModule.
-    // Release builds have ZERO Chucker code (no chucker-noop dependency).
+    // Chucker is ONLY included when -PincludeChucker=true (default).
+    // When false, the library is NOT in the APK at all - no auto-init, no overhead.
     // See: src/debug/ and src/release/ source sets for DebugInterceptorModule.
-    debugImplementation(libs.chucker)
+    if (includeChucker) {
+        debugImplementation(libs.chucker)
+    }
     // NOTE: No releaseImplementation(libs.chucker.noop) - completely removed per Issue #564
 
     // Testing

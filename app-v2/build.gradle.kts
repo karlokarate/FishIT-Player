@@ -7,6 +7,13 @@ plugins {
 }
 
 /**
+ * Issue #564: Compile-time gating for debug tools.
+ * When false, LeakCanary is NOT included in the APK at all.
+ * Default: true (for development builds)
+ */
+val includeLeakCanary: Boolean = (project.findProperty("includeLeakCanary") as? String)?.toBoolean() ?: true
+
+/**
  * Keystore configuration for release signing.
  * Reads from Gradle properties or environment variables (set by CI workflow).
  */
@@ -270,8 +277,12 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 
     // LeakCanary (debug-only memory leak detection)
-    // Controlled by BuildConfig.INCLUDE_LEAKCANARY - will be removed in future phases
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    // ⭐ COMPILE-TIME GATING (Issue #564):
+    // Only included when -PincludeLeakCanary=true (default for debug)
+    // When false, the library is NOT in the APK at all - no auto-init, no overhead
+    if (includeLeakCanary) {
+        debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    }
 }
 
 /**
