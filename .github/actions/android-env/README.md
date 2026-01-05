@@ -40,14 +40,14 @@ Keine direkten Outputs, aber folgende Umgebungsvariablen werden gesetzt:
 
 ### Android SDK Cache
 - **Path**: `/usr/local/lib/android/sdk/{platforms,build-tools,platform-tools}`
-- **Key**: `android-sdk-${{ runner.os }}-35-35.0.0`
+- **Key**: `android-sdk-${{ runner.os }}-24-34-35.0.0` (entspricht den installierten Plattformen 24, 34 und build-tools 35.0.0)
 - **Restore Keys**: `android-sdk-${{ runner.os }}-`
 
 ### Gradle Cache
 - Automatisch durch `actions/setup-java@v4` mit `cache: gradle`
 
 ### NDK Cache
-- Automatisch durch `nttld/setup-ndk@v1` mit `local-cache: true`
+- Automatisch durch `nttld/setup-ndk@afb4c9964b521afb97c864b7d40b11e6911bd410` (v1, gepinnt auf Commit-SHA) mit `local-cache: true`
 
 ## Performance-Verbesserungen
 
@@ -77,6 +77,8 @@ jobs:
 ## Wartung
 
 Wenn SDK-Versionen aktualisiert werden:
-1. Update `key` in der Cache-Konfiguration
-2. Update `sdkmanager --install` Pakete
+1. Update `key` in `.github/actions/android-env/action.yml` (z.B. von `24-34-35.0.0` zu `24-35-36.0.0`)
+2. Update `sdkmanager --install` Pakete in derselben Datei
 3. Test durchführen mit `workflow_dispatch`
+
+**Hinweis:** Der Cache-Key wird nur in `.github/actions/android-env/action.yml` definiert und richtet sich nach den dort konfigurierten SDK-Versionen.

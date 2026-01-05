@@ -127,11 +127,13 @@ jobs:
 ### Cache-Key Update
 Bei SDK-Version-Updates:
 1. Update `key` in `.github/actions/android-env/action.yml`
-2. Update `sdkmanager --install` Pakete
+2. Update `sdkmanager --install` Pakete in derselben Datei
 3. Test mit `workflow_dispatch`
 
-**Format:** `android-sdk-${{ runner.os }}-<platform>-<build-tools>`
-**Aktuell:** `android-sdk-${{ runner.os }}-35-35.0.0`
+**Format:** `android-sdk-${{ runner.os }}-<plat1>-<plat2>-<build-tools>`
+**Aktuell:** `android-sdk-${{ runner.os }}-24-34-35.0.0` (Plattformen 24, 34 und build-tools 35.0.0)
+
+**Hinweis:** Der Cache-Key wird ausschließlich in `.github/actions/android-env/action.yml` definiert und richtet sich nach den dort konfigurierten SDK-Versionen.
 
 ### Troubleshooting
 

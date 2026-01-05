@@ -22,7 +22,7 @@ runs:
           /usr/local/lib/android/sdk/platforms
           /usr/local/lib/android/sdk/build-tools
           /usr/local/lib/android/sdk/platform-tools
-        key: android-sdk-${{ runner.os }}-35-35.0.0
+        key: android-sdk-${{ runner.os }}-24-34-35.0.0
         restore-keys: |
           android-sdk-${{ runner.os }}-
 
@@ -53,7 +53,7 @@ runs:
 
     - name: Set up NDK
       id: setup-ndk
-      uses: nttld/setup-ndk@v1
+      uses: nttld/setup-ndk@afb4c9964b521afb97c864b7d40b11e6911bd410 # v1
       with:
         ndk-version: ${{ inputs.ndk-version }}
         link-to-sdk: true
