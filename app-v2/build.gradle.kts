@@ -390,6 +390,8 @@ tasks.register("verifyNoDebugToolsInRelease") {
 }
 
 // Hook into release build process
-tasks.named("assembleRelease") {
-    finalizedBy("verifyNoDebugToolsInRelease")
+tasks.whenTaskAdded {
+    if (name == "assembleRelease") {
+        finalizedBy("verifyNoDebugToolsInRelease")
+    }
 }
