@@ -28,9 +28,23 @@ object XtreamTools {
     private const val MAX_RETRIES = 3
     private const val INITIAL_BACKOFF_MS = 1000L
 
+    // =========================================================================
+    // HTTP Config (matches App's XtreamTransportConfig EXACTLY)
+    // See: infra/transport-xtream/.../XtreamTransportConfig.kt
+    // =========================================================================
+    private const val USER_AGENT = "FishIT-Player/2.x (Android)"
+    private const val ACCEPT_JSON = "application/json"
+    private const val ACCEPT_ENCODING = "gzip"
+
     private val client = OkHttpClient.Builder()
+        // Timeouts per Premium Contract Section 3 (all 30s)
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .callTimeout(30, TimeUnit.SECONDS)
+        // Redirect handling (matches App exactly)
+        .followRedirects(true)
+        .followSslRedirects(false)  // CRITICAL: Many Xtream panels use HTTP on non-standard ports
         .build()
 
     private val json = Json { 
@@ -398,12 +412,31 @@ object XtreamTools {
                 val requestUrl = "$baseUrl/player_api.php?username=$user&password=$pass&action=$action"
                 val request = Request.Builder()
                     .url(requestUrl)
-                    .header("User-Agent", "FishIT-MCP/1.0")
+                    // Headers per Premium Contract Section 4 (matches App exactly)
+                    .header("User-Agent", USER_AGENT)
+                    .header("Accept", ACCEPT_JSON)
+                    .header("Accept-Encoding", ACCEPT_ENCODING)
                     .build()
 
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
-                        val body = response.body?.string() ?: return@forEach
+                        // Gzip handling (matches App behavior)
+                        val bodyBytes = response.body?.bytes() ?: return@forEach
+                        val body = if (bodyBytes.size >= 2 &&
+                            (bodyBytes[0].toInt() and 0xFF) == 0x1F &&
+                            (bodyBytes[1].toInt() and 0xFF) == 0x8B
+                        ) {
+                            try {
+                                java.util.zip.GZIPInputStream(bodyBytes.inputStream())
+                                    .bufferedReader()
+                                    .readText()
+                            } catch (e: Exception) {
+                                String(bodyBytes, Charsets.UTF_8)
+                            }
+                        } else {
+                            String(bodyBytes, Charsets.UTF_8)
+                        }
+                        
                         val items = json.parseToJsonElement(body)
                         if (items is JsonArray) {
                             val matches = items.filter { item ->
@@ -464,7 +497,10 @@ object XtreamTools {
             try {
                 val request = Request.Builder()
                     .url(requestUrl)
-                    .header("User-Agent", "FishIT-MCP/1.0")
+                    // Headers per Premium Contract Section 4 (matches App exactly)
+                    .header("User-Agent", USER_AGENT)
+                    .header("Accept", ACCEPT_JSON)
+                    .header("Accept-Encoding", ACCEPT_ENCODING)
                     .build()
 
                 client.newCall(request).execute().use { response ->
@@ -477,7 +513,26 @@ object XtreamTools {
                         throw RuntimeException("HTTP ${response.code}: ${response.message}")
                     }
 
-                    val body = response.body?.string() ?: return errorResult("Empty response")
+                    // Get raw bytes first for gzip handling (matches App behavior)
+                    val bodyBytes = response.body?.bytes() ?: return errorResult("Empty response")
+                    
+                    // Defensive gzip handling: Some servers send gzip without Content-Encoding header
+                    // Check for gzip magic bytes: 0x1F 0x8B (per RFC 1952)
+                    val body = if (bodyBytes.size >= 2 &&
+                        (bodyBytes[0].toInt() and 0xFF) == 0x1F &&
+                        (bodyBytes[1].toInt() and 0xFF) == 0x8B
+                    ) {
+                        try {
+                            java.util.zip.GZIPInputStream(bodyBytes.inputStream())
+                                .bufferedReader()
+                                .readText()
+                        } catch (e: Exception) {
+                            // Fallback to raw bytes if decompression fails
+                            String(bodyBytes, Charsets.UTF_8)
+                        }
+                    } else {
+                        String(bodyBytes, Charsets.UTF_8)
+                    }
                     
                     // Parse and potentially limit results
                     val jsonResult = try {
