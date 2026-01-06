@@ -11,6 +11,7 @@ pluginManagement {
 
         // Kotlin Gradle plugins (align with Kotlin 2.1.0 / Compose 1.9.x)
         kotlin("android") version "2.1.0" apply false
+        kotlin("jvm") version "2.1.0" apply false
         kotlin("plugin.serialization") version "2.1.0" apply false
         kotlin("plugin.compose") version "2.1.0" apply false
         id("com.google.devtools.ksp") version "2.1.0-1.0.29" apply false
@@ -102,3 +103,6 @@ include(":infra:data-home")
 include(":infra:data-detail")
 include(":infra:imaging")
 include(":infra:work")
+
+// Tools (standalone JVM)
+include(":tools:mcp-server")

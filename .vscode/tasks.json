@@ -10,7 +10,10 @@
       "label": "Safe Build Debug",
       "type": "shell",
       "command": "bash",
-      "args": ["${workspaceFolder}/scripts/build/safe-build.sh", "assembleDebug"],
+      "args": [
+        "${workspaceFolder}/scripts/build/safe-build.sh",
+        "assembleDebug"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -20,32 +23,45 @@
         "panel": "dedicated",
         "clear": true
       },
-      "problemMatcher": ["$gradle"]
+      "problemMatcher": [
+        "$gradle"
+      ]
     },
     {
       "label": "Safe Build Release",
       "type": "shell",
       "command": "bash",
-      "args": ["${workspaceFolder}/scripts/build/safe-build.sh", "assembleRelease"],
+      "args": [
+        "${workspaceFolder}/scripts/build/safe-build.sh",
+        "assembleRelease"
+      ],
       "group": "build",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
         "clear": true
       },
-      "problemMatcher": ["$gradle"]
+      "problemMatcher": [
+        "$gradle"
+      ]
     },
     {
       "label": "Clean Build",
       "type": "shell",
       "command": "bash",
-      "args": ["${workspaceFolder}/scripts/build/safe-build.sh", "clean", "assembleDebug"],
+      "args": [
+        "${workspaceFolder}/scripts/build/safe-build.sh",
+        "clean",
+        "assembleDebug"
+      ],
       "group": "build",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
       },
-      "problemMatcher": ["$gradle"]
+      "problemMatcher": [
+        "$gradle"
+      ]
     },
     {
       "label": "Stop All Daemons",
@@ -55,8 +71,9 @@
         "cwd": "${workspaceFolder}"
       },
       "presentation": {
-        "reveal": "always",
-        "panel": "shared"
+        "reveal": "silent",
+        "panel": "shared",
+        "close": true
       }
     },
     {
@@ -67,8 +84,9 @@
         "cwd": "${workspaceFolder}"
       },
       "presentation": {
-        "reveal": "always",
-        "panel": "shared"
+        "reveal": "silent",
+        "panel": "shared",
+        "close": true
       }
     },
     {
@@ -77,7 +95,8 @@
       "command": "free -h && echo '' && echo 'Top Memory Users:' && ps aux --sort=-%mem | head -6",
       "presentation": {
         "reveal": "always",
-        "panel": "shared"
+        "panel": "shared",
+        "close": true
       }
     },
     {
@@ -90,7 +109,9 @@
         "panel": "dedicated",
         "clear": true
       },
-      "problemMatcher": ["$gradle"]
+      "problemMatcher": [
+        "$gradle"
+      ]
     },
     {
       "label": "Pipeline: Test All",
@@ -102,7 +123,9 @@
         "panel": "dedicated",
         "clear": true
       },
-      "problemMatcher": ["$gradle"]
+      "problemMatcher": [
+        "$gradle"
+      ]
     }
   ]
 }

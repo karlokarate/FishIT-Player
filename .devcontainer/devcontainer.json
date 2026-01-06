@@ -7,9 +7,6 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "vscjava.vscode-java-pack",
-        "fwcd.kotlin",
-        "mathiasfrohlich.Kotlin",
         "GitHub.copilot",
         "GitHub.copilot-chat"
       ],

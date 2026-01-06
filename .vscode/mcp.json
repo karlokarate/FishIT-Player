@@ -1,0 +1,19 @@
+{
+  "servers": {
+    "fishit-pipeline": {
+      "type": "stdio",
+      "command": "java",
+      "args": [
+        "-jar",
+        "${workspaceFolder}/tools/mcp-server/build/libs/mcp-server-1.0.0-all.jar"
+      ],
+      "env": {
+        "XTREAM_URL": "http://konigtv.com:8080",
+        "XTREAM_USER": "Christoph10",
+        "XTREAM_PASS": "JQ2rKsQ744",
+        "TELEGRAM_API_ID": "${env:TELEGRAM_API_ID}",
+        "TELEGRAM_API_HASH": "${env:TELEGRAM_API_HASH}"
+      }
+    }
+  }
+}
