@@ -3,72 +3,87 @@ applyTo:
   - infra/logging/**
 ---
 
-# 🏆 PLATIN Instructions:  infra/logging
+# 🏆 PLATIN Instructions: infra/logging
 
 > **PLATIN STANDARD** - Unified Logging System (SSOT).
 >
-> **Purpose:** Central logging facade for ALL modules.  Every log statement in the codebase
-> MUST use UnifiedLog.  Zero exceptions. 
+> **Purpose:** Central logging facade for ALL v2 modules. Every log statement in the codebase
+> MUST use UnifiedLog. Zero exceptions.
 >
-> **Critical Principle:** UnifiedLog is the SINGLE SOURCE OF TRUTH for logging. 
-> println, Log. d, Timber, System.out are FORBIDDEN everywhere. 
+> **Binding Contract:** `contracts/LOGGING_CONTRACT_V2.md` (Version 1.1)
+>
+> **Critical Principle:** UnifiedLog is the SINGLE SOURCE OF TRUTH for logging.
+> `println`, `Log.d`, `Timber`, `System.out` are FORBIDDEN everywhere except `:infra:logging`.
 
 ---
 
 ## 🔴 ABSOLUTE HARD RULES
 
-### 1. UnifiedLog is MANDATORY Everywhere
+### 1. UnifiedLog is MANDATORY Everywhere (Except :infra:logging)
 
 ```kotlin
-// ✅ CORRECT:  UnifiedLog with lazy evaluation
+// ✅ PRIMARY API: Lambda-based (RECOMMENDED for all code)
 import com.fishit.player.infra.logging.UnifiedLog
 
 private const val TAG = "MyComponent"
 
-UnifiedLog. d(TAG) { "Starting operation:  $operationId" }
-UnifiedLog.i(TAG) { "User logged in: ${user.id}" }
+UnifiedLog.d(TAG) { "Starting operation: $operationId" }
+UnifiedLog.i(TAG) { "User logged in: userId=${user.id}" }
 UnifiedLog.w(TAG) { "Cache miss for key: $key" }
-UnifiedLog.e(TAG, exception) { "Failed to load data: ${exception.message}" }
+UnifiedLog.e(TAG, exception) { "Failed to load data: itemId=$itemId" }
+UnifiedLog.v(TAG) { "Verbose debug: $details" }
+
+// ✅ CONVENIENCE API: String-based (ONLY for constant messages)
+UnifiedLog.d(TAG, "Operation started")           // OK - constant string
+UnifiedLog.e(TAG, "Critical failure", exception) // OK - constant string
+
+// ❌ FORBIDDEN: String-based with interpolation (eager evaluation!)
+UnifiedLog.d(TAG, "Computed: ${expensiveFunction()}")  // WRONG - always evaluated!
 
 // ❌ FORBIDDEN: ANY other logging mechanism
-println("Debug:  $value")                        // WRONG
+println("Debug: $value")                        // WRONG
 Log.d(TAG, "message")                           // WRONG
 Log.e(TAG, "error", exception)                  // WRONG
-Timber. d("message")                             // WRONG
+Timber.d("message")                             // WRONG
 System.out.println("debug")                     // WRONG
 android.util.Log.v(TAG, "verbose")              // WRONG
 ```
 
-**Why:**
-- Single point of control for log filtering
-- Consistent format across all modules
-- Lazy evaluation (no string building unless logged)
-- Structured logging support
-- Backend-agnostic (can route to Logcat, Firebase, Sentry, etc.)
+**Per Contract Section 1.1:**
+- `:infra:logging` is the ONLY module allowed to depend on `Timber` and `android.util.Log`
+- All other modules MUST use `UnifiedLog` exclusively
 
 ---
 
-### 2. Lazy Evaluation is MANDATORY
+### 2. Lambda-Based API is PRIMARY (Performance Rule)
 
 ```kotlin
-// ✅ CORRECT: Lazy lambda (only evaluated if logged)
-UnifiedLog.d(TAG) { "Expensive computation:  ${expensiveFunction()}" }
+// ✅ CORRECT: Lazy lambda - message only built if log level enabled
+UnifiedLog.d(TAG) { "Expensive computation: ${expensiveFunction()}" }
+UnifiedLog.d(TAG) { "loading item $id took ${measureMs()} ms" }
 
-// ❌ WRONG: Eager evaluation (always computed, even if not logged)
-UnifiedLog.d(TAG, "Expensive computation:  ${expensiveFunction()}")  // WRONG - no lambda! 
+// ❌ WRONG: Eager evaluation in hot paths (player, transport, pipelines)
+UnifiedLog.d(TAG, "Expensive computation: ${expensiveFunction()}")  // WRONG!
+// ↑ expensiveFunction() and measureMs() ALWAYS evaluated, even if DEBUG disabled!
 ```
 
-**Why:**
-- Zero performance cost when log level is disabled
-- String interpolation only happens if log is actually written
-- Critical for release builds where debug logs are disabled
+**Per Contract Section 5.1:**
+> Lambda-based logging defers message construction until after the log level check.
+> This means expensive `toString()` calls, string interpolation, and computation only happen
+> when the log will actually be emitted.
+
+**MANDATORY in these modules (per Contract Section 7):**
+- `player/**` (player internals)
+- `playback/**` (playback sources)
+- `pipeline/**` (catalog pipelines)
+- `infra/transport-*` (transport layers)
 
 ---
 
 ### 3. TAG Convention (MANDATORY)
 
 ```kotlin
-// ✅ CORRECT:  Companion object constant
+// ✅ CORRECT: Companion object or package-level constant
 class MyViewModel @Inject constructor() : ViewModel() {
     companion object {
         private const val TAG = "MyViewModel"
@@ -79,116 +94,133 @@ class MyViewModel @Inject constructor() : ViewModel() {
     }
 }
 
-// ✅ CORRECT: Package-level constant
+// ✅ CORRECT: Package-level constant (recommended for extensions/utils)
 private const val TAG = "TelegramSync"
 
 suspend fun syncChat(chatId: Long) {
-    UnifiedLog.i(TAG) { "Starting chat sync: $chatId" }
+    UnifiedLog.i(TAG) { "Starting chat sync: chatId=$chatId" }
 }
 
-// ❌ WRONG:  Inline TAG string
-UnifiedLog.d("MyClass") { "message" }  // WRONG - no constant! 
+// ❌ WRONG: Inline TAG string
+UnifiedLog.d("MyClass") { "message" }  // WRONG - no constant!
 
-// ❌ WRONG:  Class. simpleName (runtime overhead)
-UnifiedLog.d(this::class.simpleName) { "message" }  // WRONG - runtime computation! 
+// ❌ WRONG: Runtime computation
+UnifiedLog.d(this::class.simpleName) { "message" }  // WRONG - runtime overhead!
 ```
 
-**TAG Naming Rules:**
-- Use PascalCase (no spaces, underscores, or special chars)
+**Per Contract Section 4.1 - TAG Rules:**
+- Use `private const val TAG = "ModuleName/ClassName"` convention
+- Tags must be: **short, stable, meaningful**
+- Examples: `TelegramRepo`, `XtreamClient`, `IOPipeline`, `SIPPlayer`
 - Max 23 characters (Android Logcat limit)
-- Descriptive of component (not file name)
-- Stable across refactors
 
 ---
 
 ### 4. Exception Logging Pattern
 
 ```kotlin
-// ✅ CORRECT: Exception with context message
+// ✅ CORRECT: Exception with context message (lambda API)
 try {
     riskyOperation()
 } catch (e: Exception) {
-    UnifiedLog.e(TAG, e) { "Failed to process item: itemId=$itemId" }
-    // Optional: rethrow or handle
+    UnifiedLog.e(TAG, e) { "Failed to process item: itemId=$itemId, context=$context" }
+}
+
+// ✅ CORRECT: Exception with constant message (string API)
+try {
+    riskyOperation()
+} catch (e: Exception) {
+    UnifiedLog.e(TAG, "Operation failed", e)
 }
 
 // ✅ CORRECT: Warning without exception
 if (invalidState) {
-    UnifiedLog.w(TAG) { "Invalid state detected:  state=$currentState" }
+    UnifiedLog.w(TAG) { "Invalid state detected: state=$currentState" }
 }
+
+// ❌ WRONG: Exception in message string (stack trace LOST!)
+UnifiedLog.e(TAG) { "Error: ${e.message}" }  // WRONG - no exception object!
 
 // ❌ WRONG: Exception without context
-UnifiedLog.e(TAG, e) { e.message }  // WRONG - no context! 
-
-// ❌ WRONG:  Exception in message string
-UnifiedLog.e(TAG) { "Error: ${e.message}" }  // WRONG - exception not in API!
+UnifiedLog.e(TAG, e) { e.message ?: "Unknown error" }  // WRONG - no context!
 ```
 
 ---
 
-### 5. Structured Logging (Advanced)
+### 5. No Sensitive Data in Logs (Security Rule)
 
 ```kotlin
-// ✅ CORRECT: Structured data for analytics
-UnifiedLog.i(TAG) {
-    "Playback started: " +
-    "canonicalId=$canonicalId, " +
-    "sourceType=$sourceType, " +
-    "resumeMs=$resumeMs"
-}
+// ❌ FORBIDDEN: PII, credentials, tokens
+UnifiedLog.d(TAG) { "User email: ${user.email}" }           // GDPR violation!
+UnifiedLog.d(TAG) { "API key: ${credentials.apiKey}" }      // Security issue!
+UnifiedLog.d(TAG) { "Password: ${credentials.password}" }   // CRITICAL!
+UnifiedLog.d(TAG) { "Token: $authToken" }                   // Security issue!
+UnifiedLog.d(TAG) { "URL: $urlWithQueryParams" }            // May contain secrets!
 
-// ✅ CORRECT:  Key-value pairs for debugging
-UnifiedLog. d(TAG) {
-    "State transition: " +
-    "from=$oldState, " +
-    "to=$newState, " +
-    "trigger=$trigger"
-}
-
-// ❌ WRONG: Unstructured messages (hard to parse)
-UnifiedLog.i(TAG) { "Playing $canonicalId from $sourceType" }  // WRONG - no keys!
+// ✅ CORRECT: Use IDs, redact, or boolean flags
+UnifiedLog.d(TAG) { "User: userId=${user.id}" }
+UnifiedLog.d(TAG) { "API key: configured=${credentials.apiKey != null}" }
+UnifiedLog.d(TAG) { "Auth: hasPassword=${credentials.password.isNotEmpty()}" }
+UnifiedLog.d(TAG) { "Token: present=${authToken != null}" }
 ```
 
-**Why:**
-- Enables log parsing and analytics
-- Easier to filter and search
-- Better debugging experience
+**Per Contract Section 4.2:**
+> Agents MUST NOT log secrets: access tokens, passwords, private keys, 
+> full URLs with sensitive query parameters, or excessive PII.
 
 ---
 
-## 📋 Log Level Guidelines
+## 📋 Log Level Guidelines (Per Contract Section 3)
+
+### VERBOSE (`UnifiedLog.v`)
+
+**Use for:**
+- Very detailed logs for temporary debugging
+- High-frequency events (frame rendering, network packets)
+- Detailed internal state dumps
+
+**Rules:**
+- MUST NOT remain in long-term code unless clearly justified
+- **MUST use lambda-based API in hot paths**
+- NEVER shipped in release builds
+
+```kotlin
+UnifiedLog.v(TAG) { "Buffer updated: position=$position, size=$size" }
+```
+
+---
 
 ### DEBUG (`UnifiedLog.d`)
 
 **Use for:**
+- Development-time diagnostics
+- State changes, non-critical flows
 - Method entry/exit points
-- State transitions
-- Configuration values
-- Internal flow tracking
 
-**Example:**
+**Rules:**
+- Safe in debug builds
+- Consider gating behind `minLevel`
+- **MUST use lambda-based API in hot paths**
+
 ```kotlin
-UnifiedLog.d(TAG) { "resolve:  canonicalId=$canonicalId, sourceType=$sourceType" }
+UnifiedLog.d(TAG) { "resolve: canonicalId=$canonicalId, sourceType=$sourceType" }
 UnifiedLog.d(TAG) { "State changed: $oldState -> $newState" }
 ```
-
-**NOT for:**
-- Sensitive data (credentials, tokens, PII)
-- High-frequency loops (pollutes logs)
 
 ---
 
 ### INFO (`UnifiedLog.i`)
 
 **Use for:**
-- Significant events (playback started, sync completed)
-- User actions (login, logout, settings changed)
-- Success states
+- High-level application events
+- App start/stop
+- Successful major operations
+- User actions (login, logout)
 
-**Example:**
 ```kotlin
-UnifiedLog.i(TAG) { "Catalog sync complete:  sources=TELEGRAM, items=$itemCount" }
+UnifiedLog.i(TAG) { "Catalog sync complete: source=TELEGRAM, items=$itemCount" }
 UnifiedLog.i(TAG) { "User authenticated: userId=$userId, source=TELEGRAM" }
+UnifiedLog.i(TAG) { "Xtream catalog synced (1234 items)" }
 ```
 
 ---
@@ -196,15 +228,15 @@ UnifiedLog.i(TAG) { "User authenticated: userId=$userId, source=TELEGRAM" }
 ### WARN (`UnifiedLog.w`)
 
 **Use for:**
-- Recoverable errors (fallback used)
+- Recoverable issues (fallback used)
+- Missing optional configuration
+- Retryable network failures
 - Deprecated API usage
-- Configuration issues (non-fatal)
-- Performance issues
 
-**Example:**
 ```kotlin
 UnifiedLog.w(TAG) { "No factory for sourceType=$sourceType, using fallback" }
-UnifiedLog. w(TAG) { "TMDB enrichment skipped: no API key configured" }
+UnifiedLog.w(TAG) { "Token expired, will re-authenticate" }
+UnifiedLog.w(TAG) { "TMDB enrichment skipped: no API key configured" }
 ```
 
 ---
@@ -212,45 +244,41 @@ UnifiedLog. w(TAG) { "TMDB enrichment skipped: no API key configured" }
 ### ERROR (`UnifiedLog.e`)
 
 **Use for:**
-- Unrecoverable errors (operation failed)
-- Exception caught (with exception object)
-- Data corruption detected
-- Critical failures
-
-**Example:**
-```kotlin
-UnifiedLog.e(TAG, exception) { "Failed to load canonical media: id=$canonicalId" }
-UnifiedLog.e(TAG) { "Database migration failed: schema=$schemaVersion" }
-```
+- Failures that affect user experience
+- Exceptions that abort an operation
+- Critical misconfigurations
+- Unrecoverable states
 
 **MUST include exception object when available:**
+
 ```kotlin
 // ✅ CORRECT
-UnifiedLog.e(TAG, exception) { "Context message" }
+UnifiedLog.e(TAG, exception) { "Failed to load canonical media: id=$canonicalId" }
 
-// ❌ WRONG
-UnifiedLog.e(TAG) { "Error:  ${exception.message}" }  // Exception lost!
+// ❌ WRONG: Using ERROR for non-errors
+UnifiedLog.e(TAG) { "User clicked button" }  // Not an error!
 ```
-
----
-
-### VERBOSE (`UnifiedLog.v`)
-
-**Use for:**
-- High-frequency events (frame rendering, network packets)
-- Detailed internal state dumps
-- Performance profiling data
-
-**Example:**
-```kotlin
-UnifiedLog.v(TAG) { "Buffer updated: position=$position, size=$size" }
-```
-
-**Warning:** Verbose logs are NEVER shipped in release builds.
 
 ---
 
 ## 📋 Module Implementation
+
+### Application Initialization (Per Contract Section 1.2)
+
+`:app-v2` MUST call initialization early in `Application.onCreate()`:
+
+```kotlin
+class FishItApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        
+        // MUST be called BEFORE any modules start logging
+        UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
+    }
+}
+```
+
+---
 
 ### infra/logging Structure
 
@@ -258,10 +286,11 @@ UnifiedLog.v(TAG) { "Buffer updated: position=$position, size=$size" }
 infra/logging/
 ├── src/main/java/com/fishit/player/infra/logging/
 │   ├── UnifiedLog.kt              # Main facade
+│   ├── UnifiedLogInitializer.kt   # Application init
 │   ├── LogLevel.kt                # Log level enum
 │   ├── LogBackend.kt              # Backend abstraction
-│   ├── LogcatBackend.kt           # Default backend
-│   ├── LogBufferProvider.kt      # In-memory buffer for debug UI
+│   ├── LogcatBackend.kt           # Default backend (uses android.util.Log)
+│   ├── LogBufferProvider.kt       # In-memory buffer for debug UI
 │   └── di/
 │       └── LoggingModule.kt       # Hilt DI
 └── build.gradle.kts
@@ -269,215 +298,55 @@ infra/logging/
 
 ---
 
-### UnifiedLog API (Current Implementation)
+### UnifiedLog API (Per Contract Section 2.1)
 
 ```kotlin
 object UnifiedLog {
-    /**
-     * Debug log with lazy evaluation. 
-     * 
-     * @param tag Stable TAG constant (max 23 chars)
-     * @param message Lazy lambda that builds the log message
-     */
+    // ═══════════════════════════════════════════════════════════════
+    // PRIMARY API: Lambda-based (RECOMMENDED)
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Debug log with lazy evaluation. */
     fun d(tag: String, message: () -> String)
     
-    /**
-     * Info log with lazy evaluation.
-     */
+    /** Info log with lazy evaluation. */
     fun i(tag: String, message: () -> String)
     
-    /**
-     * Warning log with lazy evaluation.
-     */
+    /** Warning log with lazy evaluation. */
     fun w(tag: String, message: () -> String)
     
-    /**
-     * Error log with optional exception.
-     * 
-     * @param tag Stable TAG constant
-     * @param exception Optional throwable (ALWAYS include if available)
-     * @param message Lazy lambda with context message
-     */
-    fun e(tag: String, exception:  Throwable?  = null, message: () -> String)
+    /** Error log with exception and lazy message. */
+    fun e(tag: String, exception: Throwable? = null, message: () -> String)
     
-    /**
-     * Verbose log with lazy evaluation. 
-     * NEVER shipped in release builds.
-     */
+    /** Verbose log with lazy evaluation. */
     fun v(tag: String, message: () -> String)
     
-    /**
-     * Check if a log level is enabled (for expensive operations).
-     * 
-     * Example:
-     * if (UnifiedLog.isLoggable(LogLevel.DEBUG)) {
-     *     val expensiveData = computeExpensiveDebugData()
-     *     UnifiedLog.d(TAG) { "Debug:  $expensiveData" }
-     * }
-     */
+    // ═══════════════════════════════════════════════════════════════
+    // CONVENIENCE API: String-based (for constant messages ONLY)
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Debug log with constant message. */
+    fun d(tag: String, message: String)
+    
+    /** Info log with constant message. */
+    fun i(tag: String, message: String)
+    
+    /** Warning log with constant message. */
+    fun w(tag: String, message: String)
+    
+    /** Error log with constant message and exception. */
+    fun e(tag: String, message: String, exception: Throwable? = null)
+    
+    /** Verbose log with constant message. */
+    fun v(tag: String, message: String)
+    
+    // ═══════════════════════════════════════════════════════════════
+    // UTILITY
+    // ═══════════════════════════════════════════════════════════════
+    
+    /** Check if a log level is enabled (for expensive operations). */
     fun isLoggable(level: LogLevel): Boolean
 }
-```
-
----
-
-### LogBackend Interface (Extension Point)
-
-```kotlin
-interface LogBackend {
-    /**
-     * Write a log entry to the backend.
-     * 
-     * @param level Log level
-     * @param tag TAG constant
-     * @param message Evaluated message string
-     * @param exception Optional throwable
-     */
-    fun log(
-        level: LogLevel,
-        tag: String,
-        message:  String,
-        exception: Throwable? = null,
-    )
-    
-    /**
-     * Whether this backend supports the given log level.
-     * 
-     * Used for performance optimization (skip expensive message building).
-     */
-    fun isLoggable(level: LogLevel): Boolean
-}
-```
-
-**Current Backends:**
-- `LogcatBackend` - Writes to Android Logcat (default)
-- `LogBufferProvider` - In-memory buffer for debug UI
-
-**Future Backends:**
-- Firebase Crashlytics (ERROR only)
-- Sentry (ERROR only)
-- File logging (for bug reports)
-
----
-
-### LogBufferProvider (Debug UI)
-
-```kotlin
-interface LogBufferProvider {
-    /**
-     * Observe recent logs for debug UI display.
-     * 
-     * @param limit Maximum number of recent logs
-     * @return Flow of buffered log entries
-     */
-    fun observeLogs(limit: Int = 100): Flow<List<BufferedLogEntry>>
-    
-    /**
-     * Clear all buffered logs.
-     */
-    fun clearLogs()
-}
-
-data class BufferedLogEntry(
-    val level: LogLevel,
-    val tag: String,
-    val message:  String,
-    val exception:  Throwable?,
-    val timestampMs: Long,
-)
-```
-
-**Usage in Debug Screen:**
-```kotlin
-@HiltViewModel
-class DebugViewModel @Inject constructor(
-    private val logBufferProvider: LogBufferProvider,
-) : ViewModel() {
-    
-    val recentLogs:  StateFlow<List<BufferedLogEntry>> =
-        logBufferProvider
-            .observeLogs(limit = 500)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-}
-```
-
----
-
-## ⚠️ Critical Anti-Patterns
-
-### Anti-Pattern 1: String Building Before Log
-
-```kotlin
-// ❌ WRONG: String built even if DEBUG disabled
-val debugMsg = "Processing $count items with $size bytes"
-UnifiedLog.d(TAG, debugMsg)  // No lambda!
-
-// ✅ CORRECT: String built only if DEBUG enabled
-UnifiedLog.d(TAG) { "Processing $count items with $size bytes" }
-```
-
----
-
-### Anti-Pattern 2: Exception as String
-
-```kotlin
-// ❌ WRONG: Exception lost (no stack trace)
-try {
-    riskyOp()
-} catch (e: Exception) {
-    UnifiedLog.e(TAG) { "Error: ${e.message}" }  // Stack trace lost!
-}
-
-// ✅ CORRECT: Exception object preserved
-try {
-    riskyOp()
-} catch (e: Exception) {
-    UnifiedLog.e(TAG, e) { "Operation failed: context=$context" }
-}
-```
-
----
-
-### Anti-Pattern 3: Multiple Logging Facades
-
-```kotlin
-// ❌ WRONG:  Mixing logging systems
-class MyClass {
-    fun doSomething() {
-        Log.d(TAG, "Starting")           // Android Log
-        UnifiedLog.i(TAG) { "Middle" }   // UnifiedLog
-        Timber.d("Ending")               // Timber
-    }
-}
-
-// ✅ CORRECT: UnifiedLog exclusively
-class MyClass {
-    companion object {
-        private const val TAG = "MyClass"
-    }
-    
-    fun doSomething() {
-        UnifiedLog.d(TAG) { "Starting" }
-        UnifiedLog.i(TAG) { "Middle" }
-        UnifiedLog. d(TAG) { "Ending" }
-    }
-}
-```
-
----
-
-### Anti-Pattern 4: Sensitive Data in Logs
-
-```kotlin
-// ❌ WRONG: PII, credentials, tokens logged
-UnifiedLog. d(TAG) { "User email: ${user.email}" }           // GDPR violation! 
-UnifiedLog.d(TAG) { "API key: ${credentials.apiKey}" }      // Security issue! 
-UnifiedLog.d(TAG) { "Password: ${credentials.password}" }   // CRITICAL!
-
-// ✅ CORRECT: Redact or use IDs
-UnifiedLog.d(TAG) { "User: userId=${user.id}" }
-UnifiedLog.d(TAG) { "API key: configured=${credentials.apiKey != null}" }
-UnifiedLog.d(TAG) { "Auth:  hasPassword=${credentials.password. isNotEmpty()}" }
 ```
 
 ---
@@ -485,101 +354,92 @@ UnifiedLog.d(TAG) { "Auth:  hasPassword=${credentials.password. isNotEmpty()}" }
 ## 📐 Architecture Position
 
 ```
-ALL MODULES
-    ↓
-UnifiedLog (facade) ← YOU ARE HERE
-    ↓
-LogBackend (interface)
-    ├── LogcatBackend (Android Logcat)
-    ├── LogBufferProvider (in-memory for debug UI)
-    ├── FirebaseBackend (future - Crashlytics)
-    └── SentryBackend (future - error tracking)
+ALL v2 MODULES (except :infra:logging)
+         ↓
+    UnifiedLog (facade) ← YOU ARE HERE
+         ↓
+    LogBackend (interface)
+         ├── LogcatBackend (android.util.Log - ONLY HERE)
+         ├── LogBufferProvider (in-memory for debug UI)
+         ├── FirebaseBackend (future - Crashlytics)
+         └── SentryBackend (future - error tracking)
 ```
+
+**Dependency Rule:**
+- `:infra:logging` MAY depend on `android.util.Log`, `Timber`
+- ALL other modules MUST NOT import these (enforced via Detekt)
 
 ---
 
-## 🔍 CI Enforcement
+## 🔍 CI Enforcement (Per Contract Section 6)
 
 ### Pre-Change Verification
 
 ```bash
 # 1. No println anywhere
-grep -rn "println(" --include="*.kt" . 
+grep -rn "println(" --include="*.kt" . | grep -v "build/" | grep -v ".gradle/"
 
-# 2. No android.util.Log anywhere
-grep -rn "import android.util.Log" --include="*.kt" . 
-grep -rn "Log\.[diwev](" --include="*.kt" . 
+# 2. No android.util.Log outside infra/logging
+grep -rn "import android.util.Log" --include="*.kt" . | grep -v "infra/logging/"
+grep -rn "Log\.[diwev](" --include="*.kt" . | grep -v "infra/logging/" | grep -v "build/"
 
-# 3. No Timber anywhere
-grep -rn "import timber. log. Timber" --include="*.kt" .
-grep -rn "Timber\." --include="*.kt" . 
+# 3. No Timber outside infra/logging
+grep -rn "import timber.log.Timber" --include="*.kt" . | grep -v "infra/logging/"
+grep -rn "Timber\." --include="*.kt" . | grep -v "infra/logging/" | grep -v "build/"
 
 # 4. No System.out anywhere
-grep -rn "System\. out\.print" --include="*. kt" . 
+grep -rn "System\.out\.print" --include="*.kt" . | grep -v "build/"
 
-# All should return empty! 
+# All should return empty!
 ```
 
-### CI Guard (scripts/ci/check-arch-guardrails.sh)
+### Detekt Configuration (Per Contract Section 2.2)
 
-```bash
-# Logging compliance check
-echo "Checking logging compliance..."
-
-# Check for println
-violations=$(grep -rn "println(" --include="*.kt" . 2>/dev/null | grep -v "build/" | grep -v ". gradle/" || true)
-if [[ -n "$violations" ]]; then
-    echo "$violations"
-    echo "❌ VIOLATION: println() forbidden (use UnifiedLog)"
-    VIOLATIONS=$((VIOLATIONS + 1))
-fi
-
-# Check for android.util. Log
-violations=$(grep -rn "Log\.[diwev](" --include="*.kt" . 2>/dev/null | grep -v "build/" | grep -v "infra/logging/" || true)
-if [[ -n "$violations" ]]; then
-    echo "$violations"
-    echo "❌ VIOLATION: android.util.Log forbidden (use UnifiedLog)"
-    VIOLATIONS=$((VIOLATIONS + 1))
-fi
-
-# Check for Timber
-violations=$(grep -rn "Timber\." --include="*.kt" . 2>/dev/null | grep -v "build/" || true)
-if [[ -n "$violations" ]]; then
-    echo "$violations"
-    echo "❌ VIOLATION: Timber forbidden (use UnifiedLog)"
-    VIOLATIONS=$((VIOLATIONS + 1))
-fi
+```yaml
+# detekt-config.yml
+ForbiddenImport:
+  active: true
+  imports:
+    - value: 'android.util.Log'
+      reason: 'Use UnifiedLog. See contracts/LOGGING_CONTRACT_V2.md'
+    - value: 'timber.log.Timber'
+      reason: 'Use UnifiedLog. See contracts/LOGGING_CONTRACT_V2.md'
+  # Exception for :infra:logging module configured via baseline or module-specific config
 ```
 
 ---
 
 ## ✅ PLATIN Checklist
 
-### For ALL Modules
-- [ ] Uses UnifiedLog exclusively (no println, Log.d, Timber)
-- [ ] Lazy evaluation with lambda (`{ "message" }`)
-- [ ] Stable TAG constant (companion object or package-level)
-- [ ] TAG max 23 characters (Android Logcat limit)
-- [ ] Exception passed as parameter (not in message string)
-- [ ] No sensitive data (PII, credentials, tokens)
-- [ ] Structured logging with key-value pairs
-- [ ] Appropriate log level (DEBUG, INFO, WARN, ERROR)
+### For ALL v2 Modules (Except :infra:logging)
 
-### For infra/logging Module
+- [ ] Uses UnifiedLog exclusively (no println, Log.d, Timber, System.out)
+- [ ] Lambda-based API in hot paths (player, transport, pipelines)
+- [ ] String-based API ONLY for constant messages
+- [ ] Stable TAG constant (companion object or package-level)
+- [ ] TAG max 23 characters, meaningful name
+- [ ] Exception passed as parameter (not in message string)
+- [ ] No sensitive data (PII, credentials, tokens, passwords)
+- [ ] Structured logging with key-value pairs where applicable
+- [ ] Appropriate log level (not ERROR for non-errors)
+
+### For :infra:logging Module
+
 - [ ] UnifiedLog facade is thread-safe
 - [ ] LogBackend abstraction for extensibility
 - [ ] LogcatBackend as default implementation
 - [ ] LogBufferProvider for debug UI integration
+- [ ] UnifiedLogInitializer for app-level setup
 - [ ] Hilt DI module provides all components
-- [ ] Zero Android framework dependencies (beyond Logcat)
 - [ ] Lazy evaluation enforced by API design
+- [ ] Both lambda and string overloads available
 
 ---
 
-## 📚 Reference Documents
+## 📚 Reference Documents (Priority Order)
 
-1. **`/AGENTS. md`** - Section 4. 5 (Layer Boundaries - logging SSOT)
-2. **`/contracts/LOGGING_CONTRACT_V2.md`** - Complete logging contract
+1. **`/contracts/LOGGING_CONTRACT_V2.md`** - AUTHORITATIVE binding contract (v1.1)
+2. **`/AGENTS.md`** - Section 5 (Logging, Telemetry & Cache)
 3. **`/docs/dev/ARCH_GUARDRAILS.md`** - CI enforcement rules
 4. **`/infra/logging/README.md`** - Module-specific documentation
 5. Android Logcat documentation
@@ -588,106 +448,64 @@ fi
 
 ## 🚨 Common Violations & Solutions
 
-### Violation 1: println in Debug Code
+### Violation 1: Eager Evaluation in Hot Path
 
 ```kotlin
-// ❌ WRONG
-fun debugOperation() {
-    println("Debug:  operation started")  // WRONG! 
-}
+// ❌ WRONG (in player/transport/pipeline)
+UnifiedLog.d(TAG, "Position: ${player.currentPosition}")  // Always computed!
 
 // ✅ CORRECT
-fun debugOperation() {
-    UnifiedLog.d(TAG) { "Operation started" }
-}
+UnifiedLog.d(TAG) { "Position: ${player.currentPosition}" }  // Only if DEBUG enabled
 ```
 
----
-
-### Violation 2: android.util.Log Direct Import
+### Violation 2: android.util.Log Import
 
 ```kotlin
 // ❌ WRONG
 import android.util.Log
-
 fun logSomething() {
     Log.d(TAG, "message")  // WRONG!
 }
 
 // ✅ CORRECT
 import com.fishit.player.infra.logging.UnifiedLog
-
 fun logSomething() {
     UnifiedLog.d(TAG) { "message" }
 }
 ```
 
----
-
-### Violation 3: No Lazy Evaluation
+### Violation 3: Exception as String
 
 ```kotlin
-// ❌ WRONG
-UnifiedLog.d(TAG, "Computed:  ${expensiveFunction()}")  // Always computed!
-
-// ✅ CORRECT
-UnifiedLog. d(TAG) { "Computed: ${expensiveFunction()}" }  // Only if logged!
-```
-
----
-
-### Violation 4: Exception as String
-
-```kotlin
-// ❌ WRONG
+// ❌ WRONG - Stack trace lost!
 catch (e: Exception) {
-    UnifiedLog.e(TAG) { "Error: ${e.message}" }  // Stack trace lost! 
+    UnifiedLog.e(TAG) { "Error: ${e.message}" }
 }
 
-// ✅ CORRECT
+// ✅ CORRECT - Stack trace preserved
 catch (e: Exception) {
-    UnifiedLog.e(TAG, e) { "Operation failed" }  // Stack trace preserved! 
+    UnifiedLog.e(TAG, e) { "Operation failed: context=$context" }
 }
 ```
 
----
-
-## 🎯 Migration from Legacy Logging
-
-### Step 1: Find All Log Statements
-
-```bash
-# Find all android.util.Log usage
-git grep "Log\.[diwev](" -- "*.kt"
-
-# Find all println
-git grep "println(" -- "*.kt"
-
-# Find all Timber
-git grep "Timber\." -- "*.kt"
-```
-
-### Step 2: Replace Pattern
+### Violation 4: ERROR for Non-Errors
 
 ```kotlin
-// OLD
-Log.d(TAG, "Message:  $value")
+// ❌ WRONG - Not an error
+UnifiedLog.e(TAG) { "User clicked button" }
 
-// NEW
-UnifiedLog.d(TAG) { "Message: $value" }
-
-// OLD
-Log.e(TAG, "Error", exception)
-
-// NEW
-UnifiedLog.e(TAG, exception) { "Error" }
+// ✅ CORRECT - Use appropriate level
+UnifiedLog.d(TAG) { "User clicked button" }
 ```
 
-### Step 3: Verify
+### Violation 5: Secrets in Logs
 
-```bash
-./gradlew compileDebugKotlin
-./scripts/ci/check-arch-guardrails.sh
+```kotlin
+// ❌ WRONG - Security issue!
+UnifiedLog.d(TAG) { "Token: $authToken, Password: $password" }
+
+// ✅ CORRECT - Redacted
+UnifiedLog.d(TAG) { "Token: present=${authToken != null}, hasPassword=true" }
 ```
 
 ---
