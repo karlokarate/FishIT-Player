@@ -5,75 +5,94 @@ applyTo:
   - infra/transport-io/**
 ---
 
-# 🏆 PLATIN Instructions:  infra/transport-*
+# 🏆 PLATIN Instructions: infra/transport-* (Common Rules)
 
-> **PLATIN STANDARD** - External API Integration Layer. 
+> **PLATIN STANDARD** - External API Integration Layer (Common Rules).
 >
-> **Purpose:** Provides abstracted access to external services (TDLib, Xtream API, local files).
-> This is the **ONLY** layer allowed to directly interact with external SDKs and network libraries.
-> All upper layers consume clean, typed interfaces with source-agnostic DTOs. 
+> **Purpose:** This document defines the COMMON rules for ALL transport modules.
+> Transport is the **ONLY** layer allowed to directly interact with external SDKs and network libraries.
+> All upper layers consume clean, typed interfaces with source-agnostic DTOs.
+>
+> **Binding Contracts:**
+> - `contracts/GLOSSARY_v2_naming_and_modules.md` (Section 1.4 - Infrastructure Terms)
+> - `contracts/LOGGING_CONTRACT_V2.md` (Logging rules)
+>
+> **Source-Specific Instructions:**
+> - Telegram: `.github/instructions/infra-transport-telegram.instructions.md` *(to be created)*
+> - Xtream: `.github/instructions/infra-transport-xtream.instructions.md` *(to be created)*
 
 ---
 
-## 🔴 ABSOLUTE HARD RULES
+## 🔴 ABSOLUTE HARD RULES (ALL TRANSPORT MODULES)
 
 ### 1. This Layer OWNS External Dependencies
 
 ```kotlin
-// ✅ ONLY ALLOWED HERE
-// Transport-Telegram: 
-import org.drinkless.td.TdApi.*               // TDLib (raw)
+// ✅ ONLY ALLOWED in transport layer
+// Transport-Telegram:
+import org.drinkless.td.TdApi.*               // TDLib SDK
 import dev.g000sha256.tdl.*                    // TDLib coroutines wrapper
 
 // Transport-Xtream:
-import okhttp3.*                                // HTTP client
-import retrofit2.*                              // REST client (if used)
+import okhttp3.*                               // HTTP client
+import retrofit2.*                             // REST client (if used)
 
 // Transport-IO:
 import android.content.ContentResolver         // Android media
 import java.io.File                            // File system
 
 // All other modules use abstracted interfaces from this layer
+// Pipeline, Playback, Feature → MUST NOT import these SDKs!
 ```
+
+**Per Glossary Section 1.4:**
+> Transport: Network/file access layer. Lives in `infra/transport-*`. 
+> Exposes typed interfaces, hides implementation details (TDLib, HTTP clients).
+
+---
 
 ### 2. Export Clean DTOs ONLY - NEVER Leak SDK Types
 
 ```kotlin
-// ✅ CORRECT:  Clean, source-agnostic DTOs
+// ✅ CORRECT: Clean, source-agnostic DTOs
 // Transport-Telegram:
-data class TgMessage(...)
-data class TgChat(...)
-data class TgContent(...)
-data class TgFile(...)
-data class TgThumbnailRef(...)
+data class TgMessage(val chatId: Long, val messageId: Long, ...)
+data class TgChat(val id: Long, val title: String, ...)
+data class TgContent(val remoteId: String, val mimeType: String?, ...)
+data class TgFile(val id: Int, val localPath: String?, ...)
 
-// Transport-Xtream: 
-data class XtreamVodStream(...)
-data class XtreamLiveStream(...)
-data class XtreamSeriesInfo(...)
-data class XtreamCapabilities(...)
+// Transport-Xtream:
+data class XtreamVodStream(val streamId: Int, val name: String, ...)
+data class XtreamLiveStream(val streamId: Int, val name: String, ...)
+data class XtreamSeriesInfo(val seriesId: Int, val name: String, ...)
 
 // ❌ FORBIDDEN: Leaking raw SDK types
-fun getUpdates(): List<TdApi.Update>           // WRONG - wrap it! 
+fun getUpdates(): List<TdApi.Update>           // WRONG - wrap it!
 fun getTelegramMessages(): List<TdApi.Message> // WRONG - use TgMessage!
 fun getClient(): TdlClient                      // WRONG - never expose client!
 fun getOkHttpClient(): OkHttpClient             // WRONG - internal only!
 ```
 
+---
+
 ### 3. Typed Interfaces - NOT Monolithic Clients
 
 ```kotlin
 // ✅ CORRECT: Segregated interfaces (Interface Segregation Principle)
+// Telegram:
 interface TelegramAuthClient { ... }           // Auth operations only
 interface TelegramHistoryClient { ... }        // Chat/message operations only
 interface TelegramFileClient { ... }           // File download operations only
 interface TelegramThumbFetcher { ... }         // Thumbnail loading only
-interface TelegramRemoteResolver { ...  }       // remoteId resolution only
+interface TelegramRemoteResolver { ... }       // remoteId resolution only
 
+// Xtream:
 interface XtreamApiClient { ... }              // Core API operations
+interface XtreamDiscovery { ... }              // Port resolution
+interface XtreamUrlBuilder { ... }             // URL construction
 
-// ❌ FORBIDDEN:  God objects
-interface TelegramTransportClient {             // DEPRECATED - too broad
+// ❌ FORBIDDEN: God objects
+interface TelegramTransportClient {            // WRONG - too broad
     suspend fun auth()
     suspend fun getChats()
     suspend fun downloadFile()
@@ -82,21 +101,28 @@ interface TelegramTransportClient {             // DEPRECATED - too broad
 }
 ```
 
+**Per Glossary Section 1.6 (Telegram Transport Interfaces):**
+> Typed interfaces: `TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`, `TelegramThumbFetcher`
+
+---
+
 ### 4. No Business Logic
 
 ```kotlin
 // ❌ FORBIDDEN in Transport
 fun normalizeTitle(title: String): String              // → core/metadata-normalizer
 fun classifyMediaType(item: TgMessage): MediaType      // → pipeline
-fun generateGlobalId(... ): String                      // → core/metadata-normalizer
+fun generateGlobalId(...): String                      // → core/metadata-normalizer
 fun extractSeasonEpisode(title: String): Pair<Int, Int>?  // → pipeline
 suspend fun searchTmdb(title: String): TmdbRef?        // → core/metadata-normalizer
 
-// ✅ CORRECT: Pure transport/mapping
+// ✅ CORRECT: Pure transport/mapping operations
 suspend fun fetchMessage(chatId: Long, messageId: Long): TgMessage
 suspend fun downloadFile(fileId: Int): ByteArray
 suspend fun getLiveStreams(): List<XtreamLiveStream>
 ```
+
+---
 
 ### 5. No Persistence or Caching Logic
 
@@ -109,255 +135,62 @@ import androidx.room.*
 class TelegramMessageCache { ... }             // WRONG - data layer handles this
 suspend fun saveToDatabase(message: TgMessage) // WRONG - transport is stateless
 
-// ✅ CORRECT:  Stateless transport
+// ✅ CORRECT: Stateless transport
 // Data layer (infra/data-*) handles persistence
 // Transport only provides fetching primitives
 ```
 
 ---
 
-## 📋 Module Responsibilities
+### 6. UnifiedLog for ALL Logging (Per LOGGING_CONTRACT_V2.md)
 
-### infra/transport-telegram
+```kotlin
+// ✅ CORRECT: Lambda-based logging (MANDATORY in transport - hot path)
+private const val TAG = "TelegramTransport"
 
-**Purpose:** TDLib SDK wrapper providing typed Telegram access. 
+UnifiedLog.d(TAG) { "Fetching messages: chatId=$chatId, limit=$limit" }
+UnifiedLog.i(TAG) { "Download complete: fileId=$fileId, size=$sizeBytes" }
+UnifiedLog.e(TAG, exception) { "Failed to resolve remoteId: $remoteId" }
+
+// ❌ FORBIDDEN: Secrets in logs
+UnifiedLog.d(TAG) { "Auth with token=$authToken" }  // WRONG - security issue!
+UnifiedLog.d(TAG) { "Password: $password" }          // WRONG - CRITICAL!
+
+// ✅ CORRECT: Redacted logging
+UnifiedLog.d(TAG) { "Auth: hasToken=${authToken != null}" }
+UnifiedLog.d(TAG) { "Credentials: configured=${credentials.isValid}" }
+```
+
+---
+
+## 📋 Module Overview
+
+| Module | Purpose | Binding Contract | Specific Instructions |
+|--------|---------|------------------|----------------------|
+| `transport-telegram` | TDLib SDK wrapper | `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` | `infra-transport-telegram.instructions.md` |
+| `transport-xtream` | Xtream Codes API client | `XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` | `infra-transport-xtream.instructions.md` |
+| `transport-io` | Local file system access | *(none)* | *(basic rules only)* |
+
+---
+
+## 📋 Common Responsibilities (ALL Transport Modules)
 
 | Responsibility | Allowed | Forbidden |
 |----------------|---------|-----------|
-| TDLib client lifecycle | ✅ | Exposing `TdlClient` to upper layers |
-| Auth state machine | ✅ | Login UI (belongs in feature layer) |
-| Message/chat fetching | ✅ | Message classification (belongs in pipeline) |
-| File downloads | ✅ | MP4 parsing (belongs in playback layer) |
-| Thumbnail fetching | ✅ | Image caching (Coil handles this) |
-| TDLib logging bridge | ✅ | Log persistence (infra/logging handles this) |
-
-**Public Interfaces:**
-- `TelegramAuthClient` - Authentication operations
-- `TelegramHistoryClient` - Chat/message browsing
-- `TelegramFileClient` - File download primitives
-- `TelegramThumbFetcher` - Thumbnail loading for Coil
-- `TelegramRemoteResolver` - remoteId → fileId resolution
-
-**Wrapper DTOs:**
-- `TgMessage` - Transport-level message
-- `TgChat` - Transport-level chat
-- `TgContent` - Media content descriptor
-- `TgFile` - File download state
-- `TgThumbnailRef` - Thumbnail reference (remoteId-first)
-
-**Internal (NOT exported):**
-- `DefaultTelegramClient` - Implements all interfaces, owns TDLib state
-- `TelegramTdlibClientFactory` - ⚠️ Factory for TdlClient (internal use only)
-- `TdlibClientProvider` - ⚠️ **v1 legacy pattern**, must NEVER be exposed to upper layers
-
----
-
-### infra/transport-xtream
-
-**Purpose:** Xtream Codes API client providing typed REST access.
-
-| Responsibility | Allowed | Forbidden |
-|----------------|---------|-----------|
-| HTTP API calls | ✅ | Repository access |
-| Port auto-discovery | ✅ | Credential storage encryption (belongs in transport) |
-| Capability detection | ✅ | Media normalization (belongs in pipeline) |
-| URL construction | ✅ | Playback URI logic (belongs in playback layer) |
-| Credential redaction | ✅ | Logging implementation (UnifiedLog handles this) |
-
-**Public Interfaces:**
-- `XtreamApiClient` - Core API operations
-- `XtreamDiscovery` - Port resolution & capability detection
-- `XtreamUrlBuilder` - URL construction
-- `XtreamCredentialsStore` - Secure credential persistence
-
-**Response DTOs:**
-- `XtreamVodStream` - VOD stream descriptor
-- `XtreamLiveStream` - Live channel descriptor
-- `XtreamSeriesInfo` - Series metadata
-- `XtreamEpisodeInfo` - Episode metadata
-- `XtreamCapabilities` - Discovered panel capabilities
-
-**Configuration:**
-- `XtreamApiConfig` - API configuration (host, port, credentials, preferences)
-- `XtreamTransportConfig` - Centralized transport settings (timeouts, headers, parallelism)
-- `XtreamParallelism` - Device-aware concurrency limits
-
----
-
-### infra/transport-io
-
-**Purpose:** Local file system and Android ContentResolver access.
-
-| Responsibility | Allowed | Forbidden |
-|----------------|---------|-----------|
-| File system scanning | ✅ | Media library UI (belongs in feature layer) |
-| ContentResolver access | ✅ | Playlist parsing (belongs in pipeline) |
-| Local file metadata | ✅ | FFmpeg probing (belongs in tools layer) |
-
-**Public Interface:**
-- `LocalFileClient` - File system operations
-
-**DTOs:**
-- `IoMediaFile` - Local file descriptor
-
----
-
-## ⚠️ Critical Architecture Patterns
-
-### Telegram:  remoteId-First Architecture
-
-**SSOT:  `chatId` + `messageId` (stable across sessions)**
-
-```kotlin
-// ✅ CORRECT: remoteId is the stable identifier
-data class TgContent(
-    val remoteId: String,        // Stable file ID (use for cache key/persistence)
-    val fileId: Int,             // Session-specific TDLib ID (internal, ephemeral)
-    val chatId: Long,            // Message location
-    val messageId: Long,         // Message location
-    val mimeType: String?,
-    val sizeBytes: Long?,
-)
-
-// ⚠️ fileId may change across: 
-// - TDLib cache eviction
-// - User logout/login
-// - Message content updates
-// - App reinstalls
-
-// ✅ Resolution pattern for stale fileIds: 
-suspend fun resolveStaleFile(remoteId: String): TgFile?  {
-    // 1. Parse remoteId to chatId + messageId
-    val (chatId, messageId) = parseRemoteId(remoteId)
-    
-    // 2. Re-fetch message
-    val message = telegramHistoryClient.getMessage(chatId, messageId)
-    
-    // 3. Extract current fileId
-    return message?.content?.file
-}
-```
-
-**Imaging Integration:**
-
-```kotlin
-// TelegramThumbFetcher implementation (in transport layer)
-class TelegramThumbFetcherImpl(
-    private val fileClient: TelegramFileClient,
-) : TelegramThumbFetcher {
-    override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String?  {
-        val remoteId = thumbRef.remoteId
-        
-        // 1. Resolve remoteId → fileId via getRemoteFile(remoteId)
-        val file = fileClient.resolveRemoteId(remoteId) ?: return null
-        
-        // 2. Check if already downloaded
-        if (file.isDownloadingCompleted && file.localPath != null) {
-            return file.localPath
-        }
-        
-        // 3. Download if needed
-        fileClient.startDownload(file.fileId, priority = 16)
-        
-        // 4. Wait for completion
-        return waitForDownloadCompletion(file. fileId)
-    }
-}
-```
-
----
-
-### Xtream: Premium Contract Compliance
-
-**User-Agent (Section 4):**
-
-```kotlin
-// ✅ CORRECT: Centralized in XtreamTransportConfig
-object XtreamTransportConfig {
-    const val USER_AGENT = "FishIT-Player/2.x (Android)"
-    const val ACCEPT_JSON = "application/json"
-    const val ACCEPT_ENCODING = "gzip"  // For API calls ONLY
-    
-    // ⚠️ Playback requires different headers! 
-    const val PLAYBACK_ACCEPT = "*/*"
-    const val PLAYBACK_ENCODING = "identity"  // NO compression for streams! 
-}
-
-// ❌ FORBIDDEN: Hardcoded headers scattered across codebase
-request.header("User-Agent", "FishIT-Player/2.x (Android)")  // WRONG - use constant
-```
-
-**Port Discovery & Caching (Section 2/8):**
-
-```kotlin
-// ✅ CORRECT: XtreamDiscovery with caching
-class XtreamDiscovery(
-    private val http: OkHttpClient,
-    private val parallelism: XtreamParallelism,
-    private val portStore: XtreamPortStore?  = null,  // Optional persistent cache
-) {
-    suspend fun resolvePort(config: XtreamApiConfig): Int {
-        // 1. Check persistent cache
-        portStore?.getPort(config.host)?. let { return it }
-        
-        // 2. Probe common ports (80, 8080, 443, 8443, ...)
-        val resolvedPort = probeCommonPorts(config)
-        
-        // 3. Cache result
-        portStore?.savePort(config.host, resolvedPort)
-        
-        return resolvedPort
-    }
-}
-```
-
-**Rate Limiting & Throttling (Section 6):**
-
-```kotlin
-// ✅ CORRECT: Per-host rate limiting
-class DefaultXtreamApiClient(
-    private val http: OkHttpClient,
-    private val parallelism: XtreamParallelism,  // Device-aware limits
-) {
-    private val rateLimiters = mutableMapOf<String, RateLimiter>()
-    
-    private suspend fun <T> rateLimited(host: String, block: suspend () -> T): T {
-        val limiter = rateLimiters. getOrPut(host) {
-            RateLimiter(minIntervalMs = 120)  // 120ms min interval
-        }
-        return limiter.execute(block)
-    }
-}
-```
-
----
-
-### Xtream: Alias-Aware VOD Resolution
-
-```kotlin
-// ✅ CORRECT: Try vod/movie/movies aliases
-suspend fun getVodStreams(categoryId: String? ): List<XtreamVodStream> {
-    val aliases = listOf("vod", "movie", "movies")
-    
-    for (alias in aliases) {
-        val result = tryFetchVodStreams(alias, categoryId)
-        if (result != null) {
-            // Cache successful alias for future calls
-            vodKind = alias
-            return result
-        }
-    }
-    
-    return emptyList()
-}
-```
+| External SDK integration | ✅ | Exposing SDK types to upper layers |
+| Clean DTO mapping | ✅ | Leaking raw SDK objects |
+| Typed interface segregation | ✅ | Monolithic client interfaces |
+| Error wrapping | ✅ | Business logic (normalization, classification) |
+| Credential handling | ✅ | Logging secrets/passwords |
+| Request/response logging | ✅ | Payload dumps in logs |
+| Rate limiting primitives | ✅ | Persistence/caching logic |
 
 ---
 
 ## 📐 Architecture Position
 
 ```
-External APIs (TDLib, Xtream, Local Files)
+External APIs (TDLib, Xtream HTTP, Local Files)
               ↓
     infra/transport-* ← YOU ARE HERE
               ↓
@@ -379,118 +212,82 @@ External APIs (TDLib, Xtream, Local Files)
 ### Upstream Dependencies (ALLOWED)
 
 ```kotlin
-import com.fishit.player.core. model.*           // Core types (ImageRef, SourceType, etc.)
+import com.fishit.player.core.model.*           // Core types (ImageRef, SourceType, etc.)
 import com.fishit.player.infra.logging.*        // UnifiedLog
 import kotlinx.coroutines.*                      // Coroutines
 import kotlinx.serialization.*                   // JSON serialization
 ```
 
-### Downstream Consumers
-
-```kotlin
-// Pipeline consumes transport DTOs
-private val telegramTransport:  TelegramHistoryClient
-
-val messages = telegramTransport.fetchMessages(chatId, limit = 100)
-val rawMetadata = messages.map { it.toRawMediaMetadata() }  // Pipeline mapping
-
-// Playback consumes transport for streaming
-private val telegramFileClient: TelegramFileClient
-private val remoteResolver: TelegramRemoteResolver
-
-val resolved = remoteResolver.resolveMedia(remoteId)
-telegramFileClient.startDownload(resolved.mediaFileId, priority = 32)
-```
-
 ### Forbidden Imports (CI-GUARDED)
 
 ```kotlin
-// ❌ FORBIDDEN
-import com.fishit.player. pipeline.*             // Pipeline
+// ❌ FORBIDDEN in ALL transport modules
+import com.fishit.player.pipeline.*             // Pipeline
 import com.fishit.player.core.metadata.*        // Normalizer
-import com.fishit. player.core.persistence.*     // Persistence
-import com.fishit.player. feature.*              // UI
+import com.fishit.player.core.persistence.*     // Persistence
+import com.fishit.player.feature.*              // UI
 import com.fishit.player.playback.*             // Playback domain
 ```
 
 ---
 
-## 🔍 Pre-Change Verification
+## 🔍 Pre-Change Verification (ALL Transport Modules)
 
 ```bash
 # 1. No forbidden imports
-grep -rn "import.*pipeline\|import.*core\. metadata\|import.*persistence\|import.*feature\|import.*playback" infra/transport-telegram/ infra/transport-xtream/
+grep -rn "import.*pipeline\|import.*core\.metadata\|import.*persistence\|import.*feature\|import.*playback" infra/transport-*/
 
-# 2. No TdlClient leaks (Telegram)
-grep -rn "TdlClient\|TdApi\." infra/transport-telegram/ | grep -v "internal/"
+# 2. No business logic (normalization, classification)
+grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|extractSeasonEpisode" infra/transport-*/
 
-# 3. No OkHttpClient leaks (Xtream)
-grep -rn "fun.*OkHttpClient\|val.*OkHttpClient" infra/transport-xtream/ | grep -v "internal\|private"
+# 3. No persistence imports
+grep -rn "import.*objectbox\|import.*room\|BoxStore" infra/transport-*/
 
-# 4. No business logic (normalization, classification)
-grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|extractSeasonEpisode" infra/transport-telegram/ infra/transport-xtream/
+# 4. No secrets in logs (manual review required)
+grep -rn "password\|token\|apiKey\|secret" infra/transport-*/ | grep -i "unifiedlog\|log\."
 
-# All should return empty! 
+# All should return empty (except #4 which requires manual review)!
 ```
 
 ---
 
-## ✅ PLATIN Checklist
+## ✅ PLATIN Checklist (Common - ALL Transport Modules)
 
-### Common (All Transport Modules)
 - [ ] Only this layer imports external SDKs (TDLib, OkHttp, ContentResolver)
 - [ ] Exports clean, documented DTOs (no raw SDK types)
+- [ ] Uses typed, segregated interfaces (not god objects)
 - [ ] No business logic or normalization
 - [ ] No persistence (ObjectBox, Room)
 - [ ] No pipeline imports
 - [ ] No UI imports
 - [ ] No playback domain imports
-- [ ] Uses UnifiedLog for all logging
-- [ ] Credentials redacted in logs (UnifiedLog handles this)
+- [ ] Uses UnifiedLog for all logging (lambda-based in hot paths)
+- [ ] Credentials redacted in logs
 - [ ] Stateless design (no in-memory caches for catalog data)
 
-### Transport-Telegram Specific
-- [ ] TdlClient never exposed to upper layers
-- [ ] TdlibClientProvider internal use only (v1 legacy pattern)
-- [ ] remoteId-first for all file references
-- [ ] `TgThumbnailRef` uses remoteId (not fileId)
-- [ ] TelegramThumbFetcher implemented in transport layer
-- [ ] Typed interfaces (Auth, History, File, Thumb, Resolver)
-- [ ] DefaultTelegramClient implements all interfaces
-- [ ] Bounded error tracking for failed remoteIds (prevents log spam)
-
-### Transport-Xtream Specific
-- [ ] Premium User-Agent in all API requests
-- [ ] Port auto-discovery with persistent caching
-- [ ] VOD alias resolution (vod/movie/movies)
-- [ ] Per-host rate limiting (120ms min interval)
-- [ ] Device-aware parallelism via XtreamParallelism
-- [ ] Credential encryption via EncryptedSharedPreferences
-- [ ] Separate headers for API vs Playback (NO gzip on streams!)
-- [ ] XtreamApiClient interface (not monolithic god object)
+**For source-specific rules, see:**
+- `infra-transport-telegram.instructions.md` - remoteId-first, TelegramThumbFetcher, etc.
+- `infra-transport-xtream.instructions.md` - Premium Contract, rate limiting, etc.
 
 ---
 
 ## 📚 Reference Documents (Priority Order)
 
-1. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - Transport → Pipeline contract
-2. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - remoteId-first design
-3. **`/.github/tdlibAgent.md`** - TDLib integration SSOT
+1. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Section 1.4 (Infrastructure Terms)
+2. **`/contracts/LOGGING_CONTRACT_V2.md`** - Logging rules (v1.1)
+3. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - remoteId-first design
 4. **`/contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md`** - Xtream Premium Contract
-5. **`/AGENTS. md`** - Section on Player Layer Isolation (transport boundaries)
-6. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Transport layer definition
-7. **`infra/transport-telegram/README.md`** - Module-specific rules
-8. **`infra/transport-xtream/README. md`** - Module-specific rules
+5. **`/AGENTS.md`** - Layer boundary enforcement
 
 ---
 
 ## 🚨 Common Violations & Solutions
 
-### Violation 1: Leaking TDLib Types
+### Violation 1: Leaking SDK Types
 
 ```kotlin
 // ❌ WRONG
-fun getTelegramFile(fileId: Int): TdApi.File  // Leaking TDLib type! 
+fun getTelegramFile(fileId: Int): TdApi.File  // Leaking TDLib type!
 
 // ✅ CORRECT
 suspend fun getFile(fileId: Int): TgFile      // Wrapped DTO
@@ -500,51 +297,48 @@ suspend fun getFile(fileId: Int): TgFile      // Wrapped DTO
 
 ```kotlin
 // ❌ WRONG (in transport layer)
-fun classifyTelegramMessage(message: TgMessage): MediaType {
-    if (message.content?. video != null) return MediaType. MOVIE
-    // ... complex classification logic
-}
-
-// ✅ CORRECT:  Move to pipeline
-// pipeline/telegram/classifier/TelegramMediaClassifier.kt
-fun TgMessage.toRawMediaMetadata(): RawMediaMetadata {
-    // Classification logic HERE
-}
-```
-
-### Violation 3: Monolithic Client Interface
-
-```kotlin
-// ❌ WRONG
-interface TelegramTransportClient {
-    suspend fun auth()
-    suspend fun getChats()
-    suspend fun downloadFile()
-    // ... 50 methods
-}
-
-// ✅ CORRECT:  Segregated interfaces
-interface TelegramAuthClient { suspend fun isAuthorized(): Boolean }
-interface TelegramHistoryClient { suspend fun getChats(): List<TgChat> }
-interface TelegramFileClient { suspend fun startDownload(fileId: Int) }
-```
-
-### Violation 4: Exposing OkHttpClient
-
-```kotlin
-// ❌ WRONG
-class XtreamApiClientImpl(val http: OkHttpClient) : XtreamApiClient {
-    // Exposes OkHttpClient as public property! 
+fun normalizeTitle(title: String): String {
+    return title.replace("[1080p]", "").trim()
 }
 
 // ✅ CORRECT
-class DefaultXtreamApiClient(private val http: OkHttpClient) : XtreamApiClient {
-    // OkHttpClient is private
+// No normalization in transport! Pass raw data to pipeline
+suspend fun fetchMessage(...): TgMessage  // Raw data
+```
+
+### Violation 3: Monolithic Client
+
+```kotlin
+// ❌ WRONG
+interface TelegramClient {
+    fun auth()
+    fun getChats()
+    fun downloadFile()
+    fun fetchThumbnail()
+    // ... 30 more methods
 }
+
+// ✅ CORRECT: Segregated interfaces
+interface TelegramAuthClient { fun auth() }
+interface TelegramHistoryClient { fun getChats() }
+interface TelegramFileClient { fun downloadFile() }
+interface TelegramThumbFetcher { fun fetchThumbnail() }
+```
+
+### Violation 4: Secrets in Logs
+
+```kotlin
+// ❌ WRONG
+UnifiedLog.d(TAG) { "Login with password=$password, token=$authToken" }
+
+// ✅ CORRECT
+UnifiedLog.d(TAG) { "Login: hasPassword=true, hasToken=${authToken != null}" }
 ```
 
 ---
 
-**End of PLATIN Instructions for infra/transport-***
+**End of PLATIN Instructions for infra/transport-* (Common Rules)**
 
-**Next Steps:** Review `infra/data-*` instructions for repository implementations. 
+**Next Steps:** Create source-specific instructions:
+- `.github/instructions/infra-transport-telegram.instructions.md`
+- `.github/instructions/infra-transport-xtream.instructions.md`
