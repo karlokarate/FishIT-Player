@@ -1,9 +1,5 @@
-package com.fishit.player.v2.feature
+package com.fishit.player.core.feature
 
-import com.fishit.player.core.feature.FeatureId
-import com.fishit.player.core.feature.FeatureOwner
-import com.fishit.player.core.feature.FeatureProvider
-import com.fishit.player.core.feature.FeatureRegistry
 import javax.inject.Inject
 import javax.inject.Singleton
 

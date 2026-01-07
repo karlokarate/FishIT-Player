@@ -1,5 +1,6 @@
 package com.fishit.player.v2.feature
 
+import com.fishit.player.core.feature.AppFeatureRegistry
 import com.fishit.player.core.feature.FeatureId
 import com.fishit.player.core.feature.FeatureOwner
 import com.fishit.player.core.feature.FeatureProvider

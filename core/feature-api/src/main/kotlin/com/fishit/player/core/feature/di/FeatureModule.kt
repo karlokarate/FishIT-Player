@@ -1,8 +1,8 @@
-package com.fishit.player.v2.feature.di
+package com.fishit.player.core.feature.di
 
+import com.fishit.player.core.feature.AppFeatureRegistry
 import com.fishit.player.core.feature.FeatureProvider
 import com.fishit.player.core.feature.FeatureRegistry
-import com.fishit.player.v2.feature.AppFeatureRegistry
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
