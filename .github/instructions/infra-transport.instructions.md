@@ -10,7 +10,12 @@ applyTo:
 > **PLATIN STANDARD** - External API Integration Layer (Common Rules).
 >
 > **Purpose:** This document defines the COMMON rules for ALL transport modules.
-> Transport is the **ONLY** layer allowed to directly interact with external SDKs and network libraries.
+> Transport is the **ONLY** layer allowed to directly interact with external SDKs and network libraries
+> **for business/source data access**. 
+>
+> **Exception:** `core/ui-imaging` (Coil) is explicitly allowed to use OkHttp for image fetching - 
+> this is NOT a transport violation as imaging is a separate concern from business data access.
+>
 > All upper layers consume clean, typed interfaces with source-agnostic DTOs.
 >
 > **Binding Contracts:**

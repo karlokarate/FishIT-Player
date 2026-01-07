@@ -569,7 +569,7 @@ grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|searchTmdb" infra
 
 ## 📚 Reference Documents (Priority Order)
 
-1. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract
+1. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract (AUTHORITATIVE)
 2. **`/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`** - Flow patterns
 3. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - Telegram source ID format
 4. **`/AGENTS.md`** - Section 4.5 (Layer Boundary Enforcement)

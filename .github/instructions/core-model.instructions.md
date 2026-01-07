@@ -275,9 +275,9 @@ grep -rn "suspend fun\|fun .*{" core/model/src/main/java/ | grep -v "fun copy\|f
 
 ## 📚 Reference Documents (Priority Order)
 
-1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Section 1. 1, 2.1
+1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Section 1.1, 2.1 (AUTHORITATIVE)
 2. `/contracts/GLOSSARY_v2_naming_and_modules.md` - Section 1.2, 1.3
-3. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - ImageRef. TelegramThumb
-4. `/contracts/TMDB_ENRICHMENT_CONTRACT.md` - TmdbRef, TmdbResolveState
+3. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - ImageRef.TelegramThumb
+4. `/docs/v2/TMDB_ENRICHMENT_CONTRACT.md` - TmdbRef, TmdbResolveState (AUTHORITATIVE)
 5. `/AGENTS.md` - Section 4.1 (Canonical Media & Normalizer)
 6. `core/model/README.md` - Module-specific rules
