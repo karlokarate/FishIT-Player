@@ -101,13 +101,4 @@ class CanonicalLinkingSchedulerImpl
             workManager.cancelUniqueWork(workName)
             UnifiedLog.i(TAG) { "Cancelled backlog processing: source=$sourceType" }
         }
-
-        override suspend fun isBacklogProcessingActive(sourceType: SourceType): Boolean {
-            val workName = WORK_NAME_FORMAT.format(sourceType.name.lowercase())
-            val workInfos = workManager.getWorkInfosForUniqueWork(workName).firstOrNull()
-
-            return workInfos?.any { workInfo ->
-                workInfo.state == WorkInfo.State.RUNNING || workInfo.state == WorkInfo.State.ENQUEUED
-            } ?: false
-        }
     }

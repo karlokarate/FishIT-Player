@@ -1,7 +1,7 @@
 package com.fishit.player.v2.work
 
 import com.fishit.player.core.model.SourceType
-import kotlin.test.Test
+import org.junit.Test
 import kotlin.test.assertEquals
 
 /**

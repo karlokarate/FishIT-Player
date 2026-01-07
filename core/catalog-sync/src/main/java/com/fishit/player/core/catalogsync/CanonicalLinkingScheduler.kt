@@ -41,14 +41,6 @@ interface CanonicalLinkingScheduler {
      */
     fun cancelBacklogProcessing(sourceType: SourceType)
 
-    /**
-     * Check if backlog processing is scheduled or running for a source.
-     *
-     * @param sourceType The source type to check
-     * @return true if processing is scheduled or running
-     */
-    suspend fun isBacklogProcessingActive(sourceType: SourceType): Boolean
-
     companion object {
         /** Default delay before starting backlog processing (5 seconds) */
         const val DEFAULT_DELAY_MS = 5_000L

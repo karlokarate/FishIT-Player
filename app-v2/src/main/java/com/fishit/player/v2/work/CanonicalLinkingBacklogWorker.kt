@@ -113,7 +113,7 @@ class CanonicalLinkingBacklogWorker
 
                 UnifiedLog.d(TAG) { "Processing Xtream backlog: ${items.size} items" }
 
-                items.forEach { raw ->
+                for (raw in items) {
                     try {
                         // Check budget on each iteration
                         val elapsed = System.currentTimeMillis() - startTimeMs
@@ -144,7 +144,7 @@ class CanonicalLinkingBacklogWorker
 
                 return Result.success(
                     WorkerOutputData.success(
-                        itemsPersisted = linkedCount,
+                        itemsPersisted = linkedCount.toLong(),
                         durationMs = durationMs,
                     ),
                 )
@@ -177,7 +177,7 @@ class CanonicalLinkingBacklogWorker
 
                 UnifiedLog.d(TAG) { "Processing Telegram backlog: ${items.size} items" }
 
-                items.forEach { raw ->
+                for (raw in items) {
                     try {
                         // Check budget on each iteration
                         val elapsed = System.currentTimeMillis() - startTimeMs
@@ -208,7 +208,7 @@ class CanonicalLinkingBacklogWorker
 
                 return Result.success(
                     WorkerOutputData.success(
-                        itemsPersisted = linkedCount,
+                        itemsPersisted = linkedCount.toLong(),
                         durationMs = durationMs,
                     ),
                 )

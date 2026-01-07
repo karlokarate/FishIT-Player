@@ -78,7 +78,6 @@ class DefaultCatalogSyncService
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val checkpointStore: SyncCheckpointStore,
         private val telegramAuthRepository: TelegramAuthRepository,
-        private val canonicalLinkingScheduler: CanonicalLinkingScheduler? = null,
     ) : CatalogSyncService {
         companion object {
             private const val TAG = "CatalogSyncService"
@@ -248,16 +247,8 @@ class DefaultCatalogSyncService
 
                                 val durationMs = System.currentTimeMillis() - startTimeMs
                                 
-                                // TASK 2: Schedule backlog processing if canonical linking was skipped
-                                if (!syncConfig.enableCanonicalLinking && itemsPersisted > 0) {
-                                    canonicalLinkingScheduler?.scheduleBacklogProcessing(
-                                        sourceType = com.fishit.player.core.model.SourceType.TELEGRAM,
-                                        estimatedItemCount = itemsPersisted,
-                                    )
-                                    UnifiedLog.i(TAG) {
-                                        "Scheduled canonical linking backlog for Telegram: $itemsPersisted items"
-                                    }
-                                }
+                                // TASK 2: Backlog scheduling moved to workers to avoid DI cycle
+                                // Workers will schedule backlog processing after sync completes
                                 
                                 UnifiedLog.i(
                                     TAG,
@@ -470,16 +461,8 @@ class DefaultCatalogSyncService
 
                                 val durationMs = System.currentTimeMillis() - startTimeMs
                                 
-                                // TASK 2: Schedule backlog processing if canonical linking was skipped
-                                if (!syncConfig.enableCanonicalLinking && itemsPersisted > 0) {
-                                    canonicalLinkingScheduler?.scheduleBacklogProcessing(
-                                        sourceType = com.fishit.player.core.model.SourceType.XTREAM,
-                                        estimatedItemCount = itemsPersisted,
-                                    )
-                                    UnifiedLog.i(TAG) {
-                                        "Scheduled canonical linking backlog for Xtream: $itemsPersisted items"
-                                    }
-                                }
+                                // TASK 2: Backlog scheduling moved to workers to avoid DI cycle
+                                // Workers will schedule backlog processing after sync completes
                                 
                                 UnifiedLog.i(
                                     TAG,
