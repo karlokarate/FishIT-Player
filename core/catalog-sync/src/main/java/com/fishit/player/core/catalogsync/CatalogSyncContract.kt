@@ -249,6 +249,8 @@ interface CatalogSyncService {
      * @param includeSeries Whether to sync series index
      * @param includeEpisodes Whether to sync episodes (default FALSE for perceived speed)
      * @param includeLive Whether to sync live channels
+     * @param excludeSeriesIds Series IDs to skip during episode loading (for checkpoint resume)
+     * @param episodeParallelism Max concurrent series for parallel episode loading
      * @param config Enhanced sync configuration with per-phase settings
      * @return Flow of sync status events
      */
@@ -257,6 +259,8 @@ interface CatalogSyncService {
         includeSeries: Boolean = true,
         includeEpisodes: Boolean = false, // Lazy load episodes by default
         includeLive: Boolean = true,
+        excludeSeriesIds: Set<Int> = emptySet(),
+        episodeParallelism: Int = 4,
         config: EnhancedSyncConfig = EnhancedSyncConfig.DEFAULT,
     ): Flow<SyncStatus>
 

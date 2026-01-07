@@ -302,6 +302,8 @@ class XtreamCatalogScanWorker
                         includeSeries = includeSeries,
                         includeEpisodes = includeEpisodes,
                         includeLive = includeLive,
+                        excludeSeriesIds = excludeSeriesIds,
+                        episodeParallelism = 4, // Default parallelism
                         config = enhancedConfig,
                     ).collect { status ->
                         // Check if worker is cancelled

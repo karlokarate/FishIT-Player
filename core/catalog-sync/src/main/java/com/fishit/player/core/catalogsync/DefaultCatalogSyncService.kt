@@ -587,13 +587,16 @@ class DefaultCatalogSyncService
             includeSeries: Boolean,
             includeEpisodes: Boolean,
             includeLive: Boolean,
+            excludeSeriesIds: Set<Int>,
+            episodeParallelism: Int,
             config: EnhancedSyncConfig,
         ): Flow<SyncStatus> =
             flow {
                 UnifiedLog.i(
                     TAG,
                     "Starting enhanced Xtream sync: live=$includeLive, vod=$includeVod, series=$includeSeries, " +
-                        "episodes=$includeEpisodes, canonical_linking=${config.enableCanonicalLinking}",
+                        "episodes=$includeEpisodes, excludeSeriesIds=${excludeSeriesIds.size}, " +
+                        "episodeParallelism=$episodeParallelism, canonical_linking=${config.enableCanonicalLinking}",
                 )
                 emit(SyncStatus.Started(SOURCE_XTREAM))
 
@@ -625,6 +628,8 @@ class DefaultCatalogSyncService
                         includeSeries = includeSeries,
                         includeEpisodes = includeEpisodes,
                         includeLive = includeLive,
+                        excludeSeriesIds = excludeSeriesIds,
+                        episodeParallelism = episodeParallelism,
                     )
 
                 // Time-based flush job
