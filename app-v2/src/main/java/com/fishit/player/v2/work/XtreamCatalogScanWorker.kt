@@ -491,6 +491,7 @@ class XtreamCatalogScanWorker
                                 batchSize = 100, // Smaller than default 150
                             ),
                         enableTimeBasedFlush = true,
+                        enableCanonicalLinking = false,
                     )
                 }
                 // Force rescan: Maximize throughput with larger batches
