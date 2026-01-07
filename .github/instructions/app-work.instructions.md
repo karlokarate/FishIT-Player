@@ -204,10 +204,33 @@ const val SYNC_MODE_FORCE_RESCAN = "EXPERT_FORCE_RESCAN"
 const val DEVICE_CLASS_FIRETV_LOW_RAM = "FIRETV_LOW_RAM"
 const val DEVICE_CLASS_ANDROID_PHONE_TABLET = "ANDROID_PHONE_TABLET"
 
-// Batch sizes per device class
-const val FIRETV_BATCH_SIZE = 35
-const val NORMAL_BATCH_SIZE = 100
+// Batch sizes per device class (GLOBAL CAP for FireTV)
+const val FIRETV_BATCH_SIZE = 35      // Overrides all phase-specific sizes
+const val NORMAL_BATCH_SIZE = 100     // Generic fallback (phase-specific preferred)
 ```
+
+**Batch Size System (see also core-catalog-sync.instructions.md):**
+
+Workers use a **two-tier batch sizing system**:
+
+1. **Phase-specific sizes** (default for normal devices):
+   - Live: 400 items (rapid inserts)
+   - Movies: 250 items (balanced)
+   - Series: 150 items (larger payloads)
+
+2. **Device class override** (FireTV safety):
+   - FireTV: **35 items max** (caps ALL phases to prevent OOM)
+   - Normal: Uses phase-specific sizes
+
+**Application Logic:**
+```kotlin
+val effectiveBatchSize = if (deviceClass == DEVICE_CLASS_FIRETV_LOW_RAM) {
+    min(PHASE_BATCH_SIZE, FIRETV_BATCH_SIZE)  // Cap at 35
+} else {
+    PHASE_BATCH_SIZE  // Use 400/250/150 based on phase
+}
+```
+
 
 ### Failure Reasons (W-20 - Non-Retryable)
 ```kotlin
