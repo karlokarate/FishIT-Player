@@ -1,38 +1,13 @@
 {
   // ===== Kotlin & Android =====
-  "kotlin.languageServer.enabled": true,
-  "kotlin.compiler.jvm.target": "17",
-  "kotlin.debugAdapter.enabled": true,
-  // Kotlin Language Server Memory Limits (prevent OOM crashes)
-  "kotlin.languageServer.jvmOptions": [
-    "-Xmx768m",
-    "-Xms128m",
-    "-XX:+UseG1GC",
-    "-XX:MaxMetaspaceSize=256m",
-    "-XX:+HeapDumpOnOutOfMemoryError",
-    "-XX:HeapDumpPath=/tmp/kotlin-ls-oom.hprof"
-  ],
-  "kotlin.compiler.noStdlib": false,
-  "kotlin.compiler.noReflect": false,
+  // DISABLED: Kotlin extension removed to save resources
+  "kotlin.languageServer.enabled": false,
+  "kotlin.debugAdapter.enabled": false,
+
   // ===== Java =====
-  "java.configuration.runtimes": [
-    {
-      "name": "JavaSE-21",
-      "path": "/usr/lib/jvm/msopenjdk-current",
-      "default": true
-    }
-  ],
-  "java.jdt.ls.java.home": "/usr/lib/jvm/msopenjdk-current",
-  // Java Language Server Memory Limits (optimized for 8GB Codespaces)
-  "java.jdt.ls.vmargs": "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms256m -Xmx1024m -XX:MaxMetaspaceSize=256m -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Djava.awt.headless=true -Djava.util.concurrent.ForkJoinPool.common.parallelism=2",
-  "java.import.gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
-  "java.import.gradle.wrapper.enabled": true,
-  "java.import.gradle.offline.enabled": false,
+  // DISABLED: Java extension removed - using Gradle CLI only
   "java.autobuild.enabled": false,
-  "java.maxConcurrentBuilds": 1,
-  "java.completion.guessMethodArguments": false,
-  "java.refactor.renameFromFileExplorer": "never",
-  "java.codeGeneration.hashCodeEquals.useJava7Objects": true,
+
   // ===== Android =====
   "android.sdk": "${workspaceFolder}/.wsl-android-sdk",
   "android.gradle.path": "${workspaceFolder}/gradlew",
@@ -44,13 +19,11 @@
     "source.fixAll": "explicit"
   },
   "[kotlin]": {
-    "editor.defaultFormatter": "fwcd.kotlin",
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
-    "editor.formatOnSave": true
+    "editor.formatOnSave": false
   },
   "[java]": {
-    "editor.defaultFormatter": "redhat.java",
     "editor.tabSize": 4
   },
   "[xml]": {
@@ -64,15 +37,16 @@
     "editor.tabSize": 4
   },
   // ===== Linting & Quality =====
-  "ktlint.enable": true,
-  "ktlint.autoFormat": true,
-  "ktlint.lintAfterCreate": true,
-  "detekt.enable": true,
+  // DISABLED: Run manually via ./gradlew ktlintCheck detekt
+  "ktlint.enable": false,
+  "ktlint.autoFormat": false,
+  "ktlint.lintAfterCreate": false,
+  "detekt.enable": false,
   "detekt.configPath": "${workspaceFolder}/detekt-config.yml",
   // ===== Git =====
   "git.enableSmartCommit": true,
   "git.confirmSync": false,
-  "git.autofetch": true,
+  "git.autofetch": false,
   "git.pruneOnFetch": true,
   // ===== Files =====
   "files.exclude": {
@@ -142,9 +116,56 @@
   "extensions.autoCheckUpdates": false,
   "update.mode": "none",
   // ===== Tasks =====
-  "task.autoDetect": "on",
+  "task.autoDetect": "off",
   "task.problemMatchers": [],
   // ===== Extensions =====
   "extensions.ignoreRecommendations": false,
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "interactive",
+
+  // ===== GitHub Copilot (PLATIN Configuration) =====
+  
+  // Core Instructions
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.codeGeneration.instructions": [
+    { "file": ".github/copilot-instructions.md" },
+    { "file": "AGENTS.md" },
+    { "file": "COPILOT_TASK_HINTS.md" }
+  ],
+  
+  // Code Review Instructions
+  "github.copilot.chat.reviewSelection.instructions": [
+    { "file": ".github/copilot-instructions.md" }
+  ],
+  
+  // Test Generation Instructions  
+  "github.copilot.chat.testGeneration.instructions": [
+    { 
+      "text": "Generate tests using JUnit5 + MockK. Use @Test annotation. Mock dependencies with mockk<T>(). Use coEvery/coVerify for suspend functions. Follow AAA pattern (Arrange-Act-Assert). Test file naming: <ClassName>Test.kt. Place in src/test/java matching main package structure."
+    }
+  ],
+  
+  // Commit Message Instructions
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "Use Conventional Commits format: <type>(<scope>): <description>. Types: feat, fix, refactor, docs, test, chore, perf. Scope = module name (e.g., pipeline, player, transport). Max 72 chars for subject. Add body for breaking changes. Reference issues with #number."
+    }
+  ],
+  
+  // Performance: Faster completions
+  "github.copilot.advanced": {
+    "listCount": 10
+  },
+  
+  // Editor Integration
+  "github.copilot.editor.enableAutoCompletions": true,
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": true,
+    "scminput": true
+  },
+  
+  // Chat Behavior
+  "github.copilot.chat.localeOverride": "en",
+  "github.copilot.chat.welcomeMessage": "disabled"
 }

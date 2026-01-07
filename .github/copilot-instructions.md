@@ -6,6 +6,98 @@ This document provides repository-specific instructions for GitHub Copilot to he
 
 ---
 
+## ⚠️ Path-Scoped Instructions (Auto-Applied)
+
+This repository uses **path-scoped instruction files** in `.github/instructions/` that are **automatically applied** by VS Code Copilot when editing files in matching paths.
+
+**Key modules with dedicated instructions:**
+
+| Instruction File                           | Applies To                    |
+| ------------------------------------------ | ----------------------------- |
+| `core-model.instructions.md`               | `core/model/**`               |
+| `pipeline.instructions.md`                 | `pipeline/**`                 |
+| `player.instructions.md`                   | `player/**`                   |
+| `playback.instructions.md`                 | `playback/**`                 |
+| `infra-transport-telegram.instructions.md` | `infra/transport-telegram/**` |
+| `infra-data.instructions.md`               | `infra/data-*/**`             |
+| `feature-*.instructions.md`                | `feature/**`                  |
+
+> **Full inventory:** See `AGENTS.md` Section 2.5 for complete list of 21 instruction files.
+
+These instructions define **PLATIN quality standards** with:
+
+- Allowed/forbidden imports
+- Canonical patterns and code examples
+- Hard rules for layer boundaries
+- Module-specific best practices
+
+> ⚠️ **For Cloud Tasks (Copilot Workspace, GitHub.com):** Path-scoped files are NOT auto-loaded.
+> The critical rules are summarized below in "Layer Boundary Hard Rules".
+
+---
+
+## 🔴 Layer Boundary Hard Rules (CRITICAL for Cloud Tasks)
+
+> These rules are extracted from path-scoped instructions for agents that cannot read `.github/instructions/`.
+
+### Layer Hierarchy (top to bottom)
+
+```
+UI (feature/*) → Domain (core/*-domain) → Data (infra/data-*) → Pipeline (pipeline/*) → Transport (infra/transport-*) → Core Model (core/model)
+```
+
+### Forbidden Cross-Layer Imports
+
+| Layer         | MUST NOT Import From                                                            |
+| ------------- | ------------------------------------------------------------------------------- |
+| **Pipeline**  | `infra/data-*`, `core/persistence`, `playback/*`, `feature/*`, `io.objectbox.*` |
+| **Transport** | `pipeline/*`, `infra/data-*`, `playback/*`, `feature/*`, `core/persistence`     |
+| **Data**      | Pipeline DTOs (`TelegramMediaItem`, `XtreamVodItem`, etc.)                      |
+| **Playback**  | Pipeline DTOs - use `RawMediaMetadata` only                                     |
+| **Player**    | `pipeline/*`, `infra/transport-*`, `infra/data-*`, TDLib types (`TdApi.*`)      |
+
+### Pipeline Hard Rules
+
+```kotlin
+// ✅ CORRECT: Pipeline produces ONLY RawMediaMetadata
+fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata
+
+// ❌ FORBIDDEN: Exporting internal DTOs, computing globalId, normalization
+fun getMediaItems(): List<TelegramMediaItem>  // WRONG
+globalId = FallbackCanonicalKeyGenerator.generate(...)  // WRONG
+val cleanedTitle = title.replace(...)  // WRONG → normalizer's job
+```
+
+### Player Hard Rules
+
+```kotlin
+// ✅ CORRECT: Player is 100% source-agnostic
+class InternalPlayerSession @Inject constructor(
+    private val sourceResolver: PlaybackSourceResolver,  // Abstraction
+)
+
+// ❌ FORBIDDEN: Source-specific code in player
+class InternalPlayerSession @Inject constructor(
+    private val telegramClient: TelegramFileClient,  // WRONG!
+    private val xtreamUrlBuilder: XtreamUrlBuilder,  // WRONG!
+)
+```
+
+### Transport Hard Rules (Telegram)
+
+```kotlin
+// ✅ CORRECT: Use typed interfaces
+interface TelegramAuthClient { ... }
+interface TelegramHistoryClient { ... }
+interface TelegramFileClient { ... }
+
+// ❌ FORBIDDEN: Exposing TDLib types
+fun getMessage(): TdApi.Message  // WRONG - use TgMessage!
+fun getClient(): TdlClient       // WRONG - never expose!
+```
+
+---
+
 ## ⚠️ MANDATORY: Contracts Folder
 
 **Before making ANY code changes, you MUST read the relevant contracts from `/contracts/`:**
