@@ -474,6 +474,11 @@ class XtreamCatalogScanWorker
          * - FireTV Low-RAM: Use FIRETV_SAFE (35-item cap across all phases)
          * - Normal devices: Use PROGRESSIVE_UI (optimized for UI-first loading)
          * - Force rescan: Larger batches for throughput (600/400/200)
+         *
+         * Precedence when conditions overlap:
+         * - FireTV safety ALWAYS takes precedence over sync mode.
+         *   For example, a FireTV low-RAM device in SYNC_MODE_FORCE_RESCAN will still use
+         *   FIRETV_SAFE, not the larger force-rescan batch sizes.
          */
         private fun selectEnhancedConfig(input: WorkerInputData): com.fishit.player.core.catalogsync.EnhancedSyncConfig {
             return when {
