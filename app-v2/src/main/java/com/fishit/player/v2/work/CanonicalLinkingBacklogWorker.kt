@@ -34,15 +34,15 @@ import kotlinx.coroutines.coroutineScope
  * **Task 3: Bulk/Parallelisierung (Enhanced Dec 2025)**
  * - Bounded concurrency: 6-12 parallel normalization operations (CPU-intensive)
  * - FireTV safety: 2-4 parallel operations (reduced for low-RAM devices)
- * - Bulk transactions: Group canonical linking operations for efficiency
+ * - Error isolation: Individual item failures don't stop the batch
  * - Batch sizes: 300-800 items (device-aware)
  * - Viewport prioritization: Optional support for prioritizing visible items
  *
  * **Architecture:**
  * 1. Query pipeline-specific repositories for items without canonical links
  * 2. Normalize via MediaMetadataNormalizer (parallel with bounded concurrency)
- * 3. Upsert to CanonicalMediaRepository (bulk transactions)
- * 4. Link source via addOrUpdateSourceRef (bulk operations)
+ * 3. Upsert to CanonicalMediaRepository (individual transactions per repository API)
+ * 4. Link source via addOrUpdateSourceRef (error isolation for robustness)
  *
  * **Contract:**
  * - W-16: Runtime Guards (MANDATORY)
@@ -123,8 +123,8 @@ class CanonicalLinkingBacklogWorker
             maxRuntimeMs: Long,
             startTimeMs: Long,
         ): Result {
-            var linkedCount = 0
-            var failedCount = 0
+            var linkedCount = 0L
+            var failedCount = 0L
             val budget = maxRuntimeMs - (System.currentTimeMillis() - startTimeMs)
 
             if (budget <= 0) {
@@ -156,8 +156,8 @@ class CanonicalLinkingBacklogWorker
                 // Process in parallel chunks with bounded concurrency
                 val results = processItemsParallel(items, concurrency, maxRuntimeMs, startTimeMs)
                 
-                linkedCount = results.count { it.success }
-                failedCount = results.count { !it.success }
+                linkedCount = results.count { it.success }.toLong()
+                failedCount = results.count { !it.success }.toLong()
 
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 val throughput = if (durationMs > 0) linkedCount * 1000 / durationMs else 0
@@ -193,15 +193,15 @@ class CanonicalLinkingBacklogWorker
         /**
          * Process Telegram backlog: Link unlinked items to canonical media.
          * 
-         * **Task 3 Enhancement:** Uses bounded concurrency and bulk transactions for performance.
+         * **Task 3 Enhancement:** Uses bounded concurrency and error isolation for performance.
          */
         private suspend fun processTelegramBacklog(
             batchSize: Int,
             maxRuntimeMs: Long,
             startTimeMs: Long,
         ): Result {
-            var linkedCount = 0
-            var failedCount = 0
+            var linkedCount = 0L
+            var failedCount = 0L
             val budget = maxRuntimeMs - (System.currentTimeMillis() - startTimeMs)
 
             if (budget <= 0) {
@@ -233,8 +233,8 @@ class CanonicalLinkingBacklogWorker
                 // Process in parallel chunks with bounded concurrency
                 val results = processItemsParallel(items, concurrency, maxRuntimeMs, startTimeMs)
                 
-                linkedCount = results.count { it.success }
-                failedCount = results.count { !it.success }
+                linkedCount = results.count { it.success }.toLong()
+                failedCount = results.count { !it.success }.toLong()
 
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 val throughput = if (durationMs > 0) linkedCount * 1000 / durationMs else 0
@@ -289,9 +289,8 @@ class CanonicalLinkingBacklogWorker
          * 
          * **Task 3 Features:**
          * - Parallel normalization (CPU-intensive operation)
-         * - Bulk transactions for canonical linking
+         * - Error isolation: Individual item failures don't stop the batch
          * - Budget checks to respect maxRuntimeMs
-         * - Error isolation (one failure doesn't stop the batch)
          * 
          * @param items Items to process
          * @param concurrency Max parallel operations (6-12 normal, 2-4 FireTV)
@@ -332,7 +331,7 @@ class CanonicalLinkingBacklogWorker
                 }.awaitAll()
                 
                 // Bulk link to canonical in a single transaction
-                val chunkResults = bulkLinkToCanonical(normalized)
+                val chunkResults = linkToCanonical(normalized)
                 results.addAll(chunkResults)
             }
             
@@ -340,15 +339,18 @@ class CanonicalLinkingBacklogWorker
         }
 
         /**
-         * Bulk link normalized items to canonical media.
+         * Link normalized items to canonical media with error isolation.
          * 
-         * **Task 3 Feature:** Batch processing for performance.
-         * Note: Repository methods handle their own transactions internally via withContext(Dispatchers.IO).
+         * **Task 3 Feature:** Error isolation - individual failures don't stop the batch.
+         * 
+         * **Note:** Repository API processes items individually via suspend functions.
+         * Each call uses withContext(Dispatchers.IO) internally. True bulk transactions
+         * would require batch methods in the repository interface.
          * 
          * @param normalized List of normalization results
          * @return List of linking results
          */
-        private suspend fun bulkLinkToCanonical(
+        private suspend fun linkToCanonical(
             normalized: List<NormalizationResult>,
         ): List<LinkingResult> {
             val results = mutableListOf<LinkingResult>()

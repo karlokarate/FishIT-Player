@@ -14,7 +14,7 @@ import com.fishit.player.core.model.SourceType
  *
  * **Task 3: Bulk/Parallelisierung (Enhanced Dec 2025)**
  * - Bounded concurrency: 6-12 parallel normalization operations
- * - Bulk transactions: ObjectBox transactions for canonical linking
+ * - Error isolation: Individual failures don't stop the batch
  * - Large batch sizes: 300-800 items (500 default)
  * - FireTV safety: Reduced concurrency (2-4) and batch sizes
  * - Performance metrics: Throughput tracking (items/second)
@@ -57,7 +57,7 @@ interface CanonicalLinkingScheduler {
          * Default batch size for backlog processing.
          * 
          * **Task 3 Enhancement:** Increased from 100 to 500 (midpoint of 300-800 range).
-         * - Larger batches improve throughput for bulk operations
+         * - Larger batches amortize overhead of parallel processing
          * - Bounded concurrency prevents memory issues
          * - FireTV: automatically reduced via device class check
          */
