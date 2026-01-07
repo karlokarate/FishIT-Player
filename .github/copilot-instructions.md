@@ -6,6 +6,36 @@ This document provides repository-specific instructions for GitHub Copilot to he
 
 ---
 
+## 🚨 MANDATORY: Read Instructions Before ANY Action
+
+> **HARD RULE (NO EXCEPTIONS):** Before performing ANY task, change, review, response, or action, ALL agents MUST:
+>
+> 1. **Read the instruction index first:**  
+>    https://github.com/karlokarate/FishIT-Player/blob/architecture%2Fv2-bootstrap/.github%2Finstructions%2F_index.instructions.md
+>
+> 2. **Identify the path-scoped instruction file(s)** that apply to the files being modified or reviewed.
+>
+> 3. **Read and understand ALL applicable instructions** before planning or executing any changes.
+>
+> 4. **Verify path-scope compliance** in the planning phase - check that ALL planned changes conform to the relevant instructions.
+>
+> 5. **Any violation of path-scoped instructions is a VIOLATION** and must be corrected before proceeding.
+
+**This rule applies to:**
+- Code changes (new files, modifications, refactors)
+- Code reviews and suggestions
+- Answering questions about architecture
+- Planning tasks or features
+- Creating PRs or issues
+- ANY interaction with the codebase
+
+**Violation Consequences:**
+- Changes that violate path-scoped instructions are considered bugs
+- Reviews that miss instruction violations are incomplete
+- Agents must self-audit against instructions before finalizing any output
+
+---
+
 ## ⚠️ Path-Scoped Instructions (Auto-Applied)
 
 This repository uses **path-scoped instruction files** in `.github/instructions/` that are **automatically applied** by VS Code Copilot when editing files in matching paths.
