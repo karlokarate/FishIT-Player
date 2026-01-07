@@ -1,9 +1,9 @@
 package com.fishit.player.v2.work
 
 import androidx.work.Data
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Test
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 /**
  * Unit tests for [WorkerInputData] runtime budget handling.
@@ -76,10 +76,10 @@ class WorkerInputDataTest {
     @Test
     fun `default max_runtime_ms is reasonable`() {
         // DEFAULT should be at least 1 minute (60_000ms)
-        assertTrue(WorkerConstants.DEFAULT_MAX_RUNTIME_MS >= 60_000L)
+        assertTrue("DEFAULT should be at least 1 minute", WorkerConstants.DEFAULT_MAX_RUNTIME_MS >= 60_000L)
 
         // DEFAULT should be at most 30 minutes (1_800_000ms)
-        assertTrue(WorkerConstants.DEFAULT_MAX_RUNTIME_MS <= 1_800_000L)
+        assertTrue("DEFAULT should be at most 30 minutes", WorkerConstants.DEFAULT_MAX_RUNTIME_MS <= 1_800_000L)
     }
 
     @Test
@@ -90,8 +90,8 @@ class WorkerInputDataTest {
         val emptyData = Data.Builder().build()
         val input = WorkerInputData.from(emptyData)
 
-        assertTrue(input.maxRuntimeMs > 0L, "Runtime budget must be > 0ms")
-        assertTrue(input.maxRuntimeMs >= 60_000L, "Runtime budget should be at least 1 minute")
+        assertTrue("Runtime budget must be > 0ms", input.maxRuntimeMs > 0L)
+        assertTrue("Runtime budget should be at least 1 minute", input.maxRuntimeMs >= 60_000L)
     }
 
     @Test
@@ -105,6 +105,8 @@ class WorkerInputDataTest {
                 maxRuntimeMs = WorkerConstants.DEFAULT_MAX_RUNTIME_MS,
                 deviceClass = WorkerConstants.DEVICE_CLASS_FIRETV_LOW_RAM,
                 xtreamSyncScope = null,
+                xtreamUseEnhancedSync = true,
+                xtreamInfoBackfillConcurrency = 4,
                 telegramSyncKind = null,
                 ioSyncScope = null,
             )
@@ -118,6 +120,8 @@ class WorkerInputDataTest {
                 maxRuntimeMs = WorkerConstants.DEFAULT_MAX_RUNTIME_MS,
                 deviceClass = WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET,
                 xtreamSyncScope = null,
+                xtreamUseEnhancedSync = true,
+                xtreamInfoBackfillConcurrency = 6,
                 telegramSyncKind = null,
                 ioSyncScope = null,
             )

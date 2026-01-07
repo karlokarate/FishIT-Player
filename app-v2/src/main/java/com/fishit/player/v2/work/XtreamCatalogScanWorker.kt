@@ -471,31 +471,15 @@ class XtreamCatalogScanWorker
          * Select EnhancedSyncConfig based on device class and sync mode.
          *
          * Per PLATIN guidelines (app-work.instructions.md):
-         * - FireTV Low-RAM: 35-item cap across all phases (global safety limit)
-         * - Normal devices: Phase-specific sizes (400/250/150)
+         * - FireTV Low-RAM: Use FIRETV_SAFE (35-item cap across all phases)
+         * - Normal devices: Use PROGRESSIVE_UI (optimized for UI-first loading)
          * - Force rescan: Larger batches for throughput (600/400/200)
          */
         private fun selectEnhancedConfig(input: WorkerInputData): com.fishit.player.core.catalogsync.EnhancedSyncConfig {
             return when {
-                // FireTV: Global 35-item cap to prevent OOM
-                input.isFireTvLowRam -> {
-                    com.fishit.player.core.catalogsync.EnhancedSyncConfig(
-                        liveConfig =
-                            com.fishit.player.core.catalogsync.SyncPhaseConfig.LIVE.copy(
-                                batchSize = WorkerConstants.FIRETV_BATCH_SIZE, // 35 items
-                            ),
-                        moviesConfig =
-                            com.fishit.player.core.catalogsync.SyncPhaseConfig.MOVIES.copy(
-                                batchSize = WorkerConstants.FIRETV_BATCH_SIZE, // 35 items
-                            ),
-                        seriesConfig =
-                            com.fishit.player.core.catalogsync.SyncPhaseConfig.SERIES.copy(
-                                batchSize = WorkerConstants.FIRETV_BATCH_SIZE, // 35 items
-                            ),
-                        enableTimeBasedFlush = true,
-                        enableCanonicalLinking = false, // Hot path relief
-                    )
-                }
+                // FireTV: Use predefined FIRETV_SAFE config (global 35-item cap to prevent OOM)
+                input.isFireTvLowRam -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.FIRETV_SAFE
+                
                 // Force rescan: Maximize throughput with larger batches
                 input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN -> {
                     com.fishit.player.core.catalogsync.EnhancedSyncConfig(
@@ -514,8 +498,8 @@ class XtreamCatalogScanWorker
                         enableTimeBasedFlush = false, // Prioritize throughput over UI
                     )
                 }
-                // Default: Balanced progressive UI configuration
-                else -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.DEFAULT
+                // Default: Use PROGRESSIVE_UI for maximum UI-first loading speed
+                else -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.PROGRESSIVE_UI
             }
         }
 
