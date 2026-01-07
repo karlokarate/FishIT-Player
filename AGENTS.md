@@ -1137,5 +1137,96 @@ Before making changes, agents MUST confirm:
 
 ---
 
+## 16. MCP Server Configuration
+
+All Copilot Agents in this repository have access to the following MCP (Model Context Protocol) servers:
+
+### 16.1. GitHub MCP Server
+
+Provides deep GitHub integration capabilities:
+- Create and manage issues and pull requests
+- Search code across the repository
+- Access CI/CD run logs and status
+- Query repository metadata and contributors
+
+**Configuration:**
+- Runs via Docker: `ghcr.io/github/github-mcp-server`
+- Requires `GITHUB_TOKEN` environment variable
+- Automatically enabled in devcontainer and VS Code settings
+
+### 16.2. Sequential Thinking MCP Server
+
+Enables long-term context and multi-step reasoning:
+- Maintains context across complex, multi-PR task chains
+- Supports structured problem decomposition
+- Reduces token usage by managing context efficiently
+- Essential for Parent Issue → Child Task workflows
+
+**Configuration:**
+- Runs via npx: `@modelcontextprotocol/server-sequential-thinking`
+- No additional setup required
+- Automatically enabled in devcontainer and VS Code settings
+
+### 16.3. Setup Requirements
+
+#### Local Development & Codespaces
+1. **Environment Variable**: Ensure `GITHUB_TOKEN` is set in your environment
+   - For local development: Export in your shell profile
+   - For Codespaces: Added automatically via GitHub authentication
+2. **Docker**: Required for GitHub MCP Server (usually pre-installed in devcontainer)
+3. **Node.js/npx**: Required for Sequential Thinking Server (pre-installed in devcontainer)
+
+#### Cloud Agents (GitHub Actions / Copilot Workspace)
+MCP servers are automatically configured for cloud agents via the `copilot-setup-steps.yml` workflow:
+
+1. **Secret Required**: `COPILOT_MCP_TOKEN` - GitHub token with appropriate permissions
+   - Must be added as a repository secret
+   - Used for GitHub MCP Server authentication
+   - Enables long-term context maintenance across workflow runs
+
+2. **Automatic Caching**: All MCP dependencies are cached for performance:
+   - Docker images (GitHub MCP Server)
+   - NPM packages (Sequential Thinking MCP)
+   - Custom MCP server JAR files
+
+3. **Pre-installed in Workflow**: The `copilot-setup-steps.yml` workflow automatically:
+   - Pulls and caches the GitHub MCP Server Docker image
+   - Pre-installs the Sequential Thinking MCP package
+   - Creates MCP configuration at `~/.config/copilot/mcp.json`
+   - Verifies all MCP server prerequisites
+
+**Usage**: Cloud agents can use MCP capabilities immediately after the setup job completes, with full support for long-term context maintenance across multiple PRs in task chains.
+
+### 16.4. Usage in Task Chains
+
+When working on Parent Issues with multiple child tasks (like #573):
+1. Sequential Thinking maintains context between tasks
+2. GitHub MCP enables automatic PR creation and issue management
+3. Agents can reference previous task results without losing context
+
+### 16.5. Custom MCP Server: FishIT Pipeline
+
+In addition to the standard MCP servers, this repository includes a custom MCP server for pipeline operations:
+- **Location**: `tools/mcp-server/`
+- **Configuration**: `.vscode/mcp.json` (separate from main MCP config)
+- **Provides**: Direct access to Xtream and Telegram pipelines
+- **Purpose**: Domain-specific testing and debugging capabilities
+
+**Why Separate Configuration?**
+The custom pipeline server requires build artifacts (JAR file) and pipeline-specific credentials that are not available in all environments. It's configured separately in `.vscode/mcp.json` to:
+1. Allow local development without requiring the JAR to be built
+2. Keep pipeline credentials isolated from general MCP configuration
+3. Enable optional activation only when needed for pipeline work
+
+The server is automatically available in VS Code when the JAR is built, alongside the GitHub and Sequential Thinking MCP servers.
+
+### 16.6. Reference Documentation
+
+- GitHub MCP Server: https://github.blog/ai-and-ml/generative-ai/a-practical-guide-on-how-to-use-the-github-mcp-server/
+- MCP Specification: https://modelcontextprotocol.io/docs/learn/server-concepts
+- VS Code MCP Setup: https://code.visualstudio.com/docs/copilot/customization/mcp-servers
+
+---
+
 This `AGENTS.md` is the single entry point for agents in the v2 rebuild.  
 For detailed architecture and feature specifications, always consult `V2_PORTAL.md`, `/contracts/`, and `docs/v2/**` before making changes.
