@@ -1,4 +1,4 @@
-package com.fishit.player.v2
+package com.fishit.player.v2.bootstrap
 
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.sourceactivation.SourceActivationStore

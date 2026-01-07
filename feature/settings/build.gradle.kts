@@ -18,6 +18,22 @@ android {
     defaultConfig {
         minSdk = 24
 
+        // API Keys from environment (same as app-v2)
+        val tgApiIdEnv = System.getenv("TG_API_ID")
+        val tgApiHashEnv = System.getenv("TG_API_HASH")
+        val tgApiIdValue = tgApiIdEnv?.toIntOrNull() ?: 0
+        val tgApiHashValue = tgApiHashEnv ?: ""
+        
+        buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
+        buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
+        
+        // TMDB API key (from environment or gradle.properties)
+        val tmdbApiKey =
+            System.getenv("TMDB_API_KEY")
+                ?: project.findProperty("TMDB_API_KEY")?.toString()
+                ?: ""
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
+
         // ⭐ Compile-time gating for debug tools (Issue #564)
         // These flags control whether the UI shows debug tool sections.
         // The actual tool dependencies are still controlled by debugImplementation,
@@ -48,9 +64,13 @@ dependencies {
     implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:metadata-normalizer"))
+    implementation(project(":core:feature-api"))  // For TelegramAuthRepository
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:cache"))
+    implementation(project(":infra:data-telegram"))  // For TelegramContentRepository
+    implementation(project(":infra:data-xtream"))  // For XtreamCatalogRepository, XtreamLiveRepository
+    implementation(project(":infra:transport-xtream"))  // For XtreamCredentialsStore
 
     // Debug settings (for runtime toggles in DebugToolsControllerImpl - debug only)
     // This module is always included in debug builds for the runtime toggle infrastructure.

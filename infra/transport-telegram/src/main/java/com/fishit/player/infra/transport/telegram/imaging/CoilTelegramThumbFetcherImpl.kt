@@ -1,4 +1,4 @@
-package com.fishit.player.v2.di
+package com.fishit.player.infra.transport.telegram.imaging
 
 import coil3.decode.DataSource
 import coil3.decode.ImageSource
@@ -25,13 +25,17 @@ import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher as Transp
  * **Architecture:**
  * - core:ui-imaging defines the [TelegramThumbFetcher] interface (Coil-facing)
  * - infra:transport-telegram provides [TransportThumbFetcher] (TDLib-facing)
- * - This implementation bridges the two, lives in app-v2 for DI wiring
+ * - This implementation bridges the two
  *
  * **v2 Migration:**
  * - No longer uses deprecated TelegramTransportClient
  * - Uses typed TransportThumbFetcher which internally uses TelegramFileClient
+ *
+ * **Note:**
+ * This is different from [TelegramThumbFetcherImpl] in the same package, which is the
+ * transport-layer implementation. This class is specifically for Coil integration.
  */
-class TelegramThumbFetcherImpl(
+class CoilTelegramThumbFetcherImpl(
     private val transportFetcher: TransportThumbFetcher,
     private val ref: ImageRef.TelegramThumb,
     private val options: Options,
@@ -90,13 +94,13 @@ class TelegramThumbFetcherImpl(
         }
     }
 
-    /** Factory for creating [TelegramThumbFetcherImpl] instances. */
+    /** Factory for creating [CoilTelegramThumbFetcherImpl] instances. */
     class Factory(
         private val transportFetcher: TransportThumbFetcher,
     ) : TelegramThumbFetcher.Factory {
         override fun create(
             ref: ImageRef.TelegramThumb,
             options: Options,
-        ): TelegramThumbFetcher = TelegramThumbFetcherImpl(transportFetcher, ref, options)
+        ): TelegramThumbFetcher = CoilTelegramThumbFetcherImpl(transportFetcher, ref, options)
     }
 }
