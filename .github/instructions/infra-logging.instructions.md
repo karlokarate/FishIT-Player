@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: infra/logging
 
+**Version:** 1.0  
+**Last Updated:** 2026-01-07  
+**Status:** Active
+
 > **PLATIN STANDARD** - Unified Logging System (SSOT).
 >
 > **Purpose:** Central logging facade for ALL v2 modules. Every log statement in the codebase

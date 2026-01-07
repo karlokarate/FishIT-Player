@@ -18,8 +18,8 @@ applyTo:
 > - `contracts/LOGGING_CONTRACT_V2.md` (Logging rules)
 >
 > **Source-Specific Instructions:**
-> - Telegram: `.github/instructions/infra-transport-telegram.instructions.md` *(to be created)*
-> - Xtream: `.github/instructions/infra-transport-xtream.instructions.md` *(to be created)*
+> - Telegram: `.github/instructions/infra-transport-telegram.instructions.md`
+> - Xtream: `.github/instructions/infra-transport-xtream.instructions.md`
 
 ---
 
