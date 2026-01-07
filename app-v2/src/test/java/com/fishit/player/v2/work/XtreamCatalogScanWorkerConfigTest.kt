@@ -168,6 +168,7 @@ class XtreamCatalogScanWorkerConfigTest {
                             batchSize = 200, // Larger than default 150
                         ),
                     enableTimeBasedFlush = false, // Prioritize throughput over UI
+                    enableCanonicalLinking = false, // Align FORCE_RESCAN with throughput-focused behavior
                 )
             }
             // Default: Use PROGRESSIVE_UI for maximum UI-first loading speed
