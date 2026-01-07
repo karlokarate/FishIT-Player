@@ -107,6 +107,59 @@ All instruction files MUST comply with these authoritative contracts:
 
 ---
 
+## 🏗️ Module Naming Conventions
+
+### Core Module Naming (`:core:*`)
+
+Modules in the `core/` directory follow the **`:core:<name>`** naming convention in Gradle:
+
+| Directory Path | Gradle Module Name | Purpose |
+|----------------|-------------------|---------|
+| `core/model/` | `:core:model` | Foundational data classes |
+| `core/player-model/` | `:core:player-model` | Player primitives |
+| `core/persistence/` | `:core:persistence` | ObjectBox entities |
+| `core/feature-api/` | `:core:feature-api` | Feature system contracts |
+| `core/catalog-sync/` | `:core:catalog-sync` | Sync orchestration contracts |
+| `core/source-activation-api/` | `:core:source-activation-api` | Source state contracts |
+| `core/metadata-normalizer/` | `:core:metadata-normalizer` | Normalization logic |
+| `core/*-domain/` | `:core:<name>-domain` | Domain use cases |
+
+**Why `:core:`?**
+- Indicates shared/foundational module
+- Low in dependency hierarchy
+- No source-specific code
+- Pure Kotlin/Android (no external APIs)
+
+### Infrastructure Module Naming (`:infra:*`)
+
+| Directory Path | Gradle Module Name | Purpose |
+|----------------|-------------------|---------|
+| `infra/logging/` | `:infra:logging` | UnifiedLog system |
+| `infra/work/` | `:infra:work` | WorkManager infrastructure |
+| `infra/transport-telegram/` | `:infra:transport-telegram` | TDLib integration |
+| `infra/transport-xtream/` | `:infra:transport-xtream` | Xtream API client |
+| `infra/data-telegram/` | `:infra:data-telegram` | Telegram repositories |
+| `infra/data-xtream/` | `:infra:data-xtream` | Xtream repositories |
+
+### Other Module Naming
+
+| Directory Path | Gradle Module Name |
+|----------------|-------------------|
+| `pipeline/telegram/` | `:pipeline:telegram` |
+| `playback/telegram/` | `:playback:telegram` |
+| `player/internal/` | `:player:internal` |
+| `feature/home/` | `:feature:home` |
+| `app-v2/` | `:app-v2` |
+
+**Naming Rules:**
+1. Top-level directory = module group prefix
+2. Subdirectory = module name
+3. Use hyphen for multi-word names: `player-model`, `catalog-sync`
+4. Domain modules end with `-domain`: `home-domain`, `library-domain`
+5. API-only modules end with `-api`: `feature-api`, `source-activation-api`
+
+---
+
 ## 📝 Usage Guidelines
 
 ### For Copilot Agents

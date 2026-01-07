@@ -368,6 +368,86 @@ object WorkerOutputData {
 
 ---
 
+## 🚨 Error Handling Patterns
+
+### Worker Error Scenarios
+
+| Error Type | Example | Handling Strategy |
+|------------|---------|-------------------|
+| **Non-Retryable** | Invalid credentials, missing permissions | `Result.failure()` with reason code |
+| **Transient** | Network timeout, temporary unavailability | `Result.retry()` with exponential backoff |
+| **Guard Deferrals** | Low battery, data saver enabled | `Result.retry()` - will succeed when conditions improve |
+| **Source Inactive** | Xtream not configured | Skip gracefully, return success with 0 items |
+
+### Error Handling Examples
+
+**1. Preflight Auth Failures:**
+```kotlin
+// XtreamPreflightWorker - distinguish retryable vs permanent
+override suspend fun doWork(): Result {
+    return try {
+        val response = xtreamApiClient.authenticate()
+        when {
+            response.isSuccess -> Result.success()
+            response.isUnauthorized -> Result.failure(  // Permanent - bad credentials
+                WorkerOutputData.failure(FAILURE_XTREAM_INVALID_CREDENTIALS)
+            )
+            response.isNetworkError -> Result.retry()  // Transient - network issue
+            else -> Result.failure(
+                WorkerOutputData.failure("Unknown error: ${response.code}")
+            )
+        }
+    } catch (e: Exception) {
+        UnifiedLog.e(TAG, e) { "Preflight failed" }
+        Result.retry()  // Default to retry for unexpected errors
+    }
+}
+```
+
+**2. Runtime Guard Handling:**
+```kotlin
+// Check guards before starting expensive work
+val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+if (guardReason != null) {
+    UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason" }
+    return Result.retry()  // Will retry when conditions improve (battery charges, etc.)
+}
+```
+
+**3. Source Availability Check:**
+```kotlin
+// Gracefully handle missing sources
+val activeSources = sourceActivationStore.getActiveSources()
+if (SourceId.XTREAM !in activeSources) {
+    UnifiedLog.i(TAG) { "Xtream not active, skipping" }
+    return Result.success(WorkerOutputData.success(itemsPersisted = 0, durationMs = 0))
+}
+```
+
+**4. Timeout Handling:**
+```kotlin
+// Set max runtime from InputData
+withTimeout(input.maxRuntimeMs) {
+    catalogSyncService.syncXtream(config).collect { status ->
+        // Process status
+    }
+}
+```
+
+**5. Structured Failure Output:**
+```kotlin
+// Always include failure reason for debugging
+return Result.failure(
+    Data.Builder()
+        .putString(KEY_FAILURE_REASON, FAILURE_TELEGRAM_NOT_AUTHORIZED)
+        .putString(KEY_FAILURE_DETAILS, "User must login via Settings")
+        .putLong(KEY_DURATION_MS, elapsedMs)
+        .build()
+)
+```
+
+---
+
 ## 🚨 Common Violations & Solutions
 
 ### Violation 1: Sequential Blocking Chains
