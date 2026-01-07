@@ -479,7 +479,6 @@ class XtreamCatalogScanWorker
             return when {
                 // FireTV: Use predefined FIRETV_SAFE config (global 35-item cap to prevent OOM)
                 input.isFireTvLowRam -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.FIRETV_SAFE
-                
                 // Force rescan: Maximize throughput with larger batches
                 input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN -> {
                     com.fishit.player.core.catalogsync.EnhancedSyncConfig(
