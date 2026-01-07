@@ -8,6 +8,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: pipeline/*
 
+**Version:** 1.1  
+**Last Updated:** 2026-01-07  
+**Status:** Active
+
 > **PLATIN STANDARD** - Catalog Producers with Zero Contamination.
 >
 > **Purpose:** Transform transport-layer DTOs into `RawMediaMetadata` for the Data layer.

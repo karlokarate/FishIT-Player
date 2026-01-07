@@ -5,6 +5,10 @@ applyTo:
 
 # Copilot Instructions:  core/model
 
+**Version:** 1.0  
+**Last Updated:** 2026-01-07  
+**Status:** Active
+
 > **Module Purpose:** Central, source-agnostic data models shared across ALL layers. 
 > This is the foundational module - every other module in the project depends on it. 
 > 
