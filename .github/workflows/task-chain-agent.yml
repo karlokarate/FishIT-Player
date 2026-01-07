@@ -12,13 +12,13 @@ on:
         required: false
         default: '573'
       force_issue:
-        description: 'Force specific issue number (optional)'
+        description:  'Force specific issue number (optional)'
         required: false
         default: ''
   
   # Trigger on issue comments for commands
   issue_comment:
-    types: [created]
+    types:  [created]
   
   # Trigger on PR events with task-chain label
   pull_request:
@@ -29,7 +29,7 @@ on:
     types: [task-chain-next]
 
 permissions:
-  contents: write
+  contents:  write
   issues: write
   pull-requests: write
   actions: write
@@ -43,36 +43,36 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      action: ${{ steps.determine.outputs.action }}
+    outputs: 
+      action: ${{ steps. determine. outputs.action }}
       issue_number: ${{ steps.determine.outputs.issue_number }}
-      parent_issue: ${{ steps.determine.outputs.parent_issue }}
+      parent_issue: ${{ steps.determine. outputs.parent_issue }}
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Determine action
+      - name:  Determine action
         id: determine
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment. body }}
+          ISSUE_NUMBER:  ${{ github.event.issue.number }}
           ISSUE_LABELS: ${{ toJson(github.event.issue.labels) }}
-          PR_MERGED: ${{ github.event.pull_request.merged }}
-          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
+          PR_MERGED: ${{ github. event.pull_request.merged }}
+          PR_LABELS: ${{ toJson(github.event. pull_request.labels) }}
         run: |
           action=""
           issue_number=""
           parent_issue="${{ github.event.inputs.parent_issue || '573' }}"
           
-          echo "Event: $EVENT_NAME"
+          echo "Event:  $EVENT_NAME"
           
           # Handle repository_dispatch
           if [ "$EVENT_NAME" = "repository_dispatch" ]; then
             action="find-next"
-            parent_issue="${{ github.event.client_payload.parent_issue || '573' }}"
+            parent_issue="${{ github.event. client_payload.parent_issue || '573' }}"
           
           # Handle workflow_dispatch
           elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -100,18 +100,18 @@ jobs:
                 issue_number="$ISSUE_NUMBER"
               fi
             else
-              echo "Issue comment ignored: issue does not have task-chain label"
+              echo "Issue comment ignored:  issue does not have task-chain label"
             fi
           
           # Handle PR events
           elif [ "$EVENT_NAME" = "pull_request" ]; then
-            pr_action="${{ github.event.action }}"
+            pr_action="${{ github.event. action }}"
             echo "PR action: $pr_action"
             
             if [ "$pr_action" = "opened" ]; then
               echo "PR opened, will check if it references a task-chain issue"
               action="mark-review"
-              issue_number="${{ github.event.pull_request.number }}"
+              issue_number="${{ github.event. pull_request.number }}"
             elif [ "$pr_action" = "closed" ] && [ "$PR_MERGED" = "true" ]; then
               # Check if PR has task-chain label
               if echo "$PR_LABELS" | grep -q '"name":[[:space:]]*"task-chain"'; then
@@ -140,14 +140,14 @@ jobs:
   # Job to find the next task
   find-next-task:
     needs: dispatch
-    if: needs.dispatch.outputs.action == 'find-next'
+    if: needs.dispatch. outputs.action == 'find-next'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes:  10
     outputs:
-      has_next: ${{ steps.find.outputs.has_next }}
-      next_issue: ${{ steps.find.outputs.next_issue }}
-      next_title: ${{ steps.find.outputs.next_title }}
-      next_url: ${{ steps.find.outputs.next_url }}
+      has_next:  ${{ steps.find. outputs.has_next }}
+      next_issue: ${{ steps.find.outputs. next_issue }}
+      next_title: ${{ steps. find.outputs.next_title }}
+      next_url: ${{ steps. find.outputs.next_url }}
       all_completed: ${{ steps.check.outputs.all_completed }}
     
     steps:
@@ -156,24 +156,24 @@ jobs:
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+        with: 
+          node-version:  '20'
       
-      - name: Find next task
+      - name:  Find next task
         id: find
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PARENT_ISSUE: ${{ needs.dispatch.outputs.parent_issue }}
+          PARENT_ISSUE: ${{ needs. dispatch.outputs.parent_issue }}
         run: |
           node .github/scripts/task-chain-helper.js find-next
       
-      - name: Check if all completed
+      - name:  Check if all completed
         id: check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          PARENT_ISSUE: ${{ needs.dispatch.outputs.parent_issue }}
+        env: 
+          GITHUB_TOKEN: ${{ secrets. COPILOT_TOKEN }}
+          GITHUB_REPOSITORY:  ${{ github.repository }}
+          PARENT_ISSUE: ${{ needs. dispatch.outputs.parent_issue }}
         run: |
           node .github/scripts/task-chain-helper.js check-completed
       
@@ -181,11 +181,11 @@ jobs:
         run: |
           echo "## Task Chain Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.find.outputs.has_next }}" = "true" ]; then
-            echo "✅ Next task found: #${{ steps.find.outputs.next_issue }}" >> $GITHUB_STEP_SUMMARY
-            echo "- Title: ${{ steps.find.outputs.next_title }}" >> $GITHUB_STEP_SUMMARY
-            echo "- URL: ${{ steps.find.outputs.next_url }}" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ steps.check.outputs.all_completed }}" = "true" ]; then
+          if [ "${{ steps.find.outputs. has_next }}" = "true" ]; then
+            echo "✅ Next task found:  #${{ steps.find.outputs.next_issue }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Title: ${{ steps.find.outputs. next_title }}" >> $GITHUB_STEP_SUMMARY
+            echo "- URL: ${{ steps.find.outputs. next_url }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps. check.outputs.all_completed }}" = "true" ]; then
             echo "🎉 All tasks completed!" >> $GITHUB_STEP_SUMMARY
           else
             echo "ℹ️ No tasks ready to process" >> $GITHUB_STEP_SUMMARY
@@ -198,7 +198,7 @@ jobs:
       always() && 
       (needs.dispatch.outputs.action == 'process' || 
        (needs.dispatch.outputs.action == 'find-next' && needs.find-next-task.outputs.has_next == 'true'))
-    runs-on: ubuntu-latest
+    runs-on:  ubuntu-latest
     timeout-minutes: 10
     
     steps:
@@ -214,50 +214,50 @@ jobs:
         id: issue
         run: |
           if [ -n "${{ needs.dispatch.outputs.issue_number }}" ]; then
-            issue="${{ needs.dispatch.outputs.issue_number }}"
+            issue="${{ needs.dispatch. outputs.issue_number }}"
           else
             issue="${{ needs.find-next-task.outputs.next_issue }}"
           fi
           echo "issue=$issue" >> $GITHUB_OUTPUT
-          echo "Processing issue: $issue"
+          echo "Processing issue:  $issue"
       
-      - name: Add in-progress label
+      - name:  Add in-progress label
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github. repository }}
         run: |
-          node .github/scripts/task-chain-helper.js add-labels ${{ steps.issue.outputs.issue }} in-progress
+          node .github/scripts/task-chain-helper.js add-labels ${{ steps.issue. outputs.issue }} in-progress
       
       - name: Remove ready-for-agent label if present
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+        env: 
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github. repository }}
         run: |
-          node .github/scripts/task-chain-helper.js remove-label ${{ steps.issue.outputs.issue }} ready-for-agent || true
+          node .github/scripts/task-chain-helper.js remove-label ${{ steps.issue. outputs.issue }} ready-for-agent || true
       
       - name: Assign Copilot to issue with custom agent
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:  ${{ secrets. COPILOT_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          issue="${{ steps.issue.outputs.issue }}"
+          issue="${{ steps.issue. outputs.issue }}"
           echo "Assigning Copilot with v2_codespace_agent (Model: Claude Opus 4) to issue #$issue"
           node .github/scripts/task-chain-helper.js assign-copilot $issue v2_codespace_agent
 
       - name: Post task chain info comment
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PARENT_ISSUE: ${{ needs.dispatch.outputs.parent_issue }}
+          PARENT_ISSUE: ${{ needs.dispatch.outputs. parent_issue }}
         run: |
           issue="${{ steps.issue.outputs.issue }}"
           
-          comment="🤖 **Task Chain Agent**: Copilot wurde diesem Issue zugewiesen.
+          comment="🤖 **Task Chain Agent**:  Copilot wurde diesem Issue zugewiesen. 
 
           **Agent:** \`v2_codespace_agent\`
           **Model:** Claude Opus 4 (konfiguriert)
 
-          Dieses Issue ist Teil der automatisierten Task-Chain für Parent-Issue #${PARENT_ISSUE}.
+          Dieses Issue ist Teil der automatisierten Task-Chain für Parent-Issue #${PARENT_ISSUE}. 
 
           ---
 
@@ -268,18 +268,18 @@ jobs:
           
           node .github/scripts/task-chain-helper.js post-comment "$issue" "$comment"
       
-      - name: Add task-chain label for PR tracking
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
+      - name:  Add task-chain label for PR tracking
+        env: 
+          GITHUB_TOKEN: ${{ secrets. COPILOT_TOKEN }}
+          GITHUB_REPOSITORY:  ${{ github.repository }}
+        run:  |
           node .github/scripts/task-chain-helper.js add-labels ${{ steps.issue.outputs.issue }} task-chain
       
-      - name: Summary
+      - name:  Summary
         run: |
           echo "## Task Processing Started" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Started processing issue #${{ steps.issue.outputs.issue }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Started processing issue #${{ steps. issue.outputs.issue }}" >> $GITHUB_STEP_SUMMARY
           echo "- Added labels: \`in-progress\`, \`task-chain\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Custom Agent:** \`v2_codespace_agent\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Model:** Claude Opus 4" >> $GITHUB_STEP_SUMMARY
@@ -288,7 +288,7 @@ jobs:
   # Job to handle approval (task completion)
   approve-task:
     needs: dispatch
-    if: needs.dispatch.outputs.action == 'approve'
+    if: needs.dispatch.outputs. action == 'approve'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -296,30 +296,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name:  Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+        with: 
+          node-version:  '20'
       
-      - name: Mark task as complete
+      - name:  Mark task as complete
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github. repository }}
         run: |
-          issue="${{ needs.dispatch.outputs.issue_number }}"
+          issue="${{ needs.dispatch.outputs. issue_number }}"
           
           # Add platinum-done label
-          node .github/scripts/task-chain-helper.js add-labels $issue platinum-done
+          node . github/scripts/task-chain-helper. js add-labels $issue platinum-done
           
           # Remove working labels
           node .github/scripts/task-chain-helper.js remove-label $issue in-progress || true
           node .github/scripts/task-chain-helper.js remove-label $issue needs-review || true
           
           # Close the issue
-          node .github/scripts/task-chain-helper.js close-issue $issue
+          node . github/scripts/task-chain-helper. js close-issue $issue
           
           # Build completion comment with review trigger
-          comment="✅ **Task completed!**
+          comment="✅ **Task completed! **
 
           This task has been marked as \`platinum-done\` and closed.
 
@@ -327,7 +327,7 @@ jobs:
           - Status: 🏆 Platinum Done
           - All changes have been merged
 
-          The task chain will now proceed to the next task automatically.
+          The task chain will now proceed to the next task automatically. 
 
           ---
 
@@ -340,18 +340,18 @@ jobs:
         run: |
           echo "## Task Approved" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Task #${{ needs.dispatch.outputs.issue_number }} marked as complete" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Task #${{ needs.dispatch.outputs. issue_number }} marked as complete" >> $GITHUB_STEP_SUMMARY
   
   # Job to handle fix requests
-  fix-task:
+  fix-task: 
     needs: dispatch
-    if: needs.dispatch.outputs.action == 'fix'
+    if: needs.dispatch.outputs. action == 'fix'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    steps: 
+      - name:  Checkout
+        uses:  actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -359,43 +359,43 @@ jobs:
           node-version: '20'
       
       - name: Re-assign Copilot with custom agent for fixes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
-          issue="${{ needs.dispatch.outputs.issue_number }}"
+        env: 
+          GITHUB_TOKEN: ${{ secrets. COPILOT_TOKEN }}
+          GITHUB_REPOSITORY:  ${{ github.repository }}
+        run:  |
+          issue="${{ needs.dispatch. outputs.issue_number }}"
           echo "Re-assigning Copilot with v2_codespace_agent for fixes"
-          node .github/scripts/task-chain-helper.js assign-copilot $issue v2_codespace_agent
+          node . github/scripts/task-chain-helper. js assign-copilot $issue v2_codespace_agent
 
       - name: Request fixes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:  ${{ secrets. COPILOT_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           issue="${{ needs.dispatch.outputs.issue_number }}"
           
           node .github/scripts/task-chain-helper.js post-comment $issue "🔧 **Fix angefordert vom Reviewer**
 
-          Bitte überprüfe die Kommentare oben und nimm die nötigen Änderungen vor.
+          Bitte überprüfe die Kommentare oben und nimm die nötigen Änderungen vor. 
           
           Copilot wurde erneut zugewiesen um das Feedback zu bearbeiten."
       
-      - name: Summary
-        run: |
+      - name:  Summary
+        run:  |
           echo "## Fix Requested" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔧 Fixes requested for issue #${{ needs.dispatch.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "🔧 Fixes requested for issue #${{ needs.dispatch.outputs. issue_number }}" >> $GITHUB_STEP_SUMMARY
   
   # Job to handle PR opened (mark for review)
-  mark-for-review:
+  mark-for-review: 
     needs: dispatch
-    if: needs.dispatch.outputs.action == 'mark-review'
+    if: needs.dispatch.outputs. action == 'mark-review'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    steps: 
+      - name:  Checkout
+        uses:  actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -405,7 +405,7 @@ jobs:
       - name: Extract issue number from PR
         id: extract
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           pr_number="${{ github.event.pull_request.number }}"
@@ -413,19 +413,19 @@ jobs:
       
       - name: Check if issue has task-chain label
         id: check
-        if: steps.extract.outputs.issue_number != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
-          issue="${{ steps.extract.outputs.issue_number }}"
+        if: steps.extract.outputs. issue_number != ''
+        env: 
+          GITHUB_TOKEN: ${{ secrets. COPILOT_TOKEN }}
+          GITHUB_REPOSITORY:  ${{ github.repository }}
+        run:  |
+          issue="${{ steps.extract. outputs.issue_number }}"
           node .github/scripts/task-chain-helper.js check-issue-label $issue task-chain
       
       - name: Add needs-review label to issue
-        if: steps.extract.outputs.issue_number != '' && steps.check.outputs.has_label == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+        if: steps.extract. outputs.issue_number != '' && steps.check. outputs.has_label == 'true'
+        env: 
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github. repository }}
         run: |
           issue="${{ steps.extract.outputs.issue_number }}"
           
@@ -435,21 +435,21 @@ jobs:
           # Remove in-progress label
           node .github/scripts/task-chain-helper.js remove-label $issue in-progress || true
       
-      - name: Post review comment
-        if: steps.extract.outputs.issue_number != '' && steps.check.outputs.has_label == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+      - name:  Post review comment
+        if:  steps.extract.outputs.issue_number != '' && steps.check.outputs.has_label == 'true'
+        env: 
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github. repository }}
         run: |
           issue="${{ steps.extract.outputs.issue_number }}"
-          pr_url="${{ github.event.pull_request.html_url }}"
+          pr_url="${{ github.event.pull_request. html_url }}"
           
           # Build review comment
           comment="📝 **PR Created and Ready for Review**
 
-          A pull request has been created: $pr_url
+          A pull request has been created:  $pr_url
 
-          Please review the changes. When ready:
+          Please review the changes.  When ready: 
           - ✅ Comment \`/agent-approve\` or \`/agent-continue\` to approve and move to the next task
           - 🔧 Comment \`/agent-fix\` if changes are needed
           - 💬 Leave review comments on the PR for specific feedback
@@ -462,7 +462,7 @@ jobs:
         run: |
           echo "## PR Marked for Review" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ steps.extract.outputs.issue_number }}" ]; then
+          if [ -n "${{ steps. extract.outputs.issue_number }}" ]; then
             echo "✅ Added \`needs-review\` label to issue #${{ steps.extract.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
             echo "📝 PR: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
           else
@@ -474,25 +474,25 @@ jobs:
     needs: [dispatch, find-next-task, approve-task]
     if: |
       always() &&
-      (needs.approve-task.result == 'success' || 
-       (needs.find-next-task.result == 'success' && needs.find-next-task.outputs.all_completed == 'true'))
+      (needs. approve-task.result == 'success' || 
+       (needs.find-next-task. result == 'success' && needs.find-next-task. outputs.all_completed == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
-    steps:
-      - name: Checkout
+    steps: 
+      - name:  Checkout
         uses: actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+        with: 
+          node-version:  '20'
       
-      - name: Check and close parent if complete
+      - name:  Check and close parent if complete
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PARENT_ISSUE: ${{ needs.dispatch.outputs.parent_issue }}
+          PARENT_ISSUE: ${{ needs. dispatch.outputs.parent_issue }}
         run: |
           # Check if all tasks are completed
           node .github/scripts/task-chain-helper.js check-completed
@@ -502,21 +502,21 @@ jobs:
             all_completed=$(grep "all_completed=" "$GITHUB_OUTPUT" | cut -d= -f2)
             
             if [ "$all_completed" = "true" ]; then
-              echo "All tasks completed! Closing parent issue #$PARENT_ISSUE"
+              echo "All tasks completed!  Closing parent issue #$PARENT_ISSUE"
               
               # Close parent issue
-              node .github/scripts/task-chain-helper.js close-issue $PARENT_ISSUE
+              node . github/scripts/task-chain-helper. js close-issue $PARENT_ISSUE
               
               # Build success comment
-              success_comment="🎉 **All sub-tasks completed!**
+              success_comment="🎉 **All sub-tasks completed! **
 
               All tasks in this task chain have been successfully completed and marked as \`platinum-done\`.
 
-              This parent issue is now being closed automatically.
+              This parent issue is now being closed automatically. 
 
               ## Summary
               - All sub-issues: ✅ Completed
-              - Status: 🏆 Platinum Done
+              - Status:  🏆 Platinum Done
 
               Great work! 🚀"
               
@@ -531,24 +531,24 @@ jobs:
               echo "Tasks remaining, continuing chain..."
               echo "## ⏭️ Next Task" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "More tasks to process. Triggering next task..." >> $GITHUB_STEP_SUMMARY
+              echo "More tasks to process.  Triggering next task..." >> $GITHUB_STEP_SUMMARY
             fi
           fi
   
   # Job to automatically continue to next task after approval
   continue-chain:
-    needs: [dispatch, approve-task]
+    needs:  [dispatch, approve-task]
     if: needs.approve-task.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on:  ubuntu-latest
     timeout-minutes: 5
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Trigger next task via repository dispatch
+      - name:  Trigger next task via repository dispatch
         uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        with: 
+          token: ${{ secrets. COPILOT_TOKEN }}
           event-type: task-chain-next
-          client-payload: '{"parent_issue": "${{ needs.dispatch.outputs.parent_issue }}"}'
+          client-payload: '{"parent_issue": "${{ needs.dispatch. outputs.parent_issue }}"}'
