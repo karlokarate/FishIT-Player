@@ -98,4 +98,32 @@ interface TelegramContentRepository {
      * Delete all stored media.
      */
     suspend fun deleteAll()
+
+    // =========================================================================
+    // Canonical Linking Support (for CanonicalLinkingBacklogWorker)
+    // =========================================================================
+
+    /**
+     * Get items that need canonical linking.
+     *
+     * Queries items that exist in ObxTelegramMessage but do NOT have a corresponding
+     * MediaSourceRef entry in ObxMediaSourceRef.
+     *
+     * This enables the CanonicalLinkingBacklogWorker to process only unlinked items,
+     * avoiding duplicate work on already-linked items.
+     *
+     * **Implementation Strategy:**
+     * Query all items and filter out those whose sourceId exists in ObxMediaSourceRef.
+     *
+     * @param limit Maximum number of items to return
+     * @return List of unlinked items
+     */
+    suspend fun getUnlinkedForCanonicalLinking(limit: Int = 100): List<RawMediaMetadata>
+
+    /**
+     * Count items that need canonical linking.
+     *
+     * @return Number of unlinked items
+     */
+    suspend fun countUnlinkedForCanonicalLinking(): Long
 }

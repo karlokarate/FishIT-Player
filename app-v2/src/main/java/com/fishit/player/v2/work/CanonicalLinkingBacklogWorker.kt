@@ -109,14 +109,8 @@ class CanonicalLinkingBacklogWorker
             }
 
             try {
-                // TODO: CRITICAL - This currently queries ALL items and will reprocess them on every run.
-                // Need to track which items are already linked to avoid duplicate work.
-                // Possible solutions:
-                // 1. Add repository methods: getUnlinkedItems(limit: Int)
-                // 2. Track processed items in checkpoint store
-                // 3. Query CanonicalMediaRepository for source refs and filter locally
-                // For now, this is a placeholder implementation that demonstrates the worker pattern.
-                val items = xtreamCatalogRepository.getAll(limit = batchSize)
+                // Query items that need canonical linking (not yet linked to canonical media)
+                val items = xtreamCatalogRepository.getUnlinkedForCanonicalLinking(limit = batchSize)
 
                 UnifiedLog.d(TAG) { "Processing Xtream backlog: ${items.size} items" }
 
@@ -145,16 +139,27 @@ class CanonicalLinkingBacklogWorker
 
                 val durationMs = System.currentTimeMillis() - startTimeMs
 
+                // Check if there are more items to process
+                val remainingCount = xtreamCatalogRepository.countUnlinkedForCanonicalLinking()
+
                 UnifiedLog.i(TAG) {
-                    "SUCCESS source=XTREAM linked=$linkedCount failed=$failedCount duration_ms=$durationMs"
+                    "SUCCESS source=XTREAM linked=$linkedCount failed=$failedCount " +
+                        "duration_ms=$durationMs remaining=$remainingCount"
                 }
 
-                return Result.success(
-                    WorkerOutputData.success(
-                        itemsPersisted = linkedCount.toLong(),
-                        durationMs = durationMs,
-                    ),
-                )
+                // If there are more items, return success but suggest retry
+                // (WorkManager will schedule another run based on constraints)
+                return if (remainingCount > 0 && linkedCount > 0) {
+                    UnifiedLog.d(TAG) { "More items to process ($remainingCount remaining), will retry" }
+                    Result.retry() // Continue processing in next run
+                } else {
+                    Result.success(
+                        WorkerOutputData.success(
+                            itemsPersisted = linkedCount.toLong(),
+                            durationMs = durationMs,
+                        ),
+                    )
+                }
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, e) { "Xtream backlog processing failed" }
                 return Result.retry()
@@ -179,14 +184,8 @@ class CanonicalLinkingBacklogWorker
             }
 
             try {
-                // TODO: CRITICAL - This currently queries ALL items and will reprocess them on every run.
-                // Need to track which items are already linked to avoid duplicate work.
-                // Possible solutions:
-                // 1. Add repository methods: getUnlinkedItems(limit: Int)
-                // 2. Track processed items in checkpoint store
-                // 3. Query CanonicalMediaRepository for source refs and filter locally
-                // For now, this is a placeholder implementation that demonstrates the worker pattern.
-                val items = telegramRepository.getAll(limit = batchSize)
+                // Query items that need canonical linking (not yet linked to canonical media)
+                val items = telegramRepository.getUnlinkedForCanonicalLinking(limit = batchSize)
 
                 UnifiedLog.d(TAG) { "Processing Telegram backlog: ${items.size} items" }
 
@@ -215,16 +214,26 @@ class CanonicalLinkingBacklogWorker
 
                 val durationMs = System.currentTimeMillis() - startTimeMs
 
+                // Check if there are more items to process
+                val remainingCount = telegramRepository.countUnlinkedForCanonicalLinking()
+
                 UnifiedLog.i(TAG) {
-                    "SUCCESS source=TELEGRAM linked=$linkedCount failed=$failedCount duration_ms=$durationMs"
+                    "SUCCESS source=TELEGRAM linked=$linkedCount failed=$failedCount " +
+                        "duration_ms=$durationMs remaining=$remainingCount"
                 }
 
-                return Result.success(
-                    WorkerOutputData.success(
-                        itemsPersisted = linkedCount.toLong(),
-                        durationMs = durationMs,
-                    ),
-                )
+                // If there are more items, return success but suggest retry
+                return if (remainingCount > 0 && linkedCount > 0) {
+                    UnifiedLog.d(TAG) { "More items to process ($remainingCount remaining), will retry" }
+                    Result.retry() // Continue processing in next run
+                } else {
+                    Result.success(
+                        WorkerOutputData.success(
+                            itemsPersisted = linkedCount.toLong(),
+                            durationMs = durationMs,
+                        ),
+                    )
+                }
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, e) { "Telegram backlog processing failed" }
                 return Result.retry()
