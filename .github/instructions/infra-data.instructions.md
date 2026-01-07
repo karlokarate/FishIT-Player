@@ -479,7 +479,7 @@ Pipeline (produces RawMediaMetadata)
 
 ```kotlin
 import com.fishit.player.core.model.*                   // Core types
-import com. fishit.player.core.persistence.*             // ObjectBox entities
+import com.fishit.player.core.persistence.*             // ObjectBox entities
 import com.fishit.player.infra.logging.*                // UnifiedLog
 import kotlinx.coroutines.*                             // Coroutines
 import io.objectbox.*                                   // ObjectBox
@@ -505,7 +505,7 @@ val allMedia = combine(
 import com.fishit.player.pipeline.*                    // Pipeline
 import com.fishit.player.infra.transport.telegram.*    // Transport (except typed interfaces for adapters)
 import com.fishit.player.infra.transport.xtream.*      // Transport
-import org.drinkless. td.TdApi.*                         // TDLib
+import org.drinkless.td.TdApi.*                         // TDLib
 import okhttp3.*                                        // HTTP
 ```
 
@@ -515,7 +515,7 @@ import okhttp3.*                                        // HTTP
 
 ```bash
 # 1. No forbidden imports
-grep -rn "import.*pipeline\|import.*infra\. transport\. telegram\. internal\|import.*infra\.transport\.xtream\. internal" infra/data-telegram/ infra/data-xtream/
+grep -rn "import.*pipeline\|import.*infra\.transport\.telegram\.internal\|import.*infra\.transport\.xtream\.internal" infra/data-telegram/ infra/data-xtream/
 
 # 2. No ObjectBox entity exports
 grep -rn "fun.*Obx.*\|suspend fun.*Obx.*\|Flow<.*Obx.*>" infra/data-telegram/src/main/java/*/TelegramContentRepository.kt infra/data-xtream/src/main/java/*/XtreamCatalogRepository.kt
@@ -572,11 +572,11 @@ grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|searchTmdb" infra
 1. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract
 2. **`/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`** - Flow patterns
 3. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - Telegram source ID format
-4. **`/AGENTS. md`** - Section 4.5 (Layer Boundary Enforcement)
+4. **`/AGENTS.md`** - Section 4.5 (Layer Boundary Enforcement)
 5. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Data layer definition
 6. **`/contracts/LOGGING_CONTRACT_V2.md`** - Logging rules
 7. **`infra/data-telegram/README.md`** - Module-specific rules
-8. **`infra/data-xtream/README. md`** - Module-specific rules
+8. **`infra/data-xtream/README.md`** - Module-specific rules
 
 ---
 

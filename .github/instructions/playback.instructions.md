@@ -212,7 +212,7 @@ TelegramPlaybackSourceFactoryImpl (parses context)
     ↓
 TelegramRemoteResolver (transport - resolves remoteId→fileId)
     ↓
-PlaybackSource (tg:// URI + DataSourceType. TELEGRAM_FILE)
+PlaybackSource (tg:// URI + DataSourceType.TELEGRAM_FILE)
     ↓
 TelegramFileDataSource (Media3 - handles streaming)
     ↓
@@ -494,7 +494,7 @@ ExoPlayer
 
 ```bash
 # 1. No forbidden imports
-grep -rn "import.*pipeline\|import.*infra\. data\|import.*player\.internal" playback/
+grep -rn "import.*pipeline\|import.*infra\.data\|import.*player\.internal" playback/
 
 # 2. No business logic
 grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|searchTmdb" playback/
@@ -552,7 +552,7 @@ find playback/ -name "*PlaybackModule. kt" -exec grep -L "@IntoSet" {} \;
 
 ## 📚 Reference Documents (Priority Order)
 
-1. **`/AGENTS. md`** - Section "Playback Module Factory Pattern" (CRITICAL)
+1. **`/AGENTS.md`** - Section "Playback Module Factory Pattern" (CRITICAL)
 2. **`/docs/v2/internal-player/PLAYER_ARCHITECTURE_V2.md`** - Layer boundaries
 3. **`/docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md`** - Phase 4 implementation
 4. **`/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`** - Playback behavior

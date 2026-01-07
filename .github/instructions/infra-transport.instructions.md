@@ -113,7 +113,7 @@ interface TelegramTransportClient {            // WRONG - too broad
 fun normalizeTitle(title: String): String              // → core/metadata-normalizer
 fun classifyMediaType(item: TgMessage): MediaType      // → pipeline
 fun generateGlobalId(...): String                      // → core/metadata-normalizer
-fun extractSeasonEpisode(title: String): Pair<Int, Int>?  // → pipeline
+fun extractSeasonEpisode(title: String): Pair<Int?, Int?>?   // → core/metadata-normalizer
 suspend fun searchTmdb(title: String): TmdbRef?        // → core/metadata-normalizer
 
 // ✅ CORRECT: Pure transport/mapping operations

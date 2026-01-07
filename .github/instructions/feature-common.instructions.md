@@ -22,19 +22,19 @@ applyTo:
 ```kotlin
 // ✅ ALLOWED IN ALL FEATURE MODULES
 import com.fishit.player.core.model.*                       // Core types
-import com. fishit.player.core.*-domain.*                    // Domain interfaces
-import com.fishit.player. playback.domain.*                  // Playback interfaces
-import androidx. compose.*                                   // Compose UI
+import com.fishit.player.core.*-domain.*                    // Domain interfaces
+import com.fishit.player.playback.domain.*                  // Playback interfaces
+import androidx.compose.*                                   // Compose UI
 import androidx.lifecycle.*                                 // ViewModel
-import androidx.hilt. navigation.compose.*                   // Hilt ViewModel
-import androidx. navigation.*                                // Navigation
+import androidx.hilt.navigation.compose.*                   // Hilt ViewModel
+import androidx.navigation.*                                // Navigation
 
 // ❌ FORBIDDEN IN ALL FEATURE MODULES
-import com. fishit.player.pipeline.*                         // Pipeline
+import com.fishit.player.pipeline.*                         // Pipeline
 import com.fishit.player.infra.transport.*                  // Transport
 import com.fishit.player.infra.data.*                       // Data repositories
-import com.fishit.player.player. internal.*                  // Player internals
-import org.drinkless. td.TdApi.*                             // TDLib
+import com.fishit.player.player.internal.*                  // Player internals
+import org.drinkless.td.TdApi.*                             // TDLib
 import okhttp3.*                                            // HTTP client
 import io.objectbox.*                                       // ObjectBox
 ```
@@ -305,13 +305,13 @@ Transport Layer (External APIs)
 
 ```bash
 # 1. No forbidden imports in ANY feature module
-grep -rn "import.*pipeline\|import.*infra\. transport\|import.*infra\. data\|import.*player\.internal" feature/
+grep -rn "import.*pipeline\|import.*infra\.transport\|import.*infra\.data\|import.*player\.internal" feature/
 
 # 2. No transport calls in ANY ViewModel
 grep -rn "TelegramHistoryClient\|TelegramFileClient\|XtreamApiClient" feature/
 
 # 3. No ObjectBox entity usage in ANY feature
-grep -rn "import.*core\.persistence\. obx\." feature/
+grep -rn "import.*core\.persistence\.obx\." feature/
 
 # 4. No direct player session access in ANY feature
 grep -rn "InternalPlayerSession\|InternalPlayerState" feature/
@@ -353,7 +353,7 @@ grep -rn "InternalPlayerSession\|InternalPlayerState" feature/
 
 ## 📚 Reference Documents
 
-1. `/AGENTS. md` - Feature layer architecture rules
+1. `/AGENTS.md` - Feature layer architecture rules
 2. `/docs/v2/STARTUP_TRIGGER_CONTRACT.md` - Smart empty states
 3. `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` - Playback behavior
 4. Jetpack Compose documentation
