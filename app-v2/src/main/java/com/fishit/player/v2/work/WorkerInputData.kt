@@ -25,6 +25,8 @@ data class WorkerInputData(
     val maxRuntimeMs: Long,
     val deviceClass: String,
     val xtreamSyncScope: String?,
+    val xtreamUseEnhancedSync: Boolean,
+    val xtreamInfoBackfillConcurrency: Int,
     val telegramSyncKind: String?,
     val ioSyncScope: String?,
 ) {
@@ -71,6 +73,12 @@ data class WorkerInputData(
                     WorkerConstants.DEFAULT_MAX_RUNTIME_MS
                 }
 
+            // Device-aware defaults for enhanced sync and info backfill concurrency
+            val deviceClass =
+                data.getString(WorkerConstants.KEY_DEVICE_CLASS)
+                    ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET
+            val isFireTvLowRam = deviceClass == WorkerConstants.DEVICE_CLASS_FIRETV_LOW_RAM
+
             return WorkerInputData(
                 syncRunId = data.getString(WorkerConstants.KEY_SYNC_RUN_ID) ?: "",
                 syncMode =
@@ -81,10 +89,21 @@ data class WorkerInputData(
                         ?: emptySet(),
                 wifiOnly = data.getBoolean(WorkerConstants.KEY_WIFI_ONLY, false),
                 maxRuntimeMs = effectiveMaxRuntimeMs,
-                deviceClass =
-                    data.getString(WorkerConstants.KEY_DEVICE_CLASS)
-                        ?: WorkerConstants.DEVICE_CLASS_ANDROID_PHONE_TABLET,
+                deviceClass = deviceClass,
                 xtreamSyncScope = data.getString(WorkerConstants.KEY_XTREAM_SYNC_SCOPE),
+                // Enhanced sync enabled by default (can be disabled via input data)
+                xtreamUseEnhancedSync =
+                    data.getBoolean(WorkerConstants.KEY_XTREAM_USE_ENHANCED_SYNC, true),
+                // Device-aware info backfill concurrency
+                xtreamInfoBackfillConcurrency =
+                    data.getInt(
+                        WorkerConstants.KEY_XTREAM_INFO_BACKFILL_CONCURRENCY,
+                        if (isFireTvLowRam) {
+                            WorkerConstants.INFO_BACKFILL_CONCURRENCY_FIRETV
+                        } else {
+                            WorkerConstants.INFO_BACKFILL_CONCURRENCY_NORMAL
+                        },
+                    ),
                 telegramSyncKind = data.getString(WorkerConstants.KEY_TELEGRAM_SYNC_KIND),
                 ioSyncScope = data.getString(WorkerConstants.KEY_IO_SYNC_SCOPE),
             )

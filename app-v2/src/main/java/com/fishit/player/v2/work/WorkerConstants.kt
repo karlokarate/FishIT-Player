@@ -68,6 +68,8 @@ object WorkerConstants {
 
     // Xtream
     const val KEY_XTREAM_SYNC_SCOPE = "xtream_sync_scope"
+    const val KEY_XTREAM_USE_ENHANCED_SYNC = "xtream_use_enhanced_sync"
+    const val KEY_XTREAM_INFO_BACKFILL_CONCURRENCY = "xtream_info_backfill_concurrency"
 
     // Telegram
     const val KEY_TELEGRAM_SYNC_KIND = "telegram_sync_kind"
@@ -198,4 +200,14 @@ object WorkerConstants {
     const val TMDB_NORMAL_BATCH_SIZE_MIN = 50
     const val TMDB_NORMAL_BATCH_SIZE_MAX = 150
     const val TMDB_NORMAL_BATCH_SIZE_DEFAULT = 75
+
+    // =========================================================================
+    // Xtream Info Backfill Configuration
+    // =========================================================================
+
+    /** Info backfill concurrency for normal devices (6-12) */
+    const val INFO_BACKFILL_CONCURRENCY_NORMAL = 8
+
+    /** Info backfill concurrency for FireTV low-RAM devices (2-4) */
+    const val INFO_BACKFILL_CONCURRENCY_FIRETV = 3
 }
