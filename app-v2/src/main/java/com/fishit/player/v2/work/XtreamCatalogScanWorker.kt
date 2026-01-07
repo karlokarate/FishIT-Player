@@ -170,8 +170,10 @@ class XtreamCatalogScanWorker
                 val vodBackfillRemaining = catalogRepository.countVodNeedingInfoBackfill()
                 val seriesBackfillRemaining = catalogRepository.countSeriesNeedingInfoBackfill()
 
+                // TASK 5: Enhanced performance summary with throughput metrics
+                val overallThroughput = if (durationMs > 0) (itemsPersisted * 1000 / durationMs).toInt() else 0
                 UnifiedLog.i(TAG) {
-                    "SUCCESS duration_ms=$durationMs | " +
+                    "SUCCESS duration_ms=$durationMs throughput=${overallThroughput} items/sec | " +
                         "vod=$vodCount series=$seriesCount episodes=$episodeCount live=$liveCount | " +
                         "backfill_remaining: vod=$vodBackfillRemaining series=$seriesBackfillRemaining"
                 }
@@ -578,8 +580,12 @@ class XtreamCatalogScanWorker
                     val persistDuration = System.currentTimeMillis() - batchPersistStart
                     processedCount += successful.size
 
+                    // TASK 5: Log detailed per-batch performance metrics
+                    val itemsPerSec = if (batchDuration > 0) successful.size * 1000 / batchDuration else 0
                     UnifiedLog.d(TAG) {
-                        "VOD batch: ${successful.size}/${vodIds.size} successful in ${persistDuration}ms"
+                        "VOD batch: ${successful.size}/${vodIds.size} successful " +
+                            "fetch=${batchDuration}ms persist=${persistDuration}ms " +
+                            "throughput=${itemsPerSec} items/sec"
                     }
                 }
 
@@ -673,8 +679,12 @@ class XtreamCatalogScanWorker
                     val persistDuration = System.currentTimeMillis() - batchPersistStart
                     processedCount += successful.size
 
+                    // TASK 5: Log detailed per-batch performance metrics
+                    val itemsPerSec = if (batchDuration > 0) successful.size * 1000 / batchDuration else 0
                     UnifiedLog.d(TAG) {
-                        "Series batch: ${successful.size}/${seriesIds.size} successful in ${persistDuration}ms"
+                        "Series batch: ${successful.size}/${seriesIds.size} successful " +
+                            "fetch=${batchDuration}ms persist=${persistDuration}ms " +
+                            "throughput=${itemsPerSec} items/sec"
                     }
                 }
 
