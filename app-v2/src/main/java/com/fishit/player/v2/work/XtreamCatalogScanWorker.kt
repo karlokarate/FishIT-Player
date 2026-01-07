@@ -468,30 +468,30 @@ class XtreamCatalogScanWorker
         /**
          * Select EnhancedSyncConfig based on device class and sync mode.
          *
-         * Device-aware configuration:
-         * - FireTV: Smaller batches to avoid OOM/GC pressure
-         * - Normal: Balanced batches for speed
-         * - FORCE_RESCAN: Larger batches for throughput
+         * Per PLATIN guidelines (app-work.instructions.md):
+         * - FireTV Low-RAM: 35-item cap across all phases (global safety limit)
+         * - Normal devices: Phase-specific sizes (400/250/150)
+         * - Force rescan: Larger batches for throughput (600/400/200)
          */
         private fun selectEnhancedConfig(input: WorkerInputData): com.fishit.player.core.catalogsync.EnhancedSyncConfig {
             return when {
-                // FireTV: Conservative batches to avoid OOM
+                // FireTV: Global 35-item cap to prevent OOM
                 input.isFireTvLowRam -> {
                     com.fishit.player.core.catalogsync.EnhancedSyncConfig(
                         liveConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.LIVE.copy(
-                                batchSize = 250, // Smaller than default 500
+                                batchSize = WorkerConstants.FIRETV_BATCH_SIZE, // 35 items
                             ),
                         moviesConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.MOVIES.copy(
-                                batchSize = 150, // Smaller than default 300
+                                batchSize = WorkerConstants.FIRETV_BATCH_SIZE, // 35 items
                             ),
                         seriesConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.SERIES.copy(
-                                batchSize = 100, // Smaller than default 150
+                                batchSize = WorkerConstants.FIRETV_BATCH_SIZE, // 35 items
                             ),
                         enableTimeBasedFlush = true,
-                        enableCanonicalLinking = false,
+                        enableCanonicalLinking = false, // Hot path relief
                     )
                 }
                 // Force rescan: Maximize throughput with larger batches
@@ -499,11 +499,11 @@ class XtreamCatalogScanWorker
                     com.fishit.player.core.catalogsync.EnhancedSyncConfig(
                         liveConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.LIVE.copy(
-                                batchSize = 600, // Larger than default 500
+                                batchSize = 600, // Larger than default 400
                             ),
                         moviesConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.MOVIES.copy(
-                                batchSize = 400, // Larger than default 300
+                                batchSize = 400, // Larger than default 250
                             ),
                         seriesConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.SERIES.copy(
