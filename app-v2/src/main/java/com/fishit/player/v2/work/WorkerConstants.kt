@@ -51,6 +51,9 @@ object WorkerConstants {
     const val TAG_WORKER_TMDB_BATCH = "worker/TmdbEnrichmentBatchWorker"
     const val TAG_WORKER_TMDB_CONTINUATION = "worker/TmdbEnrichmentContinuationWorker"
 
+    // Canonical Linking Worker tags (Task 2: Hot Path Entlastung)
+    const val TAG_WORKER_CANONICAL_LINKING = "worker/CanonicalLinkingBacklogWorker"
+
     // =========================================================================
     // Common InputData Keys (W-13)
     // =========================================================================

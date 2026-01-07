@@ -78,6 +78,7 @@ class DefaultCatalogSyncService
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val checkpointStore: SyncCheckpointStore,
         private val telegramAuthRepository: TelegramAuthRepository,
+        private val canonicalLinkingScheduler: CanonicalLinkingScheduler? = null,
     ) : CatalogSyncService {
         companion object {
             private const val TAG = "CatalogSyncService"
@@ -246,6 +247,18 @@ class DefaultCatalogSyncService
                                 )
 
                                 val durationMs = System.currentTimeMillis() - startTimeMs
+                                
+                                // TASK 2: Schedule backlog processing if canonical linking was skipped
+                                if (!syncConfig.enableCanonicalLinking && itemsPersisted > 0) {
+                                    canonicalLinkingScheduler?.scheduleBacklogProcessing(
+                                        sourceType = com.fishit.player.core.model.SourceType.TELEGRAM,
+                                        estimatedItemCount = itemsPersisted,
+                                    )
+                                    UnifiedLog.i(TAG) {
+                                        "Scheduled canonical linking backlog for Telegram: $itemsPersisted items"
+                                    }
+                                }
+                                
                                 UnifiedLog.i(
                                     TAG,
                                     "Telegram sync completed: $itemsPersisted items in ${durationMs}ms " +
@@ -456,6 +469,18 @@ class DefaultCatalogSyncService
                                 }
 
                                 val durationMs = System.currentTimeMillis() - startTimeMs
+                                
+                                // TASK 2: Schedule backlog processing if canonical linking was skipped
+                                if (!syncConfig.enableCanonicalLinking && itemsPersisted > 0) {
+                                    canonicalLinkingScheduler?.scheduleBacklogProcessing(
+                                        sourceType = com.fishit.player.core.model.SourceType.XTREAM,
+                                        estimatedItemCount = itemsPersisted,
+                                    )
+                                    UnifiedLog.i(TAG) {
+                                        "Scheduled canonical linking backlog for Xtream: $itemsPersisted items"
+                                    }
+                                }
+                                
                                 UnifiedLog.i(
                                     TAG,
                                     "Xtream sync completed: $itemsPersisted items in ${durationMs}ms",
@@ -893,6 +918,7 @@ class DefaultCatalogSyncService
          * - When enableCanonicalLinking=false, skips steps 2-4 for maximum speed
          * - Use for initial sync to get UI tiles visible ASAP
          * - Canonical linking can be done later via backlog worker
+         * - Automatically schedules backlog processing when linking is skipped
          *
          * **PLATINUM Integrity:**
          * - Validates PlaybackHints per source type
@@ -902,16 +928,23 @@ class DefaultCatalogSyncService
             items: List<RawMediaMetadata>,
             config: SyncConfig = SyncConfig.DEFAULT,
         ) {
-            UnifiedLog.d(TAG) { "Persisting Telegram batch: ${items.size} items (canonical_linking=${config.enableCanonicalLinking})" }
+            val batchStartMs = System.currentTimeMillis()
+            UnifiedLog.d(TAG) { 
+                "Persisting Telegram batch: ${items.size} items " +
+                "(canonical_linking=${config.enableCanonicalLinking}, hot_path_relief=${!config.enableCanonicalLinking})" 
+            }
 
             // Step 1: Store raw in pipeline-specific repo (ALWAYS - for fast Telegram-only queries)
+            val rawPersistStart = System.currentTimeMillis()
             telegramRepository.upsertAll(items)
+            val rawPersistDuration = System.currentTimeMillis() - rawPersistStart
 
             // Step 2-4: Normalize and link to canonical (OPTIONAL - for cross-pipeline unification)
             if (config.enableCanonicalLinking) {
                 var linkedCount = 0
                 var failedCount = 0
                 var playbackHintWarnings = 0
+                val linkingStartMs = System.currentTimeMillis()
 
                 items.forEach { raw ->
                     try {
@@ -940,16 +973,29 @@ class DefaultCatalogSyncService
                     }
                 }
 
-                // PLATINUM: Log integrity summary (DEBUG level for normal runs)
+                val linkingDuration = System.currentTimeMillis() - linkingStartMs
+                val totalDuration = System.currentTimeMillis() - batchStartMs
+
+                // PLATINUM: Log integrity summary with performance metrics (DEBUG level for normal runs)
                 if (failedCount > 0 || playbackHintWarnings > 0) {
                     UnifiedLog.w(TAG) {
-                        "Telegram batch integrity: linked=$linkedCount failed=$failedCount hint_warnings=$playbackHintWarnings"
+                        "Telegram batch integrity: linked=$linkedCount failed=$failedCount " +
+                        "hint_warnings=$playbackHintWarnings " +
+                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
                     }
                 } else {
-                    UnifiedLog.d(TAG) { "Telegram batch complete: linked=$linkedCount" }
+                    UnifiedLog.d(TAG) { 
+                        "Telegram batch complete: linked=$linkedCount " +
+                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
+                    }
                 }
             } else {
-                UnifiedLog.d(TAG) { "Telegram batch complete: raw stored, canonical linking skipped for speed" }
+                val totalDuration = System.currentTimeMillis() - batchStartMs
+                UnifiedLog.d(TAG) { 
+                    "Telegram batch complete (HOT PATH): raw stored, canonical linking skipped " +
+                    "raw_persist_ms=$rawPersistDuration total_ms=$totalDuration " +
+                    "(will be processed by backlog worker)"
+                }
             }
         }
 
@@ -962,6 +1008,7 @@ class DefaultCatalogSyncService
          * - When enableCanonicalLinking=false, only stores raw data for maximum speed
          * - Use for initial sync to get UI tiles visible ASAP
          * - Canonical linking can be done later via backlog worker
+         * - Automatically schedules backlog processing when linking is skipped
          *
          * **PLATINUM Integrity:**
          * - Validates PlaybackHints per content type (VOD/Series/Episode)
@@ -971,16 +1018,23 @@ class DefaultCatalogSyncService
             items: List<RawMediaMetadata>,
             config: SyncConfig = SyncConfig.DEFAULT,
         ) {
-            UnifiedLog.d(TAG) { "Persisting Xtream catalog batch: ${items.size} items (canonical_linking=${config.enableCanonicalLinking})" }
+            val batchStartMs = System.currentTimeMillis()
+            UnifiedLog.d(TAG) { 
+                "Persisting Xtream catalog batch: ${items.size} items " +
+                "(canonical_linking=${config.enableCanonicalLinking}, hot_path_relief=${!config.enableCanonicalLinking})" 
+            }
 
             // Step 1: Store raw in pipeline-specific repo (ALWAYS)
+            val rawPersistStart = System.currentTimeMillis()
             xtreamCatalogRepository.upsertAll(items)
+            val rawPersistDuration = System.currentTimeMillis() - rawPersistStart
 
             // Step 2-4: Normalize and link to canonical (OPTIONAL)
             if (config.enableCanonicalLinking) {
                 var linkedCount = 0
                 var failedCount = 0
                 var playbackHintWarnings = 0
+                val linkingStartMs = System.currentTimeMillis()
 
                 items.forEach { raw ->
                     try {
@@ -1004,16 +1058,29 @@ class DefaultCatalogSyncService
                     }
                 }
 
-                // PLATINUM: Log integrity summary
+                val linkingDuration = System.currentTimeMillis() - linkingStartMs
+                val totalDuration = System.currentTimeMillis() - batchStartMs
+
+                // PLATINUM: Log integrity summary with performance metrics
                 if (failedCount > 0 || playbackHintWarnings > 0) {
                     UnifiedLog.w(TAG) {
-                        "Xtream batch integrity: linked=$linkedCount failed=$failedCount hint_warnings=$playbackHintWarnings"
+                        "Xtream batch integrity: linked=$linkedCount failed=$failedCount " +
+                        "hint_warnings=$playbackHintWarnings " +
+                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
                     }
                 } else {
-                    UnifiedLog.d(TAG) { "Xtream batch complete: linked=$linkedCount" }
+                    UnifiedLog.d(TAG) { 
+                        "Xtream batch complete: linked=$linkedCount " +
+                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
+                    }
                 }
             } else {
-                UnifiedLog.d(TAG) { "Xtream batch complete: raw stored, canonical linking skipped for speed" }
+                val totalDuration = System.currentTimeMillis() - batchStartMs
+                UnifiedLog.d(TAG) { 
+                    "Xtream batch complete (HOT PATH): raw stored, canonical linking skipped " +
+                    "raw_persist_ms=$rawPersistDuration total_ms=$totalDuration " +
+                    "(will be processed by backlog worker)"
+                }
             }
         }
 
