@@ -116,11 +116,13 @@ sealed interface SyncStatus {
  *
  * @property batchSize Number of items to batch before persisting
  * @property enableNormalization Whether to normalize metadata before persisting
+ * @property enableCanonicalLinking Whether to link items to canonical media (can be decoupled for speed)
  * @property emitProgressEvery Emit progress status every N items
  */
 data class SyncConfig(
     val batchSize: Int = DEFAULT_BATCH_SIZE,
     val enableNormalization: Boolean = true,
+    val enableCanonicalLinking: Boolean = true,
     val emitProgressEvery: Int = DEFAULT_PROGRESS_INTERVAL,
 ) {
     companion object {
@@ -128,6 +130,17 @@ data class SyncConfig(
         const val DEFAULT_PROGRESS_INTERVAL = 150
 
         val DEFAULT = SyncConfig()
+
+        /**
+         * Fast initial sync config: Skip canonical linking for maximum speed.
+         * Use for first-time sync to get UI tiles visible ASAP.
+         * Canonical linking can be done later via backlog worker.
+         */
+        val FAST_INITIAL_SYNC =
+            SyncConfig(
+                enableNormalization = true,
+                enableCanonicalLinking = false, // Decouple for speed
+            )
     }
 }
 

@@ -62,6 +62,7 @@ enum class SyncPhase {
  * @property episodesConfig Configuration for episodes (lazy loaded)
  * @property emitProgressEvery Emit progress status every N items
  * @property enableTimeBasedFlush Enable 1200ms auto-flush for progressive UI
+ * @property enableCanonicalLinking Enable canonical media linking (can be decoupled for speed)
  */
 data class EnhancedSyncConfig(
     val liveConfig: SyncPhaseConfig = SyncPhaseConfig.LIVE,
@@ -70,14 +71,16 @@ data class EnhancedSyncConfig(
     val episodesConfig: SyncPhaseConfig = SyncPhaseConfig.EPISODES,
     val emitProgressEvery: Int = 100,
     val enableTimeBasedFlush: Boolean = true,
+    val enableCanonicalLinking: Boolean = true,
 ) {
     companion object {
         /**
          * Default configuration optimized for perceived speed.
-         * - Live first (400 batch)
-         * - Movies next (250 batch)
+         * - Live first (500 batch)
+         * - Movies next (300 batch)
          * - Series last (150 batch)
          * - Episodes NOT synced during initial sync
+         * - Canonical linking ENABLED
          */
         val DEFAULT = EnhancedSyncConfig()
 
@@ -100,6 +103,39 @@ data class EnhancedSyncConfig(
                 moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 100),
                 seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 50),
             )
+
+        /**
+         * PROGRESSIVE_UI configuration: Maximum speed for first UI tiles.
+         * - Canonical linking DISABLED for hot path relief
+         * - Large batches for throughput
+         * - Time-based flush for progressive appearance
+         *
+         * Use for initial sync where UI speed is critical.
+         * Run canonical backlog worker later to link items.
+         */
+        val PROGRESSIVE_UI =
+            EnhancedSyncConfig(
+                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 600),
+                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 400),
+                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 200),
+                enableTimeBasedFlush = true,
+                enableCanonicalLinking = false, // HOT PATH RELIEF
+            )
+
+        /**
+         * FIRETV_SAFE configuration: Conservative settings for low-RAM devices.
+         * - Smaller batches to avoid OOM
+         * - Canonical linking DISABLED for speed
+         * - Time-based flush for progressive UI
+         */
+        val FIRETV_SAFE =
+            EnhancedSyncConfig(
+                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 250),
+                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 150),
+                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 100),
+                enableTimeBasedFlush = true,
+                enableCanonicalLinking = false, // Reduce load
+            )
     }
 
     /** Get batch size for a specific phase */
@@ -110,4 +146,16 @@ data class EnhancedSyncConfig(
             SyncPhase.SERIES -> seriesConfig.batchSize
             SyncPhase.EPISODES -> episodesConfig.batchSize
         }
+
+    /**
+     * Convert to SyncConfig for use with persist methods.
+     * Uses Movies batch size as default.
+     */
+    fun toSyncConfig(): SyncConfig =
+        SyncConfig(
+            batchSize = moviesConfig.batchSize,
+            enableNormalization = true,
+            enableCanonicalLinking = enableCanonicalLinking,
+            emitProgressEvery = emitProgressEvery,
+        )
 }
