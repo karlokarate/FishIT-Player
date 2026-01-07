@@ -46,11 +46,10 @@ env:
 
 All MCP dependencies are cached for performance:
 
-- **Docker images**: `docker-mcp-${{ runner.os }}-v1`
 - **NPM packages**: `npm-mcp-${{ runner.os }}-v1`
-- **Custom JAR**: `mcp-jar-${{ runner.os }}-${{ hashFiles('tools/mcp-server/**') }}`
+- **Custom JAR**: `mcp-jar-${{ runner.os }}-${{ hashFiles('tools/mcp-server/**/*.kt', 'tools/mcp-server/**/*.gradle*') }}`
 
-Cache is automatically restored on subsequent runs, reducing setup time significantly.
+Cache keys use stable version numbers (v1) to maintain cache across workflow updates. Docker images are pulled directly without caching as they're efficiently cached by Docker itself.
 
 ## MCP Configuration Structure
 
@@ -69,7 +68,7 @@ Cloud agents receive the following MCP configuration at `~/.config/copilot/mcp.j
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@0.1.0"]
     }
   }
 }
@@ -119,9 +118,12 @@ If Docker pull fails, the MCP server will attempt to pull on first use.
 
 ### Sequential Thinking Installation
 
-Pre-installation uses: `npx -y @modelcontextprotocol/server-sequential-thinking --version 2>/dev/null`
+Pre-installation uses pinned version for supply chain security:
+```bash
+npm install -g @modelcontextprotocol/server-sequential-thinking@0.1.0
+```
 
-If this fails, it will install on demand during workflow execution.
+This ensures a verified, immutable version is used instead of downloading arbitrary code on each run.
 
 ## Related Files
 
@@ -134,4 +136,4 @@ If this fails, it will install on demand during workflow execution.
 
 - GitHub MCP Server: https://github.blog/ai-and-ml/generative-ai/a-practical-guide-on-how-to-use-the-github-mcp-server/
 - MCP Specification: https://modelcontextprotocol.io/docs/learn/server-concepts
-- Sequential Thinking: https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
+- Sequential Thinking: https://github.com/modelcontextprotocol/servers/tree/main/src/sequential-thinking

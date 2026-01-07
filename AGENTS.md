@@ -1207,11 +1207,18 @@ When working on Parent Issues with multiple child tasks (like #573):
 ### 16.5. Custom MCP Server: FishIT Pipeline
 
 In addition to the standard MCP servers, this repository includes a custom MCP server for pipeline operations:
-- Located at: `tools/mcp-server/`
-- Provides direct access to Xtream and Telegram pipelines
-- Configuration in `.vscode/mcp.json`
+- **Location**: `tools/mcp-server/`
+- **Configuration**: `.vscode/mcp.json` (separate from main MCP config)
+- **Provides**: Direct access to Xtream and Telegram pipelines
+- **Purpose**: Domain-specific testing and debugging capabilities
 
-**Note:** The custom pipeline server is separate from the GitHub and Sequential Thinking servers and provides domain-specific capabilities for testing and debugging pipeline operations.
+**Why Separate Configuration?**
+The custom pipeline server requires build artifacts (JAR file) and pipeline-specific credentials that are not available in all environments. It's configured separately in `.vscode/mcp.json` to:
+1. Allow local development without requiring the JAR to be built
+2. Keep pipeline credentials isolated from general MCP configuration
+3. Enable optional activation only when needed for pipeline work
+
+The server is automatically available in VS Code when the JAR is built, alongside the GitHub and Sequential Thinking MCP servers.
 
 ### 16.6. Reference Documentation
 

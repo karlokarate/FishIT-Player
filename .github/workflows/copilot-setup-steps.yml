@@ -103,24 +103,16 @@ jobs:
         with:
           install: true
 
-      - name: Cache Docker images for MCP
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.docker-cache
-          key: docker-mcp-${{ runner.os }}-v1
-          restore-keys: |
-            docker-mcp-${{ runner.os }}-
-
-      - name: Pull GitHub MCP Server image
+      - name: Pull and cache GitHub MCP Server image
         run: |
           echo ">>> Pulling GitHub MCP Server Docker image..."
           docker pull ghcr.io/github/github-mcp-server:latest || echo "Image pull failed, will retry on demand"
+          echo "Image pulled successfully"
 
       - name: Set up Node.js (for Sequential Thinking MCP)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Cache Sequential Thinking MCP package
         uses: actions/cache@v4
@@ -130,10 +122,10 @@ jobs:
           restore-keys: |
             npm-mcp-${{ runner.os }}-
 
-      - name: Pre-install Sequential Thinking MCP Server
+      - name: Pre-install Sequential Thinking MCP Server (pinned version)
         run: |
-          echo ">>> Installing Sequential Thinking MCP Server..."
-          npx -y @modelcontextprotocol/server-sequential-thinking --version 2>/dev/null || echo "Will install on demand"
+          echo ">>> Installing Sequential Thinking MCP Server (pinned to 0.1.0)..."
+          npm install -g @modelcontextprotocol/server-sequential-thinking@0.1.0 || echo "Will install on demand"
 
       - name: Cache custom FishIT MCP server JAR
         uses: actions/cache@v4
@@ -144,25 +136,27 @@ jobs:
             mcp-jar-${{ runner.os }}-
 
       - name: Create MCP configuration for Copilot
+        env:
+          MCP_TOKEN: ${{ env.COPILOT_MCP_TOKEN }}
         run: |
           mkdir -p ~/.config/copilot
-          cat > ~/.config/copilot/mcp.json << 'MCPEOF'
+          cat > ~/.config/copilot/mcp.json << EOF
           {
             "mcpServers": {
               "github": {
                 "command": "docker",
                 "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
                 "env": {
-                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${COPILOT_MCP_TOKEN}"
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "$MCP_TOKEN"
                 }
               },
               "sequential-thinking": {
                 "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+                "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@0.1.0"]
               }
             }
           }
-          MCPEOF
+          EOF
           echo "MCP configuration created for cloud Copilot agents"
 
       - name: Verify MCP setup

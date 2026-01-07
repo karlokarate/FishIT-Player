@@ -137,7 +137,7 @@
       },
       "sequential-thinking": {
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+        "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@0.1.0"]
       }
     }
   },
