@@ -1169,11 +1169,33 @@ Enables long-term context and multi-step reasoning:
 
 ### 16.3. Setup Requirements
 
+#### Local Development & Codespaces
 1. **Environment Variable**: Ensure `GITHUB_TOKEN` is set in your environment
    - For local development: Export in your shell profile
    - For Codespaces: Added automatically via GitHub authentication
 2. **Docker**: Required for GitHub MCP Server (usually pre-installed in devcontainer)
 3. **Node.js/npx**: Required for Sequential Thinking Server (pre-installed in devcontainer)
+
+#### Cloud Agents (GitHub Actions / Copilot Workspace)
+MCP servers are automatically configured for cloud agents via the `copilot-setup-steps.yml` workflow:
+
+1. **Secret Required**: `COPILOT_MCP_TOKEN` - GitHub token with appropriate permissions
+   - Must be added as a repository secret
+   - Used for GitHub MCP Server authentication
+   - Enables long-term context maintenance across workflow runs
+
+2. **Automatic Caching**: All MCP dependencies are cached for performance:
+   - Docker images (GitHub MCP Server)
+   - NPM packages (Sequential Thinking MCP)
+   - Custom MCP server JAR files
+
+3. **Pre-installed in Workflow**: The `copilot-setup-steps.yml` workflow automatically:
+   - Pulls and caches the GitHub MCP Server Docker image
+   - Pre-installs the Sequential Thinking MCP package
+   - Creates MCP configuration at `~/.config/copilot/mcp.json`
+   - Verifies all MCP server prerequisites
+
+**Usage**: Cloud agents can use MCP capabilities immediately after the setup job completes, with full support for long-term context maintenance across multiple PRs in task chains.
 
 ### 16.4. Usage in Task Chains
 

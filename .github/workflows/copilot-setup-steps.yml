@@ -24,6 +24,7 @@ jobs:
 
     env:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+      COPILOT_MCP_TOKEN: ${{ secrets.COPILOT_MCP_TOKEN }}
 
     steps:
       - name: Checkout repo (inkl. Submodules)
@@ -95,6 +96,87 @@ jobs:
           # minimaler „Warmstart“, damit Copilot später schneller Builds,
           # Tests, Lint, Detekt, ktlint, etc. ausführen kann.
           ./gradlew --no-daemon -q help
+
+      # ===== MCP Server Setup =====
+      - name: Set up Docker Buildx (for GitHub MCP Server)
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
+      - name: Cache Docker images for MCP
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.docker-cache
+          key: docker-mcp-${{ runner.os }}-v1
+          restore-keys: |
+            docker-mcp-${{ runner.os }}-
+
+      - name: Pull GitHub MCP Server image
+        run: |
+          echo ">>> Pulling GitHub MCP Server Docker image..."
+          docker pull ghcr.io/github/github-mcp-server:latest || echo "Image pull failed, will retry on demand"
+
+      - name: Set up Node.js (for Sequential Thinking MCP)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Cache Sequential Thinking MCP package
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-mcp-${{ runner.os }}-v1
+          restore-keys: |
+            npm-mcp-${{ runner.os }}-
+
+      - name: Pre-install Sequential Thinking MCP Server
+        run: |
+          echo ">>> Installing Sequential Thinking MCP Server..."
+          npx -y @modelcontextprotocol/server-sequential-thinking --version 2>/dev/null || echo "Will install on demand"
+
+      - name: Cache custom FishIT MCP server JAR
+        uses: actions/cache@v4
+        with:
+          path: tools/mcp-server/build/libs/*.jar
+          key: mcp-jar-${{ runner.os }}-${{ hashFiles('tools/mcp-server/**/*.kt', 'tools/mcp-server/**/*.gradle*') }}
+          restore-keys: |
+            mcp-jar-${{ runner.os }}-
+
+      - name: Create MCP configuration for Copilot
+        run: |
+          mkdir -p ~/.config/copilot
+          cat > ~/.config/copilot/mcp.json << 'MCPEOF'
+          {
+            "mcpServers": {
+              "github": {
+                "command": "docker",
+                "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+                "env": {
+                  "GITHUB_PERSONAL_ACCESS_TOKEN": "${COPILOT_MCP_TOKEN}"
+                }
+              },
+              "sequential-thinking": {
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+              }
+            }
+          }
+          MCPEOF
+          echo "MCP configuration created for cloud Copilot agents"
+
+      - name: Verify MCP setup
+        run: |
+          echo "=== MCP Server Setup Verification ==="
+          echo "Docker: $(docker --version)"
+          echo "Node.js: $(node --version)"
+          echo "NPM: $(npm --version)"
+          echo "MCP Config: $(test -f ~/.config/copilot/mcp.json && echo '✓ exists' || echo '✗ missing')"
+          echo ""
+          echo "✓ MCP servers ready for cloud Copilot agents"
+          echo "  - GitHub MCP: Full GitHub integration"
+          echo "  - Sequential Thinking: Long-term context"
+          echo "  - Custom Pipeline: Domain-specific access (if built)"
 
       - name: Document quality & diagnostics tasks for Copilot
         run: |

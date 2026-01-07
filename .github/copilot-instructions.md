@@ -339,11 +339,18 @@ Agents can use these capabilities automatically when:
 MCP servers are configured in:
 - `.devcontainer/devcontainer.json` - For Codespaces and devcontainer environments
 - `.vscode/settings.json` - For local VS Code development
+- `.github/workflows/copilot-setup-steps.yml` - For cloud agents (GitHub Actions, Copilot Workspace)
 
 ### Requirements
 
+**Local Development:**
 - **GITHUB_TOKEN** environment variable (automatically available in Codespaces)
 - **Docker** for GitHub MCP Server (pre-installed in devcontainer)
 - **Node.js/npx** for Sequential Thinking Server (pre-installed in devcontainer)
+
+**Cloud Agents (GitHub Actions):**
+- **COPILOT_MCP_TOKEN** repository secret - Required for cloud agent authentication
+- Automatic caching of Docker images, NPM packages, and custom MCP server JARs
+- Pre-configured in `copilot-setup-steps.yml` workflow
 
 See `AGENTS.md` Section 16 for complete MCP server documentation.
