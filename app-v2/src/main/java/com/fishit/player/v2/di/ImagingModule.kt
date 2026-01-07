@@ -3,8 +3,8 @@ package com.fishit.player.v2.di
 import android.content.Context
 import coil3.ImageLoader
 import com.fishit.player.core.imaging.GlobalImageLoader
+import com.fishit.player.core.imaging.fetcher.CoilTelegramThumbFetcherImpl
 import com.fishit.player.core.imaging.fetcher.TelegramThumbFetcher
-import com.fishit.player.infra.transport.telegram.imaging.CoilTelegramThumbFetcherImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
