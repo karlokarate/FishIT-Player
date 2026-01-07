@@ -496,6 +496,7 @@ class XtreamCatalogScanWorker
                                 batchSize = 200, // Larger than default 150
                             ),
                         enableTimeBasedFlush = false, // Prioritize throughput over UI
+                        enableCanonicalLinking = false, // Disable canonical linking for throughput-optimized rescan
                     )
                 }
                 // Default: Use PROGRESSIVE_UI for maximum UI-first loading speed
