@@ -199,7 +199,7 @@ class DefaultCatalogSyncService
                                 batch.add(event.item.raw)
 
                                 if (batch.size >= syncConfig.batchSize) {
-                                    persistTelegramBatch(batch)
+                                    persistTelegramBatch(batch, syncConfig)
                                     itemsPersisted += batch.size
                                     batch.clear()
                                 }
@@ -228,7 +228,7 @@ class DefaultCatalogSyncService
                             is TelegramCatalogEvent.ScanCompleted -> {
                                 // Persist remaining batch
                                 if (batch.isNotEmpty()) {
-                                    persistTelegramBatch(batch)
+                                    persistTelegramBatch(batch, syncConfig)
                                     itemsPersisted += batch.size
                                     batch.clear()
                                 }
@@ -262,7 +262,7 @@ class DefaultCatalogSyncService
                             is TelegramCatalogEvent.ScanCancelled -> {
                                 // Persist remaining batch before reporting cancellation
                                 if (batch.isNotEmpty()) {
-                                    persistTelegramBatch(batch)
+                                    persistTelegramBatch(batch, syncConfig)
                                     itemsPersisted += batch.size
                                     batch.clear()
                                 }
@@ -323,7 +323,7 @@ class DefaultCatalogSyncService
                 } catch (e: CancellationException) {
                     // Persist remaining batch on cancellation
                     if (batch.isNotEmpty()) {
-                        persistTelegramBatch(batch)
+                        persistTelegramBatch(batch, syncConfig)
                         itemsPersisted += batch.size
                     }
                     emit(SyncStatus.Cancelled(SOURCE_TELEGRAM, itemsPersisted))
@@ -388,7 +388,7 @@ class DefaultCatalogSyncService
 
                                 // Persist catalog batch (VOD) when full
                                 if (catalogBatch.size >= syncConfig.batchSize) {
-                                    persistXtreamCatalogBatch(catalogBatch)
+                                    persistXtreamCatalogBatch(catalogBatch, syncConfig)
                                     itemsPersisted += catalogBatch.size
                                     catalogBatch.clear()
                                 }
@@ -397,7 +397,7 @@ class DefaultCatalogSyncService
                                 // Use smaller limit (100) to ensure early flush before budget-exceeded
                                 val seriesBatchLimit = minOf(100, syncConfig.batchSize)
                                 if (seriesBatch.size >= seriesBatchLimit) {
-                                    persistXtreamCatalogBatch(seriesBatch)
+                                    persistXtreamCatalogBatch(seriesBatch, syncConfig)
                                     itemsPersisted += seriesBatch.size
                                     seriesBatch.clear()
                                 }
@@ -440,12 +440,12 @@ class DefaultCatalogSyncService
                             is XtreamCatalogEvent.ScanCompleted -> {
                                 // Persist remaining batches
                                 if (catalogBatch.isNotEmpty()) {
-                                    persistXtreamCatalogBatch(catalogBatch)
+                                    persistXtreamCatalogBatch(catalogBatch, syncConfig)
                                     itemsPersisted += catalogBatch.size
                                     catalogBatch.clear()
                                 }
                                 if (seriesBatch.isNotEmpty()) {
-                                    persistXtreamCatalogBatch(seriesBatch)
+                                    persistXtreamCatalogBatch(seriesBatch, syncConfig)
                                     itemsPersisted += seriesBatch.size
                                     seriesBatch.clear()
                                 }
@@ -471,11 +471,11 @@ class DefaultCatalogSyncService
                             is XtreamCatalogEvent.ScanCancelled -> {
                                 // Persist remaining batches before reporting cancellation
                                 if (catalogBatch.isNotEmpty()) {
-                                    persistXtreamCatalogBatch(catalogBatch)
+                                    persistXtreamCatalogBatch(catalogBatch, syncConfig)
                                     itemsPersisted += catalogBatch.size
                                 }
                                 if (seriesBatch.isNotEmpty()) {
-                                    persistXtreamCatalogBatch(seriesBatch)
+                                    persistXtreamCatalogBatch(seriesBatch, syncConfig)
                                     itemsPersisted += seriesBatch.size
                                 }
                                 if (liveBatch.isNotEmpty()) {
@@ -527,11 +527,11 @@ class DefaultCatalogSyncService
                 } catch (e: CancellationException) {
                     // Persist remaining batches on cancellation
                     if (catalogBatch.isNotEmpty()) {
-                        persistXtreamCatalogBatch(catalogBatch)
+                        persistXtreamCatalogBatch(catalogBatch, syncConfig)
                         itemsPersisted += catalogBatch.size
                     }
                     if (seriesBatch.isNotEmpty()) {
-                        persistXtreamCatalogBatch(seriesBatch)
+                        persistXtreamCatalogBatch(seriesBatch, syncConfig)
                         itemsPersisted += seriesBatch.size
                     }
                     if (liveBatch.isNotEmpty()) {
@@ -587,12 +587,16 @@ class DefaultCatalogSyncService
             includeSeries: Boolean,
             includeEpisodes: Boolean,
             includeLive: Boolean,
+            excludeSeriesIds: Set<Int>,
+            episodeParallelism: Int,
             config: EnhancedSyncConfig,
         ): Flow<SyncStatus> =
             flow {
                 UnifiedLog.i(
                     TAG,
-                    "Starting enhanced Xtream sync: live=$includeLive, vod=$includeVod, series=$includeSeries, episodes=$includeEpisodes",
+                    "Starting enhanced Xtream sync: live=$includeLive, vod=$includeVod, series=$includeSeries, " +
+                        "episodes=$includeEpisodes, excludeSeriesIds=${excludeSeriesIds.size}, " +
+                        "episodeParallelism=$episodeParallelism, canonical_linking=${config.enableCanonicalLinking}",
                 )
                 emit(SyncStatus.Started(SOURCE_XTREAM))
 
@@ -602,6 +606,9 @@ class DefaultCatalogSyncService
 
                 // Initialize batch manager
                 val batchManager = SyncBatchManager(config, metrics)
+
+                // Convert to SyncConfig for persist methods
+                val syncConfig = config.toSyncConfig()
 
                 val startTimeMs = System.currentTimeMillis()
                 var itemsDiscovered = 0L
@@ -621,6 +628,8 @@ class DefaultCatalogSyncService
                         includeSeries = includeSeries,
                         includeEpisodes = includeEpisodes,
                         includeLive = includeLive,
+                        excludeSeriesIds = excludeSeriesIds,
+                        episodeParallelism = episodeParallelism,
                     )
 
                 // Time-based flush job
@@ -641,7 +650,7 @@ class DefaultCatalogSyncService
                                             val flushStart = System.currentTimeMillis()
                                             when (phase) {
                                                 SyncPhase.LIVE -> persistXtreamLiveBatch(toFlush)
-                                                else -> persistXtreamCatalogBatch(toFlush)
+                                                else -> persistXtreamCatalogBatch(toFlush, syncConfig)
                                             }
                                             val flushDuration = System.currentTimeMillis() - flushStart
                                             metrics.recordPersist(
@@ -683,7 +692,7 @@ class DefaultCatalogSyncService
                                         val flushStart = System.currentTimeMillis()
                                         when (phase) {
                                             SyncPhase.LIVE -> persistXtreamLiveBatch(toFlush)
-                                            else -> persistXtreamCatalogBatch(toFlush)
+                                            else -> persistXtreamCatalogBatch(toFlush, syncConfig)
                                         }
                                         val flushDuration = System.currentTimeMillis() - flushStart
                                         metrics.recordPersist(
@@ -748,7 +757,7 @@ class DefaultCatalogSyncService
                                             val flushStart = System.currentTimeMillis()
                                             when (phase) {
                                                 SyncPhase.LIVE -> persistXtreamLiveBatch(items)
-                                                else -> persistXtreamCatalogBatch(items)
+                                                else -> persistXtreamCatalogBatch(items, syncConfig)
                                             }
                                             val flushDuration = System.currentTimeMillis() - flushStart
                                             metrics.recordPersist(
@@ -786,7 +795,7 @@ class DefaultCatalogSyncService
                                         if (items.isNotEmpty()) {
                                             when (phase) {
                                                 SyncPhase.LIVE -> persistXtreamLiveBatch(items)
-                                                else -> persistXtreamCatalogBatch(items)
+                                                else -> persistXtreamCatalogBatch(items, syncConfig)
                                             }
                                             itemsPersisted += items.size
                                         }
@@ -841,7 +850,7 @@ class DefaultCatalogSyncService
                         if (items.isNotEmpty()) {
                             when (phase) {
                                 SyncPhase.LIVE -> persistXtreamLiveBatch(items)
-                                else -> persistXtreamCatalogBatch(items)
+                                else -> persistXtreamCatalogBatch(items, syncConfig)
                             }
                             itemsPersisted += items.size
                         }
@@ -872,115 +881,139 @@ class DefaultCatalogSyncService
         // ========================================================================
 
         /**
-         * Persist Telegram batch with canonical media unification.
+         * Persist Telegram batch with optional canonical media unification.
          *
          * Per MEDIA_NORMALIZATION_CONTRACT.md:
-         * 1. Store raw in pipeline-specific repo (fast local queries)
-         * 2. Normalize via MediaMetadataNormalizer
-         * 3. Upsert to CanonicalMediaRepository (cross-pipeline identity)
-         * 4. Link source via MediaSourceRef (enables unified resume)
+         * 1. Store raw in pipeline-specific repo (fast local queries) - ALWAYS
+         * 2. Normalize via MediaMetadataNormalizer - OPTIONAL (config.enableNormalization)
+         * 3. Upsert to CanonicalMediaRepository (cross-pipeline identity) - OPTIONAL (config.enableCanonicalLinking)
+         * 4. Link source via MediaSourceRef (enables unified resume) - OPTIONAL (config.enableCanonicalLinking)
+         *
+         * **TASK 2: Hot Path Relief**
+         * - When enableCanonicalLinking=false, skips steps 2-4 for maximum speed
+         * - Use for initial sync to get UI tiles visible ASAP
+         * - Canonical linking can be done later via backlog worker
          *
          * **PLATINUM Integrity:**
          * - Validates PlaybackHints per source type
          * - Counts linking failures (warning, not fatal)
          */
-        private suspend fun persistTelegramBatch(items: List<RawMediaMetadata>) {
-            UnifiedLog.d(TAG) { "Persisting Telegram batch: ${items.size} items" }
+        private suspend fun persistTelegramBatch(
+            items: List<RawMediaMetadata>,
+            config: SyncConfig = SyncConfig.DEFAULT,
+        ) {
+            UnifiedLog.d(TAG) { "Persisting Telegram batch: ${items.size} items (canonical_linking=${config.enableCanonicalLinking})" }
 
-            // Step 1: Store raw in pipeline-specific repo (for fast Telegram-only queries)
+            // Step 1: Store raw in pipeline-specific repo (ALWAYS - for fast Telegram-only queries)
             telegramRepository.upsertAll(items)
 
-            // Step 2-4: Normalize and link to canonical (for cross-pipeline unification)
-            var linkedCount = 0
-            var failedCount = 0
-            var playbackHintWarnings = 0
+            // Step 2-4: Normalize and link to canonical (OPTIONAL - for cross-pipeline unification)
+            if (config.enableCanonicalLinking) {
+                var linkedCount = 0
+                var failedCount = 0
+                var playbackHintWarnings = 0
 
-            items.forEach { raw ->
-                try {
-                    // PLATINUM: Validate playback hints before linking
-                    val hintValidation = validateTelegramPlaybackHints(raw)
-                    if (!hintValidation.isValid) {
-                        playbackHintWarnings++
-                        UnifiedLog.w(TAG) {
-                            "Telegram playback hint warning for ${raw.sourceId}: ${hintValidation.reason}"
+                items.forEach { raw ->
+                    try {
+                        // PLATINUM: Validate playback hints before linking
+                        val hintValidation = validateTelegramPlaybackHints(raw)
+                        if (!hintValidation.isValid) {
+                            playbackHintWarnings++
+                            UnifiedLog.w(TAG) {
+                                "Telegram playback hint warning for ${raw.sourceId}: ${hintValidation.reason}"
+                            }
                         }
+
+                        // Step 2: Normalize metadata
+                        val normalized = normalizer.normalize(raw)
+
+                        // Step 3: Upsert to canonical repository
+                        val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
+
+                        // Step 4: Link this source to the canonical entry
+                        val sourceRef = raw.toMediaSourceRef()
+                        canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
+                        linkedCount++
+                    } catch (e: Exception) {
+                        failedCount++
+                        UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
                     }
-
-                    // Step 2: Normalize metadata
-                    val normalized = normalizer.normalize(raw)
-
-                    // Step 3: Upsert to canonical repository
-                    val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
-
-                    // Step 4: Link this source to the canonical entry
-                    val sourceRef = raw.toMediaSourceRef()
-                    canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
-                    linkedCount++
-                } catch (e: Exception) {
-                    failedCount++
-                    UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
                 }
-            }
 
-            // PLATINUM: Log integrity summary (DEBUG level for normal runs)
-            if (failedCount > 0 || playbackHintWarnings > 0) {
-                UnifiedLog.w(TAG) {
-                    "Telegram batch integrity: linked=$linkedCount failed=$failedCount hint_warnings=$playbackHintWarnings"
+                // PLATINUM: Log integrity summary (DEBUG level for normal runs)
+                if (failedCount > 0 || playbackHintWarnings > 0) {
+                    UnifiedLog.w(TAG) {
+                        "Telegram batch integrity: linked=$linkedCount failed=$failedCount hint_warnings=$playbackHintWarnings"
+                    }
+                } else {
+                    UnifiedLog.d(TAG) { "Telegram batch complete: linked=$linkedCount" }
                 }
             } else {
-                UnifiedLog.d(TAG) { "Telegram batch complete: linked=$linkedCount" }
+                UnifiedLog.d(TAG) { "Telegram batch complete: raw stored, canonical linking skipped for speed" }
             }
         }
 
         /**
-         * Persist Xtream catalog batch with canonical media unification.
+         * Persist Xtream catalog batch with optional canonical media unification.
          *
-         * Same flow as Telegram: raw storage + normalize + canonical link.
+         * Same flow as Telegram: raw storage + optional normalize + canonical link.
+         *
+         * **TASK 2: Hot Path Relief**
+         * - When enableCanonicalLinking=false, only stores raw data for maximum speed
+         * - Use for initial sync to get UI tiles visible ASAP
+         * - Canonical linking can be done later via backlog worker
          *
          * **PLATINUM Integrity:**
          * - Validates PlaybackHints per content type (VOD/Series/Episode)
          * - Counts linking failures
          */
-        private suspend fun persistXtreamCatalogBatch(items: List<RawMediaMetadata>) {
-            UnifiedLog.d(TAG) { "Persisting Xtream catalog batch: ${items.size} items" }
+        private suspend fun persistXtreamCatalogBatch(
+            items: List<RawMediaMetadata>,
+            config: SyncConfig = SyncConfig.DEFAULT,
+        ) {
+            UnifiedLog.d(TAG) { "Persisting Xtream catalog batch: ${items.size} items (canonical_linking=${config.enableCanonicalLinking})" }
 
-            // Step 1: Store raw in pipeline-specific repo
+            // Step 1: Store raw in pipeline-specific repo (ALWAYS)
             xtreamCatalogRepository.upsertAll(items)
 
-            // Step 2-4: Normalize and link to canonical
-            var linkedCount = 0
-            var failedCount = 0
-            var playbackHintWarnings = 0
+            // Step 2-4: Normalize and link to canonical (OPTIONAL)
+            if (config.enableCanonicalLinking) {
+                var linkedCount = 0
+                var failedCount = 0
+                var playbackHintWarnings = 0
 
-            items.forEach { raw ->
-                try {
-                    // PLATINUM: Validate playback hints before linking
-                    val hintValidation = validateXtreamPlaybackHints(raw)
-                    if (!hintValidation.isValid) {
-                        playbackHintWarnings++
-                        UnifiedLog.w(TAG) {
-                            "Xtream playback hint warning for ${raw.sourceId}: ${hintValidation.reason}"
+                items.forEach { raw ->
+                    try {
+                        // PLATINUM: Validate playback hints before linking
+                        val hintValidation = validateXtreamPlaybackHints(raw)
+                        if (!hintValidation.isValid) {
+                            playbackHintWarnings++
+                            UnifiedLog.w(TAG) {
+                                "Xtream playback hint warning for ${raw.sourceId}: ${hintValidation.reason}"
+                            }
                         }
+
+                        val normalized = normalizer.normalize(raw)
+                        val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
+                        val sourceRef = raw.toMediaSourceRef()
+                        canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
+                        linkedCount++
+                    } catch (e: Exception) {
+                        failedCount++
+                        UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
                     }
-
-                    val normalized = normalizer.normalize(raw)
-                    val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
-                    val sourceRef = raw.toMediaSourceRef()
-                    canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
-                    linkedCount++
-                } catch (e: Exception) {
-                    failedCount++
-                    UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
                 }
-            }
 
-            // PLATINUM: Log integrity summary
-            if (failedCount > 0 || playbackHintWarnings > 0) {
-                UnifiedLog.w(TAG) {
-                    "Xtream batch integrity: linked=$linkedCount failed=$failedCount hint_warnings=$playbackHintWarnings"
+                // PLATINUM: Log integrity summary
+                if (failedCount > 0 || playbackHintWarnings > 0) {
+                    UnifiedLog.w(TAG) {
+                        "Xtream batch integrity: linked=$linkedCount failed=$failedCount hint_warnings=$playbackHintWarnings"
+                    }
+                } else {
+                    UnifiedLog.d(TAG) { "Xtream batch complete: linked=$linkedCount" }
                 }
             } else {
-                UnifiedLog.d(TAG) { "Xtream batch complete: linked=$linkedCount" }
+                UnifiedLog.d(TAG) { "Xtream batch complete: raw stored, canonical linking skipped for speed" }
             }
         }
 
