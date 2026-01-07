@@ -901,7 +901,7 @@ class DefaultCatalogSyncService
          * - When enableCanonicalLinking=false, skips steps 2-4 for maximum speed
          * - Use for initial sync to get UI tiles visible ASAP
          * - Canonical linking can be done later via backlog worker
-         * - Automatically schedules backlog processing when linking is skipped
+         * - **Callers should schedule backlog processing via CanonicalLinkingScheduler after sync**
          *
          * **PLATINUM Integrity:**
          * - Validates PlaybackHints per source type
@@ -977,7 +977,7 @@ class DefaultCatalogSyncService
                 UnifiedLog.d(TAG) { 
                     "Telegram batch complete (HOT PATH): raw stored, canonical linking skipped " +
                     "raw_persist_ms=$rawPersistDuration total_ms=$totalDuration " +
-                    "(will be processed by backlog worker)"
+                    "(backlog processing should be scheduled by caller)"
                 }
             }
         }
@@ -991,7 +991,7 @@ class DefaultCatalogSyncService
          * - When enableCanonicalLinking=false, only stores raw data for maximum speed
          * - Use for initial sync to get UI tiles visible ASAP
          * - Canonical linking can be done later via backlog worker
-         * - Automatically schedules backlog processing when linking is skipped
+         * - **Callers should schedule backlog processing via CanonicalLinkingScheduler after sync**
          *
          * **PLATINUM Integrity:**
          * - Validates PlaybackHints per content type (VOD/Series/Episode)
@@ -1062,7 +1062,7 @@ class DefaultCatalogSyncService
                 UnifiedLog.d(TAG) { 
                     "Xtream batch complete (HOT PATH): raw stored, canonical linking skipped " +
                     "raw_persist_ms=$rawPersistDuration total_ms=$totalDuration " +
-                    "(will be processed by backlog worker)"
+                    "(backlog processing should be scheduled by caller)"
                 }
             }
         }

@@ -3,12 +3,10 @@ package com.fishit.player.v2.work
 import androidx.work.BackoffPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.fishit.player.core.catalogsync.CanonicalLinkingScheduler
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
-import kotlinx.coroutines.flow.firstOrNull
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -74,8 +72,10 @@ class CanonicalLinkingSchedulerImpl
                 OneTimeWorkRequestBuilder<CanonicalLinkingBacklogWorker>()
                     .setInputData(inputData)
                     .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-                    .addTag(TAG_CANONICAL_LINKING)
-                    .addTag("source_${sourceType.name.lowercase()}")
+                    .addTag(WorkerConstants.TAG_CATALOG_SYNC)  // W-12: Base tag
+                    .addTag(TAG_CANONICAL_LINKING)  // Custom tag
+                    .addTag(WorkerConstants.TAG_WORKER_CANONICAL_LINKING)  // W-12: Worker-specific tag
+                    .addTag("source_${sourceType.name.lowercase()}")  // Source tag
                     .setBackoffCriteria(
                         BackoffPolicy.EXPONENTIAL,
                         WorkerConstants.BACKOFF_INITIAL_SECONDS,

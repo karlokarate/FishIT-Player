@@ -80,7 +80,10 @@ class CanonicalLinkingBacklogWorker
                     else -> {
                         UnifiedLog.w(TAG) { "FAILURE reason=UNSUPPORTED_SOURCE source=${input.sourceType}" }
                         Result.failure(
-                            WorkerOutputData.failure("UNSUPPORTED_SOURCE"),
+                            Data.Builder()
+                                .putString(WorkerConstants.KEY_FAILURE_REASON, "UNSUPPORTED_SOURCE")
+                                .putString(WorkerConstants.KEY_FAILURE_DETAILS, "source=${input.sourceType}")
+                                .build(),
                         )
                     }
                 }
@@ -106,9 +109,13 @@ class CanonicalLinkingBacklogWorker
             }
 
             try {
-                // Query for items without canonical links (this is a simplification - 
-                // in practice we'd need to track which items are linked)
-                // For now, we'll get all items and attempt linking
+                // TODO: CRITICAL - This currently queries ALL items and will reprocess them on every run.
+                // Need to track which items are already linked to avoid duplicate work.
+                // Possible solutions:
+                // 1. Add repository methods: getUnlinkedItems(limit: Int)
+                // 2. Track processed items in checkpoint store
+                // 3. Query CanonicalMediaRepository for source refs and filter locally
+                // For now, this is a placeholder implementation that demonstrates the worker pattern.
                 val items = xtreamCatalogRepository.getAll(limit = batchSize)
 
                 UnifiedLog.d(TAG) { "Processing Xtream backlog: ${items.size} items" }
@@ -149,7 +156,7 @@ class CanonicalLinkingBacklogWorker
                     ),
                 )
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, "Xtream backlog processing failed", e)
+                UnifiedLog.e(TAG, e) { "Xtream backlog processing failed" }
                 return Result.retry()
             }
         }
@@ -172,7 +179,13 @@ class CanonicalLinkingBacklogWorker
             }
 
             try {
-                // Query for items without canonical links
+                // TODO: CRITICAL - This currently queries ALL items and will reprocess them on every run.
+                // Need to track which items are already linked to avoid duplicate work.
+                // Possible solutions:
+                // 1. Add repository methods: getUnlinkedItems(limit: Int)
+                // 2. Track processed items in checkpoint store
+                // 3. Query CanonicalMediaRepository for source refs and filter locally
+                // For now, this is a placeholder implementation that demonstrates the worker pattern.
                 val items = telegramRepository.getAll(limit = batchSize)
 
                 UnifiedLog.d(TAG) { "Processing Telegram backlog: ${items.size} items" }
@@ -213,14 +226,21 @@ class CanonicalLinkingBacklogWorker
                     ),
                 )
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, "Telegram backlog processing failed", e)
+                UnifiedLog.e(TAG, e) { "Telegram backlog processing failed" }
                 return Result.retry()
             }
         }
 
         /**
          * Convert RawMediaMetadata to MediaSourceRef for canonical linking.
-         * (Duplicated from DefaultCatalogSyncService for now - could be extracted to shared utility)
+         * 
+         * TODO: Code duplication - this is duplicated from DefaultCatalogSyncService.
+         * Should be extracted to a shared utility class in core/catalog-sync or core/model
+         * to ensure SSOT for source reference creation logic.
+         * Options:
+         * 1. Extract to MediaSourceRefBuilder in core/catalog-sync
+         * 2. Add extension function in core/model on RawMediaMetadata
+         * 3. Add method to CanonicalMediaRepository that accepts RawMediaMetadata directly
          */
         private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef =
             MediaSourceRef(

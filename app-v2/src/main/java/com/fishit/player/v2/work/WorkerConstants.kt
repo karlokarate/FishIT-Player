@@ -96,6 +96,7 @@ object WorkerConstants {
     const val KEY_ITEMS_PERSISTED = "items_persisted"
     const val KEY_DURATION_MS = "duration_ms"
     const val KEY_FAILURE_REASON = "failure_reason"
+    const val KEY_FAILURE_DETAILS = "failure_details"
     const val KEY_CHECKPOINT_CURSOR = "checkpoint_cursor"
 
     // =========================================================================
