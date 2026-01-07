@@ -235,7 +235,15 @@ jobs:
         run: |
           node .github/scripts/task-chain-helper.js remove-label ${{ steps.issue.outputs.issue }} ready-for-agent || true
       
-      - name: Trigger Copilot Agent
+      - name: Assign Copilot to issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          issue="${{ steps.issue.outputs.issue }}"
+          node .github/scripts/task-chain-helper.js assign-copilot $issue
+
+      - name: Post task chain info comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -243,21 +251,17 @@ jobs:
         run: |
           issue="${{ steps.issue.outputs.issue }}"
           
-          # Build comment to avoid shell escaping issues
-          comment="@copilot Please analyze and implement this task.
+          comment="🤖 **Task Chain Agent**: Copilot wurde diesem Issue zugewiesen.
 
-          🤖 **Task Chain Agent**: Starting automated work on this issue.
-
-          This task is part of the automated task chain for parent issue #${PARENT_ISSUE}.
+          Dieses Issue ist Teil der automatisierten Task-Chain für Parent-Issue #${PARENT_ISSUE}.
 
           ---
 
           **Commands:**
-          - \`/agent-fix\` - Request fixes based on review comments
-          - \`/agent-approve\` - Approve and move to next task
-          - \`/agent-continue\` - Continue after manual review"
+          - \`/agent-fix\` - Änderungen basierend auf Review-Kommentaren anfordern
+          - \`/agent-approve\` - Genehmigen und zum nächsten Task wechseln
+          - \`/agent-continue\` - Nach manuellem Review fortfahren"
           
-          # Post comment to trigger Copilot Coding Agent
           node .github/scripts/task-chain-helper.js post-comment "$issue" "$comment"
       
       - name: Add task-chain label for PR tracking
@@ -273,7 +277,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Started processing issue #${{ steps.issue.outputs.issue }}" >> $GITHUB_STEP_SUMMARY
           echo "- Added labels: \`in-progress\`, \`task-chain\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Triggered Copilot Coding Agent" >> $GITHUB_STEP_SUMMARY
+          echo "- Assigned Copilot Coding Agent to the issue" >> $GITHUB_STEP_SUMMARY
   
   # Job to handle approval (task completion)
   approve-task:
@@ -348,6 +352,14 @@ jobs:
         with:
           node-version: '20'
       
+      - name: Re-assign Copilot for fixes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          issue="${{ needs.dispatch.outputs.issue_number }}"
+          node .github/scripts/task-chain-helper.js assign-copilot $issue
+
       - name: Request fixes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -355,12 +367,11 @@ jobs:
         run: |
           issue="${{ needs.dispatch.outputs.issue_number }}"
           
-          # Post comment to notify agent
-          node .github/scripts/task-chain-helper.js post-comment $issue "🔧 **Fix requested by reviewer**
+          node .github/scripts/task-chain-helper.js post-comment $issue "🔧 **Fix angefordert vom Reviewer**
 
-          Please review the comments above and make the necessary changes.
+          Bitte überprüfe die Kommentare oben und nimm die nötigen Änderungen vor.
           
-          The Copilot Coding Agent will address the feedback."
+          Copilot wurde erneut zugewiesen um das Feedback zu bearbeiten."
       
       - name: Summary
         run: |

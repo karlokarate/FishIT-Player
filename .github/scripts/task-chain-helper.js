@@ -223,6 +223,17 @@ async function postComment(issueNumber, body) {
 }
 
 /**
+ * Assign Copilot to an issue
+ */
+async function assignCopilot(issueNumber) {
+  const [owner, repo] = GITHUB_REPOSITORY.split('/');
+  console.log(`Assigning Copilot to issue #${issueNumber}`);
+  return await githubApi('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, {
+    assignees: ['copilot']
+  });
+}
+
+/**
  * Check if all sub-issues are completed
  */
 async function checkAllCompleted(parentIssueNumber) {
@@ -349,6 +360,14 @@ async function main() {
         await postComment(issueNum4, commentBody);
         break;
         
+      case 'assign-copilot':
+        const issueNumAssign = process.argv[3];
+        if (!issueNumAssign) {
+          throw new Error('Usage: assign-copilot <issue-number>');
+        }
+        await assignCopilot(issueNumAssign);
+        break;
+        
       case 'extract-issue-from-pr':
         const prNum = process.argv[3];
         if (!prNum) {
@@ -379,7 +398,7 @@ async function main() {
         
       default:
         console.error(`Unknown command: ${command}`);
-        console.error('Available commands: find-next, check-completed, add-labels, remove-label, close-issue, post-comment, extract-issue-from-pr, check-issue-label');
+        console.error('Available commands: find-next, check-completed, add-labels, remove-label, close-issue, post-comment, assign-copilot, extract-issue-from-pr, check-issue-label');
         process.exit(1);
     }
     
