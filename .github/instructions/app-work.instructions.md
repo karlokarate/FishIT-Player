@@ -138,13 +138,14 @@ class CatalogSyncOrchestratorWorker @AssistedInject constructor(
 ### Scan Workers (Per Source)
 ```kotlin
 /**
- * XtreamCatalogScanWorker - fetches catalog via transport, persists via data layer.
- * TelegramFullHistoryScanWorker / TelegramIncrementalScanWorker
- * IoQuickScanWorker
+ * XtreamCatalogScanWorker - syncs via CatalogSyncService (NEVER direct transport/pipeline).
+ * TelegramFullHistoryScanWorker / TelegramIncrementalScanWorker - sync via CatalogSyncService.
+ * IoQuickScanWorker - sync via CatalogSyncService.
  *
- * Contract: W-15
- * - Calls pipeline to process items
- * - Persists RawMediaMetadata to data layer
+ * Contract: W-2, W-15
+ * - Calls CatalogSyncService (SSOT for all sync operations)
+ * - CatalogSyncService calls pipelines, normalizes, and persists
+ * - Workers NEVER call transport or pipeline directly
  * - Reports items_persisted and duration_ms in output
  */
 ```
@@ -203,10 +204,33 @@ const val SYNC_MODE_FORCE_RESCAN = "EXPERT_FORCE_RESCAN"
 const val DEVICE_CLASS_FIRETV_LOW_RAM = "FIRETV_LOW_RAM"
 const val DEVICE_CLASS_ANDROID_PHONE_TABLET = "ANDROID_PHONE_TABLET"
 
-// Batch sizes per device class
-const val FIRETV_BATCH_SIZE = 35
-const val NORMAL_BATCH_SIZE = 100
+// Batch sizes per device class (GLOBAL CAP for FireTV)
+const val FIRETV_BATCH_SIZE = 35      // Overrides all phase-specific sizes
+const val NORMAL_BATCH_SIZE = 100     // Generic fallback (phase-specific preferred)
 ```
+
+**Batch Size System (see also core-catalog-sync.instructions.md):**
+
+Workers use a **two-tier batch sizing system**:
+
+1. **Phase-specific sizes** (default for normal devices):
+   - Live: 400 items (rapid inserts)
+   - Movies: 250 items (balanced)
+   - Series: 150 items (larger payloads)
+
+2. **Device class override** (FireTV safety):
+   - FireTV: **35 items max** (caps ALL phases to prevent OOM)
+   - Normal: Uses phase-specific sizes
+
+**Application Logic:**
+```kotlin
+val effectiveBatchSize = if (deviceClass == DEVICE_CLASS_FIRETV_LOW_RAM) {
+    min(PHASE_BATCH_SIZE, FIRETV_BATCH_SIZE)  // Cap at 35
+} else {
+    PHASE_BATCH_SIZE  // Use 400/250/150 based on phase
+}
+```
+
 
 ### Failure Reasons (W-20 - Non-Retryable)
 ```kotlin
@@ -324,7 +348,7 @@ object WorkerOutputData {
 - [ ] Returns `Result.success()` to proceed to scan
 
 ### Scan Workers
-- [ ] Persists items via data layer (not direct pipeline)
+- [ ] Calls `CatalogSyncService` (NEVER direct pipeline/transport per W-2)
 - [ ] Reports `items_persisted` and `duration_ms` in output
 - [ ] Respects device class for batch sizes (W-17)
 
@@ -341,6 +365,86 @@ object WorkerOutputData {
 2. `contracts/LOGGING_CONTRACT_V2.md` - Logging requirements
 3. `.github/instructions/infra-work.instructions.md` - SourceActivationStore
 4. `core/source-activation-api/` - Interface definitions
+
+---
+
+## 🚨 Error Handling Patterns
+
+### Worker Error Scenarios
+
+| Error Type | Example | Handling Strategy |
+|------------|---------|-------------------|
+| **Non-Retryable** | Invalid credentials, missing permissions | `Result.failure()` with reason code |
+| **Transient** | Network timeout, temporary unavailability | `Result.retry()` with exponential backoff |
+| **Guard Deferrals** | Low battery, data saver enabled | `Result.retry()` - will succeed when conditions improve |
+| **Source Inactive** | Xtream not configured | Skip gracefully, return success with 0 items |
+
+### Error Handling Examples
+
+**1. Preflight Auth Failures:**
+```kotlin
+// XtreamPreflightWorker - distinguish retryable vs permanent
+override suspend fun doWork(): Result {
+    return try {
+        val response = xtreamApiClient.authenticate()
+        when {
+            response.isSuccess -> Result.success()
+            response.isUnauthorized -> Result.failure(  // Permanent - bad credentials
+                WorkerOutputData.failure(FAILURE_XTREAM_INVALID_CREDENTIALS)
+            )
+            response.isNetworkError -> Result.retry()  // Transient - network issue
+            else -> Result.failure(
+                WorkerOutputData.failure("Unknown error: ${response.code}")
+            )
+        }
+    } catch (e: Exception) {
+        UnifiedLog.e(TAG, e) { "Preflight failed" }
+        Result.retry()  // Default to retry for unexpected errors
+    }
+}
+```
+
+**2. Runtime Guard Handling:**
+```kotlin
+// Check guards before starting expensive work
+val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
+if (guardReason != null) {
+    UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason" }
+    return Result.retry()  // Will retry when conditions improve (battery charges, etc.)
+}
+```
+
+**3. Source Availability Check:**
+```kotlin
+// Gracefully handle missing sources
+val activeSources = sourceActivationStore.getActiveSources()
+if (SourceId.XTREAM !in activeSources) {
+    UnifiedLog.i(TAG) { "Xtream not active, skipping" }
+    return Result.success(WorkerOutputData.success(itemsPersisted = 0, durationMs = 0))
+}
+```
+
+**4. Timeout Handling:**
+```kotlin
+// Set max runtime from InputData
+withTimeout(input.maxRuntimeMs) {
+    catalogSyncService.syncXtream(config).collect { status ->
+        // Process status
+    }
+}
+```
+
+**5. Structured Failure Output:**
+```kotlin
+// Always include failure reason for debugging
+return Result.failure(
+    Data.Builder()
+        .putString(KEY_FAILURE_REASON, FAILURE_TELEGRAM_NOT_AUTHORIZED)
+        .putString(KEY_FAILURE_DETAILS, "User must login via Settings")
+        .putLong(KEY_DURATION_MS, elapsedMs)
+        .build()
+)
+```
 
 ---
 

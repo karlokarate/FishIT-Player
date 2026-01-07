@@ -1,3 +1,25 @@
+---
+**⚠️ DEPRECATED - Legacy v1 Document**
+
+**Status:** For Reference Only  
+**Replacement:** `.github/instructions/infra-transport-telegram.instructions.md`  
+**Last Updated:** 2025-12-11
+
+> **IMPORTANT:** This document describes the v1 TDLib integration pattern.
+> 
+> **For v2 development, use:**
+> - `.github/instructions/infra-transport-telegram.instructions.md` - Current instructions
+> - `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - remoteId-first design
+> - `AGENTS.md` Section 13 - Player Layer Isolation rules
+>
+> **Key v2 Changes:**
+> - ❌ `TdlibClientProvider` pattern REMOVED (v1 anti-pattern)
+> - ✅ Typed interfaces: `TelegramAuthClient`, `TelegramHistoryClient`, `TelegramFileClient`
+> - ✅ remoteId-first: Stable IDs across sessions
+> - ✅ Clean DTOs: `TgMessage`, `TgContent`, `TgFile` (never expose `TdApi.*` types)
+
+---
+
 # tdlibAgent.md – Single Source of Truth für die Telegram-Integration
 
 > **Dieses Dokument ist die _Single Source of Truth_ für die Telegram‑Integration im FishIT‑Player.**  

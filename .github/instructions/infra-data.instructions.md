@@ -90,14 +90,14 @@ suspend fun getBySourceId(sourceId: String): RawMediaMetadata?  // Retrieve
 fun observeAll(): Flow<List<RawMediaMetadata>>         // React to changes
 ```
 
-### 4. No Transport or Pipeline Imports
+### 4. No Transport or Pipeline Imports (With Adapter Exception)
 
 ```kotlin
-// ❌ FORBIDDEN
+// ❌ FORBIDDEN in repository implementations
 import com.fishit.player.pipeline.telegram.*           // Pipeline
-import com.fishit.player. pipeline. xtream.*             // Pipeline
-import com.fishit.player.infra.transport.telegram.*    // Transport (except adapters, see below)
-import com.fishit.player.infra.transport. xtream.*      // Transport
+import com.fishit.player.pipeline.xtream.*             // Pipeline
+import com.fishit.player.infra.transport.telegram.internal.*  // Transport internals
+import com.fishit.player.infra.transport.xtream.internal.*    // Transport internals
 import org.drinkless.td.TdApi.*                         // TDLib
 import okhttp3.*                                        // HTTP client
 
@@ -106,7 +106,37 @@ import com.fishit.player.core.model.*                   // Core types
 import com.fishit.player.core.persistence.*             // ObjectBox entities
 import com.fishit.player.infra.logging.*                // UnifiedLog
 import kotlinx.coroutines.*                             // Coroutines
+
+// ✅ ALLOWED (ONLY in adapters, NOT repository implementations)
+import com.fishit.player.infra.transport.telegram.api.TelegramAuthClient     // API interface
+import com.fishit.player.infra.transport.telegram.api.TelegramHistoryClient  // API interface
+import com.fishit.player.infra.transport.telegram.dto.*                      // Transport DTOs
 ```
+
+**Adapter Exception (CRITICAL CLARIFICATION):**
+
+Repository **adapters** (classes ending in `*Adapter` or `*RepositoryAdapter`) MAY import:
+- ✅ Transport **API interfaces** (`TelegramAuthClient`, `TelegramHistoryClient`, `XtreamApiClient`)
+- ✅ Transport **DTOs** (`TgMessage`, `TgContent`, `XtreamVodStream`)
+- ❌ Transport **implementations** (`DefaultTelegramClient`, `DefaultXtreamApiClient`)
+- ❌ Transport **internals** (any class in `/internal/` package)
+
+**Purpose:** Adapters bridge transport APIs to feature domain interfaces (e.g., `TelegramAuthRepositoryAdapter` implements `TelegramAuthRepository` from `core/feature-api` by delegating to `TelegramAuthClient`).
+
+**Example:**
+```kotlin
+// ✅ CORRECT: Adapter imports API interface, NOT implementation
+@Singleton
+class TelegramAuthRepositoryAdapter @Inject constructor(
+    private val authClient: TelegramAuthClient,  // ✅ API interface from transport/api
+) : TelegramAuthRepository {  // Domain interface from core/feature-api
+    override fun observeAuthState() = authClient.observeAuthState()
+}
+
+// ❌ WRONG: Importing implementation or internals
+import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient  // WRONG!
+```
+
 
 ### 5. No UI or Playback Dependencies
 

@@ -598,6 +598,74 @@ grep -rn "import.*pipeline" infra/transport-telegram/
 - [ ] Bounded error tracking (prevent log spam for failed remoteIds)
 - [ ] Meaningful TAGs (max 23 chars)
 
+---
+
+## 🚨 Error Handling & Edge Cases
+
+### Common Error Scenarios
+
+| Error | Cause | Handling |
+|-------|-------|----------|
+| **TDLib not initialized** | Client lifecycle issue | Return null, log warning, ensure init in Application.onCreate() |
+| **Auth required** | User not logged in | Return null/throw AuthRequiredException, check TelegramAuthClient.isAuthorized() |
+| **Network timeout** | Poor connectivity | Retry with exponential backoff, don't block UI |
+| **File not found** | Stale fileId or deleted message | Try resolveFromMessage() fallback, use remoteId-first pattern |
+| **Rate limit** | Too many requests | Implement request throttling, respect Telegram limits |
+
+### Edge Case Handling Examples
+
+**1. Stale remoteId after session restart:**
+```kotlin
+// Try remoteId first, fallback to message coordinates
+val file = remoteResolver.resolveRemoteId(remoteId)
+    ?: remoteResolver.resolveFromMessage(chatId, messageId)
+```
+
+**2. TDLib database corruption:**
+```kotlin
+// Catch TDLib errors during init, clear database if needed
+try {
+    tdlClient.execute(TdApi.SetDatabaseEncryptionKey())
+} catch (e: TdlException) {
+    if (e.message?.contains("database") == true) {
+        clearTdlibDatabase()
+        reinitialize()
+    }
+}
+```
+
+**3. Auth state transitions:**
+```kotlin
+// Always check current auth state before operations
+if (!authClient.isAuthorized()) {
+    throw AuthRequiredException("User must log in first")
+}
+```
+
+**4. Thumbnail fetch timeout:**
+```kotlin
+// Use timeout and bounded retries in TelegramThumbFetcher
+withTimeout(10_000) {
+    fileClient.startDownload(fileId, priority = 16)
+}
+```
+
+**5. Graceful exception wrapping:**
+```kotlin
+// ✅ CORRECT: Wrap TDLib exceptions
+suspend fun resolveRemoteId(remoteId: String): TgFile? {
+    return try {
+        val result = tdlClient.execute(TdApi.GetRemoteFile(remoteId, null))
+        result?.toTgFile()
+    } catch (e: Exception) {
+        UnifiedLog.w(TAG) { "Failed to resolve remoteId: ${remoteId.take(20)}..." }
+        null  // Graceful degradation
+    }
+}
+```
+
+---
+
 ### Error Handling
 - [ ] Bounded failure tracking in `TelegramThumbFetcherImpl`
 - [ ] Graceful fallback for stale remoteIds

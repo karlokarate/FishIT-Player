@@ -167,6 +167,13 @@ No formatting, no refactors, no cleanup. Legacy is reference only.
 
 The repository uses **path-scoped instruction files** that provide module-specific rules. These are automatically applied by VS Code Copilot when working on files matching the `applyTo:` patterns.
 
+**📋 Complete Index:** See `.github/instructions/_index.instructions.md` for:
+- Full list of all 21 instruction files with versions
+- Dependency graph and cross-references
+- Module naming conventions (`:core:*`, `:infra:*`, etc.)
+- Quick reference lookup table
+- Documented gaps for missing modules
+
 **Instruction File Inventory:**
 
 | File | Applies To | Quality Standard |

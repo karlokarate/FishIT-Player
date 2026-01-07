@@ -8,6 +8,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: pipeline/*
 
+**Version:** 1.1  
+**Last Updated:** 2026-01-07  
+**Status:** Active
+
 > **PLATIN STANDARD** - Catalog Producers with Zero Contamination.
 >
 > **Purpose:** Transform transport-layer DTOs into `RawMediaMetadata` for the Data layer.
@@ -161,6 +165,40 @@ externalIds = ExternalIds(
 // ❌ FORBIDDEN: TMDB API lookups
 val tmdbId = tmdbClient.searchMovie(title)  // WRONG
 ```
+
+**TmdbMediaType Mapping (toTmdbMediaType() extension):**
+
+```kotlin
+/**
+ * Maps pipeline-specific TMDB type to core TmdbMediaType.
+ * Episodes use TV type (series-level TMDB ID + season/episode from metadata).
+ */
+fun TelegramTmdbType.toTmdbMediaType(): TmdbMediaType = when (this) {
+    TelegramTmdbType.MOVIE -> TmdbMediaType.MOVIE
+    TelegramTmdbType.TV_SERIES -> TmdbMediaType.TV
+    TelegramTmdbType.TV_EPISODE -> TmdbMediaType.TV  // ⚠️ Use series-level ID!
+}
+
+// Example: Episode metadata
+return RawMediaMetadata(
+    originalTitle = "Breaking Bad - S01E01",
+    mediaType = MediaType.SERIES_EPISODE,
+    season = 1,
+    episode = 1,
+    externalIds = ExternalIds(
+        tmdb = TmdbRef(
+            type = TmdbMediaType.TV,  // ✅ Series-level type
+            id = 1396,  // Breaking Bad series ID (NOT episode ID)
+        )
+    )
+)
+```
+
+**Critical Rule for Episodes:**
+- Episodes ALWAYS use `TmdbMediaType.TV` with **series-level ID**
+- Season/episode numbers stored in `RawMediaMetadata.season`/`episode` fields
+- NEVER create episode-specific TmdbRef (no such TMDB API endpoint)
+
 
 ### ImageRef Usage (remoteId-First)
 

@@ -88,17 +88,47 @@ abstract class TelegramPlaybackModule {
 // ✅ ALLOWED imports
 import com.fishit.player.core.playermodel.*                  // PlaybackContext
 import com.fishit.player.playback.domain.*                   // Interfaces
-import com.fishit.player.infra.transport. telegram.*          // Transport interfaces
+import com.fishit.player.infra.transport.telegram.*          // Transport interfaces
 import androidx.media3.datasource.*                          // DataSource
-import androidx.media3.exoplayer. source.*                    // MediaSource
+import androidx.media3.exoplayer.source.*                    // MediaSource
 
 // ❌ FORBIDDEN imports
 import com.fishit.player.pipeline.*                          // Pipeline
 import com.fishit.player.infra.data.*                        // Data layer
-import com.fishit.player.player. internal.*                   // Player internals
+import com.fishit.player.player.internal.*                   // Player internals
 import org.drinkless.td.TdApi.*                              // Direct TDLib
-import okhttp3.*                                              // Direct HTTP
 ```
+
+**OkHttp Exception (playback/xtream ONLY):**
+
+`playback/xtream` MAY use OkHttp **ONLY via provider pattern**:
+
+```kotlin
+// ✅ CORRECT: Interface + provider pattern (playback/xtream)
+interface XtreamOkHttpClientProvider {
+    fun createClient(): OkHttpClient
+}
+
+class DebugXtreamOkHttpClientProvider : XtreamOkHttpClientProvider {
+    override fun createClient() = OkHttpClient.Builder()
+        .addInterceptor(ChuckerInterceptor(context))  // Debug only
+        .build()
+}
+
+class ReleaseXtreamOkHttpClientProvider : XtreamOkHttpClientProvider {
+    override fun createClient() = OkHttpClient.Builder().build()  // No debug overhead
+}
+
+// ❌ FORBIDDEN: Direct OkHttp import in other playback modules
+// playback/telegram MUST NOT import okhttp3.*
+// playback/local MUST NOT import okhttp3.*
+```
+
+**Why Provider Pattern?**
+- Compile-time gating: Debug builds include Chucker, release builds don't (zero overhead)
+- Interface in `main/`, implementations in `debug/` and `release/` source sets
+- Aligns with Issue #564 compile-time dependency separation
+
 
 ---
 
