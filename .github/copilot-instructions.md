@@ -318,3 +318,32 @@ When adding new features, consider using feature flags to allow incremental roll
 - Use `PerformanceMonitor` for timing operations
 - Global debug toggle in Settings enables navigation/DPAD/focus logging under `GlobalDebug` tag
 - Telegram operations are logged via `TelegramLogRepository`
+
+---
+
+## 🔧 MCP Server Integration
+
+This repository is configured with MCP (Model Context Protocol) servers that extend Copilot's capabilities:
+
+- **GitHub MCP**: Full GitHub API access (issues, PRs, code search, CI/CD)
+- **Sequential Thinking**: Long-term context for multi-step task chains
+
+Agents can use these capabilities automatically when:
+- Creating PRs from issues
+- Analyzing CI/CD failures  
+- Maintaining context across task chains
+- Searching and understanding the codebase
+
+### Configuration
+
+MCP servers are configured in:
+- `.devcontainer/devcontainer.json` - For Codespaces and devcontainer environments
+- `.vscode/settings.json` - For local VS Code development
+
+### Requirements
+
+- **GITHUB_TOKEN** environment variable (automatically available in Codespaces)
+- **Docker** for GitHub MCP Server (pre-installed in devcontainer)
+- **Node.js/npx** for Sequential Thinking Server (pre-installed in devcontainer)
+
+See `AGENTS.md` Section 16 for complete MCP server documentation.
