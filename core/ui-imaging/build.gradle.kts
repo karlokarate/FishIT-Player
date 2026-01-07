@@ -29,9 +29,6 @@ android {
 dependencies {
     // Core model (ImageRef)
     implementation(project(":core:model"))
-    
-    // Transport telegram (for TelegramThumbFetcher interface)
-    implementation(project(":infra:transport-telegram"))
 
     // Coil 3 - Image loading
     api("io.coil-kt.coil3:coil-compose:3.0.4")

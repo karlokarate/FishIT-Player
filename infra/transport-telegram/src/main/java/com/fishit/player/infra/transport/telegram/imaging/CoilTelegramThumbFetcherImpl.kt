@@ -1,4 +1,4 @@
-package com.fishit.player.core.imaging.fetcher
+package com.fishit.player.infra.transport.telegram.imaging
 
 import coil3.decode.DataSource
 import coil3.decode.ImageSource

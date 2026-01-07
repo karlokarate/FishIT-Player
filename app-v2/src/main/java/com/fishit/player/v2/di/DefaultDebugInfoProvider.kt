@@ -1,4 +1,4 @@
-package com.fishit.player.feature.settings.di
+package com.fishit.player.v2.di
 
 import android.content.Context
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
@@ -14,7 +14,7 @@ import com.fishit.player.infra.data.telegram.TelegramContentRepository
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
-import com.fishit.player.feature.settings.BuildConfig
+import com.fishit.player.v2.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -31,7 +31,7 @@ import javax.inject.Singleton
  * - Content counts from data repositories
  *
  * **Architecture:**
- * - Lives in feature/settings module
+ * - Lives in app-v2 module (has access to all infra modules)
  * - Injected into DebugViewModel via Hilt
  * - Bridges feature/settings to infra layer
  * - Delegates all file IO to CacheManager (contract compliant)

@@ -1,7 +1,6 @@
 package com.fishit.player.v2.di
 
 import com.fishit.player.feature.settings.DebugInfoProvider
-import com.fishit.player.feature.settings.di.DefaultDebugInfoProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

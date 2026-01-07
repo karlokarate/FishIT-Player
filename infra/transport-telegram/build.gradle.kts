@@ -26,6 +26,7 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:ui-imaging"))  // For TelegramThumbFetcher interface
     implementation(project(":infra:logging"))
 
     // Coroutines
@@ -34,6 +35,12 @@ dependencies {
 
     // TDLib integration (g00sha tdlib-coroutines)
     api("dev.g000sha256:tdl-coroutines-android:5.0.0")
+    
+    // Coil 3 - For CoilTelegramThumbFetcherImpl bridge
+    implementation("io.coil-kt.coil3:coil-core:3.0.4")
+    
+    // OkIO - For file sources
+    implementation("com.squareup.okio:okio:3.9.0")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")
