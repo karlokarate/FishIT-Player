@@ -1,4 +1,4 @@
-package com.fishit.player.v2
+package com.fishit.player.v2.bootstrap
 
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState

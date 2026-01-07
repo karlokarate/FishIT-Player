@@ -9,6 +9,9 @@ import coil3.SingletonImageLoader
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.logging.UnifiedLogInitializer
 import com.fishit.player.infra.work.SourceActivationObserver
+import com.fishit.player.v2.bootstrap.CatalogSyncBootstrap
+import com.fishit.player.v2.bootstrap.TelegramActivationObserver
+import com.fishit.player.v2.bootstrap.XtreamSessionBootstrap
 import com.fishit.player.v2.debug.LeakCanaryConfig
 import com.fishit.player.v2.di.AppScopeModule
 import dagger.hilt.android.HiltAndroidApp
