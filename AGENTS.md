@@ -163,6 +163,21 @@ No formatting, no refactors, no cleanup. Legacy is reference only.
 
 2.5. **Path-Scope Instructions (BINDING)**
 
+> **🚨 CRITICAL HARD RULE (APPLIES TO ALL AGENTS):**
+>
+> **BEFORE ANY ACTION** (task, change, review, response), agents MUST:
+>
+> 1. **Read the instruction index:**  
+>    https://github.com/karlokarate/FishIT-Player/blob/architecture%2Fv2-bootstrap/.github%2Finstructions%2F_index.instructions.md
+>
+> 2. **Identify and read ALL path-scoped instructions** for files being touched
+>
+> 3. **Verify compliance in planning phase** - ALL changes must conform to instructions
+>
+> 4. **Violations are architecture bugs** - must be fixed before proceeding
+>
+> This is a **non-negotiable requirement**. Skipping instruction reading is itself a violation.
+
 > **Hard Rule:** All code modifications MUST respect the path-scoped instruction files in `.github/instructions/`.
 
 The repository uses **path-scoped instruction files** that provide module-specific rules. These are automatically applied by VS Code Copilot when working on files matching the `applyTo:` patterns.
@@ -695,6 +710,13 @@ For **every non-trivial change**, agents MUST mentally (and in the PR descriptio
 
 Before making changes, confirm:
 
+0. **Instructions Read (MANDATORY - FIRST STEP)**
+   - [ ] Read instruction index: `.github/instructions/_index.instructions.md`
+   - [ ] Identified ALL path-scoped instruction files for planned changes
+   - [ ] Read and understood ALL applicable instructions
+   - [ ] Verified planned changes comply with path-scoped rules
+   - [ ] No violations detected (or documented exception with justification)
+
 1. **Branch & scope**
    - [ ] Working on `architecture/v2-bootstrap` or a v2-derived feature branch.
    - [ ] No intention to merge to `main`.
@@ -748,7 +770,8 @@ Before making changes, confirm:
    - [ ] Verify no aliased imports (`import ... as ApiXxx`, `import ... as TransportXxx`).
    - [ ] Verify no bridge/conversion functions (`toApi*`, `fromApi*`, `toTransport*`).
    - [ ] Verify single DTO definition location (all in `api/` package).
-8. **Plan**
+
+9. **Plan**
    - [ ] Intended changes are scoped and incremental.
    - [ ] Large refactors or tool upgrades have been discussed with the user (or will be proposed first).
 
@@ -790,6 +813,13 @@ After making changes, confirm:
 7. **User proposal (if applicable)**
    - [ ] If a new tool, dependency upgrade, or alternative approach is involved, a clear proposal has been written and the user’s confirmation has been obtained before the actual change.
 
+
+8. **Instruction Compliance Verification**
+   - [ ] All changes comply with applicable path-scoped instructions
+   - [ ] No forbidden imports introduced (per module instructions)
+   - [ ] Naming conventions followed (per GLOSSARY and module instructions)
+   - [ ] Architecture patterns followed (per module instructions)
+   - [ ] Self-audit completed against instruction checklists
 ---
 
 ## 12. Pipeline Migration Philosophy (Telegram & Xtream)
