@@ -17,7 +17,23 @@
             "path": "/home/codespace/java/current",
             "default": true
           }
-        ]
+        ],
+        "github.copilot.chat.mcp.enabled": true,
+        "mcp": {
+          "servers": {
+            "github": {
+              "command": "docker",
+              "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+              "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_TOKEN}"
+              }
+            },
+            "sequential-thinking": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@0.1.0"]
+            }
+          }
+        }
       }
     }
   },
