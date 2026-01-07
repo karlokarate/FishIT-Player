@@ -11,9 +11,10 @@
 
 ## 📋 Instruction Files Overview
 
+### Core Layer
+
 | File | Applies To | Status | Version | Dependencies |
 |------|------------|--------|---------|--------------|
-| **Core Layer** |
 | `core-model.instructions.md` | `core/model/**` | ✅ Active | 1.0 | - (foundational) |
 | `core-player-model.instructions.md` | `core/player-model/**` | ✅ Active | 1.0 | core-model |
 | `core-persistence.instructions.md` | `core/persistence/**` | ✅ Active | 1.0 | core-model |
@@ -22,24 +23,48 @@
 | `core-ui.instructions.md` | `core/ui-layout/**`, `core/ui-theme/**` | ✅ Active | 1.0 | core-model |
 | `core-catalog-sync.instructions.md` | `core/catalog-sync/**` | ✅ Active | 1.1 | core-model, pipeline, infra-data |
 | `core-domain.instructions.md` | `core/*-domain/**` | ✅ Active | 1.0 | core-model, playback-domain |
-| **Infrastructure Layer** |
+
+### Infrastructure Layer
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
 | `infra-logging.instructions.md` | `infra/logging/**` | ✅ Active | 1.0 | - (foundational) |
 | `infra-work.instructions.md` | `infra/work/**` | ✅ Active | 1.0 | core-model |
 | `infra-transport.instructions.md` | `infra/transport-*/**` | ✅ Active | 1.1 | infra-logging |
 | `infra-transport-telegram.instructions.md` | `infra/transport-telegram/**` | ✅ Active | 1.0 | infra-transport, infra-logging |
 | `infra-transport-xtream.instructions.md` | `infra/transport-xtream/**` | ✅ Active | 1.0 | infra-transport, infra-logging |
 | `infra-data.instructions.md` | `infra/data-*/**` | ✅ Active | 1.1 | core-model, core-persistence, infra-logging |
-| **Pipeline Layer** |
+
+### Pipeline Layer
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
 | `pipeline.instructions.md` | `pipeline/*/**` | ✅ Active | 1.1 | core-model, infra-transport, infra-logging |
-| **Playback Layer** |
+
+### Playback Layer
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
 | `playback.instructions.md` | `playback/**` | ✅ Active | 1.1 | core-player-model, infra-transport, infra-logging |
-| **Player Layer** |
+
+### Player Layer
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
 | `player.instructions.md` | `player/**` | ✅ Active | 1.0 | core-player-model, playback-domain |
-| **Feature Layer** |
+
+### Feature Layer
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
 | `feature-common.instructions.md` | `feature/**` | ✅ Active | 1.0 | core-domain, core-model |
 | `feature-detail.instructions.md` | `feature/detail/**` | ✅ Active | 1.0 | feature-common, core-domain |
 | `feature-settings.instructions.md` | `feature/settings/**` | ✅ Active | 1.0 | feature-common, core-catalog-sync |
-| **Application Layer** |
+
+### Application Layer
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
 | `app-work.instructions.md` | `app-v2/src/main/java/*/work/**` | ✅ Active | 1.1 | core-catalog-sync, infra-work, infra-logging |
 
 **Total Files:** 21  
