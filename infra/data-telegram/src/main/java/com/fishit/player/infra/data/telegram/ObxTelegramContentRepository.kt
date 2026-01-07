@@ -343,4 +343,72 @@ class ObxTelegramContentRepository
             val messageId = parts[2].toLongOrNull() ?: return null
             return chatId to messageId
         }
+
+        // =========================================================================
+        // Canonical Linking Support
+        // =========================================================================
+
+        override suspend fun getUnlinkedForCanonicalLinking(limit: Int): List<RawMediaMetadata> =
+            withContext(Dispatchers.IO) {
+                // Query MediaSourceRef box to get all linked sourceIds
+                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.ObxMediaSourceRef::class.java)
+                val linkedSourceIds =
+                    sourceRefBox
+                        .query(
+                            com.fishit.player.core.persistence.obx.ObxMediaSourceRef_.sourceType.equal(
+                                SourceType.TELEGRAM.name,
+                            ),
+                        ).build()
+                        .find()
+                        .mapNotNull { it.sourceId }
+                        .toSet()
+
+                // Query all Telegram messages
+                val allMessages =
+                    box
+                        .query()
+                        .order(ObxTelegramMessage_.date, QueryBuilder.DESCENDING)
+                        .build()
+                        .find()
+                        .map { it.toRawMediaMetadata() }
+
+                // Filter out items that are already linked
+                val unlinked = allMessages.filter { it.sourceId !in linkedSourceIds }
+
+                UnifiedLog.d(TAG) {
+                    "getUnlinkedForCanonicalLinking: total=${allMessages.size} " +
+                        "linked=${linkedSourceIds.size} unlinked=${unlinked.size} returning=${unlinked.take(limit).size}"
+                }
+
+                unlinked.take(limit)
+            }
+
+        override suspend fun countUnlinkedForCanonicalLinking(): Long =
+            withContext(Dispatchers.IO) {
+                // Query MediaSourceRef box to get all linked sourceIds
+                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.ObxMediaSourceRef::class.java)
+                val linkedSourceIds =
+                    sourceRefBox
+                        .query(
+                            com.fishit.player.core.persistence.obx.ObxMediaSourceRef_.sourceType.equal(
+                                SourceType.TELEGRAM.name,
+                            ),
+                        ).build()
+                        .find()
+                        .mapNotNull { it.sourceId }
+                        .toSet()
+
+                // Count all Telegram messages
+                val totalCount = box.count()
+
+                // Approximate unlinked count
+                val unlinkedCount = (totalCount - linkedSourceIds.size.toLong()).coerceAtLeast(0)
+
+                UnifiedLog.d(TAG) {
+                    "countUnlinkedForCanonicalLinking: total=$totalCount " +
+                        "linked=${linkedSourceIds.size} estimated_unlinked=$unlinkedCount"
+                }
+
+                unlinkedCount
+            }
     }

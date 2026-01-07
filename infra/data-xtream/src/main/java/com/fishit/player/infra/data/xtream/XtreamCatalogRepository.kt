@@ -201,4 +201,38 @@ interface XtreamCatalogRepository {
      * @return Number of series items without plot/cast
      */
     suspend fun countSeriesNeedingInfoBackfill(): Long
+
+    // =========================================================================
+    // Canonical Linking Support (for CanonicalLinkingBacklogWorker)
+    // =========================================================================
+
+    /**
+     * Get items that need canonical linking.
+     *
+     * Queries items that exist in the pipeline-specific storage (ObxVod, ObxSeries, ObxEpisode)
+     * but do NOT have a corresponding MediaSourceRef entry in ObxMediaSourceRef.
+     *
+     * This enables the CanonicalLinkingBacklogWorker to process only unlinked items,
+     * avoiding duplicate work on already-linked items.
+     *
+     * **Implementation Strategy:**
+     * Query all items and filter out those whose sourceId exists in ObxMediaSourceRef.
+     * This is not the most efficient but avoids complex schema changes.
+     *
+     * @param mediaType Filter by media type (MOVIE, SERIES, SERIES_EPISODE)
+     * @param limit Maximum number of items to return
+     * @return List of unlinked items
+     */
+    suspend fun getUnlinkedForCanonicalLinking(
+        mediaType: MediaType? = null,
+        limit: Int = 100,
+    ): List<RawMediaMetadata>
+
+    /**
+     * Count items that need canonical linking.
+     *
+     * @param mediaType Optional filter by media type
+     * @return Number of unlinked items
+     */
+    suspend fun countUnlinkedForCanonicalLinking(mediaType: MediaType? = null): Long
 }

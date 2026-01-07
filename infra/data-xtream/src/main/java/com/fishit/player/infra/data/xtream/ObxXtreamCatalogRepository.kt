@@ -747,4 +747,102 @@ class ObxXtreamCatalogRepository
 
         /** Normalize provider strings: treat blank/whitespace as null to keep backfill logic consistent. */
         private fun String?.cleanOrNull(): String? = this?.trim()?.takeIf { it.isNotBlank() }
+
+        // =========================================================================
+        // Canonical Linking Support
+        // =========================================================================
+
+        override suspend fun getUnlinkedForCanonicalLinking(
+            mediaType: MediaType?,
+            limit: Int,
+        ): List<RawMediaMetadata> =
+            withContext(Dispatchers.IO) {
+                // Query MediaSourceRef box to get all linked sourceIds
+                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.ObxMediaSourceRef::class.java)
+                val linkedSourceIds =
+                    sourceRefBox
+                        .query(
+                            com.fishit.player.core.persistence.obx.ObxMediaSourceRef_.sourceType.equal(
+                                SourceType.XTREAM.name,
+                            ),
+                        ).build()
+                        .find()
+                        .mapNotNull { it.sourceId }
+                        .toSet()
+
+                // Query all items based on mediaType
+                val allItems =
+                    when (mediaType) {
+                        MediaType.MOVIE -> {
+                            vodBox.query().order(ObxVod_.nameLower).build().find().map { it.toRawMediaMetadata() }
+                        }
+
+                        MediaType.SERIES -> {
+                            seriesBox.query().order(ObxSeries_.nameLower).build().find().map { it.toRawMediaMetadata() }
+                        }
+
+                        MediaType.SERIES_EPISODE -> {
+                            episodeBox.query().order(ObxEpisode_.seriesId).build().find().map { it.toRawMediaMetadata() }
+                        }
+
+                        null -> {
+                            // All types
+                            val vod = vodBox.query().order(ObxVod_.nameLower).build().find().map { it.toRawMediaMetadata() }
+                            val series =
+                                seriesBox.query().order(ObxSeries_.nameLower).build().find().map { it.toRawMediaMetadata() }
+                            val episodes =
+                                episodeBox.query().order(ObxEpisode_.seriesId).build().find().map { it.toRawMediaMetadata() }
+                            vod + series + episodes
+                        }
+
+                        else -> emptyList()
+                    }
+
+                // Filter out items that are already linked
+                val unlinked = allItems.filter { it.sourceId !in linkedSourceIds }
+
+                UnifiedLog.d(TAG) {
+                    "getUnlinkedForCanonicalLinking: mediaType=$mediaType total=${allItems.size} " +
+                        "linked=${linkedSourceIds.size} unlinked=${unlinked.size} returning=${unlinked.take(limit).size}"
+                }
+
+                unlinked.take(limit)
+            }
+
+        override suspend fun countUnlinkedForCanonicalLinking(mediaType: MediaType?): Long =
+            withContext(Dispatchers.IO) {
+                // Query MediaSourceRef box to get all linked sourceIds
+                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.ObxMediaSourceRef::class.java)
+                val linkedSourceIds =
+                    sourceRefBox
+                        .query(
+                            com.fishit.player.core.persistence.obx.ObxMediaSourceRef_.sourceType.equal(
+                                SourceType.XTREAM.name,
+                            ),
+                        ).build()
+                        .find()
+                        .mapNotNull { it.sourceId }
+                        .toSet()
+
+                // Count all items
+                val totalCount =
+                    when (mediaType) {
+                        MediaType.MOVIE -> vodBox.count()
+                        MediaType.SERIES -> seriesBox.count()
+                        MediaType.SERIES_EPISODE -> episodeBox.count()
+                        null -> vodBox.count() + seriesBox.count() + episodeBox.count()
+                        else -> 0L
+                    }
+
+                // Approximate unlinked count (exact would require full scan)
+                // This is conservative: actual unlinked count may be less
+                val unlinkedCount = (totalCount - linkedSourceIds.size.toLong()).coerceAtLeast(0)
+
+                UnifiedLog.d(TAG) {
+                    "countUnlinkedForCanonicalLinking: mediaType=$mediaType total=$totalCount " +
+                        "linked=${linkedSourceIds.size} estimated_unlinked=$unlinkedCount"
+                }
+
+                unlinkedCount
+            }
     }
