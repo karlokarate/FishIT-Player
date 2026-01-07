@@ -60,6 +60,54 @@ function githubApi(method, path, data = null) {
 }
 
 /**
+ * Make a GitHub GraphQL API request
+ */
+function graphqlApi(query, variables = {}) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify({ query, variables });
+    
+    const options = {
+      hostname: 'api.github.com',
+      path: '/graphql',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'Task-Chain-Agent',
+        'GraphQL-Features': 'issues_copilot_assignment_api_support',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const result = JSON.parse(body);
+            if (result.errors) {
+              reject(new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`));
+            } else {
+              resolve(result.data);
+            }
+          } catch (e) {
+            resolve({});
+          }
+        } else {
+          reject(new Error(`GitHub GraphQL API failed: ${res.statusCode} ${body}`));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+/**
  * Get issue details
  */
 async function getIssue(issueNumber) {
@@ -223,14 +271,53 @@ async function postComment(issueNumber, body) {
 }
 
 /**
- * Assign Copilot to an issue
+ * Assign Copilot to an issue with custom agent using GraphQL API
  */
-async function assignCopilot(issueNumber) {
+async function assignCopilot(issueNumber, customAgent = 'v2_codespace_agent') {
   const [owner, repo] = GITHUB_REPOSITORY.split('/');
-  console.log(`Assigning Copilot to issue #${issueNumber}`);
-  return await githubApi('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, {
-    assignees: ['copilot']
-  });
+  console.log(`Assigning Copilot to issue #${issueNumber} with custom agent: ${customAgent}`);
+  
+  try {
+    // First, get the issue node ID via REST
+    const issue = await getIssue(issueNumber);
+    const issueNodeId = issue.node_id;
+    
+    // Use GraphQL to assign Copilot with custom agent
+    const graphqlQuery = `
+      mutation AssignCopilotToIssue($issueId: ID!, $agent: String) {
+        assignCopilotToIssue(input: {
+          issueId: $issueId,
+          customAgent: $agent
+        }) {
+          issue {
+            id
+            number
+          }
+        }
+      }
+    `;
+    
+    const result = await graphqlApi(graphqlQuery, {
+      issueId: issueNodeId,
+      agent: customAgent
+    });
+    
+    console.log(`Successfully assigned Copilot with custom agent ${customAgent} to issue #${issueNumber}`);
+    return result;
+  } catch (error) {
+    console.warn(`GraphQL assignment failed: ${error.message}`);
+    console.log(`Falling back to REST API assignment...`);
+    
+    // Fallback to REST API without custom agent
+    try {
+      return await githubApi('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, {
+        assignees: ['copilot']
+      });
+    } catch (restError) {
+      console.error(`REST API fallback also failed: ${restError.message}`);
+      throw restError;
+    }
+  }
 }
 
 /**
@@ -362,10 +449,11 @@ async function main() {
         
       case 'assign-copilot':
         const issueNumAssign = process.argv[3];
+        const customAgent = process.argv[4] || 'v2_codespace_agent';
         if (!issueNumAssign) {
-          throw new Error('Usage: assign-copilot <issue-number>');
+          throw new Error('Usage: assign-copilot <issue-number> [custom-agent]');
         }
-        await assignCopilot(issueNumAssign);
+        await assignCopilot(issueNumAssign, customAgent);
         break;
         
       case 'extract-issue-from-pr':
