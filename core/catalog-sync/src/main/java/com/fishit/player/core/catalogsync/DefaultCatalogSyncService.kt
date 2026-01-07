@@ -1183,6 +1183,8 @@ class DefaultCatalogSyncService
         /**
          * Convert RawMediaMetadata to MediaSourceRef for canonical linking.
          *
+         * Delegates to MediaSourceRefBuilder for SSOT implementation.
+         *
          * This creates the source reference that links a pipeline item to its canonical media identity,
          * enabling:
          * - Cross-pipeline resume (percentage-based positioning)
@@ -1190,34 +1192,5 @@ class DefaultCatalogSyncService
          * - Quality/language comparison across sources
          */
         private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef =
-            MediaSourceRef(
-                sourceType = sourceType,
-                sourceId = sourceId.asPipelineItemId(),
-                sourceLabel = sourceLabel,
-                quality = null, // TODO: Extract from RawMediaMetadata.quality when available
-                languages =
-                null, // TODO: Extract from RawMediaMetadata.languages when available
-                format = null, // TODO: Extract from RawMediaMetadata.format when available
-                sizeBytes = null, // TODO: Add to RawMediaMetadata
-                durationMs = durationMs,
-                // v2 PlaybackHints: MUST be preserved for playback URL construction.
-                // SSOT is RawMediaMetadata.playbackHints (keys in PlaybackHintKeys).
-                playbackHints = playbackHints,
-                priority = calculateSourcePriority(),
-            )
-
-        /**
-         * Calculate source priority for ordering in source selection.
-         *
-         * Higher values = preferred source. Xtream typically gets higher priority because it provides
-         * more structured metadata.
-         */
-        private fun RawMediaMetadata.calculateSourcePriority(): Int =
-            when (sourceType) {
-                com.fishit.player.core.model.SourceType.XTREAM -> 100
-                com.fishit.player.core.model.SourceType.TELEGRAM -> 50
-                com.fishit.player.core.model.SourceType.IO -> 75
-                com.fishit.player.core.model.SourceType.AUDIOBOOK -> 25
-                else -> 0
-            }
+            MediaSourceRefBuilder.fromRawMetadata(this)
     }

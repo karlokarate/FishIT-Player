@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.WorkerParameters
+import com.fishit.player.core.catalogsync.MediaSourceRefBuilder
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.RawMediaMetadata
@@ -242,40 +243,11 @@ class CanonicalLinkingBacklogWorker
 
         /**
          * Convert RawMediaMetadata to MediaSourceRef for canonical linking.
-         * 
-         * TODO: Code duplication - this is duplicated from DefaultCatalogSyncService.
-         * Should be extracted to a shared utility class in core/catalog-sync or core/model
-         * to ensure SSOT for source reference creation logic.
-         * Options:
-         * 1. Extract to MediaSourceRefBuilder in core/catalog-sync
-         * 2. Add extension function in core/model on RawMediaMetadata
-         * 3. Add method to CanonicalMediaRepository that accepts RawMediaMetadata directly
+         *
+         * Delegates to MediaSourceRefBuilder for SSOT implementation.
          */
         private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef =
-            MediaSourceRef(
-                sourceType = sourceType,
-                sourceId = sourceId.asPipelineItemId(),
-                sourceLabel = sourceLabel,
-                quality = null,
-                languages = null,
-                format = null,
-                sizeBytes = null,
-                durationMs = durationMs,
-                playbackHints = playbackHints,
-                priority = calculateSourcePriority(),
-            )
-
-        /**
-         * Calculate source priority for ordering in source selection.
-         */
-        private fun RawMediaMetadata.calculateSourcePriority(): Int =
-            when (sourceType) {
-                SourceType.XTREAM -> 100
-                SourceType.TELEGRAM -> 50
-                SourceType.IO -> 75
-                SourceType.AUDIOBOOK -> 25
-                else -> 0
-            }
+            MediaSourceRefBuilder.fromRawMetadata(this)
     }
 
 /**
