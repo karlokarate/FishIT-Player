@@ -235,13 +235,14 @@ jobs:
         run: |
           node .github/scripts/task-chain-helper.js remove-label ${{ steps.issue.outputs.issue }} ready-for-agent || true
       
-      - name: Assign Copilot to issue
+      - name: Assign Copilot to issue with custom agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           issue="${{ steps.issue.outputs.issue }}"
-          node .github/scripts/task-chain-helper.js assign-copilot $issue
+          echo "Assigning Copilot with v2_codespace_agent (Model: Claude Opus 4) to issue #$issue"
+          node .github/scripts/task-chain-helper.js assign-copilot $issue v2_codespace_agent
 
       - name: Post task chain info comment
         env:
@@ -252,6 +253,9 @@ jobs:
           issue="${{ steps.issue.outputs.issue }}"
           
           comment="🤖 **Task Chain Agent**: Copilot wurde diesem Issue zugewiesen.
+
+          **Agent:** \`v2_codespace_agent\`
+          **Model:** Claude Opus 4 (konfiguriert)
 
           Dieses Issue ist Teil der automatisierten Task-Chain für Parent-Issue #${PARENT_ISSUE}.
 
@@ -277,6 +281,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Started processing issue #${{ steps.issue.outputs.issue }}" >> $GITHUB_STEP_SUMMARY
           echo "- Added labels: \`in-progress\`, \`task-chain\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Custom Agent:** \`v2_codespace_agent\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model:** Claude Opus 4" >> $GITHUB_STEP_SUMMARY
           echo "- Assigned Copilot Coding Agent to the issue" >> $GITHUB_STEP_SUMMARY
   
   # Job to handle approval (task completion)
@@ -352,13 +358,14 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Re-assign Copilot for fixes
+      - name: Re-assign Copilot with custom agent for fixes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           issue="${{ needs.dispatch.outputs.issue_number }}"
-          node .github/scripts/task-chain-helper.js assign-copilot $issue
+          echo "Re-assigning Copilot with v2_codespace_agent for fixes"
+          node .github/scripts/task-chain-helper.js assign-copilot $issue v2_codespace_agent
 
       - name: Request fixes
         env:
