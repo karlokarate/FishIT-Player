@@ -161,6 +161,45 @@ No formatting, no refactors, no cleanup. Legacy is reference only.
 - Agents **may and must** update `settings.gradle.kts` when new v2 modules are introduced.
 - Never re-add the v1 app module or any legacy modules to the build.
 
+2.5. **Path-Scope Instructions (BINDING)**
+
+> **Hard Rule:** All code modifications MUST respect the path-scoped instruction files in `.github/instructions/`.
+
+The repository uses **path-scoped instruction files** that provide module-specific rules. These are automatically applied by VS Code Copilot when working on files matching the `applyTo:` patterns.
+
+**Instruction File Inventory:**
+
+| File | Applies To | Quality Standard |
+|------|------------|------------------|
+| `core-model.instructions.md` | `core/model/**` | PLATIN |
+| `core-persistence.instructions.md` | `core/persistence/**` | PLATIN |
+| `core-normalizer.instructions.md` | `core/metadata-normalizer/**` | PLATIN |
+| `core-player-model.instructions.md` | `core/player-model/**` | PLATIN |
+| `core-domain.instructions.md` | `core/*-domain/**` | PLATIN |
+| `core-imaging.instructions.md` | `core/ui-imaging/**` | PLATIN |
+| `core-ui.instructions.md` | `core/ui-layout/**`, `core/ui-theme/**` | PLATIN |
+| `core-catalog-sync.instructions.md` | `core/catalog-sync/**` | PLATIN |
+| `pipeline.instructions.md` | `pipeline/telegram/**`, `pipeline/xtream/**`, etc. | PLATIN |
+| `infra-transport.instructions.md` | `infra/transport-*/**` (general) | PLATIN |
+| `infra-transport-telegram.instructions.md` | `infra/transport-telegram/**` | PLATIN |
+| `infra-transport-xtream.instructions.md` | `infra/transport-xtream/**` | PLATIN |
+| `infra-data.instructions.md` | `infra/data-*/**` | PLATIN |
+| `infra-logging.instructions.md` | `infra/logging/**` | PLATIN |
+| `infra-work.instructions.md` | `infra/work/**` | PLATIN |
+| `playback.instructions.md` | `playback/domain/**`, `playback/telegram/**`, etc. | PLATIN |
+| `player.instructions.md` | `player/internal/**`, `player/ui/**`, etc. | PLATIN |
+| `feature-common.instructions.md` | `feature/**` (general) | PLATIN |
+| `feature-detail.instructions.md` | `feature/detail/**` | PLATIN |
+| `feature-settings.instructions.md` | `feature/settings/**` | PLATIN |
+| `app-work.instructions.md` | `app-v2/src/**/work/**` | PLATIN |
+
+**Agent Compliance:**
+
+1. **Before modifying ANY file**, agents MUST check if a matching instruction file exists.
+2. Path-scoped instructions **supplement** (not replace) global rules from `AGENTS.md` and `/contracts/`.
+3. When conflicts arise: `AGENTS.md` > `/contracts/` > Path-Scope Instructions.
+4. Agents MAY update instruction files when module contracts change.
+
 ---
 
 ## 3. Legacy & v1 Namespace Rules

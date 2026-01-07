@@ -18,8 +18,13 @@ plugins {
     id("com.google.firebase.firebase-perf") version "1.4.2" apply false
 }
 
-// Apply quality plugins to all subprojects
+// Apply quality plugins to all subprojects (except standalone JVM tools)
 subprojects {
+    // Skip tools modules (standalone JVM, no Android)
+    if (project.path.startsWith(":tools:")) {
+        return@subprojects
+    }
+    
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     

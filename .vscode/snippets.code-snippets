@@ -94,5 +94,168 @@
             "}"
         ],
         "description": "Create a focus requester with auto-focus"
+    },
+    
+    // ===== PLATIN Templates =====
+    
+    "RawMediaMetadata Builder": {
+        "prefix": "rawmeta",
+        "body": [
+            "RawMediaMetadata(",
+            "    originalTitle = ${1:title},",
+            "    sourceType = SourceType.${2|TELEGRAM,XTREAM,IO,AUDIOBOOK|},",
+            "    sourceId = ${3:sourceId},",
+            "    pipelineIdTag = PipelineIdTag.${4|TELEGRAM,XTREAM,IO,AUDIOBOOK|},",
+            "    mediaType = MediaType.${5|MOVIE,SERIES,SERIES_EPISODE,LIVE,UNKNOWN|},",
+            "    // globalId MUST be empty - normalizer sets it!",
+            "    durationMs = ${6:null},",
+            "    addedTimestamp = ${7:System.currentTimeMillis() / 1000},",
+            ")"
+        ],
+        "description": "PLATIN: Create RawMediaMetadata (pipeline output)"
+    },
+    "PlaybackSourceFactory": {
+        "prefix": "playbackfactory",
+        "body": [
+            "@Singleton",
+            "class ${1:Source}PlaybackSourceFactoryImpl @Inject constructor(",
+            "    private val ${2:client}: ${3:Client},",
+            ") : PlaybackSourceFactory {",
+            "",
+            "    override fun supports(sourceType: SourceType): Boolean =",
+            "        sourceType == SourceType.${4|TELEGRAM,XTREAM,IO,AUDIOBOOK|}",
+            "",
+            "    override suspend fun createSource(context: PlaybackContext): PlaybackSource {",
+            "        $0",
+            "    }",
+            "}"
+        ],
+        "description": "PLATIN: PlaybackSourceFactory implementation"
+    },
+    "Hilt ViewModel": {
+        "prefix": "hiltvm",
+        "body": [
+            "@HiltViewModel",
+            "class ${1:FeatureName}ViewModel @Inject constructor(",
+            "    private val ${2:repository}: ${3:Repository},",
+            ") : ViewModel() {",
+            "",
+            "    private val _uiState = MutableStateFlow<UiState<${4:DataType}>>(UiState.Loading)",
+            "    val uiState: StateFlow<UiState<${4:DataType}>> = _uiState.asStateFlow()",
+            "",
+            "    init {",
+            "        load${4:DataType}()",
+            "    }",
+            "",
+            "    private fun load${4:DataType}() {",
+            "        viewModelScope.launch {",
+            "            try {",
+            "                val data = ${2:repository}.get${4:DataType}()",
+            "                _uiState.value = UiState.Success(data)",
+            "            } catch (e: Exception) {",
+            "                _uiState.value = UiState.Error(e.message ?: \"Unknown error\")",
+            "            }",
+            "        }",
+            "    }",
+            "}"
+        ],
+        "description": "PLATIN: HiltViewModel with UiState pattern"
+    },
+    "Repository Interface": {
+        "prefix": "repointerface",
+        "body": [
+            "/**",
+            " * Repository for ${1:Entity} data access.",
+            " *",
+            " * Layer: Data (infra/data-*)",
+            " * Consumes: RawMediaMetadata from pipelines",
+            " * Exposes: Domain models via Flows",
+            " */",
+            "interface ${1:Entity}Repository {",
+            "    fun observe${1:Entity}s(): Flow<List<${1:Entity}>>",
+            "    suspend fun get${1:Entity}ById(id: String): ${1:Entity}?",
+            "    suspend fun save${1:Entity}(item: ${1:Entity})",
+            "    suspend fun delete${1:Entity}(id: String)",
+            "}"
+        ],
+        "description": "PLATIN: Repository interface with proper documentation"
+    },
+    "Unit Test": {
+        "prefix": "unittest",
+        "body": [
+            "class ${1:ClassName}Test {",
+            "",
+            "    private lateinit var sut: ${1:ClassName}",
+            "    private val ${2:dependency} = mockk<${3:DependencyType}>()",
+            "",
+            "    @BeforeEach",
+            "    fun setup() {",
+            "        sut = ${1:ClassName}(${2:dependency})",
+            "    }",
+            "",
+            "    @Test",
+            "    fun `${4:should do something when condition}`() {",
+            "        // Arrange",
+            "        ${5:every { ${2:dependency}.method() } returns value}",
+            "",
+            "        // Act",
+            "        val result = sut.${6:methodUnderTest}()",
+            "",
+            "        // Assert",
+            "        assertThat(result).${7:isEqualTo(expected)}",
+            "        ${8:verify { ${2:dependency}.method() }}",
+            "    }",
+            "}"
+        ],
+        "description": "PLATIN: Unit test with MockK and AAA pattern"
+    },
+    "Coroutine Test": {
+        "prefix": "cotest",
+        "body": [
+            "@Test",
+            "fun `${1:should do something when condition}`() = runTest {",
+            "    // Arrange",
+            "    coEvery { ${2:mock}.${3:method}() } returns ${4:value}",
+            "",
+            "    // Act",
+            "    val result = sut.${5:methodUnderTest}()",
+            "",
+            "    // Assert",
+            "    assertThat(result).${6:isEqualTo(expected)}",
+            "    coVerify { ${2:mock}.${3:method}() }",
+            "}"
+        ],
+        "description": "PLATIN: Coroutine test with coEvery/coVerify"
+    },
+    "UnifiedLog": {
+        "prefix": "log",
+        "body": [
+            "UnifiedLog.${1|d,i,w,e|}(\"${2:TAG}\", \"${3:message}\"${4:, exception})"
+        ],
+        "description": "PLATIN: UnifiedLog statement"
+    },
+    "toRawMediaMetadata Extension": {
+        "prefix": "torawmeta",
+        "body": [
+            "/**",
+            " * Maps internal DTO to RawMediaMetadata for pipeline output.",
+            " * ",
+            " * RULES:",
+            " * - originalTitle: RAW, unmodified - normalizer cleans it",
+            " * - globalId: MUST be empty - normalizer computes it",
+            " * - No normalization logic here!",
+            " */",
+            "fun ${1:InternalDto}.toRawMediaMetadata(): RawMediaMetadata =",
+            "    RawMediaMetadata(",
+            "        originalTitle = this.${2:title},",
+            "        sourceType = SourceType.${3|TELEGRAM,XTREAM,IO,AUDIOBOOK|},",
+            "        sourceId = this.${4:id}.toString(),",
+            "        pipelineIdTag = PipelineIdTag.${3|TELEGRAM,XTREAM,IO,AUDIOBOOK|},",
+            "        mediaType = MediaType.${5|MOVIE,SERIES,SERIES_EPISODE,LIVE,UNKNOWN|},",
+            "        durationMs = this.${6:duration}?.let { it * 1000 },",
+            "        poster = this.${7:posterUrl}?.let { ImageRef.Url(it) },",
+            "    )"
+        ],
+        "description": "PLATIN: Pipeline toRawMediaMetadata() extension"
     }
 }

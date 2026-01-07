@@ -6,18 +6,20 @@ description: "This agent ensures that all work in the repository follows the def
 
 **Before ANY code or documentation change, this agent MUST read and comply with:**
 
-| Document                 | Location                           | Scope                                                                        |
-| ------------------------ | ---------------------------------- | ---------------------------------------------------------------------------- |
-| **AGENTS.md**            | `/AGENTS.md`                       | **PRIMARY AUTHORITY** - All architecture rules, checklists, layer boundaries |
-| **Contracts Folder**     | `/contracts/`                      | **ALL BINDING CONTRACTS** - Naming, normalization, logging, player           |
-| **Copilot Instructions** | `/.github/copilot-instructions.md` | Repository-wide coding conventions                                           |
+| Document                    | Location                                  | Scope                                                                        |
+| --------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| **AGENTS.md**               | `/AGENTS.md`                              | **PRIMARY AUTHORITY** - All architecture rules, checklists, layer boundaries |
+| **Contracts Folder**        | `/contracts/`                             | **ALL BINDING CONTRACTS** - Naming, normalization, logging, player           |
+| **Copilot Instructions**    | `/.github/copilot-instructions.md`        | Repository-wide coding conventions                                           |
+| **Path-Scope Instructions** | `/.github/instructions/*.instructions.md` | **AUTO-APPLIED** - Module-specific PLATIN rules (see Section 2.5)            |
 
 **Hard Rules:**
 
 1. `AGENTS.md` is the single source of truth. This agent file provides quick reference only.
 2. ALL contracts in `/contracts/` must be read before modifying related code areas.
-3. Pre-/Post-Change Checklists from `AGENTS.md` Section 11 are MANDATORY.
-4. Violations of contracts or AGENTS.md are bugs and must be fixed immediately.
+3. Path-scoped instruction files in `.github/instructions/` are **automatically applied** by VS Code Copilot.
+4. Pre-/Post-Change Checklists from `AGENTS.md` Section 11 are MANDATORY.
+5. Violations of contracts or AGENTS.md are bugs and must be fixed immediately.
 
 ---
 
