@@ -1,0 +1,3568 @@
+{
+  "entities": [
+    {
+      "className": "ObxTelegramMessageRefactor",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "chatId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "messageId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "fileId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "fileUniqueId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "caption",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "captionLower",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "supportsStreaming",
+          "type": "Boolean?",
+          "annotations": []
+        },
+        {
+          "name": "date",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "fileName",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "language",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "isKidsContent",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "isFavorite",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "isHidden",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "genres",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "fsk",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "description",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "isSeries",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "seriesName",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "seriesNameNormalized",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "seasonNumber",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episodeNumber",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episodeTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "thumbFileId",
+          "type": "Int?",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntitiesRefactor.kt"
+    },
+    {
+      "className": "ObxCategory",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "categoryId",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "categoryName",
+          "type": "String?",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxLive",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "streamId",
+          "type": "Int",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "nameLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sortTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "logo",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "epgChannelId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tvArchive",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "categoryId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "providerKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genreKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxVod",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "vodId",
+          "type": "Int",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "nameLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sortTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "poster",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imagesJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "yearKey",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "genre",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "director",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "cast",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "country",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "releaseDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "trailer",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "containerExt",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "categoryId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "providerKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genreKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "importedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxSeries",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "nameLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sortTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "imagesJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "yearKey",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "genre",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "director",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "cast",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "trailer",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "country",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "releaseDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "categoryId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "providerKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genreKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "importedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxEpisode",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "season",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "episodeNum",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "episodeId",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "airDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "playExt",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imageUrl",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tgChatId",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tgMessageId",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tgFileId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "mimeType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "width",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "height",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "sizeBytes",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "supportsStreaming",
+          "type": "Boolean?",
+          "annotations": []
+        },
+        {
+          "name": "language",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxEpgNowNext",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "streamId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "channelId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "nowTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "nowStartMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "nowEndMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "nextTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "nextStartMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "nextEndMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxProfile",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "avatarPath",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "createdAt",
+          "type": "Long",
+          "annotations": []
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxProfilePermissions",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "profileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "canOpenSettings",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canChangeSources",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canUseExternalPlayer",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canEditFavorites",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canSearch",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canSeeResume",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canEditWhitelist",
+          "type": "Boolean",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxKidContentAllow",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxKidCategoryAllow",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "categoryId",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxKidContentBlock",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxScreenTimeEntry",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "dayYyyymmdd",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "usedMinutes",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "limitMinutes",
+          "type": "Int",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxResumeMark",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "mediaEncodedId",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "season",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "episodeNum",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "positionSecs",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxTelegramMessage",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "chatId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "messageId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "fileId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "fileUniqueId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "remoteId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "supportsStreaming",
+          "type": "Boolean?",
+          "annotations": []
+        },
+        {
+          "name": "caption",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "captionLower",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "date",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "localPath",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "thumbFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "thumbLocalPath",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "fileName",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "mimeType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "sizeBytes",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "width",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "height",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "language",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "genres",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "fsk",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "description",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "posterLocalPath",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "isSeries",
+          "type": "Boolean",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seriesName",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seriesNameNormalized",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "seasonNumber",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episodeNumber",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episodeTitle",
+          "type": "String?",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexProvider",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexYear",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexGenre",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexLang",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexQuality",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxTelegramItem",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "chatId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "anchorMessageId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "itemType",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "videoRemoteId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "videoUniqueId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "videoFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "videoSizeBytes",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "videoMimeType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "videoDurationSeconds",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "videoWidth",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "videoHeight",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "documentRemoteId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "documentUniqueId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "documentFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "documentSizeBytes",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "documentMimeType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "documentFileName",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterRemoteId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterUniqueId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "posterWidth",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "posterHeight",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "posterSizeBytes",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "backdropRemoteId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "backdropUniqueId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "backdropFileId",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "backdropWidth",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "backdropHeight",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "backdropSizeBytes",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "originalTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "lengthMinutes",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "fsk",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "productionCountry",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "collection",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "director",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbRating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbUrl",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "isAdult",
+          "type": "Boolean",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genresJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "textMessageId",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "photoMessageId",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "createdAtIso",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "createdAtUtc",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxChatScanState",
+      "packageName": "com.chris.m3usuite.data.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "chatId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "lastScannedMessageId",
+          "type": "Long",
+          "annotations": []
+        },
+        {
+          "name": "hasMoreHistory",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "lastError",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "legacy/v1-app/app",
+      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxCategory",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "categoryId",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "categoryName",
+          "type": "String?",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxLive",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "streamId",
+          "type": "Int",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "nameLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sortTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "logo",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "epgChannelId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tvArchive",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "categoryId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "providerKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genreKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxVod",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "vodId",
+          "type": "Int",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "nameLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sortTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "poster",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imagesJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "yearKey",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "genre",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "director",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "cast",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "country",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "releaseDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "trailer",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "containerExt",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "categoryId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "providerKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genreKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "importedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxSeries",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "nameLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sortTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "imagesJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "yearKey",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "genre",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "director",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "cast",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "trailer",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "country",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "releaseDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "categoryId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "providerKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "genreKey",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "importedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxEpisode",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "season",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "episodeNum",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "episodeId",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "airDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "playExt",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "imageUrl",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tgChatId",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tgMessageId",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tgFileId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "mimeType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "width",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "height",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "sizeBytes",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "supportsStreaming",
+          "type": "Boolean?",
+          "annotations": []
+        },
+        {
+          "name": "language",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxEpgNowNext",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "streamId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "channelId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "nowTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "nowStartMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "nowEndMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "nextTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "nextStartMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "nextEndMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxProfile",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "avatarPath",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "createdAt",
+          "type": "Long",
+          "annotations": []
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxProfilePermissions",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "profileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "canOpenSettings",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canChangeSources",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canUseExternalPlayer",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canEditFavorites",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canSearch",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canSeeResume",
+          "type": "Boolean",
+          "annotations": []
+        },
+        {
+          "name": "canEditWhitelist",
+          "type": "Boolean",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxKidContentAllow",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxKidCategoryAllow",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "categoryId",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxKidContentBlock",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "contentId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxScreenTimeEntry",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kidProfileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "dayYyyymmdd",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "usedMinutes",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "limitMinutes",
+          "type": "Int",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxTelegramMessage",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "chatId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "messageId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "remoteId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "thumbRemoteId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterRemoteId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "supportsStreaming",
+          "type": "Boolean?",
+          "annotations": []
+        },
+        {
+          "name": "caption",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "captionLower",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "date",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "fileName",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "mimeType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "sizeBytes",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "width",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "height",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "language",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "genres",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "fsk",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "description",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "isSeries",
+          "type": "Boolean",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seriesName",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seriesNameNormalized",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "seasonNumber",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episodeNumber",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episodeTitle",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "imdbId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexProvider",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexYear",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexGenre",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexLang",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxIndexQuality",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "count",
+          "type": "Long",
+          "annotations": []
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxSeasonIndex",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seasonNumber",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "episodeCount",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "name",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "coverUrl",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "airDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "lastUpdatedMs",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxEpisodeIndex",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "seriesId",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "seasonNumber",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "episodeNumber",
+          "type": "Int",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sourceKey",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "episodeId",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "title",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "thumbUrl",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "durationSecs",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "plotBrief",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "airDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "playbackHintsJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "lastUpdatedMs",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "playbackHintsUpdatedMs",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEntities.kt"
+    },
+    {
+      "className": "ObxCanonicalMedia",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "canonicalKey",
+          "type": "String",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "kind",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "mediaType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "canonicalTitle",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "canonicalTitleLower",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "year",
+          "type": "Int?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "season",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "episode",
+          "type": "Int?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "imdbId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tvdbId",
+          "type": "String?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "poster",
+          "type": "ImageRef?",
+          "annotations": [
+            "@Convert"
+          ]
+        },
+        {
+          "name": "backdrop",
+          "type": "ImageRef?",
+          "annotations": [
+            "@Convert"
+          ]
+        },
+        {
+          "name": "thumbnail",
+          "type": "ImageRef?",
+          "annotations": [
+            "@Convert"
+          ]
+        },
+        {
+          "name": "plot",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "rating",
+          "type": "Double?",
+          "annotations": []
+        },
+        {
+          "name": "durationMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "genres",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "director",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "cast",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "trailer",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "releaseDate",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbResolveState",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tmdbResolveAttempts",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "lastTmdbAttemptAt",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbNextEligibleAt",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "tmdbLastFailureReason",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbLastResolvedAt",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "tmdbResolvedBy",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "createdAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sources",
+          "type": "ToMany<ObxMediaSourceRef>",
+          "annotations": [
+            "@Backlink"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "type": "ToMany",
+          "targetEntity": "ObxMediaSourceRef",
+          "fieldName": "sources"
+        }
+      ],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxCanonicalEntities.kt"
+    },
+    {
+      "className": "ObxMediaSourceRef",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "sourceType",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sourceId",
+          "type": "String",
+          "annotations": [
+            "@Unique",
+            "@Index"
+          ]
+        },
+        {
+          "name": "sourceLabel",
+          "type": "String",
+          "annotations": []
+        },
+        {
+          "name": "qualityJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "languagesJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "formatJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "sizeBytes",
+          "type": "Long?",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "durationMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "priority",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "isAvailable",
+          "type": "Boolean",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "lastVerifiedAt",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "playbackUri",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "posterUrl",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "playbackHintsJson",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "addedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "sources",
+          "type": "ToMany<ObxMediaSourceRef>",
+          "annotations": [
+            "@Backlink"
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "type": "ToMany",
+          "targetEntity": "ObxMediaSourceRef",
+          "fieldName": "sources"
+        }
+      ],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxCanonicalEntities.kt"
+    },
+    {
+      "className": "ObxCanonicalResumeMark",
+      "packageName": "com.fishit.player.core.persistence.obx",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long",
+          "annotations": [
+            "@Id"
+          ]
+        },
+        {
+          "name": "canonicalKey",
+          "type": "String",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "profileId",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "positionPercent",
+          "type": "Float",
+          "annotations": []
+        },
+        {
+          "name": "positionMs",
+          "type": "Long",
+          "annotations": []
+        },
+        {
+          "name": "durationMs",
+          "type": "Long",
+          "annotations": []
+        },
+        {
+          "name": "lastSourceType",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "lastSourceId",
+          "type": "String?",
+          "annotations": []
+        },
+        {
+          "name": "lastSourceDurationMs",
+          "type": "Long?",
+          "annotations": []
+        },
+        {
+          "name": "watchedCount",
+          "type": "Int",
+          "annotations": []
+        },
+        {
+          "name": "isCompleted",
+          "type": "Boolean",
+          "annotations": [
+            "@Index"
+          ]
+        },
+        {
+          "name": "updatedAt",
+          "type": "Long",
+          "annotations": [
+            "@Index"
+          ]
+        }
+      ],
+      "relations": [],
+      "modulePath": "core/persistence",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxCanonicalEntities.kt"
+    }
+  ]
+}
