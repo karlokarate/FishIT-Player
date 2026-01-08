@@ -118,7 +118,7 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 - `@Id` - 23 occurrences (all entities have auto-increment Long IDs)
 - `@Index` - 150+ occurrences (extensive indexing for performance)
 - `@Unique` - 15+ occurrences (uniqueness constraints on business keys)
-- `@Backlink` - 2 occurrences (v2 canonical relations only)
+- `@Backlink` - 1 occurrence (ObxCanonicalMedia.sources)
 - `@Convert` - 3 occurrences (ImageRef custom converter)
 
 #### Store Initialization Pattern

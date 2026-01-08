@@ -1707,13 +1707,18 @@
           "annotations": [
             "@Backlink"
           ]
+        },
+        {
+          "name": "canonicalMedia",
+          "type": "ToOne<ObxCanonicalMedia>",
+          "annotations": []
         }
       ],
       "relations": [
         {
-          "type": "ToMany",
-          "targetEntity": "ObxMediaSourceRef",
-          "fieldName": "sources"
+          "type": "ToOne",
+          "targetEntity": "ObxCanonicalMedia",
+          "fieldName": "canonicalMedia"
         }
       ],
       "modulePath": "core/persistence",

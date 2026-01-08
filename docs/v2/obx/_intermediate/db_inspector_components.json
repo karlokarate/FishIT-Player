@@ -20,21 +20,41 @@
       "componentType": "Repository",
       "description": "Default implementation of ObxDatabaseInspector backed by a live BoxStore. Uses reflection to read and update entity fields. Provides row counting, pagination, and field patching.",
       "navigationEntry": "N/A (injected dependency)",
-      "annotations": ["@Singleton", "@Inject"]
+      "annotations": [
+        "@Singleton",
+        "@Inject"
+      ]
     },
     {
       "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/inspector/ObxInspectorEntityRegistry.kt",
       "module": "core/persistence",
       "componentType": "Registry",
-      "description": "Explicit registry of all ObjectBox entity classes. Maps entity IDs to Class<T> for strongly-typed Box<T> access. Contains 23 entity specs covering all v2 entities including canonical media, sources, and legacy entities.",
+      "description": "Explicit registry of all ObjectBox entity classes. Maps entity IDs to Class<T> for strongly-typed Box<T> access. Contains 21 entity specs (ObxSeasonIndex and ObxEpisodeIndex not yet registered) covering all v2 entities including canonical media, sources, and legacy entities.",
       "navigationEntry": "N/A (internal registry)",
       "registeredEntities": [
-        "ObxCategory", "ObxLive", "ObxVod", "ObxSeries", "ObxEpisode", 
-        "ObxEpgNowNext", "ObxProfile", "ObxProfilePermissions", 
-        "ObxKidContentAllow", "ObxKidCategoryAllow", "ObxKidContentBlock", 
-        "ObxScreenTimeEntry", "ObxTelegramMessage",
-        "ObxIndexProvider", "ObxIndexYear", "ObxIndexGenre", "ObxIndexLang", "ObxIndexQuality",
-        "ObxCanonicalMedia", "ObxMediaSourceRef", "ObxCanonicalResumeMark"
+        "ObxCategory",
+        "ObxLive",
+        "ObxVod",
+        "ObxSeries",
+        "ObxEpisode",
+        "ObxEpgNowNext",
+        "ObxProfile",
+        "ObxProfilePermissions",
+        "ObxKidContentAllow",
+        "ObxKidCategoryAllow",
+        "ObxKidContentBlock",
+        "ObxScreenTimeEntry",
+        "ObxTelegramMessage",
+        "ObxIndexProvider",
+        "ObxIndexYear",
+        "ObxIndexGenre",
+        "ObxIndexLang",
+        "ObxIndexQuality",
+        "ObxSeasonIndex",
+        "ObxEpisodeIndex",
+        "ObxCanonicalMedia",
+        "ObxMediaSourceRef",
+        "ObxCanonicalResumeMark"
       ]
     },
     {
@@ -67,10 +87,17 @@
           "name": "DbInspectorDetailScreen",
           "description": "Shows all fields of a single entity row. Allows editing field values and deleting the row.",
           "viewModel": "DbInspectorDetailViewModel",
-          "features": ["field editing", "delete row", "save changes"]
+          "features": [
+            "field editing",
+            "delete row",
+            "save changes"
+          ]
         }
       ],
-      "annotations": ["@HiltViewModel", "@Inject"]
+      "annotations": [
+        "@HiltViewModel",
+        "@Inject"
+      ]
     },
     {
       "filePath": "feature/settings/src/main/java/com/fishit/player/feature/settings/dbinspector/DbInspectorNavArgs.kt",
