@@ -1179,10 +1179,15 @@ Enables long-term context and multi-step reasoning:
 #### Cloud Agents (GitHub Actions / Copilot Workspace)
 MCP servers are automatically configured for cloud agents via the `copilot-setup-steps.yml` workflow:
 
-1. **Secret Required**: `COPILOT_MCP_TOKEN` - GitHub token with appropriate permissions
-   - Must be added as a repository secret
-   - Used for GitHub MCP Server authentication
-   - Enables long-term context maintenance across workflow runs
+1. **Secrets Required**:
+   - `COPILOT_MCP_TOKEN` - GitHub Personal Access Token for MCP Server authentication
+     - Must be added as a repository secret
+     - Used exclusively for GitHub MCP Server authentication
+     - Enables long-term context maintenance across workflow runs
+   - `GITHUB_TOKEN` - Standard GitHub Actions token (automatically available)
+     - Used for standard repository operations
+     - Provides fallback authentication for code access
+     - Available to all agents in the workflow environment
 
 2. **Automatic Caching**: All MCP dependencies are cached for performance:
    - Docker images (GitHub MCP Server)
@@ -1193,9 +1198,10 @@ MCP servers are automatically configured for cloud agents via the `copilot-setup
    - Pulls and caches the GitHub MCP Server Docker image
    - Pre-installs the Sequential Thinking MCP package
    - Creates MCP configuration at `~/.config/copilot/mcp.json`
+   - Passes tokens correctly to Docker containers via environment variables
    - Verifies all MCP server prerequisites
 
-**Usage**: Cloud agents can use MCP capabilities immediately after the setup job completes, with full support for long-term context maintenance across multiple PRs in task chains.
+**Usage**: Cloud agents can use MCP capabilities immediately after the setup job completes, with full support for long-term context maintenance across multiple PRs in task chains. Both tokens are available in the workflow environment for different authentication scenarios.
 
 ### 16.4. Usage in Task Chains
 
