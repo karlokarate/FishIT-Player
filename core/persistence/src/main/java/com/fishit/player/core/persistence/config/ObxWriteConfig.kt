@@ -201,7 +201,83 @@ object ObxWriteConfig {
         return if (deviceClass.isLowResource) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_PAGE_SIZE
     }
 
+    /**
+     * Get the appropriate page size for backfill operations.
+     *
+     * @param deviceClassProvider Provider for device classification
+     * @param context Android context for device detection
+     * @param contentType Type hint ("live", "vod", "series") for phase-specific sizing
+     * @return Page size optimized for device and content type
+     */
+    fun getBackfillPageSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+        contentType: String = "vod",
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) {
+            // FireTV: Conservative page sizes
+            when (contentType.lowercase()) {
+                "live" -> 500
+                "vod", "movies" -> 400
+                "series" -> 300
+                else -> 400
+            }
+        } else {
+            // Phone/Tablet: Optimized page sizes
+            when (contentType.lowercase()) {
+                "live" -> 5000
+                "vod", "movies" -> 4000
+                "series" -> 4000
+                else -> 4000
+            }
+        }
+    }
 
+    /**
+     * Get the appropriate batch size for M3U export/streaming operations.
+     *
+     * @param deviceClassProvider Provider for device classification
+     * @param context Android context for device detection
+     * @return Batch size for streaming operations
+     */
+    fun getExportBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) {
+            // FireTV: Conservative for memory pressure
+            500
+        } else {
+            // Phone/Tablet: Optimized for streaming throughput
+            5000
+        }
+    }
+
+    /**
+     * Get the appropriate batch size for TMDB enrichment operations.
+     *
+     * TMDB enrichment is network-bound and requires API rate limiting.
+     * FireTV gets smaller batches to prevent memory issues during network waits.
+     *
+     * @param deviceClassProvider Provider for device classification
+     * @param context Android context for device detection
+     * @return Batch size for TMDB enrichment
+     */
+    fun getTmdbEnrichmentBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) {
+            // FireTV: Small batches (15)
+            15
+        } else {
+            // Phone/Tablet: Larger batches (75)
+            75
+        }
+    }
 
     // =========================================================================
     // Box Extension Functions
@@ -210,21 +286,35 @@ object ObxWriteConfig {
     /**
      * Put items in chunks with device-aware chunk size.
      *
-     * Automatically selects chunk size based on device class:
-     * - TV_LOW_RAM: 500 items per chunk
-     * - Phone/Tablet/TV: 2000 items per chunk
+     * Automatically selects chunk size based on device class and optional phase hint:
+     * - TV_LOW_RAM: 35-500 items per chunk (capped for safety)
+     * - Phone/Tablet/TV: 200-2000 items per chunk (optimized for throughput)
+     *
+     * Phase hints:
+     * - "live": Uses SYNC_LIVE_BATCH_SIZE (600 on normal devices, 35 on FireTV)
+     * - "movies" or "vod": Uses SYNC_MOVIES_BATCH_SIZE (400 on normal devices, 35 on FireTV)
+     * - "series": Uses SYNC_SERIES_BATCH_SIZE (200 on normal devices, 35 on FireTV)
+     * - null: Uses default backfill chunk size (2000 on normal devices, 500 on FireTV)
      *
      * @param items List of items to persist
      * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
+     * @param phaseHint Optional phase hint for sync-specific batch sizing
+     * @return Number of items persisted
      */
     fun <T> Box<T>.putChunked(
         items: List<T>,
         deviceClassProvider: DeviceClassProvider,
         context: Context,
-    ) {
-        val chunkSize = getBackfillChunkSize(deviceClassProvider, context)
-        putChunked(items, chunkSize)
+        phaseHint: String? = null,
+    ): Int {
+        val chunkSize = when (phaseHint?.lowercase()) {
+            "live" -> getSyncLiveBatchSize(deviceClassProvider, context)
+            "movies", "vod" -> getSyncMoviesBatchSize(deviceClassProvider, context)
+            "series" -> getSyncSeriesBatchSize(deviceClassProvider, context)
+            else -> getBackfillChunkSize(deviceClassProvider, context)
+        }
+        return putChunked(items, chunkSize)
     }
 
     /**
@@ -237,11 +327,12 @@ object ObxWriteConfig {
      *
      * @param items List of items to persist
      * @param chunkSize Number of items per chunk (default: 2000)
+     * @return Number of items persisted
      */
     fun <T> Box<T>.putChunked(
         items: List<T>,
         chunkSize: Int = NORMAL_BACKFILL_CHUNK_SIZE,
-    ) {
+    ): Int {
         var i = 0
         val n = items.size
         while (i < n) {
@@ -249,5 +340,6 @@ object ObxWriteConfig {
             put(items.subList(i, to))
             i = to
         }
+        return n
     }
 }
