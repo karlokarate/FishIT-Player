@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":core:feature-api")) // For TelegramAuthRepository (userId validation)
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":core:persistence")) // For CanonicalMediaRepository
+    implementation(project(":core:device-api")) // For DeviceClassProvider (parallel persist)
     implementation(project(":infra:logging"))
 
     // Data layer repositories (for persisting catalog data)
