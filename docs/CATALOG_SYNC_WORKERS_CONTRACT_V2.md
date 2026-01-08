@@ -164,9 +164,12 @@ Workers MUST defer if:
 
 ### W-17 FireTV Safety (MANDATORY)
 On FIRETV_LOW_RAM:
-- small batch sizes
+- small batch sizes (35 items - see `ObxWriteConfig.FIRETV_BATCH_CAP`)
 - frequent persistence
 - no payload logging
+
+**Implementation:** All batch sizes are centralized in `core/persistence/config/ObxWriteConfig.kt`,
+which automatically adjusts based on device class detection via `XtreamTransportConfig.detectDeviceClass()`.
 
 ---
 
