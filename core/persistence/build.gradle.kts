@@ -51,6 +51,7 @@ tasks.matching { it.name == "compileReleaseJavaWithJavac" }.configureEach {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":infra:logging"))
+    implementation(project(":infra:transport-xtream")) // For XtreamTransportConfig device detection
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")

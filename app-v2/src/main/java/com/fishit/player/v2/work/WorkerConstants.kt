@@ -167,10 +167,44 @@ object WorkerConstants {
     /** Default max runtime for workers (15 min) */
     const val DEFAULT_MAX_RUNTIME_MS = 15L * 60 * 1000
 
-    /** FireTV low RAM batch size (smaller for memory safety, tuned Dec 2025) */
+    /**
+     * FireTV low RAM batch size (smaller for memory safety, tuned Dec 2025).
+     *
+     * @deprecated Use [com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP] instead.
+     * This constant will be removed in a future release. For device-aware batch sizing,
+     * use [com.fishit.player.core.persistence.config.ObxWriteConfig.getBatchSize].
+     *
+     * Migration: Replace direct usage with ObxWriteConfig.FIRETV_BATCH_CAP or
+     * use device-aware accessors like ObxWriteConfig.getBatchSize(context).
+     */
+    @Deprecated(
+        message = "Use ObxWriteConfig.FIRETV_BATCH_CAP or ObxWriteConfig.getBatchSize(context)",
+        replaceWith = ReplaceWith(
+            "ObxWriteConfig.FIRETV_BATCH_CAP",
+            "com.fishit.player.core.persistence.config.ObxWriteConfig"
+        ),
+        level = DeprecationLevel.WARNING
+    )
     const val FIRETV_BATCH_SIZE = 35
 
-    /** Normal device batch size (optimized Dec 2025) */
+    /**
+     * Normal device batch size (optimized Dec 2025).
+     *
+     * @deprecated Use [com.fishit.player.core.persistence.config.ObxWriteConfig.NORMAL_BATCH_SIZE] instead.
+     * This constant will be removed in a future release. For device-aware batch sizing,
+     * use [com.fishit.player.core.persistence.config.ObxWriteConfig.getBatchSize].
+     *
+     * Migration: Replace direct usage with ObxWriteConfig.NORMAL_BATCH_SIZE or
+     * use device-aware accessors like ObxWriteConfig.getBatchSize(context).
+     */
+    @Deprecated(
+        message = "Use ObxWriteConfig.NORMAL_BATCH_SIZE or ObxWriteConfig.getBatchSize(context)",
+        replaceWith = ReplaceWith(
+            "ObxWriteConfig.NORMAL_BATCH_SIZE",
+            "com.fishit.player.core.persistence.config.ObxWriteConfig"
+        ),
+        level = DeprecationLevel.WARNING
+    )
     const val NORMAL_BATCH_SIZE = 100
 
     /** Exponential backoff initial delay (W-18) */
