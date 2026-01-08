@@ -146,10 +146,7 @@ jobs:
             "mcpServers": {
               "github": {
                 "command": "docker",
-                "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN=$MCP_TOKEN", "ghcr.io/github/github-mcp-server"],
-                "env": {
-                  "GITHUB_PERSONAL_ACCESS_TOKEN": "$MCP_TOKEN"
-                }
+                "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN=$MCP_TOKEN", "ghcr.io/github/github-mcp-server"]
               },
               "sequential-thinking": {
                 "command": "npx",
