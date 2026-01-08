@@ -1,0 +1,412 @@
+{
+  "entities": [
+    {
+      "name": "ObxCanonicalMedia",
+      "readLocations": [
+        {
+          "filePath": "core/persistence/src/test/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest.kt",
+          "className": "ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest",
+          "method": "various"
+        },
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "className": "ObxCanonicalMediaRepository",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+          "className": "HomeContentRepositoryAdapter",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "core/persistence/src/test/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest.kt",
+          "className": "ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "className": "ObxCanonicalMediaRepository",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+          "className": "HomeContentRepositoryAdapter",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 27,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "findFirst:canonicalKey",
+      "patternCount": 10
+    },
+    {
+      "name": "ObxCanonicalResumeMark",
+      "readLocations": [
+        {
+          "filePath": "core/persistence/src/test/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest.kt",
+          "className": "ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest",
+          "method": "various"
+        },
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "className": "ObxCanonicalMediaRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "core/persistence/src/test/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest.kt",
+          "className": "ObxCanonicalMediaRepositoryTmdbKeyCompatibilityTest",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "className": "ObxCanonicalMediaRepository",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+          "className": "HomeContentRepositoryAdapter",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 6,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "findFirst:profileId",
+      "patternCount": 2
+    },
+    {
+      "name": "ObxMediaSourceRef",
+      "readLocations": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "className": "ObxCanonicalMediaRepository",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+          "className": "ObxTelegramContentRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "className": "ObxCanonicalMediaRepository",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+          "className": "ObxTelegramContentRepository",
+          "method": "various",
+          "operation": "put"
+        },
+        {
+          "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+          "className": "HomeContentRepositoryAdapter",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 7,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "count:sourceType",
+      "patternCount": 3
+    },
+    {
+      "name": "ObxProfile",
+      "readLocations": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxProfileRepository.kt",
+          "className": "ObxProfileRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxProfileRepository.kt",
+          "className": "ObxProfileRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 2,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "findFirst:type",
+      "patternCount": 1
+    },
+    {
+      "name": "ObxScreenTimeEntry",
+      "readLocations": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+          "className": "ObxScreenTimeRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+          "className": "ObxScreenTimeRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 4,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "findFirst:dayYyyymmdd",
+      "patternCount": 3
+    },
+    {
+      "name": "ObxSeasonIndex",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+          "className": "ObxXtreamSeriesIndexRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+          "className": "ObxXtreamSeriesIndexRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 6,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:seriesId,seriesId",
+      "patternCount": 2
+    },
+    {
+      "name": "ObxEpisodeIndex",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+          "className": "ObxXtreamSeriesIndexRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+          "className": "ObxXtreamSeriesIndexRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 11,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "findFirst:sourceKey",
+      "patternCount": 5
+    },
+    {
+      "name": "ObxVod",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+          "className": "LibraryContentRepositoryAdapter",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 20,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:",
+      "patternCount": 9
+    },
+    {
+      "name": "ObxSeries",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+          "className": "LibraryContentRepositoryAdapter",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 10,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:categoryId",
+      "patternCount": 2
+    },
+    {
+      "name": "ObxEpisode",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+          "className": "ObxXtreamCatalogRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 5,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:season,seriesId",
+      "patternCount": 2
+    },
+    {
+      "name": "ObxLive",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+          "className": "LiveContentRepositoryAdapter",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+          "className": "ObxXtreamLiveRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+          "className": "LiveContentRepositoryAdapter",
+          "method": "various",
+          "operation": "remove"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+          "className": "ObxXtreamLiveRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 10,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:nameLower",
+      "patternCount": 2
+    },
+    {
+      "name": "ObxCategory",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+          "className": "LiveContentRepositoryAdapter",
+          "method": "various"
+        },
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+          "className": "LibraryContentRepositoryAdapter",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+          "className": "LiveContentRepositoryAdapter",
+          "method": "various",
+          "operation": "remove"
+        }
+      ],
+      "queryCount": 10,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:kind",
+      "patternCount": 6
+    },
+    {
+      "name": "ObxEpgNowNext",
+      "readLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+          "className": "LiveContentRepositoryAdapter",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+          "className": "LiveContentRepositoryAdapter",
+          "method": "various",
+          "operation": "remove"
+        }
+      ],
+      "queryCount": 1,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "findFirst:streamId,channelId",
+      "patternCount": 1
+    },
+    {
+      "name": "ObxTelegramMessage",
+      "readLocations": [
+        {
+          "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+          "className": "ObxTelegramContentRepository",
+          "method": "various"
+        }
+      ],
+      "writeLocations": [
+        {
+          "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+          "className": "ObxTelegramContentRepository",
+          "method": "various",
+          "operation": "put"
+        }
+      ],
+      "queryCount": 9,
+      "relationAccessCount": 0,
+      "mostCommonQueryPattern": "find:chatId",
+      "patternCount": 3
+    }
+  ],
+  "summary": {
+    "totalEntities": 14,
+    "entitiesWithQueries": 14,
+    "entitiesWithWrites": 14,
+    "mostQueriedEntity": "ObxCanonicalMedia",
+    "mostWrittenEntity": "ObxMediaSourceRef"
+  }
+}
