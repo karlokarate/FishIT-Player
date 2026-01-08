@@ -402,7 +402,7 @@
   ],
   "modelJson": {
     "path": "core/persistence/objectbox-models/default.json",
-    "versionControlled": true,
+    "versionControlled": false,
     "entities": [
       "ObxCanonicalMedia",
       "ObxMediaSourceRef",
