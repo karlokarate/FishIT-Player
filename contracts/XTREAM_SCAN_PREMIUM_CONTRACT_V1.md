@@ -106,11 +106,11 @@ OkHttp Dispatcher limits and coroutine Semaphore limits in the client.
 
 X-21 Device class clamps
 
-Phone/Tablet: target parallelism = 10
+Phone/Tablet: target parallelism = 12
 
 FireTV/low-RAM: target parallelism = 3
 
-X-22 Where “MAX_PARALLEL=10” belongs
+X-22 Where “MAX_PARALLEL=12” belongs
 
 OkHttp dispatcher: maxRequests, maxRequestsPerHost
 

@@ -50,7 +50,7 @@ import javax.inject.Singleton
  *
  * **Performance Enhancements (Dec 2025):**
  * - Phase ordering: Live → Movies → Series (perceived speed)
- * - Per-phase batch sizes (Live=400, Movies=250, Series=150)
+ * - Per-phase batch sizes (Live=600, Movies=400, Series=200)
  * - Time-based flush (1200ms) ensures progressive UI updates
  * - Performance metrics collection for debug builds
  * - SyncActiveState broadcast for UI flow throttling
@@ -584,7 +584,7 @@ class DefaultCatalogSyncService
          * Enhanced Xtream sync with time-based batching and performance metrics.
          *
          * **Key Differences from syncXtream:**
-         * - Per-phase batch sizes (Live=400, Movies=250, Series=150)
+         * - Per-phase batch sizes (Live=600, Movies=400, Series=200)
          * - Time-based flush every 1200ms for progressive UI
          * - Performance metrics collection
          * - SyncActiveState broadcast for UI throttling

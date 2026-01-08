@@ -13,7 +13,7 @@ import org.junit.Test
  * Unit tests for XtreamTransportConfig.
  *
  * Verifies Premium Contract Section 5 compliance:
- * - Phone/Tablet: parallelism = 10
+ * - Phone/Tablet: parallelism = 12
  * - FireTV/low-RAM: parallelism = 3
  */
 class XtreamTransportConfigTest {
@@ -42,7 +42,7 @@ class XtreamTransportConfigTest {
 
         // Assert
         assertEquals(XtreamTransportConfig.DeviceClass.PHONE_TABLET, result)
-        assertEquals(10, result.parallelism)
+        assertEquals(12, result.parallelism)
     }
 
     @Test
@@ -130,7 +130,7 @@ class XtreamTransportConfigTest {
     }
 
     @Test
-    fun `getParallelism returns 10 for phone tablet`() {
+    fun `getParallelism returns 12 for phone tablet`() {
         // Arrange
         val context = mockk<Context>()
         val uiModeManager = mockk<UiModeManager>()
@@ -149,7 +149,7 @@ class XtreamTransportConfigTest {
         val result = XtreamTransportConfig.getParallelism(context)
 
         // Assert
-        assertEquals(10, result)
+        assertEquals(12, result)
     }
 
     @Test
@@ -177,13 +177,13 @@ class XtreamTransportConfigTest {
 
     @Test
     fun `constants match Premium Contract Section 5`() {
-        assertEquals(10, XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
+        assertEquals(12, XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
         assertEquals(3, XtreamTransportConfig.PARALLELISM_FIRETV_LOW_RAM)
     }
 
     @Test
     fun `DeviceClass parallelism values are correct`() {
-        assertEquals(10, XtreamTransportConfig.DeviceClass.PHONE_TABLET.parallelism)
+        assertEquals(12, XtreamTransportConfig.DeviceClass.PHONE_TABLET.parallelism)
         assertEquals(3, XtreamTransportConfig.DeviceClass.TV_LOW_RAM.parallelism)
     }
 }

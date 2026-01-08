@@ -10,8 +10,8 @@ import org.junit.Test
 class XtreamParallelismTest {
     @Test
     fun `XtreamParallelism stores correct value`() {
-        val parallelism = XtreamParallelism(10)
-        assertEquals(10, parallelism.value)
+        val parallelism = XtreamParallelism(12)
+        assertEquals(12, parallelism.value)
     }
 
     @Test
@@ -36,8 +36,8 @@ class XtreamParallelismTest {
 
     @Test
     fun `XtreamParallelism equality works correctly`() {
-        val p1 = XtreamParallelism(10)
-        val p2 = XtreamParallelism(10)
+        val p1 = XtreamParallelism(12)
+        val p2 = XtreamParallelism(12)
         val p3 = XtreamParallelism(3)
 
         assertEquals(p1, p2)

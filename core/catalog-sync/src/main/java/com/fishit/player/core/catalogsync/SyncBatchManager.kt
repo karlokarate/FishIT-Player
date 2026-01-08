@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Time-based batch manager for progressive catalog sync.
  *
  * **Key Features:**
- * - Per-phase batch sizing (Live=400, Movies=250, Series=150)
+ * - Per-phase batch sizing (Live=600, Movies=400, Series=200)
  * - Time-based flush: emit every [flushIntervalMs] even if batch isn't full
  * - Thread-safe via per-phase Mutex
  * - Metrics integration for performance tracking

@@ -81,7 +81,7 @@ PLATIN-compliant and maintainable.
 
 **Solution:**
 - Added cross-references between `core-catalog-sync.instructions.md` and `app-work.instructions.md`
-- Documented two-tier system: Phase-specific sizes (400/250/150) as defaults, FireTV cap (35) as override
+- Documented two-tier system: Phase-specific sizes (600/400/200) as defaults, FireTV cap (35) as override
 - Added `min()` logic example showing how they work together
 - Clarified device class adjustment applies globally to all phases
 

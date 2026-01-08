@@ -11,7 +11,7 @@ package com.fishit.player.infra.transport.xtream
  * - Coroutine Semaphores in DefaultXtreamApiClient and XtreamDiscovery
  *
  * Premium Contract Section 5:
- * - Phone/Tablet: parallelism = 10
+ * - Phone/Tablet: parallelism = 12
  * - FireTV/low-RAM: parallelism = 3
  *
  * @property value The parallelism level (number of concurrent requests).

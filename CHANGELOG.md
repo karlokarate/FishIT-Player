@@ -8,6 +8,22 @@ For v1 history prior to the rebuild, see `legacy/docs/CHANGELOG_v1.md`.
 
 ## [Unreleased]
 
+### Speed Optimization (2026-01-08)
+
+- **perf(infra/transport-xtream)**: Increased Xtream parallelism from 10 to 12 for Phone/Tablet devices
+  - `XtreamTransportConfig.PARALLELISM_PHONE_TABLET`: 10 → 12 concurrent requests (~20% increase)
+  - FireTV devices remain at 3 for safety (low RAM devices)
+  - Updated `contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` Section 5
+  - Updated all related tests and instruction files
+
+- **perf(core/catalog-sync)**: Raised default batch sizes to suggested maximums
+  - `LIVE_BATCH_SIZE`: 400 → 600 items (50% increase)
+  - `MOVIES_BATCH_SIZE`: 250 → 400 items (60% increase)
+  - `SERIES_BATCH_SIZE`: 150 → 200 items (33% increase)
+  - `QUICK_SYNC` adjusted proportionally: Live 200→300, Movies 100→200, Series 50→100
+  - FireTV safety cap remains at 35 items to prevent OOM
+  - **Impact**: Significantly faster catalog sync on Phone/Tablet devices
+
 ### SourceActivation API Module (2025-01-13)
 
 - **refactor(core)**: Extract SourceActivation API to dedicated module `core:source-activation-api`
