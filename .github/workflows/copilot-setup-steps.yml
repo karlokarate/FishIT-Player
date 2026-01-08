@@ -25,6 +25,7 @@ jobs:
     env:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
       COPILOT_MCP_TOKEN: ${{ secrets.COPILOT_MCP_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout repo (inkl. Submodules)
@@ -145,7 +146,7 @@ jobs:
             "mcpServers": {
               "github": {
                 "command": "docker",
-                "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+                "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN=$MCP_TOKEN", "ghcr.io/github/github-mcp-server"],
                 "env": {
                   "GITHUB_PERSONAL_ACCESS_TOKEN": "$MCP_TOKEN"
                 }
