@@ -111,6 +111,102 @@ items.map { canonical ->
 
 ---
 
+### 4. Centralized Eager Loading Patterns (ObxEagerPlans SSOT) ✅
+
+**File:** `core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxEagerPlans.kt`
+
+**Purpose:** Single Source of Truth (SSOT) for all ObjectBox eager loading patterns across the codebase.
+
+**Motivation:**
+- **Problem:** Scattered `.eager()` calls across repositories lead to:
+  - Inconsistent eager loading (some repos forget it)
+  - N+1 query problems difficult to track
+  - No centralized optimization point
+- **Solution:** Centralize all eager patterns in one file with:
+  - Named plans documenting intent (e.g., `applyHomeMoviesRowEager`)
+  - Consistent application across repositories
+  - Easy auditing and optimization
+
+**Method → Eager Plan → Consumer Mapping:**
+
+| Use Case | Repository Method | Eager Plan | Relations Loaded |
+|----------|------------------|------------|------------------|
+| **Home - Continue Watching** | `HomeContentRepositoryAdapter.observeContinueWatching()` | `applyHomeContinueWatchingEager()` | None (uses batch-fetch) |
+| **Home - Recently Added** | `HomeContentRepositoryAdapter.observeRecentlyAdded()` | `applyHomeRecentlyAddedEager()` | `ObxCanonicalMedia.sources` |
+| **Home - Movies Row** | `HomeContentRepositoryAdapter.observeMovies()` | `applyHomeMoviesRowEager()` | `ObxCanonicalMedia.sources` |
+| **Home - Series Row** | `HomeContentRepositoryAdapter.observeSeries()` | `applyHomeSeriesRowEager()` | `ObxCanonicalMedia.sources` |
+| **Home - Clips Row** | `HomeContentRepositoryAdapter.observeClips()` | `applyHomeClipsRowEager()` | `ObxCanonicalMedia.sources` |
+| **Library - VOD Grid** | `LibraryContentRepositoryAdapter.observeVod()` | `applyLibraryVodGridEager()` | None (flat entity) |
+| **Library - Series Grid** | `LibraryContentRepositoryAdapter.observeSeries()` | `applyLibrarySeriesGridEager()` | None (flat entity) |
+| **Details - VOD** | `ObxXtreamCatalogRepository.getBySourceId()` | `applyVodDetailsEager()` | None (flat entity) |
+| **Details - Series** | `ObxXtreamCatalogRepository.getBySourceId()` | `applySeriesDetailsEager()` | None (flat entity) |
+| **Details - Episodes** | `ObxXtreamCatalogRepository.observeEpisodes()` | `applyEpisodeDetailsEager()` | None (flat entity) |
+| **Playback - Source Resolution** | Playback domain | `applyPlaybackResolveDefaultSourceEager()` | `ObxCanonicalMedia.sources` |
+| **Search - Cross-Repo** | `ObxXtreamCatalogRepository.search()` | `applySearchResultsEager()` | `ObxCanonicalMedia.sources` |
+
+**Usage Example:**
+
+```kotlin
+import com.fishit.player.core.persistence.obx.ObxEagerPlans.applyHomeMoviesRowEager
+
+// In repository method:
+fun observeMovies(): Flow<List<HomeMediaItem>> {
+    val query = canonicalMediaBox.query(...)
+        .applyHomeMoviesRowEager()  // ✅ Apply centralized eager plan
+        .build()
+    
+    return query.asFlow().map { entities -> 
+        entities.map { it.toHomeMediaItem() }
+    }
+}
+```
+
+**Architecture Pattern:**
+
+```
+Repository (data layer)
+      ↓
+ObxEagerPlans (applies eager loading)
+      ↓
+QueryBuilder<T>.build()
+      ↓
+ObjectBox (executes optimized query)
+```
+
+**Benefits:**
+- ✅ Single place to audit all eager loading patterns
+- ✅ Prevents N+1 regressions (easy to spot missing plans)
+- ✅ Named plans document intent ("why this eager loading?")
+- ✅ Consistent patterns across all repositories
+- ✅ Easy to optimize (change one place, all consumers benefit)
+
+**Note on Batch-Fetch Alternative:**
+
+Some use cases (like Continue Watching in `HomeContentRepositoryAdapter`) use **batch-fetch pattern** instead of `.eager()`:
+1. Query for entity IDs
+2. Load all related entities with IN clause
+3. Join in-memory
+
+Both approaches eliminate N+1 problems. The choice depends on:
+- **Eager:** Simple 1-level relations, small result sets
+- **Batch-Fetch:** Nested relations, large result sets, complex joins
+
+ObxEagerPlans documents the eager alternative for consistency and future use.
+
+**Layer Compliance:**
+- ✅ Core persistence layer (no cross-layer violations)
+- ✅ Pure ObjectBox API usage
+- ✅ No UI or Domain dependencies
+- ✅ Reusable across all data layer modules
+
+**Impact:**
+- Same N+1 elimination as inline `.eager()` calls
+- Centralized documentation and auditability
+- Future-proofs against eager loading regressions
+- Provides standard patterns for new repositories
+
+---
+
 ## Performance Measurements
 
 ### Before Phase 1
