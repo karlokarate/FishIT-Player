@@ -2,7 +2,7 @@ package com.fishit.player.v2.work
 
 import com.fishit.player.core.model.SourceType
 import org.junit.Test
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
 
 /**
  * Tests for [CanonicalLinkingInputData].
@@ -92,7 +92,7 @@ class CanonicalLinkingInputDataTest {
             val data = input.toData()
             val decoded = CanonicalLinkingInputData.from(data)
 
-            assertEquals(sourceType, decoded.sourceType, "Failed for source: $sourceType")
+            assertEquals("Failed for source: $sourceType", sourceType, decoded.sourceType)
         }
     }
 }
