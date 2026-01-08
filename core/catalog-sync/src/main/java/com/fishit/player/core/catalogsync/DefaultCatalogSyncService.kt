@@ -74,7 +74,7 @@ import javax.inject.Singleton
 class DefaultCatalogSyncService
     @Inject
     constructor(
-        @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+        @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context,
         private val telegramPipeline: TelegramCatalogPipeline,
         private val xtreamPipeline: XtreamCatalogPipeline,
         private val telegramRepository: TelegramContentRepository,
@@ -84,8 +84,11 @@ class DefaultCatalogSyncService
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val checkpointStore: SyncCheckpointStore,
         private val telegramAuthRepository: TelegramAuthRepository,
-        private val deviceClassProvider: DeviceClassProvider,
+        deviceClassProvider: DeviceClassProvider,
     ) : CatalogSyncService {
+        // Cache device class during initialization to avoid repeated context passing
+        private val deviceClass: DeviceClass = deviceClassProvider.getDeviceClass(context)
+        
         companion object {
             private const val TAG = "CatalogSyncService"
             private const val SOURCE_TELEGRAM = "telegram"
