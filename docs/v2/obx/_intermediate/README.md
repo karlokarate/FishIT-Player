@@ -25,16 +25,16 @@ Complete inventory of all ObjectBox queries in the codebase.
 - **queryStatistics**: Summary metrics
   - Total queries: 128
   - Queries by entity (14 entities)
-  - Queries by type (find: 76, findFirst: 38, count: 11, etc.)
+  - Queries by type (find: 70, findFirst: 43, count: 15)
   - Indexed vs non-indexed queries
   
 - **entityPatterns**: Most common query pattern per entity
 
 **Key Findings:**
-- **Most queried entity**: `ObxCanonicalMedia` (24 queries)
+- **Most queried entity**: `ObxCanonicalMedia` (27 queries)
 - **Indexed queries**: 55 (43%)
 - **Non-indexed queries**: 73 (57%)
-- **Most common operations**: find (59%), findFirst (30%), count (9%)
+- **Most common operations**: find (55%), findFirst (34%), count (12%)
 
 ### 2. `relationships.json` (8.6KB)
 Complete inventory of ObjectBox relations and manual joins.
@@ -90,20 +90,20 @@ Access pattern analysis per entity.
 
 | Entity | Query Count | Primary Use Case |
 |--------|-------------|------------------|
-| `ObxCanonicalMedia` | 24 | Cross-pipeline media unification |
-| `ObxMediaSourceRef` | 18 | Source-to-canonical linking |
-| `ObxCanonicalResumeMark` | 12 | Resume position tracking |
-| `ObxEpisode` | 11 | Xtream series episodes |
+| `ObxCanonicalMedia` | 27 | Cross-pipeline media unification |
+| `ObxMediaSourceRef` | 7 | Source-to-canonical linking |
+| `ObxCanonicalResumeMark` | 6 | Resume position tracking |
+| `ObxEpisode` | 5 | Xtream series episodes |
 | `ObxSeries` | 10 | Xtream series metadata |
-| `ObxVod` | 10 | Xtream VOD items |
-| `ObxLive` | 9 | Xtream live streams |
-| `ObxSeasonIndex` | 8 | Season metadata cache |
-| `ObxEpisodeIndex` | 7 | Episode metadata cache |
-| `ObxCategory` | 6 | Content categorization |
-| `ObxTelegramMessage` | 5 | Telegram media items |
-| `ObxProfile` | 3 | User profiles |
-| `ObxScreenTimeEntry` | 3 | Kids screen time tracking |
-| `ObxEpgNowNext` | 2 | Live TV EPG data |
+| `ObxVod` | 20 | Xtream VOD items |
+| `ObxLive` | 10 | Xtream live streams |
+| `ObxSeasonIndex` | 6 | Season metadata cache |
+| `ObxEpisodeIndex` | 11 | Episode metadata cache |
+| `ObxCategory` | 10 | Content categorization |
+| `ObxTelegramMessage` | 9 | Telegram media items |
+| `ObxProfile` | 2 | User profiles |
+| `ObxScreenTimeEntry` | 4 | Kids screen time tracking |
+| `ObxEpgNowNext` | 1 | Live TV EPG data |
 
 ## Query Pattern Analysis
 
@@ -228,17 +228,17 @@ lateinit var sources: ToMany<ObxMediaSourceRef>
 ## Repository Hotspots
 
 ### High Query Activity
-1. **ObxCanonicalMediaRepository** (24 queries)
+1. **ObxCanonicalMediaRepository** (27 queries)
    - Central hub for canonical media system
    - Most complex query patterns
    - Heavy use of compound conditions
 
-2. **ObxXtreamCatalogRepository** (18 queries)
+2. **ObxXtreamCatalogRepository** (20 queries for ObxVod alone, plus ObxSeries: 10, ObxEpisode: 5, ObxLive: 10, ObxCategory: 10)
    - Xtream content queries
    - Category-based filtering
    - Series episode lookups
 
-3. **ObxXtreamSeriesIndexRepository** (15 queries)
+3. **ObxXtreamSeriesIndexRepository** (11 queries for ObxEpisodeIndex, plus ObxSeasonIndex: 6)
    - Season/episode index management
    - Compound key lookups
    - TTL-based cleanup queries
