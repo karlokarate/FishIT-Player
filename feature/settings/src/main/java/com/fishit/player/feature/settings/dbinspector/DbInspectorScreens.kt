@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,6 +40,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -88,7 +92,15 @@ class DbInspectorEntityTypesViewModel
             val isLoading: Boolean = true,
             val entityTypes: List<DbEntityTypeInfo> = emptyList(),
             val error: String? = null,
+            val exportState: ExportState = ExportState.Idle,
         )
+
+        sealed class ExportState {
+            object Idle : ExportState()
+            object Exporting : ExportState()
+            data class Success(val filePath: String) : ExportState()
+            data class Error(val message: String) : ExportState()
+        }
 
         private val _state = MutableStateFlow(State())
         val state: StateFlow<State> = _state.asStateFlow()
@@ -104,6 +116,23 @@ class DbInspectorEntityTypesViewModel
                     .onSuccess { types -> _state.update { it.copy(isLoading = false, entityTypes = types) } }
                     .onFailure { e -> _state.update { it.copy(isLoading = false, error = e.message) } }
             }
+        }
+
+        fun exportSchema(context: android.content.Context, toLogcat: Boolean = false) {
+            viewModelScope.launch {
+                _state.update { it.copy(exportState = ExportState.Exporting) }
+                runCatching {
+                    inspector.exportSchema(context, toLogcat)
+                }.onSuccess { path ->
+                    _state.update { it.copy(exportState = ExportState.Success(path)) }
+                }.onFailure { e ->
+                    _state.update { it.copy(exportState = ExportState.Error(e.message ?: "Export failed")) }
+                }
+            }
+        }
+
+        fun clearExportState() {
+            _state.update { it.copy(exportState = ExportState.Idle) }
         }
     }
 
@@ -238,11 +267,36 @@ fun DbInspectorEntityTypesScreen(
     viewModel: DbInspectorEntityTypesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showExportDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle export state snackbar
+    LaunchedEffect(state.exportState) {
+        when (val exportState = state.exportState) {
+            is DbInspectorEntityTypesViewModel.ExportState.Success -> {
+                snackbarHostState.showSnackbar(
+                    message = "Schema exported to:\n${exportState.filePath}",
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.clearExportState()
+            }
+            is DbInspectorEntityTypesViewModel.ExportState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = "Export failed: ${exportState.message}",
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.clearExportState()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
         topBar = {
             InspectorTopBar(title = "DB Inspector", onBack = onBack, onRefresh = viewModel::load)
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier =
@@ -263,17 +317,102 @@ fun DbInspectorEntityTypesScreen(
                     )
                 }
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(state.entityTypes) { entity ->
-                            EntityTypeCard(entity, onClick = { onOpenEntity(entity.id) })
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Export schema button
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showExportDialog = true }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Export ObjectBox Schema",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                    Text(
+                                        text = "Generate JSON dump of complete schema",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                    )
+                                }
+                            }
+                        }
+                        
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            items(state.entityTypes) { entity ->
+                                EntityTypeCard(entity, onClick = { onOpenEntity(entity.id) })
+                            }
                         }
                     }
                 }
             }
         }
+    }
+    
+    // Export dialog
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            title = { Text("Export ObjectBox Schema") },
+            text = {
+                Column {
+                    Text("Choose export method:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "• File: Saves JSON to app files directory",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        "• Logcat: Prints schema to Android logs",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExportDialog = false
+                        viewModel.exportSchema(context, toLogcat = false)
+                    },
+                ) {
+                    Text("Export to File")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showExportDialog = false
+                            viewModel.exportSchema(context, toLogcat = true)
+                        },
+                    ) {
+                        Text("Export to Logcat")
+                    }
+                    TextButton(onClick = { showExportDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            },
+        )
     }
 }
 
