@@ -40,6 +40,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -84,7 +87,6 @@ class DbInspectorEntityTypesViewModel
     @Inject
     constructor(
         private val inspector: ObxDatabaseInspector,
-        private val boxStore: io.objectbox.BoxStore,
     ) : ViewModel() {
         data class State(
             val isLoading: Boolean = true,
@@ -120,15 +122,7 @@ class DbInspectorEntityTypesViewModel
             viewModelScope.launch {
                 _state.update { it.copy(exportState = ExportState.Exporting) }
                 runCatching {
-                    val dump = com.fishit.player.core.persistence.inspector.ObjectBoxIntrospectionDump.generateDump(boxStore)
-                    
-                    if (toLogcat) {
-                        com.fishit.player.core.persistence.inspector.ObjectBoxIntrospectionDump.dumpToLogcat(dump)
-                        "Logcat"
-                    } else {
-                        val file = com.fishit.player.core.persistence.inspector.ObjectBoxIntrospectionDump.dumpToFile(context, dump)
-                        file.absolutePath
-                    }
+                    inspector.exportSchema(context, toLogcat)
                 }.onSuccess { path ->
                     _state.update { it.copy(exportState = ExportState.Success(path)) }
                 }.onFailure { e ->
@@ -275,11 +269,34 @@ fun DbInspectorEntityTypesScreen(
     val state by viewModel.state.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     var showExportDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle export state snackbar
+    LaunchedEffect(state.exportState) {
+        when (val exportState = state.exportState) {
+            is DbInspectorEntityTypesViewModel.ExportState.Success -> {
+                snackbarHostState.showSnackbar(
+                    message = "Schema exported to:\n${exportState.filePath}",
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.clearExportState()
+            }
+            is DbInspectorEntityTypesViewModel.ExportState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = "Export failed: ${exportState.message}",
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.clearExportState()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
         topBar = {
             InspectorTopBar(title = "DB Inspector", onBack = onBack, onRefresh = viewModel::load)
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier =
@@ -347,39 +364,6 @@ fun DbInspectorEntityTypesScreen(
                         }
                     }
                 }
-            }
-            
-            // Export state snackbar
-            when (val exportState = state.exportState) {
-                is DbInspectorEntityTypesViewModel.ExportState.Success -> {
-                    Snackbar(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp),
-                        action = {
-                            TextButton(onClick = viewModel::clearExportState) {
-                                Text("OK")
-                            }
-                        },
-                    ) {
-                        Text("Schema exported to:\n${exportState.filePath}")
-                    }
-                }
-                is DbInspectorEntityTypesViewModel.ExportState.Error -> {
-                    Snackbar(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp),
-                        action = {
-                            TextButton(onClick = viewModel::clearExportState) {
-                                Text("OK")
-                            }
-                        },
-                    ) {
-                        Text("Export failed: ${exportState.message}")
-                    }
-                }
-                else -> {}
             }
         }
     }

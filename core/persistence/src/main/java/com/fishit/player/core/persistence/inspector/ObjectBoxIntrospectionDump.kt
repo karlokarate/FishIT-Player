@@ -16,6 +16,7 @@ import java.lang.reflect.ParameterizedType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * DEBUG-ONLY Runtime introspection utility for ObjectBox schema extraction.
@@ -68,8 +69,11 @@ object ObjectBoxIntrospectionDump {
             }
         }
 
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
         val dump = ObjectBoxSchemaDump(
-            timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(Date()),
+            timestamp = dateFormat.format(Date()),
             objectBoxVersion = getObjectBoxVersion(),
             storeSize = 0L, // Store size not easily accessible via public API
             entityCount = entities.size,
@@ -186,7 +190,7 @@ object ObjectBoxIntrospectionDump {
             fullType = field.genericType.typeName,
             isIndexed = annotations.contains("Index"),
             isUnique = annotations.contains("Unique"),
-            isId = annotations.contains("Id") || field.name == "id",
+            isId = annotations.contains("Id"),
             annotations = annotations
         )
     }
