@@ -13,6 +13,7 @@ import com.fishit.player.v2.bootstrap.CatalogSyncBootstrap
 import com.fishit.player.v2.bootstrap.TelegramActivationObserver
 import com.fishit.player.v2.bootstrap.XtreamSessionBootstrap
 import com.fishit.player.v2.debug.LeakCanaryConfig
+import com.fishit.player.v2.debug.guardrails.StrictModeConfig
 import com.fishit.player.v2.di.AppScopeModule
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -78,6 +79,13 @@ class FishItV2Application :
 
         // Contract S-1: UnifiedLog MUST be initialized BEFORE any other subsystem
         UnifiedLogInitializer.init(isDebug = BuildConfig.DEBUG)
+
+        // Contract S-1.0: StrictMode for debug builds (Issue #609)
+        // Enable before any subsystem to catch violations during initialization
+        // Detects: disk I/O, network on main thread, ObjectBox violations
+        if (BuildConfig.DEBUG) {
+            StrictModeConfig.enable()
+        }
 
         // Contract S-1.1: LeakCanary base configuration (debug builds only, after logging)
         // Sets up reference matchers and default configuration
