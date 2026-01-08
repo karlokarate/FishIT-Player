@@ -2,18 +2,20 @@
 
 This directory contains the raw discovery outputs from **Phase 0 of Issue #612** (ObjectBox Data Layers Map).
 
+**Scope:** v2 only (core/persistence module)
+
 ## Contents
 
 ### Primary Deliverables
 
-1. **`entity_inventory.json`** (77KB)
-   - Complete catalog of 45 ObjectBox entities
+1. **`entity_inventory.json`** (~40KB)
+   - Complete catalog of 23 v2 ObjectBox entities
    - Fields with types and annotations
    - Relations (ToOne/ToMany)
    - Package names and file paths
 
-2. **`store_init_points.json`** (2KB)
-   - 3 BoxStore initialization points
+2. **`store_init_points.json`** (~1KB)
+   - 2 BoxStore initialization points (v2)
    - DI framework details (Hilt/Manual)
    - Initialization patterns
 
@@ -22,7 +24,7 @@ This directory contains the raw discovery outputs from **Phase 0 of Issue #612**
    - Navigation flow
    - Architecture details
 
-4. **`PHASE0_SUMMARY.md`** (8KB)
+4. **`PHASE0_SUMMARY.md`** (~6KB)
    - Comprehensive findings report
    - Entity categorization
    - Architecture insights
@@ -37,9 +39,9 @@ These JSON files are designed to be consumed by:
 
 ## Quick Stats
 
-- **Total Entities:** 45 (23 v2 + 22 v1 legacy)
+- **Total Entities:** 23 (v2 core/persistence only)
 - **Relations:** 2 (canonical identity pattern)
-- **Init Points:** 3 (v2 manual + Hilt + v1 legacy)
+- **Init Points:** 2 (v2 manual + Hilt)
 - **DB Inspector Components:** 8 (full MVVM stack)
 
 ## Data Quality
@@ -60,14 +62,13 @@ import json
 with open('entity_inventory.json', 'r') as f:
     data = json.load(f)
     
-# Find all entities in core/persistence
-v2_entities = [e for e in data['entities'] 
-               if e['modulePath'] == 'core/persistence']
+# All entities are from core/persistence
+v2_entities = data['entities']
 
 print(f"Found {len(v2_entities)} v2 entities")
 
 # Find entity by name
-canonical = next(e for e in data['entities'] 
+canonical = next(e for e in v2_entities 
                  if e['className'] == 'ObxCanonicalMedia')
                  
 print(f"Canonical media has {len(canonical['fields'])} fields")
@@ -183,6 +184,7 @@ for screen in screens:
 - JSON files are validated with `python3 -m json.tool`
 - Entity field order matches source code order
 - Annotations include `@` prefix for clarity
+- **Scope:** v2 only - legacy v1 entities excluded per task requirements
 
 ## Next Steps
 
@@ -196,4 +198,5 @@ These artifacts feed into:
 
 **Generated:** 2026-01-08  
 **Phase:** 0 (Discovery)  
+**Scope:** v2 only (core/persistence)  
 **Status:** ✅ Complete

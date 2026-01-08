@@ -2,11 +2,12 @@
 
 **Task:** Issue #612 Phase 0 - Discover and inventory all ObjectBox-related components  
 **Date:** 2026-01-08  
-**Status:** ✅ Complete
+**Status:** ✅ Complete  
+**Scope:** v2 only (core/persistence)
 
 ## Executive Summary
 
-Successfully discovered and inventoried all ObjectBox components across the FishIT-Player repository, including both v2 (core/persistence) and legacy v1 implementations. All findings are backed by actual file analysis.
+Successfully discovered and inventoried all ObjectBox components in the v2 architecture (core/persistence module). All findings are backed by actual file analysis.
 
 ## Deliverables
 
@@ -20,9 +21,7 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 
 ### Entities Discovered
 
-**Total Entities:** 45 (across v1 and v2)
-- **v2 (core/persistence):** 23 entities
-- **v1 (legacy/v1-app):** 22 entities
+**Total Entities:** 23 (v2 core/persistence only)
 
 ### Entity Categories
 
@@ -31,7 +30,7 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 - `ObxMediaSourceRef` - Source references linking canonical media to pipelines
 - `ObxCanonicalResumeMark` - Cross-source resume positions
 
-#### Content Entities (both v1 and v2)
+#### Content Entities (v2)
 - `ObxVod` - Video on demand entries
 - `ObxSeries` - Series metadata
 - `ObxEpisode` - Episode details with Telegram integration
@@ -39,12 +38,10 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 - `ObxCategory` - Content categorization
 - `ObxEpgNowNext` - EPG data for live channels
 
-#### Telegram-Specific Entities (both v1 and v2)
-- `ObxTelegramMessage` - Telegram media messages
-- `ObxTelegramItem` (v1) - Structured Telegram bundle items
-- `ObxChatScanState` (v1) - Chat scanning progress tracking
+#### Telegram-Specific Entities (v2)
+- `ObxTelegramMessage` - Telegram media messages with remoteId-based persistence
 
-#### Profile & Kids System (both v1 and v2)
+#### Profile & Kids System (v2)
 - `ObxProfile` - User profiles (adult/kid/guest)
 - `ObxProfilePermissions` - Permission matrix
 - `ObxKidContentAllow` - Kids content whitelist
@@ -52,14 +49,14 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 - `ObxKidContentBlock` - Kids content blocklist
 - `ObxScreenTimeEntry` - Screen time tracking
 
-#### Index Entities (both v1 and v2)
+#### Index Entities (v2)
 - `ObxIndexProvider` - Provider aggregation
 - `ObxIndexYear` - Year-based indexing
 - `ObxIndexGenre` - Genre indexing
 - `ObxIndexLang` - Language indexing
 - `ObxIndexQuality` - Quality indexing
-- `ObxSeasonIndex` (v2) - Season metadata
-- `ObxEpisodeIndex` (v2) - Episode metadata with playback hints
+- `ObxSeasonIndex` - Season metadata
+- `ObxEpisodeIndex` - Episode metadata with playback hints
 
 ### Relations Discovered
 
@@ -77,7 +74,7 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 
 ### Store Initialization Points
 
-**Total Init Points:** 3
+**Total Init Points:** 2 (v2 only)
 
 1. **v2 Manual Init** (`core/persistence/obx/ObxStore.kt`)
    - Pattern: Singleton with lazy initialization
@@ -88,11 +85,6 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
    - Pattern: `@Provides @Singleton`
    - Framework: Hilt
    - Delegates to: `ObxStore.get(context)`
-
-3. **v1 Legacy Init** (`legacy/v1-app/app/src/main/java/.../ObxStore.kt`)
-   - Pattern: Same singleton pattern as v2
-   - Framework: Manual
-   - Note: Legacy implementation, still in codebase
 
 ### DB Inspector Components
 
@@ -122,17 +114,16 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 - **TMDB Enrichment:** Built-in enrichment tracking with retry/cooldown logic
 
 #### Key Annotations Found
-- `@Entity` - 45 occurrences
-- `@Id` - 45 occurrences (all entities have auto-increment Long IDs)
-- `@Index` - 300+ occurrences (extensive indexing for performance)
-- `@Unique` - 25+ occurrences (uniqueness constraints on business keys)
+- `@Entity` - 23 occurrences
+- `@Id` - 23 occurrences (all entities have auto-increment Long IDs)
+- `@Index` - 150+ occurrences (extensive indexing for performance)
+- `@Unique` - 15+ occurrences (uniqueness constraints on business keys)
 - `@Backlink` - 2 occurrences (v2 canonical relations only)
 - `@Convert` - 3 occurrences (ImageRef custom converter)
 
 #### Store Initialization Pattern
-- **Lazy Singleton:** Both v1 and v2 use identical lazy initialization pattern
-- **Thread-Safe:** AtomicReference with double-check locking
-- **DI Integration:** v2 uses Hilt, delegates to manual singleton
+- **Lazy Singleton:** Thread-safe initialization via AtomicReference
+- **DI Integration:** Hilt provides BoxStore, delegates to manual singleton
 - **Generated Code:** Uses `MyObjectBox.builder()` (ObjectBox annotation processor)
 
 #### DB Inspector Architecture
@@ -144,17 +135,12 @@ All three required JSON files have been created in `/docs/v2/obx/_intermediate/`
 
 ## Notable Findings
 
-### v2 Improvements Over v1
+### v2 Architecture Highlights
 1. **Canonical Identity System:** New `ObxCanonicalMedia`/`ObxMediaSourceRef` pattern for cross-pipeline unification
 2. **TMDB Enrichment Tracking:** Built-in state machine for TMDB resolution with retry logic
 3. **ImageRef Converter:** Type-safe image reference storage with custom converter
 4. **Episode Index:** New `ObxSeasonIndex`/`ObxEpisodeIndex` for better series organization
 5. **RemoteId Support:** Telegram entities use stable remoteId (not volatile fileId)
-
-### Potential Issues Identified
-1. **Duplicate Entities:** Many entities exist in both v1 and v2 with identical structure (migration artifact)
-2. **Legacy Cleanup:** v1 entities still present in codebase alongside v2 equivalents
-3. **No Migrations:** No explicit migration tracking between v1 and v2 schemas
 
 ### DB Inspector Capabilities
 - ✅ List all entity types with counts
@@ -189,8 +175,8 @@ This inventory provides the foundation for:
 
 ```
 docs/v2/obx/_intermediate/
-├── entity_inventory.json        (45 entities, ~130KB)
-├── store_init_points.json       (3 init points)
+├── entity_inventory.json        (23 entities, ~40KB)
+├── store_init_points.json       (2 init points)
 ├── db_inspector_components.json (8 components)
 └── PHASE0_SUMMARY.md           (this file)
 ```
@@ -200,4 +186,5 @@ All JSON files validated with `python3 -m json.tool` ✓
 ---
 
 **Phase 0 Status:** ✅ **COMPLETE**  
+**Scope:** v2 only (core/persistence)  
 **Ready for:** Task 2A (Final Documentation)

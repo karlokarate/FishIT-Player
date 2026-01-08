@@ -21,25 +21,18 @@
       "initPattern": "ObxStore.get(context)",
       "isLazy": false,
       "lineNumber": 23,
-      "annotations": ["@Module", "@InstallIn(SingletonComponent::class)", "@Provides", "@Singleton"]
-    },
-    {
-      "filePath": "legacy/v1-app/app/src/main/java/com/chris/m3usuite/data/obx/ObxStore.kt",
-      "module": "legacy/v1-app/app",
-      "className": "ObxStore",
-      "methodName": "get",
-      "diFramework": "Manual",
-      "description": "Legacy v1 singleton ObjectBox store with lazy initialization",
-      "initPattern": "MyObjectBox.builder().androidContext(context.applicationContext).build()",
-      "isLazy": true,
-      "lineNumber": 15
+      "annotations": [
+        "@Module",
+        "@InstallIn(SingletonComponent::class)",
+        "@Provides",
+        "@Singleton"
+      ]
     }
   ],
   "notes": [
     "The main store initialization in v2 is in core/persistence/obx/ObxStore.kt",
     "Hilt DI is used to provide the BoxStore as a singleton via ObxStoreModule",
     "MyObjectBox is a generated class by ObjectBox annotation processor",
-    "The store is initialized lazily on first access",
-    "Both v1 (legacy) and v2 implementations use the same initialization pattern"
+    "The store is initialized lazily on first access"
   ]
 }
