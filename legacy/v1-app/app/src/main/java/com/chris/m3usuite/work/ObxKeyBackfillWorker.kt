@@ -160,11 +160,6 @@ class ObxKeyBackfillWorker(
                     return false
                 }
 
-                // NOTE: Hardcoded pageSize values (5000 for Live, 4000 for VOD/Series) are kept
-                // for backward compatibility in legacy v1 app. For v2 implementations, use
-                // ObxWriteConfig.getPageSize(context) for device-aware sizing.
-                // See: core/persistence/config/ObxWriteConfig.kt
-
                 // Live
                 val liveQuery = liveBox.query().build()
                 backfillPaged(
@@ -400,23 +395,7 @@ class ObxKeyBackfillWorker(
     }
 }
 
-/**
- * Chunked put to limit single-transaction size and surface progressive observer updates.
- *
- * @deprecated Use [com.fishit.player.core.persistence.config.ObxWriteConfig.putChunked] instead.
- * This extension function will be removed in a future release.
- *
- * Migration: Import ObxWriteConfig and use box.putChunked(items, context) for device-aware
- * chunking, or box.putChunked(items, chunkSize) for explicit chunk size control.
- */
-@Deprecated(
-    message = "Use ObxWriteConfig.putChunked extension function",
-    replaceWith = ReplaceWith(
-        "putChunked(items, chunkSize)",
-        "com.fishit.player.core.persistence.config.ObxWriteConfig.putChunked"
-    ),
-    level = DeprecationLevel.WARNING
-)
+/** Chunked put to limit single-transaction size and surface progressive observer updates. */
 private fun <T> Box<T>.putChunked(
     items: List<T>,
     chunkSize: Int = 2000,

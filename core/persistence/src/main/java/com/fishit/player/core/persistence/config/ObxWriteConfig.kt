@@ -12,8 +12,6 @@ import kotlin.math.min
  * **Konsolidiert:**
  * - WorkerConstants.FIRETV_BATCH_SIZE / NORMAL_BATCH_SIZE
  * - SyncPhaseConfig Batch-Größen
- * - ObxKeyBackfillWorker chunkSize/pageSize
- * - M3UExporter batchSize
  *
  * **Device-Class-Aware:**
  * - Uses DeviceClassProvider (core:device-api) as SSOT for device detection

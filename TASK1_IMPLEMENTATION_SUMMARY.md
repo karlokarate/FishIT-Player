@@ -14,8 +14,6 @@
 Created `ObxWriteConfig` in `core/persistence/config/` as the **SSOT** for all ObjectBox write configurations, consolidating fragmented definitions from:
 - `WorkerConstants.kt` (FIRETV_BATCH_SIZE, NORMAL_BATCH_SIZE)
 - `SyncPhaseConfig.kt` (LIVE_BATCH_SIZE, MOVIES_BATCH_SIZE, SERIES_BATCH_SIZE)
-- `ObxKeyBackfillWorker.kt` (hardcoded chunkSize values)
-- `M3UExporter.kt` (hardcoded batchSize)
 
 ### Key Features
 
@@ -56,7 +54,7 @@ Created `ObxWriteConfig` in `core/persistence/config/` as the **SSOT** for all O
    - Migration examples
    - Contract compliance references
 
-### Modified Files (6)
+### Modified Files (5)
 1. `app-v2/src/main/java/com/fishit/player/v2/work/WorkerConstants.kt`
    - Deprecated FIRETV_BATCH_SIZE and NORMAL_BATCH_SIZE
    - Added @Deprecated annotations with ReplaceWith suggestions
@@ -65,17 +63,13 @@ Created `ObxWriteConfig` in `core/persistence/config/` as the **SSOT** for all O
    - FIRETV_SAFE config now uses `ObxWriteConfig.FIRETV_BATCH_CAP`
    - Added documentation reference to ObxWriteConfig
 
-3. `legacy/v1-app/app/src/main/java/com/chris/m3usuite/work/ObxKeyBackfillWorker.kt`
-   - Deprecated custom putChunked extension
-   - Added migration guidance in comments
+3. `core/persistence/build.gradle.kts`
+   - Added `infra:device-android` dependency for device detection
 
-4. `core/persistence/build.gradle.kts`
-   - Added `infra:transport-xtream` dependency for device detection
-
-5. `docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md`
+4. `docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md`
    - W-17 section updated to reference ObxWriteConfig
 
-6. `.github/instructions/app-work.instructions.md`
+5. `.github/instructions/app-work.instructions.md`
    - Updated batch sizing patterns to use ObxWriteConfig
    - Added new recommended patterns
    - Updated common violations section

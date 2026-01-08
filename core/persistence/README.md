@@ -77,7 +77,6 @@ The following constants are now deprecated in favor of `ObxWriteConfig`:
 | `WorkerConstants` | `FIRETV_BATCH_SIZE` | `ObxWriteConfig.FIRETV_BATCH_CAP` |
 | `WorkerConstants` | `NORMAL_BATCH_SIZE` | `ObxWriteConfig.NORMAL_BATCH_SIZE` |
 | `SyncPhaseConfig` | Hardcoded `35` in FIRETV_SAFE | `ObxWriteConfig.FIRETV_BATCH_CAP` |
-| `ObxKeyBackfillWorker` | `putChunked(chunkSize = 2000)` | `ObxWriteConfig.putChunked()` |
 
 ### Device Detection
 
