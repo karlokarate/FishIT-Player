@@ -46,4 +46,12 @@ interface ObxDatabaseInspector {
         entityTypeId: String,
         id: Long,
     ): Boolean
+
+    /**
+     * Export complete ObjectBox schema as JSON.
+     * 
+     * @param toLogcat If true, dumps to logcat instead of returning file path
+     * @return File path if exported to file, "Logcat" if dumped to logcat
+     */
+    suspend fun exportSchema(context: android.content.Context, toLogcat: Boolean = false): String
 }
