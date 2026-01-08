@@ -1,9 +1,8 @@
 package com.fishit.player.infra.transport.xtream
 
-import android.app.ActivityManager
-import android.app.UiModeManager
 import android.content.Context
-import android.content.res.Configuration
+import com.fishit.player.core.device.DeviceClass
+import com.fishit.player.core.device.DeviceClassProvider
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -13,163 +12,55 @@ import org.junit.Test
  * Unit tests for XtreamTransportConfig.
  *
  * Verifies Premium Contract Section 5 compliance:
- * - Phone/Tablet: parallelism = 12
- * - FireTV/low-RAM: parallelism = 3
+ * - Phone/Tablet/TV: parallelism = 12
+ * - TV_LOW_RAM: parallelism = 3
+ *
+ * Uses the new DeviceClassProvider architecture from core:device-api.
  */
 class XtreamTransportConfigTest {
     @Test
-    fun `detectDeviceClass returns PHONE_TABLET for non-TV high-RAM device`() {
+    fun `getParallelism returns 12 for PHONE_TABLET device`() {
         // Arrange
         val context = mockk<Context>()
-        val uiModeManager = mockk<UiModeManager>()
-        val activityManager = mockk<ActivityManager>()
-        val memoryInfo =
-            ActivityManager.MemoryInfo().apply {
-                totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
-            }
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        val phoneTabletDevice = DeviceClass.PHONE_TABLET
 
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
-        every { uiModeManager.currentModeType } returns Configuration.UI_MODE_TYPE_NORMAL
-        every { activityManager.getMemoryInfo(any()) } answers {
-            val info = firstArg<ActivityManager.MemoryInfo>()
-            info.totalMem = memoryInfo.totalMem
-        }
-        every { activityManager.isLowRamDevice } returns false
+        every { deviceClassProvider.getDeviceClass(context) } returns phoneTabletDevice
 
         // Act
-        val result = XtreamTransportConfig.detectDeviceClass(context)
-
-        // Assert
-        assertEquals(XtreamTransportConfig.DeviceClass.PHONE_TABLET, result)
-        assertEquals(12, result.parallelism)
-    }
-
-    @Test
-    fun `detectDeviceClass returns TV_LOW_RAM for TV device`() {
-        // Arrange
-        val context = mockk<Context>()
-        val uiModeManager = mockk<UiModeManager>()
-        val activityManager = mockk<ActivityManager>()
-        val memoryInfo =
-            ActivityManager.MemoryInfo().apply {
-                totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
-            }
-
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
-        every { uiModeManager.currentModeType } returns Configuration.UI_MODE_TYPE_TELEVISION
-        every { activityManager.getMemoryInfo(any()) } answers {
-            val info = firstArg<ActivityManager.MemoryInfo>()
-            info.totalMem = memoryInfo.totalMem
-        }
-        every { activityManager.isLowRamDevice } returns false
-
-        // Act
-        val result = XtreamTransportConfig.detectDeviceClass(context)
-
-        // Assert
-        assertEquals(XtreamTransportConfig.DeviceClass.TV_LOW_RAM, result)
-        assertEquals(3, result.parallelism)
-    }
-
-    @Test
-    fun `detectDeviceClass returns TV_LOW_RAM for low-RAM device`() {
-        // Arrange
-        val context = mockk<Context>()
-        val uiModeManager = mockk<UiModeManager>()
-        val activityManager = mockk<ActivityManager>()
-        val memoryInfo =
-            ActivityManager.MemoryInfo().apply {
-                totalMem = 1L * 1024 * 1024 * 1024 // 1GB RAM (below 2GB threshold)
-            }
-
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
-        every { uiModeManager.currentModeType } returns Configuration.UI_MODE_TYPE_NORMAL
-        every { activityManager.getMemoryInfo(any()) } answers {
-            val info = firstArg<ActivityManager.MemoryInfo>()
-            info.totalMem = memoryInfo.totalMem
-        }
-        every { activityManager.isLowRamDevice } returns false
-
-        // Act
-        val result = XtreamTransportConfig.detectDeviceClass(context)
-
-        // Assert
-        assertEquals(XtreamTransportConfig.DeviceClass.TV_LOW_RAM, result)
-        assertEquals(3, result.parallelism)
-    }
-
-    @Test
-    fun `detectDeviceClass returns TV_LOW_RAM when isLowRamDevice is true`() {
-        // Arrange
-        val context = mockk<Context>()
-        val uiModeManager = mockk<UiModeManager>()
-        val activityManager = mockk<ActivityManager>()
-        val memoryInfo =
-            ActivityManager.MemoryInfo().apply {
-                totalMem = 4L * 1024 * 1024 * 1024 // 4GB RAM
-            }
-
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
-        every { uiModeManager.currentModeType } returns Configuration.UI_MODE_TYPE_NORMAL
-        every { activityManager.getMemoryInfo(any()) } answers {
-            val info = firstArg<ActivityManager.MemoryInfo>()
-            info.totalMem = memoryInfo.totalMem
-        }
-        every { activityManager.isLowRamDevice } returns true
-
-        // Act
-        val result = XtreamTransportConfig.detectDeviceClass(context)
-
-        // Assert
-        assertEquals(XtreamTransportConfig.DeviceClass.TV_LOW_RAM, result)
-        assertEquals(3, result.parallelism)
-    }
-
-    @Test
-    fun `getParallelism returns 12 for phone tablet`() {
-        // Arrange
-        val context = mockk<Context>()
-        val uiModeManager = mockk<UiModeManager>()
-        val activityManager = mockk<ActivityManager>()
-
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
-        every { uiModeManager.currentModeType } returns Configuration.UI_MODE_TYPE_NORMAL
-        every { activityManager.getMemoryInfo(any()) } answers {
-            val info = firstArg<ActivityManager.MemoryInfo>()
-            info.totalMem = 4L * 1024 * 1024 * 1024
-        }
-        every { activityManager.isLowRamDevice } returns false
-
-        // Act
-        val result = XtreamTransportConfig.getParallelism(context)
+        val result = XtreamTransportConfig.getParallelism(deviceClassProvider, context)
 
         // Assert
         assertEquals(12, result)
     }
 
     @Test
-    fun `getParallelism returns 3 for FireTV`() {
+    fun `getParallelism returns 12 for TV device (not low-RAM)`() {
         // Arrange
         val context = mockk<Context>()
-        val uiModeManager = mockk<UiModeManager>()
-        val activityManager = mockk<ActivityManager>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        val tvDevice = DeviceClass.TV
 
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns uiModeManager
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
-        every { uiModeManager.currentModeType } returns Configuration.UI_MODE_TYPE_TELEVISION
-        every { activityManager.getMemoryInfo(any()) } answers {
-            val info = firstArg<ActivityManager.MemoryInfo>()
-            info.totalMem = 2L * 1024 * 1024 * 1024
-        }
-        every { activityManager.isLowRamDevice } returns false
+        every { deviceClassProvider.getDeviceClass(context) } returns tvDevice
 
         // Act
-        val result = XtreamTransportConfig.getParallelism(context)
+        val result = XtreamTransportConfig.getParallelism(deviceClassProvider, context)
+
+        // Assert
+        assertEquals(12, result)
+    }
+
+    @Test
+    fun `getParallelism returns 3 for TV_LOW_RAM device`() {
+        // Arrange
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        val lowRamDevice = DeviceClass.TV_LOW_RAM
+
+        every { deviceClassProvider.getDeviceClass(context) } returns lowRamDevice
+
+        // Act
+        val result = XtreamTransportConfig.getParallelism(deviceClassProvider, context)
 
         // Assert
         assertEquals(3, result)
@@ -179,11 +70,5 @@ class XtreamTransportConfigTest {
     fun `constants match Premium Contract Section 5`() {
         assertEquals(12, XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
         assertEquals(3, XtreamTransportConfig.PARALLELISM_FIRETV_LOW_RAM)
-    }
-
-    @Test
-    fun `DeviceClass parallelism values are correct`() {
-        assertEquals(12, XtreamTransportConfig.DeviceClass.PHONE_TABLET.parallelism)
-        assertEquals(3, XtreamTransportConfig.DeviceClass.TV_LOW_RAM.parallelism)
     }
 }

@@ -200,36 +200,50 @@ const val SYNC_MODE_FORCE_RESCAN = "EXPERT_FORCE_RESCAN"
 ```
 
 ### Device Classes (W-17)
+
+**IMPORTANT:** Batch size configuration has been centralized in `ObxWriteConfig` (see `core/persistence/config/ObxWriteConfig.kt`).
+The constants below are deprecated and reference the new SSOT for backward compatibility.
+
 ```kotlin
 const val DEVICE_CLASS_FIRETV_LOW_RAM = "FIRETV_LOW_RAM"
 const val DEVICE_CLASS_ANDROID_PHONE_TABLET = "ANDROID_PHONE_TABLET"
 
-// Batch sizes per device class (GLOBAL CAP for FireTV)
+// Batch sizes per device class (DEPRECATED - use ObxWriteConfig)
+@Deprecated("Use ObxWriteConfig.FIRETV_BATCH_CAP")
 const val FIRETV_BATCH_SIZE = 35      // Overrides all phase-specific sizes
+
+@Deprecated("Use ObxWriteConfig.NORMAL_BATCH_SIZE or device-aware accessors")
 const val NORMAL_BATCH_SIZE = 100     // Generic fallback (phase-specific preferred)
 ```
 
-**Batch Size System (see also core-catalog-sync.instructions.md):**
+**Batch Size System (SSOT: `core/persistence/config/ObxWriteConfig.kt`):**
 
-Workers use a **two-tier batch sizing system**:
+Workers now use `ObxWriteConfig` for **device-aware batch sizing**:
 
 1. **Phase-specific sizes** (default for normal devices):
-   - Live: 600 items (rapid inserts)
-   - Movies: 400 items (balanced)
-   - Series: 200 items (larger payloads)
+   - Live: 600 items (rapid inserts) - `ObxWriteConfig.SYNC_LIVE_BATCH_PHONE`
+   - Movies: 400 items (balanced) - `ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE`
+   - Series: 200 items (larger payloads) - `ObxWriteConfig.SYNC_SERIES_BATCH_PHONE`
 
 2. **Device class override** (FireTV safety):
-   - FireTV: **35 items max** (caps ALL phases to prevent OOM)
+   - FireTV: **35 items max** (caps ALL phases) - `ObxWriteConfig.FIRETV_BATCH_CAP`
    - Normal: Uses phase-specific sizes
 
-**Application Logic:**
+**Application Logic (New Pattern):**
 ```kotlin
-val effectiveBatchSize = if (deviceClass == DEVICE_CLASS_FIRETV_LOW_RAM) {
-    min(PHASE_BATCH_SIZE, FIRETV_BATCH_SIZE)  // Cap at 35
-} else {
-    PHASE_BATCH_SIZE  // Use 400/250/150 based on phase
-}
+import com.fishit.player.core.persistence.config.ObxWriteConfig
+
+// Device-aware batch sizing (recommended)
+val liveBatchSize = ObxWriteConfig.getSyncLiveBatchSize(context)
+val moviesBatchSize = ObxWriteConfig.getSyncMoviesBatchSize(context)
+val seriesBatchSize = ObxWriteConfig.getSyncSeriesBatchSize(context)
+
+// Explicit constants (when context unavailable)
+val fireTvCap = ObxWriteConfig.FIRETV_BATCH_CAP  // 35
+val normalBatch = ObxWriteConfig.NORMAL_BATCH_SIZE  // 100
 ```
+
+See `core/persistence/README.md` for complete usage documentation.
 
 
 ### Failure Reasons (W-20 - Non-Retryable)
@@ -500,10 +514,19 @@ override suspend fun doWork(): Result {
 // ❌ WRONG: Hardcoded batch size
 val batchSize = 100
 
-// ✅ CORRECT: Device-aware batch size
+// ✅ CORRECT: Device-aware batch size (new pattern)
+import com.fishit.player.core.persistence.config.ObxWriteConfig
+
+val batchSize = ObxWriteConfig.getBatchSize(context)
+
+// Or phase-specific:
+val liveBatchSize = ObxWriteConfig.getSyncLiveBatchSize(context)
+val moviesBatchSize = ObxWriteConfig.getSyncMoviesBatchSize(context)
+
+// Legacy pattern (still works but deprecated):
 val batchSize = if (input.deviceClass == DEVICE_CLASS_FIRETV_LOW_RAM) {
-    WorkerConstants.FIRETV_BATCH_SIZE  // 35
+    WorkerConstants.FIRETV_BATCH_SIZE  // 35 (deprecated)
 } else {
-    WorkerConstants.NORMAL_BATCH_SIZE  // 100
+    WorkerConstants.NORMAL_BATCH_SIZE  // 100 (deprecated)
 }
 ```

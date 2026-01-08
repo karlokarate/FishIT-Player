@@ -131,18 +131,20 @@ data class EnhancedSyncConfig(
 
         /**
          * FIRETV_SAFE configuration: Conservative settings for low-RAM devices.
-         * - All batches capped at 35 items (PLATIN global safety limit)
+         * - All batches capped at ObxWriteConfig.FIRETV_BATCH_CAP (35 items)
          * - Canonical linking DISABLED for speed
          * - Time-based flush for progressive UI
          *
          * Per app-work.instructions.md: FireTV devices use a global cap of 35 items
          * to prevent OOM on limited RAM devices.
+         *
+         * @see com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP
          */
         val FIRETV_SAFE =
             EnhancedSyncConfig(
-                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 35),
-                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 35),
-                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 35),
+                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP),
+                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP),
+                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP),
                 enableTimeBasedFlush = true,
                 enableCanonicalLinking = false, // Reduce load
             )

@@ -167,12 +167,6 @@ object WorkerConstants {
     /** Default max runtime for workers (15 min) */
     const val DEFAULT_MAX_RUNTIME_MS = 15L * 60 * 1000
 
-    /** FireTV low RAM batch size (smaller for memory safety, tuned Dec 2025) */
-    const val FIRETV_BATCH_SIZE = 35
-
-    /** Normal device batch size (optimized Dec 2025) */
-    const val NORMAL_BATCH_SIZE = 100
-
     /** Exponential backoff initial delay (W-18) */
     const val BACKOFF_INITIAL_SECONDS = 30L
 

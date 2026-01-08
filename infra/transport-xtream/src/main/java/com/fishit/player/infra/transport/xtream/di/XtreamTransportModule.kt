@@ -1,6 +1,7 @@
 package com.fishit.player.infra.transport.xtream.di
 
 import android.content.Context
+import com.fishit.player.core.device.DeviceClassProvider
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -50,19 +51,29 @@ object XtreamTransportModule {
     /**
      * Provides the device-aware parallelism as SSOT.
      *
+     * Uses DeviceClassProvider from core:device-api for proper PLATIN architecture.
+     *
      * Premium Contract Section 5:
-     * - Phone/Tablet: 10
-     * - FireTV/low-RAM: 3
+     * - Phone/Tablet/TV: 12
+     * - TV_LOW_RAM: 3
      *
      * This value is used by:
      * - OkHttp Dispatcher limits
      * - All coroutine Semaphores in DefaultXtreamApiClient and XtreamDiscovery
+     *
+     * @param deviceClassProvider Injected provider for device classification
+     * @param context Application context for device detection
+     * @return XtreamParallelism wrapper with appropriate parallelism level
      */
     @Provides
     @Singleton
     fun provideXtreamParallelism(
+        deviceClassProvider: DeviceClassProvider,
         @ApplicationContext context: Context,
-    ): XtreamParallelism = XtreamParallelism(XtreamTransportConfig.getParallelism(context))
+    ): XtreamParallelism =
+        XtreamParallelism(
+            XtreamTransportConfig.getParallelism(deviceClassProvider, context),
+        )
 
     /**
      * Provides Xtream-specific OkHttpClient with Premium Contract settings.
