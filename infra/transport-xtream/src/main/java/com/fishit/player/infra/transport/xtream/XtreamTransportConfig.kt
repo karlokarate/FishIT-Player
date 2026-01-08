@@ -1,8 +1,7 @@
 package com.fishit.player.infra.transport.xtream
 
-import android.app.UiModeManager
 import android.content.Context
-import android.content.res.Configuration
+import com.fishit.player.core.device.DeviceClassProvider
 
 /**
  * XtreamTransportConfig – Zentrale Transport-Konfiguration gemäß Premium Contract.
@@ -12,7 +11,12 @@ import android.content.res.Configuration
  * - User-Agent und Headers (Section 4)
  * - Device-Class-basierte Parallelität (Section 5)
  *
+ * **Device Detection:**
+ * Uses DeviceClassProvider from core:device-api (proper PLATIN architecture).
+ * Device detection implementation is in infra:device-android.
+ *
  * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract</a>
+ * @see DeviceClassProvider for device detection interface
  */
 object XtreamTransportConfig {
     // =========================================================================
@@ -59,59 +63,55 @@ object XtreamTransportConfig {
     /** Reduced parallelism for FireTV/Android TV/low-RAM devices. */
     const val PARALLELISM_FIRETV_LOW_RAM: Int = 3
 
-    /** Low RAM threshold in MB (below this, use reduced parallelism). */
-    private const val LOW_RAM_THRESHOLD_MB: Long = 2048L
-
     /**
-     * Device classification for transport tuning.
-     */
-    enum class DeviceClass {
-        PHONE_TABLET,
-        TV_LOW_RAM,
-        ;
-
-        val parallelism: Int
-            get() =
-                when (this) {
-                    PHONE_TABLET -> PARALLELISM_PHONE_TABLET
-                    TV_LOW_RAM -> PARALLELISM_FIRETV_LOW_RAM
-                }
-    }
-
-    /**
-     * Detect the device class for transport tuning.
+     * Get the appropriate parallelism for the current device using DeviceClassProvider.
      *
-     * @param context Android context for device detection.
-     * @return DeviceClass based on device characteristics.
+     * This method uses the centralized DeviceClassProvider from core:device-api.
+     * The actual device detection implementation is in infra:device-android.
+     *
+     * Premium Contract Section 5:
+     * - Phone/Tablet/TV: parallelism = 12
+     * - TV_LOW_RAM: parallelism = 3
+     *
+     * @param deviceClassProvider Provider for device classification (injected via Hilt)
+     * @param context Android context for device detection
+     * @return Parallelism level (number of concurrent requests)
+     * @see DeviceClassProvider for device detection abstraction
      */
-    fun detectDeviceClass(context: Context): DeviceClass {
-        // Check if TV
-        val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
-        val isTV = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
-
-        // Check for low RAM
-        val activityManager =
-            context.getSystemService(Context.ACTIVITY_SERVICE)
-                as? android.app.ActivityManager
-        val memoryInfo = android.app.ActivityManager.MemoryInfo()
-        activityManager?.getMemoryInfo(memoryInfo)
-        val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
-        val isLowRam = totalRamMB < LOW_RAM_THRESHOLD_MB || activityManager?.isLowRamDevice == true
-
-        return when {
-            isTV -> DeviceClass.TV_LOW_RAM
-            isLowRam -> DeviceClass.TV_LOW_RAM
-            else -> DeviceClass.PHONE_TABLET
+    fun getParallelism(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) {
+            PARALLELISM_FIRETV_LOW_RAM
+        } else {
+            PARALLELISM_PHONE_TABLET
         }
     }
 
     /**
-     * Get the appropriate parallelism for the current device.
+     * Get the appropriate parallelism for the current device (backward compatible).
      *
-     * @param context Android context for device detection.
-     * @return Parallelism level (number of concurrent requests).
+     * **Note:** This creates a new DeviceClassProvider instance. For better performance,
+     * use the version with DeviceClassProvider parameter in production code.
+     *
+     * @param context Android context for device detection
+     * @return Parallelism level (number of concurrent requests)
+     * @deprecated Use getParallelism(DeviceClassProvider, Context) for better performance
      */
-    fun getParallelism(context: Context): Int = detectDeviceClass(context).parallelism
+    @Deprecated(
+        message = "Use getParallelism(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith(
+            "getParallelism(deviceClassProvider, context)",
+            "com.fishit.player.core.device.DeviceClassProvider",
+        ),
+    )
+    fun getParallelism(context: Context): Int {
+        // Create temporary provider for backward compatibility
+        val provider = com.fishit.player.infra.device.AndroidDeviceClassProvider()
+        return getParallelism(provider, context)
+    }
 
     // =========================================================================
     // Rate Limiting (from existing implementation)

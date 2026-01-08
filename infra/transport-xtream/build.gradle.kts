@@ -30,6 +30,8 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:device-api"))
+    implementation(project(":infra:device-android"))  // For backward compat in deprecated method
     implementation(project(":infra:logging"))
 
     // Debug settings (for GatedChuckerInterceptor in debug builds)

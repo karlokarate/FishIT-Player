@@ -1,35 +1,21 @@
 package com.fishit.player.core.persistence.config
 
 import android.content.Context
-import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
+import com.fishit.player.core.device.DeviceClass
+import com.fishit.player.core.device.DeviceClassProvider
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkAll
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 /**
  * Tests for ObxWriteConfig - SSOT for ObjectBox batch sizes.
  *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2 W-17 (FireTV Safety)
+ * Uses DeviceClassProvider architecture from core:device-api.
  */
 class ObxWriteConfigTest {
-    private lateinit var context: Context
-
-    @Before
-    fun setUp() {
-        context = mockk(relaxed = true)
-        mockkObject(XtreamTransportConfig)
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
-    }
 
     // ========== Constants ==========
 
@@ -58,126 +44,147 @@ class ObxWriteConfigTest {
         assertEquals(4000, ObxWriteConfig.NORMAL_PAGE_SIZE)
     }
 
-    // ========== Phase-Specific Batch Sizes ==========
+    // ========== Sync Phase Constants ==========
 
     @Test
-    fun `Sync live batch size is 600`() {
+    fun `Live batch size is 600`() {
         assertEquals(600, ObxWriteConfig.SYNC_LIVE_BATCH_PHONE)
     }
 
     @Test
-    fun `Sync movies batch size is 400`() {
+    fun `Movies batch size is 400`() {
         assertEquals(400, ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE)
     }
 
     @Test
-    fun `Sync series batch size is 200`() {
+    fun `Series batch size is 200`() {
         assertEquals(200, ObxWriteConfig.SYNC_SERIES_BATCH_PHONE)
     }
 
     @Test
-    fun `Sync episodes batch size is 200`() {
+    fun `Episodes batch size is 200`() {
         assertEquals(200, ObxWriteConfig.SYNC_EPISODES_BATCH_PHONE)
     }
 
-    // ========== Device-Aware Accessors (FireTV) ==========
+    // ========== Device-Aware Accessors (TV_LOW_RAM) ==========
 
     @Test
-    fun `getBatchSize returns FireTV cap for TV devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    fun `getBatchSize returns FireTV cap for TV_LOW_RAM devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV_LOW_RAM
 
-        assertEquals(35, ObxWriteConfig.getBatchSize(context))
+        assertEquals(35, ObxWriteConfig.getBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getSyncLiveBatchSize returns FireTV cap for TV devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    fun `getSyncLiveBatchSize returns FireTV cap for TV_LOW_RAM devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV_LOW_RAM
 
-        assertEquals(35, ObxWriteConfig.getSyncLiveBatchSize(context))
+        assertEquals(35, ObxWriteConfig.getSyncLiveBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getSyncMoviesBatchSize returns FireTV cap for TV devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    fun `getSyncMoviesBatchSize returns FireTV cap for TV_LOW_RAM devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV_LOW_RAM
 
-        assertEquals(35, ObxWriteConfig.getSyncMoviesBatchSize(context))
+        assertEquals(35, ObxWriteConfig.getSyncMoviesBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getSyncSeriesBatchSize returns FireTV cap for TV devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    fun `getSyncSeriesBatchSize returns FireTV cap for TV_LOW_RAM devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV_LOW_RAM
 
-        assertEquals(35, ObxWriteConfig.getSyncSeriesBatchSize(context))
+        assertEquals(35, ObxWriteConfig.getSyncSeriesBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getBackfillChunkSize returns 500 for TV devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    fun `getBackfillChunkSize returns 500 for TV_LOW_RAM devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV_LOW_RAM
 
-        assertEquals(500, ObxWriteConfig.getBackfillChunkSize(context))
+        assertEquals(500, ObxWriteConfig.getBackfillChunkSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getPageSize returns 500 for TV devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    fun `getPageSize returns 500 for TV_LOW_RAM devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV_LOW_RAM
 
-        assertEquals(500, ObxWriteConfig.getPageSize(context))
+        assertEquals(500, ObxWriteConfig.getPageSize(deviceClassProvider, context))
     }
 
-    // ========== Device-Aware Accessors (Phone/Tablet) ==========
+    // ========== Device-Aware Accessors (PHONE_TABLET / TV) ==========
 
     @Test
-    fun `getBatchSize returns 100 for normal devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.PHONE_TABLET
+    fun `getBatchSize returns 100 for PHONE_TABLET devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.PHONE_TABLET
 
-        assertEquals(100, ObxWriteConfig.getBatchSize(context))
-    }
-
-    @Test
-    fun `getSyncLiveBatchSize returns 600 for normal devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.PHONE_TABLET
-
-        assertEquals(600, ObxWriteConfig.getSyncLiveBatchSize(context))
+        assertEquals(100, ObxWriteConfig.getBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getSyncMoviesBatchSize returns 400 for normal devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.PHONE_TABLET
+    fun `getBatchSize returns 100 for TV devices (not low-RAM)`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.TV
 
-        assertEquals(400, ObxWriteConfig.getSyncMoviesBatchSize(context))
+        assertEquals(100, ObxWriteConfig.getBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getSyncSeriesBatchSize returns 200 for normal devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.PHONE_TABLET
+    fun `getSyncLiveBatchSize returns 600 for PHONE_TABLET devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.PHONE_TABLET
 
-        assertEquals(200, ObxWriteConfig.getSyncSeriesBatchSize(context))
+        assertEquals(600, ObxWriteConfig.getSyncLiveBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getBackfillChunkSize returns 2000 for normal devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.PHONE_TABLET
+    fun `getSyncMoviesBatchSize returns 400 for PHONE_TABLET devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.PHONE_TABLET
 
-        assertEquals(2000, ObxWriteConfig.getBackfillChunkSize(context))
+        assertEquals(400, ObxWriteConfig.getSyncMoviesBatchSize(deviceClassProvider, context))
     }
 
     @Test
-    fun `getPageSize returns 4000 for normal devices`() {
-        every { XtreamTransportConfig.detectDeviceClass(context) } returns
-            XtreamTransportConfig.DeviceClass.PHONE_TABLET
+    fun `getSyncSeriesBatchSize returns 200 for PHONE_TABLET devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.PHONE_TABLET
 
-        assertEquals(4000, ObxWriteConfig.getPageSize(context))
+        assertEquals(200, ObxWriteConfig.getSyncSeriesBatchSize(deviceClassProvider, context))
+    }
+
+    @Test
+    fun `getBackfillChunkSize returns 2000 for PHONE_TABLET devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.PHONE_TABLET
+
+        assertEquals(2000, ObxWriteConfig.getBackfillChunkSize(deviceClassProvider, context))
+    }
+
+    @Test
+    fun `getPageSize returns 4000 for PHONE_TABLET devices`() {
+        val context = mockk<Context>()
+        val deviceClassProvider = mockk<DeviceClassProvider>()
+        every { deviceClassProvider.getDeviceClass(context) } returns DeviceClass.PHONE_TABLET
+
+        assertEquals(4000, ObxWriteConfig.getPageSize(deviceClassProvider, context))
     }
 
     // ========== FireTV Safety Contract (W-17) ==========
@@ -212,42 +219,9 @@ class ObxWriteConfigTest {
 
     @Test
     fun `Batch size ordering is correct - Live largest, Series smallest`() {
-        assertTrue(
-            "Live (${ObxWriteConfig.SYNC_LIVE_BATCH_PHONE}) > Movies (${ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE})",
-            ObxWriteConfig.SYNC_LIVE_BATCH_PHONE > ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE,
-        )
-        assertTrue(
-            "Movies (${ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE}) > Series (${ObxWriteConfig.SYNC_SERIES_BATCH_PHONE})",
-            ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE > ObxWriteConfig.SYNC_SERIES_BATCH_PHONE,
-        )
-    }
-
-    // ========== PR #604 Values Verification ==========
-
-    @Test
-    fun `Live batch size matches PR #604 optimization (600)`() {
-        assertEquals(
-            "Live batch size should be 600 per PR #604 speed optimization",
-            600,
-            ObxWriteConfig.SYNC_LIVE_BATCH_PHONE,
-        )
-    }
-
-    @Test
-    fun `Movies batch size matches PR #604 optimization (400)`() {
-        assertEquals(
-            "Movies batch size should be 400 per PR #604 speed optimization",
-            400,
-            ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE,
-        )
-    }
-
-    @Test
-    fun `Series batch size matches PR #604 optimization (200)`() {
-        assertEquals(
-            "Series batch size should be 200 per PR #604 speed optimization",
-            200,
-            ObxWriteConfig.SYNC_SERIES_BATCH_PHONE,
-        )
+        // Live channels have smallest payload → largest batch
+        // Series have largest payload → smallest batch
+        assertTrue(ObxWriteConfig.SYNC_LIVE_BATCH_PHONE > ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE)
+        assertTrue(ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE > ObxWriteConfig.SYNC_SERIES_BATCH_PHONE)
     }
 }
