@@ -116,7 +116,10 @@ UnifiedLog.d(this::class.simpleName) { "message" }  // WRONG - runtime overhead!
 - Use `private const val TAG = "ModuleName/ClassName"` convention
 - Tags must be: **short, stable, meaningful**
 - Examples: `TelegramRepo`, `XtreamClient`, `IOPipeline`, `SIPPlayer`
-- Max 23 characters (Android Logcat limit)
+- **Max 23 characters (Android Logcat limit)**
+  - ⚠️ Tags exceeding 23 chars will be truncated in logcat (e.g., `CatalogSyncOrchestratorWorker` becomes `CatalogSyncOrchestrato`)
+  - Consider using shorter aliases for long class names (e.g., `"CatalogSyncOrch"`, `"CSOrchWorker"`)
+  - Truncation does NOT affect code functionality, only logcat filtering
 
 ---
 

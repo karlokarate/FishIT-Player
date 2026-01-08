@@ -369,7 +369,7 @@ grep -rn "fun.*XtreamVodItem" pipeline/ | grep -v "private\|internal"
 
 ## 📚 Reference Documents
 
-1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Authoritative pipeline contract
+1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Authoritative pipeline contract (AUTHORITATIVE)
 2. `/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` - Bundle processing rules
 3. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - remoteId-first design
 4. `/contracts/GLOSSARY_v2_naming_and_modules.md` - Terminology and module taxonomy
