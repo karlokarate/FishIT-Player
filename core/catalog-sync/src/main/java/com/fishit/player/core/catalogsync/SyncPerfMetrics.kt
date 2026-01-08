@@ -56,9 +56,8 @@ class SyncPerfMetrics(
         var errorCount: Int = 0,
         var retryCount: Int = 0,
         // TASK 5: Memory pressure tracking
-        var gcCountAtStart: Long = 0L,
-        var gcCountAtEnd: Long = 0L,
-        var memoryAllocatedBytes: Long = 0L,
+        var memoryUsageMBAtStart: Long = 0L,
+        var memoryUsageMBAtEnd: Long = 0L,
     ) {
         /** Average fetch duration per call */
         val avgFetchMs: Double
@@ -80,9 +79,9 @@ class SyncPerfMetrics(
         val itemsPersistedPerSec: Double
             get() = if (totalDurationMs > 0) itemsPersisted * 1000.0 / totalDurationMs else 0.0
 
-        /** TASK 5: GC events during phase */
-        val gcEventCount: Long
-            get() = if (gcCountAtEnd >= gcCountAtStart) gcCountAtEnd - gcCountAtStart else 0L
+        /** TASK 5: Memory variance (approximates GC pressure) */
+        val memoryVarianceMB: Long
+            get() = if (memoryUsageMBAtEnd >= memoryUsageMBAtStart) memoryUsageMBAtEnd - memoryUsageMBAtStart else 0L
 
         /** TASK 5: Error rate (errors per 1000 items) */
         val errorRatePer1000: Double
@@ -99,8 +98,8 @@ class SyncPerfMetrics(
             activePhases[phase] = now
             phaseMetrics.getOrPut(phase) { PhaseMetrics() }.apply {
                 phaseStartMs = now
-                // TASK 5: Capture GC count at phase start
-                gcCountAtStart = getGcCount()
+                // TASK 5: Capture memory usage at phase start
+                memoryUsageMBAtStart = getMemoryUsageMB()
             }
             UnifiedLog.d(TAG) { "Phase $phase started" }
         }
@@ -116,8 +115,8 @@ class SyncPerfMetrics(
             activePhases.remove(phase)
             phaseMetrics[phase]?.apply {
                 phaseEndMs = now
-                // TASK 5: Capture GC count at phase end
-                gcCountAtEnd = getGcCount()
+                // TASK 5: Capture memory usage at phase end
+                memoryUsageMBAtEnd = getMemoryUsageMB()
             }
             UnifiedLog.d(TAG) { "Phase $phase ended (${phaseMetrics[phase]?.totalDurationMs}ms)" }
         }
@@ -237,23 +236,25 @@ class SyncPerfMetrics(
     fun getAllMetrics(): Map<SyncPhase, PhaseMetrics> = phaseMetrics.toMap()
 
     /**
-     * TASK 5: Get current GC count estimate.
+     * TASK 5: Get current memory usage in MB.
      *
-     * Uses Runtime GC invocation count as a proxy for GC pressure.
+     * Tracks allocated memory as a proxy for GC pressure. Memory variance (delta between
+     * phase start and end) indicates memory pressure - larger deltas suggest more allocations
+     * and potential GC activity.
+     *
      * Note: This is an approximation as Android doesn't expose detailed GC stats without Debug API.
+     * The returned value represents used memory in MB, not actual GC event count.
      */
-    private fun getGcCount(): Long {
+    private fun getMemoryUsageMB(): Long {
         return try {
-            // Android doesn't expose GC count directly, so we use memory stats as proxy
-            // We track allocated memory delta instead for a more reliable metric
+            // Track allocated memory as proxy for GC pressure
             val runtime = Runtime.getRuntime()
             val totalMemory = runtime.totalMemory()
             val freeMemory = runtime.freeMemory()
             val usedMemory = totalMemory - freeMemory
             
-            // Return used memory as a monotonic counter approximation
-            // Real GC events would show as drops in this value, but we track the high-water mark
-            usedMemory / (1024 * 1024) // Convert to MB for more manageable numbers
+            // Return used memory in MB
+            usedMemory / (1024 * 1024)
         } catch (e: Exception) {
             UnifiedLog.w(TAG) { "Failed to get memory stats: ${e.message}" }
             0L
@@ -297,7 +298,7 @@ class SyncPerfMetrics(
                 // TASK 5: Add error and GC metrics
                 appendLine("  Errors: ${metrics.errorCount} (${String.format("%.2f", metrics.errorRatePer1000)}/1000 items)")
                 appendLine("  Retries: ${metrics.retryCount}")
-                appendLine("  Memory Pressure: ~${metrics.gcEventCount}MB variance")
+                appendLine("  Memory Variance: ${metrics.memoryVarianceMB} MB")
                 appendLine()
 
                 totalDuration += metrics.totalDurationMs
@@ -305,7 +306,7 @@ class SyncPerfMetrics(
                 totalPersisted += metrics.itemsPersisted
                 totalErrors += metrics.errorCount
                 totalRetries += metrics.retryCount
-                totalGcEvents += metrics.gcEventCount
+                totalGcEvents += metrics.memoryVarianceMB
             }
 
             appendLine("=== TOTALS ===")
@@ -314,7 +315,7 @@ class SyncPerfMetrics(
             appendLine("  Total Persisted: $totalPersisted items")
             appendLine("  Total Errors: $totalErrors")
             appendLine("  Total Retries: $totalRetries")
-            appendLine("  Memory Pressure: ~${totalGcEvents}MB variance")
+            appendLine("  Memory Variance: ${totalGcEvents} MB")
             if (totalDuration > 0) {
                 appendLine("  Overall Throughput: ${String.format("%.1f", totalPersisted * 1000.0 / totalDuration)} items/sec")
             }

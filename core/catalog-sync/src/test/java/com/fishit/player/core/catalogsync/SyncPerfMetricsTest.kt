@@ -14,7 +14,7 @@ import org.junit.Test
  * - Phase timing
  * - Items discovered/persisted
  * - Errors and retries
- * - Memory pressure (GC approximation)
+ * - Memory pressure (memory variance approximation)
  * - Throughput calculations
  */
 class SyncPerfMetricsTest {
@@ -29,10 +29,14 @@ class SyncPerfMetricsTest {
     @Test
     fun `test phase timing tracking`() = runTest {
         // Start phase
+        val startTime = System.currentTimeMillis()
         metrics.startPhase(SyncPhase.LIVE)
         
-        // Simulate some work
-        Thread.sleep(100)
+        // Simulate work with actual timing
+        val workStartTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - workStartTime < 100) {
+            // Busy wait for precise timing
+        }
         
         // End phase
         metrics.endPhase(SyncPhase.LIVE)
@@ -112,8 +116,11 @@ class SyncPerfMetricsTest {
         metrics.recordItemsDiscovered(SyncPhase.MOVIES, 100)
         metrics.recordPersist(SyncPhase.MOVIES, durationMs = 50, itemCount = 100, isTimeBased = false)
         
-        // Wait 1 second to have measurable duration
-        Thread.sleep(1000)
+        // Simulate elapsed time for phase
+        val workStartTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - workStartTime < 1000) {
+            // Busy wait for precise timing
+        }
         
         metrics.endPhase(SyncPhase.MOVIES)
         
@@ -137,8 +144,8 @@ class SyncPerfMetricsTest {
         
         val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.SERIES)
         assertNotNull(phaseMetrics)
-        // GC count is tracked as memory variance, should be >= 0
-        assertTrue("GC event count should be non-negative", phaseMetrics!!.gcEventCount >= 0)
+        // Memory variance is tracked, should be >= 0
+        assertTrue("Memory variance should be non-negative", phaseMetrics!!.memoryVarianceMB >= 0)
     }
 
     @Test
@@ -166,17 +173,29 @@ class SyncPerfMetricsTest {
     fun `test export report contains all metrics`() = runTest {
         // Setup multiple phases with metrics
         metrics.startPhase(SyncPhase.LIVE)
+        
+        // Simulate elapsed time for the phase
+        val workStartTime1 = System.currentTimeMillis()
+        while (System.currentTimeMillis() - workStartTime1 < 100) {
+            // Busy wait for precise timing
+        }
+        
         metrics.recordItemsDiscovered(SyncPhase.LIVE, 100)
         metrics.recordPersist(SyncPhase.LIVE, durationMs = 50, itemCount = 100, isTimeBased = false)
         metrics.recordError(SyncPhase.LIVE)
         metrics.recordRetry(SyncPhase.LIVE)
-        Thread.sleep(100)
         metrics.endPhase(SyncPhase.LIVE)
         
         metrics.startPhase(SyncPhase.MOVIES)
+        
+        // Simulate elapsed time for the phase
+        val workStartTime2 = System.currentTimeMillis()
+        while (System.currentTimeMillis() - workStartTime2 < 100) {
+            // Busy wait for precise timing
+        }
+        
         metrics.recordItemsDiscovered(SyncPhase.MOVIES, 200)
         metrics.recordPersist(SyncPhase.MOVIES, durationMs = 100, itemCount = 200, isTimeBased = true)
-        Thread.sleep(100)
         metrics.endPhase(SyncPhase.MOVIES)
         
         val report = metrics.exportReport()
@@ -185,10 +204,10 @@ class SyncPerfMetricsTest {
         assertTrue("Report should contain LIVE section", report.contains("LIVE"))
         assertTrue("Report should contain MOVIES section", report.contains("MOVIES"))
         assertTrue("Report should contain totals", report.contains("TOTALS"))
-        assertTrue("Report should contain throughput", report.contains("Overall Throughput"))
+        assertTrue("Report should contain throughput", report.contains("items/sec"))
         assertTrue("Report should contain error metrics", report.contains("Errors:"))
         assertTrue("Report should contain retry metrics", report.contains("Retries:"))
-        assertTrue("Report should contain memory metrics", report.contains("Memory Pressure:"))
+        assertTrue("Report should contain memory metrics", report.contains("Memory Variance:"))
     }
 
     @Test

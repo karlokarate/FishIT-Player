@@ -578,13 +578,14 @@ class XtreamCatalogScanWorker
                         )
                     }
                     val persistDuration = System.currentTimeMillis() - batchPersistStart
+                    val fetchDuration = batchPersistStart - batchStartTimeMs
                     processedCount += successful.size
 
                     // TASK 5: Log detailed per-batch performance metrics
-                    val itemsPerSec = if (batchDuration > 0) successful.size * 1000 / batchDuration else 0
+                    val itemsPerSec = if (fetchDuration > 0) successful.size * 1000 / fetchDuration else 0
                     UnifiedLog.d(TAG) {
                         "VOD batch: ${successful.size}/${vodIds.size} successful " +
-                            "fetch=${batchDuration}ms persist=${persistDuration}ms " +
+                            "fetch=${fetchDuration}ms persist=${persistDuration}ms " +
                             "throughput=${itemsPerSec} items/sec"
                     }
                 }
@@ -677,13 +678,14 @@ class XtreamCatalogScanWorker
                         )
                     }
                     val persistDuration = System.currentTimeMillis() - batchPersistStart
+                    val fetchDuration = batchPersistStart - batchStartTimeMs
                     processedCount += successful.size
 
                     // TASK 5: Log detailed per-batch performance metrics
-                    val itemsPerSec = if (batchDuration > 0) successful.size * 1000 / batchDuration else 0
+                    val itemsPerSec = if (fetchDuration > 0) successful.size * 1000 / fetchDuration else 0
                     UnifiedLog.d(TAG) {
                         "Series batch: ${successful.size}/${seriesIds.size} successful " +
-                            "fetch=${batchDuration}ms persist=${persistDuration}ms " +
+                            "fetch=${fetchDuration}ms persist=${persistDuration}ms " +
                             "throughput=${itemsPerSec} items/sec"
                     }
                 }

@@ -38,7 +38,7 @@ class SyncPerformanceRegressionTest {
      * Note: Set to 45 items/sec to allow for test timing variance while still catching regressions.
      */
     @Test
-    fun `baseline throughput should be at least 50 items per second`() = runTest {
+    fun `baseline throughput should be at least 45 items per second`() = runTest {
         val metrics = SyncPerfMetrics(isEnabled = true)
         
         // Simulate a sync phase
@@ -53,8 +53,11 @@ class SyncPerformanceRegressionTest {
             isTimeBased = false
         )
         
-        // Simulate 2 seconds of sync time
-        Thread.sleep(2000)
+        // Simulate elapsed time for phase (2 seconds)
+        val workStartTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - workStartTime < 2000) {
+            // Busy wait for precise timing
+        }
         
         metrics.endPhase(SyncPhase.LIVE)
         
@@ -146,7 +149,6 @@ class SyncPerformanceRegressionTest {
             metrics.recordPersist(phase, durationMs = 50, itemCount = 100, isTimeBased = false)
             metrics.recordError(phase)
             metrics.recordRetry(phase)
-            Thread.sleep(50)
             metrics.endPhase(phase)
         }
         
@@ -177,10 +179,10 @@ class SyncPerformanceRegressionTest {
         
         val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.EPISODES)!!
         
-        // GC count should be non-negative (it's a delta/variance measure)
+        // Memory variance should be non-negative (it's a delta/variance measure)
         assertTrue(
-            "GC event count should be non-negative, got ${phaseMetrics.gcEventCount}",
-            phaseMetrics.gcEventCount >= 0
+            "Memory variance should be non-negative, got ${phaseMetrics.memoryVarianceMB}",
+            phaseMetrics.memoryVarianceMB >= 0
         )
     }
 
@@ -200,7 +202,11 @@ class SyncPerformanceRegressionTest {
             metrics.recordItemsDiscovered(phase, itemCount)
             metrics.recordPersist(phase, durationMs = 50, itemCount = itemCount, isTimeBased = false)
             
-            Thread.sleep(1000)
+            // Simulate elapsed time for the phase
+            val workStartTime = System.currentTimeMillis()
+            while (System.currentTimeMillis() - workStartTime < 1000) {
+                // Busy wait for precise timing
+            }
             
             metrics.endPhase(phase)
             
@@ -242,7 +248,10 @@ class SyncPerformanceRegressionTest {
         }
         
         // Simulate total sync time
-        Thread.sleep(2000)
+        val workStartTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - workStartTime < 2000) {
+            // Busy wait for precise timing
+        }
         
         metrics.endPhase(SyncPhase.MOVIES)
         
