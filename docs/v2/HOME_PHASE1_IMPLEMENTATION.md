@@ -144,6 +144,13 @@ items.map { canonical ->
 | **Playback - Source Resolution** | Playback domain | `applyPlaybackResolveDefaultSourceEager()` | `ObxCanonicalMedia.sources` |
 | **Search - Cross-Repo** | `ObxXtreamCatalogRepository.search()` | `applySearchResultsEager()` | `ObxCanonicalMedia.sources` |
 
+> **Important Note:** The table above describes **available eager-loading patterns** as reference documentation, not necessarily the **current implementation**. Many repositories (notably `HomeContentRepositoryAdapter`) use the **batch-fetch pattern** (Phase 3 optimization) instead and do **not** import or invoke `ObxEagerPlans` functions. These patterns serve as:
+> - Reference documentation for when eager loading is appropriate
+> - Alternative patterns if batch-fetch is not suitable
+> - Standard patterns for new repositories to consider
+>
+> Before using an eager plan, verify whether the repository actually needs it or if batch-fetch is more appropriate for the use case.
+
 **Usage Example:**
 
 ```kotlin

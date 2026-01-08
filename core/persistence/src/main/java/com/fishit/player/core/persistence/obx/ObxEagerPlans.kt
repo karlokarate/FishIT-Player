@@ -89,8 +89,8 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - None (ObxCanonicalResumeMark has no ToOne/ToMany relations)
      *
-     * **Consumer:**
-     * - `HomeContentRepositoryAdapter.observeContinueWatching()`
+     * **Reference Pattern For:**
+     * - `HomeContentRepositoryAdapter.observeContinueWatching()` (currently uses batch-fetch instead)
      *
      * **Architecture:**
      * - ObxCanonicalResumeMark stores canonicalKey (String field, not relation)
@@ -101,8 +101,9 @@ object ObxEagerPlans {
      * - Batch-fetch eliminates N+1: 1 query for resume marks, 1 query for canonical media
      * - IN clause with canonicalKey is faster than JOIN for large result sets
      *
-     * **Note:** HomeContentRepositoryAdapter currently uses batch-fetch pattern
-     * (Phase 3 optimization). This plan is a no-op but documented for consistency.
+     * **Current Implementation:**
+     * HomeContentRepositoryAdapter uses batch-fetch pattern (Phase 3 optimization).
+     * This plan is a no-op but documented as reference for consistency.
      */
     fun QueryBuilder<ObxCanonicalResumeMark>.applyHomeContinueWatchingEager(): QueryBuilder<ObxCanonicalResumeMark> {
         // ObxCanonicalResumeMark has no ToOne/ToMany relations
@@ -117,15 +118,16 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - `ObxCanonicalMedia.sources` → `List<ObxMediaSourceRef>`
      *
-     * **Consumer:**
-     * - `HomeContentRepositoryAdapter.observeRecentlyAdded()`
+     * **Reference Pattern For:**
+     * - `HomeContentRepositoryAdapter.observeRecentlyAdded()` (currently uses batch-fetch instead)
      *
      * **Performance:**
      * - Eliminates N+1 for canonical media → sources
      * - Single query loads all source references
      *
-     * **Note:** HomeContentRepositoryAdapter currently uses batch-fetch pattern.
-     * This plan documents the eager alternative.
+     * **Current Implementation:**
+     * HomeContentRepositoryAdapter uses batch-fetch pattern.
+     * This plan documents the eager loading alternative for future use.
      */
     fun QueryBuilder<ObxCanonicalMedia>.applyHomeRecentlyAddedEager(): QueryBuilder<ObxCanonicalMedia> {
         eager(ObxCanonicalMedia_.sources)
@@ -138,8 +140,8 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - `ObxCanonicalMedia.sources` → `List<ObxMediaSourceRef>`
      *
-     * **Consumer:**
-     * - `HomeContentRepositoryAdapter.observeMovies()`
+     * **Reference Pattern For:**
+     * - `HomeContentRepositoryAdapter.observeMovies()` (currently uses batch-fetch instead)
      */
     fun QueryBuilder<ObxCanonicalMedia>.applyHomeMoviesRowEager(): QueryBuilder<ObxCanonicalMedia> {
         eager(ObxCanonicalMedia_.sources)
@@ -152,8 +154,8 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - `ObxCanonicalMedia.sources` → `List<ObxMediaSourceRef>`
      *
-     * **Consumer:**
-     * - `HomeContentRepositoryAdapter.observeSeries()`
+     * **Reference Pattern For:**
+     * - `HomeContentRepositoryAdapter.observeSeries()` (currently uses batch-fetch instead)
      */
     fun QueryBuilder<ObxCanonicalMedia>.applyHomeSeriesRowEager(): QueryBuilder<ObxCanonicalMedia> {
         eager(ObxCanonicalMedia_.sources)
@@ -166,8 +168,8 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - `ObxCanonicalMedia.sources` → `List<ObxMediaSourceRef>`
      *
-     * **Consumer:**
-     * - `HomeContentRepositoryAdapter.observeClips()`
+     * **Reference Pattern For:**
+     * - `HomeContentRepositoryAdapter.observeClips()` (currently uses batch-fetch instead)
      */
     fun QueryBuilder<ObxCanonicalMedia>.applyHomeClipsRowEager(): QueryBuilder<ObxCanonicalMedia> {
         eager(ObxCanonicalMedia_.sources)
@@ -184,11 +186,11 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - None (ObxVod has no ToOne/ToMany relations)
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - `LibraryContentRepositoryAdapter.observeVod()`
      *
      * **Note:** ObxVod entities are flat (no relations to eager load).
-     * This plan is a no-op but documented for consistency.
+     * This plan is a no-op but documented as reference for when relations are added.
      */
     fun QueryBuilder<ObxVod>.applyLibraryVodGridEager(): QueryBuilder<ObxVod> {
         // ObxVod has no ToOne/ToMany relations
@@ -202,11 +204,11 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - None (ObxSeries has no ToOne/ToMany relations)
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - `LibraryContentRepositoryAdapter.observeSeries()`
      *
      * **Note:** ObxSeries entities are flat (no relations to eager load).
-     * This plan is a no-op but documented for consistency.
+     * This plan is a no-op but documented as reference for when relations are added.
      */
     fun QueryBuilder<ObxSeries>.applyLibrarySeriesGridEager(): QueryBuilder<ObxSeries> {
         // ObxSeries has no ToOne/ToMany relations
@@ -224,7 +226,7 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - None (ObxVod has no relations)
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - `ObxXtreamCatalogRepository.getBySourceId()` (VOD path)
      *
      * **Use Case:**
@@ -242,7 +244,7 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - None (ObxSeries has no relations)
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - `ObxXtreamCatalogRepository.getBySourceId()` (Series path)
      *
      * **Use Case:**
@@ -261,7 +263,7 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - None (ObxEpisode has no relations)
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - `ObxXtreamCatalogRepository.getBySourceId()` (Episode path)
      * - `ObxXtreamCatalogRepository.observeEpisodes()`
      *
@@ -284,7 +286,7 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - `ObxCanonicalMedia.sources` → `List<ObxMediaSourceRef>`
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - Playback domain (resolving best source for playback)
      * - `PlayMediaUseCase` (when reading from canonical repository)
      *
@@ -308,7 +310,7 @@ object ObxEagerPlans {
      * **Relations Loaded:**
      * - `ObxCanonicalMedia.sources` → `List<ObxMediaSourceRef>`
      *
-     * **Consumer:**
+     * **Reference Pattern For:**
      * - `ObxXtreamCatalogRepository.search()` (if using canonical)
      * - Global search implementations
      *

@@ -59,8 +59,8 @@ class ObxXtreamCatalogRepository
         private val episodeBox by lazy { boxStore.boxFor<ObxEpisode>() }
 
         override fun observeVod(categoryId: String?): Flow<List<RawMediaMetadata>> {
-            // ObxVod entities are flat (no ToOne/ToMany relations)
-            // No eager loading needed - see ObxEagerPlans.applyVodDetailsEager() for documentation
+            // ObxVod entities are flat (no ToOne/ToMany relations).
+            // No eager loading needed. See ObxEagerPlans for pattern reference if relations are added.
             val query =
                 if (categoryId != null) {
                     vodBox.query(ObxVod_.categoryId.equal(categoryId)).build()
@@ -71,8 +71,8 @@ class ObxXtreamCatalogRepository
         }
 
         override fun observeSeries(categoryId: String?): Flow<List<RawMediaMetadata>> {
-            // ObxSeries entities are flat (no ToOne/ToMany relations)
-            // No eager loading needed - see ObxEagerPlans.applySeriesDetailsEager() for documentation
+            // ObxSeries entities are flat (no ToOne/ToMany relations).
+            // No eager loading needed. See ObxEagerPlans for pattern reference if relations are added.
             val query =
                 if (categoryId != null) {
                     seriesBox.query(ObxSeries_.categoryId.equal(categoryId)).build()
@@ -86,8 +86,8 @@ class ObxXtreamCatalogRepository
             seriesId: String,
             seasonNumber: Int?,
         ): Flow<List<RawMediaMetadata>> {
-            // ObxEpisode entities are flat (no ToOne/ToMany relations)
-            // No eager loading needed - see ObxEagerPlans.applyEpisodeDetailsEager() for documentation
+            // ObxEpisode entities are flat (no ToOne/ToMany relations).
+            // No eager loading needed. See ObxEagerPlans for pattern reference if relations are added.
             val seriesIdInt =
                 seriesId.toIntOrNull() ?: return kotlinx.coroutines.flow.flowOf(emptyList())
 

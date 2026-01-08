@@ -63,8 +63,9 @@ class LibraryContentRepositoryAdapter
         private val categoryNameCache = mutableMapOf<String, String?>()
 
         override fun observeVod(categoryId: String?): Flow<List<LibraryMediaItem>> {
-            // ObxVod entities are flat (no ToOne/ToMany relations)
-            // No eager loading needed - see ObxEagerPlans.applyLibraryVodGridEager() for documentation
+            // ObxVod entities are flat (no ToOne/ToMany relations).
+            // No eager loading needed. See ObxEagerPlans.applyLibraryVodGridEager() for
+            // documentation on the centralized eager loading pattern reference.
             val query =
                 if (categoryId != null) {
                     vodBox.query(ObxVod_.categoryId.equal(categoryId)).order(ObxVod_.nameLower).build()
@@ -78,8 +79,9 @@ class LibraryContentRepositoryAdapter
         }
 
         override fun observeSeries(categoryId: String?): Flow<List<LibraryMediaItem>> {
-            // ObxSeries entities are flat (no ToOne/ToMany relations)
-            // No eager loading needed - see ObxEagerPlans.applyLibrarySeriesGridEager() for documentation
+            // ObxSeries entities are flat (no ToOne/ToMany relations).
+            // No eager loading needed. See ObxEagerPlans.applyLibrarySeriesGridEager() for
+            // documentation on the centralized eager loading pattern reference.
             val query =
                 if (categoryId != null) {
                     seriesBox.query(ObxSeries_.categoryId.equal(categoryId)).order(ObxSeries_.nameLower).build()
