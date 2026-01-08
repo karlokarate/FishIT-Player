@@ -489,7 +489,7 @@ data class CanonicalLinkingInputData(
                 } catch (e: Exception) {
                     SourceType.UNKNOWN
                 }
-            val batchSize = data.getInt(KEY_BATCH_SIZE, WorkerConstants.NORMAL_BATCH_SIZE)
+            val batchSize = data.getInt(KEY_BATCH_SIZE, com.fishit.player.core.persistence.config.ObxWriteConfig.NORMAL_BATCH_SIZE)
             val maxRuntimeMs = data.getLong(WorkerConstants.KEY_MAX_RUNTIME_MS, WorkerConstants.DEFAULT_MAX_RUNTIME_MS)
 
             return CanonicalLinkingInputData(

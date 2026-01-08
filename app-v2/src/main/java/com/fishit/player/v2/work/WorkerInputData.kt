@@ -38,9 +38,9 @@ data class WorkerInputData(
     val batchSize: Int
         get() =
             if (isFireTvLowRam) {
-                WorkerConstants.FIRETV_BATCH_SIZE
+                com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP
             } else {
-                WorkerConstants.NORMAL_BATCH_SIZE
+                com.fishit.player.core.persistence.config.ObxWriteConfig.NORMAL_BATCH_SIZE
             }
 
     /** Returns retry limit based on sync mode (W-19) */

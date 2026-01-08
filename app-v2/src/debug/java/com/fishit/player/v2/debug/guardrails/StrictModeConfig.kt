@@ -125,7 +125,7 @@ object StrictModeConfig {
         val vmPolicyBuilder = StrictMode.VmPolicy.Builder()
             .detectActivityLeaks()
             .detectLeakedClosableObjects()
-            .detectLeakedSqlLiteObjects()
+            .detectLeakedSqliteObjects()
             .penaltyLog()
 
         // Leak of registration objects (API 16+)
